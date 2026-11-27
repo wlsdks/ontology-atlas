@@ -5,9 +5,5 @@
   "redirectBody": "アプリは、このMacのフォルダを開く画面から始まります。",
   "redirectFilesProof": "Markdownファイルはローカルに残ります",
   "redirectGraphProof": "ファイル先頭の情報ブロックがマップになります",
-  "redirectAgentProof": "このフォルダの外を変更する前に、エージェントが確認します",
-  "lostVaultMissing": "前回開いた「{name}」フォルダが見つかりません。移動または削除された可能性があります。もう一度選べば、続きから再開できます。",
-  "lostVaultUnreadable": "前回開いたフォルダを再び開けませんでした。もう一度選ぶか、サンプルで見て回ることもできます。",
-  "lostVaultAction": "フォルダを選び直す",
-  "lostVaultDismiss": "この通知を閉じる"
+  "redirectAgentProof": "このフォルダの外を変更する前に、エージェントが確認します"
 }

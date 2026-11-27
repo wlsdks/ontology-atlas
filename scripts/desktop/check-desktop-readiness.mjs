@@ -132,6 +132,7 @@ const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/download/check-hosted-download-surface.mjs");
 const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools"];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
+const gatewayHandOverScript = readText("src/app/providers/GatewayHandOverScript.tsx");
 const docsVaultPageFiles = [
   "src/views/docs-vault/ui/DocsVaultPage.tsx",
   "src/views/docs-vault/ui/DocsVaultHeader.tsx",
@@ -818,8 +819,7 @@ if (
  * docs prose is protected by generated-surface and referential-integrity checks.
  */
 if (
-  // The map and first-run views arrive as one fetched chunk (`views`), so a first-time web visitor
-  // on `/` downloads only the gateway.
+  // The map and first-run views arrive as one fetched chunk (`views`) once a folder is on its way.
   rootEntryPage.includes("const vaultOpen = Boolean(vault.manifest || vault.partialTotal)") &&
   rootEntryPage.includes("if (views) return <views.HomePage />") &&
   rootEntryPage.includes("isDesktopShell()") &&
@@ -828,14 +828,16 @@ if (
   // folders (`FirstRunPage` is the launch chooser): check that the runtime test is still there and that
   // the choosing state reaches the same screen.
   rootEntryPage.includes("vault.awaitingVaultChoice") &&
-  // The hosted branch may wrap the gateway with a lost-vault notice, so the fact checked is that an
-  // empty hosted session still renders the gateway, not the exact return shape.
-  rootEntryPage.includes("<GatewayLandingPage />")
+  // The page is the installed app's alone: a plain browser is sent to the download page from the
+  // document head (`GatewayHandOverScript`) before any of it loads, so no gateway page renders here.
+  !rootEntryPage.includes("GatewayLandingPage") &&
+  gatewayHandOverScript.includes("location.replace") &&
+  gatewayHandOverScript.includes("window.isTauri")
 ) {
-  pass("root entry derives the loaded-vault map, desktop first run, the launch chooser, and hosted gateway from runtime state");
+  pass("root entry derives the loaded-vault map, desktop first run and the launch chooser from runtime state, and hands a plain browser to the download page");
 } else {
   fail(
-    "src/views/root-entry/ui/RootEntryPage.tsx must route a loaded vault to HomePage, an empty desktop shell to FirstRunPage, and an empty hosted web session to GatewayLandingPage",
+    "src/views/root-entry/ui/RootEntryPage.tsx must route a loaded vault to HomePage and an empty desktop shell to FirstRunPage, and src/app/providers/GatewayHandOverScript.tsx must send a browser (no window.isTauri) to /download",
   );
 }
 

@@ -22,13 +22,7 @@ export const WEB_ONLY_ROOT_ENTRIES = [
   "sitemap.xml",
 ];
 
-export const WEB_ONLY_LOCALE_ROUTES = ["download"];
-
-/**
- * The `/project/<slug>` pages the export pre-renders exist for the bundled samples. The app opens
- * every project through these two, which read the slug from the query.
- */
-export const APP_PROJECT_PAGES = ["fallback", "new"];
+export const WEB_ONLY_LOCALE_ROUTES = ["download", "sample"];
 
 export const DESKTOP_FRONTEND_SOURCE = "out";
 export const DESKTOP_FRONTEND_TARGET = path.join("src-tauri", "target", "desktop-frontend");
@@ -40,10 +34,7 @@ export function isDesktopFrontendPath(relativePath, { locales = listLocales() } 
   if (parts.length === 1 || !locales.includes(parts[0])) {
     return !WEB_ONLY_ROOT_ENTRIES.includes(parts[0]);
   }
-  const [, route, page] = parts;
-  if (WEB_ONLY_LOCALE_ROUTES.includes(route)) return false;
-  if (route === "project" && page !== undefined) return APP_PROJECT_PAGES.includes(page);
-  return true;
+  return !WEB_ONLY_LOCALE_ROUTES.includes(parts[1]);
 }
 
 function toPosix(relativePath) {

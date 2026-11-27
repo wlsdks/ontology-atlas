@@ -1,6 +1,6 @@
 /**
  * Server-side only: the message paths the gateway pages' client tree reads (`/download`, `/guide`,
- * `/changelog`, mounted by `app/(gateway)/[locale]/layout.tsx`).
+ * `/changelog`, `/sample`, mounted by `app/(gateway)/[locale]/layout.tsx`).
  *
  * The client provider serialises its `messages` into every statically exported page, so handing it
  * the whole catalog put all of the workbench's copy into each public page's HTML. A path is a
@@ -13,7 +13,9 @@
 export const GATEWAY_MESSAGE_PATHS = [
   'agentConnect',
   'agents.models',
+  'conceptReach',
   'download',
+  'edgeTypes',
   'featuresMisc.vaultDiffToaster',
   'firstRun',
   'footer',
@@ -22,10 +24,14 @@ export const GATEWAY_MESSAGE_PATHS = [
   'kinds',
   'locale',
   'mapDial',
+  'mapEntry',
   'moru',
-  'nav',
   'navRail',
+  'sampleMap',
+  'topology.canvas',
+  'topology.controls',
   'topology.startSteps.analyze',
+  'topologyWidgets.keyboardWalk',
 ] as const;
 
 type MessageTree = Record<string, unknown>;

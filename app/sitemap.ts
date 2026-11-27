@@ -1,5 +1,4 @@
 import type { MetadataRoute } from 'next';
-import { deriveIndexedProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
 import { lastCommitDate } from '@/shared/lib/public-pages/source-dates';
 import { LOCALE_META } from '@/i18n/locales';
@@ -14,13 +13,12 @@ import {
 
 export const dynamic = 'force-static';
 
-// Canonical surfaces a user can reach directly. Compatibility redirects, vault-mode-only entry
-// points such as /project/new, and `/{locale}/` (canonical: `/{locale}/download/`) are excluded.
-// `projects` and `library` are left out: their exported HTML holds under 200 characters of text,
-// since the vault fills them in the browser, so they offer a crawler nothing to index.
+// The website's own pages. Every address that is a screen of the installed app answers with the
+// app-only page and is noindex, so none is listed; nor are compatibility redirects, or `/{locale}/`
+// (canonical: `/{locale}/download/`).
 const STATIC_ROUTES = [
   'download',
-  'topology',
+  'sample',
   'guide',
   'changelog',
   ...GUIDE_PAGES.slice(1).map(guideCanonicalPath),
@@ -32,7 +30,7 @@ const STATIC_ROUTES = [
 function sourcesOf(route: string, locale: string): string[] {
   if (route === 'download') return ['src/views/download', 'messages/en/download.json'];
   if (route === 'changelog') return ['docs/records/changes', 'docs/records/releases'];
-  if (route === 'topology') return ['app/[locale]/topology', 'messages/en/topology.json'];
+  if (route === 'sample') return ['src/views/sample-map', 'samples/storefront', 'messages/en/sampleMap.json'];
   const page = route === 'guide' ? GUIDE_ENTRY_PAGE : GUIDE_PAGES.find((guide) => guideCanonicalPath(guide) === route);
   if (!page) return ['src/views/gateway-doc', `messages/${locale}`];
   return [
@@ -50,11 +48,6 @@ const hreflangOf = (locale: string): string =>
   (LOCALE_META as Record<string, { hreflang: string }>)[locale]?.hreflang ?? locale;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  /**
-   * The project list comes from the same source as route generation, `bundledProjectSlugs()`, less
-   * the demo samples, whose pages are noindex (`app/[locale]/project/[slug]/page.tsx`).
-   */
-  const projects = deriveIndexedProjects();
   const entries: MetadataRoute.Sitemap = [];
   const modified = new Map(
     routing.locales.flatMap((locale) =>
@@ -82,24 +75,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
               ])
             ),
             'x-default': `${SITE_URL}/${ownLocales[0]}/${route}/`,
-          },
-        },
-      });
-    }
-
-    for (const project of projects) {
-      entries.push({
-        url: `${SITE_URL}/${locale}/project/${project.slug}/`,
-        ...(project.updatedAt ? { lastModified: project.updatedAt } : {}),
-        alternates: {
-          languages: {
-            ...Object.fromEntries(
-              routing.locales.map((l) => [
-                hreflangOf(l),
-                `${SITE_URL}/${l}/project/${project.slug}/`,
-              ])
-            ),
-            'x-default': `${SITE_URL}/${routing.defaultLocale}/project/${project.slug}/`,
           },
         },
       });

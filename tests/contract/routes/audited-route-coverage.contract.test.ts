@@ -49,7 +49,7 @@ describe("route coverage of the accessibility ratchet", () => {
     expect(routes.length).toBeGreaterThanOrEqual(19);
     expect(routes).toContain("/topology");
     expect(routes).toContain("/git");
-    expect(routes).toContain("/project/[slug]");
+    expect(routes).toContain("/sample");
     expect(routes).toContain("/download");
   });
 

@@ -11,9 +11,7 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, useToast } from "@/shared/ui";
 import { WaitStage } from "@/shared/ui/status/wait-stage";
-import { useLocale, useTranslations } from "next-intl";
-import type { AppLocale } from "@/i18n/locales";
-import { useWorkbenchCatalog } from "@/i18n/workbench-catalog";
+import { useTranslations } from "next-intl";
 import {
   AppNavRail,
   NavRailShellProvider,
@@ -256,18 +254,11 @@ function AppNavRailSlot() {
   const projectsDoorHref = useProjectsDoorHref();
 
   // Gateway routes hide the rail with `lg:hidden`, not an unmount, decided during render so it never
-  // paints for a frame. `isGatewaySurface` is shared with `RootEntryPage`. `useHydrated()` forces a
-  // re-render because hydration does not correct a `lg:hidden` baked in prerender.
+  // paints for a frame. `useHydrated()` forces a re-render because hydration does not correct a
+  // `lg:hidden` baked in prerender.
   const hydrated = useHydrated();
-  /* `/` on the web holds a subset of the catalog until a folder arrives (`WorkbenchMessagesProvider`);
-     the rail stays the gateway's until the rest is here, as `RootEntryPage` does. */
-  const catalogReady = useWorkbenchCatalog(useLocale() as AppLocale) !== null;
   const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest && !vault.partialTotal;
-  const gateway = isGatewaySurface(pathname, {
-    hasVault: Boolean(vault.manifest || vault.partialTotal) && catalogReady,
-    desktop: hydrated && isDesktopShell(),
-    vaultKnown: vault.restoreAttempted,
-  });
+  const gateway = isGatewaySurface(pathname, { desktop: hydrated && isDesktopShell() });
 
   const atAgents = resolveActiveNavDestination(pathname) === "agents";
   const installNotice = useInstallNotice(atAgents);

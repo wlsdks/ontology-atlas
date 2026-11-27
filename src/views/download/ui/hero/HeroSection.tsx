@@ -14,6 +14,7 @@ import { GithubMark } from '@/shared/ui/marks/service-marks/github-mark';
 import { MACOS_RELEASE, type MacosReleaseAsset, type WindowsReleaseAsset } from '../../lib/release/release-state';
 import { DownloadActions } from '../release/DownloadActions';
 import { FactsStrip } from '../release/FactsStrip';
+import { OtherComputers } from '../release/OtherComputers';
 import { TrustLine } from '../release/TrustLine';
 import { DemoStage } from './DemoStage';
 import { HeroTypewriter, heroSentence } from './HeroTypewriter';
@@ -149,6 +150,8 @@ export function HeroSection({
               windowsPrimary={heroWindowsPrimary}
               handheld={handheld}
             />
+
+            <OtherComputers className={cn(rise('gateway-t400'), 'mt-3 text-center min-[80rem]:text-left')} />
 
             <div className={cn(rise('gateway-t400'), 'mt-6')}>
               <MoruPlayEntry />

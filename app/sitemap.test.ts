@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { deriveBundledProjects, deriveIndexedProjects } from '@/entities/docs-vault';
 import { routing } from '@/i18n/routing';
 import { SITE_URL } from '@/shared/config';
 import { CHANGELOG_CONTENT_LOCALES, GUIDE_ENTRY_PAGE, GUIDE_PAGES } from '@/views/gateway-doc';
@@ -40,10 +39,9 @@ vi.mock('@/i18n/locales', async (importOriginal) => {
   };
 });
 
-// `projects` and `library` render under 200 characters before the vault loads, so they stay out.
 const PUBLIC_STATIC_PATHS = [
   'download',
-  'topology',
+  'sample',
   'guide',
   ...GUIDE_PAGES.filter((page) => page.segment !== GUIDE_ENTRY_PAGE.segment).map(
     (page) => `guide/${page.segment}`,
@@ -60,9 +58,6 @@ describe('public sitemap', () => {
           (path) => `${SITE_URL}/${locale}/${path ? `${path}/` : ''}`,
         ),
         ...(CHANGELOG_CONTENT_LOCALES.includes(locale) ? [`${SITE_URL}/${locale}/changelog/`] : []),
-        ...deriveIndexedProjects().map(
-          (project) => `${SITE_URL}/${locale}/project/${project.slug}/`,
-        ),
       ])
       .sort();
 
@@ -76,17 +71,16 @@ describe('public sitemap', () => {
     }
   });
 
-  it('lists the real project and leaves the fictional storefront demo out', async () => {
+  it('lists the sample map and no address that is a screen of the installed app', async () => {
     const urls = (await sitemap()).map((entry) => entry.url);
-    expect(deriveBundledProjects().map((project) => project.slug)).toContain('storefront');
-    expect(urls).toContain(`${SITE_URL}/en/project/ontology-atlas/`);
-    expect(urls.some((url) => url.includes('/project/storefront/'))).toBe(false);
+    expect(urls).toContain(`${SITE_URL}/en/sample/`);
+    expect(urls.filter((url) => /\/(topology|project|projects|library|agents)\//.test(url))).toEqual([]);
   });
 
   it('dates a static page by the last commit to its words, never by the build', async () => {
     const before = Date.now();
     const entries = await sitemap();
-    const staticEntries = entries.filter((entry) => !entry.url.includes('/project/'));
+    const staticEntries = entries;
 
     expect(staticEntries.length).toBeGreaterThan(0);
     const dates = new Set<string>();

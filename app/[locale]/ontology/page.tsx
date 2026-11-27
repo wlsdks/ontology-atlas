@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { OntologyRedirectPage } from "@/views/ontology-redirect";
 import { RouteLoadingFallback } from "@/shared/ui";
-import { absoluteUrl } from "@/shared/config";
 
 export async function generateMetadata({
   params,
@@ -12,11 +11,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
-  // A redirect, not a destination: canonical is `/topology/`, and no hreflang is set, so search
-  // engines see no second address for the same content.
+  // A redirect to an app screen, not a destination: it names no canonical and no hreflang, since
+  // `/topology/` is itself outside the index (a browser sees the app-only page there).
   return {
     title: t("pages.ontology"),
-    alternates: { canonical: absoluteUrl(`/${locale}/topology/`) },
+    robots: { index: false, follow: true },
   };
 }
 

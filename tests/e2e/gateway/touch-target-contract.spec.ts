@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { mountDesktopVault, installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
 
 /**
  * WCAG 2.5.8 24x24 floor on the effective hit box (own rect plus ::after rect); needs real layout.
@@ -101,33 +102,39 @@ const AUDIT_258 = `(() => {
 test.describe("minimum target contract (pointer: fine, WCAG 2.5.8 AA)", () => {
   test.use({ hasTouch: false, isMobile: false, viewport: { width: 1280, height: 860 } });
 
-  for (const route of [
-    "/ko/topology/?guides=off",
-    "/ko/download/?guides=off",
-    "/ko/docs/?guides=off",
-    "/ko/guide/?guides=off",
-  ]) {
+  /**
+   * Each route with the fewest targets its screen holds. The app-only page that stands at every app
+   * address in a browser has the language switch beside two buttons and two inline links.
+   */
+  const ROUTES: ReadonlyArray<readonly [route: string, leastTargets: number]> = [
+    ["/ko/topology/?guides=off", 3],
+    ["/ko/sample/?guides=off", 6],
+    ["/ko/download/?guides=off", 6],
+    ["/ko/guide/?guides=off", 6],
+  ];
+  for (const [route, leastTargets] of ROUTES) {
     test(`a target on ${route} under 24×24 must prove either the inline exemption or the spacing exception`, async ({ page }) => {
-      await page.goto(
-        route === "/ko/docs/?guides=off"
-          ? "/ko/library/?tab=ontology&guides=off"
-          : route,
-      );
-      if (route === "/ko/docs/?guides=off") {
-        await expect(page).toHaveURL(
-          (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
-        );
-        await expect(
-          page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
-        ).toBeVisible();
-      }
+      await page.goto(route);
       await page.waitForLoadState("networkidle");
       const { scanned, failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
       // Idling guard — catching no targets means the selector is dead, not that the screen is perfect.
-      expect(scanned, `too few targets were scanned on ${route} (${scanned})`).toBeGreaterThan(5);
+      expect(scanned, `too few targets were scanned on ${route} (${scanned})`).toBeGreaterThanOrEqual(leastTargets);
       expect(failures, `2.5.8 shortfall: ${JSON.stringify(failures)}`).toEqual([]);
     });
   }
+
+  // The map's own controls: the screen a plain browser never mounts, measured in the app's faked runtime.
+  test("a target on the map in the installed app under 24×24 must prove either the inline exemption or the spacing exception", async ({ page }) => {
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page, "ko");
+    await page.goto("/ko/topology/?guides=off");
+    await expect(page.getByTestId("ontology-map-canvas")).toBeVisible({ timeout: 30_000 });
+    await page.waitForLoadState("networkidle");
+    const { scanned, failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
+    // The rail, the map's controls and the settings entry: fewer means the workbench did not mount.
+    expect(scanned, `too few targets were scanned on the map (${scanned})`).toBeGreaterThanOrEqual(15);
+    expect(failures, `2.5.8 shortfall: ${JSON.stringify(failures)}`).toEqual([]);
+  });
 
   test("instrument probe: catches crowded targets under 24 and lets spaced targets pass", async ({ page }) => {
     await page.goto("/ko/download/?guides=off");

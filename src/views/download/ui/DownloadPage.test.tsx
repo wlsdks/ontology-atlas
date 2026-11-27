@@ -3,7 +3,6 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
-import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/site/social-links';
 import { DEMO_CLIPS } from '../model/demo-clips';
 import { FAQ_KEYS } from '../model/faq';
@@ -34,7 +33,6 @@ vi.mock('@/i18n/navigation', () => ({
 
 // Both publication states are exercised: the public site serves the unpublished one until a tag ships.
 const mocks = vi.hoisted(() => ({
-  /** The view lives at `/` and `/download`, whose chrome differs. */
   pathname: '/download',
   release: {
     published: false,
@@ -173,13 +171,13 @@ describe('DownloadPage', () => {
       expect(facts).not.toHaveTextContent(/DMG/);
     });
 
-    it('makes the browser map the strongest action while nothing is published', () => {
+    it('makes the sample map the strongest action while nothing is published', () => {
       renderDownloadPage();
 
       const primary = screen.getByTestId('gateway-hero-cta');
       // Not `/`, which is this page again.
-      expect(primary).toHaveAttribute('href', '/topology');
-      expect(primary).toHaveTextContent(/Try it in the browser/i);
+      expect(primary).toHaveAttribute('href', '/sample');
+      expect(primary).toHaveTextContent(/See a sample map/i);
       expect(primary.className).toMatch(/--color-indigo-brand/);
       expect(filledIds()).toEqual(['gateway-hero-cta', 'gateway-closing-cta']);
     });
@@ -243,8 +241,8 @@ describe('DownloadPage', () => {
       expect(windows).toHaveTextContent(/unsigned/i);
 
       const web = screen.getByTestId('gateway-hero-web-cta');
-      expect(web).toHaveAttribute('href', '/topology');
-      expect(web).toHaveTextContent(/try it in the browser/i);
+      expect(web).toHaveAttribute('href', '/sample');
+      expect(web).toHaveTextContent(/see a sample map/i);
       expect(filledIds()).toEqual(['gateway-hero-cta', 'gateway-closing-cta']);
 
       const row = primary.parentElement!;
@@ -303,7 +301,7 @@ describe('DownloadPage', () => {
 
         expect(screen.getByTestId('gateway-hero-cta')).toHaveTextContent(/Download for Apple Silicon/i);
         expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
-        expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/topology');
+        expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/sample');
       } finally {
         delete (navigator as { userAgent?: string }).userAgent;
       }
@@ -323,7 +321,7 @@ describe('DownloadPage', () => {
         expect(screen.queryByTestId('gateway-facts-sha')).not.toBeInTheDocument();
         expect(screen.queryByText('DMG')).not.toBeInTheDocument();
 
-        expect(screen.getByTestId('gateway-hero-cta')).toHaveAttribute('href', '/topology');
+        expect(screen.getByTestId('gateway-hero-cta')).toHaveAttribute('href', '/sample');
         expect(screen.getByTestId('gateway-hero-trust')).toHaveTextContent(enMessages.download.trustLineHandheld);
         expect(screen.getByTestId('gateway-closing-trust')).toHaveTextContent(enMessages.download.trustLineHandheld);
         expect(screen.queryByText(/Checked by Apple/i)).not.toBeInTheDocument();
@@ -535,13 +533,7 @@ describe('DownloadPage', () => {
     expect(facts).not.toHaveTextContent('v0.9.0-stale');
   });
 
-  // A cross-module coupling: if the bar returns here, the scroll end sits under it.
-  it('stays the one route without a bottom tab bar, which is why it reserves no height for one', () => {
-    expect(shouldHideBottomTabBar('/download', false)).toBe(true);
-    expect(shouldHideBottomTabBar('/ko/download/', false)).toBe(true);
-  });
-
-  describe('one screen served at two addresses', () => {
+  describe('the page chrome', () => {
     it('keeps compass identity in chrome and one Moru to play with, in the hero', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
@@ -563,51 +555,6 @@ describe('DownloadPage', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
       expect(screen.getByTestId('download-gnb')).toHaveTextContent(/다운로드|Download/);
-    });
-
-    it('drops the Download crumb at /, which is not that address', () => {
-      mocks.pathname = '/';
-      renderDownloadPage();
-      expect(screen.getByTestId('download-gnb')).not.toHaveTextContent(/다운로드|Download/);
-    });
-
-    it.each(['/', '/download'])('offers no back-to-map link in the %s chrome', (pathname) => {
-      mocks.pathname = pathname;
-      renderDownloadPage();
-      expect(screen.queryByTestId('download-back-to-map')).toBeNull();
-    });
-
-    it('makes the hero web CTA the only way to the map, pointing at /topology', () => {
-      mocks.pathname = '/';
-      publishRelease();
-      renderDownloadPage();
-      expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/topology');
-    });
-
-    it('reserves the bottom tab bar height at /, where the tab bar shows', () => {
-      mocks.pathname = '/';
-      renderDownloadPage();
-      const band = screen.getByTestId('download-bottom-band');
-      expect(band).toHaveAttribute(
-        'data-gateway-bottom-reserve-token',
-        '--topology-mobile-bottom-tab-reserve',
-      );
-      expect(band.className).toContain(
-        'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
-      );
-    });
-
-    it('reserves nothing at /download, which has no tab bar', () => {
-      mocks.pathname = '/download';
-      renderDownloadPage();
-      const band = screen.getByTestId('download-bottom-band');
-      expect(band).not.toHaveAttribute('data-gateway-bottom-reserve-token');
-      expect(band.className).not.toContain('--topology-mobile-bottom-tab-reserve');
-    });
-
-    it('decides the reservation with the same premise as the tab bar', () => {
-      expect(shouldHideBottomTabBar('/download', false)).toBe(true);
-      expect(shouldHideBottomTabBar('/', false)).toBe(false);
     });
   });
 });

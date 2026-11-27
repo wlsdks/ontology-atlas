@@ -4,19 +4,11 @@
  */
 
 /**
- * The URLs the ratchets actually open.
- *
- * Dynamic routes such as `[slug]` and `[segment]` are opened with **a value that
- * exists** — opening a non-existent slug falls through to 404 and measures the 404
- * rather than that route.
- *
- * ⚠️ **"Exists" means in the running data source, not in the build output.** Even
- * with `out/ko/project/<slug>/` present in the static export, if the vault the app
- * is reading at that moment (`samples/storefront/` when no vault is chosen) has no
- * such project, the screen is a degraded card or empty. The comments on the two
- * project lines below record what that cost, measured. `what-is-atlas` is emitted by
- * `src/views/gateway-doc/model/guide-pages.ts`, so it always exists regardless of
- * data source.
+ * The URLs the ratchets actually open, in a plain browser. A workbench address there is the page that
+ * says the app is needed (`app-only-page`), the same page at every one of them, so the ratchets
+ * measure that page, not the screen behind it; the installed app's screens are measured on the faked
+ * app runtime by the specs that install it. `/ko/` is the website's entry and lands on the download
+ * page. `what-is-atlas` is emitted by `src/views/gateway-doc/model/guide-pages.ts`, so it always exists.
  */
 export const AUDITED_ROUTES = [
   "/ko/",
@@ -24,29 +16,19 @@ export const AUDITED_ROUTES = [
   "/ko/architecture/",
   "/ko/docs/",
   "/ko/projects/",
-  // The slug must exist in the running data source (`samples/storefront/`), not only the build output;
-  // a missing project renders a degraded card or no `<main>`, which the ratchets would not measure.
-  "/ko/project/storefront/",
-  "/ko/project/storefront/edit/",
   "/ko/project/new/",
   "/ko/project/fallback/",
   "/ko/git/",
   "/ko/changes/",
-  // The web state is the desktop-only card: a browser cannot run Git.
   "/ko/work-status/",
-  // Measures the no-tools state: the web cannot spawn processes.
   "/ko/agents/",
-  // Measures the no-vault state: a browser cannot read agent config files or hold a token.
   "/ko/agents/?tab=mcp",
-  // The web state is the desktop-only card, which is all a browser ratchet can see.
   "/ko/agents/?tab=models",
-  // Measures the no-folder state, the only one a ratchet without a vault can reach.
   "/ko/library/",
   "/ko/planning/",
-  // Without a native folder root the browser cannot run the local clock;
-  // this audits the no-folder state.
   "/ko/automations/",
   "/ko/download/",
+  "/ko/sample/",
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",
   "/ko/changelog/",

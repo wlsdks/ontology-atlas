@@ -20,7 +20,11 @@ const MAP_ROUTE = "/topology";
  * independent of the copy.
  */
 const MAP_DESTINED = [
-  { testid: "gateway-hero-web-cta", why: "hero button that opens the web product in the browser" },
+  {
+    testid: "gateway-hero-web-cta",
+    route: "/sample",
+    why: "hero button that opens the sample map; a browser has no map of its own to open",
+  },
   /**
    * Removing a row does not weaken the gate: it guards that a control promising the map goes to the
    * map. Reviving a removed control means restoring its row here.
@@ -77,8 +81,8 @@ function hrefForTestid(source: string, testid: string): string[] {
 describe("destination of links that promise the map", () => {
   const source = collectSources();
 
-  for (const { testid, why } of MAP_DESTINED) {
-    it(`${testid} goes to ${MAP_ROUTE}: ${why}`, () => {
+  for (const { testid, route, why } of MAP_DESTINED) {
+    it(`${testid} goes to ${route}: ${why}`, () => {
       const hrefs = hrefForTestid(source, testid);
 
       expect(
@@ -92,8 +96,8 @@ describe("destination of links that promise the map", () => {
           href,
           `${testid} points at "${href}". Since 2026-07-29 \`/\` is the marketing ` +
             `page: a control that promises the map and goes there returns the person to the screen ` +
-            `they just left. The map is ${MAP_ROUTE}.`,
-        ).toBe(MAP_ROUTE);
+            `they just left. The map it promises is ${route}.`,
+        ).toBe(route);
       }
     });
   }

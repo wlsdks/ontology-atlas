@@ -14,7 +14,7 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 describe('ScreensStage', () => {
-  it('opens the live map in this browser from the Map row, with no arrow', () => {
+  it('opens the sample map from the Map row, with no arrow', () => {
     render(
       <NextIntlClientProvider locale="en" messages={enMessages}>
         <ScreensStage intro={null} />
@@ -22,7 +22,7 @@ describe('ScreensStage', () => {
     );
 
     const map = screen.getByTestId('gateway-screens-map');
-    expect(map).toHaveAttribute('href', '/topology');
+    expect(map).toHaveAttribute('href', '/sample');
     expect(map).toHaveAccessibleName(enMessages.download.screens.mapLink);
     expect(map).toHaveTextContent(enMessages.download.screens.mapHint);
     expect(map.textContent).not.toMatch(/[↑↗→]/);

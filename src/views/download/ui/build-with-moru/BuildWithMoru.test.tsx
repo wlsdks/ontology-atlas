@@ -75,7 +75,7 @@ describe('BuildWithMoru', () => {
     expect(file).toHaveTextContent('payment.md');
     expect(file).toHaveTextContent('path: src/payment');
     expect(file).toHaveTextContent('- capabilities/login');
-    expect(screen.getByTestId('build-try-browser')).toHaveAttribute('href', '/topology');
+    expect(screen.getByTestId('build-sample')).toHaveAttribute('href', '/sample');
     expect(screen.getByTestId('build-result')).toHaveAttribute('data-stars', '3');
 
     press('build-restart');
@@ -169,7 +169,7 @@ describe('BuildWithMoru', () => {
     press('build-commit-apply');
     press('build-node-payment');
     press('build-confirm');
-    expect(screen.queryByTestId('build-try-browser')).toBeNull();
+    expect(screen.queryByTestId('build-sample')).toBeNull();
     expect(screen.getByTestId('build-github')).toHaveAttribute('href', expect.stringContaining('github.com'));
   });
 });

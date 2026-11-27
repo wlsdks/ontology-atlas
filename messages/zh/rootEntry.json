@@ -5,9 +5,5 @@
   "redirectBody": "应用会从打开这台 Mac 上的文件夹开始。",
   "redirectFilesProof": "Markdown 文件留在本地",
   "redirectGraphProof": "顶部的信息块会变成地图",
-  "redirectAgentProof": "智能体在更改此文件夹以外的内容前会先询问",
-  "lostVaultMissing": "找不到你之前打开的文件夹“{name}”，它可能被移动或删除了。重新选择后即可接着上次继续。",
-  "lostVaultUnreadable": "无法重新打开你之前打开的文件夹。请重新选择，或先用示例看看。",
-  "lostVaultAction": "重新选择文件夹",
-  "lostVaultDismiss": "关闭提示"
+  "redirectAgentProof": "智能体在更改此文件夹以外的内容前会先询问"
 }

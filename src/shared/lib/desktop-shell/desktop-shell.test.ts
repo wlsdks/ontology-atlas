@@ -1,67 +1,21 @@
-import { describe, expect, it } from 'vitest';
-import { resolveDesktopShell } from './desktop-shell';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isDesktopShell } from './desktop-shell';
 
-describe('resolveDesktopShell', () => {
-  it('is false on SSR regardless of other signals', () => {
-    expect(
-      resolveDesktopShell({
-        hasWindow: false,
-        tauriRuntime: true,
-        isDevBuild: true,
-        devOverride: 'desktop',
-      }),
-    ).toBe(false);
+afterEach(() => {
+  vi.unstubAllGlobals();
+  window.history.replaceState(null, '', '/');
+});
+
+describe('isDesktopShell', () => {
+  it('is true when the app runtime bridge exists', () => {
+    vi.stubGlobal('isTauri', true);
+    expect(isDesktopShell()).toBe(true);
   });
 
-  it('is true when the Tauri runtime bridge exists', () => {
-    expect(
-      resolveDesktopShell({
-        hasWindow: true,
-        tauriRuntime: true,
-        isDevBuild: false,
-        devOverride: null,
-      }),
-    ).toBe(true);
-  });
-
-  it('is false on the plain web with no override', () => {
-    expect(
-      resolveDesktopShell({
-        hasWindow: true,
-        tauriRuntime: false,
-        isDevBuild: false,
-        devOverride: null,
-      }),
-    ).toBe(false);
-  });
-
-  it('honors the desktop dev override only in dev builds', () => {
-    expect(
-      resolveDesktopShell({
-        hasWindow: true,
-        tauriRuntime: false,
-        isDevBuild: true,
-        devOverride: 'desktop',
-      }),
-    ).toBe(true);
-    expect(
-      resolveDesktopShell({
-        hasWindow: true,
-        tauriRuntime: false,
-        isDevBuild: false,
-        devOverride: 'desktop',
-      }),
-    ).toBe(false);
-  });
-
-  it('ignores non-desktop override values', () => {
-    expect(
-      resolveDesktopShell({
-        hasWindow: true,
-        tauriRuntime: false,
-        isDevBuild: true,
-        devOverride: 'web',
-      }),
-    ).toBe(false);
+  it('is false in a plain browser, whatever the address or storage asks for', () => {
+    window.history.replaceState(null, '', '/?shell=desktop');
+    window.localStorage.setItem('dev:desktop-shell', 'desktop');
+    expect(isDesktopShell()).toBe(false);
+    window.localStorage.removeItem('dev:desktop-shell');
   });
 });

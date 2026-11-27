@@ -6,12 +6,9 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   display: none;
 }
 
-@media (max-width: 1023px) {
-  [data-testid="download-bottom-band"][data-gateway-bottom-reserve-active="true"] {
-    padding-bottom: calc(
-      var(--topology-mobile-bottom-tab-reserve) + var(--page-bottom-breath)
-    );
-  }
+/* A browser never reaches the workbench, so the bar its HTML carries at `/` is never shown to one. */
+html:not([data-shell="desktop"]) [data-tabbar="primary"] {
+  display: none;
 }
 
 /*

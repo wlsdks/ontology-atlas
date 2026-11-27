@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { LangBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
+import { GatewayHandOverScript } from '@/app-providers/providers/GatewayHandOverScript';
 import { SITE_URL } from '@/shared/config';
 import { SITE_NAME, siteEntityGraph } from '@/shared/config/site/site-entity';
 import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/site/web-content-security-policy';
@@ -89,6 +90,7 @@ export default function RootLayout({
          by body; padding here would add dead document scroll. */}
       <body className="flex min-h-full flex-col overflow-x-hidden">
         <LangBootScript />
+        <GatewayHandOverScript />
         <WebviewErrorReporter />
         <JsonLd data={siteEntityGraph(Object.values(LOCALE_META).map((meta) => meta.htmlLang))} />
         {/* The root error boundary replaces the locale layout, so its copy is handed down as props; a client import of the message files would ship them all in every page. */}

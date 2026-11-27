@@ -46,9 +46,9 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
         </a>
         <a
           className={controlClass({ shape: 'link', size: 'lg', className: 'touch-hit-expand' })}
-          href={withBasePath(`/${locale}/topology/`)}
+          href={withBasePath(`/${locale}/sample/`)}
         >
-          {t('webCta')}
+          {t('sampleCta')}
         </a>
       </p>
       </div>

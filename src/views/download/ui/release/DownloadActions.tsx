@@ -34,16 +34,16 @@ const TEST_IDS = {
 } as const;
 
 /**
- * The browser map is the download page's second way in and its heaviest route, so it is fetched
+ * The sample map is the download page's second way in and its heaviest route, so it is fetched
  * once a visitor points at, focuses or touches a way to it, not as soon as the link is on screen.
  */
-function MapLink({
+function SampleLink({
   href,
   className,
   children,
   'data-testid': testId,
 }: {
-  href: '/topology';
+  href: '/sample';
   className: string;
   children: ReactNode;
   'data-testid': string;
@@ -139,13 +139,13 @@ export function DownloadActions({
         </>
       ) : (
         <>
-          <MapLink
-            href="/topology"
+          <SampleLink
+            href="/sample"
             data-testid={id.cta}
             className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
           >
-            {t('webCta')}
-          </MapLink>
+            {t('sampleCta')}
+          </SampleLink>
           <a
             href={GITHUB_REPO_URL}
             target="_blank"
@@ -159,8 +159,8 @@ export function DownloadActions({
         </>
       )}
       {fileWins && scope === 'hero' ? (
-        <MapLink
-          href="/topology"
+        <SampleLink
+          href="/sample"
           data-testid="gateway-hero-web-cta"
           className={cn(
             buttonVariants({ variant: 'outline', size: 'lg' }),
@@ -168,8 +168,8 @@ export function DownloadActions({
             HERO_CTA_WRAP,
           )}
         >
-          {t('heroPlaygroundCta')}
-        </MapLink>
+          {t('sampleCta')}
+        </SampleLink>
       ) : null}
     </div>
   );

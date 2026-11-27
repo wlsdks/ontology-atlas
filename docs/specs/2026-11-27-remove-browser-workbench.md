@@ -498,3 +498,10 @@ old browser database is deleted without a notice (reverse: Later 4).
   into `integration/e2e-app-runtime-2026-11-27`, the Vite slices follow there, and the branch
   reaches `main` in one merge after the combined gate. Criterion 5's whole browser run runs on the
   integration tree; Risks 1 and 2 and the Owner question follow.
+- 2026-11-28: slice 3 as built. `rootEntry.lostVaultMissing` is deleted: the app never rendered it.
+  The `download.json` `screens.*` keys were rewritten in place to the sample map (`sub`, `mapLink`,
+  `mapHint`), and `build.actions.sample` is new in its place of `tryBrowser`. `appOnly` stays outside
+  `GATEWAY_MESSAGE_PATHS`: only the workbench documents carry the app-only page, and the gateway
+  pages never render it. The locale root hands a browser to `/download/` from a script in the document
+  head (`GatewayHandOverScript`), not from the workbench, so no app code is fetched on the way; the
+  installed app, once hydrated, drops the app-only page from its document so its first `main` is its own.

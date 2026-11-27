@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { OntologyEditRedirectPage } from "@/views/ontology-edit-redirect";
 import { RouteLoadingFallback } from "@/shared/ui";
-import { absoluteUrl } from "@/shared/config";
 
 export async function generateMetadata({
   params,
@@ -15,7 +14,7 @@ export async function generateMetadata({
   return {
     title: t("pages.topology"),
     description: t("descriptions.topology"),
-    alternates: { canonical: absoluteUrl(`/${locale}/topology/`) },
+    robots: { index: false, follow: true },
   };
 }
 

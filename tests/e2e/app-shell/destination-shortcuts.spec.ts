@@ -15,6 +15,8 @@ const DESTINATIONS = [
 ] as const;
 
 async function go(page: import("@playwright/test").Page, key: string) {
+  // The listener is installed by the hydrated shell; the shell marks `<html>` once it is.
+  await expect(page.locator("html")).toHaveAttribute("data-destination-shortcuts", "live");
   await page.keyboard.press("g");
   await page.keyboard.press(key);
 }
