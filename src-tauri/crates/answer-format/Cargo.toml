@@ -1,0 +1,25 @@
+[package]
+name = "answer-format"
+version = "0.1.0"
+description = "Text as agents read it from the JavaScript server: UTF-16 length and cuts, number text, the English sort order and an object's key order"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+# Keyed maps whose order is the answer's order. `serde` only: the `preserve_order` feature of
+# `serde_json`, which Cargo would switch on for the app's maps too, stays off.
+indexmap = { version = "2", features = ["serde"] }
+# Pinned to the 2.2 line the workspace already links through `icu_normalizer`, so one ICU serves
+# the sort order and the Unicode normalisation. Unicode-3.0.
+icu_collator = "~2.2"
+icu_locale_core = "~2.2"
+# Writes a number as `Number.prototype.toString` does. `Apache-2.0 OR BSL-1.0`; nothing under it.
+ryu-js = "1"
+serde = { version = "1", features = ["derive"] }
+# `raw_value` lets an answer embed JSON it already holds, such as the tool list, without reading it
+# again (tauri turns it on for the app already).
+serde_json = { version = "1", features = ["raw_value"] }
+
+[lints]
+workspace = true
