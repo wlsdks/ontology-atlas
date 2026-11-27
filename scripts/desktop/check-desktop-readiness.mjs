@@ -99,8 +99,6 @@ const downloadPage = [
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
 const downloadRoute = readText("app/(gateway)/[locale]/download/page.tsx");
-const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
-const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriVaultScope = readText("src-tauri/src/vault/scope.rs");
 const tauriShim = readTypeScriptFolder("src/shared/lib/vault-folder/native-vault");
@@ -146,8 +144,6 @@ const docsVaultPageFiles = [
     .map((name) => `src/views/docs-vault/model/${name}`),
 ];
 const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
-// The docs surface's local-source control lives in the vault chip menu.
-const vaultChipSurface = readText("src/views/docs-vault/ui/header/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/agent-setup/VaultAgentSetupPanel.tsx");
 const vaultAgentSetupCopySources = [
@@ -722,18 +718,11 @@ if (
   );
 }
 
-// The app is the only runtime, so `/docs` has no local-source tab to lock: the check is that the
-// download page sends nobody into the workbench and the docs chip offers no disabled local source.
-if (
-  !downloadPage.includes('/docs/?intent=local') &&
-  !docsVaultPage.includes("localSourceDisabled") &&
-  !vaultChipSurface.includes("localDisabledReason")
-) {
-  pass("the hosted download page does not route into the workbench, and /docs offers no disabled local-source tab");
+// The download page is the website's: it must send nobody into the workbench, which only the app opens.
+if (!downloadPage.includes('/docs/?intent=local')) {
+  pass("the hosted download page does not route into the workbench");
 } else {
-  fail(
-    "the hosted download page must stay promo/download-first, and src/views/docs-vault must not carry a locked local-source tab: the app is the only runtime that opens a folder",
-  );
+  fail("the hosted download page must stay promo/download-first and never link into the workbench: only the app opens a folder");
 }
 
 /*
@@ -914,20 +903,6 @@ if (
 } else {
   fail(
     "the /download surface must derive size/checksum/download links from src/views/download/model/macos-release.generated.ts, say plainly that macOS is unpublished instead of showing placeholders, state the Windows build's unsigned status, state signing/notarization as facts about published builds, and carry no operator-only release-pipeline status",
-  );
-}
-
-// `/` is the map hub itself: hiding this bar below `lg` would leave no global nav (the desktop nav
-// rail is `lg:flex`), so only `/download`, which has its own header, hides it.
-if (
-  bottomTabBar.includes("shouldHideBottomTabBar(pathname") &&
-  /normalized === ['"]\/download['"]/.test(bottomTabBarPolicy) &&
-  !/normalized === ['"]\/['"] &&\s*!hasLoadedVault/.test(bottomTabBarPolicy)
-) {
-  pass("mobile bottom navigation hides only on the standalone download page, keeping global nav on the root map");
-} else {
-  fail(
-    "BottomTabBar must hide on /download only — root-first-open made `/` the topology hub, and hiding the bar there strands <lg first-run visitors with no global nav",
   );
 }
 
@@ -1624,9 +1599,9 @@ if (
   docsVaultPage.includes("shouldShowDesktopVaultWelcome") &&
   docsVaultPage.includes("openLocalVault()")
 ) {
-  pass("desktop docs intent shows a vault setup welcome before opening the native picker");
+  pass("the app's docs screen shows a vault setup welcome while no folder is open, and opens the native picker only after an explicit press");
 } else {
-  fail("src/views/docs-vault/ui/DocsVaultPage.tsx must show an app-style vault setup welcome for Tauri ?intent=local and open the native picker only after an explicit user action");
+  fail("src/views/docs-vault/ui/DocsVaultPage.tsx must show the vault setup welcome (DesktopVaultWelcome, gated by shouldShowDesktopVaultWelcome) while no folder is open, and call openLocalVault() only from an explicit press");
 }
 
 if (

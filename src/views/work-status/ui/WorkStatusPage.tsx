@@ -38,7 +38,7 @@ import { WorkStatusReads } from './WorkStatusReads';
 import { WorkStatusStage } from './WorkStatusStage';
 
 const subscribe = () => () => {};
-const webSnapshot = () => false;
+const serverSnapshot = () => false;
 const MAIN_CLASS = 'flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]';
 const BRANCH_CLASS = 'font-mono';
 const MERGED_CLASS = 'text-[color:var(--color-text-secondary)] underline-offset-4 hover:text-[color:var(--color-text-primary)] hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
@@ -48,7 +48,7 @@ const ALERT_CLASS = 'font-[var(--font-weight-emphasis)] text-[color:var(--color-
 export function WorkStatusPage() {
   const t = useTranslations('workStatus');
   const git = useTranslations('atlasGit');
-  const native = useSyncExternalStore(subscribe, isWorkStatusAvailable, webSnapshot);
+  const native = useSyncExternalStore(subscribe, isWorkStatusAvailable, serverSnapshot);
   const vault = useLocalVault();
   const [chosen, setChosen] = useArrivalMemory<string | null>('work-status:repository', null);
   const vaultRoot = native && vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;

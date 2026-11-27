@@ -144,13 +144,13 @@
   },
   "vaultStatus": {
     "unsupportedTooltip": "本地本体文件夹的编辑功能仅在已安装的桌面应用中可用。",
-    "permissionNeededBanner": "文件夹访问已暂停：请重新授予文件夹访问权限才能继续编辑。在此之前显示示例文档。",
-    "errorBanner": "本体文件夹不可用（{message}）。当前显示示例文档：请重新选择文件夹或刷新。",
+    "permissionNeededBanner": "文件夹访问已暂停：请重新授予文件夹访问权限才能继续编辑。",
+    "errorBanner": "无法读取该文件夹（{message}）。请重新选择文件夹，或选择另一个文件夹。",
     "rootRejectedBanner": "这个文件夹不能用作地图。请选择存放你文档的文件夹，而不是系统文件夹或整个主目录。",
-    "pathMissingBanner": "找不到这个文件夹，可能已被移动或删除。当前显示示例文档：请打开选择器重新选择。",
+    "pathMissingBanner": "找不到这个文件夹，可能已被移动或删除。请打开选择器重新选择。",
     "grantNeededBanner": "更新之后，请重新选择一次你的本体文件夹以确认访问权限。你的文档都还在。",
     "permissionDeniedBanner": "Mac 不允许此应用读取该文件夹。请在系统设置中允许，或打开选择器选一个别处的文件夹。",
-    "unknownErrorBanner": "无法读取该文件夹，也没有返回原因。当前显示示例文档：请打开选择器重新选择。",
+    "unknownErrorBanner": "无法读取该文件夹，也没有返回原因。请打开选择器重新选择。",
     "openPicker": "选择文件夹",
     "openFallback": "打开这篇文档",
     "missingSlugBanner": "在此文件夹中找不到“{slug}”，所以打开了另一篇文档。如果它在别的文件夹里，请切换文件夹。"
