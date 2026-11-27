@@ -13,7 +13,6 @@ interface MockVault {
 
 const mocks = vi.hoisted(() => ({ vault: null as unknown as MockVault }));
 const tauriMocks = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => false),
   pickTauriVaultDirectory: vi.fn(),
 }));
 
@@ -23,7 +22,6 @@ vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', asyn
 }));
 
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => tauriMocks);
-vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => tauriMocks);
 
 vi.mock('next-intl', () => ({
   useLocale: () => 'en',
@@ -121,7 +119,6 @@ function fakeTargetDir() {
 describe('RealmBlockExportAction', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
-    tauriMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriMocks.pickTauriVaultDirectory.mockReset();
   });
 
@@ -135,14 +132,6 @@ describe('RealmBlockExportAction', () => {
     expect(button).toHaveAttribute('title', 'vaultRequiredHint');
     fireEvent.click(button);
     expect(tauriMocks.pickTauriVaultDirectory).not.toHaveBeenCalled();
-  });
-
-  it('is disabled with a hint when there is no app runtime to pick a folder', () => {
-    tauriMocks.isTauriVaultRuntime.mockReturnValue(false);
-    render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
-    const button = screen.getByTestId('realm-block-export');
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute('title', 'exportUnsupportedHint');
   });
 
   it('copies only the realm docs verbatim + writes block-manifest.json into the picked folder', async () => {
@@ -198,7 +187,6 @@ describe('RealmBlockExportAction', () => {
 
   it('exports through the native Tauri folder picker when the WebView has no browser picker', async () => {
     const target = fakeTargetDir();
-    tauriMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriMocks.pickTauriVaultDirectory.mockResolvedValue(target.handle);
 
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);

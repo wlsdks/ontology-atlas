@@ -46,10 +46,6 @@ export function AgentStageBody({
   };
 
   switch (stage.kind) {
-    case 'web':
-      // A browser has nowhere to keep a key and no route to send — it sends you to
-      // the app, not to settings (honest degradation).
-      return <AgentLockedState title={t('degraded.webTitle')} body={t('degraded.webBody')} {...locked} />;
     case 'no-folder':
       return <AgentLockedState title={t('degraded.noVaultTitle')} body={t('degraded.noVaultBody')} {...locked} />;
     case 'no-key':

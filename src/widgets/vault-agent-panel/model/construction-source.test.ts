@@ -45,11 +45,10 @@ describe('previewMatchesRequest', () => {
 });
 
 describe('canChooseConstructionSource', () => {
-  const idle = { bridgeAvailable: true, running: false, applying: false };
+  const idle = { running: false, applying: false };
 
-  it('needs the app and a quiet agent', () => {
+  it('needs a quiet agent', () => {
     expect(canChooseConstructionSource(idle)).toBe(true);
-    expect(canChooseConstructionSource({ ...idle, bridgeAvailable: false })).toBe(false);
     expect(canChooseConstructionSource({ ...idle, running: true })).toBe(false);
     expect(canChooseConstructionSource({ ...idle, applying: true })).toBe(false);
   });

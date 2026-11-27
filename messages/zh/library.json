@@ -4,7 +4,6 @@
     "meaning": {
       "words": "按词语搜索",
       "setup": "设置语义搜索",
-      "web": "语义搜索可在已安装的应用中使用，由这台电脑上的模型准备文件。这里按词语搜索。",
       "noFiles": "此文件夹中没有可准备的 Markdown 文件。",
       "indexOff": "语义搜索需要搜索索引，而它已在 设置 › 隐私 · 数据 中关闭。",
       "openSettings": "打开设置",
@@ -706,7 +705,6 @@
     "brainLocal": "{host} 上的 {model}",
     "brainNone": "尚未设置",
     "transferLocal": "读取的来源文本和现有 Wiki 页面会发送到本机上的 {host}。{file} 记录每一次请求。",
-    "blockedWeb": "生成 Wiki 页面需要在本机运行的编码智能体，只有应用才能启动。",
     "blockedChecking": "仍在本机查找编码智能体。",
     "blockedLocalRemote": "此文件夹保存的模型地址是 {host}，不是本机。生成 Wiki 页面会发送文档内容，因此只能使用本机运行的模型。请在智能体 › 模型中修改地址。",
     "blockedLocalFormats": "{model} 能读取 Markdown、纯文本、CSV、JSON 和 HTML。这里仍在等待的都是 {formats}，需要自带阅读器的编码智能体。",

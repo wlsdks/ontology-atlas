@@ -69,7 +69,7 @@
   "discard": "破棄",
   "keepWriting": "書き続ける",
   "createDocumentFailed": "文書を作成できませんでした。企画フォルダに書き込めるか確認してください。",
-  "browserUnavailable": "オントロジーフォルダを開くと、その中に企画フォルダを作成できます。別のフォルダを選んで読むのはmacOSアプリでのみ利用できます。",
+  "folderPickerMacOnly": "オントロジーフォルダを開くと、その中に企画フォルダを作成できます。別のフォルダを選んで読むのはmacOSアプリでのみ利用できます。",
   "notEditable": "UTF-8ではないファイルのため、ここでは編集できません。",
   "importService": "サービスから取り込む",
   "importServiceHint": "Notionなどのサービスの文書を企画フォルダに取り込みます。資料室で続きます。",

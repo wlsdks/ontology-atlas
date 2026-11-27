@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useSyncExternalStore, type MouseEvent } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Cpu } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { vaultIndexPreference } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { MOTION } from '@/shared/motion';
@@ -30,8 +29,6 @@ import { MiddleCutName } from '@/shared/ui/middle-cut-name/middle-cut-name';
 const FILE_NAME_PACE_MS = 1000;
 const KEPT_NAME_END = 12;
 const PLACEHOLDER = '\u0000';
-
-const noSubscribe = () => () => undefined;
 
 type DeskPress = Exclude<DeskLineAction, 'openSettings'>;
 
@@ -60,17 +57,16 @@ export function MeaningDeskLine({
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
   const reduced = usePrefersReducedMotion();
-  const isApp = useSyncExternalStore(noSubscribe, isTauriVaultRuntime, () => false);
   const indexOn = vaultIndexPreference.use() === 'on';
-  const searchFailure = useSearchFailure(isApp ? rootPath : null);
-  const status = withSearchFailure(useVectorStatus(isApp ? rootPath : null), searchFailure);
-  const stage = useVectorRunStage(isApp ? rootPath : null);
+  const searchFailure = useSearchFailure(rootPath);
+  const status = withSearchFailure(useVectorStatus(rootPath), searchFailure);
+  const stage = useVectorRunStage(rootPath);
   const source = vaultVectorSource.use(rootPath)?.source ?? null;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [guided, setGuided] = useState(false);
   const guideSeen = meaningGuideSeen.use() === 'on';
   const line = deskLine({
-    status, isApp, indexOn, markdownFiles,
+    status, indexOn, markdownFiles,
     runnerModel: source?.kind === 'runner' ? source.model : null,
   });
 
@@ -82,7 +78,7 @@ export function MeaningDeskLine({
   const ring = line?.progress === 'hold' ? heldRing : liveRing;
   const ringTrack = ring ? `${ring.measure}:${ring.total}` : 'none';
   const shownPath = usePacedValue(line?.readingPath ?? null, FILE_NAME_PACE_MS);
-  const staged = isApp && roomForStage ? runStage(status, source) : null;
+  const staged = roomForStage ? runStage(status, source) : null;
   const running = staged && { ...staged, readingPath: shownPath };
   const finished = useFinishedInView(running, status);
 
@@ -110,11 +106,10 @@ export function MeaningDeskLine({
   const modelName = source === null ? null : source.kind === 'builtin' ? BUILTIN_MODEL_NAME : source.model;
 
   const [readingBefore, readingAfter] = t('readingNow', { file: PLACEHOLDER }).split(PLACEHOLDER);
-  const web = line.message === 'web';
   // The file slot fills the row and sets the press at its end, where a separator would stand alone.
   const pushesPressRight = line.message === 'preparing' || (line.message === 'updating' && line.progress !== null);
 
-  const rowClass = cn('flex min-w-0 items-center gap-2 text-label leading-label tabular-nums', web ? 'min-h-6' : 'h-6');
+  const rowClass = 'flex h-6 min-w-0 items-center gap-2 text-label leading-label tabular-nums';
   const sentenceRow = (
       <div className="grid min-w-0 flex-1 *:col-start-1 *:row-start-1">
         <AnimatePresence initial={false}>
@@ -127,7 +122,7 @@ export function MeaningDeskLine({
             exit={{ opacity: 0 }}
             transition={transition}
           >
-            <span className={web ? 'min-w-0' : 'min-w-0 truncate'} title={web ? undefined : sentence}>{sentence}</span>
+            <span className="min-w-0 truncate" title={sentence}>{sentence}</span>
             {line.minutesLeft !== null ? <><Separator /><span className="flex-none" data-testid="meaning-desk-minutes">{t('minutesLeft', { minutes: line.minutesLeft })}</span></> : null}
             {pushesPressRight ? (
               <span className="flex min-w-0 flex-1 items-center gap-x-1.5">
@@ -156,7 +151,7 @@ export function MeaningDeskLine({
         </AnimatePresence>
       </div>
   );
-  const modelChip = modelName !== null && isApp && !web ? (
+  const modelChip = modelName !== null ? (
         <button
           type="button"
           onClick={(event) => openDialog(event, false)}
@@ -170,7 +165,7 @@ export function MeaningDeskLine({
         </button>
       ) : null;
   const shownStage = running ?? (finished && roomForStage ? finishedStage(source) : null);
-  const showGuide = !shownStage && isApp && roomForStage && !guideSeen && line.message === 'words' && rootPath !== null;
+  const showGuide = !shownStage && roomForStage && !guideSeen && line.message === 'words' && rootPath !== null;
   const dismiss = () => finished?.dismiss();
   const ask = () => {
     finished?.dismiss();
@@ -222,7 +217,7 @@ export function MeaningDeskLine({
           {modelChip}
         </>
       )}
-      {rootPath !== null && isApp ? (
+      {rootPath !== null ? (
         <MeaningModelDialog
           open={dialogOpen}
           rootPath={rootPath}

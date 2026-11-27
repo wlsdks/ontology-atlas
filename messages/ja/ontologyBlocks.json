@@ -4,7 +4,6 @@
   "exportBusy": "書き出し中…",
   "exportDone": "{count}件を書き出しました",
   "exportError": "書き出せませんでした。もう一度お試しください。",
-  "exportUnsupportedHint": "この環境ではフォルダを選べません",
   "vaultRequiredHint": "使うにはフォルダを開いてください",
   "importAction": "別のフォルダから概念を取り込む",
   "importCaption": "別のフォルダの`.md`ファイルを選ぶと、取り込まれる内容を確認できます。確定するまで何も統合されません。",

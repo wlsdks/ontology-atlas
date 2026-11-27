@@ -82,9 +82,6 @@
     "noToolCall": "The agent stopped at attempt {round} of {cap} without reading this folder even once. Try asking again."
   },
   "degraded": {
-    "webTitle": "Available in the desktop app only",
-    "webBody": "A browser has nowhere safe to keep your key. In the desktop app it stays in this computer’s operating-system credential store.",
-    "download": "Get the app",
     "noVaultTitle": "Open a document folder first",
     "noVaultBody": "The agent only reads documents in the folder you have open. Pick a folder and this picks up right here.",
     "noKeyTitle": "This needs an AI service key, once",
@@ -120,7 +117,6 @@
   "construction": {
     "action": "Build from code",
     "boundary": "This conversation reads your document folder. Build from code reads a code folder you choose with your local model.",
-    "webUnavailable": "Build from code is available in the macOS app with a local model. Open your document folder there to continue.",
     "pickerTitle": "Choose a code folder",
     "preparing": "Checking the selected folder… No code has been sent to the model.",
     "previewTitle": "Before your local model reads code",

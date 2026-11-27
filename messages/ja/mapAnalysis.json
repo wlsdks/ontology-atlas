@@ -33,9 +33,6 @@
     "catchUp": "新規・変更されたコードを分析",
     "catchUpBody": "読むファイルは{files, number}件です。エージェントへの依頼は約{requests, number}回、{duration}ほどかかります。"
   },
-  "web": {
-    "analyze": "Atlasから分析を始めるには、コーディングエージェントを実行するデスクトップアプリが必要です。MCPで自分で接続したエージェントの分析もこの記録に残ります。"
-  },
   "changed": {
     "none": "{number, number}回目の分析以降、変更されたコードファイルはありません。",
     "some": "{number, number}回目の分析以降、コードに新しいファイルが{added, number}件、変更されたファイルが{changed, number}件あります。上の割合にはまだ含まれていません。",

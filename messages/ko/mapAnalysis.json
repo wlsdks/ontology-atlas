@@ -33,9 +33,6 @@
     "catchUp": "새로 생기거나 바뀐 코드 분석",
     "catchUpBody": "읽을 파일 {files, number}개. 에이전트 요청 약 {requests, number}번, {duration} 정도 걸려요."
   },
-  "web": {
-    "analyze": "Atlas에서 분석을 시작하려면 코딩 에이전트를 실행하는 데스크톱 앱이 필요해요. MCP로 직접 연결한 에이전트가 한 분석도 이 기록에 남아요."
-  },
   "changed": {
     "none": "{number, number}차 분석 뒤로 바뀐 코드 파일이 없어요.",
     "some": "{number, number}차 분석 뒤로 코드에 새 파일 {added, number}개가 생기고 파일 {changed, number}개가 바뀌었어요. 위 숫자에는 아직 들어 있지 않아요.",

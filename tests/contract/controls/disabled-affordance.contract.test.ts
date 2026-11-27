@@ -85,19 +85,18 @@ describe('disabled affordance — value layer', () => {
 describe('recent-changes chip — states the reason it cannot be used per mode', () => {
   const HOME = read('src/views/home/ui/map-readouts/TopologyCommandChrome.tsx');
 
-  it('emits different sentences for the sample reason and the my-folder reason', () => {
-    // Telling someone viewing the sample to "edit a document" **presumes they have a
-    // document to edit.** The real reason is different: the sample's date is when this
-    // repository last touched the fixture, which has nothing to do with the user, and
-    // the feature has no meaning until they open a folder.
-    expect(HOME).toContain('spotlightSampleTooltip');
+  it('emits different sentences for the no-folder reason and the my-folder reason', () => {
+    // Telling someone with no folder loaded to "edit a document" **presumes they have a
+    // document to edit.** The real reason is different: the feature has no meaning until they
+    // open a folder.
+    expect(HOME).toContain('spotlightNeedsFolderTooltip');
     expect(HOME).toContain('spotlightEmptyTooltip');
   });
 
-  it.each(['ko', 'en'])('the %s copy explains the sample reason with a folder', (locale) => {
+  it.each(['ko', 'en'])('the %s copy explains the no-folder reason with a folder', (locale) => {
     const messages = JSON.parse(read(`messages/${locale}.json`));
-    const text: string = messages.topology.controls.spotlightSampleTooltip;
-    expect(text, `${locale}: no sample reason copy`).toBeTruthy();
+    const text: string = messages.topology.controls.spotlightNeedsFolderTooltip;
+    expect(text, `${locale}: no no-folder reason copy`).toBeTruthy();
     // Without "what to do next" it is an apology, not guidance — the same discipline as
     // the degradation contract in `surfaces.md` (why plus where).
     expect(text, `${locale}: does not state the next action (folder)`).toMatch(locale === 'ko' ? /폴더/ : /folder/i);

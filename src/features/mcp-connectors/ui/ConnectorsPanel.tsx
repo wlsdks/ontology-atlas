@@ -12,11 +12,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 import { CONNECTORS_RELATIVE_PATH, type ConnectorWriteResult } from '@/shared/lib/connectors/connector-store';
-import {
-  isConnectorDiscoveryAvailable,
-  type DiscoveredConnector,
-} from '@/shared/lib/connectors/tauri-connectors';
-import { isConnectorSecretBridgeAvailable } from '@/shared/lib/connectors/tauri-connector-secrets';
+import type { DiscoveredConnector } from '@/shared/lib/connectors/tauri-connectors';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 import { AddConnectorDialog } from './AddConnectorDialog';
@@ -64,8 +60,6 @@ export function ConnectorsPanel({
 }) {
   const t = useTranslations('connectors');
   const vaultPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
-  const canDiscover = isConnectorDiscoveryAvailable();
-  const canStoreSecrets = isConnectorSecretBridgeAvailable();
 
   // Three named states: with only `null` for "not answered", a rejected scan left the screen reading forever and the name-collision warning never fired.
   const discovery = useConnectorDiscovery(vaultPath);
@@ -83,7 +77,7 @@ export function ConnectorsPanel({
   );
 
   // Read once here: a connector whose token is absent must not be switchable on.
-  const storedRefs = useConnectorSecretPresence(store.connectors, canStoreSecrets);
+  const storedRefs = useConnectorSecretPresence(store.connectors);
 
   const addDiscovered = useCallback(
     (server: DiscoveredConnector) => store.upsert(recordFromDiscovered(server, newConnectorId())),
@@ -231,7 +225,7 @@ export function ConnectorsPanel({
         </p>
       ) : null}
 
-      {canDiscover && !isEmpty && discovery.status !== 'done' ? (
+      {!isEmpty && discovery.status !== 'done' ? (
         <p
           role="status"
           data-testid={
@@ -289,8 +283,6 @@ export function ConnectorsPanel({
         open={addOpen}
         onClose={() => setAddOpen(false)}
         discovery={discovery}
-        canDiscover={canDiscover}
-        canStoreSecrets={canStoreSecrets}
         attachedNames={attachedNames}
         /* The write result decides whether the dialog closes, so a failed write does not look like a saved one. */
         onAddDiscovered={(server) => announceAttached(server.name, addDiscovered(server))}
@@ -302,7 +294,6 @@ export function ConnectorsPanel({
       <ConnectorDetailDialog
         connector={detail}
         on={detail ? store.isOnHere(detail) : false}
-        canStoreSecrets={canStoreSecrets}
         storedRefs={storedRefs}
         onClose={() => setDetailId(null)}
         onUpsert={(connector) => void store.upsert(connector)}

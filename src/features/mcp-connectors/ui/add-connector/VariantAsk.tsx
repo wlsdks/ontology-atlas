@@ -24,7 +24,6 @@ export function VariantAsk({
   entry,
   variant,
   runtimes,
-  canStoreSecrets,
   onAttach,
   onEdit,
   onDismiss,
@@ -34,7 +33,6 @@ export function VariantAsk({
   entry: CatalogueEntry;
   variant: CatalogueVariant;
   runtimes: readonly ResolvedRuntime[] | null;
-  canStoreSecrets: boolean;
   onAttach: (values: Record<string, string>) => void;
   onEdit: () => void;
   onDismiss: () => void;
@@ -76,12 +74,10 @@ export function VariantAsk({
       </code>
       {required.length > 0 ? (
         <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
-          {canStoreSecrets
-            ? t('variantAsksToken', { keys: required.map((variable) => variable.name).join(', ') })
-            : t('secretsWeb', { keys: required.map((variable) => variable.name).join(', ') })}
+          {t('variantAsksToken', { keys: required.map((variable) => variable.name).join(', ') })}
         </p>
       ) : null}
-      {canStoreSecrets && required.length > 0 ? (
+      {required.length > 0 ? (
         <div className="mt-2 flex flex-col gap-2">
           {required.map((variable, index) => (
             <div key={variable.name} className="flex flex-col gap-1">
@@ -126,17 +122,15 @@ export function VariantAsk({
         </div>
       ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {canStoreSecrets || required.length === 0 ? (
-          <button
-            type="button"
-            data-testid={`${testIdPrefix}-catalogue-ask-add`}
-            disabled={!complete}
-            onClick={() => onAttach(values)}
-            className={CONNECTOR_SUBMIT_CLASS}
-          >
-            {t('customAdd')}
-          </button>
-        ) : null}
+        <button
+          type="button"
+          data-testid={`${testIdPrefix}-catalogue-ask-add`}
+          disabled={!complete}
+          onClick={() => onAttach(values)}
+          className={CONNECTOR_SUBMIT_CLASS}
+        >
+          {t('customAdd')}
+        </button>
         <button
           type="button"
           data-testid={`${testIdPrefix}-catalogue-ask-edit`}

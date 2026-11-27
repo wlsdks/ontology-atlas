@@ -56,7 +56,6 @@ vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', async (im
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
-  isTauriVaultRuntime: () => true,
   getTauriVaultRootPath: (handle: { __picked?: boolean } | null) =>
     // The project picker's handle carries the picked path; every other caller gets the vault's.
     handle?.__picked ? mocks.pickedProject : mocks.rootPath,

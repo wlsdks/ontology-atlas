@@ -204,7 +204,7 @@
     "relayoutToast": "マップを並べ直しています",
     "spotlightTooltip": "最近の変更：{days, plural, other {直近#日間}}に変わった概念は明るく、ほかは薄く表示します",
     "spotlightEmptyTooltip": "最近の変更はありません。文書を編集するとここに表示されます",
-    "spotlightSampleTooltip": "サンプルの日付はあなたの作業ではありません。オントロジーフォルダを開くと、自分の変更がここに表示されます",
+    "spotlightNeedsFolderTooltip": "オントロジーフォルダを開くと、最近変更された概念がここに表示されます",
     "spotlightAriaLabel": "最近の変更の強調表示を切り替え",
     "spotlightLabel": "最近",
     "switchToMyDataLabel": "オントロジーフォルダを開く",

@@ -24,7 +24,7 @@ interface Options {
   indexState: import("@/widgets/topology-index-panel/lib/index-panel-state").IndexPanelState | null;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "canCreateNode" | "selectedEdge">;
   homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "meaningWorkbenchOpen" | "acpDockFrameOpen" | "vaultAgentOpen">;
-  topologyVaultReadModel: Pick<ReturnType<typeof useTopologyVaultReadModel>, "ontologyInsight" | "llmBridgeAvailable">;
+  topologyVaultReadModel: Pick<ReturnType<typeof useTopologyVaultReadModel>, "ontologyInsight">;
   topologyRouteControls: Pick<
     ReturnType<typeof useTopologyRouteControls>,
     | "setIndexPreference"
@@ -42,7 +42,7 @@ export function useTopologyIndexPresentation({
 }: Options) {
   const { nodePopoverDismissed, nodePopoverPositionerRef, lastCanvasPointerRef } = topologyCanvasFocus;
   const { setIndexPreference, setIndexManualExpandWhileEmpty, baseRenderedIndexState, indexManualExpandWhileEmpty } = topologyRouteControls;
-  const { ontologyInsight, llmBridgeAvailable } = topologyVaultReadModel;
+  const { ontologyInsight } = topologyVaultReadModel;
   const { meaningWorkbenchOpen, acpDockFrameOpen, vaultAgentOpen } = homeWorkbenchController;
   const { canCreateNode, selectedEdge } = topologyAuthoring;
 
@@ -105,10 +105,7 @@ export function useTopologyIndexPresentation({
     meaningWorkbenchOpen ||
     acpDockFrameOpen ||
     vaultAgentOpen ||
-    Boolean(
-      llmBridgeAvailable &&
-      (routeState.askIntent || routeState.askBusinessFlow),
-    );
+    Boolean(routeState.askIntent || routeState.askBusinessFlow);
   const [startStepsDismissed, setStartStepsDismissed] = useState(() =>
     readFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY),
   );

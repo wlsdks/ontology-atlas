@@ -69,7 +69,6 @@
   "valuePlaceholder": "值",
   "secretMissing": "本机还没有这个值，没有它 MCP 服务器无法启动。",
   "secretSave": "保存",
-  "secretsWeb": "此 MCP 服务器需要 {keys} 的值。保存它需要桌面应用。",
   "customBody": "用于尚未在任何地方注册的服务器。",
   "transportLabel": "传输方式",
   "customAdd": "添加 MCP 服务器",
@@ -87,8 +86,6 @@
   "fieldUrl": "地址",
   "fieldEnvKeys": "环境变量名称",
   "fieldHeaderKeys": "请求头名称",
-  "webTitle": "查找已注册的内容需要桌面应用",
-  "webBody": "读取 ~/.claude.json 或 ~/.codex/config.toml 需要在这台电脑上运行程序，而此界面没有地方保存令牌。仍可手动添加 MCP 服务器，列表会保存在你的文件夹中。",
   "transport": {
     "stdio": "程序",
     "http": "地址"

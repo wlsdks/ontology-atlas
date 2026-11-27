@@ -118,7 +118,7 @@ export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
     : {
       state: 'unsupported',
       title: t('startTitle'),
-      body: t('browserUnavailable'),
+      body: t('folderPickerMacOnly'),
     };
   const readOnlyNote = <>
     <LockKeyhole size={ICON_SIZE.sm} aria-hidden /><span>{t('readOnly')}</span>

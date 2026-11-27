@@ -15,7 +15,7 @@ const KEPT = { doneBytes: 412_000_000, totalBytes: 2_288_243_938, checking: fals
 const english = () => createTranslator({ locale: 'en', messages: en, namespace: 'library.questionDesk.meaning' });
 const failedLine = (failure: VectorFailure, failureDetail: string | null, model: typeof KEPT | null = null) => deskLine({
   status: { ...OFF_VECTOR_STATUS, phase: 'failed', failure, failureDetail, model },
-  isApp: true, indexOn: true, markdownFiles: 10, runnerModel: 'bge-m3:latest',
+  indexOn: true, markdownFiles: 10, runnerModel: 'bge-m3:latest',
 })!;
 
 describe('the sentence the desk line says', () => {

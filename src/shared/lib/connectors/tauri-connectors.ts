@@ -58,10 +58,6 @@ export type ConnectorDiscoveryState =
   | { status: 'failed' }
   | { status: 'done'; connectors: DiscoveredConnector[] };
 
-export function isConnectorDiscoveryAvailable(): boolean {
-  return getInvoke() !== null;
-}
-
 export function isAttachableTransport(
   transport: DiscoveredTransport,
 ): transport is AttachableTransport {

@@ -8,7 +8,6 @@ import { useLocalVault } from "@/entities/vault-session";
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
 import { isPickerAbort } from "@/shared/lib/failures/picker-abort";
 import { pickTauriVaultDirectory } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { buildBlockManifest, type BlockCensus } from "../model/block-manifest";
 import { writeBlockToDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
 import { collectSubtreeNodeIds, selectRealmBlockDocs } from "../model/collect-realm-block";
@@ -33,8 +32,6 @@ export function RealmBlockExportAction({
   const [exportedCount, setExportedCount] = useState(0);
 
   const vaultLoaded = status === "loaded" && Boolean(manifest);
-  // Only the app can pick a folder; elsewhere the control says so instead of failing.
-  const supported = isTauriVaultRuntime();
 
   const runExport = async () => {
     if (phase === "exporting" || !vaultLoaded || !manifest) return;
@@ -102,15 +99,9 @@ export function RealmBlockExportAction({
       <button
         type="button"
         onClick={() => void runExport()}
-        disabled={!vaultLoaded || !supported || phase === "exporting"}
+        disabled={!vaultLoaded || phase === "exporting"}
         aria-label={t("exportAria")}
-        title={
-          !vaultLoaded
-            ? t("vaultRequiredHint")
-            : supported
-              ? t("exportAria")
-              : t("exportUnsupportedHint")
-        }
+        title={!vaultLoaded ? t("vaultRequiredHint") : t("exportAria")}
         data-testid="realm-block-export"
         className={controlClass({
           shape: "segment",

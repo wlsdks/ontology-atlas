@@ -44,7 +44,6 @@ export interface AddConnectorDialogInput {
   open: boolean;
   onClose: () => void;
   discovery: ConnectorDiscoveryState;
-  canDiscover: boolean;
   attachedNames: Set<string>;
   onAddDiscovered: (server: DiscoveredConnector) => Promise<ConnectorWriteResult | null>;
   onAddCustom: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
@@ -56,7 +55,6 @@ export function useAddConnectorDialog({
   open,
   onClose,
   discovery,
-  canDiscover,
   attachedNames,
   onAddDiscovered,
   onAddCustom,
@@ -182,7 +180,7 @@ export function useAddConnectorDialog({
     : groups;
   const catalogueMatches = useMemo(() => searchCatalogue(MCP_CATALOGUE, query), [query]);
   const nothingMatches =
-    needle.length > 0 && catalogueMatches.length === 0 && (!canDiscover || foundMatches.length === 0);
+    needle.length > 0 && catalogueMatches.length === 0 && foundMatches.length === 0;
 
   const catalogueRecord = (entry: CatalogueEntry, variant: CatalogueVariant) => {
     const id = newConnectorId();

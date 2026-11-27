@@ -66,7 +66,6 @@ const args = {
   labels: {
     createFile: (path: string) => `create ${path}`,
     modifyFile: (path: string) => `modify ${path}`,
-    bridgeMissing: 'bridge missing',
   },
 };
 

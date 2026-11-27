@@ -15,7 +15,6 @@ import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { deniedFolderName } from "@/entities/vault-session";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useToast } from "@/shared/ui/toast/toast";
 import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";
@@ -56,8 +55,6 @@ export function FirstRunPage() {
     busy: justStartBusy,
     actionError: justStartError,
   } = useJustStartVault(vault, locale, { created: justStartCreated, starterFailed });
-  // Read on the client only, so there is no hydration mismatch.
-  const showJustStart = isTauriVaultRuntime();
   const { prepare: prepareCodeHandoff, handoff: codeHandoff } = useCodeProjectHandoff();
   const codeProject = useBuildFromCode({ openRecord: vault.openRecent, handoff: codeHandoff });
   const chooseCodeProject = useCallback(() => {
@@ -258,7 +255,7 @@ export function FirstRunPage() {
                     {tSwitch("choose.listTitle")}
                   </p>
                   {choosingFolderHome ? (
-                    <FirstRunFolderActions trigger={createTrigger} busy={busy} showJustStart={showJustStart} onOpen={() => void handleOpen()} onCreate={setChoosingFor} onCodeProject={chooseCodeProject} />
+                    <FirstRunFolderActions trigger={createTrigger} busy={busy} onOpen={() => void handleOpen()} onCreate={setChoosingFor} onCodeProject={chooseCodeProject} />
                   ) : null}
                 </div>
                 <RecentVaultList
@@ -283,69 +280,59 @@ export function FirstRunPage() {
 
         {/* Equal-height cards (Don'ts, content-decided card height). */}
         {!choosingFolderHome ? <div className={`${styles.startDoors} grid auto-rows-fr gap-2`} aria-busy={busy}>
-          {showJustStart ? (
-            <button
-              type="button"
-              onClick={chooseCodeProject}
-              disabled={busy}
-              data-testid="first-run-code-project"
-              /* Leads on a first run: the product reads a codebase, so the person who has one starts here. */
-              className={`${secondaryCardBase} ${
-                choosingFolder
-                  ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
-                  : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
-              }`}
-            >
-              <span className={`${secondaryIconChip} ${doorGlyph}`}>
-                <Code2 size={ICON_SIZE.md} aria-hidden />
+          <button
+            type="button"
+            onClick={chooseCodeProject}
+            disabled={busy}
+            data-testid="first-run-code-project"
+            /* Leads on a first run: the product reads a codebase, so the person who has one starts here. */
+            className={`${secondaryCardBase} ${
+              choosingFolder
+                ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
+                : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
+            }`}
+          >
+            <span className={`${secondaryIconChip} ${doorGlyph}`}>
+              <Code2 size={ICON_SIZE.md} aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {codeProject.stage === "choosing" ? t("busy") : t("codeTitle")}
               </span>
-              <span className="min-w-0">
-                <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  {codeProject.stage === "choosing" ? t("busy") : t("codeTitle")}
-                </span>
-                <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-                  {t("codeBody")}
-                </span>
+              <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                {t("codeBody")}
               </span>
-            </button>
-          ) : null}
+            </span>
+          </button>
 
-          {showJustStart ? (
-            <button
-              type="button"
-              onClick={() => setChoosingFor("just-start")}
-              disabled={busy}
-              data-testid="first-run-just-start"
-              className={`${secondaryCardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
-            >
-              <span className={`${secondaryIconChip} text-[color:var(--color-text-tertiary)]`}>
-                <Zap size={ICON_SIZE.md} aria-hidden />
+          <button
+            type="button"
+            onClick={() => setChoosingFor("just-start")}
+            disabled={busy}
+            data-testid="first-run-just-start"
+            className={`${secondaryCardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
+          >
+            <span className={`${secondaryIconChip} text-[color:var(--color-text-tertiary)]`}>
+              <Zap size={ICON_SIZE.md} aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {justStartBusy ? t("justStartBusy") : t("justStartTitle")}
               </span>
-              <span className="min-w-0">
-                <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  {justStartBusy ? t("justStartBusy") : t("justStartTitle")}
-                </span>
-                <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-                  {choosingFolderHome ? tSwitch("choose.justStartBody") : t("justStartBody")}
-                </span>
+              <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                {choosingFolderHome ? tSwitch("choose.justStartBody") : t("justStartBody")}
               </span>
-            </button>
-          ) : null}
+            </span>
+          </button>
 
           <button
             type="button"
             onClick={() => void handleOpen()}
             disabled={busy}
             data-testid="first-run-open"
-            className={`${secondaryCardBase} ${
-              showJustStart || choosingFolder
-                ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
-                : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
-            }`}
+            className={`${secondaryCardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
           >
-            <span
-              className={`${secondaryIconChip} ${showJustStart ? "text-[color:var(--color-text-tertiary)]" : doorGlyph}`}
-            >
+            <span className={`${secondaryIconChip} text-[color:var(--color-text-tertiary)]`}>
               <FolderOpen size={ICON_SIZE.md} aria-hidden />
             </span>
             <span className="min-w-0">
@@ -395,7 +382,7 @@ export function FirstRunPage() {
         ) : null}
         </div>
 
-        {showJustStart && !choosingFor ? <Link href="/changes/" className={controlClass({ shape: "row", hoverSurface: "lift", hoverInk: "strong", className: `${choosingFolderHome ? "" : styles.startAside} grid gap-1 border border-[color:var(--color-border-soft)] p-4` })}><span className="text-body font-[var(--font-weight-strong)]">{tBriefing("title")}</span><span className="text-body text-[color:var(--color-text-secondary)]">{tBriefing("sourcePrompt")}</span></Link> : null}
+        {!choosingFor ? <Link href="/changes/" className={controlClass({ shape: "row", hoverSurface: "lift", hoverInk: "strong", className: `${choosingFolderHome ? "" : styles.startAside} grid gap-1 border border-[color:var(--color-border-soft)] p-4` })}><span className="text-body font-[var(--font-weight-strong)]">{tBriefing("title")}</span><span className="text-body text-[color:var(--color-text-secondary)]">{tBriefing("sourcePrompt")}</span></Link> : null}
 
 
       </section>

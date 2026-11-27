@@ -33,13 +33,11 @@ type ProblemKey = `problem.${ConnectorProblem}`;
 export function CustomConnectorForm({
   prefill,
   runtimes,
-  canStoreSecrets,
   onAdd,
   testIdPrefix,
 }: {
   prefill: CustomPrefill;
   runtimes: readonly ResolvedRuntime[] | null;
-  canStoreSecrets: boolean;
   onAdd: (connector: ConnectorRecord, secrets: SecretToStore[]) => void;
   testIdPrefix: string;
 }) {
@@ -292,18 +290,12 @@ export function CustomConnectorForm({
                     checked={secret}
                     /*
                      * A credential name cannot be unchecked: `serializeConnectorState` refuses a
-                     * literal under one, so the whole write would fail. Disabled on the web: there is
-                     * no keychain.
+                     * literal under one, so the whole write would fail.
                      */
-                    disabled={locked || !canStoreSecrets}
+                    disabled={locked}
                     onChange={(event) => changeVariable(index, { secret: event.target.checked })}
                     className="mt-2 text-label text-[color:var(--color-text-secondary)]"
                   />
-                  {secret && !canStoreSecrets ? (
-                    <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-                      {t('secretsWeb', { keys: variable.name || t('variableName') })}
-                    </p>
-                  ) : null}
                 </li>
               );
             })}

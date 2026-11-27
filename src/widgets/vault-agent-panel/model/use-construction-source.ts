@@ -28,7 +28,6 @@ type VaultAgent = ReturnType<typeof useVaultAgent>;
  */
 export function useConstructionSource({
   open,
-  bridgeAvailable,
   vaultPath,
   provider,
   localEndpoint,
@@ -37,7 +36,6 @@ export function useConstructionSource({
   onRun,
 }: {
   open: boolean;
-  bridgeAvailable: boolean;
   vaultPath: string | null;
   provider: ConnectionProvider | null;
   localEndpoint: LocalEndpointSettings | null;
@@ -57,7 +55,7 @@ export function useConstructionSource({
 
   const cancel = () => { selectionNonce.current += 1; setSelection(null); };
   const choose = async () => {
-    if (!vaultPath || !canChooseConstructionSource({ bridgeAvailable, running: agent.running, applying: agent.proposal?.status === 'applying' })) return;
+    if (!vaultPath || !canChooseConstructionSource({ running: agent.running, applying: agent.proposal?.status === 'applying' })) return;
     agent.stop();
     const nonce = ++selectionNonce.current;
     const resource = resourceKey;

@@ -20,7 +20,6 @@
   "clearFocus": "개념 묶음만 보기 해제",
   "clearFocusNamed": "{name}만 보기 해제",
   "prepare": "에이전트에게 묻기",
-  "prepareUnavailable": "데스크톱 앱에서 에이전트에게 물어볼 수 있어요",
   "edit": "편집",
   "createTitle": "개념 묶음 만들기",
   "editTitle": "개념 묶음 편집",

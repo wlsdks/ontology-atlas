@@ -26,7 +26,6 @@ vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', asyn
 }));
 
 const tauriFsMocks = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => false),
   ensureDefaultVaultParentDir: vi.fn(async () => '/Users/me/Documents/Ontology Atlas'),
   listTauriDirectoryNames: vi.fn(async () => [] as string[]),
   ensureTauriChildDirectory: vi.fn(async () => undefined),
@@ -145,7 +144,6 @@ function swappingVault(unmountPage: () => void) {
 describe('FirstRunPage', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
     tauriFsMocks.ensureDefaultVaultParentDir.mockResolvedValue(
       '/Users/me/Documents/Ontology Atlas',
     );
@@ -165,7 +163,6 @@ describe('FirstRunPage', () => {
 
   describe('starting from a code project', () => {
     const pickProject = (root: string) => {
-      tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
       tauriFsMocks.pickTauriVaultDirectory.mockResolvedValue({ name: root.split('/').pop() ?? root });
       tauriFsMocks.getTauriVaultRootPath.mockReturnValue(root);
     };
@@ -222,12 +219,6 @@ describe('FirstRunPage', () => {
       await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull());
       expect(agentMocks.requestAgentChat).not.toHaveBeenCalled();
       expect(agentMocks.queueAgentChatIntent).not.toHaveBeenCalled();
-    });
-
-    it('is absent in a browser, where no project folder can be created', () => {
-      render(<FirstRunPage />);
-
-      expect(screen.queryByTestId('first-run-code-project')).toBeNull();
     });
   });
 
@@ -290,7 +281,6 @@ describe('FirstRunPage', () => {
   });
 
   it('just start leaves its starter on disk and says where, though the page is swapped away mid-open', async () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     let unmountPage = () => undefined as void;
     const disk = swappingVault(() => unmountPage());
     const { unmount } = render(<FirstRunPage />);
@@ -325,7 +315,6 @@ describe('FirstRunPage', () => {
   });
 
   it('a starter that could not be written is said in a toast, because the page is gone by then', async () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     mocks.vault.openRecent = vi.fn(async () => ({
       opened: true,
       starterWritten: 0,
@@ -342,15 +331,7 @@ describe('FirstRunPage', () => {
     expect(toastMocks.show).not.toHaveBeenCalledWith(expect.stringContaining('justStartToast'), 'success');
   });
 
-  it('hides "just start" when the Tauri invoke bridge is unavailable', () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
-    render(<FirstRunPage />);
-
-    expect(screen.queryByTestId('first-run-just-start')).not.toBeInTheDocument();
-  });
-
-  it('creates the default folder on disk and opens it with the chosen starter when "just start" is available', async () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
+  it('creates the default folder on disk and opens it with the chosen starter from "just start"', async () => {
     mocks.vault.openRecent = vi.fn(async () => ({ opened: true, starterWritten: 3, starterError: null }));
     render(<FirstRunPage />);
 
@@ -377,7 +358,6 @@ describe('FirstRunPage', () => {
   });
 
   it('picks a numbered folder name and reports it in the toast when the base name is already taken', async () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.listTauriDirectoryNames.mockResolvedValue(['my-ontology']);
     mocks.vault.openRecent = vi.fn(async () => ({ opened: true, starterWritten: 3, starterError: null }));
     render(<FirstRunPage />);

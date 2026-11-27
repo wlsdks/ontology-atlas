@@ -204,7 +204,7 @@
     "relayoutToast": "지도를 다시 정렬해요",
     "spotlightTooltip": "최근 변경: 지난 {days}일 동안 바뀐 개념은 밝게, 나머지는 흐리게 보여요",
     "spotlightEmptyTooltip": "최근에 바뀐 개념이 없어요. 문서를 고치면 여기에 표시돼요",
-    "spotlightSampleTooltip": "샘플의 날짜는 내 작업이 아니에요. 온톨로지 폴더를 열면 내 변경이 여기에 표시돼요",
+    "spotlightNeedsFolderTooltip": "온톨로지 폴더를 열면 최근에 바뀐 개념이 여기에 표시돼요",
     "spotlightAriaLabel": "최근 변경 강조 켜기·끄기",
     "spotlightLabel": "최근 변경",
     "switchToMyDataLabel": "온톨로지 폴더 열기",
