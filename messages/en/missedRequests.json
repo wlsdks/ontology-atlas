@@ -5,43 +5,42 @@
   },
   "stage": {
     "title": "Find what you asked for that never landed",
-    "body": "Atlas reads the messages you typed to Claude Code in this repository, picks out the requests, and checks each one against the commits on {branch}. A request at least 2 days old with no matching commit is listed here.",
-    "local": "Your messages go only to {model} at {address} on this computer. Nothing is sent anywhere else, and nothing is written into your repository or your agent's memory.",
+    "body": "Atlas reads the messages you typed to Claude Code in this repository, picks out the requests for a code change, and checks each one against the commits on {branch}. One at least 2 days old with no matching commit is listed here.",
+    "local": "Your messages go only to {model} at {address} on this computer. A model your server runs on the internet is refused. Nothing is sent anywhere else, and nothing is written into your repository or your agent's memory.",
     "scope": "Reads {count, plural, one {# session} other {# sessions}} from the last 14 days in {worktrees, plural, one {# folder} other {# folders}} of this repository.",
-    "start": "Check now",
-    "nightly": "Check every night",
-    "nightlyNote": "Runs at most once a day, after 1:00, while Atlas is open, this computer is on power and no one has used it for 10 minutes. It stops when you touch the keyboard or mouse."
+    "start": "Check now"
   },
   "model": {
     "noneTitle": "Needs a model on this computer",
-    "noneBody": "Picking requests out of your messages needs a language model running on this computer, such as one in Ollama or LM Studio. Add its address in Agents › Models, then come back.",
+    "noneBody": "Picking requests out of your messages needs a language model running on this computer, such as one in Ollama or LM Studio. In Atlas's test the smallest that worked had 27 billion parameters and used about 19 GB of memory, so a computer with 32 GB or more. Add its address in Agents › Models, then come back.",
     "noneAction": "Open Models",
     "weakTitle": "{model} is too small for this check",
-    "weakBody": "Atlas gave {model} {total} example messages that come with the app. It found {found} of {requests} requests for a code change and called {wrong} other messages requests; this check needs {neededFound} found and at most {neededWrong} wrong. Choose a larger model in Agents › Models. None of your own messages were read.",
+    "weakBody": "Atlas gave {model} {total} example messages and {cases} example commit checks that come with the app. It found {found} of {requests} code requests, called {wrong} other messages code requests, and judged {judged} of {cases} checks right. This check needs {neededFound} found, at most {neededWrong} wrong and {neededJudged} judged right. Choose a larger model in Agents › Models. None of your own messages were read.",
     "searchTitle": "Needs the search-by-meaning model",
     "searchBody": "Finding the commits closest to each request uses the model that search by meaning prepares on this computer. Set it up once in the Library, then come back.",
     "searchAction": "Set up search by meaning",
     "notLocal": "{address} is not on this computer. Only a model at localhost, 127.0.0.1 or ::1 may read your messages.",
+    "remote": "{model} runs on the internet through {address}. Only a model that runs on this computer may read your messages.",
     "using": "{model} at {address}"
   },
   "run": {
     "reading": "Reading {done} of {total} sessions",
     "sorting": "Picking out requests: {done} of {total} messages",
     "checking": "Checking {done} of {total} requests against Git",
-    "paused": "Paused while you use this computer. It goes on the next time the computer is idle on power.",
-    "waiting": "Waiting for this computer to be idle on power",
     "stop": "Stop",
     "stopped": "Stopped. Requests checked so far stay in the list.",
+    "loaded": "{model} may stay loaded in memory for a while after the check; your model server decides when to unload it.",
     "last": "Last checked {time} · {count, plural, one {# new message} other {# new messages}}"
   },
   "list": {
     "title": "Asked, not done",
     "onBranch": "On {branch}, not merged",
+    "unclear": "Could not tell",
     "noMatch": "No matching commit",
     "row": "{date} · {worktree}",
     "young": "{count, plural, one {# request is under 2 days old and is checked later.} other {# requests are under 2 days old and are checked later.}}",
     "emptyTitle": "Nothing you asked for is missing",
-    "emptyBody": "Every request from {from} to {to} has a matching commit on {branch}, or you marked it."
+    "emptyBody": "Every code request from {from} to {to} that the model could judge has a matching commit on {branch}, or you marked it."
   },
   "detail": {
     "youWrote": "You wrote on {date}, in {worktree}",
@@ -49,6 +48,7 @@
     "closest": "Closest commits on {branch}",
     "closestBranch": "Matching commit on {branch}, not merged into {base}",
     "noneMatch": "None of these does what you asked.",
+    "unclearNote": "A commit looks related, but the model could not tell whether it does what you asked.",
     "copy": "Copy request",
     "copied": "Copied",
     "resume": "Copy resume command",
@@ -59,13 +59,9 @@
   },
   "error": {
     "model": "{model} at {address} did not answer, so the check stopped at message {done} of {total}. Requests found so far stay in the list. Start the model, then press Check now to go on.",
-    "reply": "{count, plural, one {# message got an answer Atlas could not read and was left out.} other {# messages got an answer Atlas could not read and were left out.}}",
+    "reply": "{count, plural, one {# message got an answer Atlas could not read, or one naming a commit it was not shown, and was left out.} other {# messages got an answer Atlas could not read, or one naming a commit it was not shown, and were left out.}}",
     "git": "Git could not read {repository}, so no request was checked. The requests found are kept and checked when Git answers.",
     "unreadable": "{count, plural, one {# session file could not be read and was skipped.} other {# session files could not be read and were skipped.}} {path}",
     "noSessions": "No Claude Code session for this repository was found in {paths}."
-  },
-  "web": {
-    "title": "Asked, not done runs in the app",
-    "body": "It reads Claude Code's session files and runs a model on this computer. A browser can open neither, so this page cannot check your requests."
   }
 }
