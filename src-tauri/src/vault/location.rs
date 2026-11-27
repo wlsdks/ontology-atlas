@@ -10,7 +10,7 @@ use std::path::PathBuf;
 /// loop, so moving it to a worker would break it.
 #[tauri::command]
 pub(crate) fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, String> {
-    let title = dialog_title.as_deref().unwrap_or("Open ontology vault");
+    let title = dialog_title.as_deref().unwrap_or("Open ontology folder");
     let Some(picked) = rfd::FileDialog::new().set_title(title).pick_folder() else {
         return Ok(None);
     };
