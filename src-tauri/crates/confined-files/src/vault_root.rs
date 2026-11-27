@@ -163,6 +163,27 @@ impl VaultRoot {
         &self.root
     }
 
+    /// The text of a declarative file that lives at the top of the vault, such as
+    /// `.ontology-atlasignore`: `None` when there is no such file. `name` is one file name; a name
+    /// with a separator or a `..` is refused, so no call can reach outside the vault through it.
+    pub fn read_top_file(&self, name: &str) -> io::Result<Option<String>> {
+        let is_one_name = !name.is_empty()
+            && name != ".."
+            && name != "."
+            && !name.contains(['/', '\\', '\0']);
+        if !is_one_name {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "a top-level file is named by one file name",
+            ));
+        }
+        match ConfinedPath::new(self.root.join(name)).read_text() {
+            Ok(text) => Ok(Some(text)),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+
     /// Every Markdown file of the vault, in UTF-16 order (see [`list_markdown_files`]).
     pub fn markdown_files(&self) -> Vec<ConfinedPath> {
         list_markdown_files(&self.root)

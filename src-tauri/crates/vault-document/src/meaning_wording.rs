@@ -75,7 +75,7 @@ pub(crate) fn uncertainty_missing(slug: &str, kind: &str) -> String {
     )
 }
 
-pub(crate) fn slug_outside_kind_folder(slug: &str, kind: &str, canonical_slug: &str) -> String {
+pub fn slug_outside_kind_folder(slug: &str, kind: &str, canonical_slug: &str) -> String {
     format!(
         "\"{slug}\" is a {kind} written at the vault root instead of inside its kind folder, so it reads as \"{slug}\" where every other {kind} reads as \"{canonical_slug}\". The write succeeded and nothing here blocks it — a flat slug is valid, it just groups with nothing. The map, the README generator, and every other reader that shows a vault by kind group on that folder, so a root-level {kind} sits beside the project node rather than with its own kind. Move it when you are ready: rename_concept({{oldSlug:\"{slug}\", newSlug:\"{canonical_slug}\"}}) without `confirm` returns a dry-run listing every backlink that would be rewritten; repeat the same call with `confirm: true` to move the file and rewrite them in one pass. The UID does not change, so nothing loses its identity."
     )

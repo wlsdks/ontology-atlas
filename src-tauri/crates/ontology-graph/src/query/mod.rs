@@ -25,7 +25,10 @@ pub use operation::{Operation, PendingOperation};
 pub use query_error::QueryError;
 pub use relation_set::RELATION_TYPE_VALUES;
 pub use request::{Direction, QueryRequest, SEARCH_BUDGET_MAX};
-pub use selection::SelectionOperation;
+pub use selection::{
+    parse_ignore_patterns, LineSpan, NodeSort, OutsideFacts, SelectionArguments, SelectionOperation,
+    SelectionRequest, StaleSummary, UncertaintyRead,
+};
 pub use walks::WalkOperation;
 
 /// What one operation answered.

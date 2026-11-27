@@ -53,6 +53,10 @@ impl<'a> NodeSummary<'a> {
             out_degree: node.out_degree,
         }
     }
+
+    pub fn slug(&self) -> &str {
+        self.identity.slug
+    }
 }
 
 pub fn summaries(

@@ -109,6 +109,11 @@ impl Node {
             .filter(|path| !answer_format::whitespace::trim(path).is_empty())
     }
 
+    /// The body as readers see it, read from the file again when the cache did not keep it.
+    pub fn body(&self) -> Result<Cow<'_, str>, vault_document::FileReadError> {
+        self.document.body()
+    }
+
     pub fn degree(&self) -> u32 {
         self.out_degree + self.in_degree
     }

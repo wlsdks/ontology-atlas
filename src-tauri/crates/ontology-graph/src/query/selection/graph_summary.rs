@@ -18,32 +18,48 @@ use crate::query::request::QueryRequest;
 const DEFAULT_OVERVIEW_LIMIT: usize = 10;
 const DEFAULT_SCHEMA_LIMIT: usize = 50;
 
-/// A node as the hub lists show it: the summary and its total degree.
+/// A node as the hub lists and the node scans show it: the summary and its total degree.
 #[derive(Serialize)]
-pub struct Hub<'a> {
+pub struct DegreeRow<'a> {
     #[serde(flatten)]
     summary: NodeSummary<'a>,
     degree: u32,
 }
 
-/// The `limit` most connected nodes: by total degree, then by incoming degree, then by slug.
-pub fn top_hubs(graph: &CompiledGraph, limit: usize) -> Vec<Hub<'_>> {
-    let mut nodes: Vec<NodeId> = graph.node_ids().collect();
+impl<'a> DegreeRow<'a> {
+    pub fn of(graph: &'a CompiledGraph, id: NodeId) -> Self {
+        Self {
+            summary: NodeSummary::of(graph, id),
+            degree: graph.node(id).degree(),
+        }
+    }
+}
+
+/// The `limit` most connected of `nodes`: by total degree, then by incoming degree, then by slug.
+pub fn top_hubs_among(
+    graph: &CompiledGraph,
+    nodes: impl IntoIterator<Item = NodeId>,
+    limit: usize,
+) -> Vec<DegreeRow<'_>> {
+    let mut nodes: Vec<NodeId> = nodes.into_iter().collect();
     nodes.sort_by(|left, right| {
         let (left_node, right_node) = (graph.node(*left), graph.node(*right));
         right_node
             .degree()
             .cmp(&left_node.degree())
             .then_with(|| right_node.in_degree.cmp(&left_node.in_degree))
+            .then_with(|| left.cmp(right))
     });
     nodes
         .into_iter()
         .take(limit)
-        .map(|id| Hub {
-            summary: NodeSummary::of(graph, id),
-            degree: graph.node(id).degree(),
-        })
+        .map(|id| DegreeRow::of(graph, id))
         .collect()
+}
+
+/// The `limit` most connected nodes of the graph.
+pub fn top_hubs(graph: &CompiledGraph, limit: usize) -> Vec<DegreeRow<'_>> {
+    top_hubs_among(graph, graph.node_ids(), limit)
 }
 
 #[derive(Serialize)]
@@ -153,7 +169,7 @@ pub struct OverviewAnswer<'a> {
     by_domain: IndexMap<String, usize>,
     #[serde(rename = "byRelation")]
     by_relation: IndexMap<String, usize>,
-    hubs: Vec<Hub<'a>>,
+    hubs: Vec<DegreeRow<'a>>,
 }
 
 pub fn overview<'a>(
@@ -262,7 +278,7 @@ struct FacetNodes<'a> {
     #[serde(rename = "byDegreeBucket")]
     by_degree_bucket: DegreeBuckets,
     #[serde(rename = "topByDegree")]
-    top_by_degree: Vec<Hub<'a>>,
+    top_by_degree: Vec<DegreeRow<'a>>,
 }
 
 #[derive(Serialize)]

@@ -1,0 +1,148 @@
+//! `growth_plan`: what the vault should add, repair or read next, grouped so an agent works
+//! through one kind of gap at a time. It only lists candidates; each write waits for a person.
+
+use serde::Serialize;
+
+use super::containment::Containment;
+use super::growth_candidates::{
+    dangling_references, empty_domains, external_elements, unassigned_nodes, CandidateGroup,
+    DanglingReferenceRow, ExternalElements, NodeCandidate,
+};
+use super::relation_recommendations::{recommend, RecommendRelationsAnswer};
+use super::selection_request::UncertaintyRead;
+use crate::compiled_graph::CompiledGraph;
+use crate::query::query_error::QueryError;
+use crate::query::request::QueryRequest;
+
+const DEFAULT_LIMIT: usize = 25;
+
+/// The reads the vault's own uncertainty sections ask for. `no_bodies` says no body was handed to
+/// the reader of them, so an empty list is never taken for "nothing to read".
+#[derive(Serialize)]
+pub struct NextReads {
+    total: usize,
+    limited: bool,
+    rows: Vec<UncertaintyRead>,
+    reason: Option<&'static str>,
+}
+
+impl NextReads {
+    fn of(reads: Option<&[UncertaintyRead]>, limit: usize) -> Self {
+        match reads {
+            None => Self {
+                total: 0,
+                limited: false,
+                rows: Vec::new(),
+                reason: Some("no_bodies"),
+            },
+            Some(all) => Self {
+                total: all.len(),
+                limited: all.len() > limit,
+                rows: all.iter().take(limit).cloned().collect(),
+                reason: None,
+            },
+        }
+    }
+}
+
+#[derive(Serialize, Clone)]
+pub struct GrowthSummary {
+    #[serde(rename = "relationRecommendations")]
+    relation_recommendations: usize,
+    #[serde(rename = "externalElementRefs")]
+    external_element_refs: usize,
+    #[serde(rename = "externalElementRefsIgnored")]
+    external_element_refs_ignored: usize,
+    #[serde(rename = "danglingReferences")]
+    dangling_references: usize,
+    #[serde(rename = "unassignedNodes")]
+    unassigned_nodes: usize,
+    #[serde(rename = "emptyDomains")]
+    empty_domains: usize,
+    #[serde(rename = "nextReads")]
+    next_reads: usize,
+    /// The writes waiting. A next read is not a write, so it is not counted here.
+    #[serde(rename = "totalActions")]
+    total_actions: usize,
+}
+
+impl GrowthSummary {
+    pub fn recommendations(&self) -> usize {
+        self.relation_recommendations
+    }
+
+    pub fn dangling(&self) -> usize {
+        self.dangling_references
+    }
+
+    pub fn external(&self) -> usize {
+        self.external_element_refs
+    }
+
+    pub fn total_actions(&self) -> usize {
+        self.total_actions
+    }
+}
+
+#[derive(Serialize)]
+pub struct GrowthPlanAnswer<'a> {
+    operation: &'static str,
+    pub(super) summary: GrowthSummary,
+    #[serde(rename = "relationRecommendations")]
+    pub(super) relation_recommendations: RecommendRelationsAnswer<'a>,
+    #[serde(rename = "externalElementRefs")]
+    pub(super) external_element_refs: ExternalElements<'a>,
+    #[serde(rename = "danglingReferences")]
+    pub(super) dangling_references: CandidateGroup<DanglingReferenceRow<'a>>,
+    #[serde(rename = "unassignedNodes")]
+    unassigned_nodes: CandidateGroup<NodeCandidate<'a>>,
+    #[serde(rename = "emptyDomains")]
+    empty_domains: CandidateGroup<NodeCandidate<'a>>,
+    #[serde(rename = "nextReads")]
+    next_reads: NextReads,
+}
+
+pub fn growth_plan<'a>(
+    graph: &'a CompiledGraph,
+    request: &QueryRequest,
+) -> Result<GrowthPlanAnswer<'a>, QueryError> {
+    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    growth_plan_with_limit(graph, request, limit)
+}
+
+/// The plan with `limit` rows per group, which `workspace_brief` asks for with its own limit.
+pub fn growth_plan_with_limit<'a>(
+    graph: &'a CompiledGraph,
+    request: &QueryRequest,
+    limit: usize,
+) -> Result<GrowthPlanAnswer<'a>, QueryError> {
+    let outside = &request.selection.outside;
+    let containment = Containment::of(graph);
+    let recommendations =
+        RecommendRelationsAnswer::of(recommend(graph, &containment, None, limit), limit);
+    let external = external_elements(graph, &outside.ignore_patterns, limit);
+    let dangling = dangling_references(graph, limit);
+    let unassigned = unassigned_nodes(graph, &containment, limit);
+    let empty = empty_domains(graph, &containment, limit);
+    let next_reads = NextReads::of(outside.next_reads.as_deref(), limit);
+    let summary = GrowthSummary {
+        relation_recommendations: recommendations.total(),
+        external_element_refs: external.total(),
+        external_element_refs_ignored: external.ignored(),
+        dangling_references: dangling.total,
+        unassigned_nodes: unassigned.total,
+        empty_domains: empty.total,
+        next_reads: next_reads.total,
+        total_actions: recommendations.total() + external.total() + dangling.total,
+    };
+    Ok(GrowthPlanAnswer {
+        operation: "growth_plan",
+        summary,
+        relation_recommendations: recommendations,
+        external_element_refs: external,
+        dangling_references: dangling,
+        unassigned_nodes: unassigned,
+        empty_domains: empty,
+        next_reads,
+    })
+}
