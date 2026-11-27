@@ -522,7 +522,7 @@ mod tests {
     #[test]
     fn a_slug_is_listed_back_in_nfc_whatever_the_disk_spelled() {
         let (_directory, root) = vault();
-        // "한" typed as the three jamo U+1112 U+1161 U+11AB, as a Mac lists it.
+        // a Hangul syllable typed as the three jamo U+1112 U+1161 U+11AB, as a Mac lists it.
         let decomposed = "\u{1112}\u{1161}\u{11ab}";
         std::fs::write(root.path().join(format!("{decomposed}.md")), "x").expect("file");
         let listed = root.markdown_files();
