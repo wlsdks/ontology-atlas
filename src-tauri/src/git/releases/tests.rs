@@ -266,8 +266,13 @@ fn tag_names_never_reach_git_and_reads_change_nothing() {
     let second = f.commit("fix: second");
     f.tag("--output=x", &root);
     f.tag("-h", &second);
-    let refs = f.source.join(".git/refs/tags");
-    fs::write(refs.join("bad\nname"), format!("{second}\n")).unwrap();
+    // Windows refuses a line break in a file name, so only Unix plants that loose ref.
+    #[cfg(unix)]
+    fs::write(
+        f.source.join(".git/refs/tags").join("bad\nname"),
+        format!("{second}\n"),
+    )
+    .unwrap();
     let mut packed = fs::read(f.source.join(".git/packed-refs")).unwrap_or_default();
     packed.extend_from_slice(format!("{second} refs/tags/{}\n", "v".repeat(800)).as_bytes());
     packed.extend_from_slice(format!("{root} refs/tags/caf").as_bytes());
