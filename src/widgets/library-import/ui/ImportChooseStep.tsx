@@ -22,7 +22,6 @@ export function ImportChooseStep({
   onWhatChange,
   requestField,
   canRunAgent,
-  agentGap,
   onBack,
   onBring,
 }: {
@@ -33,7 +32,6 @@ export function ImportChooseStep({
   onWhatChange: (what: string) => void;
   requestField: RefObject<HTMLInputElement | null>;
   canRunAgent: boolean;
-  agentGap: 'browser' | 'runtime';
   onBack: () => void;
   onBring: () => void;
 }) {
@@ -97,10 +95,10 @@ export function ImportChooseStep({
             {t('noAgentTitle')}
           </p>
           <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-            {agentGap === 'browser' ? t('noAgentBodyWeb') : t('noAgentBodyRuntime')}
+            {t('noAgentBodyRuntime')}
           </p>
           <Link
-            href={agentGap === 'browser' ? '/download/' : DESTINATION_HREF.agents}
+            href={DESTINATION_HREF.agents}
             data-testid={`${testIdPrefix}-no-agent-app`}
             className={controlClass({
               shape: 'link',
@@ -108,7 +106,7 @@ export function ImportChooseStep({
               className: 'atlas-touch-floor atlas-touch-floor-wide mt-2 text-label font-[var(--font-weight-signature)]',
             })}
           >
-            {agentGap === 'browser' ? t('noAgentGetApp') : t('noAgentSeeRuntimes')}
+            {t('noAgentSeeRuntimes')}
           </Link>
         </div>
       )}

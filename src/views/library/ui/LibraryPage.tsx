@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { isWikiPage } from "@/entities/docs-vault";
 import { opensLocally } from "@/features/vault-agent";
-import { isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
 import {
   FindDocumentsDialog,
   questionDeskListingVersion,
@@ -315,7 +314,6 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null, showHo
       onAddFiles={handleAddFiles}
       onBrief={(brief) => { importHeadsToPlanningRef.current = importDestination === "planning"; agent.start(brief, "import"); }}
       canRunAgent={agent.route === "agent"}
-      agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
       destination={importDestination}
       onOpenAdvanced={openConnectorSettings}
     />

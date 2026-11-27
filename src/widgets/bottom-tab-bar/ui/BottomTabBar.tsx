@@ -3,7 +3,7 @@
 import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
-import { Blocks, Download, FolderKanban, Library, Map as MapIcon, NotebookPen } from 'lucide-react';
+import { Blocks, FolderKanban, Library, Map as MapIcon, NotebookPen } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { useMapReadingContext } from '@/shared/lib/navigation/map-reading-context';
@@ -19,7 +19,6 @@ import {
   type MobileDestinationId,
 } from '@/shared/config/destinations';
 import { shouldHideBottomTabBar } from '../lib/is-tab-active';
-import { shouldShowGetAppTile } from '@/shared/lib/navigation/show-get-app-tile';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 /** The runtime never changes after load, so subscribing is a formality. */
@@ -65,19 +64,12 @@ export function BottomTabBar() {
   const vault = useLocalVault();
   const readingContext = useMapReadingContext(vault.handle);
 
-  /**
-   * Web-only download utility below lg, outside `TABS`. The hook sits above the early return to
-   * keep hook order stable.
-   */
+  /** Above the early return to keep hook order stable. */
   const desktopRuntime = useSyncExternalStore(
     subscribeToRuntime,
     isTauriVaultRuntime,
     getServerRuntimeSnapshot,
   );
-  const showGetApp = shouldShowGetAppTile({
-    mounted: desktopRuntime !== null,
-    isDesktopApp: desktopRuntime === true,
-  });
 
   const activeId = resolveActiveNavDestination(pathname);
   const desktopWithoutVault = desktopRuntime === true && !vault.manifest && !vault.partialTotal;
@@ -143,22 +135,6 @@ export function BottomTabBar() {
           </Link>
         );
       })}
-
-      {showGetApp ? (
-        <Link
-          href="/download/"
-          title={tRail('getAppTitle')}
-          data-testid="bottom-tab-get-app"
-          className="relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
-        >
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-card border border-transparent transition-colors">
-            <Download size={ICON_SIZE.lg} aria-hidden />
-          </span>
-          <span className="text-caption font-[var(--font-weight-signature)] leading-display-tight">
-            {tRail('getApp')}
-          </span>
-        </Link>
-      ) : null}
     </nav>
   );
 }

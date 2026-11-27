@@ -16,7 +16,6 @@ import {
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
-import { codeReaderBridgeAvailable } from "@/shared/lib/project-source/tauri-code-reader";
 import { stripDuplicateHeading } from "@/shared/lib/vault-document/strip-duplicate-heading";
 import {
   formatProjectSourceHandoff,
@@ -437,7 +436,6 @@ export function FullDetail({
                 />
               ))}
             </ul>
-            {codePath && !codeReaderBridgeAvailable() ? <CodeReaderWebCard /> : null}
           </section>
         ) : null}
 
@@ -501,28 +499,6 @@ export function FullDetail({
           </section>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-/** Why the code is not read in place here, and where it is. */
-function CodeReaderWebCard() {
-  const t = useTranslations("codeReader.web");
-  const tRail = useTranslations("navRail");
-  return (
-    <div
-      data-testid="code-reader-web-limit"
-      className="mt-3 flex flex-col gap-2 rounded-chip border border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] px-3.5 py-3"
-    >
-      <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-text-primary)]">{t("title")}</p>
-      <p className="text-body text-[color:var(--map-panel-text-secondary)]">{t("body")}</p>
-      <Link
-        href="/download"
-        data-testid="code-reader-get-app"
-        className={controlClass({ shape: "link", size: "lg", tone: "accent", className: "self-start" })}
-      >
-        {tRail("getApp")}
-      </Link>
     </div>
   );
 }

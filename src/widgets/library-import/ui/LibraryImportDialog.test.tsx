@@ -32,7 +32,7 @@ function draw(options: Partial<Parameters<typeof LibraryImportDialog>[0]> = {}, 
   const approve = vi.fn(() => true);
   const setup = createConnectorSetup(store, { current: () => true, approved: () => false, approve });
   const callbacks = { onSetupSaved: vi.fn(), onAddFiles: vi.fn(), onClose: vi.fn(), onBrief: vi.fn<(brief: string) => void>(), onOpenAdvanced: vi.fn() };
-  const props = { open: true, setup, ...callbacks, canRunAgent: true, agentGap: 'runtime' as const, ...options };
+  const props = { open: true, setup, ...callbacks, canRunAgent: true, ...options };
   const tree = (next: Parameters<typeof LibraryImportDialog>[0]) => <NextIntlClientProvider locale="ko" messages={messages}><LibraryImportDialog {...next} /></NextIntlClientProvider>;
   const view = render(tree(props));
   const replace = (next: Partial<Parameters<typeof LibraryImportDialog>[0]>) => view.rerender(tree({ ...props, ...next }));
