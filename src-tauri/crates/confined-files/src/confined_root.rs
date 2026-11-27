@@ -4,28 +4,13 @@
 use std::path::{Component, Path, PathBuf};
 
 /// Why a folder cannot be a vault root. The text is what the server prints, word for word.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum VaultRootError {
+    #[error("Vault root not found: {}", .0.display())]
     NotFound(PathBuf),
+    #[error("Vault root is not a directory: {}", .0.display())]
     NotADirectory(PathBuf),
 }
-
-impl std::fmt::Display for VaultRootError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NotFound(path) => write!(formatter, "Vault root not found: {}", path.display()),
-            Self::NotADirectory(path) => {
-                write!(
-                    formatter,
-                    "Vault root is not a directory: {}",
-                    path.display()
-                )
-            }
-        }
-    }
-}
-
-impl std::error::Error for VaultRootError {}
 
 /// Requires an existing directory; a folder with no frontmatter is an empty vault. A symbolic
 /// link is followed, as a person who linked their vault folder expects.

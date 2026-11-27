@@ -1,7 +1,8 @@
-//! How a scanning tool is allowed to look at a source root: which names are addressable, what a
-//! refusal says, and the questions a scan asks of a tree. [`crate::SnapshotSource`] answers them
-//! from a census the app supplied; [`crate::DiskSource`] answers them from the disk.
+//! How a scanning tool is allowed to look at a source root: what a refusal is, and the questions a
+//! scan asks of a tree. [`crate::SnapshotSource`] answers them from a census the app supplied;
+//! [`crate::DiskSource`] answers them from the disk.
 
+use std::borrow::Cow;
 use std::path::{Component, Path, PathBuf};
 
 use crate::confined_root::resolve_path;
@@ -48,26 +49,49 @@ pub struct DirectoryEntry {
     pub kind: EntryKind,
 }
 
+/// Why a read or a census entry was refused.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum Refusal {
+    #[error("invalid path")]
+    InvalidPath,
+    #[error("outside approved root")]
+    OutsideApprovedRoot,
+    #[error("snapshot entries are named relative to the root")]
+    AbsoluteSnapshotEntry,
+    #[error("private or hidden path")]
+    PrivateOrHiddenPath,
+    #[error("input deliberately excluded")]
+    DeliberatelyExcluded,
+    #[error("symlink")]
+    Symlink,
+    #[error("file bytes unavailable in snapshot")]
+    FileBytesUnavailable,
+    #[error("directory unavailable in snapshot")]
+    DirectoryUnavailable,
+    #[error("incomplete directory")]
+    IncompleteDirectory,
+    #[error("invalid snapshot entry")]
+    InvalidSnapshotEntry,
+    #[error("ambiguous snapshot entry")]
+    AmbiguousSnapshotEntry,
+    #[error("snapshot byte limit")]
+    SnapshotByteLimit,
+    #[error("file over the size limit")]
+    FileOverSizeLimit,
+}
+
 /// Why a read was not answered.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum SourceReadError {
-    /// The path is outside what a read may touch. The first refusal of a run also fails the run
-    /// as a whole, even if a caller swallows this error (see [`crate::SnapshotSource::finish`]).
-    Refused(String),
+    /// The path is outside what a read may touch. The first refusal of a snapshot run also fails
+    /// the run as a whole, even if a caller swallows this error (see
+    /// [`crate::SnapshotSource::finish`]).
+    #[error("source read refused: {0}")]
+    Refused(Refusal),
     /// Nothing is there (or, from a snapshot, the complete census lists nothing there).
+    #[error("nothing is at that path")]
     Absent,
 }
-
-impl std::fmt::Display for SourceReadError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Refused(reason) => write!(formatter, "Confined source read refused: {reason}"),
-            Self::Absent => formatter.write_str("Input absent from the complete snapshot"),
-        }
-    }
-}
-
-impl std::error::Error for SourceReadError {}
 
 impl SourceReadError {
     /// The error code a caller sees: `EACCES` for a refusal, `ENOENT` for an absence.
@@ -79,7 +103,8 @@ impl SourceReadError {
     }
 }
 
-/// The questions a scan asks of a source tree. Paths are absolute, below the tree's root.
+/// The questions a scan asks of a source tree. A path may be absolute or relative; a relative one
+/// is read below the tree's root, and any path that does not end up inside the root is refused.
 pub trait SourceFiles {
     /// The folder every path is below.
     fn root(&self) -> &Path;
@@ -90,34 +115,43 @@ pub trait SourceFiles {
     /// The kind of the path itself, a link being a link.
     fn link_kind(&self, path: &Path) -> Result<Option<EntryKind>, SourceReadError>;
 
-    /// The text of a regular file. A link is refused, whatever it points at.
-    fn read_text(&self, path: &Path) -> Result<String, SourceReadError>;
+    /// The text of a regular file, as Node's `readFileSync(path, 'utf8')` decodes it.
+    fn read_text(&self, path: &Path) -> Result<Cow<'_, str>, SourceReadError>;
 
     /// The names in a directory, in byte order of the name.
     fn list_directory(&self, path: &Path) -> Result<Vec<DirectoryEntry>, SourceReadError>;
 }
 
-/// `path` as the `/`-separated name below `root` (`.` for the root itself), or the refusal that
-/// names why it may not be touched: not a valid path, outside the root, hidden or named like a
-/// credential, or deliberately excluded. A relative path is taken as below `root`.
-pub(crate) fn address(
-    root: &Path,
-    excluded: &[String],
-    path: &Path,
-) -> Result<String, SourceReadError> {
-    let refuse = |reason: &str| Err(SourceReadError::Refused(reason.to_string()));
+/// `path` folded lexically against `root` (a relative path is taken below it) and checked to be
+/// `root` or below it: the parts of `path` below `root`. Refuses a path that holds a NUL or
+/// leaves the root.
+pub(crate) fn parts_below(root: &Path, path: &Path) -> Result<Vec<String>, Refusal> {
     if path.to_string_lossy().contains('\0') {
-        return refuse("invalid path");
+        return Err(Refusal::InvalidPath);
     }
     let resolved = resolve_path(root, path);
-    let Some(parts) = below(root, &resolved) else {
-        return refuse("outside approved root");
-    };
+    let relative = resolved
+        .strip_prefix(root)
+        .map_err(|_| Refusal::OutsideApprovedRoot)?;
+    Ok(relative
+        .components()
+        .filter_map(|part| match part {
+            Component::Normal(name) => Some(name.to_string_lossy().into_owned()),
+            _ => None,
+        })
+        .collect())
+}
+
+/// `path` as the `/`-separated name below `root` (`.` for the root itself), or the refusal that
+/// names why it may not be touched: not a valid path, outside the root, hidden or named like a
+/// credential, or deliberately excluded.
+pub(crate) fn address(root: &Path, excluded: &[String], path: &Path) -> Result<String, Refusal> {
+    let parts = parts_below(root, path)?;
     if parts
         .iter()
         .any(|part| is_hidden_name(part) || is_credential_name(part))
     {
-        return refuse("private or hidden path");
+        return Err(Refusal::PrivateOrHiddenPath);
     }
     let normalized = if parts.is_empty() {
         ".".to_string()
@@ -128,23 +162,9 @@ pub(crate) fn address(
         .iter()
         .any(|prefix| normalized == *prefix || normalized.starts_with(&format!("{prefix}/")))
     {
-        return refuse("input deliberately excluded");
+        return Err(Refusal::DeliberatelyExcluded);
     }
     Ok(normalized)
-}
-
-/// The parts of `path` below `root`, when it is `root` or below it.
-fn below(root: &Path, path: &Path) -> Option<Vec<String>> {
-    let relative = path.strip_prefix(root).ok()?;
-    Some(
-        relative
-            .components()
-            .filter_map(|part| match part {
-                Component::Normal(name) => Some(name.to_string_lossy().into_owned()),
-                _ => None,
-            })
-            .collect(),
-    )
 }
 
 /// The absolute path of a `/`-separated name below `root`.
@@ -162,43 +182,49 @@ pub(crate) fn absolute(root: &Path, name: &str) -> PathBuf {
 mod tests {
     use super::*;
 
-    fn refused(path: &str) -> String {
-        match address(Path::new("/repo"), &[], Path::new(path)) {
-            Err(SourceReadError::Refused(reason)) => reason,
-            other => panic!("{path}: {other:?}"),
-        }
+    fn refused(path: &str) -> Refusal {
+        address(Path::new("/repo"), &[], Path::new(path)).expect_err(path)
     }
 
     #[test]
     fn a_path_below_the_root_is_named_with_slashes() {
+        let root = Path::new("/repo");
         assert_eq!(
-            address(Path::new("/repo"), &[], Path::new("/repo/src/a.ts")).as_deref(),
+            address(root, &[], Path::new("/repo/src/a.ts")).as_deref(),
             Ok("src/a.ts")
         );
         assert_eq!(
-            address(Path::new("/repo"), &[], Path::new("/repo/src/../lib/b.ts")).as_deref(),
+            address(root, &[], Path::new("/repo/src/../lib/b.ts")).as_deref(),
             Ok("lib/b.ts")
         );
+        assert_eq!(address(root, &[], Path::new("/repo")).as_deref(), Ok("."));
         assert_eq!(
-            address(Path::new("/repo"), &[], Path::new("/repo")).as_deref(),
-            Ok(".")
-        );
-        assert_eq!(
-            address(Path::new("/repo"), &[], Path::new("src/a.ts")).as_deref(),
-            Ok("src/a.ts")
+            address(root, &[], Path::new("src/a.ts")).as_deref(),
+            Ok("src/a.ts"),
+            "a relative path is taken below the root"
         );
     }
 
     #[test]
-    fn every_way_out_of_the_root_has_its_own_refusal_text() {
-        assert_eq!(refused("/repo/../outside/x.ts"), "outside approved root");
-        assert_eq!(refused("/etc/passwd"), "outside approved root");
-        assert_eq!(refused("/repository/a.ts"), "outside approved root");
-        assert_eq!(refused("/repo/a\0b"), "invalid path");
-        assert_eq!(refused("/repo/.env"), "private or hidden path");
-        assert_eq!(refused("/repo/src/.git/config"), "private or hidden path");
-        assert_eq!(refused("/repo/keys/server.pem"), "private or hidden path");
-        assert_eq!(refused("/repo/secrets/a.ts"), "private or hidden path");
+    fn every_way_out_of_the_root_has_its_own_refusal() {
+        assert_eq!(
+            refused("/repo/../outside/x.ts"),
+            Refusal::OutsideApprovedRoot
+        );
+        assert_eq!(refused("/etc/passwd"), Refusal::OutsideApprovedRoot);
+        assert_eq!(refused("/repository/a.ts"), Refusal::OutsideApprovedRoot);
+        assert_eq!(refused("../a.ts"), Refusal::OutsideApprovedRoot);
+        assert_eq!(refused("/repo/a\0b"), Refusal::InvalidPath);
+        assert_eq!(refused("/repo/.env"), Refusal::PrivateOrHiddenPath);
+        assert_eq!(
+            refused("/repo/src/.git/config"),
+            Refusal::PrivateOrHiddenPath
+        );
+        assert_eq!(
+            refused("/repo/keys/server.pem"),
+            Refusal::PrivateOrHiddenPath
+        );
+        assert_eq!(refused("/repo/secrets/a.ts"), Refusal::PrivateOrHiddenPath);
     }
 
     #[test]
@@ -208,9 +234,7 @@ mod tests {
         for path in ["/repo/vendor", "/repo/vendor/lib/a.ts"] {
             assert_eq!(
                 address(root, &excluded, Path::new(path)),
-                Err(SourceReadError::Refused(
-                    "input deliberately excluded".to_string()
-                )),
+                Err(Refusal::DeliberatelyExcluded),
                 "{path}"
             );
         }
@@ -218,9 +242,9 @@ mod tests {
     }
 
     #[test]
-    fn the_refusal_reads_as_the_javascript_error_does() {
-        let error = SourceReadError::Refused("symlink".to_string());
-        assert_eq!(error.to_string(), "Confined source read refused: symlink");
+    fn a_refusal_reads_as_a_sentence_with_its_reason() {
+        let error = SourceReadError::Refused(Refusal::Symlink);
+        assert_eq!(error.to_string(), "source read refused: symlink");
         assert_eq!(error.code(), "EACCES");
         assert_eq!(SourceReadError::Absent.code(), "ENOENT");
     }

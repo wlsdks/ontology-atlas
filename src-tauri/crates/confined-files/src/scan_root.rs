@@ -5,7 +5,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::confined_root::resolve_path;
-use crate::real_paths::{is_within, real_path};
+use crate::real_paths::{is_within_folding_case, real_path};
 
 /// A folder a scanning tool may read, as a real path inside the vault or its repository. Only
 /// [`ScanRoots::allow`] builds one.
@@ -26,49 +26,48 @@ impl SourceRoot {
 
 /// A scan root that is neither the vault nor below it, nor the repository nor below it. The text
 /// is what the server prints; `argument` is the name of the argument the caller passed.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error(
+    "{argument} must be inside the vault ({}) or its repository ({}). \
+This server only reads the folder it was opened for.",
+    vault.display(),
+    repository.display()
+)]
 pub struct ScanRootRefused {
     pub argument: String,
     pub vault: PathBuf,
     pub repository: PathBuf,
 }
 
-impl std::fmt::Display for ScanRootRefused {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "{} must be inside the vault ({}) or its repository ({}). \
-This server only reads the folder it was opened for.",
-            self.argument,
-            self.vault.display(),
-            self.repository.display()
-        )
-    }
-}
-
-impl std::error::Error for ScanRootRefused {}
-
-/// The two folders a scan may stay inside.
+/// The two folders a scan may stay inside, resolved once against the folder the server started in.
 #[derive(Debug, Clone)]
 pub struct ScanRoots {
+    base: PathBuf,
     vault: PathBuf,
     repository: PathBuf,
 }
 
 impl ScanRoots {
-    pub fn new(vault: PathBuf, repository: PathBuf) -> Self {
-        Self { vault, repository }
+    /// Takes the process folder once; a relative `vault` or `repository` is resolved against it.
+    pub fn new(vault: PathBuf, repository: PathBuf) -> std::io::Result<Self> {
+        Ok(Self {
+            base: std::env::current_dir()?,
+            vault,
+            repository,
+        })
     }
 
     /// `target` as a real path when it is the vault, the repository or below one of them. A
     /// target that does not exist is compared as written (made absolute), so it is refused or
-    /// allowed by where it would be.
+    /// allowed by where it would be. Windows compares letters without regard to case here, as
+    /// the JavaScript server's `path.win32.relative` does.
     pub fn allow(&self, target: &Path, argument: &str) -> Result<SourceRoot, ScanRootRefused> {
-        let base = std::env::current_dir().unwrap_or_default();
-        let canonical = canonical_or_resolved(&base, target);
-        let vault = canonical_or_resolved(&base, &self.vault);
-        let repository = canonical_or_resolved(&base, &self.repository);
-        if is_within(&vault, &canonical) || is_within(&repository, &canonical) {
+        let canonical = canonical_or_resolved(&self.base, target);
+        let vault = canonical_or_resolved(&self.base, &self.vault);
+        let repository = canonical_or_resolved(&self.base, &self.repository);
+        if is_within_folding_case(&vault, &canonical)
+            || is_within_folding_case(&repository, &canonical)
+        {
             return Ok(SourceRoot::new(canonical));
         }
         Err(ScanRootRefused {
@@ -107,7 +106,7 @@ mod tests {
     #[test]
     fn the_vault_the_repository_and_folders_below_them_are_allowed() {
         let (_directory, repo, vault) = folders();
-        let roots = ScanRoots::new(vault.clone(), repo.clone());
+        let roots = ScanRoots::new(vault.clone(), repo.clone()).expect("roots");
         std::fs::create_dir_all(repo.join("src/lib")).expect("src");
         for target in [
             &vault,
@@ -135,7 +134,7 @@ mod tests {
     #[test]
     fn a_folder_elsewhere_is_refused_in_the_servers_words() {
         let (directory, repo, vault) = folders();
-        let roots = ScanRoots::new(vault.clone(), repo.clone());
+        let roots = ScanRoots::new(vault.clone(), repo.clone()).expect("roots");
         let elsewhere = real_path(directory.path()).expect("real").join("elsewhere");
         let refused = roots.allow(&elsewhere, "sourcePath").expect_err("refused");
         assert_eq!(
@@ -158,7 +157,7 @@ This server only reads the folder it was opened for.",
     #[test]
     fn a_sibling_whose_name_starts_like_the_repository_is_not_inside_it() {
         let (directory, repo, vault) = folders();
-        let roots = ScanRoots::new(vault, repo.clone());
+        let roots = ScanRoots::new(vault, repo.clone()).expect("roots");
         let sibling = real_path(directory.path())
             .expect("real")
             .join("repo-backup");
@@ -169,7 +168,7 @@ This server only reads the folder it was opened for.",
     #[test]
     fn a_link_inside_the_repository_that_leads_out_is_judged_by_where_it_leads() {
         let (directory, repo, vault) = folders();
-        let roots = ScanRoots::new(vault, repo.clone());
+        let roots = ScanRoots::new(vault, repo.clone()).expect("roots");
         let elsewhere = real_path(directory.path()).expect("real").join("elsewhere");
         symlink(&elsewhere, repo.join("shortcut")).expect("link");
         assert!(roots.allow(&repo.join("shortcut"), "rootPath").is_err());

@@ -1,21 +1,53 @@
 //! What a slug may name before any path is built from it: the vault's raw-source folder and the
-//! names a write tool never creates, edits or deletes. The sentences are the ones an agent reads.
+//! names a write tool never creates, edits or deletes. A refusal is a typed reason; the sentence an
+//! agent reads is the server's to write (`crate::agent_text` holds the JavaScript server's).
+
+use std::sync::OnceLock;
 
 use icu_normalizer::ComposingNormalizerBorrowed;
 use regex::Regex;
-use std::sync::OnceLock;
 
 /// The vault folder of raw sources: every file below it is a source, never a node.
 pub const VAULT_SOURCES_DIR: &str = "sources";
 
-/// Instruction files that coding agents load; compared after NFKC and lower-casing.
-const AGENT_INSTRUCTION_FILE_STEMS: [&str; 5] = [
+/// Instruction files that coding agents load, compared after NFKC and lower-casing. The
+/// `agent-instruction-files` contract test holds this list to the classifier the app uses.
+pub const AGENT_INSTRUCTION_FILE_STEMS: [&str; 5] = [
     "agents",
     "agents.override",
     "claude",
     "claude.local",
     "gemini",
 ];
+
+/// Why a write tool may not create, edit or delete the file a slug names.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum UnwritableReason {
+    /// A control or invisible formatting character, which can break a line or disguise which
+    /// file is meant.
+    #[error("the slug contains U+{code_point:04X}, a control or invisible formatting character")]
+    InvisibleCharacter { code_point: u32 },
+    /// A segment ending like a Windows short file name (`~1`), which on Windows can open a
+    /// different file.
+    #[error("the segment {segment:?} ends like a Windows short file name")]
+    ShortFileName { segment: String },
+    /// A segment starting with `.`: hidden folders hold agent and tool configuration.
+    #[error("the segment {segment:?} starts with a dot")]
+    HiddenSegment { segment: String },
+    /// A segment with a colon, which on Windows names a data stream of another file (`a.md:x`)
+    /// or a drive. Only refused on Windows, where it can change the bytes of a file the slug
+    /// does not name.
+    #[error(
+        "the segment {segment:?} has a colon, which on Windows names a data stream or a drive"
+    )]
+    ColonInSegment { segment: String },
+    /// A file coding agents load as their instructions, in any letter case.
+    #[error("{file_name}.md is a file coding agents load as their instructions")]
+    AgentInstructionFile { file_name: String },
+    /// The vault README, which a write tool never authors.
+    #[error("the slug is the vault README")]
+    VaultReadme,
+}
 
 fn invisible_character() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
@@ -30,54 +62,17 @@ pub fn is_vault_source_path(relative_path: &str) -> bool {
     relative_path.starts_with("sources/")
 }
 
-/// The raw file a source slug names: the slug itself when it has an extension, else `<slug>.md`.
-fn raw_source_file_for_slug(slug: &str) -> String {
+/// The raw file a source slug names: the slug itself when its last part has an extension, else
+/// `<slug>.md`.
+pub fn raw_source_file_for_slug(slug: &str) -> String {
     let last = slug.rsplit('/').next().unwrap_or(slug);
-    let has_extension = last.rfind('.').is_some_and(|dot| {
-        // `/\.[^/.]+$/` needs at least one character after the last dot.
-        dot + 1 < last.len()
-    });
+    // `/\.[^/.]+$/` needs at least one character after the last dot of the last part.
+    let has_extension = last.rfind('.').is_some_and(|dot| dot + 1 < last.len());
     if has_extension {
         slug.to_string()
     } else {
         format!("{slug}.md")
     }
-}
-
-/// Why a slug under `sources/` is refused, or `None` for any other slug.
-pub fn raw_source_slug_issue(slug: &str) -> Option<String> {
-    if !is_vault_source_path(slug) {
-        return None;
-    }
-    Some(format!(
-        "slug \"{slug}\" must not name a file under {VAULT_SOURCES_DIR}/: every file there is a raw source, never a node. \
-Write or move a node into a kind folder such as domains/ or capabilities/, \
-and read the source with read_source({{ path: \"{}\" }}).",
-        raw_source_file_for_slug(slug)
-    ))
-}
-
-/// JavaScript's `JSON.stringify` of a string, for the one place the sentence quotes a slug that way.
-fn json_string(text: &str) -> String {
-    let mut out = String::with_capacity(text.len() + 2);
-    out.push('"');
-    for character in text.chars() {
-        match character {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\u{8}' => out.push_str("\\b"),
-            '\u{c}' => out.push_str("\\f"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            control if (control as u32) < 0x20 => {
-                out.push_str(&format!("\\u{:04x}", control as u32));
-            }
-            other => out.push(other),
-        }
-    }
-    out.push('"');
-    out
 }
 
 fn ends_like_short_file_name(segment: &str) -> bool {
@@ -100,49 +95,40 @@ fn nfkc_lowercase(text: &str) -> String {
 /// Why a write tool may not create, edit or delete the file `slug` names, or `None` when it may:
 /// an invisible character, a Windows short-name ending, a hidden segment, an agent instruction
 /// file in any letter case, or the vault README.
-pub fn unwritable_slug_issue(slug: &str) -> Option<String> {
+pub fn unwritable_slug_reason(slug: &str) -> Option<UnwritableReason> {
     if let Some(found) = invisible_character().find(slug) {
         let code_point = found.as_str().chars().next().map_or(0, u32::from);
-        return Some(format!(
-            "slug {} contains U+{code_point:04X}, a control or invisible formatting character, and a write \
-tool never names one: it can break a line or disguise which file is meant. Type the slug in visible characters only.",
-            json_string(slug)
-        ));
+        return Some(UnwritableReason::InvisibleCharacter { code_point });
     }
     let segments: Vec<&str> = slug.split(['\\', '/']).collect();
-    if let Some(short_name) = segments
+    if let Some(segment) = segments
         .iter()
         .find(|segment| ends_like_short_file_name(segment))
     {
-        return Some(format!(
-            "slug \"{slug}\" has the segment \"{short_name}\", which ends like a Windows short file name (\"~1\"), and a write \
-tool never names one: on Windows it can open a different file. Drop the \"~<number>\" ending."
-        ));
+        return Some(UnwritableReason::ShortFileName {
+            segment: (*segment).to_string(),
+        });
     }
-    if let Some(hidden) = segments.iter().find(|segment| segment.starts_with('.')) {
-        return Some(format!(
-            "slug \"{slug}\" has the path segment \"{hidden}\", and a write tool never names a segment that starts with \".\": \
-hidden folders such as .claude, .agents, .codex, .github and .git hold agent and tool configuration, \
-and the vault never reads them as nodes. Use a slug without a leading-dot segment, such as \"capabilities/<name>\"."
-        ));
+    if let Some(segment) = segments.iter().find(|segment| segment.starts_with('.')) {
+        return Some(UnwritableReason::HiddenSegment {
+            segment: (*segment).to_string(),
+        });
+    }
+    if cfg!(windows) {
+        if let Some(segment) = segments.iter().find(|segment| segment.contains(':')) {
+            return Some(UnwritableReason::ColonInSegment {
+                segment: (*segment).to_string(),
+            });
+        }
     }
     let last = segments.last().copied().unwrap_or("");
     let stem = nfkc_lowercase(last);
     if AGENT_INSTRUCTION_FILE_STEMS.contains(&stem.as_str()) {
-        return Some(format!(
-            "slug \"{slug}\" names {last}.md, a file coding agents load as their instructions \
-(AGENTS.md, AGENTS.override.md, CLAUDE.md, CLAUDE.local.md or GEMINI.md, in any letter case, because macOS \
-and Windows open those as one file). A write tool never creates, edits or deletes one; a person edits it by hand. \
-Name the node for what it means instead, such as \"domains/agent-runtime\"."
-        ));
+        return Some(UnwritableReason::AgentInstructionFile {
+            file_name: last.to_string(),
+        });
     }
-    if segments.len() == 1 && stem == "readme" {
-        return Some(format!(
-            "slug \"{slug}\" is the vault README (kind vault-readme), which a write tool never authors. \
-Write the overview as a document node instead, such as \"overview\"."
-        ));
-    }
-    None
+    (segments.len() == 1 && stem == "readme").then_some(UnwritableReason::VaultReadme)
 }
 
 #[cfg(test)]
@@ -151,43 +137,77 @@ mod tests {
 
     #[test]
     fn a_source_slug_is_named_with_the_raw_file_to_read_instead() {
-        assert_eq!(raw_source_slug_issue("domains/auth"), None);
-        assert_eq!(raw_source_slug_issue("sources"), None);
-        let issue = raw_source_slug_issue("sources/notes/a").expect("refused");
-        assert!(issue.starts_with(
-            "slug \"sources/notes/a\" must not name a file under sources/: every file there is a raw source, never a node."
-        ));
-        assert!(issue.ends_with("read_source({ path: \"sources/notes/a.md\" })."));
-        let with_extension = raw_source_slug_issue("sources/data.json").expect("refused");
-        assert!(with_extension.ends_with("read_source({ path: \"sources/data.json\" })."));
-        let trailing_dot = raw_source_slug_issue("sources/a.").expect("refused");
-        assert!(trailing_dot.ends_with("read_source({ path: \"sources/a..md\" })."));
+        assert_eq!(
+            raw_source_file_for_slug("sources/notes/a"),
+            "sources/notes/a.md"
+        );
+        assert_eq!(
+            raw_source_file_for_slug("sources/data.json"),
+            "sources/data.json"
+        );
+        assert_eq!(raw_source_file_for_slug("sources/a."), "sources/a..md");
+        assert_eq!(
+            raw_source_file_for_slug("sources/a.b/c"),
+            "sources/a.b/c.md"
+        );
+        assert!(is_vault_source_path("sources/a"));
+        assert!(!is_vault_source_path("sources"));
+        assert!(!is_vault_source_path("domains/auth"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_colon_is_refused_on_windows_where_it_names_a_data_stream() {
+        for slug in ["a.md:stream", "notes/a:b", "C:notes"] {
+            assert!(
+                matches!(
+                    unwritable_slug_reason(slug),
+                    Some(UnwritableReason::ColonInSegment { .. })
+                ),
+                "{slug}"
+            );
+        }
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn a_colon_is_a_plain_character_off_windows() {
+        assert_eq!(unwritable_slug_reason("notes/a:b"), None);
     }
 
     #[test]
-    fn invisible_characters_are_named_by_code_point_and_quoted_as_json() {
-        let issue = unwritable_slug_issue("a\u{202e}b").expect("refused");
-        assert!(issue.starts_with("slug \"a\u{202e}b\" contains U+202E, "));
-        let tab = unwritable_slug_issue("a\tb").expect("refused");
-        assert!(tab.starts_with("slug \"a\\tb\" contains U+0009, "));
-        let line_separator = unwritable_slug_issue("a\u{2028}b").expect("refused");
-        assert!(line_separator.contains("U+2028"));
-        assert_eq!(unwritable_slug_issue("domains/\u{d55c}\u{ae00}"), None);
+    fn invisible_characters_are_named_by_code_point() {
+        assert_eq!(
+            unwritable_slug_reason("a\u{202e}b"),
+            Some(UnwritableReason::InvisibleCharacter { code_point: 0x202e })
+        );
+        assert_eq!(
+            unwritable_slug_reason("a\tb"),
+            Some(UnwritableReason::InvisibleCharacter { code_point: 9 })
+        );
+        assert!(matches!(
+            unwritable_slug_reason("a\u{2028}b"),
+            Some(UnwritableReason::InvisibleCharacter { code_point: 0x2028 })
+        ));
+        assert_eq!(unwritable_slug_reason("domains/\u{d55c}\u{ae00}"), None);
     }
 
     #[test]
     fn a_short_name_ending_hidden_segment_and_instruction_file_are_refused() {
-        assert!(unwritable_slug_issue("docs/PROGRA~1")
-            .expect("short")
-            .contains("ends like a Windows short file name"));
-        assert_eq!(unwritable_slug_issue("docs/a~"), None);
-        assert_eq!(unwritable_slug_issue("docs/a~x1"), None);
-        assert!(unwritable_slug_issue(".claude/rules")
-            .expect("hidden")
-            .contains("the path segment \".claude\""));
-        assert!(unwritable_slug_issue("docs/.git/x")
-            .expect("hidden")
-            .contains("\".git\""));
+        assert_eq!(
+            unwritable_slug_reason("docs/PROGRA~1"),
+            Some(UnwritableReason::ShortFileName {
+                segment: "PROGRA~1".to_string()
+            })
+        );
+        assert_eq!(unwritable_slug_reason("docs/a~"), None);
+        assert_eq!(unwritable_slug_reason("docs/a~x1"), None);
+        assert_eq!(
+            unwritable_slug_reason(".claude/rules"),
+            Some(UnwritableReason::HiddenSegment {
+                segment: ".claude".to_string()
+            })
+        );
         for slug in [
             "AGENTS",
             "docs/claude",
@@ -198,16 +218,18 @@ mod tests {
             "\u{ff21}\u{ff27}\u{ff25}\u{ff2e}\u{ff34}\u{ff33}",
         ] {
             assert!(
-                unwritable_slug_issue(slug)
-                    .expect(slug)
-                    .contains("coding agents load as their instructions"),
+                matches!(
+                    unwritable_slug_reason(slug),
+                    Some(UnwritableReason::AgentInstructionFile { .. })
+                ),
                 "{slug}"
             );
         }
-        assert!(unwritable_slug_issue("README")
-            .expect("readme")
-            .contains("is the vault README"));
-        assert_eq!(unwritable_slug_issue("docs/README"), None);
-        assert_eq!(unwritable_slug_issue("capabilities/read-vault"), None);
+        assert_eq!(
+            unwritable_slug_reason("README"),
+            Some(UnwritableReason::VaultReadme)
+        );
+        assert_eq!(unwritable_slug_reason("docs/README"), None);
+        assert_eq!(unwritable_slug_reason("capabilities/read-vault"), None);
     }
 }

@@ -3,8 +3,9 @@
 //! original bytes back. Not crash-safe, hence not "atomic": that needs a journal, and the vault is
 //! Git.
 //!
-//! The caller checks what only it can know before applying: that no target carries a reservation
-//! for a person (`review_state: human_decides`), and it forgets any cached parse of a file when
+//! A plan never rewrites a file reserved for a person (`review_state: human_decides`): the
+//! caller states how a reservation is read ([`Reservations`]), because only the frontmatter
+//! parser knows. The caller forgets any cached parse of a file when
 //! [`WriteError::ChangedOnDisk`] or [`WriteError::Conflict`] names it.
 
 use std::collections::HashSet;
@@ -15,6 +16,7 @@ use crate::atomic_write::{
     file_holds_text, modified_time_of, write_atomically, AtomicWrite, Expectation, WriteError,
 };
 use crate::modified_time::ModifiedTime;
+use crate::os_error::{IoFailure, OsErrorCode};
 use crate::real_paths::real_path;
 use crate::vault_root::WritablePath;
 
@@ -99,13 +101,55 @@ impl PlanEntry {
     }
 }
 
+/// A file reserved for a person: a plan that would rewrite it is refused.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error(
+    "Refused: {slug} carries review_state: human_decides, so it is reserved for a person \
+and this change would rewrite it.{}",
+    note.as_ref().map(|text| format!(" What they have to decide: {text}")).unwrap_or_default()
+)]
+pub struct ReservedForPerson {
+    /// The file's own `slug`, or its path when it has none.
+    pub slug: String,
+    pub note: Option<String>,
+}
+
+/// How a plan treats a file reserved for a person. A required choice of every plan: a tool that
+/// rewrites several files (rename, reclassify, merge touch backlinks nobody named) cannot forget
+/// the check.
+pub enum Reservations<'a> {
+    /// Refuse a plan that touches a reserved file. The reader gets the path and the current text
+    /// of every target that exists, and returns the reservation it finds in that text, or `None`
+    /// when there is none, the text does not parse, or the file is only being created.
+    Refuse(&'a dyn Fn(&Path, &str) -> Option<ReservedForPerson>),
+    /// The one tool that releases a reservation may rewrite reserved files.
+    AllowReserved,
+}
+
 /// How a plan is applied.
-#[derive(Default)]
 pub struct ApplyOptions<'a> {
+    pub reservations: Reservations<'a>,
     /// Refuse an entry that carries no snapshot of what it replaces.
     pub require_revisions: bool,
     /// Runs before each entry, with its index; a test parks a racing edit here.
+    #[cfg(feature = "test-hooks")]
     pub before_entry: Option<&'a dyn Fn(usize)>,
+}
+
+impl<'a> ApplyOptions<'a> {
+    pub fn new(reservations: Reservations<'a>) -> Self {
+        Self {
+            reservations,
+            require_revisions: false,
+            #[cfg(feature = "test-hooks")]
+            before_entry: None,
+        }
+    }
+
+    pub fn requiring_revisions(mut self) -> Self {
+        self.require_revisions = true;
+        self
+    }
 }
 
 /// What an applied plan did.
@@ -134,6 +178,16 @@ pub fn apply_all_or_nothing(
     if plan.is_empty() {
         return Ok(Applied { steps: 0 });
     }
+    if let Reservations::Refuse(reservation_of) = &options.reservations {
+        for entry in &plan {
+            if let Ok(bytes) = std::fs::read(entry.path()) {
+                let text = String::from_utf8_lossy(&bytes);
+                if let Some(reserved) = reservation_of(entry.path(), &text) {
+                    return Err(WriteError::Reserved(reserved));
+                }
+            }
+        }
+    }
     let plan = without_deletes_of_written_files(plan);
     if options.require_revisions {
         let missing: Vec<PathBuf> = plan
@@ -155,7 +209,7 @@ pub fn apply_all_or_nothing(
         return Err(WriteError::ChangedOnDisk(conflicts));
     }
     refuse_unwritable(&plan)?;
-    apply_with_rollback(&plan, options)
+    apply_with_rollback(plan, options)
 }
 
 /// A plan that writes then deletes one file drops the delete: a case-only rename (write
@@ -195,7 +249,7 @@ fn lacks_revision(entry: &PlanEntry) -> bool {
 }
 
 fn refuse_unwritable(plan: &[PlanEntry]) -> Result<(), WriteError> {
-    let mut blocked: Vec<(PathBuf, &'static str)> = Vec::new();
+    let mut blocked: Vec<(PathBuf, OsErrorCode)> = Vec::new();
     for entry in plan {
         let path = entry.path();
         let checks = || -> io::Result<()> {
@@ -213,7 +267,7 @@ fn refuse_unwritable(plan: &[PlanEntry]) -> Result<(), WriteError> {
             Ok(())
         };
         if let Err(error) = checks() {
-            blocked.push((path.to_path_buf(), error_code(&error)));
+            blocked.push((path.to_path_buf(), OsErrorCode::of(&error)));
         }
     }
     if blocked.is_empty() {
@@ -238,53 +292,30 @@ fn nearest_existing_parent(path: &Path) -> PathBuf {
     }
 }
 
+/// `access(2)` with `W_OK`, through a safe binding: it asks the kernel about the real user, so
+/// it sees what a read-only mount or an access list says and a mode bit does not.
 #[cfg(unix)]
 fn check_writable(path: &Path) -> io::Result<()> {
-    use std::os::unix::ffi::OsStrExt;
-    let name = std::ffi::CString::new(path.as_os_str().as_bytes())
-        .map_err(|_| io::Error::from(io::ErrorKind::InvalidInput))?;
-    // SAFETY: `name` is a NUL-terminated string that outlives the call, and `access` only reads it.
-    let status = unsafe { libc::access(name.as_ptr(), libc::W_OK) };
-    if status == 0 {
-        Ok(())
-    } else {
-        Err(io::Error::last_os_error())
-    }
+    rustix::fs::access(path, rustix::fs::Access::WRITE_OK).map_err(io::Error::from)
 }
 
-/// Windows has the read-only attribute and nothing else to ask without opening the file.
+/// Windows has the read-only attribute and nothing else to ask without opening the file. A
+/// folder's attribute does not stop a file being created in it, so a folder always passes, as
+/// `accessSync` says.
 #[cfg(windows)]
 fn check_writable(path: &Path) -> io::Result<()> {
-    if std::fs::metadata(path)?.permissions().readonly() {
+    let metadata = std::fs::metadata(path)?;
+    if !metadata.is_dir() && metadata.permissions().readonly() {
         Err(io::Error::from(io::ErrorKind::PermissionDenied))
     } else {
         Ok(())
     }
 }
 
-/// The error name JavaScript shows for the failures a permission check meets.
-fn error_code(error: &io::Error) -> &'static str {
-    #[cfg(unix)]
-    match error.raw_os_error() {
-        Some(libc::EPERM) => return "EPERM",
-        Some(libc::ENOENT) => return "ENOENT",
-        Some(libc::EROFS) => return "EROFS",
-        Some(libc::ENOTDIR) => return "ENOTDIR",
-        Some(libc::ELOOP) => return "ELOOP",
-        Some(libc::ENAMETOOLONG) => return "ENAMETOOLONG",
-        _ => {}
-    }
-    match error.kind() {
-        io::ErrorKind::NotFound => "ENOENT",
-        _ if cfg!(windows) => "EPERM",
-        _ => "EACCES",
-    }
-}
-
 /// Creates missing folders one level at a time, only during the real apply: an `AlreadyExists`
 /// per level tells a folder another process raced in from one we own, so a rollback removes only
 /// ours.
-fn create_missing_parents(path: &Path, created: &mut Vec<PathBuf>) -> io::Result<()> {
+fn create_missing_parents(path: &Path, created: &mut Vec<PathBuf>) -> Result<(), WriteError> {
     let mut missing: Vec<PathBuf> = Vec::new();
     let mut probe = path.parent().map(Path::to_path_buf).unwrap_or_default();
     while !probe.as_os_str().is_empty() && !probe.exists() {
@@ -298,27 +329,31 @@ fn create_missing_parents(path: &Path, created: &mut Vec<PathBuf>) -> io::Result
         match std::fs::create_dir(&folder) {
             Ok(()) => created.push(folder),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
-            Err(error) => return Err(error),
+            Err(error) => return Err(WriteError::io("mkdir", &folder)(error)),
         }
     }
     Ok(())
 }
 
-fn read_text_lossy(path: &Path) -> io::Result<String> {
-    Ok(String::from_utf8_lossy(&std::fs::read(path)?).into_owned())
+fn read_text_lossy(path: &Path) -> Result<String, WriteError> {
+    let bytes = std::fs::read(path).map_err(WriteError::io("read", path))?;
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
 fn apply_with_rollback(
-    plan: &[PlanEntry],
+    plan: Vec<PlanEntry>,
     options: &ApplyOptions<'_>,
 ) -> Result<Applied, WriteError> {
     let mut done: Vec<Step> = Vec::new();
     let mut created_folders: Vec<PathBuf> = Vec::new();
     let outcome = (|| -> Result<(), WriteError> {
-        for (index, entry) in plan.iter().enumerate() {
+        for (index, entry) in plan.into_iter().enumerate() {
+            #[cfg(feature = "test-hooks")]
             if let Some(before_entry) = options.before_entry {
                 before_entry(index);
             }
+            #[cfg(not(feature = "test-hooks"))]
+            let _ = (index, options);
             if entry.changed_on_disk() {
                 return Err(WriteError::ChangedOnDisk(vec![entry.path().to_path_buf()]));
             }
@@ -328,41 +363,41 @@ fn apply_with_rollback(
             } else {
                 None
             };
-            match &entry.operation {
+            match entry.operation {
                 PlannedOperation::Write { content } => {
-                    create_missing_parents(entry.path(), &mut created_folders)?;
-                    let expectation = match &before {
-                        Some(text) => Expectation::Text(text.clone()),
+                    create_missing_parents(entry.path.as_path(), &mut created_folders)?;
+                    let expectation = match before.as_deref() {
+                        Some(text) => Expectation::Text(text),
                         None => Expectation::Absent,
                     };
                     write_atomically(
                         &entry.path,
-                        content,
+                        &content,
                         &AtomicWrite {
                             expectation,
                             ..AtomicWrite::default()
                         },
                     )?;
                     done.push(Step {
-                        path: entry.path.clone(),
-                        operation: StepKind::Write {
-                            after: content.clone(),
-                        },
+                        path: entry.path,
+                        operation: StepKind::Write { after: content },
                         existed,
                         before,
                     });
                 }
                 PlannedOperation::Delete => {
                     if let Some(text) = &before {
-                        if !file_holds_text(entry.path(), text) {
+                        if !file_holds_text(entry.path.as_path(), text) {
                             return Err(WriteError::ChangedOnDisk(vec![entry
-                                .path()
+                                .path
+                                .as_path()
                                 .to_path_buf()]));
                         }
-                        std::fs::remove_file(entry.path())?;
+                        std::fs::remove_file(entry.path.as_path())
+                            .map_err(WriteError::io("unlink", entry.path.as_path()))?;
                     }
                     done.push(Step {
-                        path: entry.path.clone(),
+                        path: entry.path,
                         operation: StepKind::Delete,
                         existed,
                         before,
@@ -374,15 +409,14 @@ fn apply_with_rollback(
     })();
     match outcome {
         Ok(()) => Ok(Applied { steps: done.len() }),
-        Err(error) => Err(roll_back(done, created_folders, &error)),
+        Err(error) => Err(roll_back(done, created_folders, error)),
     }
 }
 
-fn roll_back(done: Vec<Step>, created_folders: Vec<PathBuf>, cause: &WriteError) -> WriteError {
+fn roll_back(done: Vec<Step>, created_folders: Vec<PathBuf>, cause: WriteError) -> WriteError {
     let mut unrecovered: Vec<PathBuf> = Vec::new();
     for step in done.into_iter().rev() {
-        let restored = restore_step(&step);
-        if restored.is_err() {
+        if restore_step(&step).is_err() {
             unrecovered.push(step.path.as_path().to_path_buf());
         }
     }
@@ -393,14 +427,11 @@ fn roll_back(done: Vec<Step>, created_folders: Vec<PathBuf>, cause: &WriteError)
             }
         }
     }
-    let reason = cause.to_string();
+    let cause = Box::new(cause);
     if unrecovered.is_empty() {
-        WriteError::RolledBack { reason }
+        WriteError::RolledBack { cause }
     } else {
-        WriteError::Inconsistent {
-            reason,
-            unrecovered,
-        }
+        WriteError::Inconsistent { cause, unrecovered }
     }
 }
 
@@ -414,9 +445,10 @@ fn restore_step(step: &Step) -> Result<(), WriteError> {
                 return refuse();
             }
             if let (true, Some(before)) = (step.existed, &step.before) {
-                put_back(&step.path, before, Expectation::Text(after.clone()))
+                put_back(&step.path, before, Expectation::Text(after))
             } else if path.exists() {
-                std::fs::remove_file(path).map_err(WriteError::from)
+                std::fs::remove_file(path)
+                    .map_err(|source| WriteError::Io(IoFailure::new("unlink", path, source)))
             } else {
                 Ok(())
             }
@@ -436,7 +468,11 @@ fn restore_step(step: &Step) -> Result<(), WriteError> {
     }
 }
 
-fn put_back(target: &WritablePath, text: &str, expectation: Expectation) -> Result<(), WriteError> {
+fn put_back(
+    target: &WritablePath,
+    text: &str,
+    expectation: Expectation<'_>,
+) -> Result<(), WriteError> {
     write_atomically(
         target,
         text,

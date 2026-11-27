@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::slug_rules::VAULT_SOURCES_DIR;
+use crate::vault_root::ConfinedPath;
 
 const SKIPPED_FOLDERS: [&str; 7] = [
     "node_modules",
@@ -31,7 +32,7 @@ pub fn utf16_order(left: &str, right: &str) -> Ordering {
 /// error, as the file below it cannot be named anyway. Directory order differs between file
 /// systems, and every consumer (the document cache, the breadth-first path search, list order)
 /// inherits this order, so it is fixed here once.
-pub fn list_markdown_files(root: &Path) -> Vec<PathBuf> {
+pub(crate) fn list_markdown_files(root: &Path) -> Vec<ConfinedPath> {
     let mut found: Vec<PathBuf> = WalkDir::new(root)
         .follow_links(false)
         .into_iter()
@@ -42,7 +43,7 @@ pub fn list_markdown_files(root: &Path) -> Vec<PathBuf> {
         .map(walkdir::DirEntry::into_path)
         .collect();
     found.sort_by(|left, right| utf16_order(&left.to_string_lossy(), &right.to_string_lossy()));
-    found
+    found.into_iter().map(ConfinedPath::new).collect()
 }
 
 fn keeps_entry(entry: &walkdir::DirEntry) -> bool {

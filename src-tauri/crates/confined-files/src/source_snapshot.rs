@@ -3,18 +3,19 @@
 //! link planted since, changes nothing; every question it asked is recorded, so the answer can
 //! say which bytes it stood on.
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use serde::Serialize;
-use serde_json::Value;
+use serde::de::{self, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::confined_root::resolve_path;
 use crate::source_access::{
-    absolute, address, DirectoryEntry, EntryKind, SourceFiles, SourceReadError,
+    absolute, address, DirectoryEntry, EntryKind, Refusal, SourceFiles, SourceReadError,
 };
 
 pub const SNAPSHOT_CONTRACT: &str = "confinedSourceSnapshot:v1";
@@ -30,41 +31,123 @@ pub const MAX_TRANSPORT_BYTES: u64 = 64 * 1024 * 1024;
 pub const SNAPSHOT_DESCRIPTOR: i32 = 198;
 
 /// Why a census could not be used. The text is what the server prints.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum SnapshotError {
     /// The census is not the expected contract, is truncated, or is not the expected shape.
+    #[error("source snapshot is incomplete")]
     Incomplete,
     /// The descriptor is missing, or is not the agreed number.
+    #[error("source snapshot descriptor is unavailable")]
     DescriptorUnavailable,
     /// The descriptor holds more than [`MAX_TRANSPORT_BYTES`].
+    #[error("source snapshot exceeds its transport limit")]
     TooLargeToTransport,
     /// The census was taken of another folder than the one asked about.
+    #[error("source snapshot was taken of another folder")]
     RootMismatch,
     /// An entry or a read broke a rule; the first reason of a run is the run's.
-    Refused(String),
+    #[error("source read refused: {0}")]
+    Refused(Refusal),
 }
 
-impl std::fmt::Display for SnapshotError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Incomplete => formatter.write_str("Confined source snapshot is incomplete"),
-            Self::DescriptorUnavailable => {
-                formatter.write_str("Confined source snapshot descriptor is unavailable")
-            }
-            Self::TooLargeToTransport => {
-                formatter.write_str("Confined source snapshot exceeds its transport limit")
-            }
-            Self::RootMismatch => formatter.write_str("Confined source snapshot root mismatch"),
-            Self::Refused(reason) => write!(formatter, "Confined source read refused: {reason}"),
+/// A string where JavaScript has `typeof x === 'string'`: any other JSON value is `None`, not an
+/// error, so the census checks reject it by name instead of the whole parse failing.
+fn lenient_string<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<String>, D::Error> {
+    struct Lenient;
+    impl<'de> Visitor<'de> for Lenient {
+        type Value = Option<String>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("any JSON value")
         }
+
+        fn visit_str<E: de::Error>(self, text: &str) -> Result<Self::Value, E> {
+            Ok(Some(text.to_string()))
+        }
+
+        fn visit_string<E: de::Error>(self, text: String) -> Result<Self::Value, E> {
+            Ok(Some(text))
+        }
+
+        fn visit_bool<E: de::Error>(self, _: bool) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_i64<E: de::Error>(self, _: i64) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_u64<E: de::Error>(self, _: u64) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_f64<E: de::Error>(self, _: f64) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_none<E: de::Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+            while seq.next_element::<de::IgnoredAny>()?.is_some() {}
+            Ok(None)
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+            while map
+                .next_entry::<de::IgnoredAny, de::IgnoredAny>()?
+                .is_some()
+            {}
+            Ok(None)
+        }
+    }
+    deserializer.deserialize_any(Lenient)
+}
+
+/// A census as the app writes it. Text is read straight into the strings the census keeps.
+#[derive(Deserialize)]
+struct Census {
+    #[serde(default, deserialize_with = "lenient_string")]
+    contract: Option<String>,
+    #[serde(default, rename = "rootPath", deserialize_with = "lenient_string")]
+    root_path: Option<String>,
+    entries: Vec<CensusEntry>,
+    /// JavaScript truthiness decides: only `false`, `null`, `0` and `""` are complete.
+    #[serde(default)]
+    truncated: serde_json::Value,
+    #[serde(default)]
+    excluded: Option<Vec<String>>,
+}
+
+#[derive(Deserialize)]
+struct CensusEntry {
+    #[serde(default, deserialize_with = "lenient_string")]
+    path: Option<String>,
+    #[serde(default, deserialize_with = "lenient_string")]
+    kind: Option<String>,
+    #[serde(default, deserialize_with = "lenient_string")]
+    text: Option<String>,
+    #[serde(default)]
+    children: Option<Vec<String>>,
+}
+
+fn is_truthy(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::Null => false,
+        serde_json::Value::Bool(flag) => *flag,
+        serde_json::Value::Number(number) => number.as_f64().is_some_and(|found| found != 0.0),
+        serde_json::Value::String(text) => !text.is_empty(),
+        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
     }
 }
 
-impl std::error::Error for SnapshotError {}
-
 #[derive(Debug, Clone)]
 struct SnapshotEntry {
-    path: String,
     kind: EntryKind,
     text: Option<String>,
     children: Option<Vec<String>>,
@@ -73,7 +156,7 @@ struct SnapshotEntry {
 /// The census, checked: every entry addressable, none repeated, the text within its limits.
 #[derive(Debug, Clone)]
 pub struct SourceSnapshot {
-    root: std::path::PathBuf,
+    root: PathBuf,
     excluded: Vec<String>,
     entries: HashMap<String, SnapshotEntry>,
 }
@@ -88,122 +171,115 @@ fn kind_of(name: &str) -> Option<EntryKind> {
     }
 }
 
+/// Whether the app asked for reads to come from a census (`OATLAS_CONFINED_SOURCE_READS=1`).
+pub fn confined_source_reads_enabled() -> bool {
+    std::env::var("OATLAS_CONFINED_SOURCE_READS").is_ok_and(|value| value == "1")
+}
+
 impl SourceSnapshot {
     /// Reads and checks a census from JSON text.
     pub fn from_json(text: &str) -> Result<Self, SnapshotError> {
-        let value: Value = serde_json::from_str(text).map_err(|_| SnapshotError::Incomplete)?;
-        Self::from_value(&value)
+        let census: Census = serde_json::from_str(text).map_err(|_| SnapshotError::Incomplete)?;
+        Self::from_census(census)
     }
 
-    /// Reads the census from what the app passed on a descriptor: at most
-    /// [`MAX_TRANSPORT_BYTES`], read to the end.
-    pub fn from_reader(mut source: impl Read, size: u64) -> Result<Self, SnapshotError> {
+    /// Reads and checks a census from what the app passed on a descriptor: `size` bytes at most
+    /// [`MAX_TRANSPORT_BYTES`], parsed as they are read.
+    pub fn from_reader(source: impl Read, size: u64) -> Result<Self, SnapshotError> {
         if size > MAX_TRANSPORT_BYTES {
             return Err(SnapshotError::TooLargeToTransport);
         }
-        let mut text = String::new();
-        source
-            .by_ref()
-            .take(MAX_TRANSPORT_BYTES + 1)
-            .read_to_string(&mut text)
+        let limited = source.take(MAX_TRANSPORT_BYTES + 1);
+        let census: Census = serde_json::from_reader(std::io::BufReader::new(limited))
             .map_err(|_| SnapshotError::Incomplete)?;
-        Self::from_json(&text)
+        Self::from_census(census)
     }
 
-    /// Reads the census from the inherited descriptor the app passes, and closes it.
+    /// The census the app passed on descriptor 198, read once for the life of the process. The
+    /// app names the descriptor in `OATLAS_SOURCE_SNAPSHOT_FD`; any other value, or none, is
+    /// [`SnapshotError::DescriptorUnavailable`]. Every call after the first returns the first
+    /// call's answer, so the descriptor is taken over and closed at most once.
     #[cfg(unix)]
-    pub fn from_inherited_descriptor() -> Result<Self, SnapshotError> {
+    pub fn inherited() -> Result<&'static Self, SnapshotError> {
         use std::os::fd::{FromRawFd, OwnedFd};
-        // SAFETY: the app starts this program with the census open on this descriptor and nothing
-        // else owns it here; `fcntl` first proves the number is open before it is taken over, and
-        // taking it over closes it once, as the JavaScript server does.
-        let owned = unsafe {
-            if libc::fcntl(SNAPSHOT_DESCRIPTOR, libc::F_GETFD) == -1 {
-                return Err(SnapshotError::DescriptorUnavailable);
-            }
-            OwnedFd::from_raw_fd(SNAPSHOT_DESCRIPTOR)
-        };
-        let file = std::fs::File::from(owned);
-        let size = file
-            .metadata()
-            .map_err(|_| SnapshotError::DescriptorUnavailable)?
-            .len();
-        Self::from_reader(file, size)
+        static INHERITED: std::sync::OnceLock<Result<SourceSnapshot, SnapshotError>> =
+            std::sync::OnceLock::new();
+        INHERITED
+            .get_or_init(|| {
+                let named = std::env::var("OATLAS_SOURCE_SNAPSHOT_FD")
+                    .is_ok_and(|value| value == SNAPSHOT_DESCRIPTOR.to_string());
+                if !named {
+                    return Err(SnapshotError::DescriptorUnavailable);
+                }
+                // SAFETY: the app starts this program with the census open on exactly this
+                // descriptor and says so in the environment variable checked above; nothing else
+                // in the program owns it, and the surrounding `OnceLock` runs this at most once,
+                // so the descriptor is taken over and closed once, as the JavaScript server does.
+                let owned = unsafe { OwnedFd::from_raw_fd(SNAPSHOT_DESCRIPTOR) };
+                let file = std::fs::File::from(owned);
+                let size = file
+                    .metadata()
+                    .map_err(|_| SnapshotError::DescriptorUnavailable)?
+                    .len();
+                Self::from_reader(file, size)
+            })
+            .as_ref()
+            .map_err(Clone::clone)
     }
 
     /// Windows passes no census on a descriptor.
     #[cfg(not(unix))]
-    pub fn from_inherited_descriptor() -> Result<Self, SnapshotError> {
+    pub fn inherited() -> Result<&'static Self, SnapshotError> {
         Err(SnapshotError::DescriptorUnavailable)
     }
 
-    fn from_value(value: &Value) -> Result<Self, SnapshotError> {
-        let contract_ok = value.get("contract").and_then(Value::as_str) == Some(SNAPSHOT_CONTRACT);
-        let root = value.get("rootPath").and_then(Value::as_str);
-        let entries = value.get("entries").and_then(Value::as_array);
-        let truncated = value
-            .get("truncated")
-            .is_some_and(|flag| !matches!(flag, Value::Null | Value::Bool(false)));
-        let (true, Some(root), Some(entries), false) = (contract_ok, root, entries, truncated)
+    fn from_census(census: Census) -> Result<Self, SnapshotError> {
+        let (Some(contract), Some(root)) =
+            (census.contract.as_deref(), census.root_path.as_deref())
         else {
             return Err(SnapshotError::Incomplete);
         };
-        if entries.len() > MAX_ENTRIES {
+        let root = PathBuf::from(root);
+        if contract != SNAPSHOT_CONTRACT
+            || is_truthy(&census.truncated)
+            || census.entries.len() > MAX_ENTRIES
+            || !root.is_absolute()
+        {
             return Err(SnapshotError::Incomplete);
         }
-        let root = resolve_path(
-            &std::env::current_dir().unwrap_or_default(),
-            Path::new(root),
-        );
-        let excluded: Vec<String> = value
-            .get("excluded")
-            .and_then(Value::as_array)
-            .map(|list| {
-                list.iter()
-                    .filter_map(|item| item.as_str().map(str::to_string))
-                    .collect()
-            })
-            .unwrap_or_default();
-        let refuse = |reason: &str| SnapshotError::Refused(reason.to_string());
-        let mut by_path: HashMap<String, SnapshotEntry> = HashMap::with_capacity(entries.len());
+        let root = resolve_path(Path::new(""), &root);
+        let excluded = census.excluded.unwrap_or_default();
+        let mut by_path: HashMap<String, SnapshotEntry> =
+            HashMap::with_capacity(census.entries.len());
         let mut total_text = 0_usize;
-        for raw in entries {
-            let path = raw.get("path").and_then(Value::as_str);
-            let kind = raw.get("kind").and_then(Value::as_str).and_then(kind_of);
-            let (Some(path), Some(kind)) = (path, kind) else {
-                return Err(refuse("invalid snapshot entry"));
+        for raw in census.entries {
+            let (Some(path), Some(kind)) = (raw.path, raw.kind.as_deref().and_then(kind_of)) else {
+                return Err(SnapshotError::Refused(Refusal::InvalidSnapshotEntry));
             };
             let normalized = if path == "." {
-                ".".to_string()
+                path.clone()
             } else {
-                address(&root, &excluded, &absolute(&root, path)).map_err(|error| match error {
-                    SourceReadError::Refused(reason) => SnapshotError::Refused(reason),
-                    SourceReadError::Absent => refuse("ambiguous snapshot entry"),
-                })?
+                if Path::new(&path).is_absolute() {
+                    return Err(SnapshotError::Refused(Refusal::AbsoluteSnapshotEntry));
+                }
+                address(&root, &excluded, &absolute(&root, &path))
+                    .map_err(SnapshotError::Refused)?
             };
-            if normalized != path || by_path.contains_key(&normalized) {
-                return Err(refuse("ambiguous snapshot entry"));
+            if normalized != path || by_path.contains_key(&path) {
+                return Err(SnapshotError::Refused(Refusal::AmbiguousSnapshotEntry));
             }
-            let text = raw.get("text").and_then(Value::as_str).map(str::to_string);
-            if let Some(text) = &text {
+            if let Some(text) = &raw.text {
                 total_text += text.len();
                 if text.len() > MAX_FILE_TEXT_BYTES || total_text > MAX_TEXT_BYTES {
-                    return Err(refuse("snapshot byte limit"));
+                    return Err(SnapshotError::Refused(Refusal::SnapshotByteLimit));
                 }
             }
-            let children = raw.get("children").and_then(Value::as_array).map(|names| {
-                names
-                    .iter()
-                    .filter_map(|name| name.as_str().map(str::to_string))
-                    .collect::<Vec<_>>()
-            });
             by_path.insert(
-                normalized,
+                path,
                 SnapshotEntry {
-                    path: path.to_string(),
                     kind,
-                    text,
-                    children,
+                    text: raw.text,
+                    children: raw.children,
                 },
             );
         }
@@ -220,8 +296,7 @@ impl SourceSnapshot {
 
     /// Answers reads from this census. A census taken of another folder than `root` is refused.
     pub fn source_for(&self, root: &Path) -> Result<SnapshotSource<'_>, SnapshotError> {
-        let asked = resolve_path(&std::env::current_dir().unwrap_or_default(), root);
-        if asked != self.root {
+        if !root.is_absolute() || resolve_path(Path::new(""), root) != self.root {
             return Err(SnapshotError::RootMismatch);
         }
         Ok(SnapshotSource {
@@ -234,7 +309,7 @@ impl SourceSnapshot {
 #[derive(Default)]
 struct Record {
     /// The first refusal of the run; it fails the run even when a caller swallows the error.
-    failure: Option<String>,
+    failure: Option<Refusal>,
     files: BTreeMap<String, String>,
     lookups: BTreeMap<String, &'static str>,
     directories: BTreeMap<String, Vec<String>>,
@@ -287,32 +362,30 @@ impl SnapshotSource<'_> {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
-    fn refuse(&self, reason: &str) -> SourceReadError {
-        self.recorded()
-            .failure
-            .get_or_insert_with(|| reason.to_string());
-        SourceReadError::Refused(reason.to_string())
+    fn refuse(&self, reason: Refusal) -> SourceReadError {
+        self.recorded().failure.get_or_insert(reason);
+        SourceReadError::Refused(reason)
     }
 
     fn address(&self, path: &Path) -> Result<String, SourceReadError> {
-        address(&self.snapshot.root, &self.snapshot.excluded, path).map_err(|error| match error {
-            SourceReadError::Refused(reason) => self.refuse(&reason),
-            other => other,
-        })
+        address(&self.snapshot.root, &self.snapshot.excluded, path)
+            .map_err(|reason| self.refuse(reason))
     }
 
-    /// The entry a path names; a link is refused, a path the census lacks is absent.
-    fn get(&self, path: &Path) -> Result<&SnapshotEntry, SourceReadError> {
+    /// The entry a path names, `None` when the census lists nothing there. A link is refused and
+    /// fails the run, whether the question was about the link or about what it points at: the
+    /// census never says where a link goes.
+    fn get(&self, path: &Path) -> Result<(String, Option<&SnapshotEntry>), SourceReadError> {
         let name = self.address(path)?;
         let entry = self.snapshot.entries.get(&name);
-        self.recorded()
-            .lookups
-            .insert(name, EntryKind::state_name(entry.map(|found| found.kind)));
-        let entry = entry.ok_or(SourceReadError::Absent)?;
-        if entry.kind.is_symlink() {
-            return Err(self.refuse("symlink"));
+        self.recorded().lookups.insert(
+            name.clone(),
+            EntryKind::state_name(entry.map(|found| found.kind)),
+        );
+        if entry.is_some_and(|found| found.kind.is_symlink()) {
+            return Err(self.refuse(Refusal::Symlink));
         }
-        Ok(entry)
+        Ok((name, entry))
     }
 
     /// Ends the run: the boundary of what it read, or the first refusal if any read was refused,
@@ -366,61 +439,54 @@ impl SourceFiles for SnapshotSource<'_> {
     }
 
     fn kind(&self, path: &Path) -> Result<Option<EntryKind>, SourceReadError> {
-        match self.get(path) {
-            Ok(entry) => Ok(Some(entry.kind)),
-            Err(SourceReadError::Absent) => Ok(None),
-            Err(error) => Err(error),
-        }
+        Ok(self.get(path)?.1.map(|entry| entry.kind))
     }
 
     fn link_kind(&self, path: &Path) -> Result<Option<EntryKind>, SourceReadError> {
-        let name = self.address(path)?;
-        let entry = self.snapshot.entries.get(&name);
-        self.recorded()
-            .lookups
-            .insert(name, EntryKind::state_name(entry.map(|found| found.kind)));
-        Ok(entry.map(|found| found.kind))
+        self.kind(path)
     }
 
-    fn read_text(&self, path: &Path) -> Result<String, SourceReadError> {
-        let entry = self.get(path)?;
-        let Some(text) = entry.text.as_ref().filter(|_| entry.kind.is_file()) else {
-            return Err(self.refuse("file bytes unavailable in snapshot"));
+    fn read_text(&self, path: &Path) -> Result<Cow<'_, str>, SourceReadError> {
+        let (name, entry) = self.get(path)?;
+        let entry = entry.ok_or(SourceReadError::Absent)?;
+        let Some(text) = entry.text.as_deref().filter(|_| entry.kind.is_file()) else {
+            return Err(self.refuse(Refusal::FileBytesUnavailable));
         };
         self.recorded()
             .files
-            .insert(entry.path.clone(), sha256_hex(text.as_bytes()));
-        Ok(text.clone())
+            .insert(name, sha256_hex(text.as_bytes()));
+        Ok(Cow::Borrowed(text))
     }
 
     fn list_directory(&self, path: &Path) -> Result<Vec<DirectoryEntry>, SourceReadError> {
-        let entry = self.get(path)?;
+        let (name, entry) = self.get(path)?;
+        let entry = entry.ok_or(SourceReadError::Absent)?;
         let Some(children) = entry
             .children
             .as_ref()
             .filter(|_| entry.kind.is_directory())
         else {
-            return Err(self.refuse("directory unavailable in snapshot"));
+            return Err(self.refuse(Refusal::DirectoryUnavailable));
         };
         let mut names = children.clone();
         names.sort_unstable();
         self.recorded()
             .directories
-            .insert(entry.path.clone(), names.clone());
+            .insert(name.clone(), names.clone());
         names
             .into_iter()
-            .map(|name| {
-                let child = if entry.path == "." {
-                    name.clone()
+            .map(|child_name| {
+                let child = if name == "." {
+                    child_name.clone()
                 } else {
-                    format!("{}/{}", entry.path, name)
+                    format!("{name}/{child_name}")
                 };
                 match self.snapshot.entries.get(&child) {
                     Some(found) => Ok(DirectoryEntry {
-                        name,
+                        name: child_name,
                         kind: found.kind,
                     }),
-                    None => Err(self.refuse("incomplete directory")),
+                    None => Err(self.refuse(Refusal::IncompleteDirectory)),
                 }
             })
             .collect()
@@ -431,7 +497,7 @@ impl SourceFiles for SnapshotSource<'_> {
 #[cfg(unix)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{json, Value};
 
     fn census(entries: Vec<Value>) -> Value {
         json!({
@@ -460,10 +526,12 @@ mod tests {
         wrong["contract"] = json!("confinedSourceSnapshot:v2");
         let mut truncated = census(vec![]);
         truncated["truncated"] = json!(true);
+        let mut relative_root = census(vec![]);
+        relative_root["rootPath"] = json!("repo");
         let many: Vec<Value> = (0..=MAX_ENTRIES)
             .map(|index| file(&format!("f{index}.ts"), ""))
             .collect();
-        for bad in [wrong, truncated, census(many)] {
+        for bad in [wrong, truncated, relative_root, census(many)] {
             assert_eq!(
                 SourceSnapshot::from_json(&bad.to_string()).expect_err("incomplete"),
                 SnapshotError::Incomplete
@@ -475,8 +543,29 @@ mod tests {
         );
         assert_eq!(
             SnapshotError::Incomplete.to_string(),
-            "Confined source snapshot is incomplete"
+            "source snapshot is incomplete"
         );
+    }
+
+    #[test]
+    fn a_falsy_truncated_flag_is_complete_and_a_truthy_one_is_not() {
+        for (flag, complete) in [
+            (json!(false), true),
+            (json!(null), true),
+            (json!(0), true),
+            (json!(""), true),
+            (json!(1), false),
+            (json!("yes"), false),
+            (json!([]), false),
+        ] {
+            let mut value = census(vec![]);
+            value["truncated"] = flag.clone();
+            assert_eq!(
+                SourceSnapshot::from_json(&value.to_string()).is_ok(),
+                complete,
+                "{flag}"
+            );
+        }
     }
 
     #[test]
@@ -493,10 +582,7 @@ mod tests {
         let refused =
             SourceSnapshot::from_json(&census(vec![file("big.ts", &one_over)]).to_string())
                 .expect_err("byte limit");
-        assert_eq!(
-            refused,
-            SnapshotError::Refused("snapshot byte limit".to_string())
-        );
+        assert_eq!(refused, SnapshotError::Refused(Refusal::SnapshotByteLimit));
         let at_cap = "a".repeat(MAX_FILE_TEXT_BYTES);
         assert!(
             SourceSnapshot::from_json(&census(vec![file("ok.ts", &at_cap)]).to_string()).is_ok()
@@ -506,48 +592,72 @@ mod tests {
             .collect();
         assert_eq!(
             SourceSnapshot::from_json(&census(many).to_string()).expect_err("total"),
-            SnapshotError::Refused("snapshot byte limit".to_string())
+            SnapshotError::Refused(Refusal::SnapshotByteLimit)
         );
     }
 
     #[test]
-    fn an_entry_that_is_hidden_outside_repeated_or_spelled_oddly_refuses_the_census() {
+    fn an_entry_that_is_hidden_outside_absolute_repeated_or_spelled_oddly_refuses_the_census() {
         for (entry_paths, reason) in [
-            (vec![".env"], "private or hidden path"),
-            (vec!["keys/server.pem"], "private or hidden path"),
-            (vec!["../outside.ts"], "outside approved root"),
-            (vec!["a.ts", "a.ts"], "ambiguous snapshot entry"),
-            (vec!["src//a.ts"], "ambiguous snapshot entry"),
-            (vec!["src/./a.ts"], "ambiguous snapshot entry"),
+            (vec![".env"], Refusal::PrivateOrHiddenPath),
+            (vec!["keys/server.pem"], Refusal::PrivateOrHiddenPath),
+            (vec!["../outside.ts"], Refusal::OutsideApprovedRoot),
+            (vec!["/repo/a.ts"], Refusal::AbsoluteSnapshotEntry),
+            (vec!["/etc/passwd"], Refusal::AbsoluteSnapshotEntry),
+            (vec!["a.ts", "a.ts"], Refusal::AmbiguousSnapshotEntry),
+            (vec!["src//a.ts"], Refusal::AmbiguousSnapshotEntry),
+            (vec!["src/./a.ts"], Refusal::AmbiguousSnapshotEntry),
         ] {
             let entries = entry_paths.iter().map(|path| file(path, "x")).collect();
             assert_eq!(
-                SourceSnapshot::from_json(&census(entries).to_string()).expect_err(reason),
-                SnapshotError::Refused(reason.to_string()),
+                SourceSnapshot::from_json(&census(entries).to_string()).expect_err("refused"),
+                SnapshotError::Refused(reason),
                 "{entry_paths:?}"
             );
         }
-        let bad_kind = json!({ "path": "a.ts", "kind": "socket" });
-        assert_eq!(
-            SourceSnapshot::from_json(&census(vec![bad_kind]).to_string()).expect_err("kind"),
-            SnapshotError::Refused("invalid snapshot entry".to_string())
-        );
+        for bad in [
+            json!({ "path": "a.ts", "kind": "socket" }),
+            json!({ "path": 7, "kind": "file" }),
+            json!({ "kind": "file" }),
+        ] {
+            assert_eq!(
+                SourceSnapshot::from_json(&census(vec![bad]).to_string()).expect_err("kind"),
+                SnapshotError::Refused(Refusal::InvalidSnapshotEntry)
+            );
+        }
     }
 
     #[test]
     fn a_census_of_another_folder_is_a_root_mismatch() {
         let census = snapshot(vec![directory(".", &[])]);
         assert!(census.source_for(Path::new("/repo")).is_ok());
-        assert_eq!(
-            census.source_for(Path::new("/elsewhere")).err(),
-            Some(SnapshotError::RootMismatch)
-        );
+        for other in ["/elsewhere", "repo", ""] {
+            assert_eq!(
+                census.source_for(Path::new(other)).err(),
+                Some(SnapshotError::RootMismatch),
+                "{other:?}"
+            );
+        }
     }
 
     #[test]
     fn a_descriptor_past_the_transport_limit_is_refused_before_it_is_read() {
         let result = SourceSnapshot::from_reader(std::io::empty(), MAX_TRANSPORT_BYTES + 1);
         assert_eq!(result.err(), Some(SnapshotError::TooLargeToTransport));
+    }
+
+    #[test]
+    fn the_inherited_descriptor_is_refused_unless_the_app_named_it() {
+        // The test process was not started by the app, so the variable is not set to 198.
+        assert_eq!(
+            SourceSnapshot::inherited().err(),
+            Some(SnapshotError::DescriptorUnavailable)
+        );
+        assert_eq!(
+            SourceSnapshot::inherited().err(),
+            Some(SnapshotError::DescriptorUnavailable),
+            "a second call answers the first call's answer"
+        );
     }
 
     #[test]
@@ -627,7 +737,24 @@ mod tests {
         let _also = source.read_text(Path::new("/outside/x.ts"));
         assert_eq!(
             source.finish().err(),
-            Some(SnapshotError::Refused("symlink".to_string()))
+            Some(SnapshotError::Refused(Refusal::Symlink))
+        );
+    }
+
+    #[test]
+    fn asking_about_a_link_itself_fails_the_run_as_reading_it_does() {
+        let census = snapshot(vec![directory(".", &["link"]), {
+            json!({ "path": "link", "kind": "symlink" })
+        }]);
+        let source = census.source_for(Path::new("/repo")).expect("source");
+        assert_eq!(
+            source.link_kind(Path::new("/repo/link")),
+            Err(SourceReadError::Refused(Refusal::Symlink))
+        );
+        assert_eq!(
+            source.finish().err(),
+            Some(SnapshotError::Refused(Refusal::Symlink)),
+            "a link is a confinement risk however it is asked about"
         );
     }
 
@@ -641,31 +768,27 @@ mod tests {
         let source = census.source_for(Path::new("/repo")).expect("source");
         assert_eq!(
             source.read_text(Path::new("/repo/a.ts")),
-            Err(SourceReadError::Refused(
-                "file bytes unavailable in snapshot".to_string()
-            ))
+            Err(SourceReadError::Refused(Refusal::FileBytesUnavailable))
         );
         assert_eq!(
             source.list_directory(Path::new("/repo/d")),
-            Err(SourceReadError::Refused(
-                "directory unavailable in snapshot".to_string()
-            ))
+            Err(SourceReadError::Refused(Refusal::DirectoryUnavailable))
         );
         assert!(source.finish().is_err());
     }
 
     #[test]
-    fn a_hidden_or_outside_read_is_refused_without_looking_at_the_disk() {
+    fn a_hidden_relative_or_outside_read_is_refused_without_looking_at_the_disk() {
         let census = snapshot(vec![directory(".", &[])]);
         let source = census.source_for(Path::new("/repo")).expect("source");
         for (path, reason) in [
-            ("/repo/.env", "private or hidden path"),
-            ("/repo/../etc/passwd", "outside approved root"),
-            ("/etc/passwd", "outside approved root"),
+            ("/repo/.env", Refusal::PrivateOrHiddenPath),
+            ("/repo/../etc/passwd", Refusal::OutsideApprovedRoot),
+            ("/etc/passwd", Refusal::OutsideApprovedRoot),
         ] {
             assert_eq!(
                 source.read_text(Path::new(path)),
-                Err(SourceReadError::Refused(reason.to_string())),
+                Err(SourceReadError::Refused(reason)),
                 "{path}"
             );
         }

@@ -9,7 +9,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-use confined_files::{write_atomically, AtomicWrite, ScanRoots, VaultRoot, VAULT_SOURCES_DIR};
+use confined_files::{
+    apply_all_or_nothing, write_atomically, ApplyOptions, AtomicWrite, PlanEntry, Reservations,
+    ScanRoots, SlugError, VaultRoot, VAULT_SOURCES_DIR,
+};
 use proptest::prelude::*;
 
 struct Fixture {
@@ -208,11 +211,28 @@ proptest! {
         prop_assert_eq!(&contents_of(&fixture.outside), &fixture.outside_before);
     }
 
+    /// A whole plan through accepted slugs (linked folders, links to files, dangling links,
+    /// loops) writes inside the vault and changes nothing outside it, whether it applies or
+    /// rolls back.
+    #[test]
+    fn a_plan_through_linked_folders_touches_nothing_outside_the_vault(
+        slugs in prop::collection::vec(slug(), 1..5)
+    ) {
+        let fixture = fixture();
+        let plan: Vec<PlanEntry> = slugs
+            .iter()
+            .filter_map(|slug| fixture.root.write_path(slug).ok())
+            .map(|path| PlanEntry::write(path, "planted".to_string()))
+            .collect();
+        let _ = apply_all_or_nothing(plan, &ApplyOptions::new(Reservations::AllowReserved));
+        prop_assert_eq!(&contents_of(&fixture.outside), &fixture.outside_before);
+    }
+
     /// A scan root is allowed only inside the vault or its repository (here the same folder).
     #[test]
     fn an_allowed_scan_root_is_inside_the_vault_as_a_real_path(slug in slug()) {
         let fixture = fixture();
-        let roots = ScanRoots::new(fixture.real_root.clone(), fixture.real_root.clone());
+        let roots = ScanRoots::new(fixture.real_root.clone(), fixture.real_root.clone()).expect("roots");
         let target = fixture.real_root.join(&slug);
         if let Ok(allowed) = roots.allow(&target, "rootPath") {
             let real = dunce::canonicalize(allowed.as_path()).unwrap_or_else(|_| allowed.as_path().to_path_buf());
@@ -233,6 +253,32 @@ proptest! {
         prop_assert!(resolved.is_absolute());
         prop_assert!(resolved.components().all(|part| !matches!(part, std::path::Component::ParentDir | std::path::Component::CurDir)));
         prop_assert_eq!(&confined_files::resolve_path(base, &resolved), &resolved);
+    }
+}
+
+/// A spelling of the vault's own name that differs only in case, reached through its parent,
+/// is a different folder to a case-sensitive parent: it is outside the vault on every platform.
+#[cfg(unix)]
+#[test]
+fn a_case_variant_of_the_vault_name_beside_it_is_outside() {
+    let fixture = fixture();
+    let name = fixture
+        .real_root
+        .file_name()
+        .expect("name")
+        .to_string_lossy()
+        .to_uppercase();
+    for slug in [
+        format!("../{name}/notes"),
+        format!("../{name}/domains/auth"),
+    ] {
+        assert!(
+            matches!(
+                fixture.root.read_path(&slug),
+                Err(SlugError::OutsideRoot { .. })
+            ),
+            "{slug}"
+        );
     }
 }
 
@@ -320,6 +366,23 @@ mod windows_spellings {
         let upper = root.path().to_string_lossy().to_uppercase();
         let shouted = VaultRoot::open(Path::new(&upper)).expect("same folder");
         assert!(shouted.read_path("domains/auth").is_ok());
+    }
+
+    #[test]
+    fn a_case_variant_of_the_vault_name_beside_it_is_outside_and_a_stream_name_is_refused() {
+        let directory = tempfile::tempdir().expect("temp dir");
+        let parent = dunce::canonicalize(directory.path()).expect("real");
+        let vault = parent.join("vault");
+        fs::create_dir_all(&vault).expect("vault");
+        let root = VaultRoot::open(&vault).expect("vault");
+        for slug in ["..\\VAULT\\notes", "../VAULT/notes", "..\\Vault\\notes"] {
+            assert!(
+                matches!(root.read_path(slug), Err(SlugError::OutsideRoot { .. })),
+                "{slug}"
+            );
+        }
+        assert!(root.write_path("a.md:stream").is_err());
+        assert!(root.write_path("notes/a:b").is_err());
     }
 
     #[test]

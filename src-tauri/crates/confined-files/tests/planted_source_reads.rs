@@ -1,6 +1,6 @@
-//! Planted hostile source trees, mirroring
-//! `mcp/src/infer-imports/confinement/confined-source-fs.test.mjs`: a link out, a replaced tree,
-//! an incomplete census, and the limits.
+//! Planted hostile source trees, from the cases the JavaScript suite
+//! (`mcp/src/infer-imports/confinement/confined-source-fs.test.mjs`) planted and more: a link out,
+//! a replaced tree, an incomplete census, and the limits.
 
 #![cfg(unix)]
 
@@ -9,7 +9,8 @@ use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
 use confined_files::{
-    DiskSource, EntryKind, ScanRoots, SnapshotError, SourceFiles, SourceReadError, SourceSnapshot,
+    DiskSource, EntryKind, Refusal, ScanRoots, SnapshotError, SourceFiles, SourceReadError,
+    SourceSnapshot,
 };
 use serde_json::{json, Value};
 
@@ -101,7 +102,7 @@ fn an_authored_source_root_link_is_captured_as_a_link_and_refused_on_every_read(
     );
     assert_eq!(
         source.finish().err(),
-        Some(SnapshotError::Refused("symlink".to_string())),
+        Some(SnapshotError::Refused(Refusal::Symlink)),
         "the run fails closed"
     );
 }
@@ -140,16 +141,14 @@ fn a_climbing_or_absolute_probe_is_refused_without_reaching_the_disk() {
     ] {
         assert_eq!(
             source.kind(&probe),
-            Err(SourceReadError::Refused(
-                "outside approved root".to_string()
-            )),
+            Err(SourceReadError::Refused(Refusal::OutsideApprovedRoot)),
             "{}",
             probe.display()
         );
     }
     assert_eq!(
         source.finish().err(),
-        Some(SnapshotError::Refused("outside approved root".to_string()))
+        Some(SnapshotError::Refused(Refusal::OutsideApprovedRoot))
     );
 }
 
@@ -179,11 +178,14 @@ fn the_scan_reads_the_captured_bytes_even_if_the_files_are_replaced_after_captur
         .contains("sentinel"));
 
     // The disk reader, asked the same question now, refuses: the tree is a link.
-    let roots = ScanRoots::new(tree.root.clone(), tree.root.clone());
-    let disk = DiskSource::new(&roots.allow(&tree.root, "rootPath").expect("allowed"));
+    let roots = ScanRoots::new(tree.root.clone(), tree.root.clone()).expect("roots");
+    let disk = DiskSource::new(
+        &roots.allow(&tree.root, "rootPath").expect("allowed"),
+        512 * 1024,
+    );
     assert_eq!(
         disk.read_text(&tree.root.join("src/a.ts")),
-        Err(SourceReadError::Refused("symlink".to_string()))
+        Err(SourceReadError::Refused(Refusal::OutsideApprovedRoot))
     );
     assert_eq!(
         disk.link_kind(&tree.root.join("src")),
@@ -208,9 +210,7 @@ fn missing_bytes_and_an_incomplete_census_cannot_become_a_quiet_success() {
     let source = snapshot.source_for(&tree.root).expect("source");
     assert_eq!(
         source.read_text(&tree.root.join("tsconfig.json")),
-        Err(SourceReadError::Refused(
-            "file bytes unavailable in snapshot".to_string()
-        ))
+        Err(SourceReadError::Refused(Refusal::FileBytesUnavailable))
     );
     assert!(source.finish().is_err());
     value["truncated"] = json!(true);
@@ -257,7 +257,7 @@ fn a_hidden_or_credential_file_cannot_be_smuggled_into_a_census() {
         });
         assert_eq!(
             census(&value).err(),
-            Some(SnapshotError::Refused("private or hidden path".to_string())),
+            Some(SnapshotError::Refused(Refusal::PrivateOrHiddenPath)),
             "{path}"
         );
     }
@@ -268,8 +268,11 @@ fn the_disk_reader_and_the_census_agree_on_what_a_hidden_name_is() {
     let tree = tree();
     fs::write(tree.root.join(".env"), "TOKEN=1").expect("env");
     fs::write(tree.root.join("src/a.ts"), "x").expect("a");
-    let roots = ScanRoots::new(tree.root.clone(), tree.root.clone());
-    let disk = DiskSource::new(&roots.allow(&tree.root, "rootPath").expect("allowed"));
+    let roots = ScanRoots::new(tree.root.clone(), tree.root.clone()).expect("roots");
+    let disk = DiskSource::new(
+        &roots.allow(&tree.root, "rootPath").expect("allowed"),
+        512 * 1024,
+    );
     let snapshot = census(&capture(&tree.root)).expect("census");
     let source = snapshot.source_for(&tree.root).expect("source");
     for path in [tree.root.join(".env"), tree.root.join("src/.git/config")] {
@@ -280,4 +283,39 @@ fn the_disk_reader_and_the_census_agree_on_what_a_hidden_name_is() {
             path.display()
         );
     }
+}
+
+#[test]
+fn a_link_probe_is_refused_and_fails_the_run_as_a_read_does() {
+    let tree = tree();
+    let outside = tree.base.join("outside");
+    fs::create_dir(&outside).expect("outside");
+    symlink(&outside, tree.root.join("linked")).expect("link");
+    let snapshot = census(&capture(&tree.root)).expect("census");
+    let source = snapshot.source_for(&tree.root).expect("source");
+    // Asking only what the link is must not be a way to learn it, quietly, and carry on.
+    assert_eq!(
+        source.link_kind(&tree.root.join("linked")),
+        Err(SourceReadError::Refused(Refusal::Symlink))
+    );
+    assert_eq!(
+        source.finish().err(),
+        Some(SnapshotError::Refused(Refusal::Symlink))
+    );
+}
+
+#[test]
+fn an_absolute_entry_in_a_census_is_refused_even_when_it_is_below_the_root() {
+    let tree = tree();
+    let inside = tree.root.join("src/a.ts");
+    let value = json!({
+        "contract": "confinedSourceSnapshot:v1",
+        "rootPath": tree.root,
+        "truncated": false,
+        "entries": [{ "path": inside, "kind": "file", "text": "x" }],
+    });
+    assert_eq!(
+        census(&value).err(),
+        Some(SnapshotError::Refused(Refusal::AbsoluteSnapshotEntry))
+    );
 }

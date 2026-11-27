@@ -9,9 +9,17 @@ pub fn real_path(path: &Path) -> io::Result<PathBuf> {
     dunce::canonicalize(path)
 }
 
-/// Whether `path` is `root` or lies below it, part by part (so `/a/bc` is not inside `/a/b`).
-/// Windows compares letters without regard to case, as its file system does.
+/// Whether `path` is `root` or lies below it, part by part (so `/a/bc` is not inside `/a/b`),
+/// comparing letters exactly. A vault is confined this way on every platform: the vault's
+/// parent folder may hold siblings whose names differ from the vault's only in case, and
+/// `../VAULT/notes` must not reach one.
 pub fn is_within(root: &Path, path: &Path) -> bool {
+    path.starts_with(root)
+}
+
+/// [`is_within`] with Windows comparing letters without regard to case, as `path.win32.relative`
+/// does for the scan-root and evidence-read checks. Elsewhere it is [`is_within`].
+pub fn is_within_folding_case(root: &Path, path: &Path) -> bool {
     #[cfg(windows)]
     {
         let fold = |candidate: &Path| -> Vec<String> {
@@ -20,43 +28,26 @@ pub fn is_within(root: &Path, path: &Path) -> bool {
                 .map(|part| part.as_os_str().to_string_lossy().to_lowercase())
                 .collect()
         };
-        let root_parts = fold(root);
-        let path_parts = fold(path);
-        path_parts.starts_with(&root_parts)
+        fold(path).starts_with(&fold(root))
     }
     #[cfg(not(windows))]
     {
-        path.starts_with(root)
+        is_within(root, path)
     }
 }
 
 /// The parts of `path` below `root`, or `None` when it is not below it.
 pub fn segments_below(root: &Path, path: &Path) -> Option<Vec<String>> {
-    if !is_within(root, path) {
-        return None;
-    }
-    let skip = root.components().count();
+    let relative = path.strip_prefix(root).ok()?;
     Some(
-        path.components()
-            .skip(skip)
+        relative
+            .components()
             .filter_map(|part| match part {
                 Component::Normal(name) => Some(name.to_string_lossy().into_owned()),
                 _ => None,
             })
             .collect(),
     )
-}
-
-/// The link a path is, when it is a link: where it points, made absolute against its folder and
-/// folded lexically. `None` for anything else.
-pub fn link_target(path: &Path) -> Option<PathBuf> {
-    let metadata = std::fs::symlink_metadata(path).ok()?;
-    if !metadata.file_type().is_symlink() {
-        return None;
-    }
-    let target = std::fs::read_link(path).ok()?;
-    let folder = path.parent()?;
-    Some(crate::confined_root::resolve_path(folder, &target))
 }
 
 #[cfg(test)]
@@ -70,6 +61,7 @@ mod tests {
         assert!(is_within(Path::new("/a/b"), Path::new("/a/b/c/d")));
         assert!(!is_within(Path::new("/a/b"), Path::new("/a/bc")));
         assert!(!is_within(Path::new("/a/b"), Path::new("/a")));
+        assert!(!is_within(Path::new("/a/b"), Path::new("/a/B/c")));
     }
 
     #[test]
@@ -83,5 +75,25 @@ mod tests {
             Some(vec![])
         );
         assert_eq!(segments_below(Path::new("/v"), Path::new("/w/x")), None);
+    }
+}
+
+/// On Windows the vault compares exactly and the scan and evidence checks fold case.
+#[cfg(test)]
+#[cfg(windows)]
+mod windows_tests {
+    use super::*;
+
+    #[test]
+    fn a_vault_compares_letters_exactly_and_a_scan_root_does_not() {
+        let vault = Path::new("C:\\parent\\vault");
+        let sibling = Path::new("C:\\parent\\VAULT\\notes");
+        assert!(!is_within(vault, sibling));
+        assert!(is_within_folding_case(vault, sibling));
+        assert!(!is_within_folding_case(
+            vault,
+            Path::new("C:\\parent\\vault2")
+        ));
+        assert_eq!(segments_below(vault, sibling), None);
     }
 }

@@ -9,72 +9,53 @@ use icu_normalizer::ComposingNormalizerBorrowed;
 
 use crate::confined_root::{ensure_vault_root, resolve_path, VaultRootError};
 use crate::markdown_walk::list_markdown_files;
-use crate::real_paths::{is_within, link_target, real_path, segments_below};
-use crate::slug_rules::{raw_source_slug_issue, unwritable_slug_issue, VAULT_SOURCES_DIR};
+use crate::real_paths::{is_within, real_path, segments_below};
+use crate::slug_rules::{unwritable_slug_reason, UnwritableReason, VAULT_SOURCES_DIR};
 
-/// A link followed more often than this while looking for the end of a missing path is a loop.
-const MAX_LINK_HOPS: usize = 40;
-
-/// Why a slug cannot name a file. The text is what the server prints, word for word.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// Why a slug cannot name a file. The server writes the sentence an agent reads; the text here
+/// says what happened, with the slug and the reason as values.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum SlugError {
+    #[error("slug must be a non-empty string")]
     Empty,
+    #[error("slug must not contain a null byte")]
     NullByte,
-    OutsideRoot {
-        slug: String,
-    },
-    /// The slug names a file under `sources/`; the sentence names the raw file to read instead.
-    RawSource(String),
-    OutsideRootThroughLink {
-        slug: String,
-    },
+    #[error("slug points outside the vault root: \"{slug}\"")]
+    OutsideRoot { slug: String },
+    /// The slug names a file under `sources/`; `raw_source` is the slug of that raw file (see
+    /// [`crate::raw_source_file_for_slug`] for the file to read instead).
+    #[error("slug \"{raw_source}\" names a raw source, not a node")]
+    RawSource { raw_source: String },
+    #[error("slug resolves outside the vault root through a symlink: \"{slug}\"")]
+    OutsideRootThroughLink { slug: String },
     /// A write tool never names this file (an invisible character, a hidden segment, an
     /// instruction file, the README, a short Windows name).
-    Unwritable(String),
+    #[error("slug \"{slug}\" cannot be written: {reason}")]
+    Unwritable {
+        slug: String,
+        reason: UnwritableReason,
+    },
     /// The slug is fine as typed, but a link makes it name a file a write tool never names.
+    #[error("slug \"{slug}\" resolves through a link to \"{resolved}\": {reason}")]
     UnwritableThroughLink {
         slug: String,
         resolved: String,
-        issue: String,
+        reason: UnwritableReason,
     },
 }
 
-impl std::fmt::Display for SlugError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Empty => formatter.write_str("slug must be a non-empty string"),
-            Self::NullByte => formatter.write_str("slug must not contain a null byte"),
-            Self::OutsideRoot { slug } => {
-                write!(formatter, "slug points outside the vault root: \"{slug}\"")
-            }
-            Self::RawSource(message) | Self::Unwritable(message) => formatter.write_str(message),
-            Self::OutsideRootThroughLink { slug } => write!(
-                formatter,
-                "slug resolves outside the vault root through a symlink: \"{slug}\""
-            ),
-            Self::UnwritableThroughLink {
-                slug,
-                resolved,
-                issue,
-            } => write!(
-                formatter,
-                "slug \"{slug}\" resolves through a link to \"{resolved}\". {issue}"
-            ),
-        }
-    }
-}
-
-impl std::error::Error for SlugError {}
-
-/// A path inside a vault that passed the slug rules and the link check. Only a [`VaultRoot`]
-/// builds one.
+/// A path inside a vault, reached by a slug that is not a raw source and whose real path (every
+/// link resolved, or the nearest existing folder's for a file not yet created) stays inside the
+/// vault; or a file the vault walk listed, which is a regular file that no link was followed to.
+/// It does not prove the slug is one a write tool may name: that is [`WritablePath`]. Only a
+/// [`VaultRoot`] builds one.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ConfinedPath {
     path: PathBuf,
 }
 
 impl ConfinedPath {
-    fn new(path: PathBuf) -> Self {
+    pub(crate) fn new(path: PathBuf) -> Self {
         Self { path }
     }
 
@@ -112,7 +93,7 @@ impl ConfinedPath {
 }
 
 /// A [`ConfinedPath`] a write tool may create, change or delete: its slug, as typed and where it
-/// resolves, is not one `unwritable_slug_issue` names. Only [`VaultRoot::write_path`] and
+/// resolves, is not one [`unwritable_slug_reason`] names. Only [`VaultRoot::write_path`] and
 /// [`VaultRoot::writable`] build one.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct WritablePath {
@@ -139,7 +120,8 @@ impl VaultRoot {
     /// Requires an existing directory, reached through a link if it is one.
     pub fn open(path: &Path) -> Result<Self, VaultRootError> {
         ensure_vault_root(path)?;
-        let base = std::env::current_dir().unwrap_or_default();
+        let base =
+            std::env::current_dir().map_err(|_| VaultRootError::NotFound(path.to_path_buf()))?;
         Ok(Self {
             root: resolve_path(&base, path),
         })
@@ -152,9 +134,6 @@ impl VaultRoot {
     /// Every Markdown file of the vault, in UTF-16 order (see [`list_markdown_files`]).
     pub fn markdown_files(&self) -> Vec<ConfinedPath> {
         list_markdown_files(&self.root)
-            .into_iter()
-            .map(ConfinedPath::new)
-            .collect()
     }
 
     /// The slug of a file below the vault: its path with `/` separators and no `.md`, in NFC.
@@ -163,11 +142,9 @@ impl VaultRoot {
     /// path stays as it is. `None` for a path outside the vault.
     pub fn slug_of(&self, file: &ConfinedPath) -> Option<String> {
         let parts = segments_below(&self.root, file.as_path())?;
-        let joined = parts.join("/");
-        let without_extension = joined.strip_suffix(".md").unwrap_or(&joined);
         Some(
             ComposingNormalizerBorrowed::new_nfc()
-                .normalize(without_extension)
+                .normalize(&segments_to_slug(&parts))
                 .into_owned(),
         )
     }
@@ -190,9 +167,7 @@ impl VaultRoot {
             });
         }
         if let Some(raw_source) = self.raw_source_slug_for(&candidate) {
-            return Err(SlugError::RawSource(
-                raw_source_slug_issue(&raw_source).unwrap_or(raw_source),
-            ));
+            return Err(SlugError::RawSource { raw_source });
         }
         assert_real_path_inside(&candidate, &self.root, slug)?;
         Ok(ConfinedPath::new(candidate))
@@ -201,8 +176,11 @@ impl VaultRoot {
     /// [`Self::read_path`] for a file a write tool will create, change or delete: it also refuses
     /// what `unwritable_slug_issue` names, as typed or where the slug resolves through a link.
     pub fn write_path(&self, slug: &str) -> Result<WritablePath, SlugError> {
-        if let Some(issue) = unwritable_slug_issue(slug) {
-            return Err(SlugError::Unwritable(issue));
+        if let Some(reason) = unwritable_slug_reason(slug) {
+            return Err(SlugError::Unwritable {
+                slug: slug.to_string(),
+                reason,
+            });
         }
         let confined = self.read_path(slug)?;
         self.refuse_unwritable_through_links(slug, confined.as_path())?;
@@ -215,8 +193,8 @@ impl VaultRoot {
         let slug = self.slug_of(file).ok_or_else(|| SlugError::OutsideRoot {
             slug: file.display().to_string(),
         })?;
-        if let Some(issue) = unwritable_slug_issue(&slug) {
-            return Err(SlugError::Unwritable(issue));
+        if let Some(reason) = unwritable_slug_reason(&slug) {
+            return Err(SlugError::Unwritable { slug, reason });
         }
         self.refuse_unwritable_through_links(&slug, file.as_path())?;
         Ok(WritablePath { path: file.clone() })
@@ -230,11 +208,11 @@ impl VaultRoot {
         if resolved == slug {
             return Ok(());
         }
-        match unwritable_slug_issue(&resolved) {
-            Some(issue) => Err(SlugError::UnwritableThroughLink {
+        match unwritable_slug_reason(&resolved) {
+            Some(reason) => Err(SlugError::UnwritableThroughLink {
                 slug: slug.to_string(),
                 resolved,
-                issue,
+                reason,
             }),
             None => Ok(()),
         }
@@ -322,7 +300,7 @@ impl VaultRoot {
                 }
             };
             canonical.push(if index == last {
-                hit.strip_suffix(".md").unwrap_or(&hit).to_string()
+                without_extension(&hit).to_string()
             } else {
                 hit.clone()
             });
@@ -344,46 +322,44 @@ fn names_raw_source(segments: &[String]) -> bool {
 
 fn segments_to_slug(segments: &[String]) -> String {
     let joined = segments.join("/");
-    joined.strip_suffix(".md").unwrap_or(&joined).to_string()
+    without_extension(&joined).to_string()
+}
+
+/// `name` without its `.md`, any letter case: a case-insensitive disk lists `Page.MD` for a slug
+/// typed `Page`, and JavaScript drops the last three characters of it as it does of `Page.md`.
+fn without_extension(name: &str) -> &str {
+    let tail = name.len().saturating_sub(3);
+    match name.get(tail..) {
+        Some(suffix) if suffix.eq_ignore_ascii_case(".md") => name.get(..tail).unwrap_or(name),
+        _ => name,
+    }
 }
 
 /// The real path must stay inside the vault. A file that does not exist yet answers through its
 /// nearest existing folder, as creating a file inside a linked folder is the same escape. A
-/// missing path that is itself a link (dangling) is followed to where it points, so a write
-/// cannot create the file the link names outside the vault.
+/// dangling link is not followed: the nearest existing folder decides, as it does in the
+/// JavaScript server.
 fn assert_real_path_inside(candidate: &Path, root: &Path, slug: &str) -> Result<(), SlugError> {
     let Ok(real_root) = real_path(root) else {
         // If the root itself cannot be resolved, the lexical check is all there is.
         return Ok(());
     };
-    let escape = || SlugError::OutsideRootThroughLink {
-        slug: slug.to_string(),
-    };
-    let mut probe = candidate.to_path_buf();
-    let mut hops = 0;
+    let mut probe = candidate;
     loop {
-        match real_path(&probe) {
+        match real_path(probe) {
             Ok(real) => {
                 return if is_within(&real_root, &real) {
                     Ok(())
                 } else {
-                    Err(escape())
+                    Err(SlugError::OutsideRootThroughLink {
+                        slug: slug.to_string(),
+                    })
                 };
             }
-            Err(_) => {
-                if let Some(target) = link_target(&probe) {
-                    hops += 1;
-                    if hops > MAX_LINK_HOPS {
-                        return Err(escape());
-                    }
-                    probe = target;
-                    continue;
-                }
-                match probe.parent() {
-                    Some(parent) if parent != probe => probe = parent.to_path_buf(),
-                    _ => return Ok(()),
-                }
-            }
+            Err(_) => match probe.parent() {
+                Some(parent) if parent != probe => probe = parent,
+                _ => return Ok(()),
+            },
         }
     }
 }
@@ -401,8 +377,8 @@ mod tests {
         (directory, root)
     }
 
-    fn message(result: Result<impl std::fmt::Debug, SlugError>) -> String {
-        result.expect_err("refused").to_string()
+    fn refusal(result: Result<impl std::fmt::Debug, SlugError>) -> SlugError {
+        result.expect_err("refused")
     }
 
     #[test]
@@ -414,27 +390,25 @@ mod tests {
     }
 
     #[test]
-    fn the_refusals_read_as_the_javascript_server_prints_them() {
+    fn every_refusal_is_a_typed_reason_with_a_plain_sentence() {
         let (_directory, root) = vault();
+        assert_eq!(refusal(root.read_path("")), SlugError::Empty);
+        assert_eq!(refusal(root.read_path("a\0b")), SlugError::NullByte);
+        for slug in ["../../etc/passwd", "/etc/passwd"] {
+            assert_eq!(
+                refusal(root.read_path(slug)),
+                SlugError::OutsideRoot {
+                    slug: slug.to_string()
+                }
+            );
+        }
         assert_eq!(
-            message(root.read_path("")),
-            "slug must be a non-empty string"
+            refusal(root.read_path("sources/a")).to_string(),
+            "slug \"sources/a\" names a raw source, not a node"
         );
         assert_eq!(
-            message(root.read_path("a\0b")),
-            "slug must not contain a null byte"
-        );
-        assert_eq!(
-            message(root.read_path("../../etc/passwd")),
+            refusal(root.read_path("../../etc/passwd")).to_string(),
             "slug points outside the vault root: \"../../etc/passwd\""
-        );
-        assert_eq!(
-            message(root.read_path("/etc/passwd")),
-            "slug points outside the vault root: \"/etc/passwd\""
-        );
-        assert_eq!(
-            message(root.read_path("sources/a")),
-            raw_source_slug_issue("sources/a").expect("issue")
         );
     }
 
@@ -452,21 +426,21 @@ mod tests {
         std::fs::create_dir_all(&outside).expect("outside");
         std::fs::write(outside.join("secret.md"), "x").expect("secret");
         symlink(&outside, root.path().join("linked")).expect("link");
-        let existing = message(root.read_path("linked/secret"));
-        let created = message(root.read_path("linked/new-file"));
+        let existing = refusal(root.read_path("linked/secret"));
+        let created = refusal(root.read_path("linked/new-file"));
         std::fs::remove_dir_all(&outside).expect("cleanup");
-        assert_eq!(
-            existing,
-            "slug resolves outside the vault root through a symlink: \"linked/secret\""
-        );
-        assert_eq!(
-            created,
-            "slug resolves outside the vault root through a symlink: \"linked/new-file\""
-        );
+        for (found, slug) in [(existing, "linked/secret"), (created, "linked/new-file")] {
+            assert_eq!(
+                found,
+                SlugError::OutsideRootThroughLink {
+                    slug: slug.to_string()
+                }
+            );
+        }
     }
 
     #[test]
-    fn a_dangling_link_pointing_out_cannot_be_written_through() {
+    fn a_dangling_link_is_judged_by_its_nearest_existing_folder() {
         let (directory, root) = vault();
         let outside_target = directory
             .path()
@@ -474,14 +448,10 @@ mod tests {
             .expect("parent")
             .join("planted-target-that-does-not-exist.md");
         symlink(&outside_target, root.path().join("dangling.md")).expect("link");
-        assert_eq!(
-            message(root.write_path("dangling")),
-            "slug resolves outside the vault root through a symlink: \"dangling\""
-        );
+        // The slug itself names a path inside the vault; what a write does with a link at that
+        // path is the atomic write's rename, which replaces the link and never follows it.
+        assert!(root.write_path("dangling").is_ok());
         assert!(!outside_target.exists());
-        // A dangling link that points inside the vault is a path a write may create.
-        symlink(root.path().join("inside.md"), root.path().join("alias.md")).expect("link");
-        assert!(root.write_path("alias").is_ok());
     }
 
     #[test]
@@ -491,8 +461,10 @@ mod tests {
         std::fs::write(root.path().join("sources/page.md"), "x").expect("page");
         symlink(root.path().join("sources"), root.path().join("alias")).expect("link");
         assert_eq!(
-            message(root.read_path("alias/page")),
-            raw_source_slug_issue("sources/page").expect("issue")
+            refusal(root.read_path("alias/page")),
+            SlugError::RawSource {
+                raw_source: "sources/page".to_string()
+            }
         );
         assert_eq!(
             root.raw_source_slug_at("alias/page").as_deref(),
@@ -506,10 +478,15 @@ mod tests {
         let (_directory, root) = vault();
         std::fs::write(root.path().join("AGENTS.md"), "x").expect("agents");
         symlink(root.path().join("AGENTS.md"), root.path().join("notes.md")).expect("link");
-        let text = message(root.write_path("notes"));
-        assert!(
-            text.starts_with("slug \"notes\" resolves through a link to \"AGENTS\". slug \"AGENTS\" names AGENTS.md"),
-            "{text}"
+        assert_eq!(
+            refusal(root.write_path("notes")),
+            SlugError::UnwritableThroughLink {
+                slug: "notes".to_string(),
+                resolved: "AGENTS".to_string(),
+                reason: UnwritableReason::AgentInstructionFile {
+                    file_name: "AGENTS".to_string()
+                },
+            }
         );
         assert!(root.read_path("notes").is_ok());
     }
@@ -517,10 +494,29 @@ mod tests {
     #[test]
     fn a_write_path_refuses_what_a_write_tool_never_names() {
         let (_directory, root) = vault();
-        assert!(message(root.write_path(".claude/rules")).contains("path segment \".claude\""));
-        assert!(message(root.write_path("README")).contains("vault README"));
+        assert!(matches!(
+            refusal(root.write_path(".claude/rules")),
+            SlugError::Unwritable {
+                reason: UnwritableReason::HiddenSegment { .. },
+                ..
+            }
+        ));
+        assert!(matches!(
+            refusal(root.write_path("README")),
+            SlugError::Unwritable {
+                reason: UnwritableReason::VaultReadme,
+                ..
+            }
+        ));
         assert!(root.write_path("capabilities/read").is_ok());
         assert!(root.read_path(".claude/rules").is_ok());
+    }
+
+    #[test]
+    fn an_upper_case_extension_is_dropped_from_a_slug() {
+        let (_directory, root) = vault();
+        std::fs::write(root.path().join("Page.MD"), "x").expect("file");
+        assert_eq!(root.canonical_disk_slug("page").as_deref(), Some("Page"));
     }
 
     #[test]

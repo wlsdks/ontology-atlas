@@ -7,6 +7,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 const TEMPORARY_MARKER: &str = ".oatlas-tmp-";
 
+/// The longest name one folder entry may have on the file systems a vault lives on (ext4, APFS,
+/// NTFS count 255 bytes or units); a longer name fails with `ENAMETOOLONG`.
+const LONGEST_FILE_NAME_BYTES: usize = 255;
+
 pub(crate) fn atomic_temporary_name(
     file_name: &str,
     process: u32,
@@ -17,18 +21,31 @@ pub(crate) fn atomic_temporary_name(
 }
 
 /// A fresh name for a file called `file_name`: this process, the clock, a counter. Two writers in
-/// one process or two processes never pick one, and `create_new` refuses the rare tie.
+/// one process or two processes never pick one, and `create_new` refuses the rare tie. The
+/// shape adds up to 60 bytes to the file's name, where the JavaScript writers add 20, so a name
+/// that would pass 255 bytes keeps only as much of the file's name as fits; the sweep needs a
+/// non-empty target and nothing else of it.
 pub(crate) fn next_atomic_temporary_name(file_name: &str) -> String {
     static SEQUENCE: AtomicU64 = AtomicU64::new(0);
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |elapsed| elapsed.as_nanos());
-    atomic_temporary_name(
-        file_name,
-        std::process::id(),
-        nonce,
-        SEQUENCE.fetch_add(1, Ordering::Relaxed),
-    )
+    let process = std::process::id();
+    let sequence = SEQUENCE.fetch_add(1, Ordering::Relaxed);
+    let whole = atomic_temporary_name(file_name, process, nonce, sequence);
+    if whole.len() <= LONGEST_FILE_NAME_BYTES {
+        return whole;
+    }
+    let overhead = whole.len() - file_name.len();
+    let room = LONGEST_FILE_NAME_BYTES.saturating_sub(overhead).max(1);
+    let kept: String = file_name
+        .chars()
+        .scan(0_usize, |used, letter| {
+            *used += letter.len_utf8();
+            (*used <= room).then_some(letter)
+        })
+        .collect();
+    atomic_temporary_name(&kept, process, nonce, sequence)
 }
 
 /// The app's own recogniser, compiled into this crate's tests as a copy of the file, so a change
@@ -67,6 +84,17 @@ mod tests {
                 app_names::atomic_temporary_name(file_name, process, nonce, sequence)
             );
         }
+    }
+
+    #[test]
+    fn a_long_file_name_still_gets_a_name_the_disk_accepts_and_the_sweep_recognises() {
+        for file_name in ["a".repeat(250), "\u{d55c}".repeat(80), "b".repeat(255)] {
+            let name = next_atomic_temporary_name(&file_name);
+            assert!(name.len() <= LONGEST_FILE_NAME_BYTES, "{}", name.len());
+            assert!(app_names::is_atlas_temporary(&name), "{name}");
+        }
+        let short = next_atomic_temporary_name("note.md");
+        assert!(short.starts_with(".note.md.oatlas-tmp-"), "{short}");
     }
 
     #[test]

@@ -1,6 +1,6 @@
-//! Planted write hazards, mirroring `mcp/src/vault/writes/all-or-nothing.test.mjs` and
-//! `conflict-detection.test.mjs`: a stale or raced write, an unwritable target, a failure in the
-//! middle of a batch. Each case names what it proves.
+//! Planted write hazards, from the cases the JavaScript suites (`all-or-nothing.test.mjs`,
+//! `conflict-detection.test.mjs`) planted and more: a stale or raced write, an unwritable target,
+//! a reserved file, a failure in the middle of a batch. Each case names what it proves.
 
 use std::cell::Cell;
 use std::fs;
@@ -8,9 +8,23 @@ use std::path::Path;
 
 use confined_files::{
     apply_all_or_nothing, check_current_text, check_modified_time, write_atomically, ApplyOptions,
-    AtomicWrite, ConflictReport, Expectation, ModifiedTime, PlanEntry, VaultRoot, WritablePath,
-    WriteError,
+    AtomicWrite, ConflictReport, Expectation, IoFailure, ModifiedTime, OsErrorCode, PlanEntry,
+    Reservations, ReservedForPerson, VaultRoot, WritablePath, WriteError, WriteErrorClass,
 };
+
+/// How a test reads a reservation: a `review_state: human_decides` line in the text.
+fn reserved_in_text(path: &Path, text: &str) -> Option<ReservedForPerson> {
+    text.lines()
+        .any(|line| line.trim() == "review_state: human_decides")
+        .then(|| ReservedForPerson {
+            slug: path.display().to_string(),
+            note: None,
+        })
+}
+
+fn options() -> ApplyOptions<'static> {
+    ApplyOptions::new(Reservations::Refuse(&reserved_in_text))
+}
 
 fn vault() -> (tempfile::TempDir, VaultRoot) {
     let directory = tempfile::tempdir().expect("temp dir");
@@ -62,7 +76,7 @@ fn an_edit_made_right_before_the_rename_is_kept_and_the_write_stops_with_a_confl
         &path,
         "agent text",
         &AtomicWrite {
-            expectation: Expectation::Text("as planned".to_string()),
+            expectation: Expectation::Text("as planned"),
             conflict: Some(ConflictReport {
                 slug: "note",
                 expected_modified: Some(ModifiedTime::from_milliseconds(1000.0)),
@@ -78,9 +92,11 @@ fn an_edit_made_right_before_the_rename_is_kept_and_the_write_stops_with_a_confl
     assert!(error.to_string().starts_with(
         "Vault conflict: \"note\" was modified externally (changed on disk) between read and write. expectedMtime=1000 currentMtime="
     ));
-    assert!(error.to_string().ends_with(
-        "Re-read the doc with get_concepts to get the current expected_mtime, then retry the write."
-    ));
+    assert!(
+        !error.to_string().contains("get_concepts"),
+        "which tool re-reads the document is the server's to say"
+    );
+    assert_eq!(error.class(), WriteErrorClass::VaultConflict);
     assert_eq!(
         fs::read_to_string(path.as_path()).expect("read"),
         "a person's edit"
@@ -111,7 +127,7 @@ fn a_create_over_a_file_that_appeared_meanwhile_is_a_conflict_not_an_overwrite()
 }
 
 #[test]
-fn the_modified_time_rule_matches_the_javascript_check() {
+fn the_modified_time_rule_is_a_millisecond_apart() {
     let at = |milliseconds: f64| Some(ModifiedTime::from_milliseconds(milliseconds));
     assert!(
         check_modified_time("n", None, at(5.0)).is_ok(),
@@ -162,7 +178,7 @@ fn a_private_originals_mode_is_kept_by_the_rewrite() {
 fn an_empty_plan_does_nothing_and_a_mixed_plan_applies_everything() {
     let (_directory, root) = vault();
     assert_eq!(
-        apply_all_or_nothing(vec![], &ApplyOptions::default())
+        apply_all_or_nothing(vec![], &options())
             .expect("empty")
             .steps,
         0
@@ -175,7 +191,7 @@ fn an_empty_plan_does_nothing_and_a_mixed_plan_applies_everything() {
             PlanEntry::write(target(&root, "deep/new/b"), "B".to_string()),
             PlanEntry::delete(target(&root, "gone")),
         ],
-        &ApplyOptions::default(),
+        &options(),
     )
     .expect("applied");
     assert_eq!(applied.steps, 3);
@@ -195,7 +211,7 @@ fn deleting_a_missing_file_is_not_an_error() {
     let (_directory, root) = vault();
     let applied = apply_all_or_nothing(
         vec![PlanEntry::delete(target(&root, "never-existed"))],
-        &ApplyOptions::default(),
+        &options(),
     )
     .expect("applied");
     assert_eq!(applied.steps, 1);
@@ -216,10 +232,16 @@ fn a_failure_in_the_middle_rolls_back_earlier_writes_deletes_and_created_folders
             PlanEntry::write(target(&root, "new/nested/node"), "x".to_string()),
             PlanEntry::write(target(&root, "trap"), "boom".to_string()),
         ],
-        &ApplyOptions::default(),
+        &options(),
     )
     .expect_err("fails");
-    assert!(matches!(error, WriteError::RolledBack { .. }), "{error}");
+    let WriteError::RolledBack { cause } = &error else {
+        panic!("{error}");
+    };
+    assert!(
+        matches!(**cause, WriteError::Io(ref failure) if failure.syscall == "read"),
+        "the cause is the typed failure, not its text: {cause:?}"
+    );
     let text = error.to_string();
     assert!(text.starts_with("Write failed ("), "{text}");
     assert!(
@@ -258,7 +280,7 @@ fn a_plan_made_from_bytes_that_changed_writes_nothing() {
             PlanEntry::write(target(&root, "b"), "B".to_string())
                 .expecting_text("planned".to_string()),
         ],
-        &ApplyOptions::default(),
+        &options(),
     )
     .expect_err("changed");
     let WriteError::ChangedOnDisk(paths) = &error else {
@@ -285,7 +307,7 @@ fn an_expected_modified_time_that_moved_or_a_target_that_was_deleted_stops_the_p
     ));
     let moved = apply_all_or_nothing(
         vec![PlanEntry::write(target(&root, "a"), "A".to_string()).expecting_modified(stale)],
-        &ApplyOptions::default(),
+        &options(),
     )
     .expect_err("moved");
     assert!(matches!(moved, WriteError::ChangedOnDisk(_)));
@@ -295,7 +317,7 @@ fn an_expected_modified_time_that_moved_or_a_target_that_was_deleted_stops_the_p
             PlanEntry::write(target(&root, "deleted"), "stale".to_string())
                 .expecting_modified(stale),
         ],
-        &ApplyOptions::default(),
+        &options(),
     )
     .expect_err("deleted");
     assert!(matches!(revived, WriteError::ChangedOnDisk(_)));
@@ -324,11 +346,14 @@ fn each_entry_is_rechecked_right_before_it_applies_and_earlier_writes_roll_back(
         ],
         &ApplyOptions {
             before_entry: Some(&edit_b),
-            ..ApplyOptions::default()
+            ..options()
         },
     )
     .expect_err("late edit");
-    assert!(matches!(error, WriteError::RolledBack { .. }), "{error}");
+    let WriteError::RolledBack { cause } = &error else {
+        panic!("{error}");
+    };
+    assert!(matches!(**cause, WriteError::ChangedOnDisk(_)), "{cause:?}");
     assert_eq!(
         fs::read_to_string(root.path().join("a.md")).expect("a"),
         "A0"
@@ -344,10 +369,7 @@ fn each_entry_is_rechecked_right_before_it_applies_and_earlier_writes_roll_back(
 fn a_plan_that_requires_revisions_refuses_an_entry_without_one_before_starting() {
     let (_directory, root) = vault();
     fs::write(root.path().join("old.md"), "x").expect("old");
-    let require = ApplyOptions {
-        require_revisions: true,
-        ..ApplyOptions::default()
-    };
+    let require = options().requiring_revisions();
     let error = apply_all_or_nothing(
         vec![
             PlanEntry::write(target(&root, "old"), "y".to_string()),
@@ -384,7 +406,7 @@ fn a_plan_that_writes_a_file_and_deletes_its_other_spelling_keeps_what_it_wrote(
             PlanEntry::write(target(&root, "Auth"), "new".to_string()),
             PlanEntry::delete(target(&root, "Auth")),
         ],
-        &ApplyOptions::default(),
+        &options(),
     )
     .expect("applied");
     assert_eq!(
@@ -403,8 +425,7 @@ mod permissions {
     use std::os::unix::fs::PermissionsExt;
 
     fn running_as_root() -> bool {
-        // SAFETY: `geteuid` takes no arguments and cannot fail.
-        unsafe { libc::geteuid() == 0 }
+        rustix::process::geteuid().is_root()
     }
 
     #[test]
@@ -426,7 +447,7 @@ mod permissions {
                 PlanEntry::write(target(&root, "ok"), "after-ok".to_string()),
                 PlanEntry::write(target(&root, "locked"), "after-locked".to_string()),
             ],
-            &ApplyOptions::default(),
+            &options(),
         )
         .expect_err("refused");
         fs::set_permissions(
@@ -439,7 +460,7 @@ mod permissions {
         };
         assert_eq!(blocked.len(), 1);
         assert!(blocked[0].0.ends_with("locked.md"));
-        assert_eq!(blocked[0].1, "EACCES");
+        assert_eq!(blocked[0].1, OsErrorCode::PermissionDenied);
         let text = error.to_string();
         assert!(text.starts_with("Refused before writing anything: 1 file(s) are not writable, so this operation could not finish as one unit:\n  "));
         assert!(text.contains("locked.md (EACCES)"));
@@ -472,11 +493,11 @@ mod permissions {
                 target(&root, "frozen/new"),
                 "x".to_string(),
             )],
-            &ApplyOptions::default(),
+            &options(),
         );
         let delete = apply_all_or_nothing(
             vec![PlanEntry::delete(target(&root, "frozen/keep"))],
-            &ApplyOptions::default(),
+            &options(),
         );
         fs::set_permissions(
             root.path().join("frozen"),
@@ -493,6 +514,120 @@ mod permissions {
         );
         assert!(root.path().join("frozen/keep.md").exists());
     }
+}
+
+#[test]
+fn a_plan_that_would_rewrite_a_file_reserved_for_a_person_writes_nothing() {
+    let (_directory, root) = vault();
+    fs::write(
+        root.path().join("decision.md"),
+        "---\nreview_state: human_decides\n---\nbody",
+    )
+    .expect("reserved");
+    fs::write(root.path().join("plain.md"), "plain").expect("plain");
+    let plan = || {
+        vec![
+            PlanEntry::write(target(&root, "plain"), "rewritten".to_string()),
+            PlanEntry::write(target(&root, "decision"), "rewritten".to_string()),
+        ]
+    };
+    let error = apply_all_or_nothing(plan(), &options()).expect_err("reserved");
+    assert!(matches!(error, WriteError::Reserved(_)), "{error}");
+    assert!(error.to_string().contains("reserved for a person"));
+    assert_eq!(error.class(), WriteErrorClass::ToolError);
+    assert_eq!(
+        fs::read_to_string(root.path().join("plain.md")).expect("plain"),
+        "plain",
+        "the unreserved file of the same plan is untouched too"
+    );
+    // A deletion rewrites it just the same.
+    let deletion = apply_all_or_nothing(
+        vec![PlanEntry::delete(target(&root, "decision"))],
+        &options(),
+    );
+    assert!(matches!(deletion, Err(WriteError::Reserved(_))));
+    assert!(root.path().join("decision.md").exists());
+    // The one tool that releases a reservation says so, by name, in its options.
+    let released = apply_all_or_nothing(plan(), &ApplyOptions::new(Reservations::AllowReserved));
+    assert!(released.is_ok(), "{released:?}");
+}
+
+#[test]
+fn a_taken_name_classifies_as_a_conflict_by_its_code_not_by_its_wording() {
+    let taken = WriteError::Io(IoFailure::new(
+        "mkdir",
+        "/vault/a",
+        std::io::Error::from(std::io::ErrorKind::AlreadyExists),
+    ));
+    assert_eq!(taken.class(), WriteErrorClass::Conflict);
+    let missing = WriteError::Io(IoFailure::new(
+        "open",
+        "/vault/a",
+        std::io::Error::from(std::io::ErrorKind::NotFound),
+    ));
+    assert_eq!(missing.class(), WriteErrorClass::ToolError);
+    let rolled_back = WriteError::RolledBack {
+        cause: Box::new(taken),
+    };
+    assert_eq!(rolled_back.class(), WriteErrorClass::Conflict);
+    let rolled_back_conflict = WriteError::RolledBack {
+        cause: Box::new(WriteError::Conflict(confined_files::VaultConflict {
+            slug: "a".to_string(),
+            expected_modified: None,
+            current_modified: None,
+        })),
+    };
+    assert_eq!(rolled_back_conflict.class(), WriteErrorClass::Conflict);
+    #[cfg(unix)]
+    {
+        let raw = WriteError::Io(IoFailure::new(
+            "mkdir",
+            "/vault/a",
+            std::io::Error::from_raw_os_error(17),
+        ));
+        assert_eq!(raw.class(), WriteErrorClass::Conflict, "EEXIST is 17");
+    }
+}
+
+#[test]
+fn a_file_whose_name_nearly_fills_the_limit_is_still_written_atomically() {
+    let (_directory, root) = vault();
+    // 252 bytes + `.md` = 255, the longest name a folder entry may have. The temporary name is
+    // cut to fit, so the write neither fails with a name too long nor leaves debris.
+    let slug = "n".repeat(252);
+    let path = target(&root, &slug);
+    write_atomically(&path, "long", &AtomicWrite::default()).expect("write");
+    assert_eq!(fs::read_to_string(path.as_path()).expect("read"), "long");
+    assert_eq!(names_in(root.path()).len(), 1);
+}
+
+#[test]
+fn a_temporary_that_is_not_ours_is_never_removed() {
+    let (_directory, root) = vault();
+    let path = target(&root, "note");
+    fs::write(path.as_path(), "before").expect("seed");
+    write_atomically(&path, "after", &AtomicWrite::default()).expect("write");
+    // A stranger's file in the same folder survives every write.
+    fs::write(root.path().join(".note.md.oatlas-tmp-1-0-0"), "stranger").expect("stranger");
+    write_atomically(&path, "again", &AtomicWrite::default()).expect("write");
+    assert_eq!(
+        fs::read_to_string(root.path().join(".note.md.oatlas-tmp-1-0-0")).expect("kept"),
+        "stranger"
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn a_stream_name_in_a_slug_cannot_change_the_bytes_of_the_file_it_hangs_on() {
+    let (_directory, root) = vault();
+    fs::write(root.path().join("a.md"), "original").expect("seed");
+    // `a.md:stream.md` would name an alternate data stream of `a.md` on NTFS.
+    let outcome = root.write_path("a.md:stream");
+    assert!(outcome.is_err(), "{outcome:?}");
+    assert_eq!(
+        fs::read_to_string(root.path().join("a.md")).expect("a"),
+        "original"
+    );
 }
 
 #[test]

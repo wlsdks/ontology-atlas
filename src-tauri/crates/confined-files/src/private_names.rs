@@ -1,7 +1,7 @@
 //! Names that are never read as evidence: hidden files (a leading `.`) and files named like a
 //! credential. The same rule the browser bundle asks before it requests a file from the app.
 
-const CREDENTIAL_STEMS: [&str; 8] = [
+const CREDENTIAL_STEMS: [&str; 9] = [
     "credential",
     "credentials",
     "secret",
@@ -10,8 +10,8 @@ const CREDENTIAL_STEMS: [&str; 8] = [
     "private_key",
     "privatekey",
     "id_rsa",
+    "id_ed25519",
 ];
-const CREDENTIAL_STEM_ED25519: &str = "id_ed25519";
 const KEY_EXTENSIONS: [&str; 6] = [".pem", ".key", ".p12", ".pfx", ".jks", ".keystore"];
 
 /// Whether one file or folder name is a credential: `secret`, `credentials.json`, `id_rsa`,
@@ -25,7 +25,7 @@ pub fn is_credential_name(name: &str) -> bool {
     {
         return true;
     }
-    let is_stem = |stem: &str| stem == CREDENTIAL_STEM_ED25519 || CREDENTIAL_STEMS.contains(&stem);
+    let is_stem = |stem: &str| CREDENTIAL_STEMS.contains(&stem);
     if is_stem(&lowered) {
         return true;
     }

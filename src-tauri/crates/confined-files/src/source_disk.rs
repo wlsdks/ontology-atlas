@@ -1,17 +1,23 @@
-//! A source tree read from the disk, with the confinement the snapshot gives by construction: a
-//! path must be below the root, not hidden and not named like a credential, a link is never
-//! followed, and what a path really is must lie inside the root's real folder.
+//! A source tree read from the disk, under the rules the snapshot gives by construction. The
+//! boundary's rules, each checked before any byte is read:
+//!
+//! - a path is resolved against the root when it is relative, and must end up inside the root;
+//! - a path with a hidden part (a leading dot) or a part named like a credential is refused, both
+//!   as written and as it really resolves, so a link cannot reach `.git` or a key file;
+//! - a link is followed only where its real location is inside the root's real folder, so a
+//!   folder link to somewhere else in the repository works and one that leaves it is refused;
+//! - a file larger than the caller's limit is refused, never cut, so a half-read file cannot
+//!   look like a complete one.
 
-use std::collections::HashMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 
 use crate::private_names::{is_credential_name, is_hidden_name};
-use crate::real_paths::{is_within, real_path};
+use crate::real_paths::{is_within, real_path, segments_below};
 use crate::scan_root::SourceRoot;
-use crate::source_access::{address, DirectoryEntry, EntryKind, SourceFiles, SourceReadError};
-use crate::source_snapshot::MAX_FILE_TEXT_BYTES;
+use crate::source_access::{
+    absolute, address, DirectoryEntry, EntryKind, Refusal, SourceFiles, SourceReadError,
+};
 
 /// A file larger than this is never re-read as evidence: it stays moved.
 pub const MAX_EVIDENCE_TEXT_BYTES: usize = 1024 * 1024;
@@ -34,11 +40,11 @@ impl ReadBudget {
     }
 }
 
-/// `bytes` as evidence text, or `None` when they are empty, over [`MAX_EVIDENCE_TEXT_BYTES`],
-/// binary (a NUL byte among the first 8000) or not UTF-8. A leading byte-order mark is dropped,
-/// as `TextDecoder` drops it.
+/// `bytes` as evidence text, or `None` when they are over [`MAX_EVIDENCE_TEXT_BYTES`], binary (a
+/// NUL byte among the first 8000) or not UTF-8. An empty file is the empty text. A leading
+/// byte-order mark is dropped, as `TextDecoder` drops it.
 pub fn evidence_text(bytes: &[u8]) -> Option<String> {
-    if bytes.is_empty() || bytes.len() > MAX_EVIDENCE_TEXT_BYTES {
+    if bytes.len() > MAX_EVIDENCE_TEXT_BYTES {
         return None;
     }
     if bytes.iter().take(BINARY_PROBE_BYTES).any(|byte| *byte == 0) {
@@ -54,7 +60,6 @@ pub struct DiskSource {
     real_root: Option<PathBuf>,
     excluded: Vec<String>,
     max_file_bytes: usize,
-    kinds: Mutex<HashMap<(PathBuf, bool), Option<EntryKind>>>,
 }
 
 fn kind_of(file_type: std::fs::FileType) -> EntryKind {
@@ -70,13 +75,14 @@ fn kind_of(file_type: std::fs::FileType) -> EntryKind {
 }
 
 impl DiskSource {
-    pub fn new(root: &SourceRoot) -> Self {
+    /// `max_file_bytes` is the most one read returns; a larger file is refused. The caller
+    /// states it because only the caller knows what a file it must understand may weigh.
+    pub fn new(root: &SourceRoot, max_file_bytes: usize) -> Self {
         Self {
             root: root.as_path().to_path_buf(),
             real_root: real_path(root.as_path()).ok(),
             excluded: Vec::new(),
-            max_file_bytes: MAX_FILE_TEXT_BYTES,
-            kinds: Mutex::new(HashMap::new()),
+            max_file_bytes,
         }
     }
 
@@ -87,77 +93,55 @@ impl DiskSource {
         self
     }
 
-    /// The most bytes a read returns; a larger file is refused, not cut.
-    #[must_use]
-    pub fn with_max_file_bytes(mut self, max_file_bytes: usize) -> Self {
-        self.max_file_bytes = max_file_bytes;
-        self
-    }
-
-    /// `path` made absolute and checked by name, and every folder between the root and it must be
-    /// a real folder: a path under a link is under whatever the link points at.
-    fn address(&self, path: &Path) -> Result<PathBuf, SourceReadError> {
+    /// `path` checked by name and made absolute below the root.
+    fn address(&self, path: &Path) -> Result<PathBuf, Refusal> {
         let name = address(&self.root, &self.excluded, path)?;
-        let checked = crate::source_access::absolute(&self.root, &name);
-        for ancestor in checked.ancestors().skip(1) {
-            if ancestor == self.root.as_path() || !ancestor.starts_with(&self.root) {
-                break;
-            }
-            match self.probe(ancestor, false) {
-                Some(EntryKind::Directory) => {}
-                Some(EntryKind::Symlink) => {
-                    return Err(SourceReadError::Refused("symlink".to_string()))
-                }
-                _ => {}
-            }
-        }
-        Ok(checked)
+        Ok(absolute(&self.root, &name))
     }
 
-    fn really_inside(&self, path: &Path) -> bool {
-        let Some(real_root) = &self.real_root else {
-            return false;
+    /// Where a path really is, or `None` when nothing is there: refused unless that is inside the
+    /// root's real folder and has no hidden or credential-named part below it. A path that is not
+    /// there yet is judged by its nearest existing folder. With `follow` false the path itself
+    /// may be a link that leads anywhere (it is only looked at, never opened), so its folder is
+    /// judged.
+    fn confine(&self, checked: &Path, follow: bool) -> Result<Option<PathBuf>, Refusal> {
+        let real_root = self
+            .real_root
+            .as_ref()
+            .ok_or(Refusal::OutsideApprovedRoot)?;
+        let judged = if follow {
+            checked
+        } else {
+            checked.parent().unwrap_or(checked)
         };
-        real_path(path).is_ok_and(|real| is_within(real_root, &real))
-    }
-
-    fn probe(&self, path: &Path, through_links: bool) -> Option<EntryKind> {
-        let key = (path.to_path_buf(), through_links);
-        if let Some(known) = self
-            .kinds
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .get(&key)
-        {
-            return *known;
+        let mut probe = judged;
+        let real = loop {
+            if let Ok(real) = real_path(probe) {
+                break real;
+            }
+            match probe.parent() {
+                Some(parent) if parent != probe => probe = parent,
+                _ => return Err(Refusal::OutsideApprovedRoot),
+            }
+        };
+        let below = if is_within(real_root, &real) {
+            segments_below(real_root, &real)
+        } else {
+            None
         }
-        // A path under a parent that is not a directory is absent without a probe of its own.
-        let parent_is_directory = path
-            .parent()
-            .filter(|parent| parent.starts_with(&self.root) && *parent != self.root.as_path())
-            .is_none_or(|parent| self.probe(parent, false) == Some(EntryKind::Directory));
-        let kind = parent_is_directory
-            .then(|| {
-                let metadata = if through_links {
-                    std::fs::metadata(path)
-                } else {
-                    std::fs::symlink_metadata(path)
-                };
-                metadata.ok().map(|found| kind_of(found.file_type()))
-            })
-            .flatten();
-        self.kinds
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .insert(key, kind);
-        kind
+        .ok_or(Refusal::OutsideApprovedRoot)?;
+        if below
+            .iter()
+            .any(|part| is_hidden_name(part) || is_credential_name(part))
+        {
+            return Err(Refusal::PrivateOrHiddenPath);
+        }
+        Ok((probe == judged && follow).then_some(real))
     }
 
-    /// A regular file, not a link, whose real location is inside the root.
+    /// A regular file, not a link, in a folder that really is inside the root.
     pub fn is_own_file(&self, path: &Path) -> bool {
-        self.address(path).is_ok_and(|checked| {
-            self.probe(&checked, false) == Some(EntryKind::File) && self.really_inside(&checked)
-        })
+        self.link_kind(path) == Ok(Some(EntryKind::File))
     }
 
     /// The working-tree file as evidence text, only when it is a regular file inside the root, its
@@ -166,18 +150,9 @@ impl DiskSource {
     /// the file has grown. `None` for anything else.
     pub fn read_evidence_text(&self, path: &Path, budget: &mut ReadBudget) -> Option<String> {
         let checked = self.address(path).ok()?;
-        let real = real_path(&checked).ok()?;
+        let real = self.confine(&checked, true).ok()??;
         let real_root = self.real_root.as_ref()?;
-        if !is_within(real_root, &real) {
-            return None;
-        }
-        let below = real.strip_prefix(real_root).ok()?;
-        if below.as_os_str().is_empty()
-            || below.components().any(|part| {
-                let name = part.as_os_str().to_string_lossy();
-                is_hidden_name(&name) || is_credential_name(&name)
-            })
-        {
+        if real == *real_root {
             return None;
         }
         let file = std::fs::File::open(&real).ok()?;
@@ -208,71 +183,64 @@ impl SourceFiles for DiskSource {
     }
 
     fn kind(&self, path: &Path) -> Result<Option<EntryKind>, SourceReadError> {
-        let checked = self.address(path)?;
-        match self.probe(&checked, false) {
-            Some(EntryKind::Symlink) => Err(SourceReadError::Refused("symlink".to_string())),
-            other => Ok(other),
-        }
+        let checked = self.address(path).map_err(SourceReadError::Refused)?;
+        let Some(real) = self
+            .confine(&checked, true)
+            .map_err(SourceReadError::Refused)?
+        else {
+            return Ok(None);
+        };
+        Ok(std::fs::metadata(real)
+            .ok()
+            .map(|found| kind_of(found.file_type())))
     }
 
     fn link_kind(&self, path: &Path) -> Result<Option<EntryKind>, SourceReadError> {
-        let checked = self.address(path)?;
-        Ok(self.probe(&checked, false))
+        let checked = self.address(path).map_err(SourceReadError::Refused)?;
+        self.confine(&checked, false)
+            .map_err(SourceReadError::Refused)?;
+        Ok(std::fs::symlink_metadata(&checked)
+            .ok()
+            .map(|found| kind_of(found.file_type())))
     }
 
-    fn read_text(&self, path: &Path) -> Result<String, SourceReadError> {
-        let checked = self.address(path)?;
-        match self.probe(&checked, false) {
-            None => return Err(SourceReadError::Absent),
-            Some(EntryKind::Symlink) => {
-                return Err(SourceReadError::Refused("symlink".to_string()))
-            }
-            Some(EntryKind::File) => {}
-            Some(_) => {
-                return Err(SourceReadError::Refused(
-                    "file bytes unavailable".to_string(),
-                ))
-            }
+    fn read_text(&self, path: &Path) -> Result<std::borrow::Cow<'_, str>, SourceReadError> {
+        let checked = self.address(path).map_err(SourceReadError::Refused)?;
+        let real = self
+            .confine(&checked, true)
+            .map_err(SourceReadError::Refused)?
+            .ok_or(SourceReadError::Absent)?;
+        let file = std::fs::File::open(&real).map_err(|_| SourceReadError::Absent)?;
+        let is_file = file.metadata().is_ok_and(|found| found.is_file());
+        if !is_file {
+            return Err(SourceReadError::Refused(Refusal::FileBytesUnavailable));
         }
-        if !self.really_inside(&checked) {
-            return Err(SourceReadError::Refused(
-                "outside approved root".to_string(),
-            ));
-        }
-        let file = std::fs::File::open(&checked).map_err(|_| SourceReadError::Absent)?;
         let mut bytes = Vec::new();
         let limit = u64::try_from(self.max_file_bytes).unwrap_or(u64::MAX);
         file.take(limit.saturating_add(1))
             .read_to_end(&mut bytes)
             .map_err(|_| SourceReadError::Absent)?;
         if bytes.len() > self.max_file_bytes {
-            return Err(SourceReadError::Refused(
-                "file over the size limit".to_string(),
-            ));
+            return Err(SourceReadError::Refused(Refusal::FileOverSizeLimit));
         }
-        Ok(String::from_utf8_lossy(&bytes).into_owned())
+        Ok(std::borrow::Cow::Owned(
+            String::from_utf8_lossy(&bytes).into_owned(),
+        ))
     }
 
     fn list_directory(&self, path: &Path) -> Result<Vec<DirectoryEntry>, SourceReadError> {
-        let checked = self.address(path)?;
-        match self.probe(&checked, false) {
-            None => return Err(SourceReadError::Absent),
-            Some(EntryKind::Symlink) => {
-                return Err(SourceReadError::Refused("symlink".to_string()))
+        let checked = self.address(path).map_err(SourceReadError::Refused)?;
+        let real = self
+            .confine(&checked, true)
+            .map_err(SourceReadError::Refused)?
+            .ok_or(SourceReadError::Absent)?;
+        let listing = std::fs::read_dir(&real).map_err(|error| {
+            if error.kind() == std::io::ErrorKind::NotADirectory {
+                SourceReadError::Refused(Refusal::DirectoryUnavailable)
+            } else {
+                SourceReadError::Absent
             }
-            Some(EntryKind::Directory) => {}
-            Some(_) => {
-                return Err(SourceReadError::Refused(
-                    "directory unavailable".to_string(),
-                ))
-            }
-        }
-        if !self.really_inside(&checked) {
-            return Err(SourceReadError::Refused(
-                "outside approved root".to_string(),
-            ));
-        }
-        let listing = std::fs::read_dir(&checked).map_err(|_| SourceReadError::Absent)?;
+        })?;
         let mut entries: Vec<DirectoryEntry> = listing
             .filter_map(Result::ok)
             .filter_map(|entry| {
@@ -296,11 +264,18 @@ mod tests {
     use crate::scan_root::ScanRoots;
     use std::os::unix::fs::symlink;
 
+    const LIMIT: usize = 512 * 1024;
+
     struct Tree {
         _directory: tempfile::TempDir,
         root: PathBuf,
         outside: PathBuf,
         source: DiskSource,
+    }
+
+    fn source_of(root: &Path, limit: usize) -> DiskSource {
+        let scan = ScanRoots::new(root.to_path_buf(), root.to_path_buf()).expect("roots");
+        DiskSource::new(&scan.allow(root, "rootPath").expect("allowed"), limit)
     }
 
     fn tree() -> Tree {
@@ -312,8 +287,7 @@ mod tests {
         std::fs::create_dir_all(&outside).expect("outside");
         std::fs::write(root.join("src/a.ts"), "import './b';").expect("a");
         std::fs::write(outside.join("sentinel.ts"), "outside sentinel").expect("sentinel");
-        let scan = ScanRoots::new(root.clone(), root.clone());
-        let source = DiskSource::new(&scan.allow(&root, "rootPath").expect("allowed"));
+        let source = source_of(&root, LIMIT);
         Tree {
             _directory: directory,
             root,
@@ -322,7 +296,7 @@ mod tests {
         }
     }
 
-    fn refusal(result: Result<impl std::fmt::Debug, SourceReadError>) -> String {
+    fn refusal<T: std::fmt::Debug>(result: Result<T, SourceReadError>) -> Refusal {
         match result {
             Err(SourceReadError::Refused(reason)) => reason,
             other => panic!("{other:?}"),
@@ -353,20 +327,38 @@ mod tests {
     }
 
     #[test]
+    fn a_relative_path_is_read_below_the_root() {
+        let tree = tree();
+        assert_eq!(
+            tree.source.read_text(Path::new("src/a.ts")).as_deref(),
+            Ok("import './b';")
+        );
+        assert_eq!(
+            refusal(tree.source.read_text(Path::new("../outside/sentinel.ts"))),
+            Refusal::OutsideApprovedRoot
+        );
+    }
+
+    #[test]
     fn a_folder_link_out_of_the_root_cannot_be_listed_read_or_probed() {
         let tree = tree();
         symlink(&tree.outside, tree.root.join("linked")).expect("link");
         assert_eq!(
             refusal(tree.source.list_directory(&tree.root.join("linked"))),
-            "symlink"
+            Refusal::OutsideApprovedRoot
         );
         assert_eq!(
             refusal(tree.source.read_text(&tree.root.join("linked/sentinel.ts"))),
-            "symlink"
+            Refusal::OutsideApprovedRoot
         );
         assert_eq!(
             refusal(tree.source.kind(&tree.root.join("linked"))),
-            "symlink"
+            Refusal::OutsideApprovedRoot
+        );
+        assert_eq!(
+            refusal(tree.source.link_kind(&tree.root.join("linked/sentinel.ts"))),
+            Refusal::OutsideApprovedRoot,
+            "what is under a link that leaves the root is not even looked at"
         );
         // The link itself is visible as a link, so a scan can skip it without a read.
         assert_eq!(
@@ -376,7 +368,7 @@ mod tests {
     }
 
     #[test]
-    fn a_file_link_to_the_outside_and_a_file_under_a_linked_folder_are_refused() {
+    fn a_file_link_to_the_outside_is_refused_and_a_link_inside_the_root_is_followed() {
         let tree = tree();
         symlink(
             tree.outside.join("sentinel.ts"),
@@ -385,15 +377,50 @@ mod tests {
         .expect("link");
         assert_eq!(
             refusal(tree.source.read_text(&tree.root.join("src/leak.ts"))),
-            "symlink"
+            Refusal::OutsideApprovedRoot
         );
         assert!(!tree.source.is_own_file(&tree.root.join("src/leak.ts")));
         assert!(tree.source.is_own_file(&tree.root.join("src/a.ts")));
-        // A folder link that stays inside the root still makes its files not "own" paths.
+        // A folder link that stays inside the root is read through.
         symlink(tree.root.join("src"), tree.root.join("alias")).expect("link");
         assert_eq!(
-            refusal(tree.source.read_text(&tree.root.join("alias/a.ts"))),
-            "symlink"
+            tree.source
+                .read_text(&tree.root.join("alias/a.ts"))
+                .as_deref(),
+            Ok("import './b';")
+        );
+        assert_eq!(
+            tree.source.kind(&tree.root.join("alias")),
+            Ok(Some(EntryKind::Directory))
+        );
+    }
+
+    #[test]
+    fn a_link_inside_the_root_cannot_reach_a_hidden_or_credential_name() {
+        let tree = tree();
+        std::fs::create_dir_all(tree.root.join(".git")).expect("git");
+        std::fs::write(tree.root.join(".git/config"), "[core]").expect("config");
+        std::fs::create_dir_all(tree.root.join("secrets")).expect("secrets");
+        std::fs::write(tree.root.join("secrets/token.ts"), "x").expect("token");
+        symlink(tree.root.join(".git"), tree.root.join("docs")).expect("link");
+        symlink(tree.root.join("secrets"), tree.root.join("notes")).expect("link");
+        symlink(
+            tree.root.join("secrets/token.ts"),
+            tree.root.join("plain.ts"),
+        )
+        .expect("link");
+        for path in ["docs/config", "notes/token.ts", "plain.ts"] {
+            assert_eq!(
+                refusal(tree.source.read_text(&tree.root.join(path))),
+                Refusal::PrivateOrHiddenPath,
+                "{path}"
+            );
+        }
+        let mut budget = ReadBudget::evidence();
+        assert_eq!(
+            tree.source
+                .read_evidence_text(&tree.root.join("docs/config"), &mut budget),
+            None
         );
     }
 
@@ -403,14 +430,17 @@ mod tests {
         std::fs::write(tree.root.join(".env"), "TOKEN=1").expect("env");
         std::fs::write(tree.root.join("id_rsa"), "key").expect("key");
         for (path, reason) in [
-            (tree.root.join(".env"), "private or hidden path"),
-            (tree.root.join("id_rsa"), "private or hidden path"),
+            (tree.root.join(".env"), Refusal::PrivateOrHiddenPath),
+            (tree.root.join("id_rsa"), Refusal::PrivateOrHiddenPath),
             (
                 tree.root.join("../outside/sentinel.ts"),
-                "outside approved root",
+                Refusal::OutsideApprovedRoot,
             ),
-            (tree.outside.join("sentinel.ts"), "outside approved root"),
-            (PathBuf::from("/etc/passwd"), "outside approved root"),
+            (
+                tree.outside.join("sentinel.ts"),
+                Refusal::OutsideApprovedRoot,
+            ),
+            (PathBuf::from("/etc/passwd"), Refusal::OutsideApprovedRoot),
         ] {
             assert_eq!(
                 refusal(tree.source.read_text(&path)),
@@ -439,17 +469,42 @@ mod tests {
     }
 
     #[test]
-    fn a_file_over_the_limit_is_refused_not_cut() {
+    fn the_caller_sets_the_limit_and_a_file_over_it_is_refused_not_cut() {
         let tree = tree();
-        let source = DiskSource::new(
-            &ScanRoots::new(tree.root.clone(), tree.root.clone())
-                .allow(&tree.root, "rootPath")
-                .expect("allowed"),
-        )
-        .with_max_file_bytes(8);
+        let small = source_of(&tree.root, 8);
         assert_eq!(
-            refusal(source.read_text(&tree.root.join("src/a.ts"))),
-            "file over the size limit"
+            refusal(small.read_text(&tree.root.join("src/a.ts"))),
+            Refusal::FileOverSizeLimit
+        );
+        // A 1 MiB TypeScript file keeps its imports when the caller allows it.
+        let big = "import './b';\n".repeat(70_000);
+        std::fs::write(tree.root.join("src/big.ts"), &big).expect("big");
+        assert!(big.len() > 900_000);
+        let roomy = source_of(&tree.root, 2 * 1024 * 1024);
+        assert_eq!(
+            roomy
+                .read_text(&tree.root.join("src/big.ts"))
+                .map(|text| text.len()),
+            Ok(big.len())
+        );
+    }
+
+    #[test]
+    fn an_empty_file_is_the_empty_text() {
+        let tree = tree();
+        std::fs::write(tree.root.join("src/empty.ts"), "").expect("empty");
+        assert_eq!(
+            tree.source
+                .read_text(&tree.root.join("src/empty.ts"))
+                .as_deref(),
+            Ok("")
+        );
+        let mut budget = ReadBudget::evidence();
+        assert_eq!(
+            tree.source
+                .read_evidence_text(&tree.root.join("src/empty.ts"), &mut budget)
+                .as_deref(),
+            Some("")
         );
     }
 
@@ -484,17 +539,17 @@ mod tests {
                 path.display()
             );
         }
-        let mut empty = ReadBudget { left: 4 };
+        let mut short = ReadBudget { left: 4 };
         assert_eq!(
             tree.source
-                .read_evidence_text(&tree.root.join("src/a.ts"), &mut empty),
+                .read_evidence_text(&tree.root.join("src/a.ts"), &mut short),
             None
         );
     }
 
     #[test]
-    fn evidence_text_refuses_empty_oversized_binary_and_invalid_bytes() {
-        assert_eq!(evidence_text(b""), None);
+    fn evidence_text_refuses_oversized_binary_and_invalid_bytes() {
+        assert_eq!(evidence_text(b"").as_deref(), Some(""));
         assert_eq!(evidence_text(b"a\0b"), None);
         assert_eq!(evidence_text(&[0xff, 0xfe, 0x41]), None);
         assert_eq!(
