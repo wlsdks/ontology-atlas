@@ -211,7 +211,7 @@ touched state, not an automatic full release build. The proof records the
 installed app route, WebView marker, window identity, lifecycle result, and a
 Computer Use screenshot/accessibility tree.
 
-A browser can prove web layout. It cannot prove AppKit/Tauri window behavior,
+A test browser can prove the layout of the shared bundle. It cannot prove AppKit/Tauri window behavior,
 restoration, menus, shutdown, or WKWebView-only defects.
 
 ## Design post-check

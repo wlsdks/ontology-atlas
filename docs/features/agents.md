@@ -71,9 +71,9 @@ own. The rail tile, the composer's limit note and the mapping row read them.
 
 **Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **The ontology folder remains in settings** (the axis a folder answers is different). API keys live in the Models tab below.
 
-**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected. That row names the place: the MCP tab on the same strip, one press away, so the sentence carries no link (the settings sheet, which has no strip, still does).
+**Where MCP lives**: MCP is **attached to the folder**, not the screen, so an agent connected over MCP needs none of this tab's launch machinery. Where a row points to it, it names the MCP tab on the same strip, one press away, so the sentence carries no link (the settings sheet, which has no strip, still does).
 
-The header bar starts at the page gutter like every destination's; beneath it the body wears `PAGE_FRAME_FORM`, the 960px column centred at every width, as Automations does, and the frame carries the desktop bottom breath itself. On the web, where the Agents and Models tabs hold one card each, the lede and that card are a stage centred in the window; the MCP tab and every app tab are lists under the bar, and switching between a stage and a list glides. Each tab is one column: the setup shelf follows the tool rows, the sent log follows the model rows, and the connectors follow the folder's MCP rows. The web's Agents card stands above the tool marks. Each MCP share row names the file it writes beside its button, as a model row shows its state.
+The header bar starts at the page gutter like every destination's; beneath it the body wears `PAGE_FRAME_FORM`, the 960px column centred at every width, as Automations does, and the frame carries the desktop bottom breath itself. Each tab is one column: the setup shelf follows the tool rows, the sent log follows the model rows, and the connectors follow the folder's MCP rows. Each MCP share row names the file it writes beside its button, as a model row shows its state.
 
 The folder's own MCP connection and the connectors live in the MCP tab. This tab keeps the runner list, the connection checks, the app-only install and repair, and opening a conversation.
 
@@ -107,9 +107,9 @@ writable claim. A valid citation still needs human/source review.
 Construction observes at most 500 entries/eight directory levels, reads eight
 ranges/32 KiB, and sends eight requests of at most 64 KiB, with a cancellable
 180-second timeout per request. Local audit retains 60 seconds and its separate
-catalogue. The web explains the native/local requirement. Neither file saves nor
+catalogue. Neither file saves nor
 these limits are a completeness score or meaning acceptance. Background native
-and browser fixtures substitute chooser/window gestures; installed interaction
+and test-browser fixtures substitute chooser/window gestures; installed interaction
 and general repository quality remain unmeasured.
 
 ### `/agents?tab=models` — Models
@@ -152,8 +152,7 @@ and with whose key. The strip reads Agents | Models | MCP. Decision:
   completed outcomes remain intact. The existing audit format records an
   interrupted transfer as an error, not as unsent. Closing Atlas's connection
   does not establish that the model server stopped inference.
-- **Web** — the tab exists and shows the desktop-only card (why, and the app download); no
-  sample rows. Settings keeps a "Models · API keys" door row in its Agents pane, and the map dock's
+- **Entry points** — Settings keeps a "Models · API keys" door row in its Agents pane, and the map dock's
   no-key button opens this tab. Opening a local runner row focuses its address, so Escape closes the editor before the native window handles the key. Every way a row closes returns focus to its opener, and results
   are announced once through one polite live region.
 
@@ -190,9 +189,8 @@ connectors dialog. The rail has no MCP tile; `g c` lands here.
   waives copyright and not trademark, so every other service falls back to the generic connector
   glyph rather than to an assumption that nobody would mind.
 
-**On the web**: the whole screen works, because MCP attaches to **the folder**, not to
-an Atlas screen. Two halves are app-only and each says so where it is missing — reading
-what this machine already registers, and keeping a token in the OS keychain.
+MCP attaches to **the folder**, not to an Atlas screen. Two halves are native —
+reading what this machine already registers, and keeping a token in the OS keychain.
 
 #### Connectors — the external MCP servers a folder may reach
 
@@ -227,7 +225,7 @@ vault server.
 - **A reference is the connector's own.** A variable pointing at another connector's
   keychain entry keeps the connector off and says why, and removing it never deletes the
   other connector's token.
-- **The token stays out of the browser process too.** The reference becomes a value in
+- **The token stays out of the WebView too.** The reference becomes a value in
   Rust, one line before it leaves for the agent.
 - **Name collisions are called out first.** Codex silently drops an ACP-supplied server
   whose name a config layer already holds.
@@ -283,15 +281,14 @@ and Escape. The record is in `docs/DECISIONS.md` (one list).
 - **Where a row came from is recorded.** `origin` holds `catalogue:<id>@<capture date>`,
   so the folder can say which entry and which capture produced it.
 - **An install link only pre-fills.** `ontology-atlas://mcp?install=<base64>` — registered
-  with macOS by the installed app, and reachable as `?install=` on `/mcp` in any browser —
+  with macOS by the installed app, and reachable as `?install=` on `/mcp` inside the app
+  (opened in a plain browser, that address shows the app-only page) —
   opens the dialog filled in and waits for the press. An unknown field refuses the whole
   payload, no value survives, and every argument is rendered verbatim — the lesson of
   CVE-2025-54133.
   The app answers that one address and nothing else, a second press routes the window
   already open, and a refused link is logged and dropped rather than followed.
 
-**On the web**: adding, editing and removing connectors work (the list is in the folder,
-which a browser holds), and the catalogue and the by-hand form work unchanged; a catalogue
-row that needs a token offers no field there and says so. Finding
-what is already registered, resolving a runtime path, and keeping a token are app-only,
-and the panel says so with somewhere to go.
+**What is native**: finding what is already registered, resolving a runtime path, and keeping
+a token are the app's own (Rust). Adding, editing and removing connectors only change the
+list in the folder, and the catalogue and the by-hand form work from it.

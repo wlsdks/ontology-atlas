@@ -75,5 +75,4 @@ concepts, imports at 2,000 files, code/config capture at 32 MiB and 512 KiB per 
 metadata at 12,000 entries, and native source excerpts at 16 files, 80 lines and
 8 KiB per excerpt (256 KiB per full source file). Unsupported, excluded, oversized and limited work remains
 unknown. Zero candidates is not proof of completeness or safety. Windows secure
-reads currently refuse; the web explains the native boundary and retains map
-and document reading.
+reads currently refuse; map and document reading remain.

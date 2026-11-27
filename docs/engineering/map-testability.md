@@ -27,6 +27,11 @@ a getter that reads refs at that moment, so frame cost is 0.
 http://localhost:4173/ko/topology?synth=3000&t=freeze&guides=off&e2e=1
 ```
 
+Open it in a test browser that installs the faked app runtime
+(`installDesktopRailRuntime`, `tests/e2e/desktop-rail-arrival-harness.ts`): in a
+plain browser every app address, `/ko/topology` included, shows the page that
+says Atlas runs in the installed app, with no map.
+
 Implementation: Last effect in `src/widgets/ontology-map/ui/loop/use-topology-loop.ts`.
 
 ## Interface
@@ -104,7 +109,7 @@ pnpm build && npx serve out -l 4173
 node scripts/perf/perf-node-drag.mjs
 ```
 
-If the output does not contain `node noise ✓`, discard that metric—the harness judges it itself.
+Both scripts open the map in a test browser on the faked app runtime. If the output does not contain `node noise ✓`, discard that metric—the harness judges it itself.
 
 **Readability** (crossings · overlaps) is a separate harness and requires no real input, so it is headless:
 

@@ -3,7 +3,7 @@ title: Projects
 doc_type: feature
 status: current
 area: projects
-routes: [/projects, /project/[slug], /project/[slug]/edit, /project/new, /project/fallback]
+routes: [/projects, /project/new, /project/fallback]
 ---
 
 # Projects
@@ -18,10 +18,9 @@ documents can be scanned by name and authored purpose. There is currently no
 in-page filtering.
 
 #### Header
-- The shared header bar: the title, the project count on its baseline (hidden below 640px, kept for screen readers) and, for the bundled sample, the open-folder action; adding a project lives in the section under the cards, or on the stage while no project exists
-- The bundled example state is labelled as a loaded sample rather than presented as the user's folder
+- The shared header bar: the title, the project count on its baseline (hidden below 640px, kept for screen readers); adding a project lives in the section under the cards, or on the stage while no project exists
 - The lede says what choosing does: with several projects that the Projects tab opens the one picked, with one that the folder has one project and the tab opens it
-- With at most one project the lede, the cards and the add section are one stage centred in the window; from two the grid starts under the bar. While a browser folder opens, a centred wait names it
+- With at most one project the lede, the cards and the add section are one stage centred in the window; from two the grid starts under the bar. While a folder opens, a centred wait names it
 
 #### Rows (one `<article>` per project, sorted by `updatedAt` desc, the selected project first)
 - The selected project's card carries a "Selected" tag beside its name and the strong border at rest, and its name link is `aria-current`. With one project that project is the selected one; with several, a card is marked only after its page was opened in this session
@@ -36,7 +35,7 @@ in-page filtering.
 #### Empty state
 - No projects at all → one centred stage in place of the lede and the add section: artwork of a project card being composed (name, definition line, domain rows whose bars fill once on arrival), the primary "New project" action, the secondary request to copy for an agent, and the `kind: project` note. When the first project appears the stage fades out where it stood and the card rises; reduced motion shows the composed card still
 
-### `/project/[slug]` — Project detail (the brief beside what to check, 2026-11-17)
+### `/project/fallback/?slug=<slug>` — Project detail (the brief beside what to check, 2026-11-17)
 
 One page, no tabs, one level below `/projects`. It answers four questions in
 order, the first three inside the first screen: what the product is, what to
@@ -52,7 +51,7 @@ box, and nothing on the page unfolds in place: no `<details>`, no chevron row.
 - Under 64rem of page column everything is one column: name, lead text, actions, "To check", "Changed". From 64rem the brief sits beside "To check" and "Changed" runs under both as one strip of three equal slots; from 90rem the brief, "To check" and "Changed" sit side by side. The arrangement changes by container width only; nothing animates between them
 - **To check** lists at most three concepts of this project, each once, under the highest-ranked of its typed reasons: raised for a person, changed after a person checked it, a source file changed after the document was written, could not be checked, no definition sentence. A concept with no document of its own gets no "no definition" row. No reason takes more than two slots while another has a row waiting. A row is the kind glyph, the name, its domain, and the reason as a sentence: a raised row is a fixed label followed by the agent's note in the locale's quotation marks, and a stale row names the file, the changed one before a missing one. It opens the concept on the map, or its document when the reason is about the document; its accessible name is what it shows, and where it opens is its description. The heading and "View all N" count concepts; the centred dialog lists every reason group
 - One sentence under the heading says where the stale count comes from: how many of this project's capabilities that name a source file have one that changed after their document (a change only in comments, the module an import names, or line wrapping and indentation that does not change meaning does not count, by the rule `validate_vault` uses), that Git history is being read, that only the desktop app reads it, that it could not be read, or that no capability of this project names a file. Its height is reserved for the tallest of these, so it does not move when the Git walk ends
-- **Changed** lists at most three concepts of this project changed in the adaptive recent window (seven days by default; Git dates in the app, file dates on the web), name and day, each opening the concept on the map; "View on the map" opens the map's recent filter
+- **Changed** lists at most three concepts of this project changed in the adaptive recent window (seven days by default; Git dates), name and day, each opening the concept on the map; "View on the map" opens the map's recent filter
 - Three row slots are always reserved in both lists, so rows arriving after the Git walk shift nothing (band and page height step 0 px, sampled per frame). "Nothing to check" waits for both the review queue and the Git walk and fades in place; a re-read keeps the previous rows until the new ones arrive
 - Evidence states come from the Git walk the map uses (`useMapEvidenceStates` in `src/features/vault-ontology/`): a screen that mounts shows the folder's last answer and walks again in the background, joining a walk already running for the same paths; a failed walk is never kept, and one folder never shows another's answer. Paths go to Git in batches of 512. The facts are built only under a found project in the installed app; the page computes no new fact, writes nothing and sends nothing
 
@@ -61,7 +60,6 @@ box, and nothing on the page unfolds in place: no `<details>`, no chevron row.
 - Project kind glyph and inline-editable name (`InlineEditable`, when the project can be managed; the word shown is the locale's `display_<locale>` when present, and editing it in place edits that key, otherwise the canonical name). The name stays the page's level-1 heading for the people who can edit it, and its accessible name is the project name
 - One meta line: Hub label, or "Individual project" when the folder holds several, the status when set, and the updated date
 - The authored description (inline-editable) at `text-title`, then the project document's lead paragraph at reading size and the prose measure: the paragraph above the first `##`, else the first section's, starting after the sentence the description already says, with wikilinks read as their labels. The numbered list of the document's own headings is gone. "Keep reading in the Ontology document" opens this project's own Markdown file (`/docs/?slug=<doc>`), or the vault root when the file is unknown
-- The read-only sample says so in one line beside the open-folder action
 - The lead paragraph sits inside the first screen at 1280x720 (`tests/e2e/projects/project-brief-page.spec.ts`)
 
 #### Actions
@@ -92,7 +90,7 @@ One quiet line under a hairline: the Harness door only where the desktop app can
 - Invalid slug → "Project not found" panel + back-to-workspace button
 - Loading → "Loading project data" gray panel
 
-### `/project/[slug]/edit` — Full editor
+### `/project/fallback/?slug=<slug>&mode=edit` — Full editor
 
 `ProjectForm` in `mode="edit"` (640px centered form column + 260px companion column; 4 sections + sticky save bar). **Create and edit no longer share one layout** (2026-07-27) — see `/project/new` below.
 
@@ -135,6 +133,9 @@ Create is a **different screen from edit**, not the same one with fewer values. 
 - **One place teaches.** The four teaching surfaces that used to stack above the form (two tip cards on the page, one header help line, one "1-minute tip" disclosure) all said the same sentence and pushed the actual fields off screen. They are replaced by one subtitle line directly above the fields, plus per-field captions.
 - `ProjectQuickCreatePanel` still exists as a component but is no longer surfaced from `/projects` (2026-07-18); this full form remains the canonical create path.
 
-### `/project/fallback` — Static-export fallback
+### `/project/fallback` — The one project address
 
-Used when a non-existent slug is hit in static export. Redirects or shows "not found" panel.
+The app opens every project here: `?slug=` is the detail page and `&mode=edit` the full editor,
+both read from the query, so a folder's slug needs no page built for it. The per-slug pages
+`/project/<slug>` and `/project/<slug>/edit` existed only for bundled samples and were removed
+(2026-11-27). An address without a resolvable slug returns to `/projects`.

@@ -88,6 +88,10 @@ npx serve out
 # visit http://localhost:3000
 ```
 
+A browser shows the website's pages (the gateway, `/sample`, the guide, the
+changelog); every app address shows the page that says Atlas runs in the
+installed app.
+
 ## Desktop release paths
 
 A release goes out on one of three paths. `docs/DESKTOP-MACOS.md` ("Release

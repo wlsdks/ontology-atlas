@@ -41,12 +41,10 @@ routes: [/topology]
   **Edit** menu holds **Edit relations**, **Rename**, **Edit description** and
   **Delete** (a domain also **Add a concept inside**); rename and description
   edit in place and save on `Enter`, delete first names what still points here,
-  and each write's toast offers **Undo** (`meaning-editor.md`). On the sample a
-  capability, element or project shows **Edit relations** alone. **More** starts with
+  and each write's toast offers **Undo** (`meaning-editor.md`). **More** starts with
   **Ontology review**, then **Copy prompt**, then explore overlooked areas, the
   document and the realm. A project whose code check is current shows
-  **Copy prompt** beside that status only on the web; beside an agent the
-  status stands alone and the copy stays in **More**. A menu opens directly above its trigger with their right edges
+  that status alone; **Copy prompt** stays in **More**. A menu opens directly above its trigger with their right edges
   aligned, on the app's raised menu surface with the popover shadow and a
   bright edge, never past the panel's left padding. A document selection's
   footer is the slug, **More** and **Open document**, its one filled control.

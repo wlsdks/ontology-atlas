@@ -21,11 +21,11 @@ Sources remain original files; write-ups and filed answers remain wiki pages.
 Documents-only folders need no code nodes or separate mode switch. The ontology
 retains its codebase scope.
 
-During a browser import, the renderer withholds only the new paths belonging to
-that copy batch and its newly created Chromium swap files until the batch settles.
+During an import, the renderer withholds only the new paths belonging to
+that copy batch until the batch settles.
 Existing originals and unrelated folder changes remain live. This is transient
 read coordination, not a persistent index or a filesystem transaction: a failed
-browser copy can still leave a newly created empty target, and failures remain
+copy can still leave a newly created empty target, and failures remain
 explicit. The first completed collection enters with a finite opacity transition;
 reduced motion skips it.
 
@@ -138,8 +138,7 @@ opens the setup dialog, which states the size and the free room before anything
 downloads. The limits sentence, saved with a report and sent in its brief, says
 the search matched words and meaning when meaning took part, and how many files meaning covered when that was partial. With nothing set up, a search that finds nothing offers setup before the
 investigation action. The field's first focus in a visit loads the model so the
-first answer does not wait. The web playground has no search by meaning and says
-so in the line.
+first answer does not wait.
 A matching hash
 means the cited source bytes agree with the page's receipt; it does not verify
 the sentence. Results from an older folder listing stay under a line saying the
@@ -149,8 +148,7 @@ the agent to re-read originals and cite its answer; that turn disables automatic
 Wiki approval, while the existing permission path still governs unexpected
 writes. Jev remains optional in the installed app: a current cited claim opens
 an exact-transfer consent dialog, and its result is advice on that pair only.
-Neither a key nor an agent is needed to search or open the originals; on the web
-there is no Jev press and no report action. The existing
+Neither a key nor an agent is needed to search or open the originals. The existing
 Conversation control remains available on the inquiry and report surfaces, so a
 person can choose a runtime or return to the transcript before starting another
 report request. Saved questions retain their direct entry there too. Opening a
@@ -270,8 +268,7 @@ came back without a page or, otherwise, one line naming the connected agent that
 many wait after the press is the overview panel's foot), and in the app one work line under it
 whose slot is held from the first paint: a running mark only while work happens, the kind of
 work, the file's name (its path is the title) as a press that opens it, and `Recent N`, which opens the last three in an
-anchored list. On the web, where nothing can write, one line says only the app writes pages and
-a Get the app button stands in for the press. Below a 60rem pane the number and bar stack, so
+anchored list. Below a 60rem pane the number and bar stack, so
 the band stays inside 112px at 1040. The percent and the sentence's count rise together on a
 folder's first visit in a session, drawn only once the count starts, and later move on from what
 is drawn; at 100% the bar turns green and one light passes along it. Below `md` the chart steps
@@ -361,8 +358,7 @@ exist without sources), the drop area with **Add files**, a line naming the sour
 inside the open folder (with **Show in Finder** or **Show in File Explorer** in the app and
 **Find documents**), the line that copying leaves the original files where they are, the
 sentence about what leaves the computer, and **Bring from Notion, Jira and more**. Without a
-connected agent the app adds one line and a link to the agents page; the web says writing
-wiki pages needs the app. No index, canvas, status strip or popup.
+connected agent the app adds one line and a link to the agents page. No index, canvas, status strip or popup.
 
 **Documents already in the folder lead.** On arrival the stage runs the metadata-only walk
 **Find documents** runs. Files inside the open folder but outside the sources folder sit
@@ -370,7 +366,7 @@ above the drop area: the count, a chip per first-level folder with its count, **
 into the sources folder** and **Choose files to copy** (the find dialog, filled). Markdown is
 offered only from the open folder, never a file the ontology knows as a concept (`kind:`),
 never under `sources/`, `wiki/` or `.ontology-atlas/`, and never a repository guide; Rust and
-the browser apply the same rules (`source-discovery-rules.contract.test.ts`). Files only a
+the renderer apply the same rules (`source-discovery-rules.contract.test.ts`). Files only a
 connected code folder holds stay a quiet suggestion below the folder line: up to four sheets,
 **Add N**, and **Hide this suggestion**, which the find dialog can undo.
 
@@ -526,8 +522,7 @@ own-shape card carries exactly one action, top right: with a coding agent connec
 starts one turn scoped to that page's shape findings (`buildWikiShapeFixBrief` — restore
 the five sections, cite a real place, and **never** invent a citation: an unverifiable
 claim moves under `## Not in sources`), and without one it reveals the file in Finder. Its
-wording names the checkpoint the person's own write mode actually runs. On the web there is
-neither an absolute path nor a local agent, so there is no control rather than a dead one.
+wording names the checkpoint the person's own write mode actually runs.
 The folder card has no action at all: its findings are repaired by editing another page,
 and that page's title inside the sentence is the press.
 
@@ -582,8 +577,7 @@ DOCX section arrives whole. An address the file no longer holds says exactly tha
 shows **no** text — the paragraph beside a renamed heading is not the cited one — and
 names alternatives only where the extractor itself reported that heading occurring twice.
 A PDF keeps its page number and the Finder door. The bytes come from the handle the folder
-walk already granted (`read_vault_binary_file` in the app, the File System Access handle in
-a browser, one ability on both surfaces), the text is stored nowhere and dropped when the
+walk already granted (`read_vault_binary_file`), the text is stored nowhere and dropped when the
 pane closes, and nothing leaves the computer; the pane therefore stops saying Atlas has
 never opened the file, and its sha256 row says it was measured on this read. The splitter
 is `src/shared/lib/library/source-units.ts` (the zip reader is `source-zip.ts`), the MCP `read_source` reader's twin, pinned unit for
@@ -611,12 +605,9 @@ discover before by opening the documents themselves.
     not the colour, is what tells the two apart.
   - `stale` — the hashes disagree, or a page cites it without recording one.
   - `checking` — cited with a hash, not yet measured. Hashing is lazy and only ever asked
-    for on cited files; the app hashes natively, a browser with `crypto.subtle`.
-  - A row opens the file: the app reveals it in Finder (reveal, never launch), the browser
-    hands over the bytes it was already granted. It opens a copy only of a kind it shows
-    without running anything (PDF, PNG, JPEG, GIF, WebP, AVIF, and plain text for `.txt`,
-    `.md`, `.csv`, `.tsv`, `.json`, `.yaml` and `.log`) and saves everything else, `.html`
-    and `.svg` included, as a download: a copy opened in the page would run in its origin.
+    for on cited files; the app hashes natively.
+  - A row reveals the file in Finder or File Explorer (reveal, never launch); no copy is opened
+    in the page, because a copy opened there would run in its origin.
 - **Wiki** — Markdown under `wiki/**` with no `kind:`. Each row shows `created_by` and,
   when the page does not fit the contract, the first problem code `wiki-validate` prints
   (`section-order`, `uncited-fact`, …), the folder's own findings included
@@ -636,8 +627,7 @@ discover before by opening the documents themselves.
 Tour one-click doors: hree one-click doors, plus one that reaches outside this computer:
 
 - **Add files** — app: a native panel, and Rust copies the bytes into `<vault>/sources/`
-  so the WebView never holds a document. Web: `showOpenFilePicker`, written through the
-  vault handle. A second copy of the same bytes is refused by sha256 and the refusal names
+  so the WebView never holds a document. A second copy of the same bytes is refused by sha256 and the refusal names
   the file that already holds them. Under the button: the folder is the interface — drop
   files into `<vault>/sources/` in Finder and the list updates by itself.
 - **Find documents** — proposes candidates from the open folder and from each bound
@@ -687,7 +677,7 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
   Save admits one attempt and reports pending and failed stages; retry reuses the row. Confirmed
   tokens need not be entered again. Close/Back cancel subsequent actions; already-issued writes
   may finish. Changed/deleted rows and all sibling-name collisions require saved-settings review.
-  A browser asks for no token and offers Get the app or Add files. Detection uses the captured
+  Detection uses the captured
   session/handle and absolute root; same-path physical replacement and cross-process atomicity
   are unproven. **What is not proven**: the picking happens inside the agent turn, not on this screen,
   because Atlas is not the MCP client and cannot call a service's tools or receive their

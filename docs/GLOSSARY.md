@@ -72,7 +72,7 @@ These are the words that were drifting. The **Use** column is binding.
 | **probe** | — | A defect inserted on purpose to prove a gate turns red | `.claude/skills/gate-probe/SKILL.md` |
 | **inventory** | census | The full count of existing violations, taken **before** switching a rule on | "Census" reads as demography to English speakers; engineers say "inventory" |
 | **doc-block** | — | The block comment above a file or export | Standard |
-| **surface** | — | A delivery target: the web, or the macOS app | Established by `AGENTS.md` — "two surfaces, one folder" |
+| **surface** | — | A delivery target: the website, or the macOS app | Established by `AGENTS.md` — "two surfaces, one folder" |
 | **`Surface` primitive** | bare "surface" | The UI component in `src/shared/ui/surfaces/surface.tsx` | Same English word, two meanings. Always backtick the component so they never blur |
 | **gateway** | landing page | The first-visit screen behind `/` and `/download` | It is not only marketing — installed-app users hit the same route, so "landing page" would misdescribe it |
 | **facade** | gateway | A single entry point hiding several render paths | The map's canvas/DOM render paths were called "gateways", colliding with the product screen. English already has "facade" |
@@ -113,7 +113,7 @@ the composed `messages/<locale>.json`.
 | query | search text | search text |
 | index (body) | search prep | search prep |
 | metadata | basic info | basic info |
-| handle (filesystem) | "folder opened by browser" | "the folder your browser opened" |
+| handle (filesystem) | "folder opened by the app" | "the folder the app opened" |
 | contract | how it runs · original info | where this reads from |
 | schema | format | format |
 | vault | ontology folder, then folder | ontology folder, then folder |

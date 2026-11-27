@@ -27,7 +27,7 @@ summaries and tags only, and past the app's 100,000-file or 12-level limit it sa
 many documents it searches inside. The Library's wiki list asks the same index, so a page
 is found by its text there too, and so is a Markdown file under `sources/`; the Library's
 source search reads only the other formats (PDF, CSV, DOCX and the like), so no Markdown
-file is searched twice. On the web a Markdown source matches by its name. Settings › Privacy · data, "Stored on this computer",
+file is searched twice. Without the index a Markdown source matches by its name. Settings › Privacy · data, "Stored on this computer",
 says the index holds file paths and modified times, each document's words with their
 positions, so its text can be read back by anyone who can read the account's cache folder,
 and each document's frontmatter, title, short first paragraph and the documents it links
@@ -37,7 +37,7 @@ the folder's files. It shows the open folder's index
 size, deletes that index, and turns indexing off (off leaves no index file). A folder's
 index is also deleted when the folder is taken off the folder list, or at launch when the
 folder is gone or was left unopened for fourteen days; an index being built or that cannot
-be read is kept. The web has no index: there the palette searches titles, display names,
+be read is kept. Without the index (indexing off, or none built yet) the palette searches titles, display names,
 slugs, tags and summaries (a description, else a concept's definition preview), and its
 zero-result note says exactly that. A page is no longer found by a word that only its
 first paragraph holds, except in the app with the index on: the documents palette finds
@@ -47,7 +47,7 @@ by summary only.
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
 substrings only, so the two things a Korean typist does first found nothing on the
-bundled Online Store sample: initials alone (the four consonants of a four-syllable
+Storefront sample: initials alone (the four consonants of a four-syllable
 capability), and any name mid-syllable — which every Korean word passes through,
 because the IME emits one jamo at a time, so the list blinked empty on most
 keystrokes. `shared/lib/search-match/hangul-match` adds exactly two rules, no general fuzziness:
@@ -69,7 +69,7 @@ nothing.
 wider than the row draws — every one of a concept's names (the canonical `title` and
 each `display_<locale>`), the summary, and the id — but the row drew only the
 localised name and the summary, so a match on anything else arrived with nothing to
-see. Measured on the bundled sample over thirty English queries: **97 of 317 rows
+see. Measured on the Storefront sample over thirty English queries: **97 of 317 rows
 (30.6%) carried no highlight at all.** Two changes close it. The id now matches on its
 slug and not its `kind:` prefix, because typing "element" returned twenty rows that
 were all just the kind — which the filter chips already select, properly; a query
@@ -85,7 +85,7 @@ start line (`w-[14rem]`, after four rows of "policy" began at four different x).
 
 **One answer to the same typing, in every box** (2026-09-19). The map draws INDEX
 and the `⌘K` palette on the same screen, and the docs tree has a third field; each
-kept its own match rule. Measured on the bundled sample: INDEX answered "no matching
+kept its own match rule. Measured on the Storefront sample: INDEX answered "no matching
 concept" to a chosung query and to a half-typed syllable that the palette resolved
 against the same vault, and it pulled every element for the word "element" because it
 compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearchText`
@@ -107,7 +107,7 @@ sits on is a separate open question.
 draws at most 20 rows, and both the group heading and the footer counted the drawn
 array — so the limit stood in for the answer. The footer is the one place that names
 the scope it searched ("N matches · Online Store"), which makes its number read as a
-fact about that folder. Measured on the bundled sample: typing `the` showed "match ·
+fact about that folder. Measured on the Storefront sample: typing `the` showed "match ·
 20" and "21 matches" where 120 actually matched, and one common Hangul initial showed
 20 where 52 did. The
 matchers now return the page **and** the size of what was found, the heading uses the
@@ -129,7 +129,7 @@ means.
 
 **The reason survives a phone** (2026-09-19). The reason column was `md:`-only, so
 below that breakpoint the class that hid it took the whole answer with it — measured
-at 390x844 on the bundled sample: `policy` showed 4 rows with **0** marks, `order` and
+at 390x844 on the Storefront sample: `policy` showed 4 rows with **0** marks, `order` and
 `shopper` 20 rows with 0, while the desktop layout explained every one of them. A
 reason that **carries a mark** now drops to a line of its own under the name there
 (rows grow 44 → 58px, and only those rows do); a reason with no mark is the summary

@@ -209,7 +209,6 @@ the expired patch request. Calendar inputs and selection survive route changes w
 session, after the source revisions are re-read and match. Dates are retained after
 read errors; an obsolete response cannot replace a newer scope.
 
-The browser shows its local-Git capability limit and no fabricated history.
 There is no semantic approval, agent attribution, background collection or last-read checkpoint.
 
 ## Public pull request inventory

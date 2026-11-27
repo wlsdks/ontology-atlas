@@ -85,7 +85,7 @@ the Markdown files + the local stdio MCP genuinely can't serve them.
 - **Graph diff pulse** — newly appearing slugs amber-pulse for 5s on `/topology`
 - **Toasts** — `Added: <slug>` (info) / `Edited: <slug>` (success, mtime change) on every page
 - **Save-conflict guard** — if a file changed on disk between read and write, `/docs` editor save surfaces a localized conflict notice and keeps the buffer dirty instead of silently overwriting unsaved edits
-- Effect: When files are edited via IDE · AI agent, the graph updates and toasts appear within ~1.5–5s without the user needing to click the web tab again.
+- Effect: When files are edited via IDE · AI agent, the graph updates and toasts appear within ~1.5–5s without the user needing to reload.
 
 #### Read tools (19)
 1. **connection_info** — active vault/repo roots plus the actually advertised `readOnly`, `toolCount`, `toolNames`, and `toolsetHash`; explicit `OATLAS_REPO_ROOT` wins, otherwise repo root is auto-discovered from the active vault's Git top-level before falling back to process cwd

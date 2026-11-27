@@ -190,4 +190,4 @@ The hosted demo serves *our* dogfood vault (the project's own `docs/ontology/`).
 
 - Open an issue: https://github.com/wlsdks/ontology-atlas/issues
 - Discussions: https://github.com/wlsdks/ontology-atlas/discussions
-- Include: OS, Node version (`node --version`), pnpm version, browser (for web issues), exact error message.
+- Include: OS, Node version (`node --version`), pnpm version, browser (for website issues), exact error message.

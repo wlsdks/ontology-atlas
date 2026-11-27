@@ -23,7 +23,7 @@ routes: []
   and conflict protection. Library also inherits the former mobile Docs slot.
   Relation writing stays on the map, in the contextual meaning editor
   ([`meaning-editor.md`](../map/meaning-editor.md)).
-- Bottom utility tier: the `settingsSlot` plus the web-only Get App tile.
+- Bottom utility tier: the `settingsSlot`.
   `AppShell` supplies the app-wide settings trigger by default; a page can
   override the slot for a surface-specific control.
 - Active-item detection: shared `resolveActiveNavDestination`

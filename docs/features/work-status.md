@@ -152,7 +152,7 @@ bezel counts both.
 
 A switch in the header, **By folder** and **By session**, arranges the same
 reads two ways while the building has rooms. By folder is the building above
-and the default; Atlas keeps the last choice in this browser profile's storage
+and the default; Atlas keeps the last choice in the app's storage
 (`atlas.workStatus.arrangeBy`, `folder` or `session`, never a name or pid), and
 any other stored value opens By folder. The plan is
 [`docs/specs/2026-11-25-workshop-sessions-view.md`](../specs/2026-11-25-workshop-sessions-view.md).
@@ -198,7 +198,7 @@ CPU and GPU. Each row is its name, one line on what it shows (or what is
 missing while it is off), and an On/Off switch; all are on by default. **How
 each one is read**, folded beneath, holds the full account of each read: when
 it runs, what it reads and what it never keeps or sends. The choices are kept
-in this browser profile's storage beside the session-status choice, and the
+in the app's storage beside the session-status choice, and the
 app holds each one too.
 
 The header carries words only when rooms can no longer say who waits:
@@ -215,8 +215,8 @@ Switched off, the page stops asking and tells the app, which holds the choice
 too: an ask already on its way starts no `claude`, and the list held in memory
 is dropped. Switched on again, the next read comes a second after the last one
 at the soonest. Rooms go back to the words they had: a
-program in a folder still reads **Working**. The choice is kept in this
-browser profile's storage (`atlas.workStatus.sessionListRead`) and is on until
+program in a folder still reads **Working**. The choice is kept in the
+app's storage (`atlas.workStatus.sessionListRead`) and is on until
 the person turns it off. Where the read never runs (Windows, Linux) the header
 says nothing about it.
 
@@ -486,7 +486,6 @@ without movement.
 
 | State | What shows |
 |---|---|
-| Web | `workStatus.web.*` with Get the app |
 | No repository | Choose the Git repository your agents work in |
 | Not a repository | the same choice |
 | Git missing | `atlasGit.install.*` |
