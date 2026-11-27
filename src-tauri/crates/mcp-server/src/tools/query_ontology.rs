@@ -298,9 +298,24 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
     request.include_external = include_external;
     request.include_unresolved = include_unresolved;
     let text = |name: &str| text_of(&texts, name).cloned();
-    let size = |name: &str| counts.iter().find(|(key, _)| *key == name).and_then(|(_, n)| *n);
-    let degree = |name: &str| degrees.iter().find(|(key, _)| *key == name).and_then(|(_, n)| *n);
-    let flag = |name: &str| flags.iter().find(|(key, _)| *key == name).and_then(|(_, f)| *f);
+    let size = |name: &str| {
+        counts
+            .iter()
+            .find(|(key, _)| *key == name)
+            .and_then(|(_, n)| *n)
+    };
+    let degree = |name: &str| {
+        degrees
+            .iter()
+            .find(|(key, _)| *key == name)
+            .and_then(|(_, n)| *n)
+    };
+    let flag = |name: &str| {
+        flags
+            .iter()
+            .find(|(key, _)| *key == name)
+            .and_then(|(_, f)| *f)
+    };
     request.selection.arguments = SelectionArguments {
         kind: text("kind"),
         domain: text("domain"),
@@ -473,6 +488,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         request.selection.outside.ignore_patterns = read_ignore_patterns(context)?;
     }
     let graph = context.compiled_graph().read(context)?;
-    let answer = ontology_graph::run_query(&graph, &request).map_err(|error| refusal(error, request.operation.name()))?;
+    let answer = ontology_graph::run_query(&graph, &request)
+        .map_err(|error| refusal(error, request.operation.name()))?;
     ToolOutput::json(&answer)
 }
