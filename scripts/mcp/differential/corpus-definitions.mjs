@@ -646,7 +646,21 @@ add('imports', 'inspect-architecture-storefront-profile', { vault: 'storefront' 
   call('inspect_architecture', { profileSlug: 'storefront-services' }),
   call('inspect_architecture', { rootPath: '$VAULT', profileSlug: 'architecture/storefront-services' }),
 ]);
-add('imports', 'infer-imports-atlas-ontology-vault-as-root', { vault: 'atlas-ontology' }, [call('infer_imports', { rootPath: '$VAULT' }), call('inspect_architecture', { rootPath: '$VAULT' })]);
+// Where the syntax tree reads what the line scanners did not (rows 2, 33, 34 and 35 of the table).
+const plant = (path, text) => ({ $: 'write-file', path: `../parser/${path}`, text });
+add('imports', 'infer-imports-syntax-tree-reads', { vault: 'miniature-repo' }, [
+  plant('binary/a.ts', '\u0000\u0001\u0002 import { b } from \'./b\';\n'),
+  plant('binary/b.ts', 'export const b = 1;\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/binary', reconcile: false }),
+  plant('rust/lib.rs', '#![allow(dead_code)]\nmod util;\n#[cfg(unix)]\nuse crate::util::tool;\nuse crate::\n    util::other;\nmacro_rules! m { () => { use crate::ghost::x; } }\n'),
+  plant('rust/util.rs', 'pub fn tool() {}\npub fn other() {}\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/rust', reconcile: false }),
+  plant('jvm/src/main/java/com/acme/Café.java', 'package com.acme;\nclass Café { Naïve n; }\n'),
+  plant('jvm/src/main/java/com/acme/Naïve.java', 'package com.acme;\nclass Naïve {}\n'),
+  plant('jvm/src/main/kotlin/com/acme/Use.kt', 'package com.acme\nfun use() = "${Naïve()}"\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/jvm', reconcile: false }),
+]);
+add('imports', 'infer-imports-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('infer_imports', { rootPath: '$VAULT' }), call('inspect_architecture', { rootPath: '$VAULT' })]);
 
 // ---------------------------------------------------------------------------------------------
 // evidence: find_evidence, read_source, the agent brief

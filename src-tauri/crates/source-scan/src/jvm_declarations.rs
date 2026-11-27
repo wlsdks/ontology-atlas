@@ -241,8 +241,13 @@ fn is_identifier(name: &str) -> bool {
     let mut characters = name.chars();
     characters
         .next()
-        .is_some_and(|first| first.is_ascii_alphabetic() || first == '_' || first == '$')
-        && characters.all(|character| character.is_ascii_alphanumeric() || character == '_' || character == '$')
+        .is_some_and(|first| first.is_alphabetic() || first == '_' || first == '$')
+        && characters.all(is_identifier_character)
+}
+
+/// A character a Java or Kotlin identifier may hold: letters and digits of any script, `_` and `$`.
+fn is_identifier_character(character: char) -> bool {
+    character.is_alphanumeric() || character == '_' || character == '$'
 }
 
 /// The class Java sees a Kotlin file's top-level functions in.
@@ -256,7 +261,7 @@ fn facade_name(annotation: Option<String>, stem: &str) -> Option<String> {
     let identifier: String = stem
         .chars()
         .map(|character| {
-            if character.is_ascii_alphanumeric() || character == '_' || character == '$' {
+            if is_identifier_character(character) {
                 character
             } else {
                 '_'
@@ -264,7 +269,7 @@ fn facade_name(annotation: Option<String>, stem: &str) -> Option<String> {
         })
         .collect();
     let mut characters = identifier.chars();
-    let first = characters.next()?.to_ascii_uppercase();
+    let first: String = characters.next()?.to_uppercase().collect();
     Some(format!("{first}{}Kt", characters.as_str()))
 }
 
@@ -273,7 +278,7 @@ fn facade_name(annotation: Option<String>, stem: &str) -> Option<String> {
 fn capitalised_reference(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<String> {
     let text = parsed.text_of(node);
     let first = text.chars().next()?;
-    if !first.is_ascii_uppercase() {
+    if !first.is_uppercase() {
         return None;
     }
     let before = node
@@ -283,10 +288,7 @@ fn capitalised_reference(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<St
     if before == Some(&b'.') {
         return None;
     }
-    let name: String = text
-        .chars()
-        .take_while(|character| character.is_ascii_alphanumeric() || *character == '_' || *character == '$')
-        .collect();
+    let name: String = text.chars().take_while(|character| is_identifier_character(*character)).collect();
     Some(name)
 }
 
@@ -332,6 +334,16 @@ mod tests {
         assert_eq!(file.declarations, ["Color", "bar", "top", "Alias", "Tools"]);
         assert!(file.type_references.contains(&"Baz".to_string()));
         assert!(!file.type_references.contains(&"Color".to_string()));
+    }
+
+    #[test]
+    fn a_name_in_any_script_is_read_whole_in_a_declaration_and_in_a_kotlin_template() {
+        let java = read(SourceLanguage::Java, "Caf\u{e9}.java", "package p;\nclass Caf\u{e9} { Na\u{ef}ve n; }\n");
+        assert_eq!(java.types, ["Caf\u{e9}"]);
+        assert_eq!(java.type_references, ["Na\u{ef}ve"]);
+        let kotlin = read(SourceLanguage::Kotlin, "caf\u{e9}.kt", "package p\nfun f() = \"${Na\u{ef}ve()}\"\n");
+        assert_eq!(kotlin.types, ["Caf\u{e9}Kt"]);
+        assert_eq!(kotlin.type_references, ["Na\u{ef}ve"]);
     }
 
     #[test]
