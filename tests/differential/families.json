@@ -2,7 +2,7 @@
   "generatedBy": "node scripts/mcp/differential/write-families.mjs",
   "unmapped": 0,
   "counts": {
-    "shell": 56,
+    "shell": 58,
     "safety": 26,
     "vault-read": 29,
     "graph": 58,
@@ -76,6 +76,8 @@
     "mcp/src/architecture/architecture-record.mjs": "imports",
     "mcp/src/architecture/architecture-record.test.mjs": "imports",
     "mcp/src/call-tool-script.test.mjs": "shell",
+    "mcp/src/compare-text.mjs": "shell",
+    "mcp/src/compare-text.test.mjs": "shell",
     "mcp/src/construction/build-depth.mjs": "meaning",
     "mcp/src/construction/build-depth.test.mjs": "meaning",
     "mcp/src/construction/build-depth/ability-placement.mjs": "meaning",

@@ -88,6 +88,7 @@ const RULES = [
   [/^server\/compiled-cache/, 'vault-read'],
   // the shell: protocol loop, registry, surface, instructions
   [/^server\//, 'shell'],
+  [/^compare-text[./]/, 'shell'],
   [/^(index|server-version)[./]/, 'shell'],
   [/^(integration|json-rpc-lines|startup-imports|call-tool-script|package-metadata-script|source-dependencies-script|containment-parent|verify-script)[./-]/, 'shell'],
 ];
