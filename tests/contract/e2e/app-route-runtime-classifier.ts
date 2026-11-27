@@ -1,19 +1,25 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 import { architectureRoutes } from "../architecture-routes.ts";
+import { reachFrom, testsOfSpec, type ReachedNode } from "./spec-test-reach.ts";
 
 /**
- * Decides which end-to-end specs still reach an app screen without the faked app runtime.
+ * Decides which end-to-end tests still reach an app screen without the faked app runtime.
  *
- * A spec is listed when it visits an app route and neither it nor the local modules it imports
- * call a function that installs the faked app runtime, or when it names a browser-only door:
- * `?shell=desktop`, `stubDirectoryPicker`, `useDogfoodSample` or `demo:sample-source`. A module that
- * merely mentions the native bridge, or one that only serves fixture data, installs nothing.
+ * Each `test(...)` is judged alone, with the `beforeEach` hooks that apply to it and the declarations those reach
+ * by name (`spec-test-reach.ts`). A test is listed when what it reaches visits an app route and none of it installs
+ * the faked app runtime, or when any of it names a browser-only door: `?shell=desktop`, `stubDirectoryPicker`,
+ * `useDogfoodSample` or `demo:sample-source`. A door outweighs an installer.
  *
- * Print the list with `node tests/contract/e2e/app-route-runtime-classifier.ts`; add `--json` for the
- * sorted file list.
+ * Installing the runtime means assigning the native bridge in the page: `window.__TAURI_INTERNALS__ = { ... }`.
+ * Reading it, wrapping its `invoke`, or naming it in a string installs nothing. Importing a module that installs
+ * it, without naming the function that does, reaches nothing.
+ *
+ * Print the list with `node tests/contract/e2e/app-route-runtime-classifier.ts`; add `--json` for the sorted spec
+ * files.
  */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -22,28 +28,44 @@ const E2E_ROOT = join(ROOT, "tests", "e2e");
 /** Folders and files the check never reads: the public site has no app runtime to install. */
 const EXCLUDED_SPEC_PREFIXES = ["tests/e2e/gateway/", "tests/e2e/web-surface-smoke.spec.ts"];
 
-/** Routes of the route list that the public site serves; a spec that visits only these is not listed. */
+/** Routes of the route list that the public site serves; a test that visits only these is not listed. */
 const PUBLIC_ROUTES = new Set(["/download", "/guide", "/guide/[segment]", "/changelog"]);
 
-/** What a spec names that belongs to the browser alone. */
-const BROWSER_DOORS = ["?shell=desktop", "stubDirectoryPicker", "useDogfoodSample", "demo:sample-source"];
+/** What a test names that belongs to the browser alone. */
+const BROWSER_DOOR_NAMES = ["stubDirectoryPicker", "useDogfoodSample"];
+const BROWSER_DOOR_TEXTS = ["?shell=desktop", "demo:sample-source"];
 
-/** An exported function whose body defines the native bridge in the page installs a faked app runtime. */
-const RUNTIME_MARKER = "__TAURI_INTERNALS__";
+/** The page property that holds the native bridge. */
+const BRIDGE_PROPERTY = "__TAURI_INTERNALS__";
 
 const LOCALES = ["en", "ko", "ja", "zh"];
+
+type Pending = "browser door" | "no faked runtime";
+
+interface TestRuntimeVerdict {
+  title: string;
+  /** 1-based line of the `test(` call in the spec. */
+  line: number;
+  /** The first app route the test reaches, or null. */
+  visitedRoute: string | null;
+  /** Whether the test reaches an assignment of the native bridge. */
+  installsRuntime: boolean;
+  /** The browser-only doors the test reaches. */
+  doors: string[];
+  /** Why the test is listed; null when it is clean. */
+  pending: Pending | null;
+}
 
 interface RouteRuntimeVerdict {
   /** Repository-relative path with `/` separators. */
   spec: string;
-  /** The first app route the spec or a helper it imports visits, or null. */
+  tests: TestRuntimeVerdict[];
+}
+
+interface Facts {
+  installsRuntime: boolean;
   visitedRoute: string | null;
-  /** The faked runtime installers reached through the imports, nearest first, or empty. */
-  installers: string[];
-  /** The browser-only doors the spec itself names. */
-  doors: string[];
-  /** Why the spec is listed; null when it is clean. */
-  pending: "browser door" | "no faked runtime" | null;
+  doors: Set<string>;
 }
 
 function toPosix(path: string): string {
@@ -59,13 +81,13 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/**
- * Matches a quoted or template path that opens an app route, with or without a locale prefix:
- * `"/en/topology?x=1"`, `` `/ko/project/${slug}` ``, `"/library"`. The root is a visit only when a
- * locale names it (`"/en/"`, `"/en?guides=off"`) or `goto("/")` does. A template that opens with a
- * locale variable (`` `/${locale}/${route}/` ``) names a route it cannot spell, and counts as one.
- */
-function routePattern(routes: string[]): RegExp {
+/** How a string or template written in a test can name an app route. */
+interface RouteReader {
+  /** The route a literal opens, or null: `"/en/topology?x=1"`, `` `/ko/project/${slug}` ``, `"/library"`, `"/en/"`. */
+  routeOf(literal: ts.StringLiteralLike | ts.TemplateExpression): string | null;
+}
+
+function routeReader(routes: string[]): RouteReader {
   const firstSegments = new Set<string>();
   for (const route of routes) {
     const first = route.split("/")[1];
@@ -73,9 +95,77 @@ function routePattern(routes: string[]): RegExp {
   }
   const names = [...firstSegments].map(escapeRegExp).join("|");
   const locales = LOCALES.join("|");
-  return new RegExp(
-    `["'\`](?:/(?:${locales}))?/(?:${names})(?=[/?#"'\`$\\\\]|$)|["'\`]/(?:${locales})(?=[/?#"'\`])|goto\\(\\s*["'\`]/["'\`?#]|\`/\\$\\{[\\w.]*[lL]ocale\\w*\\}/`,
-  );
+  /* A path in quotes, with or without a locale. The root is a visit only when a locale names it (`"/en/"`). */
+  const quoted = new RegExp(`^["'\`](?:/(?:${locales}))?/(?:${names})(?=[/?#"'\`$\\\\]|$)|^["'\`]/(?:${locales})(?=[/?#"'\`])`);
+  /* The same path after a `${...}` in a template: a locale must name it, or any bare route would match a file path. */
+  const afterExpression = new RegExp(`^/(?:${locales})(?:/(?:${names})(?=[/?#]|$)|/?(?=[?#]|$))`);
+  /* What may follow a locale expression: a route name, the root, or another expression (`/${locale}/${route}/`). */
+  const afterLocale = new RegExp(`^/(?:(?:${names})(?=[/?#]|$)|(?=[?#]|$))`);
+  const namesLocale = (expression: string) => /locale|lang/i.test(expression);
+
+  return {
+    routeOf(literal) {
+      const text = literal.getText();
+      const quotedStart = quoted.exec(text);
+      if (quotedStart) return quotedStart[0].slice(1);
+      if (ts.isStringLiteralLike(literal)) return null;
+      const { head, templateSpans } = literal;
+      if (head.text === "/" && templateSpans[0] && namesLocale(templateSpans[0].expression.getText())) {
+        const next = templateSpans[0].literal.text;
+        const unknownRoute = next === "/" && templateSpans.length > 1;
+        if (unknownRoute || afterLocale.test(next)) return `/\${${templateSpans[0].expression.getText()}}${next}`;
+      }
+      for (const span of templateSpans) {
+        if (afterExpression.test(span.literal.text)) return span.literal.text;
+      }
+      return null;
+    },
+  };
+}
+
+function isRootVisit(call: ts.CallExpression): boolean {
+  const callee = call.expression;
+  const goes = (ts.isPropertyAccessExpression(callee) && callee.name.text === "goto") || (ts.isIdentifier(callee) && callee.text === "goto");
+  const target = call.arguments[0];
+  return goes && target !== undefined && ts.isStringLiteralLike(target) && /^\/(?:[?#]|$)/.test(target.text);
+}
+
+/** `undefined`, `null` and `void 0`: assigning one of them removes the bridge. */
+function isNothing(value: ts.Expression): boolean {
+  let bare = value;
+  while (ts.isParenthesizedExpression(bare) || ts.isAsExpression(bare) || ts.isNonNullExpression(bare)) bare = bare.expression;
+  return (ts.isIdentifier(bare) && bare.text === "undefined") || bare.kind === ts.SyntaxKind.NullKeyword || ts.isVoidExpression(bare);
+}
+
+function assignsBridge(node: ts.Node): boolean {
+  if (!ts.isBinaryExpression(node) || node.operatorToken.kind !== ts.SyntaxKind.EqualsToken || isNothing(node.right)) return false;
+  const target = node.left;
+  if (ts.isPropertyAccessExpression(target)) return target.name.text === BRIDGE_PROPERTY;
+  return ts.isElementAccessExpression(target) && ts.isStringLiteralLike(target.argumentExpression) && target.argumentExpression.text === BRIDGE_PROPERTY;
+}
+
+const factsCache = new WeakMap<ts.Node, Facts>();
+
+/** What one node says on its own, without following the names in it. */
+function factsOf(reached: ReachedNode, reader: RouteReader): Facts {
+  const cached = factsCache.get(reached.node);
+  if (cached) return cached;
+  const facts: Facts = { installsRuntime: false, visitedRoute: null, doors: new Set() };
+  const visit = (node: ts.Node): void => {
+    if (ts.isTypeNode(node)) return;
+    if (assignsBridge(node)) facts.installsRuntime = true;
+    if (ts.isIdentifier(node) && BROWSER_DOOR_NAMES.includes(node.text)) facts.doors.add(node.text);
+    if (ts.isStringLiteralLike(node) || ts.isTemplateExpression(node)) {
+      const text = node.getText();
+      for (const door of BROWSER_DOOR_TEXTS) if (text.includes(door)) facts.doors.add(door);
+      facts.visitedRoute ??= reader.routeOf(node);
+    }
+    if (ts.isCallExpression(node) && isRootVisit(node)) facts.visitedRoute ??= "/";
+    ts.forEachChild(node, visit);
+  };
+  visit(reached.node);
+  factsCache.set(reached.node, facts);
+  return facts;
 }
 
 function listSpecs(): string[] {
@@ -86,129 +176,46 @@ function listSpecs(): string[] {
     .sort();
 }
 
-const IMPORT_SPECIFIER = /(?:^|\n)\s*(?:import|export)\s(?!type\s)[^;]*?from\s+["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
-
-function resolveLocalImport(from: string, specifier: string): string | null {
-  if (!specifier.startsWith(".")) return null;
-  const base = resolve(ROOT, dirname(from), specifier);
-  const candidates = [`${base}.ts`, `${base}.tsx`, join(base, "index.ts"), base];
-  for (const candidate of candidates) {
-    if (!candidate.endsWith(".ts") && !candidate.endsWith(".tsx")) continue;
-    if (!existsSync(candidate)) continue;
-    const relativePath = toPosix(relative(ROOT, candidate));
-    return relativePath.startsWith("tests/") ? relativePath : null;
-  }
-  return null;
+export function classifySpec(spec: string, reader: RouteReader = routeReader(appRoutes())): RouteRuntimeVerdict {
+  const tests = testsOfSpec(spec).map((test): TestRuntimeVerdict => {
+    const reached = reachFrom(test.roots).map((each) => factsOf(each, reader));
+    const doors = [...new Set(reached.flatMap((facts) => [...facts.doors]))];
+    const installsRuntime = reached.some((facts) => facts.installsRuntime);
+    const visitedRoute = reached.find((facts) => facts.visitedRoute !== null)?.visitedRoute ?? null;
+    let pending: Pending | null = null;
+    if (doors.length > 0) pending = "browser door";
+    else if (visitedRoute !== null && !installsRuntime) pending = "no faked runtime";
+    return { title: test.title, line: test.line, visitedRoute, installsRuntime, doors, pending };
+  });
+  return { spec, tests };
 }
 
-const sourceCache = new Map<string, string>();
-
-function sourceOf(file: string): string {
-  let text = sourceCache.get(file);
-  if (text === undefined) {
-    text = readFileSync(join(ROOT, file), "utf8");
-    sourceCache.set(file, text);
-  }
-  return text;
+function verdictsOfEverySpec(): RouteRuntimeVerdict[] {
+  const reader = routeReader(appRoutes());
+  return listSpecs().map((spec) => classifySpec(spec, reader));
 }
 
-/** The spec and every module under `tests/` it imports, nearest first. */
-function importClosure(spec: string): string[] {
-  const seen = new Set<string>([spec]);
-  const queue = [spec];
-  while (queue.length > 0) {
-    const file = queue.shift() as string;
-    for (const match of sourceOf(file).matchAll(IMPORT_SPECIFIER)) {
-      const next = resolveLocalImport(file, match[1] ?? match[2]);
-      if (next && !seen.has(next)) {
-        seen.add(next);
-        queue.push(next);
-      }
-    }
-  }
-  return [...seen];
-}
-
-/** A top-level function of a module, by name, with its body: from its `function` line to the next declaration at column 0. */
-function functionBodies(file: string): Map<string, string> {
-  const text = sourceOf(file);
-  const starts = [...text.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+(\w+)/gm)];
-  const boundaries = [...text.matchAll(/^(?:export |async function |function |const |let |interface |type |\/\*\*)/gm)].map((match) => match.index);
-  return new Map(
-    starts.map((start) => {
-      const next = boundaries.find((at) => at > start.index);
-      return [start[1], text.slice(start.index, next ?? text.length)] as const;
-    }),
+/** Every test that still reaches an app screen without the faked runtime, as `spec:line title (reason)`, sorted. */
+export function pendingTests(): string[] {
+  return verdictsOfEverySpec().flatMap(({ spec, tests }) =>
+    tests.filter((test) => test.pending !== null).map((test) => `${spec}:${test.line} ${test.title} (${test.pending})`),
   );
 }
 
-/** Whether code (not a comment) calls `name`; a comment that spells a call is not one. */
-function callsFunction(text: string, name: string): boolean {
-  const code = text.replace(/\/\*[\s\S]*?\*\/|(?<![:"'`])\/\/.*$/gm, "");
-  return new RegExp(`(?<!function\\s)\\b${name}\\s*\\(`).test(code);
-}
-
-/**
- * The functions among these modules that install a faked app runtime: one whose body defines the native
- * bridge in the page, or one that calls such a function (`openLibraryWorkScenario` installs through
- * `installLibraryWorkHarness`). A function that only serves fixture data, such as `storefrontSampleFiles`, is
- * not one, however much its module mentions the bridge.
- */
-function installerFunctions(closure: string[]): Set<string> {
-  const bodies = closure.flatMap((file) => [...functionBodies(file)]);
-  const installers = new Set(bodies.filter(([, body]) => body.includes(RUNTIME_MARKER)).map(([name]) => name));
-  for (let grew = true; grew; ) {
-    grew = false;
-    for (const [name, body] of bodies) {
-      if (installers.has(name)) continue;
-      if ([...installers].some((installer) => callsFunction(body, installer))) {
-        installers.add(name);
-        grew = true;
-      }
-    }
-  }
-  return installers;
-}
-
-export function classifySpec(spec: string, routes: RegExp = routePattern(appRoutes())): RouteRuntimeVerdict {
-  const closure = importClosure(spec);
-  const functions = installerFunctions(closure);
-  /* A spec that defines the bridge inline installs it itself; any file counts by the installer it calls. */
-  const installers = closure.filter(
-    (file) =>
-      (file === spec && sourceOf(file).includes(RUNTIME_MARKER)) ||
-      [...functions].some((name) => callsFunction(sourceOf(file), name) && !functionBodies(file).has(name)),
-  );
-  const doors = BROWSER_DOORS.filter((door) => sourceOf(spec).includes(door));
-  let visitedRoute: string | null = null;
-  for (const file of closure) {
-    const match = sourceOf(file).match(routes);
-    if (match) {
-      visitedRoute = match[0].replace(/^["'`]/, "");
-      break;
-    }
-  }
-  let pending: RouteRuntimeVerdict["pending"] = null;
-  if (doors.length > 0) pending = "browser door";
-  else if (visitedRoute !== null && installers.length === 0) pending = "no faked runtime";
-  return { spec, visitedRoute, installers, doors, pending };
-}
-
-/** The specs that still reach an app screen without the faked runtime, sorted. */
+/** The spec files that hold one or more of those tests, sorted. */
 export function pendingSpecs(): string[] {
-  const routes = routePattern(appRoutes());
-  return listSpecs()
-    .map((spec) => classifySpec(spec, routes))
-    .filter((verdict) => verdict.pending !== null)
-    .map((verdict) => verdict.spec);
+  return verdictsOfEverySpec()
+    .filter(({ tests }) => tests.some((test) => test.pending !== null))
+    .map(({ spec }) => spec);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const tests = pendingTests();
   const specs = pendingSpecs();
   if (process.argv.includes("--json")) {
     console.log(JSON.stringify(specs, null, 2));
   } else {
-    for (const spec of specs) console.log(spec);
-    console.log(`${specs.length} specs`);
+    for (const test of tests) console.log(test);
+    console.log(`${tests.length} tests in ${specs.length} specs`);
   }
 }

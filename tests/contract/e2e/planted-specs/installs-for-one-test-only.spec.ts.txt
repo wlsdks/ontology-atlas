@@ -1,0 +1,11 @@
+import { test } from "@playwright/test";
+import { installDesktopRailRuntime } from "../../../e2e/desktop-rail-arrival-harness";
+
+test("opens the library on the runtime", async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.goto("/en/library/");
+});
+
+test("opens the library in a plain browser", async ({ page }) => {
+  await page.goto("/en/library/");
+});

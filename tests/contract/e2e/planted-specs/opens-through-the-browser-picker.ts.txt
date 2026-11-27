@@ -1,0 +1,7 @@
+import type { Page } from "@playwright/test";
+
+/* The picker stub is named, not imported: its module is deleted once the move ends, and the name stays a door. */
+export async function openThroughTheBrowserPicker(page: Page) {
+  await stubDirectoryPicker(page, {});
+  await page.goto("/en/library/");
+}

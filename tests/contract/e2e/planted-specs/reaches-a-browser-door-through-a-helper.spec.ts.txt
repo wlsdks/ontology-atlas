@@ -1,0 +1,8 @@
+import { test } from "@playwright/test";
+import { installDesktopRailRuntime } from "../../../e2e/desktop-rail-arrival-harness";
+import { openThroughTheBrowserPicker } from "./opens-through-the-browser-picker";
+
+test("opens the library through a helper that stubs the picker", async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await openThroughTheBrowserPicker(page);
+});

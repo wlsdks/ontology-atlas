@@ -1,0 +1,14 @@
+import { expect, test } from "@playwright/test";
+
+// window.__TAURI_INTERNALS__ = { invoke() {} } would install the bridge; this comment does not.
+test("asserts the bridge is missing", async ({ page }) => {
+  await page.goto("/en/library/");
+  expect(await page.evaluate(() => "__TAURI_INTERNALS__" in window)).toBe(false);
+});
+
+test("takes the bridge away", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = undefined;
+  });
+  await page.goto("/en/library/");
+});

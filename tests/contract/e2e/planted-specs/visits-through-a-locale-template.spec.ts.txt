@@ -1,0 +1,6 @@
+import { test } from "@playwright/test";
+
+test("opens the library in the locale it was given", async ({ page }) => {
+  const options: { locale?: string } = {};
+  await page.goto(`/${options.locale ?? "en"}/library/`);
+});
