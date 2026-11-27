@@ -33,7 +33,7 @@ fn answer(graph: &CompiledGraph, request: &QueryRequest) -> serde_json::Value {
     serde_json::from_str(&text).expect("is JSON")
 }
 
-fn rows<'a>(value: &'a serde_json::Value) -> &'a [serde_json::Value] {
+fn rows(value: &serde_json::Value) -> &[serde_json::Value] {
     value.as_array().map_or(&[], Vec::as_slice)
 }
 
@@ -258,4 +258,44 @@ fn blast_radius_names_the_nearest_domain_and_a_named_one_before_any() {
     assert_eq!(domain_of("capabilities/n"), Some("domains/d1".into()));
     assert_eq!(domain_of("capabilities/q"), Some("domains/d1".into()));
     assert_eq!(domain_of("capabilities/r"), Some("domains/d2".into()));
+}
+
+#[test]
+fn of_two_equally_short_ways_a_walk_takes_the_one_whose_node_comes_first_in_the_graph() {
+    // `capabilities/build` comes before `capabilities/build-index` in the order of the graph, so
+    // a walk that goes through one of them goes through it, though `-` sorts before `:` in the
+    // text `slug:edge` that the script server ordered by.
+    let graph = compiled(&[
+        capability("start", 1, &["build", "build-index"]),
+        capability("build", 2, &["target"]),
+        capability("build-index", 3, &["target"]),
+        capability("target", 4, &[]),
+    ]);
+    let between = |operation: &str| QueryRequest {
+        from: Some("capabilities/start".to_string()),
+        to: Some("capabilities/target".to_string()),
+        ..call(operation)
+    };
+    let through_build = serde_json::json!([
+        "capabilities/start",
+        "capabilities/build",
+        "capabilities/target"
+    ]);
+
+    assert_eq!(answer(&graph, &between("path"))["hops"], through_build);
+    let explained = answer(&graph, &between("explain_relation"));
+    assert_eq!(explained["shortestPath"]["hops"], through_build);
+
+    let reach = answer(
+        &graph,
+        &QueryRequest {
+            slug: Some("capabilities/start".to_string()),
+            ..call("reachability")
+        },
+    );
+    let to_target = rows(&reach["paths"]["rows"])
+        .iter()
+        .find(|row| row["slug"] == "capabilities/target")
+        .map(|row| row["path"].clone());
+    assert_eq!(to_target, Some(through_build));
 }

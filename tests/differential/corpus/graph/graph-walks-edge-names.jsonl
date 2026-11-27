@@ -12,3 +12,6 @@
 {"id":10,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"containment_tree","includeOrphans":true}}}
 {"id":11,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"project_scope"}}}
 {"id":12,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"project_map"}}}
+{"id":13,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"path","from":"capabilities/start","to":"capabilities/target"}}}
+{"id":14,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"explain_relation","from":"capabilities/start","to":"capabilities/target"}}}
+{"id":15,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"reachability","slug":"capabilities/start"}}}

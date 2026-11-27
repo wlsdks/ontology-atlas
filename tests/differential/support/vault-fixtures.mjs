@@ -341,6 +341,17 @@ const FIXTURE_BUILDERS = {
       write(dir, v('capabilities/ten.md'), capabilityNode('capabilities/ten', 'Ten', 'domains/Zebra'));
       write(dir, v('capabilities/Two.md'), capabilityNode('capabilities/Two', 'Two', 'domains/Zebra'));
       write(dir, v('capabilities/one.md'), capabilityNode('capabilities/one', 'One', 'domains/Zebra'));
+      // Two ways from `start` to `target` that are equally short, whose names share a prefix.
+      write(dir, v('capabilities/start.md'), capabilityNode('capabilities/start', 'Start', 'domains/Zebra', {
+        dependencies: '[capabilities/build, capabilities/build-index]',
+      }));
+      write(dir, v('capabilities/build.md'), capabilityNode('capabilities/build', 'Build', 'domains/Zebra', {
+        dependencies: '[capabilities/target]',
+      }));
+      write(dir, v('capabilities/build-index.md'), capabilityNode('capabilities/build-index', 'Build index', 'domains/Zebra', {
+        dependencies: '[capabilities/target]',
+      }));
+      write(dir, v('capabilities/target.md'), capabilityNode('capabilities/target', 'Target', 'domains/Zebra'));
     },
   },
 

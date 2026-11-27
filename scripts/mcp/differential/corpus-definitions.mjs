@@ -707,6 +707,9 @@ walksCase('edge-names', 'edge-names', [
   { operation: 'containment_tree', includeOrphans: true },
   { operation: 'project_scope' },
   { operation: 'project_map' },
+  { operation: 'path', from: 'capabilities/start', to: 'capabilities/target' },
+  { operation: 'explain_relation', from: 'capabilities/start', to: 'capabilities/target' },
+  { operation: 'reachability', slug: 'capabilities/start' },
 ]);
 walksCase('miniature-repo', 'miniature-repo', [
   { operation: 'impact', slug: 'capabilities/charge-card' },
