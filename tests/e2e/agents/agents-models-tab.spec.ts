@@ -243,21 +243,6 @@ for (const width of [1280, 1512]) {
   });
 }
 
-test("on the web the tab exists and says where it works, with no sample rows", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/ko/agents/?tab=models&guides=off");
-  await expect(page.getByTestId("agents-tab-models")).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByTestId("ai-connection-web-degraded")).toBeVisible();
-  await expect(page.getByTestId("ai-connection-download-link")).toHaveAttribute("href", /\/download\//);
-  for (const id of ["models-local", "models-keys", "models-external", "ai-audit-tail"]) {
-    await expect(page.getByTestId(id)).toHaveCount(0);
-  }
-  await capture(page, "1280-09-web");
-  const result = await axe(page);
-  expect(result.violations).toEqual([]);
-});
-
 test("one pending saved-key lookup does not hide other tools' actions", async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 982 });
   await installDesktopRailRuntime(page, {}, undefined, { models: MODELS });

@@ -1,11 +1,3 @@
 {
-  "specs": [
-    "tests/e2e/agents/agents-models-tab.spec.ts",
-    "tests/e2e/app-shell/app-chrome-interaction.spec.ts",
-    "tests/e2e/app-shell/desktop-shell-rail.spec.ts",
-    "tests/e2e/harness-scopes.spec.ts",
-    "tests/e2e/harness/automations-workspace.spec.ts",
-    "tests/e2e/map/hex-board/map-hex-relief.spec.ts",
-    "tests/e2e/settings/settings-reading.spec.ts"
-  ]
+  "specs": []
 }

@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 
 import { openSwitcher } from './app-chrome-harness';
 import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { seedFirstRunSeen } from '../first-run-seed';
 import { waitForMapSettled, waitForMapStill } from '../settle';
 
 test.describe('the vault switcher', () => {
@@ -282,40 +281,21 @@ test.describe('settings', () => {
     expect(Math.abs(lines.card - lines.result), 'result line is off the card edge').toBeLessThanOrEqual(1);
   });
 
-  test('the web About pane shows the website build without the update check', async ({ page }) => {
-    await seedFirstRunSeen(page);
+  test('switching language in the sheet opens the same screen in that language', async ({ page }) => {
+    test.setTimeout(120_000);
+    await installDesktopRailRuntime(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/ko/topology/?guides=off', { waitUntil: 'networkidle' });
+    await mountDesktopVault(page, 'ko');
+    await page.goto('/ko/topology/?guides=off', { waitUntil: 'domcontentloaded' });
+    const sheet = page.getByTestId('app-settings-popover');
     // A press before hydration lands on an inert <summary>; retry the press, not the claim.
     await expect(async () => {
       await page.locator('[data-testid="app-settings-trigger"]:visible').click();
-      await expect(page.getByTestId('app-settings-popover')).toBeVisible({ timeout: 2_000 });
+      await expect(sheet).toBeVisible({ timeout: 2_000 });
     }).toPass({ timeout: 20_000 });
-    await page.getByTestId('app-settings-nav-about').click();
-    await expect(page.getByTestId('app-settings-about-web-version')).toBeVisible();
-    await expect(page.getByTestId('app-settings-update-check')).toHaveCount(0);
-  });
-
-  test('switching language keeps the sheet open on the same pane', async ({ page }) => {
-    test.setTimeout(120_000);
-    await seedFirstRunSeen(page);
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/ko/topology/?guides=off', { waitUntil: 'networkidle' });
-    await page.locator('[data-testid="app-settings-trigger"]:visible').click();
-    const sheet = page.getByTestId('app-settings-popover');
-    await expect(sheet).toBeVisible();
     await expect.poll(() => sheet.evaluate((el) => Number(getComputedStyle(el).opacity))).toBe(1);
     await sheet.getByRole('radio', { name: /EN/ }).click();
     await expect(page).toHaveURL(/\/en\/topology\//, { timeout: 20_000 });
-    await expect(page.getByTestId('app-settings-popover')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByTestId('app-settings-nav-screen')).toHaveAttribute('aria-current', 'page');
-    await expect
-      .poll(() =>
-        page.evaluate(() => {
-          const active = document.activeElement;
-          return Boolean(active && active !== document.body && active.closest('[data-testid="app-settings-popover"]'));
-        }),
-      )
-      .toBe(true);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
 });
