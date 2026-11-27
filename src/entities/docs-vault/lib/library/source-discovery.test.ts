@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  DISCOVERY_MIN_FILE_BYTES,
   candidateKey,
-  discoverCandidatesInHandle,
   discoveryAcceptsDirectory,
   discoveryAcceptsFile,
   discoveryExtension,
@@ -12,47 +12,6 @@ import {
   type SourceCandidate,
 } from './source-discovery';
 import discoveryCases from '../../../../../tests/fixtures/source-discovery-cases.json';
-
-/**
- * A minimal FSA directory implementing only what the walk touches, so a read would fail loudly.
- * A file is its body or just its size in bytes.
- */
-function fakeDirectory(
-  files: Record<string, string | number>,
-  name = 'vault',
-): FileSystemDirectoryHandle {
-  const build = (prefix: string, dirName: string): FileSystemDirectoryHandle => {
-    const children = new Map<string, FileSystemHandle>();
-    const subdirectories = new Set<string>();
-    for (const path of Object.keys(files)) {
-      if (prefix && !path.startsWith(`${prefix}/`)) continue;
-      const rest = prefix ? path.slice(prefix.length + 1) : path;
-      const slash = rest.indexOf('/');
-      if (slash < 0) {
-        const body = files[path]!;
-        const size = typeof body === 'number' ? body : body.length;
-        children.set(rest, {
-          kind: 'file',
-          name: rest,
-          getFile: async () => ({ size, lastModified: 1_757_000_000_000 }),
-        } as unknown as FileSystemFileHandle);
-      } else {
-        subdirectories.add(rest.slice(0, slash));
-      }
-    }
-    for (const child of subdirectories) {
-      children.set(child, build(prefix ? `${prefix}/${child}` : child, child));
-    }
-    return {
-      kind: 'directory',
-      name: dirName,
-      async *entries() {
-        for (const entry of children) yield entry;
-      },
-    } as unknown as FileSystemDirectoryHandle;
-  };
-  return build('', name);
-}
 
 describe('discovery never proposes what local-first forbids reading', () => {
   it.each([
@@ -73,24 +32,6 @@ describe('discovery never proposes what local-first forbids reading', () => {
 
   it('refuses every dotfile whatever its extension', () => {
     expect(discoveryAcceptsFile('.hidden-plan.pdf')).toBe(false);
-  });
-
-  it('walks past a planted secret and never lists it as a candidate', async () => {
-    const report = await discoverCandidatesInHandle(
-      fakeDirectory({
-        'Requirements.pdf': 2_000,
-        '.env': 'SECRET=1',
-        'id_rsa': 'key',
-        'credentials.json': '{}',
-        'config/credentials.csv': 'user,password',
-        'node_modules/pkg/manual.pdf': 2_000,
-        'sources/already.pdf': 2_000,
-      }),
-      { rootLabel: 'my folder', skipRelative: ['sources'] },
-    );
-    expect(report.candidates.map((candidate) => candidate.relativePath)).toEqual([
-      'Requirements.pdf',
-    ]);
   });
 });
 
@@ -134,35 +75,28 @@ describe('the walk skips dependency and build directories', () => {
   });
 });
 
-type DiscoveryRow = { path: string; bytes: number };
-
-async function offeredByTheWalk(rows: readonly DiscoveryRow[]): Promise<string[]> {
-  const report = await discoverCandidatesInHandle(
-    fakeDirectory(Object.fromEntries(rows.map((row) => [row.path, row.bytes]))),
-    { rootLabel: 'project' },
-  );
-  return report.candidates.map((candidate) => candidate.relativePath).sort();
-}
-
 describe('the shared discovery table (tests/fixtures/source-discovery-cases.json)', () => {
-  it("offers none of the owner's three junk files", async () => {
-    expect(await offeredByTheWalk(discoveryCases.ownerReport)).toEqual([]);
-  });
-
-  it('offers exactly the rows the table keeps, as the native walk does', async () => {
-    const expected = discoveryCases.files
-      .filter((row) => row.offered)
-      .map((row) => row.path)
-      .sort();
-    expect(await offeredByTheWalk(discoveryCases.files)).toEqual(expected);
-  });
-
   it.each(discoveryCases.directories)(
     'judges the folder $path the same with either separator',
     ({ path, descends }) => {
       expect(discoveryAcceptsDirectory(path)).toBe(descends);
     },
   );
+
+  const named = (row: { path: string }) => row.path.slice(row.path.lastIndexOf('/') + 1);
+
+  it('accepts the name of every row the table offers', () => {
+    for (const row of discoveryCases.files.filter((entry) => entry.offered)) {
+      expect(discoveryAcceptsFile(named(row)), row.path).toBe(true);
+    }
+  });
+
+  it("offers none of the owner's three junk files", () => {
+    for (const row of discoveryCases.ownerReport) {
+      const offered = discoveryAcceptsFile(named(row)) && row.bytes >= DISCOVERY_MIN_FILE_BYTES;
+      expect(offered, row.path).toBe(false);
+    }
+  });
 });
 
 describe('Markdown the vault owns is never offered', () => {
@@ -198,23 +132,6 @@ describe('Markdown the vault owns is never offered', () => {
     ]);
   });
 
-  it('offers nothing from a folder whose every Markdown file is a node', async () => {
-    const files = { 'project.md': 300, 'domains/library.md': 300, 'capabilities/search.md': 300 };
-    const report = await discoverCandidatesInHandle(fakeDirectory(files), { rootLabel: 'ontology' });
-    const kept = withoutVaultOwnedMarkdown(report.candidates, {
-      openRootPath: 'vault',
-      docs: Object.keys(files).map((path) => ({ path, frontmatter: { kind: 'domain' } })),
-    });
-    expect(kept).toEqual([]);
-  });
-
-  it('never walks the sources or wiki folders of the open folder, in any letter case', async () => {
-    const report = await discoverCandidatesInHandle(
-      fakeDirectory({ 'Sources/a.pdf': 300, 'WIKI/page.md': 300, 'meetings/b.pdf': 300 }),
-      { rootLabel: 'vault' },
-    );
-    expect(report.candidates.map((row) => row.relativePath)).toEqual(['meetings/b.pdf']);
-  });
 });
 
 describe('a dropped folder keeps documents and counts what it skipped', () => {

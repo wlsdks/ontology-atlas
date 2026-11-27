@@ -3,7 +3,6 @@
 import { vaultIdentityScope, type VaultIdentityScope } from '@/entities/docs-vault';
 import { useDataSourceMode } from './use-data-source-mode';
 import { useLocalVault } from '../vault-provider/LocalVaultProvider';
-import { useSampleSource } from './use-sample-source';
 
 const localHandleIdentity = new WeakMap<FileSystemDirectoryHandle, string>();
 let nextLocalHandleIdentity = 1;
@@ -25,12 +24,10 @@ function localHandleIdentityName(handle: FileSystemDirectoryHandle): string {
 export function useVaultIdentityScope(): VaultIdentityScope {
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
-  const [sampleSource] = useSampleSource();
 
   return vaultIdentityScope({
     isLocalLoaded: mode === 'local' && localVault.status === 'loaded',
     handleName: localVault.handle?.name ?? null,
-    sampleSource,
   });
 }
 
@@ -38,25 +35,21 @@ export function useVaultIdentityScope(): VaultIdentityScope {
 export function useVaultSessionIdentityScope(): VaultIdentityScope {
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
-  const [sampleSource] = useSampleSource();
 
   return vaultIdentityScope({
-    // A file watcher rescan keeps the open handle. It is not a switch to sample
-    // data, and must not erase the transient observations that caused the rescan.
+    // A file watcher rescan keeps the open handle. It is not a switch to no folder,
+    // and must not erase the transient observations that caused the rescan.
     isLocalLoaded: mode === 'local' && Boolean(localVault.handle)
       && (localVault.status === 'loaded' || localVault.status === 'loading'),
     handleName: localVault.handle ? localHandleIdentityName(localVault.handle) : null,
-    sampleSource,
   });
 }
 
 export function useArrivingVaultIdentityScope(): VaultIdentityScope | null {
   const localVault = useLocalVault();
-  const [sampleSource] = useSampleSource();
   if (!localVault.partialTotal || !localVault.handle) return null;
   return vaultIdentityScope({
     isLocalLoaded: true,
     handleName: localHandleIdentityName(localVault.handle),
-    sampleSource,
   });
 }

@@ -38,11 +38,11 @@ describe("useDataSourceMode", () => {
     expect(result.current).toBe("local");
   });
 
-  it("keeps the static sample for a first loading with no manifest", () => {
+  it("reports no folder for a first loading with no manifest", () => {
     mocks.vault.status = "loading";
 
     const { result } = renderHook(() => useDataSourceMode());
 
-    expect(result.current).toBe("static");
+    expect(result.current).toBe("no-folder");
   });
 });

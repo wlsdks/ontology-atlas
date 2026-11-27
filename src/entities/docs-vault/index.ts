@@ -5,19 +5,16 @@ export type {
   VaultTreeNode,
 } from './model/vault-manifest';
 // The bundled samples are built by `scripts/docs-vault/build-docs-vault.mjs` from `docs/ontology/`
-// and `samples/storefront/`. The browser reads them through the loader; only build-time callers
-// and `/download` take the synchronous resolver, whose static JSON imports a screen must not reach.
+// and `samples/storefront/`. `/sample` reads the store through the loader; only build-time callers
+// and the public pages take the synchronous resolver, whose static JSON imports a screen must not reach.
 export {
   resolveStaticVaultSource,
+  type BundledSample,
   type StaticVaultSource,
 } from './lib/bundled-vault/static-vault-source';
 export { dogfoodManifest } from './lib/bundled-vault/dogfood-manifest';
 export { DOGFOOD_AGENT_SLUG_PREFIX } from './lib/bundled-vault/dogfood-slug-prefix';
 export { bundledSamples } from './lib/bundled-vault/load-static-vault-source';
-export {
-  importStaticVaultHeadings,
-  type StaticVaultHeadings,
-} from './lib/bundled-vault/static-headings';
 export { deriveDocumentDetail, type DocumentRef, type VaultDocDetail } from './store/document-detail';
 export { createDocumentStore, type DocumentStore } from './store/document-store';
 export {
@@ -51,7 +48,6 @@ export { deriveSourceProgress } from './lib/library/source-progress';
 export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
 export {
   candidateKey,
-  discoverCandidatesInHandle,
   discoverySkipReason,
   walkDroppedFolder,
   withoutVaultOwnedMarkdown,
@@ -112,6 +108,5 @@ export type {
   ReferrerListKept,
   ReferrerListMove,
 } from './lib/authoring/rename-ref-rewrites';
-export { fetchServerDocContent, buildDocsVaultAssetCandidates } from './lib/bundled-vault/server-doc-content';
 export { buildReviewQueue, reviewCurrentness, reviewDigest } from './lib/review';
 export type { ReviewQueueRow } from './lib/review';

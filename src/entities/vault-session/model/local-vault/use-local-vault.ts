@@ -14,7 +14,6 @@ import {
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { recordLocalFsHandleContents, verifyHandlePermission } from '@/entities/local-fs-handle';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import type { VaultChangeBatch, VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
 import { classifyVaultAccessError } from '../vault-opening/classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
@@ -45,13 +44,12 @@ import { useVaultDocWrites } from './use-vault-doc-writes';
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
 
 /** Network drives, a watcher that failed to start, and events the OS dropped. */
-const APP_SAFETY_POLL: PollCadenceConfig = { burstMs: 60_000, idleMs: 60_000, burstWindowMs: 0 };
+const SAFETY_POLL: PollCadenceConfig = { burstMs: 60_000, idleMs: 60_000, burstWindowMs: 0 };
 const HEARTBEAT_STALE_MARGIN_MS = 1000;
 
 /** @internal — mount through `LocalVaultProvider`, read through `useLocalVault()`; one instance keeps IDB rehydration, fingerprint rescans and FS reads from running per consumer. */
 export function useLocalVaultInternal() {
-  // Start 'idle' on both server and client; a mount effect switches to 'unsupported' when FSA
-  // is missing, so hydration matches.
+  // Start 'idle' on both server and client, so hydration matches.
   const [state, setState] = useState<State>(() => emptyState('idle'));
   const stateRef = useLatestRef(state);
   /** The launch stopped at the chooser on purpose (two or more folders are known); not a failure, and 'idle' alone would land on the sample. */
@@ -448,12 +446,8 @@ export function useLocalVaultInternal() {
     window.addEventListener('focus', fire);
     document.addEventListener('visibilitychange', onVisibility);
 
-    // The web has no folder events, so it polls adaptively (`poll-cadence.ts`). The app's
-    // watcher reports changes at once; its slow poll catches what a watcher cannot see.
-    const poller = createAdaptivePoller({
-      poll: syncWithDisk,
-      config: isTauriVaultRuntime() ? APP_SAFETY_POLL : undefined,
-    });
+    // The app's watcher reports changes at once; this slow poll catches what a watcher cannot see.
+    const poller = createAdaptivePoller({ poll: syncWithDisk, config: SAFETY_POLL });
     const onVisibilityForPoll = () => {
       if (document.visibilityState === 'visible') poller.start();
       else poller.stop();
@@ -564,9 +558,6 @@ export function useLocalVaultInternal() {
     restoreAttempted,
     openedInsidePickedFolder,
     dismissOpenedInsideNotice: () => setOpenedInsidePickedFolder(null),
-    // Derived from state to stay SSR-consistent (avoiding an `isSupported()` call in the lazy
-    // initializer). The switch to 'unsupported' happens in a mount effect.
-    isSupported: state.status !== 'unsupported',
     open,
     openRecent,
     forgetRecent,

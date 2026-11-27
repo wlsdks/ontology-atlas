@@ -2,7 +2,6 @@ interface DocsVaultHrefInput {
   slug?: string | null;
   collection?: 'ontology';
   hash?: string | null;
-  intent?: 'local' | null;
   dogfood?: boolean;
   via?: string | null;
 }
@@ -11,7 +10,6 @@ export function buildDocsVaultHref({
   slug,
   collection,
   hash,
-  intent,
   dogfood,
   via,
 }: DocsVaultHrefInput = {}): string {
@@ -21,7 +19,6 @@ export function buildDocsVaultHref({
 
   if (collection === 'ontology') queryParts.push('tab=ontology');
   if (normalizedSlug) queryParts.push(`slug=${encodeURIComponent(normalizedSlug)}`);
-  if (intent === 'local') queryParts.push('intent=local');
   if (dogfood) queryParts.push('dogfood=1');
   if (via) queryParts.push(`via=${encodeURIComponent(via)}`);
 

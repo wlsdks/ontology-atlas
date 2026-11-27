@@ -1,4 +1,3 @@
-import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
 import sampleStorefrontContent from '../../data/sample-storefront.content.json';
 import sampleStorefrontManifest from '../../data/sample-storefront.manifest.json';
 import gatewayContent from '../../data/gateway-content.json';
@@ -7,11 +6,14 @@ import vaultManifest from '../../data/manifest.json';
 import { bundledVaultManifest, type BundledVaultManifest } from './bundled-manifest';
 import { DOGFOOD_AGENT_SLUG_PREFIX } from './dogfood-slug-prefix';
 
-/** The bundled vault in static mode; manifest and content travel as one pair so they can never mix vaults. */
+/** The two vaults built into the site: this repository's own (`dogfood`) and the online store (`storefront`). */
+export type BundledSample = 'dogfood' | 'storefront';
+
+/** One bundled vault; manifest and content travel as one pair so they can never mix vaults. */
 export interface StaticVaultSource {
-  source: SampleSource;
+  source: BundledSample;
   manifest: BundledVaultManifest;
-  /** slug → markdown for the `guide/*` documents needed before first paint; the rest load from `public/docs-vault/`. */
+  /** slug → markdown for the `guide/*` documents the public pages draw before first paint. */
   content: Record<string, string>;
   /**
    * Truncated synchronous previews for documents too large to bundle, cut on `## ` boundaries;
@@ -39,6 +41,6 @@ const STOREFRONT: StaticVaultSource = {
   content: sampleStorefrontContent as Record<string, string>,
 };
 
-export function resolveStaticVaultSource(source: SampleSource): StaticVaultSource {
+export function resolveStaticVaultSource(source: BundledSample): StaticVaultSource {
   return source === 'storefront' ? STOREFRONT : DOGFOOD;
 }

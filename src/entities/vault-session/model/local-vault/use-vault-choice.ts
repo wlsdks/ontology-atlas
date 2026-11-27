@@ -17,7 +17,6 @@ import {
 } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
 import {
   getTauriVaultRootPath,
-  isTauriVaultRuntime,
 } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { classifyVaultAccessError, isMissingFolderError } from '../vault-opening/classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
@@ -27,7 +26,6 @@ import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault
 import { emptyAgentActivityStatus } from '../agent-activity-status';
 import { ABSENT_MAP_ANALYSIS_RECORD } from '@/shared/lib/vault-document/map-analysis-record';
 import {
-  isSupported,
   resolveVaultHandle,
   tauriVaultRecordResolves,
   verifyRead,
@@ -69,10 +67,6 @@ export function useVaultChoice({
    * the folder is first shown if it holds no documents. The result says whether each landed.
    */
   const open = useCallback(async (options: VaultOpenOptions = {}): Promise<VaultOpenResult> => {
-    if (!isSupported()) {
-      setState(emptyState('unsupported'));
-      return NOT_OPENED;
-    }
     // A cancelled picker is not a state change: restore the exact status from before it opened.
     const previousState = stateRef.current;
     const pickerSequence = ++pickerSequenceRef.current;
@@ -86,15 +80,8 @@ export function useVaultChoice({
       errorCode: null,
     }));
     try {
-      const handle = isTauriVaultRuntime()
-        ? await pickTauriVaultDirectory()
-        : await (
-            window as unknown as {
-              showDirectoryPicker: (options?: {
-                mode?: 'read' | 'readwrite';
-              }) => Promise<FileSystemDirectoryHandle>;
-            }
-          ).showDirectoryPicker({ mode: 'read' });
+      // `null` outside the app (no runtime to ask) reads as a cancelled picker.
+      const handle = await pickTauriVaultDirectory();
       if (!isCurrent()) return NOT_OPENED;
       if (!handle) {
         setState(previousState);
@@ -162,10 +149,6 @@ export function useVaultChoice({
 
   const openRecent = useCallback(
     async (record: LocalFsHandleRecord, options: VaultOpenOptions = {}): Promise<VaultOpenResult> => {
-      if (!isSupported()) {
-        setState(emptyState('unsupported'));
-        return NOT_OPENED;
-      }
       pickerSequenceRef.current += 1;
       const session = beginVaultReadSession(record.handle);
       const isCurrent = () => mountedRef.current && vaultReadSessionRef.current === session;
@@ -254,19 +237,13 @@ export function useVaultChoice({
       await refreshRecentVaults();
     } finally {
       if (mountedRef.current && vaultReadSessionRef.current === session) {
-        setState(emptyState(isSupported() ? 'idle' : 'unsupported'));
+        setState(emptyState('idle'));
       }
     }
   }, [beginVaultReadSession, refreshRecentVaults, mountedRef, pickerSequenceRef, setState, vaultReadSessionRef]);
 
-  // Once on mount: try to restore the handle from IDB, and switch to 'unsupported' when the
-  // browser lacks FSA (starting from 'idle' keeps SSR consistent).
+  // Once on mount: try to restore the handle from IDB (starting from 'idle' keeps SSR consistent).
   useEffect(() => {
-    if (!isSupported()) {
-      setState((s) => ({ ...s, status: 'unsupported' }));
-      setRestoreAttempted(true);
-      return;
-    }
     let cancelled = false;
     let session = vaultReadSessionRef.current;
     const pickerSequence = pickerSequenceRef.current;

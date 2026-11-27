@@ -73,10 +73,6 @@ export function bundledServerLaunch(binaryPath: string): McpServerLaunch {
   return { kind: "app-bundled", command: binaryPath, args: [] };
 }
 
-export function sourceCheckoutLaunch(repoRoot: string): McpServerLaunch {
-  return { kind: "source-checkout", command: "node", args: [`${repoRoot}/mcp/src/index.js`] };
-}
-
 /**
  * Whether this surface knows how to launch the server; the whole UI branches on it. The
  * installed app does (its bundled binary); a browser does not (it has no absolute path).

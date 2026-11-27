@@ -218,8 +218,8 @@ describe("shouldAutoMarkBaseline", () => {
   it("returns true for a local vault with nodes and no baseline", () => {
     expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: false, nodeCount: 5 })).toBe(true);
   });
-  it("returns false in static mode", () => {
-    expect(shouldAutoMarkBaseline({ mode: "static", hasBaseline: false, nodeCount: 5 })).toBe(false);
+  it("returns false while no folder is open", () => {
+    expect(shouldAutoMarkBaseline({ mode: "no-folder", hasBaseline: false, nodeCount: 5 })).toBe(false);
   });
   it("returns false when a baseline exists", () => {
     expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: true, nodeCount: 5 })).toBe(false);

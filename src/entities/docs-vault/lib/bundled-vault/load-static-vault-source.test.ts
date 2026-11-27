@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  emptyStaticVaultSource,
   loadStaticVaultSource,
   peekStaticVaultSource,
   resetStaticVaultSourcesForTests,
@@ -11,7 +10,7 @@ import {
 describe('loadStaticVaultSource', () => {
   beforeEach(() => resetStaticVaultSourcesForTests());
 
-  it('holds nothing until a screen asks, then hands out one stable value per sample', async () => {
+  it('holds nothing until the sample map asks, then hands out one stable value', async () => {
     expect(peekStaticVaultSource('storefront')).toBeNull();
     expect(staticVaultSourceState('storefront')).toBe('idle');
     const first = await loadStaticVaultSource('storefront');
@@ -19,28 +18,18 @@ describe('loadStaticVaultSource', () => {
     expect(peekStaticVaultSource('storefront')).toBe(first);
     expect(staticVaultSourceState('storefront')).toBe('ready');
     expect(await loadStaticVaultSource('storefront')).toBe(first);
-    expect(peekStaticVaultSource('dogfood')).toBeNull();
   });
 
   it('starts one import for concurrent callers and tells subscribers once', async () => {
     const onChange = vi.fn();
     const stop = subscribeStaticVaultSource(onChange);
-    const pending = [loadStaticVaultSource('dogfood'), loadStaticVaultSource('dogfood')];
-    expect(staticVaultSourceState('dogfood')).toBe('loading');
+    const pending = [loadStaticVaultSource('storefront'), loadStaticVaultSource('storefront')];
+    expect(staticVaultSourceState('storefront')).toBe('loading');
     const [a, b] = await Promise.all(pending);
     stop();
     expect(a).toBe(b);
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(a?.agentSlugPrefix).toBe('ontology/');
-    expect(Object.keys(a?.content ?? {}).every((slug) => slug.startsWith('guide/'))).toBe(true);
-    expect(a?.contentPreviews?.CHANGELOG?.omittedSections).toBeGreaterThan(0);
-  });
-
-  it('keeps the empty sample of the same name for a screen that reads before arrival', () => {
-    const empty = emptyStaticVaultSource('dogfood');
-    expect(empty.source).toBe('dogfood');
-    expect(empty.manifest.docs).toEqual([]);
-    expect(emptyStaticVaultSource('dogfood')).toBe(empty);
+    expect(a?.source).toBe('storefront');
   });
 });
 

@@ -176,7 +176,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:last-route", kind: "storage", scope: "global", note: "**Nobody reads it**: route restoration was retired on 2026-07-30 (`locale-redirect.tsx`). It is a dead key rather than a defect, so this registry records only the fact and leaves deletion as a separate matter" },
 
   // Things that *define* the scope (they are the answer to "which vault")
-  { key: "demo:sample-source:v1", kind: "storage", scope: "global", note: "which built-in sample this is; an input to the scope, not state inside the scope" },
   { key: "docs-vault:current-handle", kind: "storage", scope: "global", note: "IndexedDB: current vault handle" },
   { key: "docs-vault:fs-handle:", kind: "storage", scope: "global", note: "IndexedDB store prefix: vault handle storage" },
   { key: "docs-vault:fs-handle:recent", kind: "storage", scope: "global", note: "IndexedDB: recent vault handles" },
@@ -315,12 +314,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "legacy",
     scope: "global",
     note: "global read time from the era that did not know the vault; same as above",
-  },
-  {
-    key: "demo:docs-vault:recent:v1",
-    kind: "legacy",
-    scope: "global",
-    note: "recent documents v1; after migrating to v2 it is only read and cleared",
   },
 
   // Event names (not storage — registered here because they share the namespace)
@@ -582,9 +575,6 @@ describe("scope registry: persisted storage keys", () => {
                 continue;
             for (const file of SCANNED.get(entry.key) ?? []) {
                 const source = stripComments(readFileSync(join(REPO_ROOT, file), "utf8"));
-                // Reading `demo:docs-vault:recent:v1` is legitimate because it is a migration.
-                if (entry.key === "demo:docs-vault:recent:v1")
-                    continue;
                 const readsIt = new RegExp(`getItem\\(\\s*["'\`]${entry.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(source);
                 expect(readsIt, `${file} reads back ${entry.key}`).toBe(false);
             }

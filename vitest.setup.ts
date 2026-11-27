@@ -6,11 +6,11 @@ import { loadStaticVaultSource } from './src/entities/docs-vault/lib/bundled-vau
 import { clearArrivalMemory } from './src/shared/lib/navigation/route-arrival-memory-store';
 
 /**
- * The browser fetches a bundled sample the first time a screen shows it; a unit test renders
- * synchronously, so both samples are in hand before any test file runs, as they were when they
- * were static imports. A test of the loading step itself resets with `resetStaticVaultSourcesForTests`.
+ * The browser fetches the sample map's vault the first time `/sample` shows it; a unit test renders
+ * synchronously, so it is in hand before any test file runs, as it was when it was a static import.
+ * A test of the loading step itself resets with `resetStaticVaultSourcesForTests`.
  */
-await Promise.all([loadStaticVaultSource('dogfood'), loadStaticVaultSource('storefront')]);
+await loadStaticVaultSource('storefront');
 
 /**
  * One condition-wait ceiling for the whole suite: it only decides how long a failure takes to report.

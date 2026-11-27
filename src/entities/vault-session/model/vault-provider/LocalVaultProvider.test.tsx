@@ -45,7 +45,6 @@ function mockVaultValue(overrides: Record<string, unknown> = {}) {
     errorMessage: null,
     lastLoadedAt: null,
     restoreAttempted: true,
-    isSupported: true,
     open: vi.fn(),
     openRecent: vi.fn(),
     forgetRecent: vi.fn(),

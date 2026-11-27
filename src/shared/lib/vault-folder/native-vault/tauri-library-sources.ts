@@ -5,8 +5,7 @@ import { getTauriInvoke } from './tauri-vault-runtime';
 
 /**
  * The native "add documents" picker. Returns the absolute paths a person chose, or an
- * empty list when they cancelled; `null` outside the app, where `showOpenFilePicker`
- * does the same job in the browser.
+ * empty list when they cancelled; `null` outside the app, which has no picker.
  */
 export async function pickTauriSourceFiles(dialogTitle?: string): Promise<string[] | null> {
   const invoke = getTauriInvoke();

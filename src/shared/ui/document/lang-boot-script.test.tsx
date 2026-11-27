@@ -43,19 +43,3 @@ describe("the installed app is marked before first paint", () => {
     expect(document.documentElement.getAttribute("data-shell")).toBe("desktop");
   });
 });
-
-describe("the stored sample choice is marked before first paint", () => {
-  afterEach(() => {
-    window.localStorage.clear();
-    document.documentElement.removeAttribute("data-sample");
-  });
-
-  it("marks the root only for the dogfood choice", () => {
-    window.localStorage.setItem("demo:sample-source:v1", "storefront");
-    runBootScript();
-    expect(document.documentElement.hasAttribute("data-sample")).toBe(false);
-    window.localStorage.setItem("demo:sample-source:v1", "dogfood");
-    runBootScript();
-    expect(document.documentElement.getAttribute("data-sample")).toBe("dogfood");
-  });
-});
