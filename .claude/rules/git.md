@@ -5,10 +5,8 @@
 ## Commit messages
 
 - The whole message is English: prefix, subject, and body.
-- Prefixes: `feat:` · `fix:` · `docs:` · `refactor:` · `chore:` · `test:` ·
-  `style:` · `perf:` · `design:`, an optional `(scope)`, then a space. `wip` is
-  not a prefix. `.githooks/commit-msg` enforces both rules; Git-generated merge,
-  revert, and fixup subjects are exempt.
+- A conventional prefix with an optional `(scope)`; `.githooks/commit-msg`
+  enforces the prefix list and the language.
 - The body explains **why**; the diff already says what. Lines stay within 80
   characters.
 
@@ -41,12 +39,10 @@
   the last push, or it falls back to its train code, a live fallback.
   `pnpm pr:ci <number>` starts that run early; `--plan <n...>` previews.
   Preserve original commits with merge commits; never squash or rebase during
-  landing. Disable main's linear-history requirement.
+  landing.
 - Several branches merge through one integration branch (`/integrate`), each
   by `git merge --no-ff`; never squash, rebase or cherry-pick a component.
   Its CI run is Checks; rendered slices attach their local spec runs.
-- Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
-  `--draft`; `.claude/hooks/block-manual-landing.sh` refuses them.
 - Title: a conventional prefix. Body: `Summary` and `Test plan`, naming the
   checks that passed. Attach dark-mode before/after screenshots of visual
   changes to the PR; never commit them.

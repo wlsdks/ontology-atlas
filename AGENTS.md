@@ -149,24 +149,9 @@ optimizing Codex instructions.
 
 ## Harness loading and hooks
 
-This file is the only root instruction file: Claude Code reads it directly, and
-a root `CLAUDE.md` would replace it. `.claude/rules/` always loads `forbidden`,
-`git` and `local-first`; `design`, `design-gates`, `architecture`, `testing`,
-`surfaces` and `documentation` load by their frontmatter paths
-(`rules-path-scope.contract.test.ts`). Making a rule resident updates that
-contract, this sentence, and the commit's reason together. Codex loads no rule
-by itself. Claude discovers skills in `.claude/skills/`, Codex in
-`.agents/skills/`.
-
-`.claude/settings.json` owns Claude permissions and hooks, `.codex/hooks.json`
-Codex hooks; Codex skips a new or changed entry until a person trusts it in
-`/hooks`. Hooks block irreversible commands, report lint and language findings
-at edit time, and inject the vault census at session start; each header says
-why. Each has a `.codex/hooks/` adaptation (a Codex edit is an `apply_patch`
-envelope), not a copy, except Codex-only
-`block-secret-read.sh` (Claude uses `permissions.deny`) and Claude-only
-`session-length.sh` (it reads Claude's transcript). `pnpm test:claude:hooks`
-guards the wiring.
+This is the only root instruction file; a root `CLAUDE.md` would replace it.
+Which rules load every turn, which wait for a path, and which hooks run for
+which host: `docs/engineering/agent-instructions.md`, "Loading and hooks".
 
 <!-- BEGIN:nextjs-agent-rules -->
 

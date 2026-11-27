@@ -28,6 +28,8 @@ import { describe, expect, it } from "vitest";
  * `ALWAYS_LOADED` below states it.
  */
 
+const HARNESS_RUNBOOK = "docs/engineering/agent-instructions.md";
+
 const RULES_DIR = join(process.cwd(), ".claude/rules");
 
 /**
@@ -118,7 +120,7 @@ describe("`.claude/rules` path scoping contract", () => {
   }, 30_000);
 
   /**
-   * `AGENTS.md` tells the reader which rules load every turn and which wait for a
+   * The harness runbook tells the reader which rules load every turn and which wait for a
    * matching path. That sentence is how someone decides where a new rule goes;
    * it goes stale the moment a rule is added or a frontmatter block opens.
    *
@@ -126,10 +128,10 @@ describe("`.claude/rules` path scoping contract", () => {
    * a prose gate only when it derives its expectation from code; a hand-written
    * list here would be the pinned sentence that rule forbids.
    */
-  it("describes its own loading conditions correctly in AGENTS.md", () => {
-    const agents = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
-    const start = agents.indexOf("## Harness loading and hooks");
-    expect(start, "AGENTS.md has no harness loading section").toBeGreaterThan(-1);
+  it("describes its own loading conditions correctly in the harness runbook", () => {
+    const agents = readFileSync(join(process.cwd(), HARNESS_RUNBOOK), "utf8");
+    const start = agents.indexOf("## Loading and hooks");
+    expect(start, `${HARNESS_RUNBOOK} has no loading section`).toBeGreaterThan(-1);
     const section = agents.slice(start);
     const end = section.indexOf("\n## ", 1);
     const sentence = end === -1 ? section : section.slice(0, end);
@@ -141,7 +143,7 @@ describe("`.claude/rules` path scoping contract", () => {
     for (const name of [...resident, ...conditional]) {
       expect(
         named.has(name),
-        `AGENTS.md's loading section never names \`${name}\`, so a reader cannot tell when it loads`,
+        `the runbook's loading section never names \`${name}\`, so a reader cannot tell when it loads`,
       ).toBe(true);
     }
   });
@@ -167,7 +169,7 @@ describe("`.claude/rules` path scoping contract", () => {
    * by importing a view from `@/views/*-redirect` and rendering nothing else, so the set is derived.
    */
   /**
-   * `AGENTS.md` inventories hooks and says which are mirrored into `.codex/hooks/`. Only one-sided hooks
+   * The harness runbook inventories hooks and says which are mirrored into `.codex/hooks/`. Only one-sided hooks
    * are required by name; the mirrored ones are covered by `pnpm test:claude:hooks`, and a size cap
    * cannot catch a claim rotting without changing size.
    */
@@ -183,11 +185,11 @@ describe("`.claude/rules` path scoping contract", () => {
       ...claude.filter((name) => !codex.includes(name)),
       ...codex.filter((name) => !claude.includes(name)),
     ].sort();
-    const agents = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
-    const unnamed = asymmetric.filter((name) => !agents.includes(name));
+    const runbook = readFileSync(join(process.cwd(), HARNESS_RUNBOOK), "utf8");
+    const unnamed = asymmetric.filter((name) => !runbook.includes(name));
     expect(
       unnamed,
-      `these hooks run for one tool and not the other, and AGENTS.md never says so:\n`
+      `these hooks run for one tool and not the other, and the harness runbook never says so:\n`
         + `${unnamed.join("\n")}\n`
         + "An asymmetry nobody wrote down reads as an oversight the next time someone "
         + "tries to restore parity.",
