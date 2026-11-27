@@ -180,13 +180,16 @@ fn found_files_keep_their_folders_and_vault_folders_are_never_walked() {
     fs::remove_dir_all(fixture).unwrap();
 }
 
-/// A bound code root's Markdown is developer documentation, never a suggestion.
+/// A bound code root's Markdown is developer documentation and its HTML a served page,
+/// never a suggestion.
 #[test]
-fn markdown_is_offered_only_from_the_open_folder() {
+fn markdown_and_html_are_offered_only_from_the_open_folder() {
     let (fixture, vault) = fixture_with_vault("markdown-roots");
     let project = fixture.join("project");
     plant_file(&project.join("docs/design.md"), 300);
     plant_file(&project.join("docs/design.pdf"), 300);
+    plant_file(&project.join("scripts/preview/page.html"), 300);
+    plant_file(&project.join("site/index.HTM"), 300);
     let project = fs::canonicalize(&project).unwrap();
     let _scope =
         crate::vault::grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);

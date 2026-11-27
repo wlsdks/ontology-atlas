@@ -127,7 +127,7 @@ describe('the discovery rule is the same in both walks', () => {
     expect(rustList('DISCOVERY_VAULT_OWNED_DIRS').sort()).toEqual(
       [...DISCOVERY_VAULT_OWNED_DIRS].sort(),
     );
-    expect(walkSource).toMatch(/root\.open_folder \|\| !is_markdown_name\(&name\)/);
+    expect(walkSource).toMatch(/root\.open_folder \|\| !offered_only_from_open_folder\(&name\)/);
   });
 
   it('caps a dropped folder at the same file, visit and skipped-name counts', () => {
