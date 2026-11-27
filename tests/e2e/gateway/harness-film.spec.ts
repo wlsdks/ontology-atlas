@@ -75,7 +75,10 @@ for (const viewport of [
     test.setTimeout(180_000);
     await page.setViewportSize(viewport);
     await seedFirstRunSeen(page);
-    await page.clock.install();
+    /* Paused, the clock moves only by `runFor`, so a slow runner cannot stretch a sample past 100 ms of film. */
+    const start = Date.now();
+    await page.clock.install({ time: start });
+    await page.clock.pauseAt(start);
     await page.goto("/en/download/?guides=off", { waitUntil: "load" });
     await page.clock.runFor(1500);
     const film = page.getByTestId("gateway-harness");
