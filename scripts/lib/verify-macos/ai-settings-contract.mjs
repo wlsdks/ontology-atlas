@@ -41,8 +41,8 @@ export function validateAiSettingsMarkers(markers, { expectedBaseUrl = null } = 
   if (run.attempted !== true) {
     return `WebView AI settings verifier did not start: ${run.reason || "unknown reason"}`;
   }
-  if (run.bridgeMissing === true) {
-    return "installed app rendered the web-degraded AI card; the desktop LLM bridge was unavailable";
+  if (run.browserPageShown === true) {
+    return "installed app rendered the page meant for browsers";
   }
   if (markers.aiSettingsSheetOpen !== true) {
     return `WebView did not reach the Agents destination (verifier stopped at ${run.step || "unknown step"}: ${run.reason || "unknown reason"})`;
