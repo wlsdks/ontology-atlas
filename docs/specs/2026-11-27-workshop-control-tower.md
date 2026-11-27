@@ -218,8 +218,12 @@ and pressure; 2.5 holds there only until it is measured there (Later 3).
 
 **Subagents** (record `67a26c36`; read with each session-list read, while Workshop is visible and
 that list is on). Config homes: `~/.claude`, `CLAUDE_CONFIG_DIR` when the app sees it, and Orca's
-`claude-profiles/*/home`, as Harness Improve finds them. For each listed Claude Code session, its
-folder is `projects/<its cwd, each / and . as ->/<its sessionId>/subagents/`. **Running:** a
+`claude-profiles/*/home`, as Harness Improve finds them. For each listed Claude Code session, the
+candidate folder is `projects/<its cwd>/<its sessionId>/subagents/`, the cwd encoded as Claude Code
+2.1.332 does: every character outside `a-z`, `A-Z` and `0-9` becomes `-`, and a name over 200
+characters is cut with a hash. That name is only a hint, since two folders can share it: Atlas
+accepts the session only when the `cwd` recorded in its own `<sessionId>.jsonl` is the main checkout
+or a worktree Git lists, as Harness Improve does, and otherwise reads nothing more. **Running:** a
 `agent-<id>.meta.json` there, the session's pid alive, and no end record for that id in the
 session's own `.jsonl`. An end record is a line whose record is the user's own text, beginning
 `<task-notification>`, with `<task-id>` the id and `<status>` one of `completed`, `failed`,
@@ -228,8 +232,8 @@ session's own `.jsonl`. An end record is a line whose record is the user's own t
 meta key outside the twelve measured, a meta over 64 KiB or a link, or another status value. From a
 meta only `agentType`, `model` and `worktreePath` are kept; the path becomes a listed worktree's id
 or "no worktree" and is dropped. `description` and every other key's value are never kept, shown,
-logged or sent. The session's `.jsonl` is read on from the last offset, keeping only ids and
-statuses. **The warning** rides on the verdict: the measured load came from checks, and the four
+logged or sent. The session's `.jsonl` is read on from the last offset, keeping only its `cwd`,
+ids and statuses. **The warning** rides on the verdict: the measured load came from checks, and the four
 `claude` programs used 0.13 core together, so a count of subagents on a calm Mac warns of nothing.
 
 ## Copy
@@ -309,8 +313,10 @@ controls' keys under `tower.leftover`, `.remove` and `.build` belong to the cont
    listed session whose folder holds: A, running (no end record, written 5 s ago); B, ended by a
    `completed` record; C, in a long command (no end record, unwritten for 40 minutes); D, whose
    end record appears only quoted inside a tool result; E, with `description` holding
-   `ATLAS_PLANTED_7f3c`; F, with a thirteenth key; then A, C, D and E read running, C quiet for
-   40 minutes, B absent, F unknown; the planted string, the session id and every path are in no
+   `ATLAS_PLANTED_7f3c`; F, with a thirteenth key; and, in the other home, a folder of the same
+   encoded name and session id whose file records another repository's `cwd` (`/tmp/x_y` beside
+   `/tmp/x-y`) with a running subagent G; then A, C, D and E read running, C quiet for 40 minutes,
+   B absent, F unknown, G nowhere; the planted string, the session id and every path are in no
    payload or log; a meta that is a link is not opened; a missing folder gives unknown and no
    error; a second read reads only the bytes added since. Checked:
    `src-tauri/src/work_status/subagents/tests.rs` (new).
@@ -371,3 +377,7 @@ new record.
   under record `67a26c36`; unknown forms read "Subagents unknown"; the warning rides on the load
   verdict, since no subagent count was measured to slow this Mac. Criterion 4 plants each case;
   the old criteria 4 and 6 fold into 5 and 6, and Later 5 now covers only a count-based warning.
+- 2026-11-27: the folder name follows Claude Code 2.1.332's own encoding (every character outside
+  letters and digits as `-`, long names cut with a hash), read from its binary by the Harness
+  Improve review; it is a hint only, and a session counts only when the `cwd` in its own file is
+  the main checkout or a listed worktree. Criterion 4 plants a colliding folder.
