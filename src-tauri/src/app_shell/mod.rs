@@ -1,6 +1,8 @@
 pub(crate) mod app_log;
 mod deep_link;
 #[cfg(target_os = "macos")]
+pub(crate) mod open_file_limit;
+#[cfg(target_os = "macos")]
 pub(crate) mod tray;
 pub(crate) mod window;
 
