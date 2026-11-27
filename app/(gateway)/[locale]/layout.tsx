@@ -3,6 +3,7 @@ import { getMessages, getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { GatewayShell } from '@/app-providers/providers/GatewayShell';
 import { MotionProvider } from '@/app-providers/providers/MotionProvider';
+import { OldBrowserFolderCleanup } from '@/app-providers/providers/OldBrowserFolderCleanup';
 import {
   enterLocaleSegment,
   LocaleDocumentChrome,
@@ -10,8 +11,6 @@ import {
   localeStaticParams,
 } from '@/app-providers/providers/locale-segment';
 import { GATEWAY_MESSAGE_PATHS, pickMessagePaths } from '@/i18n/gateway-messages';
-import { LocalVaultProvider } from '@/entities/vault-session';
-import { BottomTabBar } from '@/widgets/bottom-tab-bar';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
 import { RouteMemory } from '@/shared/ui/routing/route-memory';
 
@@ -28,13 +27,12 @@ export async function generateMetadata({
 }
 
 /**
- * A sibling of `app/[locale]` rather than a child, so the workbench's providers and whole catalog
- * stay out of these pages' HTML; the URLs are the same, since a route group adds no segment. The
- * client receives only the message paths its tree reads (`src/i18n/gateway-messages.ts`).
+ * A sibling of `app/[locale]` rather than a child, so the app's providers and whole catalog stay out
+ * of these pages' HTML; the URLs are the same, since a route group adds no segment. The client
+ * receives only the message paths its tree reads (`src/i18n/gateway-messages.ts`).
  *
- * The vault provider stays because the mobile tab bar on `/guide` and `/changelog` lists the
- * destinations the open folder has. Crossing to a workbench route mounts that layout's own
- * providers, which restore the remembered folder as a first load does.
+ * No vault provider and no tab bar: the website opens no folder, so there is nothing for them to
+ * list. Opening an app address from here mounts that layout's own providers.
  */
 export default async function GatewayLocaleLayout({
   children,
@@ -50,16 +48,14 @@ export default async function GatewayLocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <LocaleDocumentChrome locale={locale} />
+      <OldBrowserFolderCleanup />
       <MotionProvider>
-        <LocalVaultProvider>
-          <ToastProvider notificationsLabel={tNav('notificationsAriaLabel')}>
-            <TooltipProvider delayDuration={300}>
-              <RouteMemory />
-              <GatewayShell>{children}</GatewayShell>
-              <BottomTabBar />
-            </TooltipProvider>
-          </ToastProvider>
-        </LocalVaultProvider>
+        <ToastProvider notificationsLabel={tNav('notificationsAriaLabel')}>
+          <TooltipProvider delayDuration={300}>
+            <RouteMemory />
+            <GatewayShell>{children}</GatewayShell>
+          </TooltipProvider>
+        </ToastProvider>
       </MotionProvider>
     </NextIntlClientProvider>
   );

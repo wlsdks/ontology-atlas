@@ -14,9 +14,8 @@ async function settled(page: import("@playwright/test").Page) {
  * so a disclosure is opened once and the count retaken.
  */
 
-/** The four gateway surfaces. This list is the reach. */
+/** The gateway surfaces that carry reading links. This list is the reach. */
 const GATEWAY_ROUTES = [
-  "/ko/",
   "/ko/download/",
   "/ko/guide/",
   "/ko/guide/connect-agent/",

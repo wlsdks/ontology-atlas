@@ -60,8 +60,7 @@ describe("isDesktopFrontendPath", () => {
       "sitemap.xml",
       "robots.txt",
       "ko/download/index.html",
-      "en/project/storefront",
-      "en/project/storefront/edit/index.html",
+      "en/sample/index.html",
     ]) {
       assert.equal(isDesktopFrontendPath(dropped, { locales }), false, dropped);
     }
@@ -70,7 +69,7 @@ describe("isDesktopFrontendPath", () => {
   it("matches route names only under a locale", () => {
     // A vault document may be called `download`; only `<locale>/download` is the gateway page.
     assert.equal(isDesktopFrontendPath("docs-vault/features/download.md", { locales }), true);
-    assert.equal(isDesktopFrontendPath("docs-vault/project/storefront.md", { locales }), true);
+    assert.equal(isDesktopFrontendPath("docs-vault/features/sample.md", { locales }), true);
   });
 });
 
@@ -82,8 +81,8 @@ describe("stageDesktopFrontend", () => {
       "demo/clip.en.mp4",
       "en/topology/index.html",
       "en/download/index.html",
+      "en/sample/index.html",
       "en/project/fallback/index.html",
-      "en/project/storefront/index.html",
     ]);
     const target = path.join(root, "staged");
     fs.mkdirSync(path.join(target, "en", "download"), { recursive: true });
@@ -97,7 +96,7 @@ describe("stageDesktopFrontend", () => {
       "en/topology/index.html",
       "index.html",
     ]);
-    assert.deepEqual(report.dropped, ["demo", "en/download", "en/project/storefront"]);
+    assert.deepEqual(report.dropped, ["demo", "en/download", "en/sample"]);
     assert.equal(report.staged.files, 4);
     assert.equal(report.source.files, 7);
   });

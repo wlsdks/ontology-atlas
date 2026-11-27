@@ -38,11 +38,11 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
 }
 
 /**
- * Routes that are gateway surfaces by path alone. `/` is absent because who the visitor is decides
- * it (`isGatewaySurface`). A new gateway surface needs a line here, or that screen wears the
- * workbench rail.
+ * Routes that are website pages by path alone. `/` is absent because the installed app opens its
+ * work entry there (`isGatewaySurface`). A new website page needs a line here, or that screen wears
+ * the workbench rail.
  */
-const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog"] as const;
+const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog", "/sample"] as const;
 
 /**
  * A gateway route does not wear the workbench chrome (the left rail): workbench destinations in
@@ -55,26 +55,20 @@ export function isGatewayRoute(pathname: string): boolean {
 }
 
 export interface GatewayContext {
-  hasVault: boolean;
+  /** The installed app: its `/` is the work entry, never the website's gateway. */
   desktop: boolean;
-  /**
-   * While unknown, `/` leans towards the gateway: the other way flashes the rail on a visitor's
-   * first frame, and a returning user rarely passes through `/`.
-   */
-  vaultKnown: boolean;
 }
 
 /**
- * Is this surface a gateway right now. `/` is the marketing face only for a web visitor; with a
- * vault open, or in the installed app, it stays the work entry point, so the app never tells its own
- * user to download itself.
+ * Is this surface a gateway right now. A browser has no folder to open, so there `/` is the gateway
+ * (it hands over to `/download`); in the installed app `/` is where work starts, so the app never
+ * tells its own user to download itself. Before the page knows which one it is (`desktop` false),
+ * `/` leans towards the gateway: the other way flashes the rail on a visitor's first frame.
  */
 export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean {
   const path = stripLocalePrefix(pathname || "/");
   if (GATEWAY_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix))) return true;
-  if (path !== "/") return false;
-  if (ctx.desktop) return false;
-  return ctx.vaultKnown ? !ctx.hasVault : true;
+  return path === "/" && !ctx.desktop;
 }
 
 /** `/ko/foo` → `/foo`, so route matching never trips over a locale prefix. */

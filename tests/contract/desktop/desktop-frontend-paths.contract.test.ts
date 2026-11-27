@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  APP_PROJECT_PAGES,
   WEB_ONLY_LOCALE_ROUTES,
   WEB_ONLY_ROOT_ENTRIES,
   isDesktopFrontendPath,
@@ -46,12 +45,7 @@ function exportFileFor(locale: string, href: string): string {
   return [locale, pathname, "index.html"].filter(Boolean).join("/");
 }
 
-const WEB_ONLY_ROUTES = new Set([
-  ...WEB_ONLY_LOCALE_ROUTES.map((route: string) => `/${route}`),
-  // Pre-rendered only for the bundled samples; the app opens every slug through `/project/fallback`.
-  "/project/[slug]",
-  "/project/[slug]/edit",
-]);
+const WEB_ONLY_ROUTES = new Set(WEB_ONLY_LOCALE_ROUTES.map((route: string) => `/${route}`));
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
@@ -153,17 +147,17 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
     expect([...reviewed].filter((file) => !naming.includes(file))).toEqual([]);
   });
 
-  it("/project/<slug>: the app opens every project, to read or to edit, through the query-addressed pages", () => {
+  it("/project/<slug>: the export builds no page per slug; the app opens every project through the query-addressed pages", () => {
     for (const href of [buildProjectRuntimeDetailHref("a b/c"), buildProjectEditHref("a b/c", { returnTo: "/topology" })]) {
-      const page = new URL(href, "https://atlas.invalid").pathname.split("/")[2];
-      expect(APP_PROJECT_PAGES).toContain(page);
+      for (const locale of locales) {
+        expect(isDesktopFrontendPath(exportFileFor(locale, href), { locales }), `${locale}${href}`).toBe(true);
+      }
     }
-    // Only the address helpers, the web's canonical and sitemap, and a text search spell the path form.
+    expect(exportedRoutes().filter((route) => route.startsWith("/project/[slug]"))).toEqual([]);
+    // Only the address helpers and a text search spell the path form.
     const pathForm = /\/project\/\$\{/;
     const allowed = new Set([
       "src/entities/project/lib/detail-href.ts",
-      "app/[locale]/project/[slug]/page.tsx",
-      "app/sitemap.ts",
       // Scores documents whose text mentions the address; it renders no link.
       "src/entities/docs-vault/lib/doc-navigation/related-docs.ts",
     ]);

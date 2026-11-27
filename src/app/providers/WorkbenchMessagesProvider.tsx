@@ -9,8 +9,8 @@ import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
 
 /**
- * The workbench's messages. `/` starts from `rootMessages`, the subset the gateway and the hidden
- * shell around it read, and gains the whole catalog once a visitor turns out to have a folder
+ * The workbench's messages. `/` starts from `rootMessages`, the subset the neutral frame and the
+ * hidden shell around it read, and gains the whole catalog once the installed app has a folder
  * (`requestRootWorkbench` in `@/views/root-entry`). Every other route, and `/` in the installed
  * app, renders with the whole catalog: the server reads it before rendering, and the browser holds
  * hydration on the server's HTML until the chunk arrives, so no screen shows a raw key.

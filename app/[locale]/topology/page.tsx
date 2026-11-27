@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { HomePage, MapSampleHead } from "@/views/home";
+import { HomePage } from "@/views/home";
 import { buildPageMetadata } from "@/shared/lib/public-pages/page-metadata";
 import { MapEntryFallback } from "@/shared/ui/fallbacks/map-entry-fallback";
 
-/** Renders the same component as `/`; the demo URL the README points at. */
+/** Renders the same component as `/`. A plain browser sees the app-only page here, so it is noindex. */
 export async function generateMetadata({
   params,
 }: {
@@ -18,6 +18,7 @@ export async function generateMetadata({
     path: 'topology',
     title: t("pages.topology"),
     description: t('descriptions.topology'),
+    noindex: true,
   });
 }
 
@@ -28,11 +29,8 @@ export default async function Page({
 }) {
   const { locale } = await params;
   return (
-    <>
-      <MapSampleHead />
-      <Suspense fallback={<MapEntryFallback locale={locale} />}>
-        <HomePage />
-      </Suspense>
-    </>
+    <Suspense fallback={<MapEntryFallback locale={locale} />}>
+      <HomePage />
+    </Suspense>
   );
 }

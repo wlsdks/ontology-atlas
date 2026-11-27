@@ -1,8 +1,6 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { usePathname } from '@/i18n/navigation';
-import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
@@ -29,19 +27,16 @@ import { StartSection } from './StartSection';
 const THIRD_PARTY_LICENSES_HREF = withBasePath('/third-party-licenses.txt');
 
 /**
- * Serves /download and /: a hero on its own clock, then sections whose scroll entrances
+ * Serves /download: a hero on its own clock, then sections whose scroll entrances
  * (`animation-timeline: view()`) do not exist under reduced motion
  * (`tests/contract/motion/reduced-motion-equivalent.contract.test.ts`).
  */
 export function DownloadPage() {
-  const pathname = usePathname() ?? '/';
   const tFooter = useTranslations('footer');
   const tMotion = useTranslations('download.motion');
   const motionLabels = { pause: tMotion('pause'), play: tMotion('play') };
   const published = isMacosReleasePublished();
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
-  /** The tab bar's own function: `/` shows the bar and `/download` hides it, and two lists drift. */
-  const bottomTabBarPresent = !shouldHideBottomTabBar(pathname, false);
   const graph = useStageGraph();
   useSectionPull();
   /** Decided once for the CTA, trust line and facts strip, or they disagree. */
@@ -82,16 +77,10 @@ export function DownloadPage() {
 
         <div
           data-testid="download-bottom-band"
-          data-gateway-bottom-reserve-token={
-            bottomTabBarPresent ? '--topology-mobile-bottom-tab-reserve' : undefined
-          }
-          data-gateway-bottom-reserve-active={bottomTabBarPresent ? 'true' : undefined}
           className={cn(
             PAGE_GUTTER,
             'mt-16 sm:mt-24',
             'shrink-0 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
-            bottomTabBarPresent &&
-              'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
           )}
         >
           <div className={cn(PAGE_COLUMN, '@container')}>

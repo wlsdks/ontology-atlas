@@ -21,12 +21,12 @@ export function GET(): Response {
 - After a commit, the map marks the concepts whose files changed, so you know what to recheck.
 - A line on the map is a declared relationship, not proof of runtime impact; missing evidence shows as unknown.
 - Free and MIT licensed. No account and no backend run by Atlas; a coding agent you connect talks to its own provider.
-- Desktop app for macOS (Apple Silicon, notarized) and a Windows x64 beta; the map also runs in the browser.
+- Desktop app for macOS (Apple Silicon, notarized) and a Windows x64 beta. Elsewhere, a read-only sample map is on the website and the MCP server runs from the source code.
 
 ## Start
 
 - [Download](${SITE_URL}/en/download/): the desktop app and what it does
-- [Try it in the browser](${SITE_URL}/en/topology/)
+- [Sample map](${SITE_URL}/en/sample/): a read-only map of a sample online store
 - [Changelog](${SITE_URL}/en/changelog/)
 
 ## Guide

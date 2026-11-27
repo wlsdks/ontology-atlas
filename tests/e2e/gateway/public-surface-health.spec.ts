@@ -9,39 +9,21 @@ import { waitForAnimationsDone, waitForPageSettled } from "../settle";
  * purity on the English routes with no vault text; the example vault is legitimately Korean.
  */
 
-/** Every route is opened once at the workbench reference size and gets the checks listed for it. */
-const WORKBENCH_ROUTES = [
-  "/en/",
-  "/en/topology/",
-  "/en/docs/",
-  "/en/projects/",
-  "/en/download/",
-  "/en/guide/",
-  "/en/project/ontology-atlas/",
-  "/en/project/new/",
-] as const;
+/**
+ * Every route is opened once at the desktop reference size and gets the checks listed for it. A
+ * workbench address is the app-only page in a browser, so its console must stay quiet too: a
+ * hydration error there would mean the held workbench mounted after all.
+ */
+const WORKBENCH_ROUTES = ["/en/topology/", "/en/sample/", "/en/download/", "/en/guide/"] as const;
 
-const OVERFLOW_ROUTES = new Set<string>([
-  "/en/",
-  "/en/topology/",
-  "/en/docs/",
-  "/en/projects/",
-  "/en/download/",
-  "/en/guide/",
-]);
+const OVERFLOW_ROUTES = new Set<string>(WORKBENCH_ROUTES);
 
-const STRUCTURE_ROUTES = new Set<string>([
-  "/en/",
-  "/en/project/ontology-atlas/",
-  "/en/docs/",
-  "/en/topology/",
-  "/en/projects/",
-]);
+const STRUCTURE_ROUTES = new Set<string>(["/en/sample/"]);
 
-const VAULT_FREE_EN_ROUTES = new Set<string>(["/en/project/new/", "/en/download/"]);
+const VAULT_FREE_EN_ROUTES = new Set<string>(["/en/download/"]);
 
-/** The phone reference width is kept for the public gateway, where a shared link lands. */
-const GATEWAY_ROUTES = ["/en/", "/en/download/"] as const;
+/** The phone reference width is kept for the pages a shared link lands on. */
+const GATEWAY_ROUTES = ["/en/download/", "/en/sample/", "/en/topology/"] as const;
 
 const DESKTOP = { width: 1512, height: 950 };
 const PHONE = { width: 390, height: 844 };
@@ -73,18 +55,7 @@ function collectProblems(page: Page): string[] {
 }
 
 async function open(page: Page, route: string) {
-  const response = await page.goto(
-    route === "/en/docs/" ? "/en/library/?tab=ontology" : route,
-    { waitUntil: "domcontentloaded" },
-  );
-  if (route === "/en/docs/") {
-    await expect(page).toHaveURL(
-      (url) => url.pathname === "/en/library/" && url.searchParams.get("tab") === "ontology",
-    );
-    await expect(
-      page.locator("#library-workspace-tabpanel-ontology [data-docs-viewer]"),
-    ).toBeVisible();
-  }
+  const response = await page.goto(route, { waitUntil: "domcontentloaded" });
   // ⚠️ The previous specs swallowed navigation failures into `console.log` — passing even on a 500.
   expect(response?.ok(), `${route} 를 열지 못했다 (${response?.status()})`).toBe(true);
 }
@@ -196,7 +167,7 @@ async function readHangul(page: Page): Promise<string[]> {
   return hits;
 }
 
-test.describe("public screens at the workbench size", () => {
+test.describe("public screens at the desktop size", () => {
   for (const route of WORKBENCH_ROUTES) {
     test(`${route} has no overflow, quiet console, one h1 with landmarks and English-only text where those apply`, async ({
       page,

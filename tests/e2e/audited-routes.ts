@@ -6,17 +6,10 @@
 /**
  * The URLs the ratchets actually open.
  *
- * Dynamic routes such as `[slug]` and `[segment]` are opened with **a value that
- * exists** — opening a non-existent slug falls through to 404 and measures the 404
- * rather than that route.
- *
- * ⚠️ **"Exists" means in the running data source, not in the build output.** Even
- * with `out/ko/project/<slug>/` present in the static export, if the vault the app
- * is reading at that moment (`samples/storefront/` when no vault is chosen) has no
- * such project, the screen is a degraded card or empty. The comments on the two
- * project lines below record what that cost, measured. `what-is-atlas` is emitted by
- * `src/views/gateway-doc/model/guide-pages.ts`, so it always exists regardless of
- * data source.
+ * A plain browser opens every workbench address as the page that says the app is needed
+ * (`app-only-page`), so the ratchets measure that page there; the screens themselves belong to the
+ * installed app. Dynamic routes such as `[segment]` are opened with a value that exists. `what-is-atlas`
+ * is emitted by `src/views/gateway-doc/model/guide-pages.ts`, so it always exists.
  */
 export const AUDITED_ROUTES = [
   "/ko/",
@@ -24,10 +17,6 @@ export const AUDITED_ROUTES = [
   "/ko/architecture/",
   "/ko/docs/",
   "/ko/projects/",
-  // The slug must exist in the running data source (`samples/storefront/`), not only the build output;
-  // a missing project renders a degraded card or no `<main>`, which the ratchets would not measure.
-  "/ko/project/storefront/",
-  "/ko/project/storefront/edit/",
   "/ko/project/new/",
   "/ko/project/fallback/",
   "/ko/git/",
@@ -47,6 +36,7 @@ export const AUDITED_ROUTES = [
   // this audits the no-folder state.
   "/ko/automations/",
   "/ko/download/",
+  "/ko/sample/",
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",
   "/ko/changelog/",

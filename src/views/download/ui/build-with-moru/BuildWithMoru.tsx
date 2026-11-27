@@ -387,8 +387,8 @@ function Actions({ state, handheld, act }: { state: BuildState; handheld: boolea
       return (
         <>
           {handheld ? null : (
-            <Link href="/topology" data-testid="build-try-browser" className={cn(buttonVariants({ variant: 'outline' }), 'atlas-touch-floor w-full')}>
-              {t('actions.tryBrowser')}
+            <Link href="/sample" data-testid="build-sample" className={cn(buttonVariants({ variant: 'outline' }), 'atlas-touch-floor w-full')}>
+              {t('actions.sample')}
             </Link>
           )}
           <a

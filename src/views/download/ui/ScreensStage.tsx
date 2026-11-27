@@ -93,7 +93,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
       </div>
       <div className="flex min-w-0 items-end max-[112rem]:mb-3 min-[112rem]:col-start-1 min-[112rem]:row-start-2 min-[112rem]:flex-col min-[112rem]:items-stretch min-[112rem]:gap-0.5">
         <Link
-          href="/topology"
+          href="/sample"
           data-testid="gateway-screens-map"
           aria-label={t('mapLink')}
           className={controlClass({

@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { InsightsRedirectPage } from '@/views/insights-redirect';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { absoluteUrl } from '@/shared/config';
 
 export async function generateMetadata({
   params,
@@ -12,7 +11,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'metadata' });
-  return { title: t('pages.ontology'), alternates: { canonical: absoluteUrl(`/${locale}/topology/`) } };
+  return { title: t('pages.ontology'), robots: { index: false, follow: true } };
 }
 
 /**

@@ -10,7 +10,7 @@ const repoRoot = resolve(__dirname, '../../..');
  * A new gateway route must be registered in `isGatewayRoute()`; a missing one renders wrong chrome
  * that no type or lint check catches, so route directories are compared against the predicate.
  */
-const GATEWAY_ROUTES = ['download', 'guide', 'changelog'] as const;
+const GATEWAY_ROUTES = ['download', 'guide', 'changelog', 'sample'] as const;
 
 describe('gateway route registration', () => {
   it.each(GATEWAY_ROUTES)('the `/%s` route really exists', (route) => {
@@ -53,18 +53,15 @@ describe('gateway route registration', () => {
    * registering a new route makes the installed app recommend installing itself.
    */
   it('the `/` verdict is decided by the visitor context, and the registered list did not swallow this branch', () => {
-    const web = { hasVault: false, desktop: false, vaultKnown: true };
-    const worker = { hasVault: true, desktop: false, vaultKnown: true };
-    const app = { hasVault: false, desktop: true, vaultKnown: true };
-    expect(isGatewaySurface('/', web)).toBe(true);
-    expect(isGatewaySurface('/', worker)).toBe(false);
-    expect(isGatewaySurface('/', app)).toBe(false);
+    expect(isGatewaySurface('/', { desktop: false })).toBe(true);
+    expect(isGatewaySurface('/', { desktop: true })).toBe(false);
   });
 
   it('gateway reading is gateway chrome inside the app too, not a workbench', () => {
-    const app = { hasVault: true, desktop: true, vaultKnown: true };
+    const app = { desktop: true };
     expect(isGatewaySurface('/guide', app)).toBe(true);
     expect(isGatewaySurface('/changelog', app)).toBe(true);
+    expect(isGatewaySurface('/sample', app)).toBe(true);
   });
 });
 

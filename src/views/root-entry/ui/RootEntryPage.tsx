@@ -1,49 +1,27 @@
 "use client";
 
-import { Suspense, lazy, useEffect, useState, useSyncExternalStore } from "react";
-import { Bot, FolderSearch, HardDrive, Network, X } from "lucide-react";
+import { useEffect, useSyncExternalStore } from "react";
+import { Bot, HardDrive, Network } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import type { AppLocale } from "@/i18n/locales";
-import { Button, IconButton } from "@/shared/ui";
-import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import { useWorkbenchCatalog } from "@/i18n/workbench-catalog";
 import { requestRootWorkbench, useRootWorkbenchViews } from "../model/root-workbench";
 
 /**
- * The gateway is its own chunk: it draws this repository's vault from a static JSON import, which
- * the installed app, whose `/` is the map or first-run, must never fetch. A web browser starts the
- * import the moment this module runs, so it overlaps the page's other scripts, and the installed
- * app starts nothing. While the chunk finishes, the opening frame stays up, so the web never sees
- * the exported gateway frame come back between the two.
- */
-function startGatewayImport() {
-  if (typeof window === "undefined") return null;
-  try {
-    if (isDesktopShell()) return null;
-  } catch {
-    // An import must never throw; the lazy factory below imports on first render instead.
-  }
-  return import("@/views/download").then((module) => ({ default: module.GatewayLandingPage }));
-}
-const gatewayImport = startGatewayImport();
-const GatewayLandingPage = lazy(
-  () => gatewayImport ?? import("@/views/download").then((module) => ({ default: module.GatewayLandingPage })),
-);
-
-/**
- * The map, first-run and the whole catalog are fetched only once a folder is on its way or this is
- * the app (`root-workbench.ts`). Until they arrive the screen already showing stays: the gateway on
- * the web, the neutral frame in the app, and the shell keeps its rail hidden on the same signal.
+ * The installed app's `/`: the map when a folder is open, the first-run screen when none is. A plain
+ * browser never mounts it (`AppAddressFaces` hands that visitor to `/download`), so nothing here
+ * offers a download. The map, first-run and the whole catalog are fetched once a folder is on its
+ * way (`root-workbench.ts`); until they arrive the neutral frame stays up, and the shell keeps its
+ * rail hidden on the same signal.
  */
 export function RootEntryPage() {
   const vault = useLocalVault();
   const locale = useLocale() as AppLocale;
   const views = useRootWorkbenchViews(locale);
   const catalogReady = useWorkbenchCatalog(locale) !== null;
-  const [noticeDismissed, setNoticeDismissed] = useState(false);
   const clientReady = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -62,85 +40,18 @@ export function RootEntryPage() {
     if (workbenchLikely) requestRootWorkbench(locale);
   }, [workbenchLikely, locale]);
 
-  // Not yet known whether this is the installed app, which must never be offered its own download.
+  // Not yet known whether this is the installed app.
   if (!clientReady) return <DesktopVaultRedirect />;
   if (vaultOpen) {
     if (views) return <views.HomePage />;
     if (desktop) return <DesktopVaultRedirect />;
-    // With the catalog here the shell already shows the rail, so the gateway would flash beside it.
+    // With the catalog here the shell already shows the rail, so a bare frame would flash beside it.
     if (catalogReady) return <RouteLoadingFallback />;
-  }
-  else if (desktop || vault.awaitingVaultChoice) {
+  } else if (desktop || vault.awaitingVaultChoice) {
     // A neutral frame until the restore is attempted, or FirstRun flashes.
     return vault.restoreAttempted && views ? <views.FirstRunPage /> : <DesktopVaultRedirect />;
   }
-  /* The stored handle is kept: a failed restore does not prove the folder is gone. */
-  const failedRestore =
-    vault.restoreAttempted && vault.status === 'error' && !noticeDismissed;
-  return (
-    <>
-      {failedRestore ? (
-        <LostVaultNotice
-          folderName={vault.handle?.name ?? vault.recentVaults[0]?.name ?? null}
-          missing={vault.errorCode === 'path-missing'}
-          onOpen={() => void vault.open()}
-          onDismiss={() => setNoticeDismissed(true)}
-        />
-      ) : null}
-      {/* The opening frame stays up until the gateway chunk lands; the exported gateway frame must not
-          return between them, or two gateway-shaped screens swap in a row. */}
-      <Suspense fallback={<DesktopVaultRedirect />}>
-        <GatewayLandingPage />
-      </Suspense>
-    </>
-  );
-}
-
-function LostVaultNotice({
-  folderName,
-  missing,
-  onOpen,
-  onDismiss,
-}: {
-  folderName: string | null;
-  missing: boolean;
-  onOpen: () => void;
-  onDismiss: () => void;
-}) {
-  const t = useTranslations('rootEntry');
-  return (
-    <div
-      role="status"
-      data-testid="root-entry-lost-vault-notice"
-      className="flex flex-wrap items-center gap-3 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3"
-    >
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
-        <FolderSearch size={ICON_SIZE.md} aria-hidden />
-      </span>
-      <p className="min-w-0 flex-1 break-keep text-label leading-prose text-[color:var(--color-text-secondary)]">
-        {missing && folderName
-          ? t('lostVaultMissing', { name: folderName })
-          : t('lostVaultUnreadable')}
-      </p>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        data-testid="root-entry-lost-vault-open"
-        onClick={onOpen}
-      >
-        {t('lostVaultAction')}
-      </Button>
-      <IconButton
-        label={t('lostVaultDismiss')}
-        size="sm"
-        data-testid="root-entry-lost-vault-dismiss"
-        onClick={onDismiss}
-      >
-        <X size={ICON_SIZE.md} aria-hidden />
-      </IconButton>
-    </div>
-  );
+  return <DesktopVaultRedirect />;
 }
 
 function DesktopVaultRedirect() {
