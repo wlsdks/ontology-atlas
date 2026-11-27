@@ -1,19 +1,19 @@
 //! `overview`, `schema` and `facets`: what the whole graph holds. Counts, the most connected
 //! nodes, and the patterns of kind, relation and kind that its edges make.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 
 use answer_format::collation::compare_text;
+use indexmap::IndexMap;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use vault_document::frontmatter::Value;
 
-use crate::compiled_graph::{CompiledGraph, Target};
-use crate::object_map::ObjectMap;
+use crate::compiled_graph::{CompiledGraph, NodeId, Target};
+use crate::query::edge_rows::name_reached;
+use crate::query::name_counts::{domain_counts, kind_counts, sorted_counts};
+use crate::query::node_summary::NodeSummary;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
-use crate::query::views::{domain_counts, kind_counts, sorted_counts};
 
 const DEFAULT_OVERVIEW_LIMIT: usize = 10;
 const DEFAULT_SCHEMA_LIMIT: usize = 50;
@@ -21,41 +21,27 @@ const DEFAULT_SCHEMA_LIMIT: usize = 50;
 /// A node as the hub lists show it: the summary and its total degree.
 #[derive(Serialize)]
 pub struct Hub<'a> {
-    uid: &'a str,
-    slug: &'a str,
-    kind: &'a str,
-    title: Cow<'a, Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    domain: Option<&'a Value>,
-    #[serde(rename = "inDegree")]
-    in_degree: u32,
-    #[serde(rename = "outDegree")]
-    out_degree: u32,
+    #[serde(flatten)]
+    summary: NodeSummary<'a>,
     degree: u32,
 }
 
 /// The `limit` most connected nodes: by total degree, then by incoming degree, then by slug.
 pub fn top_hubs(graph: &CompiledGraph, limit: usize) -> Vec<Hub<'_>> {
-    let mut nodes: Vec<&crate::compiled_graph::Node> = graph.nodes().iter().collect();
+    let mut nodes: Vec<NodeId> = graph.node_ids().collect();
     nodes.sort_by(|left, right| {
-        right
+        let (left_node, right_node) = (graph.node(*left), graph.node(*right));
+        right_node
             .degree()
-            .cmp(&left.degree())
-            .then_with(|| right.in_degree.cmp(&left.in_degree))
-            .then_with(|| compare_text(left.slug(), right.slug()))
+            .cmp(&left_node.degree())
+            .then_with(|| right_node.in_degree.cmp(&left_node.in_degree))
     });
     nodes
         .into_iter()
         .take(limit)
-        .map(|node| Hub {
-            uid: node.uid(),
-            slug: node.slug(),
-            kind: node.kind(),
-            title: node.title(),
-            domain: node.domain(),
-            in_degree: node.in_degree,
-            out_degree: node.out_degree,
-            degree: node.degree(),
+        .map(|id| Hub {
+            summary: NodeSummary::of(graph, id),
+            degree: graph.node(id).degree(),
         })
         .collect()
 }
@@ -119,7 +105,7 @@ pub fn schema_patterns(graph: &CompiledGraph) -> Vec<SchemaPattern<'_>> {
         if pattern.examples.len() < 3 {
             pattern.examples.push(EdgeExample {
                 from: graph.node(edge.from).slug(),
-                to: crate::query::views::name_reached(graph, id),
+                to: name_reached(graph, id),
                 reference: &edge.reference,
             });
         }
@@ -162,11 +148,11 @@ pub struct OverviewAnswer<'a> {
     operation: &'static str,
     graph: OverviewGraph<'a>,
     #[serde(rename = "byKind")]
-    by_kind: ObjectMap<usize>,
+    by_kind: IndexMap<String, usize>,
     #[serde(rename = "byDomain")]
-    by_domain: ObjectMap<usize>,
+    by_domain: IndexMap<String, usize>,
     #[serde(rename = "byRelation")]
-    by_relation: ObjectMap<usize>,
+    by_relation: IndexMap<String, usize>,
     hubs: Vec<Hub<'a>>,
 }
 
@@ -270,9 +256,9 @@ impl Serialize for DegreeBuckets {
 #[derive(Serialize)]
 struct FacetNodes<'a> {
     #[serde(rename = "byKind")]
-    by_kind: ObjectMap<usize>,
+    by_kind: IndexMap<String, usize>,
     #[serde(rename = "byDomain")]
-    by_domain: ObjectMap<usize>,
+    by_domain: IndexMap<String, usize>,
     #[serde(rename = "byDegreeBucket")]
     by_degree_bucket: DegreeBuckets,
     #[serde(rename = "topByDegree")]
@@ -289,7 +275,7 @@ struct Resolution {
 #[derive(Serialize)]
 struct FacetEdges<'a> {
     #[serde(rename = "byRelation")]
-    by_relation: ObjectMap<usize>,
+    by_relation: IndexMap<String, usize>,
     #[serde(rename = "byResolution")]
     by_resolution: Resolution,
     #[serde(rename = "topPatterns")]

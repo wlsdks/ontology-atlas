@@ -43,6 +43,7 @@ use vault_document::DocumentCache;
 
 use crate::audit::AuditLog;
 use crate::runtime::Config;
+use crate::tools::KeptGraph;
 
 /// The stack of a worker. A handler keeps its nesting in the heap, so this only has to hold what a
 /// handler's own calls need, and the same size on every platform: a thread starts with 2 MiB on
@@ -84,6 +85,8 @@ pub struct Session {
     audit: AuditLog,
     /// What the reads have read of each vault file, kept while the file is as it was.
     documents: DocumentCache,
+    /// The compiled graph of the documents as they were last read.
+    graph: KeptGraph,
     /// Held by the one write in progress, from its approval to its audit line.
     write_lock: Mutex<()>,
     output: Mutex<Box<dyn Write + Send>>,
@@ -101,6 +104,7 @@ impl Session {
         Arc::new(Self {
             audit: AuditLog::new(config.vault_root.clone()),
             documents: DocumentCache::new(),
+            graph: KeptGraph::new(),
             write_lock: Mutex::new(()),
             config,
             output: Mutex::new(output),
@@ -159,6 +163,10 @@ impl Session {
 
     pub fn documents(&self) -> &DocumentCache {
         &self.documents
+    }
+
+    pub fn graph(&self) -> &KeptGraph {
+        &self.graph
     }
 
     pub fn is_closed(&self) -> bool {

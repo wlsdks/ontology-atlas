@@ -3597,6 +3597,7 @@ version = "0.1.0"
 dependencies = [
  "answer-format",
  "confined-files",
+ "indexmap 2.14.0",
  "serde",
  "serde_json",
  "sha2 0.11.1",

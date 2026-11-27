@@ -506,6 +506,43 @@ add('graph', 'query-ontology-recompiles-after-disk-change', { vault: 'storefront
   call('compile_ontology', { summary: true }),
 ]);
 
+// Identity faults stop every graph command with one refusal naming the files.
+for (const vault of ['identity-uid-missing', 'identity-uid-invalid', 'identity-uid-duplicate', 'identity-merged-collision']) {
+  add('graph', `graph-refuses-${vault}`, { vault }, [
+    call('compile_ontology', {}),
+    call('query_ontology', { operation: 'overview' }),
+    call('query_ontology', { operation: 'neighbors', slug: 'capabilities/a' }),
+  ]);
+}
+// A vote that two names tie for is settled the same way on every machine.
+add('graph', 'query-ontology-communities-ties', { vault: 'communities-ties' }, [
+  { operation: 'communities' }, { operation: 'communities', iterations: 1 }, { operation: 'centrality' },
+  { operation: 'neighbors', slug: 'capabilities/a' }, { operation: 'topological_order' },
+].map((args) => call('query_ontology', args)));
+// A node named for a whole number, and the ordered tables that name it.
+add('graph', 'graph-numeric-names', { vault: 'numeric-names' }, [
+  call('compile_ontology', { includeIndexes: true }),
+  call('compile_ontology', { summary: true }),
+  call('query_ontology', { operation: 'overview' }),
+  call('query_ontology', { operation: 'schema' }),
+  call('query_ontology', { operation: 'all_paths', from: 'capabilities/plan', to: 'capabilities/review' }),
+  call('query_ontology', { operation: 'centrality' }),
+]);
+// Issues that do not stop the compile: a name two nodes answer to, references to nothing, a cycle.
+add('graph', 'graph-ambiguous-and-dangling', { vault: 'ambiguous-dangling' }, [
+  call('compile_ontology', { includeIndexes: true }),
+  call('compile_ontology', { summary: true }),
+  call('query_ontology', { operation: 'overview' }),
+  call('query_ontology', { operation: 'cycles' }),
+  call('query_ontology', { operation: 'neighbors', slug: 'capabilities/a', includeUnresolved: true, includeExternal: true }),
+]);
+// A topological order cut at `limit` cuts its blocked list too.
+add('graph', 'query-ontology-tangle-limited-order', { vault: 'tangle' }, [
+  call('query_ontology', { operation: 'topological_order', limit: 2 }),
+  call('query_ontology', { operation: 'topological_order', limit: 1 }),
+  call('query_ontology', { operation: 'topological_order', limit: 500 }),
+]);
+
 // ---------------------------------------------------------------------------------------------
 // git: reads and staleness
 // ---------------------------------------------------------------------------------------------

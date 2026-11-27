@@ -35,9 +35,11 @@ impl IdentityFault {
             | Self::InvalidUid { slug }
             | Self::InvalidMergedUids { slug }
             | Self::InvalidMergedUid { slug } => slug.clone(),
-            Self::DuplicateUid { slugs } | Self::DuplicateMergedUid { slugs } => slugs.join(" + "),
-            // The JavaScript compiler names no place for this one.
-            Self::PrimaryMergedUidCollision { .. } => "unknown".to_string(),
+            Self::DuplicateUid { slugs }
+            | Self::DuplicateMergedUid { slugs }
+            | Self::PrimaryMergedUidCollision {
+                merged_slugs: slugs,
+            } => slugs.join(" + "),
         }
     }
 

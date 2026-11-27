@@ -1,47 +1,39 @@
-//! The operations of `query_ontology` that read the compiled graph alone. Each operation is a
-//! function from the graph and the call's arguments to a typed answer, written in the field order
-//! agents have always read.
+//! `query_ontology`: one question put to the compiled graph. A call is a `QueryRequest` the tool
+//! layer has read once; `run` hands it to the module of its operation, which answers with a typed
+//! value written in the field order agents have always read.
+//!
+//! The modules `walks` and `selection` each own a family of operations and an answer type; what
+//! they share lives here: the request, the error, the names of relations and nodes, and the rows
+//! every answer repeats.
 
-mod centrality;
-mod clusters;
-mod dependency_order;
-mod graph_summary;
-mod graph_walk;
-mod neighbors;
+mod edge_rows;
+mod name_counts;
 mod node_resolution;
-mod paths;
+mod node_summary;
+mod operation;
 mod query_error;
 mod relation_set;
 mod request;
-mod views;
+mod selection;
+mod walks;
 
 use serde::Serialize;
 
 use crate::compiled_graph::CompiledGraph;
 
+pub use operation::{Operation, PendingOperation};
 pub use query_error::QueryError;
 pub use relation_set::RELATION_TYPE_VALUES;
-pub use request::{Direction, QueryRequest};
+pub use request::{Direction, QueryRequest, SEARCH_BUDGET_MAX};
+pub use selection::SelectionOperation;
+pub use walks::WalkOperation;
 
 /// What one operation answered.
-#[allow(
-    clippy::large_enum_variant,
-    reason = "an answer is built once, written out and dropped; boxing each would only add steps"
-)]
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum OperationAnswer<'a> {
-    Overview(graph_summary::OverviewAnswer<'a>),
-    Schema(graph_summary::SchemaAnswer<'a>),
-    Facets(graph_summary::FacetsAnswer<'a>),
-    Neighbors(neighbors::NeighborsAnswer<'a>),
-    Path(paths::PathAnswer<'a>),
-    AllPaths(paths::AllPathsAnswer<'a>),
-    Cycles(dependency_order::CyclesAnswer<'a>),
-    TopologicalOrder(dependency_order::TopologicalOrderAnswer<'a>),
-    Components(clusters::ComponentsAnswer<'a>),
-    Communities(clusters::CommunitiesAnswer<'a>),
-    Centrality(centrality::CentralityAnswer<'a>),
+    Walk(walks::WalkAnswer<'a>),
+    Selection(selection::SelectionAnswer<'a>),
 }
 
 /// The counts of the graph an answer was read from, which close every answer.
@@ -70,46 +62,18 @@ pub struct QueryAnswer<'a> {
     compiled_summary: CompiledSummary<'a>,
 }
 
-/// The operations this crate answers, in the order the schema lists them.
-pub const ANSWERED_OPERATIONS: [&str; 11] = [
-    "neighbors",
-    "path",
-    "all_paths",
-    "centrality",
-    "communities",
-    "overview",
-    "schema",
-    "facets",
-    "components",
-    "cycles",
-    "topological_order",
-];
-
-/// Answers `operation` from `graph`. An operation this crate does not answer yet is a failure that
-/// says so.
+/// Answers the call from `graph`. An operation no module answers yet is refused by name.
 pub fn run<'a>(
     graph: &'a CompiledGraph,
-    operation: &str,
     request: &QueryRequest,
 ) -> Result<QueryAnswer<'a>, QueryError> {
-    let answer = match operation {
-        "overview" => OperationAnswer::Overview(graph_summary::overview(graph, request)?),
-        "schema" => OperationAnswer::Schema(graph_summary::schema(graph, request)?),
-        "facets" => OperationAnswer::Facets(graph_summary::facets(graph, request)?),
-        "neighbors" => OperationAnswer::Neighbors(neighbors::neighbors(graph, request)?),
-        "path" => OperationAnswer::Path(paths::path(graph, request)?),
-        "all_paths" => OperationAnswer::AllPaths(paths::all_paths(graph, request)?),
-        "cycles" => OperationAnswer::Cycles(dependency_order::cycles(graph, request)?),
-        "topological_order" => {
-            OperationAnswer::TopologicalOrder(dependency_order::topological_order(graph, request)?)
+    let answer = match request.operation {
+        Operation::Walk(operation) => OperationAnswer::Walk(walks::run(graph, operation, request)?),
+        Operation::Selection(operation) => {
+            OperationAnswer::Selection(selection::run(graph, operation, request)?)
         }
-        "components" => OperationAnswer::Components(clusters::components(graph, request)?),
-        "communities" => OperationAnswer::Communities(clusters::communities(graph, request)?),
-        "centrality" => OperationAnswer::Centrality(centrality::centrality(graph, request)?),
-        other => {
-            return Err(QueryError::Failed(format!(
-                "The query_ontology operation \"{other}\" is not answered by this server yet."
-            )))
+        Operation::Pending(operation) => {
+            return Err(QueryError::NotAnsweredYet(operation.name()));
         }
     };
     let counts = graph.edge_counts();

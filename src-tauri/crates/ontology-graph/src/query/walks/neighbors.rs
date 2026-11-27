@@ -3,13 +3,13 @@
 use answer_format::collation::compare_text;
 use serde::Serialize;
 
+use super::graph_walk::edge_order_key;
 use crate::compiled_graph::{CompiledGraph, EdgeId, Node, NodeId};
-use crate::query::graph_walk::edge_order_key;
+use crate::query::edge_rows::DirectedEdge;
 use crate::query::node_resolution::resolve;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::{Direction, QueryRequest};
-use crate::query::views::DirectedEdge;
 
 const DEFAULT_LIMIT: usize = 100;
 
@@ -93,7 +93,7 @@ pub fn neighbors<'a>(
             }
         }
     }
-    graph.sort_by_code_units(&mut neighbor_nodes);
+    neighbor_nodes.sort_unstable();
     Ok(NeighborsAnswer {
         operation: "neighbors",
         center: graph.node(center).slug(),

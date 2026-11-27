@@ -264,6 +264,150 @@
       "change": 20,
       "platform": "win32",
       "reason": "On Windows the JavaScript server writes the vault's place with backslashes and then counts every row as outside the vault; the Rust server writes it with / (row 20). Elsewhere the two agree, so this entry applies on Windows only."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 45,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name is a wrong call and answers invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 46,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name is a wrong call and answers invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-missing",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-missing",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-invalid",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-invalid",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-invalid",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/query-ontology-tangle",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 24,
+      "reason": "topological_order cuts the blocked list at limit and says it was limited (row 24); the JavaScript server listed every blocked node."
+    },
+    {
+      "case": "graph/query-ontology-tangle-limited-order",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 24,
+      "reason": "topological_order cuts the blocked list at limit and says it was limited (row 24); the JavaScript server listed every blocked node."
+    },
+    {
+      "case": "graph/query-ontology-tangle-limited-order",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 24,
+      "reason": "topological_order cuts the blocked list at limit and says it was limited (row 24); the JavaScript server listed every blocked node."
+    },
+    {
+      "case": "graph/compile-ontology-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "Names that a list repeats are in the order of the graph: the collation of slugs, then of edge keys (row 25); the JavaScript server sorted each list again by UTF-16 code unit."
+    },
+    {
+      "case": "graph/compile-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "Names that a list repeats are in the order of the graph: the collation of slugs, then of edge keys (row 25); the JavaScript server sorted each list again by UTF-16 code unit."
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "Names that a list repeats are in the order of the graph: the collation of slugs, then of edge keys (row 25); the JavaScript server sorted each list again by UTF-16 code unit."
+    },
+    {
+      "case": "graph/graph-numeric-names",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 26,
+      "reason": "A table keyed by names lists them in the order the graph holds them (row 26); a JavaScript object lists a key that is a whole number before every other."
     }
   ]
 }

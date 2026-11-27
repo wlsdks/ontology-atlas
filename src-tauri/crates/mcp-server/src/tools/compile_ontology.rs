@@ -6,7 +6,6 @@ use ontology_graph::{compile_answer, CompileRequest, COMPILE_PAGE_MAX};
 use super::argument_checks::{
     optional_boolean, optional_non_negative_integer, optional_positive_integer,
 };
-use super::compiled_graph::read_graph;
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
@@ -32,6 +31,6 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         edges_limit: optional_positive_integer(arguments, "edgesLimit", page_max)?.map(count),
         edges_offset: optional_non_negative_integer(arguments, "edgesOffset", None)?.map(count),
     };
-    let graph = read_graph(context)?;
+    let graph = context.compiled_graph().read(context)?;
     ToolOutput::json(&compile_answer(&graph, &request))
 }

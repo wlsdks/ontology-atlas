@@ -1,16 +1,16 @@
-//! `centrality`: which nodes the graph leans on. PageRank with a damping of 0.85 and a fixed number
-//! of rounds; authorities (most distinct dependents), hubs (most distinct dependencies) and bridges
-//! (both at once).
+//! `centrality`: which nodes the graph leans on. PageRank with a damping of 0.85 over `iterations`
+//! rounds (20 unless asked), each score rounded to six decimals; authorities (the most nodes
+//! reaching them), hubs (the most nodes they reach) and bridges (the product of the two). Each
+//! counts a pair of nodes once, however many edges join them.
 
-use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use answer_format::collation::compare_text;
 use serde::Serialize;
-use vault_document::frontmatter::Value;
 
+use super::clusters::DEFAULT_ITERATIONS;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
-use crate::query::clusters::DEFAULT_ITERATIONS;
+use crate::query::node_summary::NodeIdentity;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
@@ -21,13 +21,8 @@ const DEFAULT_LIMIT: usize = 10;
 /// The share of rank each node holds after `iterations` rounds. A node with no outgoing edge
 /// spreads its rank over every node.
 fn row(graph: &CompiledGraph, id: NodeId, standing: Standing) -> CentralityRow<'_> {
-    let node = graph.node(id);
     CentralityRow {
-        uid: node.uid(),
-        slug: node.slug(),
-        kind: node.kind(),
-        title: node.title(),
-        domain: node.domain(),
+        identity: NodeIdentity::of(graph, id),
         in_degree: standing.in_degree,
         out_degree: standing.out_degree,
         degree: standing.degree(),
@@ -109,14 +104,10 @@ fn round_score(value: f64) -> f64 {
     text.parse().unwrap_or(value)
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize)]
 struct CentralityRow<'a> {
-    uid: &'a str,
-    slug: &'a str,
-    kind: &'a str,
-    title: Cow<'a, Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    domain: Option<&'a Value>,
+    #[serde(flatten)]
+    identity: NodeIdentity<'a>,
     #[serde(rename = "inDegree")]
     in_degree: usize,
     #[serde(rename = "outDegree")]

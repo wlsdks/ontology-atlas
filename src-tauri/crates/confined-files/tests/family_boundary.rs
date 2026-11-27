@@ -64,6 +64,7 @@ const FAMILY: [(&str, &[&str]); 5] = [
         "ontology-graph",
         &[
             "answer-format",
+            "indexmap",
             "serde",
             "sha2",
             "strsim",

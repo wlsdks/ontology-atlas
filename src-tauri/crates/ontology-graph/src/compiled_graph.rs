@@ -374,9 +374,6 @@ pub struct CompiledGraph {
     pub(crate) edge_counts: EdgeCounts,
     pub(crate) outgoing: Vec<Vec<EdgeId>>,
     pub(crate) incoming: Vec<Vec<EdgeId>>,
-    /// Where each node's slug stands in UTF-16 code unit order, which is how most lists of slugs
-    /// are ordered; the nodes themselves are in collation order.
-    pub(crate) code_unit_rank: Vec<u32>,
 }
 
 impl CompiledGraph {
@@ -479,20 +476,5 @@ impl CompiledGraph {
                 .and_then(|at| self.aliases.get(at))
                 .map(|entry| entry.node)
         })
-    }
-
-    /// Puts nodes in the order a JavaScript `sort()` puts their slugs: by UTF-16 code unit.
-    pub fn sort_by_code_units(&self, nodes: &mut [NodeId]) {
-        nodes.sort_by_key(|node| {
-            self.code_unit_rank
-                .get(node.index())
-                .copied()
-                .unwrap_or(u32::MAX)
-        });
-    }
-
-    /// The `compareText` order of two nodes.
-    pub fn compare_nodes(&self, left: NodeId, right: NodeId) -> std::cmp::Ordering {
-        compare_text(self.node(left).slug(), self.node(right).slug())
     }
 }

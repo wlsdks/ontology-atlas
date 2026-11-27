@@ -1,53 +1,9 @@
-//! The small shapes the operations repeat: a node as a one-line summary, an edge as each operation
-//! shows it, and a count table in the order agents read it.
+//! An edge as each answer shows it: the way it was walked, the way it stands on a path, or with the
+//! public name of its relation.
 
-use std::borrow::Cow;
-use std::collections::HashMap;
-
-use answer_format::collation::compare_text;
 use serde::Serialize;
-use vault_document::frontmatter::Value;
 
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
-use crate::object_map::ObjectMap;
-
-#[derive(Serialize)]
-pub struct NodeSummary<'a> {
-    uid: &'a str,
-    slug: &'a str,
-    kind: &'a str,
-    title: Cow<'a, Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    domain: Option<&'a Value>,
-    #[serde(rename = "inDegree")]
-    in_degree: u32,
-    #[serde(rename = "outDegree")]
-    out_degree: u32,
-}
-
-impl<'a> NodeSummary<'a> {
-    pub fn of(graph: &'a CompiledGraph, id: NodeId) -> Self {
-        let node = graph.node(id);
-        Self {
-            uid: node.uid(),
-            slug: node.slug(),
-            kind: node.kind(),
-            title: node.title(),
-            domain: node.domain(),
-            in_degree: node.in_degree,
-            out_degree: node.out_degree,
-        }
-    }
-}
-
-pub fn summaries(
-    graph: &CompiledGraph,
-    ids: impl IntoIterator<Item = NodeId>,
-) -> Vec<NodeSummary<'_>> {
-    ids.into_iter()
-        .map(|id| NodeSummary::of(graph, id))
-        .collect()
-}
 
 /// An edge with the way it was walked, as `neighbors` lists it.
 #[derive(Serialize)]
@@ -148,50 +104,4 @@ pub fn name_reached(graph: &CompiledGraph, id: EdgeId) -> &str {
         Some(node) => graph.node(node).slug(),
         None => &edge.reference,
     }
-}
-
-/// How often each key occurs: the most frequent first, equal counts in the order of the key's text.
-pub fn sorted_counts<'a>(keys: impl IntoIterator<Item = &'a str>) -> ObjectMap<usize> {
-    let mut counts: Vec<(String, usize)> = Vec::new();
-    let mut at: HashMap<&str, usize> = HashMap::new();
-    for key in keys {
-        match at.get(key) {
-            Some(index) => {
-                if let Some((_, count)) = counts.get_mut(*index) {
-                    *count += 1;
-                }
-            }
-            None => {
-                at.insert(key, counts.len());
-                counts.push((key.to_string(), 1));
-            }
-        }
-    }
-    counts.sort_by(|left, right| {
-        right
-            .1
-            .cmp(&left.1)
-            .then_with(|| compare_text(&left.0, &right.0))
-    });
-    ObjectMap(counts)
-}
-
-/// The kinds of `nodes`, counted.
-pub fn kind_counts(
-    graph: &CompiledGraph,
-    nodes: impl IntoIterator<Item = NodeId>,
-) -> ObjectMap<usize> {
-    sorted_counts(nodes.into_iter().map(|id| graph.node(id).kind()))
-}
-
-/// The domains of `nodes` that have one, counted.
-pub fn domain_counts(
-    graph: &CompiledGraph,
-    nodes: impl IntoIterator<Item = NodeId>,
-) -> ObjectMap<usize> {
-    sorted_counts(
-        nodes
-            .into_iter()
-            .filter_map(|id| graph.node(id).domain_name()),
-    )
 }

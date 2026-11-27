@@ -7,7 +7,6 @@ mod compiled_graph;
 mod graph_compiler;
 mod graph_hash;
 mod identity_error;
-mod object_map;
 mod query;
 
 pub use compile_answer::{compile_answer, CompileAnswer, CompileRequest, COMPILE_PAGE_MAX};
@@ -18,8 +17,7 @@ pub use compiled_graph::{
 };
 pub use graph_compiler::compile;
 pub use identity_error::{IdentityError, IdentityFault};
-pub use object_map::ObjectMap;
 pub use query::{
-    run as run_query, Direction, QueryAnswer, QueryError, QueryRequest, ANSWERED_OPERATIONS,
-    RELATION_TYPE_VALUES,
+    run as run_query, Direction, Operation, PendingOperation, QueryAnswer, QueryError,
+    QueryRequest, SelectionOperation, WalkOperation, RELATION_TYPE_VALUES, SEARCH_BUDGET_MAX,
 };

@@ -32,6 +32,8 @@ mod read_vault;
 mod test_hooks;
 mod vault_repository;
 
+pub use compiled_graph::KeptGraph;
+
 /// A write tool's handler. It receives the proof that the checkpoint passed, and answers with what
 /// the audit lines record, so it cannot finish without saying.
 pub type WriteHandler = fn(&Permit<'_>, &Arguments) -> Result<WriteDone, ToolError>;

@@ -8,15 +8,16 @@
 
 use std::collections::HashMap;
 
-use answer_format::collation::compare_text;
+use indexmap::IndexMap;
 use serde::Serialize;
 
 use crate::compiled_graph::{CompiledGraph, NodeId};
-use crate::object_map::ObjectMap;
+use crate::query::edge_rows::PathEdge;
+use crate::query::name_counts::{domain_counts, kind_counts};
+use crate::query::node_summary::{summaries, NodeSummary};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
-use crate::query::views::{domain_counts, kind_counts, summaries, NodeSummary, PathEdge};
 
 const DEFAULT_GROUP_LIMIT: usize = 20;
 const DEFAULT_NODE_LIMIT: usize = 25;
@@ -43,7 +44,7 @@ pub(crate) fn undirected_adjacency(
     for list in &mut adjacency {
         list.sort_unstable();
         list.dedup();
-        graph.sort_by_code_units(list);
+        list.sort_unstable();
     }
     adjacency
 }
@@ -79,19 +80,14 @@ pub(crate) fn connected_components(
                 }
             }
         }
-        graph.sort_by_code_units(&mut queue);
+        queue.sort_unstable();
         groups.push(queue);
     }
     groups.sort_by(|left, right| {
-        right.len().cmp(&left.len()).then_with(|| {
-            let slug = |group: &Vec<NodeId>| {
-                group
-                    .first()
-                    .map_or("", |node| graph.node(*node).slug())
-                    .to_string()
-            };
-            compare_text(&slug(left), &slug(right))
-        })
+        right
+            .len()
+            .cmp(&left.len())
+            .then_with(|| left.first().cmp(&right.first()))
     });
     groups
 }
@@ -100,7 +96,7 @@ pub(crate) fn connected_components(
 struct ComponentRow<'a> {
     id: usize,
     size: usize,
-    kinds: ObjectMap<usize>,
+    kinds: IndexMap<String, usize>,
     #[serde(rename = "nodeLimited")]
     node_limited: bool,
     nodes: Vec<NodeSummary<'a>>,
@@ -155,28 +151,21 @@ fn propagate_labels(
     iterations: usize,
 ) -> Vec<NodeId> {
     let mut labels: Vec<NodeId> = graph.node_ids().collect();
-    let mut in_slug_order: Vec<NodeId> = graph.node_ids().collect();
-    graph.sort_by_code_units(&mut in_slug_order);
     for _ in 0..iterations {
         let mut changed = false;
-        for node in &in_slug_order {
+        for node in graph.node_ids() {
             let neighbors = adjacency.get(node.index()).map_or(&[][..], Vec::as_slice);
-            if neighbors.is_empty() {
-                continue;
-            }
-            let mut counts: HashMap<NodeId, usize> = HashMap::new();
+            let mut counts: Vec<(NodeId, usize)> = Vec::new();
             for neighbor in neighbors {
                 let label = labels.get(neighbor.index()).copied().unwrap_or(*neighbor);
-                *counts.entry(label).or_insert(0) += 1;
+                match counts.iter_mut().find(|(known, _)| *known == label) {
+                    Some((_, count)) => *count += 1,
+                    None => counts.push((label, 1)),
+                }
             }
             let Some(best) = counts
                 .into_iter()
-                .min_by(|left, right| {
-                    right
-                        .1
-                        .cmp(&left.1)
-                        .then_with(|| graph.compare_nodes(left.0, right.0))
-                })
+                .min_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)))
                 .map(|(label, _)| label)
             else {
                 continue;
@@ -212,8 +201,8 @@ struct CommunityRow<'a> {
     internal_edges: usize,
     #[serde(rename = "boundaryEdges")]
     boundary_edges: usize,
-    kinds: ObjectMap<usize>,
-    domains: ObjectMap<usize>,
+    kinds: IndexMap<String, usize>,
+    domains: IndexMap<String, usize>,
     representative: NodeSummary<'a>,
     #[serde(rename = "nodeLimited")]
     node_limited: bool,
@@ -310,7 +299,7 @@ pub fn communities<'a>(
     let mut groups: Vec<Community> = by_label
         .into_iter()
         .map(|(label, mut nodes)| {
-            graph.sort_by_code_units(&mut nodes);
+            nodes.sort_unstable();
             let representative = nodes
                 .iter()
                 .copied()
@@ -319,7 +308,7 @@ pub fn communities<'a>(
                         .node(*right)
                         .degree()
                         .cmp(&graph.node(*left).degree())
-                        .then_with(|| graph.compare_nodes(*left, *right))
+                        .then_with(|| left.cmp(right))
                 })
                 .unwrap_or(label);
             Community {
@@ -337,12 +326,7 @@ pub fn communities<'a>(
             .len()
             .cmp(&left.nodes.len())
             .then_with(|| right.internal_edges.cmp(&left.internal_edges))
-            .then_with(|| {
-                compare_text(
-                    graph.node(left.representative).slug(),
-                    graph.node(right.representative).slug(),
-                )
-            })
+            .then_with(|| left.representative.cmp(&right.representative))
     });
     let mut community_of: HashMap<NodeId, usize> = HashMap::new();
     for (index, group) in groups.iter().enumerate() {

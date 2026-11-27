@@ -11,27 +11,35 @@ It reads documents that `vault-document` already read; it never opens a file.
 | `identity_error.rs` | `IdentityError`: the faults in `uid:` that refuse the compile |
 | `graph_hash.rs` | `hash_graph`: the SHA-256 an agent compares to see the graph changed |
 | `compile_answer.rs` | `compile_answer`: the summary, the pages and the lookup tables of `compile_ontology` |
-| `object_map.rs` | `ObjectMap`: a map written in the order a JavaScript object lists its keys |
 
 `src/query/` holds the operations of `query_ontology` that read the graph alone, one function per
-operation from the graph and a `QueryRequest` to a typed answer. `ANSWERED_OPERATIONS` lists them;
-a call naming any other operation is refused as not answered yet, and the differential corpus
-shows which those are.
+operation from the graph and a `QueryRequest` to a typed answer. `Operation` names every operation
+the tool offers; the ones no module answers yet are `Operation::Pending`, which `run` refuses by
+name, and the differential corpus shows which those are. A family of operations is a folder with
+its own `run` and its own answer type: `walks/` follows edges from a node, `selection/` picks nodes
+from the whole graph.
 
 | File in `src/query/` | What it owns |
 |---|---|
-| `mod.rs` | `run`: the operation named, and the `compiledSummary` that closes every answer |
-| `request.rs` | `QueryRequest`, `Direction`: what a call asked, already range-checked |
-| `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node, a failure |
+| `mod.rs` | `run`: the family an operation belongs to, and the `compiledSummary` that closes every answer |
+| `operation.rs` | `Operation`: every operation, its name, and whether a plan may target it |
+| `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer |
+| `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node, an operation not answered yet |
 | `relation_set.rs` | `RelationSet`: the relation names a call may select, with their aliases |
 | `node_resolution.rs` | `resolve`: a slug or alias to a node, or the slugs near a name that is none |
-| `graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
-| `neighbors.rs`, `paths.rs` | `neighbors`, `path`, `all_paths`: breadth-first, shortest and budgeted iterative search |
-| `dependency_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn) |
-| `clusters.rs` | `components` and `communities` (label propagation) |
-| `centrality.rs` | `centrality`: PageRank and degree rankings |
-| `graph_summary.rs` | `overview`, `schema`, `facets` |
-| `views.rs` | the small rows every answer shares: node summaries, edges on a path, counts |
+| `node_summary.rs` | `NodeIdentity`, `NodeSummary`: the node row every answer writes |
+| `edge_rows.rs` | the edge rows of an answer: directed, on a path, compiled |
+| `name_counts.rs` | counts by kind, domain or relation, in the order of the names |
+| `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
+| `walks/neighbors.rs`, `walks/paths.rs` | `neighbors`, `path`, `all_paths`: breadth-first, shortest and budgeted iterative search |
+| `walks/dependency_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn) |
+| `selection/clusters.rs` | `components` and `communities` (label propagation) |
+| `selection/centrality.rs` | `centrality`: PageRank and degree rankings |
+| `selection/graph_summary.rs` | `overview`, `schema`, `facets` |
+
+Every list and table of an answer is in the order of the graph: nodes by the collation of their
+slugs (a `NodeId` is that position), edges by the collation of `from:via:to:ref`. Tables keyed by
+names are `IndexMap`s, written in the order the keys were added.
 
 No walk recurses as deep as the graph: searches are iterative or bounded by `maxHops` (at most 20)
 and a budget of expanded states, and an answer that hit its budget says its count is a lower bound.

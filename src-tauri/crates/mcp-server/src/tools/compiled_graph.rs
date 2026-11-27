@@ -1,7 +1,7 @@
 //! The compiled graph a graph tool answers from. Compiling reads every node's frontmatter, so the
-//! graph is kept between calls and used again for as long as every document it was compiled from
-//! is the very read the document cache still holds: a file that changed, appeared or went away
-//! gives the next call a new read, and with it a new compile.
+//! graph is kept beside the session's document cache and used again for as long as every document
+//! it was compiled from is the very read the cache still holds: a file that changed, appeared or
+//! went away gives the next call a new read, and with it a new compile.
 
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -18,8 +18,10 @@ struct Compiled {
     graph: Arc<CompiledGraph>,
 }
 
-/// One graph for the process: a server has one vault.
-static KEPT: Mutex<Option<Compiled>> = Mutex::new(None);
+/// The graph of one session's vault, compiled once for as long as the vault reads the same.
+pub struct KeptGraph {
+    kept: Mutex<Option<Compiled>>,
+}
 
 fn is_current(kept: &Compiled, documents: &[LoadedDocument]) -> bool {
     kept.documents.len() == documents.len()
@@ -30,24 +32,38 @@ fn is_current(kept: &Compiled, documents: &[LoadedDocument]) -> bool {
             .all(|(old, new)| old.is_same_read(new))
 }
 
-/// The graph of the vault as it is now.
-pub fn read_graph(context: &CallContext<'_>) -> Result<Arc<CompiledGraph>, ToolError> {
-    let read = read_vault(context)?;
-    let documents = read.vault.documents().to_vec();
-    {
-        let kept = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
-        if let Some(kept) = kept.as_ref().filter(|kept| is_current(kept, &documents)) {
-            return Ok(Arc::clone(&kept.graph));
+impl KeptGraph {
+    pub fn new() -> Self {
+        Self {
+            kept: Mutex::new(None),
         }
     }
-    let graph = Arc::new(
-        ontology_graph::compile(&documents)
-            .map_err(|error| ToolError::failed(error.to_string()))?,
-    );
-    let mut kept = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
-    *kept = Some(Compiled {
-        documents,
-        graph: Arc::clone(&graph),
-    });
-    Ok(graph)
+
+    /// The graph of the vault as it is now.
+    pub fn read(&self, context: &CallContext<'_>) -> Result<Arc<CompiledGraph>, ToolError> {
+        let read = read_vault(context)?;
+        let documents = read.vault.documents().to_vec();
+        {
+            let kept = self.kept.lock().unwrap_or_else(PoisonError::into_inner);
+            if let Some(kept) = kept.as_ref().filter(|kept| is_current(kept, &documents)) {
+                return Ok(Arc::clone(&kept.graph));
+            }
+        }
+        let graph = Arc::new(
+            ontology_graph::compile(&documents)
+                .map_err(|error| ToolError::failed(error.to_string()))?,
+        );
+        let mut kept = self.kept.lock().unwrap_or_else(PoisonError::into_inner);
+        *kept = Some(Compiled {
+            documents,
+            graph: Arc::clone(&graph),
+        });
+        Ok(graph)
+    }
+}
+
+impl Default for KeptGraph {
+    fn default() -> Self {
+        Self::new()
+    }
 }

@@ -332,7 +332,7 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
             ));
         }
     }
-    edges.sort_by_cached_key(|(key, _)| icu_key(key));
+    edges.sort_by(|(left, _), (right, _)| compare_text(left, right));
     let edges: Vec<Edge> = edges.into_iter().map(|(_, edge)| edge).collect();
 
     sort_issues(&mut issues);
@@ -375,20 +375,6 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
         .iter()
         .fold(0.0_f64, |most, node| most.max(node.mtime));
 
-    let mut by_code_units: Vec<usize> = (0..nodes.len()).collect();
-    by_code_units.sort_by(|left, right| {
-        utf16::compare(
-            nodes.get(*left).map_or("", |node| node.slug()),
-            nodes.get(*right).map_or("", |node| node.slug()),
-        )
-    });
-    let mut code_unit_rank = vec![0_u32; nodes.len()];
-    for (rank, index) in by_code_units.into_iter().enumerate() {
-        if let Some(slot) = code_unit_rank.get_mut(index) {
-            *slot = u32::try_from(rank).unwrap_or(u32::MAX);
-        }
-    }
-
     let mut graph = CompiledGraph {
         nodes,
         edges,
@@ -402,30 +388,9 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
         edge_counts: counts,
         outgoing,
         incoming,
-        code_unit_rank,
     };
     graph.graph_hash = hash_graph(&graph);
     Ok(graph)
-}
-
-fn icu_key(text: &str) -> IcuKey {
-    IcuKey(text.to_string())
-}
-
-/// A text ordered as [`compare_text`] orders it, so a list can be sorted by a key made once.
-#[derive(PartialEq, Eq)]
-struct IcuKey(String);
-
-impl Ord for IcuKey {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        compare_text(&self.0, &other.0)
-    }
-}
-
-impl PartialOrd for IcuKey {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 fn node_of(document: &LoadedDocument) -> Node {

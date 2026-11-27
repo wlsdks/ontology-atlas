@@ -3,9 +3,9 @@
 use answer_format::collation::compare_text;
 
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
+use crate::query::edge_rows::name_reached;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::Direction;
-use crate::query::views::name_reached;
 
 /// One step of a walk: the edge and the node it leads to.
 #[derive(Debug, Clone, Copy)]

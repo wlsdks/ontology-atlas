@@ -4,13 +4,12 @@
 use std::collections::HashMap;
 
 use answer_format::collation::compare_text;
-use answer_format::utf16;
+use indexmap::IndexMap;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 
 use crate::compiled_graph::{CompiledGraph, Edge, EdgeView, Node, NodeId};
 use crate::graph_hash::COMPILER_VERSION;
-use crate::object_map::ObjectMap;
 
 /// The most nodes or edges one page of `compile_ontology` holds.
 pub const COMPILE_PAGE_MAX: usize = 500;
@@ -126,7 +125,7 @@ struct Pagination {
 }
 
 /// How many nodes hold each value of a key, in the order of the key's text.
-fn counts_by(values: impl Iterator<Item = String>) -> ObjectMap<usize> {
+fn counts_by(values: impl Iterator<Item = String>) -> IndexMap<String, usize> {
     let mut counts: Vec<(String, usize)> = Vec::new();
     let mut at: HashMap<String, usize> = HashMap::new();
     for value in values {
@@ -143,14 +142,14 @@ fn counts_by(values: impl Iterator<Item = String>) -> ObjectMap<usize> {
         }
     }
     counts.sort_by(|left, right| compare_text(&left.0, &right.0));
-    ObjectMap(counts)
+    counts.into_iter().collect()
 }
 
-fn by_kind(graph: &CompiledGraph) -> ObjectMap<usize> {
+fn by_kind(graph: &CompiledGraph) -> IndexMap<String, usize> {
     counts_by(graph.nodes().iter().map(|node| node.kind().to_string()))
 }
 
-fn by_domain(graph: &CompiledGraph) -> ObjectMap<usize> {
+fn by_domain(graph: &CompiledGraph) -> IndexMap<String, usize> {
     counts_by(
         graph
             .nodes()
@@ -323,67 +322,49 @@ impl Serialize for Recap<'_> {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Indexes<'a> {
-    out: ObjectMap<Vec<String>>,
+    out: IndexMap<&'a str, Vec<String>>,
     #[serde(rename = "in")]
-    incoming: ObjectMap<Vec<String>>,
-    by_kind: ObjectMap<Vec<&'a str>>,
-    by_domain: ObjectMap<Vec<&'a str>>,
-    edge_by_id: ObjectMap<EdgeView<'a>>,
-    alias_to_slug: ObjectMap<&'a str>,
-    uid_to_slug: ObjectMap<&'a str>,
-    slug_to_uid: ObjectMap<&'a str>,
-    merged_uid_to_slug: ObjectMap<&'a str>,
+    incoming: IndexMap<&'a str, Vec<String>>,
+    by_kind: IndexMap<&'a str, Vec<&'a str>>,
+    by_domain: IndexMap<&'a str, Vec<&'a str>>,
+    edge_by_id: IndexMap<String, EdgeView<'a>>,
+    alias_to_slug: IndexMap<&'a str, &'a str>,
+    uid_to_slug: IndexMap<&'a str, &'a str>,
+    slug_to_uid: IndexMap<&'a str, &'a str>,
+    merged_uid_to_slug: IndexMap<&'a str, &'a str>,
 }
 
-/// Edge ids listed under the node `key_of` gives each edge, each list in code unit order.
-fn edge_ids_by_node(
-    graph: &CompiledGraph,
+/// Edge ids listed under the node `key_of` gives each edge, each list in edge order, the nodes in
+/// the order their first edge appears.
+fn edge_ids_by_node<'a>(
+    graph: &'a CompiledGraph,
     ids: &[String],
     key_of: impl Fn(&Edge) -> Option<NodeId>,
-) -> ObjectMap<Vec<String>> {
-    let mut lists: Vec<(String, Vec<String>)> = Vec::new();
-    let mut position: Vec<Option<usize>> = vec![None; graph.nodes().len()];
+) -> IndexMap<&'a str, Vec<String>> {
+    let mut lists: IndexMap<&'a str, Vec<String>> = IndexMap::new();
     for (edge, id) in graph.edges().iter().zip(ids) {
         let Some(node) = key_of(edge) else { continue };
-        let Some(slot) = position.get_mut(node.index()) else {
-            continue;
-        };
-        let at = *slot.get_or_insert_with(|| {
-            lists.push((graph.node(node).slug().to_string(), Vec::new()));
-            lists.len() - 1
-        });
-        if let Some((_, list)) = lists.get_mut(at) {
-            list.push(id.clone());
-        }
+        lists
+            .entry(graph.node(node).slug())
+            .or_default()
+            .push(id.clone());
     }
-    for (_, list) in &mut lists {
-        list.sort_by(|left, right| utf16::compare(left, right));
-    }
-    ObjectMap(lists)
+    lists
 }
 
-/// Slugs listed under the text `key_of` gives each node, the keys in the order of their text.
+/// Slugs listed under the text `key_of` gives each node, the keys in collation order and the
+/// slugs in node order.
 fn slugs_by<'a>(
     graph: &'a CompiledGraph,
     key_of: impl Fn(&'a Node) -> Option<&'a str>,
-) -> ObjectMap<Vec<&'a str>> {
-    let mut groups: Vec<(String, Vec<&'a str>)> = Vec::new();
-    let mut at: HashMap<&'a str, usize> = HashMap::new();
+) -> IndexMap<&'a str, Vec<&'a str>> {
+    let mut groups: IndexMap<&'a str, Vec<&'a str>> = IndexMap::new();
     for node in graph.nodes() {
         let Some(key) = key_of(node) else { continue };
-        let index = *at.entry(key).or_insert_with(|| {
-            groups.push((key.to_string(), Vec::new()));
-            groups.len() - 1
-        });
-        if let Some((_, slugs)) = groups.get_mut(index) {
-            slugs.push(node.slug());
-        }
+        groups.entry(key).or_default().push(node.slug());
     }
-    for (_, slugs) in &mut groups {
-        slugs.sort_by(|left, right| utf16::compare(left, right));
-    }
-    groups.sort_by(|left, right| compare_text(&left.0, &right.0));
-    ObjectMap(groups)
+    groups.sort_by(|left, _, right, _| compare_text(left, right));
+    groups
 }
 
 impl<'a> Indexes<'a> {
@@ -409,37 +390,25 @@ impl<'a> Indexes<'a> {
             incoming: edge_ids_by_node(graph, &ids, Edge::to),
             by_kind: slugs_by(graph, |node| Some(node.kind())),
             by_domain: slugs_by(graph, Node::domain_name),
-            edge_by_id: ObjectMap(
-                ids.into_iter()
-                    .zip(graph.edge_ids())
-                    .map(|(id, edge)| (id, graph.edge_view(edge)))
-                    .collect(),
-            ),
-            alias_to_slug: ObjectMap(
-                graph
-                    .aliases()
-                    .iter()
-                    .map(|entry| (entry.alias.to_string(), entry.slug))
-                    .collect(),
-            ),
-            uid_to_slug: ObjectMap(
-                by_uid
-                    .iter()
-                    .map(|node| (node.uid().to_string(), node.slug()))
-                    .collect(),
-            ),
-            slug_to_uid: ObjectMap(
-                by_uid
-                    .iter()
-                    .map(|node| (node.slug().to_string(), node.uid()))
-                    .collect(),
-            ),
-            merged_uid_to_slug: ObjectMap(
-                merged
-                    .into_iter()
-                    .map(|(uid, slug)| (uid.to_string(), slug))
-                    .collect(),
-            ),
+            edge_by_id: ids
+                .into_iter()
+                .zip(graph.edge_ids())
+                .map(|(id, edge)| (id, graph.edge_view(edge)))
+                .collect(),
+            alias_to_slug: graph
+                .aliases()
+                .iter()
+                .map(|entry| (entry.alias, entry.slug))
+                .collect(),
+            uid_to_slug: by_uid
+                .iter()
+                .map(|node| (node.uid(), node.slug()))
+                .collect(),
+            slug_to_uid: by_uid
+                .iter()
+                .map(|node| (node.slug(), node.uid()))
+                .collect(),
+            merged_uid_to_slug: merged.into_iter().collect(),
         }
     }
 }

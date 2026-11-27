@@ -4,7 +4,7 @@
 
 mod support;
 
-use ontology_graph::{compile, run_query, CompiledGraph, QueryRequest};
+use ontology_graph::{compile, run_query, CompiledGraph, Operation, QueryRequest};
 use support::{node, plant};
 
 const CHAIN: usize = 10_000;
@@ -36,8 +36,13 @@ fn vault(count: usize, depends_on: impl Fn(usize) -> Vec<usize>) -> CompiledGrap
     compile(&plant(&files).documents).expect("compiles")
 }
 
-fn answer(graph: &CompiledGraph, request: &QueryRequest, operation: &str) -> serde_json::Value {
-    let answer = run_query(graph, operation, request).expect("answers");
+/// A call that names `operation` and nothing else.
+fn request(operation: &str) -> QueryRequest {
+    QueryRequest::new(Operation::parse(operation).expect("an operation the tool offers"))
+}
+
+fn answer(graph: &CompiledGraph, request: &QueryRequest) -> serde_json::Value {
+    let answer = run_query(graph, request).expect("answers");
     let text = answer_format::json::to_string(&answer).expect("writes");
     serde_json::from_str(&text).expect("is JSON")
 }
@@ -51,25 +56,25 @@ fn a_chain_ten_thousand_long_is_ordered_searched_and_bounded_without_recursion()
             Vec::new()
         }
     });
-    let order = answer(&graph, &QueryRequest::default(), "topological_order");
+    let order = answer(&graph, &request("topological_order"));
     assert_eq!(order["acyclic"], true);
     assert_eq!(order["orderedCount"], CHAIN);
     assert_eq!(order["layers"].as_array().map(Vec::len), Some(100));
 
     // The two ends are ten thousand edges apart: a search within twenty hops says so.
-    let ends = QueryRequest {
+    let ends = |operation: &str| QueryRequest {
         from: Some(slug(0)),
         to: Some(slug(CHAIN - 1)),
-        ..QueryRequest::default()
+        ..request(operation)
     };
-    assert_eq!(answer(&graph, &ends, "path")["found"], false);
-    let all = answer(&graph, &ends, "all_paths");
+    assert_eq!(answer(&graph, &ends("path"))["found"], false);
+    let all = answer(&graph, &ends("all_paths"));
     assert_eq!(all["found"], false);
     assert_eq!(all["exhaustive"], true);
 
     // Ten thousand starting points overspend the default budget of expanded states: the search
     // stops, and says zero cycles is not proof of none.
-    let cycles = answer(&graph, &QueryRequest::default(), "cycles");
+    let cycles = answer(&graph, &request("cycles"));
     assert_eq!(cycles["totalCycles"], 0);
     assert_eq!(cycles["evidence"]["status"], "partial");
 }
@@ -77,13 +82,15 @@ fn a_chain_ten_thousand_long_is_ordered_searched_and_bounded_without_recursion()
 #[test]
 fn a_ring_ten_thousand_long_blocks_the_order_and_is_no_cycle_within_the_depth() {
     let graph = vault(CHAIN, |number| vec![(number + 1) % CHAIN]);
-    let order = answer(&graph, &QueryRequest::default(), "topological_order");
+    let order = answer(&graph, &request("topological_order"));
     assert_eq!(order["acyclic"], false);
     assert_eq!(order["orderedCount"], 0);
-    assert_eq!(order["blocked"].as_array().map(Vec::len), Some(CHAIN));
-    let cycles = answer(&graph, &QueryRequest::default(), "cycles");
+    // The list of blocked nodes is cut at the call's limit, and the answer says it was.
+    assert_eq!(order["blocked"].as_array().map(Vec::len), Some(100));
+    assert_eq!(order["limited"], true);
+    let cycles = answer(&graph, &request("cycles"));
     assert_eq!(cycles["totalCycles"], 0);
-    let components = answer(&graph, &QueryRequest::default(), "components");
+    let components = answer(&graph, &request("components"));
     assert_eq!(components["totalComponents"], 1);
     assert_eq!(components["largestSize"], CHAIN);
 }
@@ -91,7 +98,7 @@ fn a_ring_ten_thousand_long_blocks_the_order_and_is_no_cycle_within_the_depth() 
 #[test]
 fn a_small_ring_is_found_once_from_its_lowest_node() {
     let graph = vault(3, |number| vec![(number + 1) % 3]);
-    let cycles = answer(&graph, &QueryRequest::default(), "cycles");
+    let cycles = answer(&graph, &request("cycles"));
     assert_eq!(cycles["totalCycles"], 1);
     assert_eq!(
         cycles["cycles"][0]["nodes"],
@@ -106,20 +113,19 @@ fn fifty_thousand_nodes_and_a_hub_they_all_depend_on_answer_every_summary() {
         |number| if number == 0 { Vec::new() } else { vec![0] },
     );
     assert_eq!(graph.nodes().len(), MANY);
-    let overview = answer(&graph, &QueryRequest::default(), "overview");
+    let overview = answer(&graph, &request("overview"));
     assert_eq!(overview["graph"]["edges"], MANY - 1);
     assert_eq!(overview["hubs"][0]["slug"], slug(0));
-    let communities = answer(&graph, &QueryRequest::default(), "communities");
+    let communities = answer(&graph, &request("communities"));
     assert_eq!(communities["summary"]["communities"], 1);
-    let centrality = answer(&graph, &QueryRequest::default(), "centrality");
+    let centrality = answer(&graph, &request("centrality"));
     assert_eq!(centrality["rankings"]["pageRank"][0]["slug"], slug(0));
     let neighbors = answer(
         &graph,
         &QueryRequest {
             slug: Some(slug(0)),
-            ..QueryRequest::default()
+            ..request("neighbors")
         },
-        "neighbors",
     );
     assert_eq!(neighbors["total"], MANY - 1);
     assert_eq!(neighbors["edges"].as_array().map(Vec::len), Some(100));

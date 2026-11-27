@@ -13,10 +13,11 @@ use answer_format::collation::compare_text;
 use serde::Serialize;
 
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
+use crate::query::edge_rows::CompiledEdge;
+use crate::query::node_summary::{summaries, NodeSummary};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
-use crate::query::views::{summaries, CompiledEdge, NodeSummary};
 
 const DEFAULT_CYCLE_LIMIT: usize = 20;
 const DEFAULT_CYCLE_DEPTH: usize = 8;
@@ -42,7 +43,7 @@ fn normalized(graph: &CompiledGraph, nodes: &[NodeId], edges: &[EdgeId]) -> Cycl
     let mut start = 0;
     for (index, node) in nodes.iter().enumerate().skip(1) {
         let lowest = nodes.get(start).copied().unwrap_or(*node);
-        if compare_text(graph.node(*node).slug(), graph.node(lowest).slug()).is_lt() {
+        if *node < lowest {
             start = index;
         }
     }
@@ -74,7 +75,6 @@ fn normalized(graph: &CompiledGraph, nodes: &[NodeId], edges: &[EdgeId]) -> Cycl
 
 struct CycleSearch<'a> {
     graph: &'a CompiledGraph,
-    rank: Vec<u32>,
     successors: HashMap<NodeId, Vec<EdgeId>>,
     max_depth: usize,
     limit: usize,
@@ -89,7 +89,7 @@ struct CycleSearch<'a> {
 }
 
 impl CycleSearch<'_> {
-    fn expand(&mut self, start_rank: u32, current: NodeId) {
+    fn expand(&mut self, start: NodeId, current: NodeId) {
         if self.expanded >= self.search_budget {
             self.truncated = true;
             return;
@@ -103,12 +103,9 @@ impl CycleSearch<'_> {
             };
             if self.path.first() == Some(&to) {
                 self.record(edge_id);
-            } else if self.path.len() < self.max_depth
-                && self.rank.get(to.index()).copied().unwrap_or(0) > start_rank
-                && !self.path.contains(&to)
-            {
+            } else if self.path.len() < self.max_depth && to > start && !self.path.contains(&to) {
                 self.edge_path.push(edge_id);
-                self.expand(start_rank, to);
+                self.expand(start, to);
                 self.edge_path.pop();
                 if self.truncated {
                     break;
@@ -214,16 +211,8 @@ pub fn cycles<'a>(
         .or(request.depth)
         .unwrap_or(DEFAULT_CYCLE_DEPTH);
     let types = dependency_types(request)?;
-    let search_budget = request.search_budget.unwrap_or(DEFAULT_SEARCH_BUDGET);
+    let search_budget = request.search_budget(DEFAULT_SEARCH_BUDGET)?;
 
-    let mut by_rank: Vec<NodeId> = graph.node_ids().collect();
-    by_rank.sort_by(|left, right| graph.compare_nodes(*left, *right));
-    let mut rank = vec![0_u32; graph.nodes().len()];
-    for (position, node) in by_rank.iter().enumerate() {
-        if let Some(slot) = rank.get_mut(node.index()) {
-            *slot = u32::try_from(position).unwrap_or(u32::MAX);
-        }
-    }
     let mut successors: HashMap<NodeId, Vec<EdgeId>> = HashMap::new();
     for node in graph.node_ids() {
         let mut seen: HashSet<NodeId> = HashSet::new();
@@ -241,11 +230,10 @@ pub fn cycles<'a>(
         }
     }
     let mut starts: Vec<NodeId> = successors.keys().copied().collect();
-    starts.sort_by_key(|node| rank.get(node.index()).copied().unwrap_or(u32::MAX));
+    starts.sort_unstable();
 
     let mut search = CycleSearch {
         graph,
-        rank,
         successors,
         max_depth,
         limit,
@@ -262,8 +250,7 @@ pub fn cycles<'a>(
         if max_depth == 0 || search.truncated {
             break;
         }
-        let start_rank = search.rank.get(start.index()).copied().unwrap_or(0);
-        search.expand(start_rank, start);
+        search.expand(start, start);
     }
     search.keep_shortest();
 
@@ -427,7 +414,7 @@ pub fn topological_order<'a>(
         .copied()
         .filter(|node| indegree.get(node.index()).copied() == Some(0))
         .collect();
-    graph.sort_by_code_units(&mut ready);
+    ready.sort_unstable();
     let mut ordered: Vec<(usize, NodeId)> = Vec::new();
     let mut layers: Vec<(usize, Vec<NodeId>)> = Vec::new();
     let mut rank = 0;
@@ -439,7 +426,7 @@ pub fn topological_order<'a>(
         let mut next_ready: Vec<NodeId> = Vec::new();
         for node in &layer {
             let mut following = dependents.get(node.index()).cloned().unwrap_or_default();
-            graph.sort_by_code_units(&mut following);
+            following.sort_unstable();
             for next in following {
                 if let Some(slot) = indegree.get_mut(next.index()) {
                     *slot = slot.saturating_sub(1);
@@ -451,7 +438,6 @@ pub fn topological_order<'a>(
         }
         next_ready.sort_unstable();
         next_ready.dedup();
-        graph.sort_by_code_units(&mut next_ready);
         layers.push((rank, layer));
         ready = next_ready;
         rank += 1;
@@ -461,7 +447,7 @@ pub fn topological_order<'a>(
         .copied()
         .filter(|node| indegree.get(node.index()).copied().unwrap_or(0) > 0)
         .collect();
-    graph.sort_by_code_units(&mut blocked);
+    blocked.sort_unstable();
 
     let order_rows: Vec<OrderedRow<'a>> = ordered
         .iter()
@@ -495,11 +481,12 @@ pub fn topological_order<'a>(
         total_nodes: slugs.len(),
         ordered_count: ordered.len(),
         selected_edges: selected.len(),
-        limited: ordered.len() > limit,
+        limited: ordered.len() > limit || blocked.len() > limit,
         order: order_rows,
         layers: layer_rows,
         blocked: blocked
             .iter()
+            .take(limit)
             .map(|node| BlockedRow {
                 slug: graph.node(*node).slug(),
                 remaining_in_degree: indegree.get(node.index()).copied().unwrap_or(0),

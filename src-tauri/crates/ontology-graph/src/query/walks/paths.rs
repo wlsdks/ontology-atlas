@@ -2,19 +2,22 @@
 //! that keeps one predecessor per node; every path is a depth-first search over simple paths
 //! that stops when its budget of expanded states is spent and says so.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use answer_format::collation::compare_text;
 use serde::Serialize;
 
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
-use crate::object_map::ObjectMap;
-use crate::query::graph_walk::traversal_steps;
+use indexmap::IndexMap;
+
+use super::graph_walk::traversal_steps;
+use crate::query::edge_rows::PathEdge;
+use crate::query::name_counts::sorted_counts;
 use crate::query::node_resolution::resolve;
+use crate::query::node_summary::{summaries, NodeSummary};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::{Direction, QueryRequest};
-use crate::query::views::{sorted_counts, summaries, NodeSummary, PathEdge};
 
 const DEFAULT_MAX_HOPS: usize = 5;
 const DEFAULT_ALL_PATHS_LIMIT: usize = 25;
@@ -233,7 +236,7 @@ struct PathRow<'a> {
     nodes: Vec<NodeSummary<'a>>,
     edges: Vec<PathEdge<'a>>,
     #[serde(rename = "byRelation")]
-    by_relation: ObjectMap<usize>,
+    by_relation: IndexMap<String, usize>,
 }
 
 #[derive(Serialize)]
@@ -261,7 +264,7 @@ pub struct AllPathsAnswer<'a> {
     #[serde(rename = "shortestHopCount")]
     shortest_hop_count: Option<usize>,
     #[serde(rename = "byLength")]
-    by_length: ObjectMap<usize>,
+    by_length: IndexMap<String, usize>,
     evidence: PathEvidence<'a>,
     paths: Vec<PathRow<'a>>,
 }
@@ -281,7 +284,7 @@ pub fn all_paths<'a>(
     let max_hops = request.max_hops.unwrap_or(DEFAULT_MAX_HOPS);
     let direction = Direction::for_paths(request.direction);
     let limit = request.limit.unwrap_or(DEFAULT_ALL_PATHS_LIMIT);
-    let search_budget = request.search_budget.unwrap_or(DEFAULT_SEARCH_BUDGET);
+    let search_budget = request.search_budget(DEFAULT_SEARCH_BUDGET)?;
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
 
     let mut matches: Vec<Walk> = Vec::new();
@@ -355,15 +358,14 @@ pub fn all_paths<'a>(
             .then_with(|| compare_text(&left.0, &right.0))
     });
     let total = keyed.len();
-    let length_counts = sorted_counts(
-        keyed
-            .iter()
-            .map(|(_, walk)| walk.hops.len() - 1)
-            .map(|length| length.to_string())
-            .collect::<Vec<_>>()
-            .iter()
-            .map(String::as_str),
-    );
+    let mut lengths: BTreeMap<usize, usize> = BTreeMap::new();
+    for (_, walk) in &keyed {
+        *lengths.entry(walk.hops.len() - 1).or_insert(0) += 1;
+    }
+    let length_counts: IndexMap<String, usize> = lengths
+        .into_iter()
+        .map(|(length, count)| (length.to_string(), count))
+        .collect();
     let shortest_hop_count = keyed.first().map(|(_, walk)| walk.hops.len() - 1);
     let paths: Vec<PathRow<'a>> = keyed
         .iter()

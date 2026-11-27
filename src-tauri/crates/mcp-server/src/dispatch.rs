@@ -58,6 +58,11 @@ impl<'a> CallContext<'a> {
         self.session.documents()
     }
 
+    /// The compiled graph kept beside the document cache.
+    pub fn compiled_graph(&self) -> &crate::tools::KeptGraph {
+        self.session.graph()
+    }
+
     pub fn config(&self) -> &Config {
         self.session.config()
     }

@@ -4,8 +4,11 @@
 
 use serde::Serialize;
 
-/// The way an operation may follow an edge. `Both` and `Undirected` are the one thing under two
-/// names; an answer repeats the name the call used.
+use crate::query::operation::Operation;
+use crate::query::query_error::QueryError;
+
+/// The way an operation may follow an edge. `Both` and `Undirected` both follow an edge either way;
+/// `neighbors` reads an absent direction as `Both` and a path search reads it as `Undirected`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Direction {
@@ -46,11 +49,16 @@ impl Direction {
     }
 }
 
-/// The arguments of a `query_ontology` call that the operations read.
-#[derive(Debug, Clone, Default)]
+/// The most expanded states one search may be given to spend.
+pub const SEARCH_BUDGET_MAX: usize = 50_000;
+
+/// The arguments of one `query_ontology` call that the operations read, each read once by the
+/// tool layer. The operation asks for the argument its own way: `search_budget` is judged only by
+/// the two operations that spend one, after they have resolved their nodes.
+#[derive(Debug, Clone)]
 pub struct QueryRequest {
+    pub operation: Operation,
     pub slug: Option<String>,
-    pub seed: Option<String>,
     pub from: Option<String>,
     pub to: Option<String>,
     pub limit: Option<usize>,
@@ -58,10 +66,62 @@ pub struct QueryRequest {
     pub iterations: Option<usize>,
     pub max_hops: Option<usize>,
     pub depth: Option<usize>,
-    pub search_budget: Option<usize>,
+    /// `searchBudget` as sent, a number or NaN for anything that is not one.
+    pub search_budget: Option<f64>,
     pub direction: Option<Direction>,
     pub types: Option<Vec<String>>,
     pub include_isolated: Option<bool>,
     pub include_external: Option<bool>,
     pub include_unresolved: Option<bool>,
+}
+
+impl QueryRequest {
+    /// A call that names `operation` and no argument.
+    pub fn new(operation: Operation) -> Self {
+        Self {
+            operation,
+            slug: None,
+            from: None,
+            to: None,
+            limit: None,
+            node_limit: None,
+            iterations: None,
+            max_hops: None,
+            depth: None,
+            search_budget: None,
+            direction: None,
+            types: None,
+            include_isolated: None,
+            include_external: None,
+            include_unresolved: None,
+        }
+    }
+
+    /// The states a search may expand: `default` when none was asked for.
+    pub fn search_budget(&self, default: usize) -> Result<usize, QueryError> {
+        let Some(sent) = self.search_budget else {
+            return Ok(default);
+        };
+        if sent.fract() != 0.0 || !sent.is_finite() || sent < 1.0 {
+            return Err(QueryError::Invalid(
+                "searchBudget must be a positive integer.".to_string(),
+            ));
+        }
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "the number is a whole number of at least one"
+        )]
+        let budget = if sent > SEARCH_BUDGET_MAX as f64 {
+            usize::MAX
+        } else {
+            sent as usize
+        };
+        if budget > SEARCH_BUDGET_MAX {
+            return Err(QueryError::Invalid(format!(
+                "searchBudget must be <= {SEARCH_BUDGET_MAX}."
+            )));
+        }
+        Ok(budget)
+    }
 }
