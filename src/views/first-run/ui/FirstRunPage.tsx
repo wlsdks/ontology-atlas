@@ -56,7 +56,7 @@ export function FirstRunPage() {
     busy: justStartBusy,
     actionError: justStartError,
   } = useJustStartVault(vault, locale, { created: justStartCreated, starterFailed });
-  // A browser under ?shell=desktop has no Tauri bridge. Client-only mount, so no hydration mismatch.
+  // Read on the client only, so there is no hydration mismatch.
   const showJustStart = isTauriVaultRuntime();
   const { prepare: prepareCodeHandoff, handoff: codeHandoff } = useCodeProjectHandoff();
   const codeProject = useBuildFromCode({ openRecord: vault.openRecent, handoff: codeHandoff });

@@ -167,7 +167,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "demo:index-panel-collapsed:v1", kind: "storage", scope: "global", note: "INDEX collapsed preference" },
   { key: "demo:sigma-hub-rail-open:v1", kind: "storage", scope: "global", note: "hub rail open preference" },
   { key: "demo:docs-vault:list-collapsed", kind: "storage", scope: "global", note: "document list collapsed preference" },
-  { key: "dev:desktop-shell", kind: "storage", scope: "global", note: "desktop shell development override" },
   { key: "demo:gesture-hint:dismissed:v1", kind: "storage", scope: "global", note: "gesture hint, one time only" },
   { key: "demo:first-run-starter-dismissed:v1", kind: "storage", scope: "global", note: "first-run card, one time only (session)" },
   { key: "demo:vault-start-steps-dismissed:v1", kind: "storage", scope: "global", note: "first-steps card, one time only (session); withdrawn once the last step is passed" },

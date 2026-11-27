@@ -4,12 +4,11 @@
  */
 
 /**
- * The URLs the ratchets actually open.
- *
- * A plain browser opens every workbench address as the page that says the app is needed
- * (`app-only-page`), so the ratchets measure that page there; the screens themselves belong to the
- * installed app. Dynamic routes such as `[segment]` are opened with a value that exists. `what-is-atlas`
- * is emitted by `src/views/gateway-doc/model/guide-pages.ts`, so it always exists.
+ * The URLs the ratchets actually open, in a plain browser. A workbench address there is the page that
+ * says the app is needed (`app-only-page`), the same page at every one of them, so the ratchets
+ * measure that page, not the screen behind it; the installed app's screens are measured on the faked
+ * app runtime by the specs that install it. `/ko/` is the website's entry and lands on the download
+ * page. `what-is-atlas` is emitted by `src/views/gateway-doc/model/guide-pages.ts`, so it always exists.
  */
 export const AUDITED_ROUTES = [
   "/ko/",
@@ -21,19 +20,12 @@ export const AUDITED_ROUTES = [
   "/ko/project/fallback/",
   "/ko/git/",
   "/ko/changes/",
-  // The web state is the desktop-only card: a browser cannot run Git.
   "/ko/work-status/",
-  // Measures the no-tools state: the web cannot spawn processes.
   "/ko/agents/",
-  // Measures the no-vault state: a browser cannot read agent config files or hold a token.
   "/ko/agents/?tab=mcp",
-  // The web state is the desktop-only card, which is all a browser ratchet can see.
   "/ko/agents/?tab=models",
-  // Measures the no-folder state, the only one a ratchet without a vault can reach.
   "/ko/library/",
   "/ko/planning/",
-  // Without a native folder root the browser cannot run the local clock;
-  // this audits the no-folder state.
   "/ko/automations/",
   "/ko/download/",
   "/ko/sample/",

@@ -6,6 +6,11 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   display: none;
 }
 
+/* A browser never reaches the workbench, so the bar its HTML carries at `/` is never shown to one. */
+html:not([data-shell="desktop"]) [data-tabbar="primary"] {
+  display: none;
+}
+
 /*
  * Document header tab strip (docs-chrome-round slice B) — allows horizontal scroll within the strip on overflow but hides the scrollbar itself (design-prescription.md
  * ③-3 "overflow = horizontal scroll within strip, hidden scrollbar"). Scroll behavior is preserved so no accessibility regression — keyboard/trackpad scroll both work normally.

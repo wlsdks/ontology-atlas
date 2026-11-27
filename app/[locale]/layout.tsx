@@ -52,7 +52,7 @@ export default async function LocaleLayout({
   const tNav = await getTranslations({ locale, namespace: 'nav' });
 
   return (
-    <AppAddressFaces locale={locale} appOnly={<AppOnlyPage locale={locale} />}>
+    <AppAddressFaces appOnly={<AppOnlyPage locale={locale} />}>
       <WorkbenchMessagesProvider locale={locale} timeZone={timeZone} rootMessages={rootMessages}>
         <LocaleDocumentChrome locale={locale} />
         <MotionProvider>

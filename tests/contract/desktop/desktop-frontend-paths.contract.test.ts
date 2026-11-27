@@ -104,6 +104,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
     // gates its link behind the web runtime or renders only on a gateway page; a new file that
     // links `/download` or renders `GetAppLink` has to be read for that gate and added here.
     const reviewed = new Set([
+      "src/app/providers/GatewayHandOverScript.tsx",
       "src/shared/ui/controls/get-app-link.tsx",
       "src/shared/lib/navigation/nav-destination.ts",
       "src/features/docs-vault-local/ui/use-agent-client-controls.tsx",

@@ -12,8 +12,8 @@ import { requestRootWorkbench, useRootWorkbenchViews } from "../model/root-workb
 
 /**
  * The installed app's `/`: the map when a folder is open, the first-run screen when none is. A plain
- * browser never mounts it (`AppAddressFaces` hands that visitor to `/download`), so nothing here
- * offers a download. The map, first-run and the whole catalog are fetched once a folder is on its
+ * browser never mounts it (`GatewayHandOverScript` sends that visitor to `/download` from the
+ * document head), so nothing here offers a download. The map, first-run and the whole catalog are fetched once a folder is on its
  * way (`root-workbench.ts`); until they arrive the neutral frame stays up, and the shell keeps its
  * rail hidden on the same signal.
  */

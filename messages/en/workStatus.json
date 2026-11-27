@@ -208,7 +208,7 @@
   },
   "web": {
     "title": "Workshop runs in the desktop app",
-    "body": "A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library."
+    "body": "A browser cannot run git or read this computer's processes. Workshop opens in the Atlas app."
   },
   "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git.",
   "header": {

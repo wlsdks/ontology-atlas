@@ -342,7 +342,7 @@ describe('FirstRunPage', () => {
     expect(toastMocks.show).not.toHaveBeenCalledWith(expect.stringContaining('justStartToast'), 'success');
   });
 
-  it('hides "just start" when the Tauri invoke bridge is unavailable (e.g. dev ?shell=desktop override in a plain browser)', () => {
+  it('hides "just start" when the Tauri invoke bridge is unavailable', () => {
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
     render(<FirstRunPage />);
 

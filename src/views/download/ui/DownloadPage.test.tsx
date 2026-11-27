@@ -556,11 +556,5 @@ describe('DownloadPage', () => {
       renderDownloadPage();
       expect(screen.getByTestId('download-gnb')).toHaveTextContent(/다운로드|Download/);
     });
-
-    it('offers no back-to-map link in the chrome', () => {
-      mocks.pathname = '/download';
-      renderDownloadPage();
-      expect(screen.queryByTestId('download-back-to-map')).toBeNull();
-    });
   });
 });

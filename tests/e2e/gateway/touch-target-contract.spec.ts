@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { mountDesktopVault, installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
 
 /**
  * WCAG 2.5.8 24x24 floor on the effective hit box (own rect plus ::after rect); needs real layout.
@@ -121,6 +122,19 @@ test.describe("minimum target contract (pointer: fine, WCAG 2.5.8 AA)", () => {
       expect(failures, `2.5.8 shortfall: ${JSON.stringify(failures)}`).toEqual([]);
     });
   }
+
+  // The map's own controls: the screen a plain browser never mounts, measured in the app's faked runtime.
+  test("a target on the map in the installed app under 24×24 must prove either the inline exemption or the spacing exception", async ({ page }) => {
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page, "ko");
+    await page.goto("/ko/topology/?guides=off");
+    await expect(page.getByTestId("ontology-map-canvas")).toBeVisible({ timeout: 30_000 });
+    await page.waitForLoadState("networkidle");
+    const { scanned, failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
+    // The rail, the map's controls and the settings entry: fewer means the workbench did not mount.
+    expect(scanned, `too few targets were scanned on the map (${scanned})`).toBeGreaterThanOrEqual(15);
+    expect(failures, `2.5.8 shortfall: ${JSON.stringify(failures)}`).toEqual([]);
+  });
 
   test("instrument probe: catches crowded targets under 24 and lets spaced targets pass", async ({ page }) => {
     await page.goto("/ko/download/?guides=off");

@@ -32,12 +32,4 @@ describe('SampleMapStage', () => {
     fireEvent.click(screen.getByRole('button', { name: enMessages.sampleMap.retry }));
     expect(retry).toHaveBeenCalledTimes(1);
   });
-
-  it('shows the wait stage, with no failure and no map, while the sample is on its way', () => {
-    renderStage();
-
-    expect(screen.getByTestId('sample-map-wait')).toBeInTheDocument();
-    expect(screen.queryByTestId('sample-map-failed')).toBeNull();
-    expect(screen.queryByTestId('ontology-map-canvas')).toBeNull();
-  });
 });

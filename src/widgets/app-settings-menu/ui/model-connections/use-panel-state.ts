@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Announce, RowKey } from './ModelRow';
 
 /**
@@ -28,11 +28,26 @@ export function useOpenRow() {
  */
 export function useAnnouncer() {
   const [announcement, setAnnouncement] = useState('');
+  const pending = useRef<number | undefined>(undefined);
+  const mounted = useRef(false);
+
+  // A row's request can finish after the panel closed: nobody is left to read that outcome, and a
+  // sentence still waiting must not outlive the panel.
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      window.clearTimeout(pending.current);
+    };
+  }, []);
 
   const announce = useCallback<Announce>((message) => {
-    // Cleared first, so the same sentence twice in a row is still read twice.
+    if (!mounted.current) return;
+    // Cleared first, so the same sentence twice in a row is still read twice; a newer sentence
+    // replaces one still waiting.
     setAnnouncement('');
-    window.setTimeout(() => setAnnouncement(message), 60);
+    window.clearTimeout(pending.current);
+    pending.current = window.setTimeout(() => setAnnouncement(message), 60);
   }, []);
 
   return { announcement, announce };

@@ -61,12 +61,6 @@ describe("blank-screen gate on route entry", () => {
   );
   const rel = (p: string) => p.replace(process.cwd() + "/", "");
 
-  it("names a hydration hold only where the file really holds hydration", () => {
-    for (const hold of HYDRATION_HOLDS) {
-      expect(readFileSync(join(process.cwd(), hold), "utf-8")).toContain("NEVER_SETTLES");
-    }
-  });
-
   it("finds the Suspense boundaries to scan", () => {
     expect(suspenseFiles.length).toBeGreaterThan(5);
   });

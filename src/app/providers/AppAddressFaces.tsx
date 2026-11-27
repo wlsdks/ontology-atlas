@@ -1,14 +1,28 @@
 "use client";
 
-import { Suspense, use, useEffect, type ReactNode } from "react";
+import { Suspense, use, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { withBasePath } from "@/shared/lib/public-pages/base-path";
 import { stripLocalePrefix } from "@/shared/lib/navigation/nav-destination";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { OldBrowserFolderCleanup } from "./OldBrowserFolderCleanup";
 
 /** A promise that never settles: a component that reads it keeps the server's HTML and never mounts. */
 const NEVER_SETTLES = new Promise<never>(() => undefined);
+
+const subscribeToRuntime = () => () => undefined;
+
+/**
+ * Whether this document still carries the page that says the app is needed. The server's HTML and the
+ * first client render both carry it, so hydration matches; once hydrated, the installed app drops it
+ * from the document, so its first `main`, `h1` and skip-link target are the workbench's own.
+ */
+function useAppOnlyFace(): boolean {
+  return useSyncExternalStore(
+    subscribeToRuntime,
+    () => !isTauriVaultRuntime(),
+    () => true,
+  );
+}
 
 /**
  * An app address answers with two faces in one document: the app's screen and the page that says the
@@ -17,24 +31,16 @@ const NEVER_SETTLES = new Promise<never>(() => undefined);
  * the app's screen as inert HTML: it never mounts, so it opens, reads and remembers no folder.
  *
  * The locale's root is the one address that is no app screen for a browser: it is the website's
- * entry, so its HTML stays visible and a plain browser is sent on to the gateway.
+ * entry, which a script in the document head sends on to the gateway before the body is parsed
+ * (`GatewayHandOverScript`), so its own HTML stays visible and carries no second face.
  */
-export function AppAddressFaces({
-  locale,
-  appOnly,
-  children,
-}: {
-  locale: string;
-  appOnly: ReactNode;
-  children: ReactNode;
-}) {
+export function AppAddressFaces({ appOnly, children }: { appOnly: ReactNode; children: ReactNode }) {
   const atEntry = stripLocalePrefix(usePathname() ?? "/") === "/";
+  const showAppOnly = useAppOnlyFace();
   return (
     <>
       <OldBrowserFolderCleanup />
-      {atEntry ? (
-        <GatewayHandOver locale={locale} />
-      ) : (
+      {atEntry || !showAppOnly ? null : (
         <div data-face="app-only" className="flex min-h-full flex-1 flex-col [html[data-shell=desktop]_&]:hidden">
           {appOnly}
         </div>
@@ -54,11 +60,4 @@ export function AppAddressFaces({
 function InstalledAppOnly({ children }: { children: ReactNode }) {
   if (typeof window !== "undefined" && !isTauriVaultRuntime()) use(NEVER_SETTLES);
   return children;
-}
-
-function GatewayHandOver({ locale }: { locale: string }) {
-  useEffect(() => {
-    if (!isTauriVaultRuntime()) window.location.replace(withBasePath(`/${locale}/download/`));
-  }, [locale]);
-  return null;
 }
