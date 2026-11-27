@@ -1,0 +1,18 @@
+[package]
+name = "answer-format"
+version = "0.1.0"
+description = "Text as agents read it from the JavaScript server: UTF-16 length and cuts, whitespace and number text"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+# Writes a number as `Number.prototype.toString` does. `Apache-2.0 OR BSL-1.0`; nothing under it.
+ryu-js = "1"
+serde = { version = "1", features = ["derive"] }
+# `raw_value` lets an answer embed JSON it already holds, such as the tool list, without reading it
+# again (tauri turns it on for the app already).
+serde_json = { version = "1", features = ["raw_value"] }
+
+[lints]
+workspace = true

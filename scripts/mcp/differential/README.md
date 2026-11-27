@@ -94,6 +94,12 @@ Nothing, except what a committed list names:
 - `expect-locale-diff.json` and `node-vs-bun-differences.json`: one entry `{ case, where, id?, path }`
   per request or path, with the reason. A run fails when an entry no longer differs, and neither list
   may grow against the base ref.
+- `declared-changes.json`, read by `--a=node --b=rust`: the same entries, each also naming the row of
+  the specification's table of declared changes (`change`) and a reason. A run fails when an entry no
+  longer differs, and an entry without a row and a reason is refused. It grows with the table, so the
+  base-ref check skips it. A difference is reported once per request (the first differing path), so an
+  entry hides the rest of that request's answer; the Rust program's own tests state each declared
+  answer in full.
 
 ## Corpus steps
 

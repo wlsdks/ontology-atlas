@@ -196,6 +196,37 @@ add('shell', 'unknown-tool-and-arguments', { vault: 'storefront' }, [
   call('query_concepts', { filter: 'kind=' }),
   call('query_concepts', { filter: 'AND AND' }),
 ]);
+// Half of a surrogate pair in a name, in an argument, and in a request id (declared change 3). Ids
+// can only be sent as raw lines, so their answers are compared as the server's other messages.
+add('shell', 'half-a-surrogate-pair-in-a-name-and-arguments', { vault: 'storefront' }, [
+  call('a\ud800b', {}),
+  call('list_concepts', { domain: 'x\ud800' }),
+  call('get_concepts', { slugs: ['capabilities/cart', '\udc00'] }),
+  call('get_concepts', { slugs: ['capabilities/cart'], slugss: '\ud800' }),
+  req('ping'),
+]);
+add('shell', 'half-a-surrogate-pair-in-a-request-id', { vault: 'storefront' }, [
+  { raw: '{"jsonrpc":"2.0","id":"i\\ud800","method":"ping"}' },
+  { raw: '{"jsonrpc":"2.0","id":"\\ud83d","method":"ping"}' },
+  { raw: '{"jsonrpc":"2.0","id":"\\ud83d\\ude00","method":"ping"}' },
+  req('ping'),
+]);
+// Names an agent sends that the answer must carry as sent (declared change 4).
+add('shell', 'unknown-names-in-any-form', { vault: 'storefront' }, [
+  call('srv.list_concepts', {}),
+  call('ontology-atlas.git_status', {}),
+  call('git_status', { 'a,b': 1, ' c ': 2 }),
+  call('git_status', { 'q"x': 1 }),
+  call('git_status', { '': 1 }),
+  call('list_concepts', { limit: 1, '': 2, zz: 3 }),
+  req('ping'),
+]);
+// Arguments reach the server in the order the line holds them; a script object would list integer
+// names first before the line is written, so this one is a raw line (declared change 5).
+add('shell', 'unknown-arguments-sent-in-any-order', { vault: 'storefront' }, [
+  { raw: '{"jsonrpc":"2.0","id":702,"method":"tools/call","params":{"name":"git_status","arguments":{"b":1,"2":2,"1":3}}}' },
+  req('ping'),
+]);
 add('shell', 'missing-vault-root', { vault: 'one-node', env: { OATLAS_VAULT: '$VAULT/does-not-exist' }, handshake: false }, [req('ping')]);
 add('shell', 'vault-root-is-a-file', { vault: 'one-node', env: { OATLAS_VAULT: '$VAULT/only.md' }, handshake: false }, [req('ping')]);
 add('shell', 'vault-root-is-empty-string-uses-cwd', { vault: 'one-node', env: { OATLAS_VAULT: '' }, cwd: 'vault' }, [

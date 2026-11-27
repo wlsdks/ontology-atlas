@@ -11,7 +11,8 @@ use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
-use mcp_server::json::parse;
+use serde::Deserialize;
+use serde_json::value::RawValue;
 
 /// The variables the server reads; each test starts from none of them.
 const SERVER_VARIABLES: [&str; 7] = [
@@ -103,9 +104,12 @@ pub fn run_to_end(program: Program, environment: &[(&str, &str)], input: &[u8]) 
         let _ = stderr.read_to_string(&mut text);
         text
     });
-    let lines: Vec<String> = BufReader::new(stdout)
-        .lines()
-        .map_while(Result::ok)
+    // Split on `\n` alone, so a `\r` the server wrote stays in the line for a test to see.
+    let mut bytes = Vec::new();
+    let _ = BufReader::new(stdout).read_to_end(&mut bytes);
+    let lines: Vec<String> = String::from_utf8_lossy(&bytes)
+        .split_terminator('\n')
+        .map(str::to_string)
         .collect();
     let _ = writer.join();
     let status = child.wait().expect("wait");
@@ -118,9 +122,13 @@ pub fn run_to_end(program: Program, environment: &[(&str, &str)], input: &[u8]) 
 
 /// An answer line's id as the key answers are matched by, `None` for a line that is not an answer.
 pub fn answer_id(line: &str) -> Option<String> {
-    let value = parse(line).ok()?;
-    let id = value.get("id")?;
-    Some(mcp_server::json::to_json(id))
+    #[derive(Deserialize)]
+    struct Line<'a> {
+        #[serde(borrow)]
+        id: &'a RawValue,
+    }
+    let line: Line<'_> = serde_json::from_str(line).ok()?;
+    Some(line.id.get().to_string())
 }
 
 /// The answers of a run by request id. Two requests answered in another order are still equal: the

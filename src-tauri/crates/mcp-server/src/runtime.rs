@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use confined_files::confined_root::{ensure_vault_root, resolve_path, VaultRootError};
 
-use crate::js_text::js_trim;
+use answer_format::whitespace::trim;
 
 /// Which tools `tools/list` shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -49,7 +49,7 @@ impl StartupError {
     pub fn lines(&self) -> Vec<String> {
         match self {
             Self::InvalidProfile(value) => {
-                let quoted = crate::json::to_json(&crate::json::Value::string(value.clone()));
+                let quoted = answer_format::json::quote(value);
                 vec![format!(
                     "Error: Invalid OATLAS_TOOL_PROFILE {quoted}; use full or construction, or unset it, then restart the server."
                 )]
@@ -69,7 +69,7 @@ impl StartupError {
 fn is_on(value: Option<&str>) -> bool {
     value.is_some_and(|text| {
         matches!(
-            js_trim(text).to_lowercase().as_str(),
+            trim(text).to_lowercase().as_str(),
             "1" | "true" | "yes" | "on"
         )
     })
@@ -218,6 +218,39 @@ mod tests {
         )
         .expect_err("invalid profile");
         assert!(matches!(error, StartupError::InvalidProfile(_)));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_vault_named_with_backslashes_forward_slashes_or_a_verbatim_prefix_is_a_folder() {
+        let folder = std::env::temp_dir();
+        let backslashes = folder.to_string_lossy().into_owned();
+        let forward = backslashes.replace('\\', "/");
+        let verbatim = format!(r"\\?\{backslashes}");
+        for named in [backslashes, forward, verbatim] {
+            let config = Config::from_lookup(
+                |name| (name == "OATLAS_VAULT").then(|| named.clone()),
+                &folder,
+            );
+            assert!(config.is_ok(), "{named}: {config:?}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_missing_vault_on_a_drive_is_reported_with_the_path_as_written() {
+        let error = Config::from_lookup(
+            |name| (name == "OATLAS_VAULT").then(|| r"C:\definitely\not\here".to_string()),
+            &std::env::temp_dir(),
+        )
+        .expect_err("missing vault");
+        let lines = error.lines();
+        assert!(lines
+            .first()
+            .is_some_and(|line| line.contains("vault root validation failed")));
+        assert!(lines
+            .get(1)
+            .is_some_and(|line| line.contains(r"definitely\not\here")));
     }
 
     #[test]

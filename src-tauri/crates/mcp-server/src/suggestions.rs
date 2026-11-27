@@ -1,90 +1,57 @@
 //! "Did you mean" suggestions: the nearest allowed value by edit distance over UTF-16 code units,
-//! as `mcp/src/suggestions.mjs` finds it.
+//! so an agent sees the same hint whichever server answers.
 
-/// The allowed value nearest to `input`, when it is near enough to be a typo.
+use answer_format::utf16;
+
+/// The most edits a typo of an allowed value of this length may hold: a third of the length, and
+/// always at least two.
+fn edits_allowed(length: usize) -> usize {
+    (length / 3).max(2)
+}
+
+/// The allowed value nearest to `input`, when it is near enough to be a typo: within a third of its
+/// own length, and always at least two edits. Of equally near values the first listed wins.
+///
+/// An edit distance is never below the difference in length, so a value whose length differs from
+/// the input's by more than any allowed value tolerates is not measured, and an input that long is
+/// refused before it is read: a name of millions of characters costs a length count, not a table.
 pub fn closest_allowed_value<S: AsRef<str>>(input: &str, allowed: &[S]) -> Option<String> {
-    if input.is_empty() || allowed.is_empty() {
+    if input.is_empty() {
+        return None;
+    }
+    let lengths: Vec<usize> = allowed
+        .iter()
+        .map(|candidate| utf16::len(candidate.as_ref()))
+        .collect();
+    let most_edits = lengths.iter().map(|&length| edits_allowed(length)).max()?;
+    let longest_reach = lengths
+        .iter()
+        .map(|&length| length + edits_allowed(length))
+        .max()?;
+    // A UTF-16 unit takes at most three bytes of UTF-8, so the byte count bounds the unit count
+    // from below without reading the input.
+    if input.len() / 3 > longest_reach {
         return None;
     }
     let input_units: Vec<u16> = input.encode_utf16().collect();
-    let threshold_limit = allowed
-        .iter()
-        .map(|value| utf16_len(value.as_ref()) / 3)
-        .fold(2, usize::max);
-    let limit = i64::try_from(threshold_limit).unwrap_or(i64::MAX);
-    let mut best: Option<(&str, i64)> = None;
-    for candidate in allowed {
-        let candidate = candidate.as_ref();
-        let cutoff = best.map_or(limit, |(_, distance)| limit.min(distance - 1));
-        let distance = distance_within(
-            &input_units,
-            &candidate.encode_utf16().collect::<Vec<u16>>(),
-            cutoff,
-        );
-        if best.is_none_or(|(_, held)| distance < held) {
-            best = Some((candidate, distance));
+    if input_units.len() > longest_reach {
+        return None;
+    }
+    let mut nearest: Option<(&str, usize)> = None;
+    for (candidate, &length) in allowed.iter().zip(&lengths) {
+        let gap = input_units.len().abs_diff(length);
+        let best = nearest.map_or(usize::MAX, |(_, distance)| distance);
+        if gap > most_edits || gap >= best {
+            continue;
+        }
+        let units: Vec<u16> = candidate.as_ref().encode_utf16().collect();
+        let distance = strsim::generic_levenshtein(&input_units, &units);
+        if distance < best {
+            nearest = Some((candidate.as_ref(), distance));
         }
     }
-    let (candidate, distance) = best?;
-    let threshold = i64::try_from((utf16_len(candidate) / 3).max(2)).unwrap_or(i64::MAX);
-    (distance <= threshold).then(|| candidate.to_string())
-}
-
-fn utf16_len(text: &str) -> usize {
-    text.encode_utf16().count()
-}
-
-/// The edit distance when it is within `cutoff`; any value above `cutoff` otherwise. A distance
-/// beyond the cutoff cannot change which candidate is chosen.
-#[allow(
-    clippy::indexing_slicing,
-    reason = "every index is bounded by the lengths of `left` and `right` in the loops below"
-)]
-fn distance_within(left: &[u16], right: &[u16], cutoff: i64) -> i64 {
-    let over = cutoff + 1;
-    let length_gap = i64::try_from(left.len().abs_diff(right.len())).unwrap_or(i64::MAX);
-    if length_gap > cutoff {
-        return over;
-    }
-    let cut = usize::try_from(cutoff).unwrap_or(0);
-    let mut previous: Vec<i64> = (0..=right.len())
-        .map(|column| {
-            if column <= cut {
-                i64::try_from(column).unwrap_or(over)
-            } else {
-                over
-            }
-        })
-        .collect();
-    let mut current: Vec<i64> = vec![over; right.len() + 1];
-    for row in 1..=left.len() {
-        current[0] = if row <= cut {
-            i64::try_from(row).unwrap_or(over)
-        } else {
-            over
-        };
-        let first = row.saturating_sub(cut).max(1);
-        let last = right.len().min(row + cut);
-        if first > 1 {
-            current[first - 1] = over;
-        }
-        let mut minimum = current[0];
-        for column in first..=last {
-            let substitution = i64::from(left[row - 1] != right[column - 1]);
-            current[column] = (previous[column] + 1)
-                .min(current[column - 1] + 1)
-                .min(previous[column - 1] + substitution);
-            minimum = minimum.min(current[column]);
-        }
-        if last < right.len() {
-            current[last + 1] = over;
-        }
-        if minimum > cutoff {
-            return over;
-        }
-        std::mem::swap(&mut previous, &mut current);
-    }
-    previous[right.len()]
+    let (value, distance) = nearest?;
+    (distance <= edits_allowed(utf16::len(value))).then(|| value.to_string())
 }
 
 #[cfg(test)]
@@ -143,5 +110,41 @@ mod tests {
             Some("limit".to_string())
         );
         assert_eq!(closest_allowed_value("zzzzz", &allowed), None);
+    }
+
+    #[test]
+    fn distance_counts_utf16_units_so_an_emoji_is_two_edits() {
+        assert_eq!(
+            closest_allowed_value("a", &["a😀"]),
+            Some("a😀".to_string())
+        );
+        assert_eq!(closest_allowed_value("a", &["a😀😀"]), None);
+    }
+
+    #[test]
+    fn a_name_of_millions_of_characters_is_refused_without_being_measured() {
+        let name = "x".repeat(9_000_000);
+        let wide = "😀".repeat(2_000_000);
+        let started = std::time::Instant::now();
+        assert_eq!(closest_allowed_value(&name, &TOOLS), None);
+        assert_eq!(closest_allowed_value(&wide, &TOOLS), None);
+        assert!(
+            started.elapsed() < std::time::Duration::from_millis(100),
+            "took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn a_value_far_in_length_is_skipped_and_a_near_one_still_wins() {
+        let allowed = ["abcdefghijklmnopqrstuvwxyz", "ab"];
+        assert_eq!(
+            closest_allowed_value("abc", &allowed),
+            Some("ab".to_string())
+        );
+        assert_eq!(
+            closest_allowed_value("abcdefghijklmnopqrstuvwxy", &allowed),
+            Some(allowed[0].to_string())
+        );
     }
 }

@@ -73,7 +73,11 @@ export function formatUnrunFunctions(families, about) {
 const EXPECTED_DIFFERENCE_FILES = Object.freeze({
   locale: 'expect-locale-diff.json',
   'node-vs-bun': 'node-vs-bun-differences.json',
+  'node-vs-rust': 'declared-changes.json',
 });
+
+/** The lists that may only shrink; the declared changes grow as the specification's table does. */
+const SHRINKING_LISTS = new Set(['locale', 'node-vs-bun']);
 
 export function loadExpectedDifferences(repoRoot, which) {
   const name = EXPECTED_DIFFERENCE_FILES[which];
@@ -165,6 +169,11 @@ export function checkManifest(repoRoot, { baseRef } = {}) {
       if (invalid) problems.push(`ceiling: ${invalid}`);
     }
   }
+  for (const entry of loadExpectedDifferences(repoRoot, 'node-vs-rust')) {
+    if (!Number.isInteger(entry.change) || typeof entry.reason !== 'string' || entry.reason === '') {
+      problems.push(`declared-changes.json: ${differenceKey(entry)} names no row of the specification's table (change) or no reason`);
+    }
+  }
   const unrun = loadUnrunFunctions(repoRoot).families;
   for (const [family, entries] of Object.entries(unrun)) {
     for (const entry of entries) {
@@ -192,6 +201,7 @@ export function checkManifest(repoRoot, { baseRef } = {}) {
         }
       }
       for (const [which, name] of Object.entries(EXPECTED_DIFFERENCE_FILES)) {
+        if (!SHRINKING_LISTS.has(which)) continue;
         const earlier = fileAtRef(repoRoot, baseRef, name);
         if (!earlier) continue;
         const was = new Set((earlier.differences ?? []).map(differenceKey));

@@ -85,6 +85,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "answer-format"
+version = "0.1.0"
+dependencies = [
+ "ryu-js",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2957,13 +2966,17 @@ dependencies = [
 name = "mcp-server"
 version = "0.1.0"
 dependencies = [
+ "answer-format",
  "confined-files",
  "hardened-git",
+ "indexmap 2.14.0",
  "mcp-server",
  "ontology-graph",
- "regex",
- "ryu-js",
+ "serde",
+ "serde_json",
  "source-evidence",
+ "strsim",
+ "thiserror 2.0.18",
  "vault-document",
 ]
 

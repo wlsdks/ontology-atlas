@@ -1,0 +1,99 @@
+{
+  "about": "The differences between the Node server and the Rust server that the specification declares, one entry per request or path, each naming its row of the table in docs/specs/2026-11-27-mcp-server-in-rust.md. A run fails when an entry no longer differs. Unlike the other known-difference lists this one grows with the table; an entry without a row and a reason is refused.",
+  "differences": [
+    {
+      "case": "shell/half-a-surrogate-pair-in-a-name-and-arguments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 3,
+      "reason": "Half of a surrogate pair is not text: a name is read with U+FFFD in its place and an argument that holds one is refused by name before any handler (row 3 of the specification's table)."
+    },
+    {
+      "case": "shell/half-a-surrogate-pair-in-a-name-and-arguments",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 3,
+      "reason": "Half of a surrogate pair is not text: a name is read with U+FFFD in its place and an argument that holds one is refused by name before any handler (row 3 of the specification's table)."
+    },
+    {
+      "case": "shell/half-a-surrogate-pair-in-a-name-and-arguments",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 3,
+      "reason": "Half of a surrogate pair is not text: a name is read with U+FFFD in its place and an argument that holds one is refused by name before any handler (row 3 of the specification's table)."
+    },
+    {
+      "case": "shell/unknown-names-in-any-form",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.receivedTool",
+      "change": 4,
+      "reason": "The fields of an unknown-tool or unknown-argument answer are the typed values the message was written from, whatever the names hold; the JavaScript server reads them back out of its message and loses a name with a full stop, a comma, a quote, edge spaces or nothing in it (row 4)."
+    },
+    {
+      "case": "shell/unknown-names-in-any-form",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.receivedTool",
+      "change": 4,
+      "reason": "The fields of an unknown-tool or unknown-argument answer are the typed values the message was written from, whatever the names hold; the JavaScript server reads them back out of its message and loses a name with a full stop, a comma, a quote, edge spaces or nothing in it (row 4)."
+    },
+    {
+      "case": "shell/unknown-names-in-any-form",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.receivedArguments[0]",
+      "change": 4,
+      "reason": "The fields of an unknown-tool or unknown-argument answer are the typed values the message was written from, whatever the names hold; the JavaScript server reads them back out of its message and loses a name with a full stop, a comma, a quote, edge spaces or nothing in it (row 4)."
+    },
+    {
+      "case": "shell/unknown-names-in-any-form",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.toolName",
+      "change": 4,
+      "reason": "The fields of an unknown-tool or unknown-argument answer are the typed values the message was written from, whatever the names hold; the JavaScript server reads them back out of its message and loses a name with a full stop, a comma, a quote, edge spaces or nothing in it (row 4)."
+    },
+    {
+      "case": "shell/unknown-names-in-any-form",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.toolName",
+      "change": 4,
+      "reason": "The fields of an unknown-tool or unknown-argument answer are the typed values the message was written from, whatever the names hold; the JavaScript server reads them back out of its message and loses a name with a full stop, a comma, a quote, edge spaces or nothing in it (row 4)."
+    },
+    {
+      "case": "shell/unknown-names-in-any-form",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.receivedArguments[0]",
+      "change": 4,
+      "reason": "The fields of an unknown-tool or unknown-argument answer are the typed values the message was written from, whatever the names hold; the JavaScript server reads them back out of its message and loses a name with a full stop, a comma, a quote, edge spaces or nothing in it (row 4)."
+    },
+    {
+      "case": "shell/unknown-tool-and-arguments",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.receivedTool",
+      "change": 4,
+      "reason": "The fields of an unknown-tool or unknown-argument answer are the typed values the message was written from, whatever the names hold; the JavaScript server reads them back out of its message and loses a name with a full stop, a comma, a quote, edge spaces or nothing in it (row 4)."
+    },
+    {
+      "case": "shell/unknown-tool-and-arguments",
+      "where": "server-message",
+      "path": "message 0",
+      "change": 5,
+      "reason": "Arguments are listed in the order sent and `__proto__` is an argument like any other; the JavaScript server lists integer-like names first and drops `__proto__` silently (row 5)."
+    },
+    {
+      "case": "shell/unknown-arguments-sent-in-any-order",
+      "where": "server-message",
+      "path": "message 0",
+      "change": 5,
+      "reason": "Arguments are listed in the order sent and `__proto__` is an argument like any other; the JavaScript server lists integer-like names first and drops `__proto__` silently (row 5)."
+    }
+  ]
+}

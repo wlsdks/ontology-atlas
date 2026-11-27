@@ -139,12 +139,14 @@ fn ids_are_written_back_as_javascript_writes_them() {
 }
 
 #[test]
-fn a_carriage_return_before_the_newline_is_part_of_the_line_ending() {
+fn a_carriage_return_before_the_newline_is_part_of_the_line_ending_and_never_written_back() {
     let run = rust(
         &[],
-        "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"ping\"}\r\n",
+        "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"ping\"}\r\n{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/list\"}\r\n",
     );
-    assert_eq!(run.lines, [PING_9]);
+    assert_eq!(run.lines.len(), 2);
+    assert_eq!(run.lines.first().map(String::as_str), Some(PING_9));
+    assert!(run.lines.iter().all(|line| !line.contains('\r')));
 }
 
 #[test]
@@ -226,8 +228,7 @@ fn a_cancelled_request_still_runs_its_handler_and_only_its_answer_is_dropped() {
     let marker = std::env::temp_dir().join(format!("mcp-cancel-marker-{}", std::process::id()));
     let _ = std::fs::remove_file(&marker);
     let cancel = "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/cancelled\",\"params\":{\"requestId\":2}}\n";
-    let path =
-        mcp_server::json::to_json(&mcp_server::json::Value::string(marker.to_string_lossy()));
+    let path = answer_format::json::quote(&marker.to_string_lossy());
     let run = rust(
         &[],
         &format!(
@@ -375,11 +376,11 @@ fn a_line_longer_than_the_buffer_ends_the_session_without_a_panic() {
     assert_eq!(run.code, Some(0));
 }
 
-/// Declared difference from the JavaScript server, which answers at any depth: beyond the parser's
-/// bound a line is dropped like any other that is not a message, and the session goes on.
+/// The JavaScript server answers at any depth (it was probed to a million levels); so does this one,
+/// because what an agent nests inside `arguments` stays unread text.
 #[test]
-fn a_request_nested_beyond_the_parsers_bound_is_dropped_and_the_session_goes_on() {
-    let depth = mcp_server::json::MAX_DEPTH + 50;
+fn a_request_nested_a_hundred_and_fifty_thousand_deep_is_answered_and_the_session_goes_on() {
+    let depth = 150_000;
     let nested = format!("{}{}", "[".repeat(depth), "]".repeat(depth));
     let run = rust(
         &[],
@@ -393,44 +394,17 @@ fn a_request_nested_beyond_the_parsers_bound_is_dropped_and_the_session_goes_on(
             then_ping()
         ),
     );
-    assert_eq!(run.lines, [PING_9]);
-    assert_eq!(run.code, Some(0));
-    assert!(!run.stderr.contains("overflow"), "{}", run.stderr);
-}
-
-#[test]
-fn arguments_nested_thousands_deep_are_answered_never_a_crash() {
-    let deep_array = format!("{}{}", "[".repeat(3000), "]".repeat(3000));
-    let deep_object = format!("{}1{}", "{\"a\":".repeat(5000), "}".repeat(5000));
-    let run = rust(
-        &[],
-        &format!(
-            "{}{}{}",
-            request(
-                2,
-                "tools/call",
-                &format!("{{\"name\":\"list_concepts\",\"arguments\":{deep_array}}}")
-            ),
-            request(
-                3,
-                "tools/call",
-                &format!("{{\"name\":\"list_concepts\",\"arguments\":{deep_object}}}")
-            ),
-            then_ping()
-        ),
-    );
     let by_id = support::by_id(&run);
-    let answer = |id: &str| {
+    assert_eq!(by_id.len(), 2);
+    assert!(
         by_id
             .iter()
-            .find(|(key, _)| key == id)
-            .map(|(_, line)| line.clone())
-            .expect("answered")
-    };
-    assert!(answer("2").contains("expected record, received array"));
-    assert!(answer("3").contains("Unknown argument \\\"a\\\" for list_concepts."));
-    assert_eq!(answer("9"), PING_9);
+            .any(|(id, line)| id == "2"
+                && line.contains("Unknown argument \\\"a\\\" for git_status."))
+    );
+    assert!(by_id.iter().any(|(id, line)| id == "9" && line == PING_9));
     assert_eq!(run.code, Some(0));
+    assert!(!run.stderr.contains("overflow"), "{}", run.stderr);
 }
 
 #[test]
@@ -541,4 +515,91 @@ fn an_unknown_tool_profile_stops_the_start_even_when_the_vault_is_missing_too() 
         "Error: Invalid OATLAS_TOOL_PROFILE \"bogus\"; use full or construction, or unset it, then restart the server.\n"
     );
     assert_eq!(run.code, Some(1));
+}
+
+/// Declared change 3: half of a surrogate pair is not text. A tool name with one is read with
+/// U+FFFD in its place, an argument that holds one is refused by name before any handler sees it,
+/// and a request id is the exception: it is written back exactly as sent.
+#[test]
+fn half_a_surrogate_pair_is_replaced_in_a_name_refused_in_an_argument_and_kept_in_an_id() {
+    let escape = "\\ud800";
+    let id = format!("\"i{escape}\"");
+    let run = rust(
+        &[],
+        &format!(
+            "{{\"jsonrpc\":\"2.0\",\"id\":{id},\"method\":\"tools/call\",\"params\":{{\"name\":\"a{escape}b\",\"arguments\":{{}}}}}}\n{}",
+            call(3, "list_concepts", &format!("{{\"domain\":\"x{escape}\"}}"))
+        ),
+    );
+    let by_id = support::by_id(&run);
+    let first = by_id
+        .first()
+        .map(|(_, line)| line.as_str())
+        .unwrap_or_default();
+    assert!(first.contains("Unknown tool: a\u{fffd}b."), "{first}");
+    assert!(
+        first.ends_with(&format!(",\"jsonrpc\":\"2.0\",\"id\":{id}}}")),
+        "{first}"
+    );
+    let refused = by_id
+        .get(1)
+        .map(|(_, line)| line.as_str())
+        .unwrap_or_default();
+    assert!(
+        refused.contains("\"errorCode\":\"invalid_arguments\"")
+            && refused.contains("Argument \\\"domain\\\" holds half of a surrogate pair"),
+        "{refused}"
+    );
+}
+
+/// A tool name of nine million characters is answered at once: nothing measures it against every
+/// allowed name.
+#[test]
+fn a_tool_name_of_millions_of_characters_is_answered_at_once() {
+    let name = "n".repeat(9_000_000);
+    let line = format!(
+        "{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{{\"name\":\"{name}\"}}}}\n{}",
+        ping(9)
+    );
+    let started = std::time::Instant::now();
+    let run = rust(&[], &line);
+    assert_eq!(run.lines.len(), 2);
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(5),
+        "{:?}",
+        started.elapsed()
+    );
+}
+
+/// Declared change 4: the fields of an unknown-argument answer are the names as sent. The JavaScript
+/// server reads them back out of its own message, so a comma splits a name, edge spaces are trimmed
+/// and a quote drops the fields altogether.
+#[test]
+fn unknown_argument_names_are_reported_as_sent_whatever_punctuation_they_hold() {
+    let run = rust(
+        &[],
+        &format!(
+            "{}{}",
+            call(2, "list_concepts", "{\"a,b\":1,\" c \":2}"),
+            call(3, "list_concepts", "{\"a\\\"b\":1}")
+        ),
+    );
+    let by_id = support::by_id(&run);
+    let answer = |id: &str| {
+        by_id
+            .iter()
+            .find(|(key, _)| key == id)
+            .map(|(_, line)| line.clone())
+            .expect("answered")
+    };
+    assert!(
+        answer("2").contains("\"receivedArguments\":[\" c \",\"a,b\"]"),
+        "{}",
+        answer("2")
+    );
+    assert!(
+        answer("3").contains("\"receivedArgument\":\"a\\\"b\""),
+        "{}",
+        answer("3")
+    );
 }
