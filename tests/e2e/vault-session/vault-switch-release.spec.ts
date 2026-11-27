@@ -1,14 +1,15 @@
 import { expect, test, type CDPSession, type Page } from "@playwright/test";
 
 import "../atlas-map-probe";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { chooseDesktopFolder, holdDesktopReads, installDesktopRailRuntime, releaseDesktopReads } from "../desktop-rail-arrival-harness";
 import { liveInstances } from "../heap-census";
 import { syntheticVault } from "../hex-board-vaults";
 import { waitForDomQuiet, waitForMapStill } from "../settle";
-import { stubDirectoryPicker } from "../vault-picker-stub";
 
 const DOCS = syntheticVault(990, 10);
 const LARGE = 900;
+/** The same documents in three folders, so each switch reads a folder the page has not read before. */
+const FOLDERS = ["/Users/probe/release-one", "/Users/probe/release-two", "/Users/probe/release-three"] as const;
 
 async function folderOpen(page: Page, previous: string | null): Promise<string> {
   const tile = page.getByTestId("vault-switch-rail-tile");
@@ -32,6 +33,21 @@ async function folderOpen(page: Page, previous: string | null): Promise<string> 
   );
   await waitForMapStill(page);
   return (await tile.getAttribute("aria-label")) ?? "";
+}
+
+/** The documents each folder withholds until it has been seen arriving in parts. */
+const UNREAD_UNTIL_SEEN_ARRIVING = Object.keys(DOCS).slice(Math.ceil(Object.keys(DOCS).length / 2));
+
+const partialArrivals = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __vaultPartialArrivalCount: number }).__vaultPartialArrivalCount);
+
+/** Presses `open` with half the folder's documents unread, waits until the page has drawn it in parts, then reads the rest. */
+async function openArrivingInParts(page: Page, open: () => Promise<void>): Promise<void> {
+  const before = await partialArrivals(page);
+  await holdDesktopReads(page, UNREAD_UNTIL_SEEN_ARRIVING);
+  await open();
+  await expect.poll(() => partialArrivals(page), { message: "the folder never drew in parts", timeout: 60_000 }).toBeGreaterThan(before);
+  await releaseDesktopReads(page);
 }
 
 async function routerPush(page: Page, url: string): Promise<void> {
@@ -59,7 +75,6 @@ const LARGE_ARRAY = `item.length >= ${LARGE}`;
 
 async function retained(cdp: CDPSession) {
   return {
-    fileHandles: await liveInstances(cdp, "FileSystemFileHandle"),
     largeArrays: await liveInstances(cdp, "Array", LARGE_ARRAY),
     largeMaps: await liveInstances(cdp, "Map", LARGE_MAP),
   };
@@ -68,8 +83,11 @@ async function retained(cdp: CDPSession) {
 test("two folder switches leave no earlier folder alive", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1512, height: 949 });
-  await stubDirectoryPicker(page, DOCS);
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, {}, undefined, {
+    replaceFixture: true,
+    folders: Object.fromEntries(FOLDERS.map((folder) => [folder, DOCS])),
+    vaultPick: FOLDERS[0],
+  });
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("HeapProfiler.enable");
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
@@ -88,34 +106,28 @@ test("two folder switches leave no earlier folder alive", async ({ page }) => {
     }).observe(document, { subtree: true, childList: true, attributes: true,
       attributeFilter: ['data-vault-load-progress'], attributeOldValue: true });
   });
-  await page.goto("/en/topology/?guides=off&e2e=1");
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await page.goto("/en/?guides=off&e2e=1");
+  await openArrivingInParts(page, () => page.getByTestId("first-run-open").click());
   let label = await folderOpen(page, null);
   await readOneDocument(page);
-  const partialArrivals = () => page.evaluate(() => (window as unknown as { __vaultPartialArrivalCount: number }).__vaultPartialArrivalCount);
-  expect(await partialArrivals(), 'the initial folder must exercise partial arrival').toBeGreaterThan(0);
   const oneFolder = await retained(cdp);
-  expect(oneFolder.fileHandles, "the open folder's files were read through handles").toBeGreaterThan(0);
   expect(oneFolder.largeArrays, "the open folder's graph is made of arrays this large").toBeGreaterThan(0);
   expect(oneFolder.largeMaps, "the open folder has indexed maps this large").toBeGreaterThan(0);
 
   // The frame's reused mark lists reach their high-water length during a switch, so arrays are
-  // compared between the two switches; maps and handles are held to the first open.
+  // compared between the two switches; maps are held to the first open.
   let arraysAfterOneSwitch = oneFolder.largeArrays;
   for (let switchCount = 1; switchCount <= 2; switchCount += 1) {
-    const beforeArrival = await partialArrivals();
+    await chooseDesktopFolder(page, FOLDERS[switchCount]);
     await page.getByTestId("vault-switch-rail-tile").click();
-    await page.getByTestId("vault-switch-pick-other").click();
+    await openArrivingInParts(page, () => page.getByTestId("vault-switch-pick-other").click());
     label = await folderOpen(page, label);
     await readOneDocument(page);
-    expect(await partialArrivals(), 'each switched folder must exercise partial arrival').toBeGreaterThan(beforeArrival);
     if (switchCount === 1) arraysAfterOneSwitch = await liveInstances(cdp, "Array", LARGE_ARRAY);
   }
 
   const afterSwitches = await retained(cdp);
   const summary = `one folder open: ${JSON.stringify(oneFolder)}; arrays after one switch: ${arraysAfterOneSwitch}; after two switches: ${JSON.stringify(afterSwitches)}`;
-  expect(afterSwitches.fileHandles, summary).toBeLessThanOrEqual(oneFolder.fileHandles);
   // Work still in flight when the map goes still can hold one more collection; a kept folder never lets go.
   await expect.poll(() => liveInstances(cdp, "Array", LARGE_ARRAY), summary).toBeLessThanOrEqual(arraysAfterOneSwitch);
   await expect.poll(() => liveInstances(cdp, "Map", LARGE_MAP), summary).toBeLessThanOrEqual(oneFolder.largeMaps);

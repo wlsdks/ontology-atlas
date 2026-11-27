@@ -28,11 +28,11 @@ import { dogfoodVaultFiles } from "./map/dogfood-vault-files";
  * | a browser handle written through OPFS | `writeDesktopFile` / `removeDesktopFile` / `renameDesktopFile`, read back with `readDesktopFile`. |
  * | `showOpenFilePicker` stubbed | `externalFiles` + `chooseSourceFiles` (`pick_source_files`, then `import_source_files`). |
  * | a records seed in IndexedDB (`demo-kv`) | `seedKnownDesktopFolders`, which writes the app's records with `desktopRootPath`. |
- * | `queryPermission` patched to `denied` | the app has no permission arm; a folder that cannot be read is a root the fake does not serve (`vault_path_exists` rejects). |
+ * | `queryPermission` patched to `denied` | the app has no permission prompt: a folder it holds no grant for is `ungrantedFolders`, one that vanished is a root `folders` does not serve. |
  *
  * Seeding: `storefrontFiles()` is the shared fixture folder (Storefront), `atlasSampleFiles()` is
- * the product's own vault (`docs/ontology`), and any `Record<path, text>` is a folder. A path ends
- * `.md`; `{{NOW-<ms>}}` tokens are not resolved here, build the text in the spec.
+ * the product's own vault (`docs/ontology`), and any `Record<path, text>` is a folder. Texts are
+ * served as written: a `{{NOW-<ms>}}` token is not resolved here, so build the text in the spec.
  *
  * Several folders: `options.folders` serves each by its absolute path and makes every command
  * check the `rootPath` it names. `chooseDesktopFolder(page, rootA, rootB)` sets what the next
@@ -164,6 +164,13 @@ export interface DesktopRuntimeOptions {
    */
   folders?: Record<string, Record<string, string>>;
   /**
+   * Folders that exist but that the app holds no grant for: every command naming one rejects
+   * with `vault-root-not-granted`, as `src-tauri/src/vault/scope.rs` does. The recent list draws
+   * such a row as one it cannot vouch for (`unknown`) and the launch counts it as present, not
+   * as a vanished folder.
+   */
+  ungrantedFolders?: readonly string[];
+  /**
    * The folder `pick_vault_directory` answers, or `null` for a cancelled dialog. Default
    * `DESKTOP_VAULT_ROOT`. A test changes it later with `chooseDesktopFolder`.
    */
@@ -222,6 +229,7 @@ export async function installDesktopRailRuntime(
       };
       writable?: boolean;
       folders?: Record<string, Record<string, string>>;
+      ungrantedFolders?: string[];
       vaultPick: string | null;
       externalFiles?: Record<string, string | { bytes: number[] }>;
       sourcePick?: { folder?: string | null; files?: string[] };
@@ -229,9 +237,13 @@ export async function installDesktopRailRuntime(
       holdReadsUntilReleased?: string[];
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
-      const held = new Set(input.holdReadsUntilReleased ?? []);
-      const heldReads = Promise.withResolvers<void>();
+      let held = new Set(input.holdReadsUntilReleased ?? []);
+      let heldReads = Promise.withResolvers<void>();
       (window as unknown as { __releaseHeldReads: () => void }).__releaseHeldReads = () => heldReads.resolve();
+      (window as unknown as { __holdReads: (paths: string[]) => void }).__holdReads = (paths) => {
+        held = new Set(paths);
+        heldReads = Promise.withResolvers<void>();
+      };
       const afterHeldReads = <T>(paths: string[], read: () => Promise<T>): Promise<T> =>
         paths.some((path) => held.has(path)) ? heldReads.promise.then(read) : read();
       if (input.writable) (window as unknown as { __stubFiles: typeof files }).__stubFiles = files;
@@ -401,12 +413,18 @@ export async function installDesktopRailRuntime(
           if (!folder) folders.set(folderRoot, (folder = { files: {}, binaries: {}, dirs: new Set() }));
           if (typeof value === "string") putText(folderRoot, folder, path, value);
           else putBytes(folderRoot, folder, path, value.bytes);
+          reportChange(folderRoot, [{ path, kind: "file", lastModified: Date.now(), size: bytesOf(folder, path)?.length ?? 0 }]);
         },
         remove: (folderRoot: string, path: string) => {
           const folder = folders.get(folderRoot);
           if (!folder) return;
-          if (hasEntry(folder, path)) dropEntry(folderRoot, folder, path);
-          else dropDirectory(folderRoot, folder, path);
+          if (hasEntry(folder, path)) {
+            dropEntry(folderRoot, folder, path);
+            reportChange(folderRoot, [{ path, kind: "missing" }]);
+          } else {
+            dropDirectory(folderRoot, folder, path);
+            reportChange(folderRoot, [], true);
+          }
         },
         rename: (folderRoot: string, from: string, to: string) => {
           const folder = folders.get(folderRoot);
@@ -415,6 +433,10 @@ export async function installDesktopRailRuntime(
           if (from in folder.files) putText(folderRoot, folder, to, folder.files[from]);
           else putBytes(folderRoot, folder, to, folder.binaries[from]);
           dropEntry(folderRoot, folder, from);
+          reportChange(folderRoot, [
+            { path: to, kind: "file", lastModified: Date.now(), size: bytesOf(folder, to)?.length ?? 0 },
+            { path: from, kind: "missing" },
+          ]);
         },
         list: (folderRoot: string) => {
           const folder = folders.get(folderRoot);
@@ -462,6 +484,16 @@ export async function installDesktopRailRuntime(
       const mtime = Date.now();
       const callbacks = new Map<number, (event: { event: string; payload: unknown }) => void>();
       let nextCallback = 1;
+      /** The handlers the app registered through `listen`, by event name. */
+      const listeners = new Map<string, Set<number>>();
+      const emitEvent = (event: string, payload: unknown) => {
+        for (const id of listeners.get(event) ?? []) {
+          (callbacks.get(id) as ((event: unknown) => void) | undefined)?.({ event, id, payload });
+        }
+      };
+      /** What the native watcher reports when a file changes outside the app. */
+      const reportChange = (folderRoot: string, changes: { path: string; kind: string; lastModified?: number; size?: number }[], rescan = false) =>
+        emitEvent("vault-changed", { root: folderRoot, changes: rescan ? [] : changes, rescan });
 
       /** Counts what the arriving screen asked the native side for, per command. */
       const calls: { command: string; at: number }[] = [];
@@ -528,6 +560,9 @@ export async function installDesktopRailRuntime(
         const target: Folder | null =
           folders.get(folderRootOf(args)) ?? (strictRoots && typeof args.rootPath === "string" ? null : (folders.get(root) as Folder));
         const gone = (): Promise<never> => Promise.reject(enoent(String(args.rootPath)));
+        if (typeof args.rootPath === "string" && (input.ungrantedFolders ?? []).includes(args.rootPath)) {
+          return Promise.reject(new Error("vault-root-not-granted"));
+        }
         switch (command) {
           case "git_probe":
             return slow({ installed: true, version: "git version 2.49.0", path: "/usr/bin/git" });
@@ -735,9 +770,13 @@ export async function installDesktopRailRuntime(
             return slow((args.relativePaths as string[]).map((relativePath) => ({ relativePath, hash: "0".repeat(64) })));
           case "plugin:event|listen": {
             const id = Number(args.handler);
+            const name = String(args.event);
+            if (!listeners.has(name)) listeners.set(name, new Set());
+            listeners.get(name)?.add(id);
             return Promise.resolve(id);
           }
           case "plugin:event|unlisten":
+            for (const handlers of listeners.values()) handlers.delete(Number(args.eventId));
             return Promise.resolve(null);
           case "acp_prepare_adapter":
             return Promise.resolve("ready");
@@ -858,7 +897,7 @@ export async function installDesktopRailRuntime(
             });
           }
           case "start_vault_watch":
-            return Promise.resolve(null);
+            return Promise.resolve(typeof args.rootPath === "string" ? args.rootPath : null);
           case "ensure_vault_directory": {
             if (persist && target) addDirectory(folderRootOf(args), target, relative(args.relativePath));
             return persist && !target ? gone() : Promise.resolve(null);
@@ -943,6 +982,7 @@ export async function installDesktopRailRuntime(
       models: options.models,
       writable: options.writable,
       folders: options.folders,
+      ungrantedFolders: options.ungrantedFolders ? [...options.ungrantedFolders] : undefined,
       vaultPick: options.vaultPick === undefined ? DESKTOP_VAULT_ROOT : options.vaultPick,
       externalFiles: options.externalFiles,
       sourcePick: options.sourcePick,
@@ -961,6 +1001,19 @@ export async function mountDesktopVault(page: Page): Promise<void> {
   await page.waitForLoadState("networkidle");
   await page.getByTestId("first-run-open").click();
   await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
+}
+
+/**
+ * Holds every read of these vault-relative paths until `releaseDesktopReads`, so a folder arrives
+ * in parts. It replaces an earlier hold, so a spec that opens several folders arms each in turn.
+ */
+export async function holdDesktopReads(page: Page, paths: readonly string[]): Promise<void> {
+  await page.evaluate((held) => (window as unknown as { __holdReads: (paths: string[]) => void }).__holdReads(held), [...paths]);
+}
+
+/** Lets every held read answer, and every read after it. */
+export async function releaseDesktopReads(page: Page): Promise<void> {
+  await page.evaluate(() => (window as unknown as { __releaseHeldReads: () => void }).__releaseHeldReads());
 }
 
 /** The Storefront folder: the shared fixture vault every install serves unless `replaceFixture` is set. */
