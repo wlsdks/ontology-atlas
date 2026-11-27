@@ -1,4 +1,3 @@
-export { ONTOLOGY_ATLAS_REPO_BLOB_BASE } from './lib/resolve-doc-link';
 export {
   readRecentDocs,
   pushRecentDoc,

@@ -7,11 +7,7 @@ export type {
 // The bundled samples are built by `scripts/docs-vault/build-docs-vault.mjs` from `docs/ontology/`
 // and `samples/storefront/`. `/sample` reads the store through the loader; only build-time callers
 // and the public pages take the synchronous resolver, whose static JSON imports a screen must not reach.
-export {
-  resolveStaticVaultSource,
-  type BundledSample,
-  type StaticVaultSource,
-} from './lib/bundled-vault/static-vault-source';
+export { resolveStaticVaultSource } from './lib/bundled-vault/static-vault-source';
 export { dogfoodManifest } from './lib/bundled-vault/dogfood-manifest';
 export { DOGFOOD_AGENT_SLUG_PREFIX } from './lib/bundled-vault/dogfood-slug-prefix';
 export { bundledSamples } from './lib/bundled-vault/load-static-vault-source';

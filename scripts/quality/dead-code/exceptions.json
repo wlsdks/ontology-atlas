@@ -68,12 +68,6 @@
       "witness": "retainedAnswerHeads"
     },
     {
-      "key": "frontend:runtime:exports:src/shared/lib/vault-folder/sample-source.ts:resetSampleSourceCacheForTests",
-      "reason": "Tests clear the module-level sample cache between cases; test files are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "src/features/first-run-starter/ui/FirstRunStarterModule.test.tsx",
-      "witness": "resetSampleSourceCacheForTests"
-    },
-    {
       "key": "frontend:runtime:exports:src/shared/motion/stagger.ts:resetStaggerSessionForTests",
       "reason": "Tests clear the once-per-session stagger memory between cases; test files are not runtime entries, so the lane cannot see this consumer.",
       "consumer": "src/shared/motion/stagger.test.tsx",
