@@ -83,18 +83,24 @@ describe('the shared discovery table (tests/fixtures/source-discovery-cases.json
     },
   );
 
-  const named = (row: { path: string }) => row.path.slice(row.path.lastIndexOf('/') + 1);
+  /** What the walk offers: every folder on the way accepted, the name accepted, and big enough. */
+  const offeredByTheRules = (row: { path: string; bytes: number }) => {
+    const parts = row.path.split('/');
+    const foldersAccepted = parts
+      .slice(0, -1)
+      .every((_, at) => discoveryAcceptsDirectory(parts.slice(0, at + 1).join('/')));
+    return foldersAccepted && discoveryAcceptsFile(parts[parts.length - 1]!) && row.bytes >= DISCOVERY_MIN_FILE_BYTES;
+  };
 
-  it('accepts the name of every row the table offers', () => {
-    for (const row of discoveryCases.files.filter((entry) => entry.offered)) {
-      expect(discoveryAcceptsFile(named(row)), row.path).toBe(true);
+  it('offers exactly the rows the table keeps', () => {
+    for (const row of discoveryCases.files) {
+      expect(offeredByTheRules(row), row.path).toBe(row.offered);
     }
   });
 
   it("offers none of the owner's three junk files", () => {
     for (const row of discoveryCases.ownerReport) {
-      const offered = discoveryAcceptsFile(named(row)) && row.bytes >= DISCOVERY_MIN_FILE_BYTES;
-      expect(offered, row.path).toBe(false);
+      expect(offeredByTheRules(row), row.path).toBe(false);
     }
   });
 });

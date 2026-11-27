@@ -27,6 +27,7 @@ const state = {
 vi.mock('@/entities/vault-session', () => ({
   useDataSourceMode: () => state.mode,
   useLocalVault: () => ({ status: 'loaded', handle: {}, manifest: { docs: state.docs } }),
+  useOpenFolderManifest: () => ({ docs: state.docs }),
 }));
 // The report sits behind its feature's public API, so this mock names the slice, not the file.
 vi.mock('@/features/harness-report', async (importOriginal) => ({

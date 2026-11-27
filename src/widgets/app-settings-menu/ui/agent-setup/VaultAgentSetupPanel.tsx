@@ -204,6 +204,7 @@ export function VaultAgentSetupPanel({
         </p>
       ) : null}
 
+      {clientRows ? (
       <SettingsGroup
         label={tMcp('shareHeading')}
         testId="agent-setup-steps"
@@ -281,6 +282,7 @@ export function VaultAgentSetupPanel({
           })
         ) : null}
       </SettingsGroup>
+      ) : null}
 
       {/*
         The check dialog: restart and verify steps Atlas cannot observe itself, ending in the
