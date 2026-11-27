@@ -15,7 +15,7 @@ use std::time::SystemTime;
 use serde::Serialize;
 
 use super::fingerprint::common_dir;
-use super::git_read::{git_read, read_admin_file};
+use super::git_read::{base_reference, git_read, read_admin_file};
 use super::worktrees::{is_plain_ref_name, points_back};
 
 /// A commit subject is text anyone with push access wrote; the page shows at most this much of it.
@@ -111,7 +111,7 @@ pub(super) fn read_activity(
                 let range = if on_base {
                     "HEAD".to_string()
                 } else {
-                    format!("refs/heads/{branch}..HEAD")
+                    format!("{}..HEAD", base_reference(&folder, branch)?)
                 };
                 newest_commits(&folder, &range)
             }),

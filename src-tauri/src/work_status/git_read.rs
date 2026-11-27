@@ -40,6 +40,28 @@ pub(super) fn git_read(cwd: &Path, args: &[&str]) -> Result<String, GitFailure> 
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
+/// The reference the base branch is measured at. Pull requests merge on the remote and the
+/// local branch is often left behind, so a fetched `origin/<branch>` that contains the local one
+/// wins; a local branch holding commits the remote lacks stays the base.
+pub(super) fn base_reference(cwd: &Path, branch: &str) -> Option<String> {
+    let local = format!("refs/heads/{branch}");
+    let remote = format!("refs/remotes/origin/{branch}");
+    let exists = |reference: &str| {
+        git_read(cwd, &["rev-parse", "--verify", "--quiet", reference])
+            .is_ok_and(|head| !head.trim().is_empty())
+    };
+    match (exists(&local), exists(&remote)) {
+        (true, true) => {
+            let local_is_behind =
+                git_read(cwd, &["merge-base", "--is-ancestor", &local, &remote]).is_ok();
+            Some(if local_is_behind { remote } else { local })
+        }
+        (true, false) => Some(local),
+        (false, true) => Some(remote),
+        (false, false) => None,
+    }
+}
+
 /// Reads a small file without following a link at its last component.
 pub(super) fn read_admin_file(path: &Path) -> Option<String> {
     let file = open_no_follow(path).ok()?;

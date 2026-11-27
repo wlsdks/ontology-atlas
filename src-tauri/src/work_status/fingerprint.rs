@@ -9,7 +9,8 @@ use super::worktrees::lock::{parse_lock_reason, process_start};
 /// Files whose modified time moves when a worktree commits, switches branch, or is locked.
 const PER_WORKTREE_FILES: &[&str] = &["HEAD", "locked", "logs/HEAD"];
 const REPOSITORY_FILES: &[&str] = &["HEAD", "logs/HEAD", "packed-refs", "worktrees"];
-/// A merge landed by `git fetch origin main:main` moves only the base's loose ref.
+/// A merge landed by `git fetch origin main:main` moves only the base's loose ref, and a plain
+/// fetch only `origin/<base>`'s.
 const BASE_CANDIDATES: &[&str] = &["main", "master"];
 const REMOTE_HEAD_PREFIX: &str = "ref: refs/remotes/origin/";
 
@@ -24,7 +25,8 @@ pub(super) fn admin_fingerprint(root: &Path, processes: &[AgentProcess]) -> Opti
         modified(&common.join(name)).hash(&mut hasher);
     }
     for branch in base_branches(&common) {
-        modified(&common.join("refs").join("heads").join(branch)).hash(&mut hasher);
+        modified(&common.join("refs").join("heads").join(&branch)).hash(&mut hasher);
+        modified(&common.join("refs/remotes/origin").join(&branch)).hash(&mut hasher);
     }
     let mut ids: Vec<_> = std::fs::read_dir(common.join("worktrees"))
         .map(|entries| entries.flatten().map(|entry| entry.file_name()).collect())
