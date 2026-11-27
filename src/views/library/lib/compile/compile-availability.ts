@@ -22,8 +22,6 @@ import type { LibraryLocalModel } from "../agent/use-library-agent";
  */
 export interface CompileAvailability {
   route: "checking" | "agent" | "local" | "unavailable";
-  /** True in the installed app. The web build has no runtime for Compile at all. */
-  inApp: boolean;
   sourceCount: number;
   /** Sources with no write-up, plus those whose write-up no longer matches. */
   needsCompileCount: number;
@@ -37,10 +35,9 @@ export interface CompileAvailability {
 }
 
 export function libraryCompileBlockedReason(
-  { route, inApp, sourceCount, needsCompileCount, localModel, sources }: CompileAvailability,
+  { route, sourceCount, needsCompileCount, localModel, sources }: CompileAvailability,
   t: ReturnType<typeof useTranslations<"library">>,
 ): string | null {
-  if (!inApp) return t("stage.blockedWeb");
   if (route === "checking") return t("stage.blockedChecking");
   if (route === "unavailable") return t("stage.blockedNoAgent");
   if (sourceCount === 0) return t("stage.blockedNoSources");

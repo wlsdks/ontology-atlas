@@ -43,7 +43,6 @@ export function SourceProgressBand({
   vaultScope,
   batch,
   blocked,
-  inApp,
   filter,
   workLine,
   agentName,
@@ -55,7 +54,6 @@ export function SourceProgressBand({
   batch: ContinueBatch;
   /** Null when Continue can run. */
   blocked: ContinueBlocked | null;
-  inApp: boolean;
   filter: SourceStateFilter;
   /**
    * The agent's work line, in the app only. Its slot is part of the cell from the first paint, so the
@@ -294,7 +292,6 @@ export function SourceProgressBand({
         <ProgressAction
           complete={complete}
           blocked={blocked}
-          inApp={inApp}
           batch={batch}
           running={running}
           agentName={agentName}

@@ -18,7 +18,6 @@ type LibraryT = ReturnType<typeof useTranslations<"library">>;
  */
 export function LibraryStartStage({
   folderName,
-  inApp,
   fileManager,
   agentName,
   agentNote,
@@ -35,11 +34,10 @@ export function LibraryStartStage({
 }: {
   /** The folder's name, never its path. */
   folderName: string;
-  inApp: boolean;
   fileManager: FileManager;
   /** The connected agent's name, or null for the generic words. */
   agentName: string | null;
-  /** The no-agent line in the app, the browser line on the web, or nothing. */
+  /** The no-agent line, or nothing. */
   agentNote: ReactNode;
   wikiOnly: boolean;
   busy: boolean;
@@ -77,18 +75,14 @@ export function LibraryStartStage({
       {dropArea}
       {foundShown ? null : <div data-testid="library-start-where" className="flex flex-col gap-2">
         <p className="text-body text-[color:var(--color-text-secondary)] [overflow-wrap:anywhere]">
-          {inApp
-            ? t("start.where", { folder: folderName, fileManagerName })
-            : t("start.whereWeb", { folder: folderName })}
+          {t("start.where", { folder: folderName, fileManagerName })}
         </p>
         <p className="text-label text-[color:var(--color-text-tertiary)]">{t("start.copyNote")}</p>
         <div className="flex flex-wrap items-center gap-2">
-          {inApp ? (
-            <button type="button" onClick={onReveal} data-testid="library-start-reveal" className={quietChip}>
-              <FolderOpen size={ICON_SIZE.sm} aria-hidden />
-              {t("start.reveal", { fileManager })}
-            </button>
-          ) : null}
+          <button type="button" onClick={onReveal} data-testid="library-start-reveal" className={quietChip}>
+            <FolderOpen size={ICON_SIZE.sm} aria-hidden />
+            {t("start.reveal", { fileManager })}
+          </button>
           <button
             type="button"
             onClick={(event) => {

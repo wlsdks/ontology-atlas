@@ -512,7 +512,6 @@ export function useLibraryTurns({
   const compileBlocked = libraryCompileBlockedReason(
     {
       route: agent.route,
-      inApp: nativeVaultRootPath !== null,
       sourceCount: model.sources.length,
       needsCompileCount: model.needsCompileCount,
       localModel: agent.localModel,
@@ -535,6 +534,6 @@ export function useLibraryTurns({
     handleFix, handleNewPage, handleFileAnswer, handleFileReport, autoDecide, pageBodyRef,
     candidates, findings, openCandidates, reportHeadings,
     reportDoorCount, latestDocsRef, handleTurnStarted, hasOntology, handlePropose, handleLint,
-    compileBlocked, compileTransfer, agentOnlyReason: agentOnlyReason(agent.route, nativeVaultRootPath !== null, t),
+    compileBlocked, compileTransfer, agentOnlyReason: agentOnlyReason(agent.route, t),
   };
 }

@@ -60,10 +60,7 @@ export function LibraryEmptyFolderStage({
   }, [busy, copying, startCopy, vaultScope]);
   const { over } = useSourceDrop({ root: handle, nativeRootPath: nativeVaultRootPath, onRequest: request });
 
-  const inApp = nativeVaultRootPath !== null;
-  const agentNote = !inApp ? (
-    <p data-testid="library-start-agent-note" className="text-body text-[color:var(--color-text-tertiary)]">{t("start.web")}</p>
-  ) : agentConnected ? null : (
+  const agentNote = agentConnected ? null : (
     <p data-testid="library-start-agent-note" className="flex flex-wrap items-center gap-x-2 text-body text-[color:var(--color-text-tertiary)]">
       <span>{t("start.noAgent")}</span>
       <AgentDoor variant="link" label={t("start.noAgentLink")} testId="library-start-agent-door" />
@@ -74,7 +71,6 @@ export function LibraryEmptyFolderStage({
     <div className="relative flex min-h-0 min-w-0 flex-1 justify-center overflow-auto px-5 pt-14 pb-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
       <LibraryStartStage
         folderName={handle.name}
-        inApp={inApp}
         fileManager={fileManager}
         agentName={agentConnected ? agentName : null}
         agentNote={agentNote}

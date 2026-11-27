@@ -41,7 +41,6 @@ function source(path: string, format: string): LibrarySourceRow {
 
 const READY = {
   route: "agent",
-  inApp: true,
   sourceCount: 3,
   needsCompileCount: 2,
   localModel: null,
@@ -51,12 +50,6 @@ const READY = {
 describe("why Compile cannot run — one answer, in the order a person can act", () => {
   it("says nothing when a coding agent, a folder and waiting sources are all there", () => {
     expect(libraryCompileBlockedReason(READY, t)).toBeNull();
-  });
-
-  it("names the web limit first, because nothing else on that surface can be changed", () => {
-    // Sources waiting and a runtime reported would both be reasons; neither is the one a
-    // browser reader can act on.
-    expect(libraryCompileBlockedReason({ ...READY, inApp: false }, t)).toBe("stage.blockedWeb");
   });
 
   it("does not guess while the runtime check is still running", () => {

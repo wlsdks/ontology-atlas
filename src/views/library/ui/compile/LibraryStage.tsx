@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 import { BookText, FilePlus2, Search, Sparkles, Stethoscope } from "lucide-react";
 
-import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
@@ -38,8 +37,6 @@ export interface LibraryStageProps {
   brain: CompileBrain | null;
   brainChoosable: boolean;
   onChooseBrain: (brain: CompileBrain) => void;
-  /** True in the installed app. On the web, Compile has no runtime at all. */
-  inApp: boolean;
   onAddFiles: () => void;
   addFilesFeedback?: ActionFeedbackState;
   onFindDocuments: () => void;
@@ -85,7 +82,6 @@ export function LibraryStage({
   brain,
   brainChoosable,
   onChooseBrain,
-  inApp,
   onAddFiles,
   addFilesFeedback = 'idle',
   onFindDocuments,
@@ -105,7 +101,7 @@ export function LibraryStage({
     newest, transfer, blocked, gatherCaption, compileCaption, blockedBelow, partialNote,
     lintBlocked, lintReasonBelow, lintReasonId, coverage,
   } = libraryStageLines({
-    model, route, inApp, localModel, canCheck: onLint !== null, lintBlockedReason, lintBlockedReasonId, answerSlugs, t,
+    model, route, localModel, canCheck: onLint !== null, lintBlockedReason, lintBlockedReasonId, answerSlugs, t,
   });
 
   return (
@@ -214,28 +210,6 @@ export function LibraryStage({
                   className="min-w-0 max-w-full flex-1"
                   t={t}
                 />
-              ) : null}
-              {!inApp ? (
-                /*
-                 * A **chip**, not a link. `shape: "link"` is excluded from the coarse 44px
-                 * floor because it ends a sentence; here it stands in an action row beside
-                 * a button, where that exclusion would leave a ~25px target on a tablet.
-                 */
-                <Link
-                  href="/download"
-                  data-testid="library-stage-get-app"
-                  /*
-                   * The live control in a dead row wears the strong ink: on the web Compile is disabled, so this link
-                   * is the only thing a person can press. When Compile can run it leads and this recedes.
-                   */
-                  className={controlClass({
-                    shape: "chip",
-                    tone: blocked === null ? "muted" : "strong",
-                    hoverInk: "strong",
-                  })}
-                >
-                  {t("wiki.compileWebGetApp")}
-                </Link>
               ) : null}
             </>
           }

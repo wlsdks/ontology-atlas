@@ -5,7 +5,6 @@ import type { useTranslations } from "next-intl";
 
 import { WorkGlyph } from "@/shared/motion/status-glyphs/WorkGlyph";
 import { Button } from "@/shared/ui";
-import { GetAppLink } from "@/shared/ui/controls/get-app-link";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import type { ContinueBatch, ContinueBlocked } from "../../model/sources/continue-batch";
@@ -13,15 +12,14 @@ import type { ContinueBatch, ContinueBlocked } from "../../model/sources/continu
 const BLOCKED_ID = "library-progress-blocked";
 
 /**
- * The cell at the band's right: the all-done line, or the web's way to the app, or the Continue press
+ * The cell at the band's right: the all-done line, or the Continue press
  * with who writes beside it and the work line under it. Pointing at or focusing Continue is reported
  * so the bar can show how far its sources would take it.
  */
-export function ProgressAction({ complete, blocked, inApp, batch, running, agentName, workLine, onAimChange, t }: {
+export function ProgressAction({ complete, blocked, batch, running, agentName, workLine, onAimChange, t }: {
   complete: boolean;
   /** Null when Continue can run. */
   blocked: ContinueBlocked | null;
-  inApp: boolean;
   batch: ContinueBatch;
   running: boolean;
   agentName: string | null;
@@ -39,13 +37,6 @@ export function ProgressAction({ complete, blocked, inApp, batch, running, agent
           <WorkGlyph phase="done" size={ICON_SIZE.md} />
           <span className="min-w-0 truncate">{t("progress.allDone")}</span>
         </p>
-      ) : blocked && !inApp ? (
-        <>
-          <GetAppLink data-testid="library-progress-get-app" className="self-start">{t("wiki.compileWebGetApp")}</GetAppLink>
-          <p data-testid="library-progress-blocked" className="text-label leading-label text-[color:var(--color-text-tertiary)]">
-            {t("progress.webLine")}
-          </p>
-        </>
       ) : batch.next.length > 0 || running ? (
         /* The press, then who writes beside it; a note too long for the row takes the next line. */
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">

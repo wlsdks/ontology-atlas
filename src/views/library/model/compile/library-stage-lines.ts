@@ -16,11 +16,10 @@ import { libraryCoverageCaption, libraryStepStates, libraryWaitingLine } from ".
  * under the button appears only with something else to say.
  */
 export function libraryStageLines({
-  model, route, inApp, localModel, canCheck, lintBlockedReason, lintBlockedReasonId, answerSlugs, t,
+  model, route, localModel, canCheck, lintBlockedReason, lintBlockedReasonId, answerSlugs, t,
 }: {
   model: LibraryUiModel;
   route: CompileAvailability["route"];
-  inApp: boolean;
   localModel: LibraryLocalModel | null;
   /** The report-only wiki check can run. */
   canCheck: boolean;
@@ -41,7 +40,7 @@ export function libraryStageLines({
   /** What leaves the computer, said once and where the press is; `null` on the agent route. */
   const transfer = libraryTransferSentence({ route, localModel }, t);
   const blocked = libraryCompileBlockedReason(
-    { route, inApp, sourceCount: model.sources.length, needsCompileCount: model.needsCompileCount, localModel, sources: model.sources },
+    { route, sourceCount: model.sources.length, needsCompileCount: model.needsCompileCount, localModel, sources: model.sources },
     t,
   );
   const steps = libraryStepStates(model);

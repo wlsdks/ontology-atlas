@@ -18,7 +18,7 @@ const folder = (states: readonly string[], pages = 0, needsCompileCount = 0, par
 
 const lines = (model: LibraryUiModel, over: Partial<Parameters<typeof libraryStageLines>[0]> = {}) =>
   libraryStageLines({
-    model, route: "agent", inApp: true, localModel: null, canCheck: true,
+    model, route: "agent", localModel: null, canCheck: true,
     lintBlockedReason: null, lintBlockedReasonId: null, answerSlugs: undefined, t, ...over,
   });
 

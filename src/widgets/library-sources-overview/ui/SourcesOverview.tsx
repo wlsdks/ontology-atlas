@@ -72,7 +72,6 @@ export function SourcesOverview({
   sources,
   pages,
   batch,
-  inApp,
   readingCount,
   pick,
   onPick,
@@ -84,7 +83,6 @@ export function SourcesOverview({
   sources: readonly LibrarySourceRow[];
   pages: readonly LibraryWikiPage[];
   batch: SourcesNextBatch;
-  inApp: boolean;
   /** Sources counted so far while the folder is still being read; null once it is read. */
   readingCount: number | null;
   pick: SourcePick | null;
@@ -285,13 +283,11 @@ export function SourcesOverview({
       lead={
         totalWaiting === 0 && !arriving
           ? t("sourcesHome.panel.nextEmpty")
-          : !inApp
-            ? t("sourcesHome.panel.webNote")
-            : running
+          : running
               ? t("sourcesHome.panel.leadRunning")
               : t("sourcesHome.panel.lead", { action })
       }
-      privacy={inApp && totalWaiting > 0 ? t("sourcesHome.panel.privacy") : null}
+      privacy={totalWaiting > 0 ? t("sourcesHome.panel.privacy") : null}
       files={batch.next}
       running={batch.running}
       reserveRows={batch.next.length > 0 ? 0 : Math.min(PANEL_LIST_ROWS, totalWaiting)}
@@ -358,7 +354,7 @@ export function SourcesOverview({
             dayText={dayText}
             sourceExists={(path) => index.keyOf(path, "folder") !== undefined}
             onOpenPage={onOpenPage}
-            firstStep={inApp ? action : null}
+            firstStep={action}
             reserve={recent.pages.length > 0 || readingCount !== null}
             t={t}
           />
