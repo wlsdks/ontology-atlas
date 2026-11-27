@@ -24,7 +24,9 @@ the installed app. After this change:
 - The installed app looks and works as it does today. It loses the bundled-sample branches, which
   it never ran; its own "no folder loaded" state stays.
 - The browser picker code, the bundled-sample mode and every "works in the app" card are deleted.
-  The test move merges first and alone; the five other steps then merge together.
+  All six steps, the test move first, enter one integration branch shared with the Vite move;
+  nothing reaches `main` until the combined checks pass on its head, and then it arrives in one
+  merge.
 
 Words used below. **Browser workbench**: opening a local folder in a web browser and working on it
 there. **Plain browser**: any browser window that is not the installed app. **App-only page**: the
@@ -256,8 +258,8 @@ Replaced keys are deleted in slice 6.
   script sets before the first face in the document, the pattern `/` already uses. A plain browser
   with or without scripts paints only the app-only face; the app paints only the workbench, also
   on a document load of an app route. The Vite move must carry this HTML shape into its
-  page-by-page parity (the spec "Build the app and the website with Vite", criterion 3, on
-  branch `docs/ui-on-vite`, not merged yet). `/sample` is left out of the app's bundle like `/download`.
+  page-by-page parity (`docs/specs/2026-11-27-ui-on-vite.md`, criterion 3). `/sample` is left
+  out of the app's bundle like `/download`.
 - **Code the app shares with the browser path** stays: the folder-handle shape, the remembered
   folder store, the slow safety reread
   (`src/entities/vault-session/model/local-vault/use-local-vault.ts:48`, `:451-456`), the "no
@@ -281,11 +283,17 @@ Replaced keys are deleted in slice 6.
 Each list is produced by its command, so it stays true as `main` moves; counts are from
 `969fd2b804`. No file belongs to two slices.
 
-**Order and merge (decided by the lead, 2026-11-27).** Slice 2 changes tests and tools only and
-merges to `main` alone, first. Slices 1 and 3 to 6 then branch from that `main` and merge together
-through one integration branch; slice 1 runs beside the others, 3 to 6 in order, because each
-deletes what the one before stopped using. The Vite move starts after. Three Next-shaped pieces of
-slice 3 are rewritten at Vite's switch: the `stage-desktop-frontend.mjs` edit, the `app/**` page
+**Order and merge (owner, 2026-11-27: "collect every switch in one branch and, with no issue,
+put it into `main` at once"; arranged by the lead).** Every slice merges, `--no-ff` and unsquashed,
+into one integration branch, `integration/e2e-app-runtime-2026-11-27`, in this order: 2 (it
+changes tests and tools only), then 1, then 3 to 6, because each of 3 to 6 deletes what the one
+before stopped using; slice 1 may be built beside them. The Vite move's slices follow in the same
+branch (`docs/specs/2026-11-27-ui-on-vite.md`, Slices). `origin/main` is merged into the
+integration branch at least daily. Nothing reaches `main` until the combined gate passes on the
+branch's head (the Vite spec, "The gate before the merge to `main`"); then the branch reaches
+`main` in one merge. The MCP server's move to Rust keeps its own integration branch over `mcp/`,
+`src-tauri/crates/` and `src-tauri/Cargo.*`, and merges once on its own. Three Next-shaped pieces
+of slice 3 are rewritten by Vite's switch: the `stage-desktop-frontend.mjs` edit, the `app/**` page
 files, and the two-face HTML. Keep each thin: page files only import a view from `src/views`.
 
 **Deciding rule for a file the pattern finds.** Delete a branch that runs only when the app's
@@ -414,21 +422,23 @@ path, and one `Removed` change record.
    verifier pass; the staged bundle's file count and bytes, printed by `stage-desktop-frontend.mjs`,
    are not above the figure captured before slice 3; `verify-windows`
    (`.github/workflows/windows-beta-check.yml:134`) is green. Installed-app walk in the pull request.
-5. **Slice 2, one test substrate, merged alone.** Given unchanged product code, a new check
-   (`tests/contract/e2e/app-route-runtime.contract.test.ts`) reads every spec outside
-   `tests/e2e/gateway/` and `web-surface-smoke.spec.ts` and lists each that visits an app route
-   without installing the faked app runtime (through any helper), or names `?shell=desktop`,
+5. **Slice 2, one test substrate, first into the integration branch.** Given unchanged product
+   code, a new check (`tests/contract/e2e/app-route-runtime.contract.test.ts`) reads every spec
+   outside `tests/e2e/gateway/` and `web-surface-smoke.spec.ts` and lists each that visits an app
+   route without installing the faked app runtime (through any helper), or names `?shell=desktop`,
    `stubDirectoryPicker`, `useDogfoodSample` or `demo:sample-source`; on its base commit it lists
    at least 113 specs, after slice 2 none. `playwright test --list` before and after differ only by
    the titles named as deleted in the pull request; `tests/quarantine.json` holds no entry and no
    `skip` was added; a spec serves two folders, reloads after a write without re-seeding, creates,
    removes and renames a file, answers both source pickers, and shows the launch chooser on the app
-   arm (`use-recent-vault-reachability.ts:66-69`). One whole browser run is green
-   (`.github/workflows/e2e.yml`) and `pnpm e2e:durations` is refreshed from it.
+   arm (`use-recent-vault-reachability.ts:66-69`). One whole browser run
+   (`.github/workflows/e2e.yml`, dispatched on the integration branch) is green on the integration
+   tree with slice 2 merged in, and `pnpm e2e:durations` is refreshed from it.
 6. **Slices 4 and 5, the code is gone.** `git grep -nE "$GONE|showSaveFilePicker|DEGRADED_SURFACES|web-session|perf-web-open" -- src app scripts src-tauri/src tests ':!tests/e2e/web-surface-smoke.spec.ts'`
    prints nothing (that spec names the picker only to prove it is never called). For `KEPT`, the
    pull request lists each remaining file with the app path it serves, and the file count per
-   token does not rise. `pnpm typecheck`, the unit suite and one whole browser run are green.
+   token does not rise. `pnpm typecheck`, the unit suite and one whole browser run on the
+   integration tree are green.
 7. **Slice 6, nothing orphaned.** `pnpm knip` is clean with no added exception; every key the
    message candidate scan still finds is used by a source file or listed under Copy;
    `pnpm messages:check` and `pnpm messages:coverage` pass for ko, ja and zh.
@@ -441,12 +451,14 @@ path, and one `Removed` change record.
 ## Risks
 
 1. **A deleted branch was one the app runs**, as the `static` mode nearly was. Answer: slice 2
-   merges first, so every deletion is judged by specs on the faked app runtime; the deciding rule
-   keeps the "no folder loaded" arm; criterion 4 walks the states where no manifest exists.
-2. **The spec move leaves the nightly browser run red, and a stable release needs a whole green
-   run on its commit** (`.github/workflows/release-macos.yml:957-963`). Answer: slice 2 changes no
-   product code, merges alone with a green run and refreshed durations, and its three parts are
-   disjoint, so a red part does not hold the others.
+   enters the integration branch first, so every deletion is judged by specs on the faked app
+   runtime; the deciding rule keeps the "no folder loaded" arm; criterion 4 walks the states where
+   no manifest exists.
+2. **The spec move leaves a browser run red, and a stable release needs a whole green run on its
+   commit** (`.github/workflows/release-macos.yml:957-963`). Answer: `main` receives nothing until
+   the combined gate passes, so its nightly run and its releases never see a half-moved suite;
+   slice 2 changes no product code and its three parts are disjoint, so a red part does not hold
+   the others inside the branch.
 3. **The installed app flashes the app-only page, or a plain browser the rail**, because both
    faces ship in one export. Answer: CSS chooses the face by `data-shell="desktop"`, which the boot
    script sets before either face is parsed; criteria 2 and 4 sample from the first paint,
@@ -465,8 +477,9 @@ path, and one `Removed` change record.
 ## Owner question
 
 None. Decided by the lead on 2026-11-27: the two pages name the computers with an app and point
-the rest to the sample and the source-run MCP server; slice 2 merges alone first, the rest through
-one integration branch, Vite after. Decided here, each reversible in one file: the sample is
+the rest to the sample and the source-run MCP server. Decided by the owner on 2026-11-27 and
+arranged by the lead: every slice here and of the Vite move enters one integration branch, slice 2
+first, and reaches `main` in one merge after the combined gate passes. Decided here, each reversible in one file: the sample is
 Storefront, because the gateway hero already draws Atlas's own map
 (`src/views/download/lib/use-stage-graph.ts:6-9`; reverse: change the data `/sample` imports); the
 old browser database is deleted without a notice (reverse: Later 4).
@@ -480,3 +493,8 @@ old browser database is deleted without a notice (reverse: Later 4).
   richer fake, and merges alone first (lead decision). The other-computers sentence and its States
   row added (lead decision). Verifier, measuring tools, sitemap, `noindex`, `MapSampleHead`,
   emitted text and narrow, touch, keyboard and 200% states assigned. 47 corrected to 44.
+- 2026-11-27: owner decision ("collect every switch in one branch and, with no issue, put it into
+  `main` at once"). Slice 2 no longer merges to `main` alone: slices 2, 1 and 3 to 6 merge in order
+  into `integration/e2e-app-runtime-2026-11-27`, the Vite slices follow there, and the branch
+  reaches `main` in one merge after the combined gate. Criterion 5's whole browser run runs on the
+  integration tree; Risks 1 and 2 and the Owner question follow.
