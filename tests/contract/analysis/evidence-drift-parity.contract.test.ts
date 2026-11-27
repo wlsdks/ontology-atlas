@@ -1,3 +1,7 @@
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { comparableCode as comparableInApp } from "@/shared/lib/git/comparable-code.mjs";
 import { resolveEvidenceStates as resolveInApp } from "@/shared/lib/git/evidence-states";
@@ -11,7 +15,9 @@ import {
   movedEvidencePairs as movedPairsInServer,
   unchangedEvidencePairs as unchangedInServer,
 } from "../../../mcp/src/drift/evidence-verdict.mjs";
+import { collectPathLastChanges } from "../../../mcp/src/git/git-tools.mjs";
 import { COMPARABLE_CODE_CASES } from "../../fixtures/comparable-code-cases.mjs";
+import DOCUMENT_DATING from "../../fixtures/document-dating-cases.json";
 
 /** The server's answer, as this test reads it; the module ships plain ESM without types. */
 type ServerStates = Record<
@@ -149,5 +155,81 @@ describe("comment-only changes, on both surfaces", () => {
       DATED,
     );
     expect(pairs).toEqual([{ commit: COMMIT, path: "src/moved.ts" }]);
+  });
+});
+
+type DatingStep = {
+  commit?: string;
+  files?: Record<string, string>;
+  revert?: string;
+  restore?: string;
+  from?: string;
+  reset?: string;
+  cherryPick?: string;
+  as?: string;
+};
+
+/** Replays one case of the shared table; the desktop walks replay the same table in `src-tauri/src/git/evidence/tests.rs`. */
+function replayDatingCase(steps: readonly DatingStep[]): { root: string; labels: Map<string, string> } {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "atlas-dating-")));
+  const labels = new Map<string, string>();
+  const git = (minute: number, ...args: string[]) => {
+    const at = `2026-01-01T00:${String(minute).padStart(2, "0")}:00Z`;
+    return execFileSync("git", args, { cwd: root, encoding: "utf8", env: { ...process.env, GIT_AUTHOR_DATE: at, GIT_COMMITTER_DATE: at } }).trim();
+  };
+  git(0, "init", "-q", "-b", "main");
+  git(0, "config", "user.email", "test@example.invalid");
+  git(0, "config", "user.name", "atlas test");
+  git(0, "config", "commit.gpgsign", "false");
+  git(0, "config", "core.autocrlf", "false");
+  steps.forEach((step, index) => {
+    const minute = index + 1;
+    const label = (name: string | undefined) => labels.get(name ?? "") ?? "";
+    if (step.commit) {
+      for (const [path, text] of Object.entries(step.files ?? {})) {
+        mkdirSync(dirname(join(root, path)), { recursive: true });
+        writeFileSync(join(root, path), text);
+        git(minute, "add", "--", path);
+      }
+      git(minute, "commit", "-qm", step.commit);
+      labels.set(step.commit, git(minute, "rev-parse", "HEAD"));
+    } else if (step.revert) git(minute, "revert", "--no-edit", label(step.revert));
+    else if (step.restore) {
+      git(minute, "checkout", label(step.from), "--", step.restore);
+      git(minute, "commit", "-qm", "restore");
+    } else if (step.reset) git(minute, "reset", "-q", "--hard", label(step.reset));
+    else if (step.cherryPick) git(minute, "cherry-pick", label(step.cherryPick));
+    if (step.as) labels.set(step.as, git(minute, "rev-parse", "HEAD"));
+  });
+  return { root, labels };
+}
+
+describe("a document is dated by its bytes, on both surfaces", () => {
+  const vaultFolder = DOCUMENT_DATING.document.split("/")[0]!;
+  const documentKey = DOCUMENT_DATING.document.slice(vaultFolder.length + 1);
+  it.each(DOCUMENT_DATING.cases)("$name → $verdict", (testCase) => {
+    const { root, labels } = replayDatingCase(testCase.steps as DatingStep[]);
+    try {
+      const walk = collectPathLastChanges({
+        repoRoot: root,
+        vaultRoot: join(root, vaultFolder),
+        repoPaths: [DOCUMENT_DATING.code],
+        vaultPaths: [documentKey],
+      }) as { ok: boolean; changes: Map<string, { exists: boolean; lastChangedAt: string | null; lastCommit: string | null }> };
+      expect(walk.ok).toBe(true);
+      expect(walk.changes.get(documentKey)?.lastCommit).toBe(labels.get(testCase.dates.document));
+      expect(walk.changes.get(DOCUMENT_DATING.code)?.lastCommit).toBe(labels.get(testCase.dates.code));
+      const changes = new Map<string, { exists: boolean; lastChangedAt: string | null }>([
+        [documentKey, walk.changes.get(documentKey)!],
+        [DOCUMENT_DATING.code, walk.changes.get(DOCUMENT_DATING.code)!],
+      ]);
+      const concept = { docPath: documentKey, evidencePaths: [DOCUMENT_DATING.code] };
+      const app = resolveInApp([{ id: "subject", ...concept }], changes);
+      const server = resolveInServer([{ slug: "subject", kind: "capability", ...concept }], changes) as ServerStates;
+      expect(appVerdict(app, "subject")).toBe(testCase.verdict);
+      expect(serverVerdict(server, "subject")).toBe(testCase.verdict);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

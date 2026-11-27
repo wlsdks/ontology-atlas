@@ -32,7 +32,7 @@ function evidencePairKey(commit, path) {
 /**
  * Every pair the date rule calls moved, deduplicated and sorted by path then commit, so
  * the order does not depend on which concepts a surface walked first: the files to
- * re-read at the concept document's newest commit. A document without a commit names no
+ * re-read at the commit that dates the concept document. A document without a commit names no
  * pair, and a hidden or credential-named path is never asked for; both stay moved.
  *
  * @param {readonly {docPath: string|null, evidencePaths: readonly string[]}[]} concepts
@@ -80,7 +80,7 @@ export function unchangedEvidencePairs(readings) {
 }
 
 /**
- * Judges one concept from its document's newest commit and the walk's result
+ * Judges one concept from the commit that dates its document and the walk's result
  * per cited path. Fixed, total priority: a gone path beats a moved file, which
  * beats anything undated; a moved folder is never `stale`, since a folder
  * changes on almost any commit. A file the dates call moved is not moved when

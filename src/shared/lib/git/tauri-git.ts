@@ -364,7 +364,10 @@ export interface GitPathLastChange {
   exists: boolean;
   /** A folder changes whenever anything under it does: weaker evidence than a file. */
   isDir: boolean;
-  /** ISO time of the newest commit touching the path in the walk window, else null. */
+  /**
+   * ISO time of the commit that dates the path in the walk window, else null: a cited file's newest
+   * commit, a concept document's first commit holding its present bytes.
+   */
   lastChangedAt: string | null;
   /** Hash of that commit; a concept document's is where its cited files are re-read. */
   lastCommit?: string | null;
