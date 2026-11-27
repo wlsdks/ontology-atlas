@@ -1,8 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { installDesktopRailRuntime, listDesktopFiles, mountDesktopVault } from "../desktop-rail-arrival-harness";
+import { dropOnApp, installDesktopRailRuntime, listDesktopFiles, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { seedFirstRunSeen } from "../first-run-seed";
-import { dropOnApp, proposedDocumentFiles, serveSourceIntake } from "./served-source-intake";
 
 /**
  * The empty Library in the app: documents already in the folder lead with one Copy all, files and
@@ -39,9 +38,9 @@ async function openFolder(page: Page, files: Record<string, string>, options: { 
   await installDesktopRailRuntime(page, files, undefined, {
     replaceFixture: true,
     writable: true,
-    externalFiles: proposedDocumentFiles(files),
+    proposeSources: true,
+    refuseImportsNamed: options.refuseWritesNamed,
   });
-  await serveSourceIntake(page, files, options);
   await mountDesktopVault(page, "en");
   await page.goto("/en/library/?guides=off");
   await expect(page.getByTestId("library-start-stage")).toBeVisible();

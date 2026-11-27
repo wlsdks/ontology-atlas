@@ -4,8 +4,6 @@ import { expect, test } from "@playwright/test";
 
 import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { seedFirstRunSeen } from "../first-run-seed";
-import { hashServedFilesLikeTheDisk } from "./served-file-hashes";
-import { proposedDocumentFiles, serveSourceIntake } from "./served-source-intake";
 
 /**
  * Proves what only a rendered folder can: a non-Markdown source is a Library row and never in the
@@ -177,10 +175,8 @@ async function openLibrary(
   await installDesktopRailRuntime(page, vault, undefined, {
     replaceFixture: true,
     writable: true,
-    externalFiles: proposedDocumentFiles(vault),
+    proposeSources: true,
   });
-  await hashServedFilesLikeTheDisk(page);
-  await serveSourceIntake(page, vault);
   await mountDesktopVault(page, "en");
   await page.goto("/en/library/");
   /* The folder decides which shape arrives, so wait on the state rather than on a box only one has. */

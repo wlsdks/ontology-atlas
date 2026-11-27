@@ -1,8 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { readdirSync, readFileSync } from "node:fs";
-import path from "node:path";
 
-import { atlasSampleFiles, installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
+import { atlasSampleFiles, installDesktopRailRuntime, mountDesktopVault, storefrontSampleFiles } from "../desktop-rail-arrival-harness";
 
 /**
  * Detects interactive elements that are not accessible, per route.
@@ -26,18 +24,6 @@ const ROUTES = [
   { url: "/en/topology/", folder: "storefront" },
   { url: `/ko/topology/?mode=focus&p=${encodeURIComponent(FOCUS_NODE_ID)}`, folder: "storefront" },
 ] as const;
-
-/** The bundled Online Store (`samples/storefront`) as a folder: the Storefront this audit measured, with its `cart` capability. */
-function storefrontSampleFiles(): Record<string, string> {
-  const root = path.resolve(__dirname, "../../../samples/storefront");
-  const files: Record<string, string> = {};
-  for (const entry of readdirSync(root, { recursive: true, withFileTypes: true })) {
-    if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-    const absolute = path.join(entry.parentPath, entry.name);
-    files[path.relative(root, absolute).split(path.sep).join("/")] = readFileSync(absolute, "utf8");
-  }
-  return files;
-}
 
 /** A window of its own: the app remembers the folder a window chose, so two folders need two. */
 async function openApp(browser: Browser, baseURL: string | undefined, folder: "storefront" | "atlas"): Promise<Page> {

@@ -3,6 +3,14 @@ import path from "node:path";
 
 import type { Page } from "@playwright/test";
 
+import {
+  DISCOVERY_MIN_FILE_BYTES,
+  discoveryAcceptsDirectory,
+  discoveryAcceptsFile,
+  discoveryExtension,
+  discoverySkipReason,
+  type DiscoverySkipReason,
+} from "../../src/entities/docs-vault/lib/library/source-discovery";
 import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { dogfoodVaultFiles } from "./map/dogfood-vault-files";
@@ -58,6 +66,19 @@ import { dogfoodVaultFiles } from "./map/dogfood-vault-files";
  * Source pickers: `chooseSourceFolder` answers `pick_source_directory`, `chooseSourceFiles`
  * answers `pick_source_files`; `import_source_files` then copies from `externalFiles` into
  * `sources/` or `planning/`, refusing a repeat of bytes already there and renaming a taken name.
+ * Hashes are what the app reads: `hash_vault_files` and every import answer each file's real
+ * sha256 (`null` for a file that is not there), never a placeholder.
+ *
+ * Documents reaching `sources/`: `options.proposeSources` makes `discover_source_candidates`
+ * propose the served folder's own documents (its name, depth and size rules, as the native walk
+ * applies them) and puts each proposed file outside the folder in `externalFiles`, where the copy
+ * reads it. `import_offered_sources` and `import_source_files` copy a proposed or dropped file
+ * under the folders it was found in (`sources/<folder>/name`), as the native side does for a path
+ * it offered; `options.refuseImportsNamed` makes a copy whose file name starts with it fail as an
+ * unwritable destination. `arm_source_drop` is accepted. `dropOnApp(page, { files, folder })`
+ * reports a window drop as the native side does: the pointer over the window, the walk, the offer.
+ * It sends those through `emitNativeEvent(page, "source-drop", payload)`, which delivers any
+ * native event (`source-drop`, `vault-changed`) to the handlers the app registered with `listen`.
  *
  * What it does not do: it has no Git beyond the canned `commits`, no agent beyond
  * `runtimeResponses`; `library-work-harness.ts` is the fake for the agent protocol, the Library's
@@ -199,6 +220,14 @@ export interface DesktopRuntimeOptions {
   /** The answer to `ensure_default_vault_parent_dir` ("Just start"). Unstubbed without it. */
   defaultVaultParent?: string;
   holdReadsUntilReleased?: readonly string[];
+  /**
+   * Let `discover_source_candidates` propose the default folder's own documents, as the app does
+   * for an open folder with no project folder connected. Without it the walk finds nothing.
+   * The list is made from the files the folder is installed with, not from later writes.
+   */
+  proposeSources?: boolean;
+  /** A copy into `sources/` whose file name starts with this fails as `import-destination-unwritable`. */
+  refuseImportsNamed?: string;
 }
 
 export interface ModelsStubOptions {
@@ -222,6 +251,12 @@ export async function installDesktopRailRuntime(
   options: DesktopRuntimeOptions = {},
 ): Promise<void> {
   await seedFirstRunSeen(page);
+  const served = options.replaceFixture ? { ...extraFiles } : { ...FIXTURE_VAULT, ...extraFiles };
+  const proposed = options.proposeSources ? documentsTheWalkProposes(served) : [];
+  const externalFiles = {
+    ...Object.fromEntries(proposed.map((document) => [`${DESKTOP_VAULT_ROOT}/${document.relativePath}`, served[document.relativePath]!])),
+    ...options.externalFiles,
+  };
   await page.addInitScript(
     (input: {
       root: string;
@@ -250,6 +285,8 @@ export async function installDesktopRailRuntime(
       sourcePick?: { folder?: string | null; files?: string[] };
       defaultVaultParent?: string;
       holdReadsUntilReleased?: string[];
+      sourceCandidates: { relativePath: string; name: string; extension: string; size: number }[];
+      refuseImportsNamed: string;
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
       let held = new Set(input.holdReadsUntilReleased ?? []);
@@ -504,6 +541,10 @@ export async function installDesktopRailRuntime(
         failWrites: (patterns: string[]) => {
           failWrites = patterns.map((pattern) => new RegExp(pattern));
         },
+        offer: (offered: { path: string; relativePath: string }[]) => {
+          for (const file of offered) rememberOffer(file.path, file.relativePath);
+        },
+        emit: (event: string, payload: unknown) => emitEvent(event, payload),
       };
       const AUDIT = ".ontology-atlas/llm-audit.jsonl";
       const auditReads = new Map<string, { raw: string; bytes: Uint8Array; cursor: number } | null>();
@@ -552,6 +593,84 @@ export async function installDesktopRailRuntime(
 
       const slow = <T>(value: T): Promise<T> =>
         new Promise((resolve) => setTimeout(() => resolve(value), latency));
+
+      const sha256Of = async (bytes: number[]): Promise<string> => {
+        const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
+        return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      };
+
+      /**
+       * The folder each offered file is found in, as the native side records it when it proposes or
+       * is dropped a path: a copy lands under `sources/<folder>/`, and a path never offered lands
+       * directly under `sources/`.
+       */
+      const offeredFolder = new Map<string, string>();
+      const rememberOffer = (path: string, relativePath: string) => {
+        const at = relativePath.lastIndexOf("/");
+        if (at > 0) offeredFolder.set(path, relativePath.slice(0, at));
+      };
+      const sourceName = (sourcePath: string) => sourcePath.slice(sourcePath.lastIndexOf("/") + 1);
+      const failedCopy = (pickedName: string, reason: string) => ({
+        pickedName,
+        status: "failed",
+        relativePath: null,
+        sha256: null,
+        size: null,
+        reason,
+      });
+
+      /** Copies each path in order, as `import_sources` does: a repeat of bytes is refused, a taken name is renumbered. */
+      const copyIntoFolder = async (
+        folderRoot: string,
+        target: Folder,
+        sourcePaths: string[],
+        destination: string,
+        onCopied?: (done: number) => void,
+      ) => {
+        const sameBytes = (left: number[], right: number[] | null) =>
+          right !== null && left.length === right.length && left.every((byte, at) => byte === right[at]);
+        const results: Record<string, unknown>[] = [];
+        for (const sourcePath of sourcePaths) {
+          const pickedName = sourceName(sourcePath);
+          const source = external.get(sourcePath);
+          const into = destination === "sources" && offeredFolder.has(sourcePath) ? `sources/${offeredFolder.get(sourcePath)}` : destination;
+          if (source === undefined) {
+            results.push(failedCopy(pickedName, "source-not-found"));
+          } else if (input.refuseImportsNamed !== "" && pickedName.startsWith(input.refuseImportsNamed)) {
+            results.push(failedCopy(pickedName, "import-destination-unwritable"));
+          } else if (destination === "planning" && !/\.(md|png|jpe?g|webp|avif)$/i.test(pickedName)) {
+            results.push(failedCopy(pickedName, "unsupported-type"));
+          } else {
+            const bytes = typeof source === "string" ? [...new TextEncoder().encode(source)] : source.bytes;
+            const prefix = `${into}/`;
+            const duplicate = [...Object.keys(target.files), ...Object.keys(target.binaries)].some(
+              (path) => path.startsWith(prefix) && sameBytes(bytes, bytesOf(target, path)),
+            );
+            if (duplicate) {
+              results.push({ pickedName, status: "duplicate", relativePath: null, sha256: null, size: bytes.length, reason: null });
+            } else {
+              const dot = pickedName.lastIndexOf(".");
+              const stem = dot > 0 ? pickedName.slice(0, dot) : pickedName;
+              const extension = dot > 0 ? pickedName.slice(dot) : "";
+              let name = pickedName;
+              for (let suffix = 2; exists(target, `${into}/${name}`); suffix += 1) name = `${stem} (${suffix})${extension}`;
+              const relativePath = `${into}/${name}`;
+              if (typeof source === "string") putText(folderRoot, target, relativePath, source);
+              else putBytes(folderRoot, target, relativePath, source.bytes);
+              results.push({
+                pickedName,
+                status: name === pickedName ? "added" : "renamed",
+                relativePath,
+                sha256: await sha256Of(bytes),
+                size: bytes.length,
+                reason: null,
+              });
+            }
+          }
+          onCopied?.(results.length);
+        }
+        return results;
+      };
 
       /** `read_vault_text_files` answers framed bytes; see `src/shared/lib/vault-folder/vault-text-frames.ts`. */
       const textFrames = (reads: { relativePath: string; text: string | null; error: string | null; lastModified: number }[]): ArrayBuffer => {
@@ -656,43 +775,18 @@ export async function installDesktopRailRuntime(
           case "import_source_files": {
             if (!target) return gone();
             const destination = String(args.destination ?? "sources");
-            const taken = (name: string) => exists(target, `${destination}/${name}`);
-            const sameBytes = (left: number[], right: number[] | null) =>
-              right !== null && left.length === right.length && left.every((byte, at) => byte === right[at]);
-            const results = ((args.sourcePaths as string[]) ?? []).map((sourcePath) => {
-              const pickedName = sourcePath.slice(sourcePath.lastIndexOf("/") + 1);
-              const source = external.get(sourcePath);
-              if (source === undefined) {
-                return { pickedName, status: "failed", relativePath: null, sha256: null, size: null, reason: "source-not-found" };
-              }
-              if (destination === "planning" && !/\.(md|png|jpe?g|webp|avif)$/i.test(pickedName)) {
-                return { pickedName, status: "failed", relativePath: null, sha256: null, size: null, reason: "unsupported-type" };
-              }
-              const bytes = typeof source === "string" ? [...new TextEncoder().encode(source)] : source.bytes;
-              const folderPrefix = `${destination}/`;
-              const duplicate = [...Object.keys(target.files), ...Object.keys(target.binaries)].some(
-                (path) => path.startsWith(folderPrefix) && sameBytes(bytes, bytesOf(target, path)),
-              );
-              if (duplicate) return { pickedName, status: "duplicate", relativePath: null, sha256: null, size: bytes.length, reason: null };
-              const dot = pickedName.lastIndexOf(".");
-              const stem = dot > 0 ? pickedName.slice(0, dot) : pickedName;
-              const extension = dot > 0 ? pickedName.slice(dot) : "";
-              let name = pickedName;
-              for (let suffix = 2; taken(name); suffix += 1) name = `${stem} (${suffix})${extension}`;
-              const relativePath = `${destination}/${name}`;
-              if (typeof source === "string") putText(folderRootOf(args), target, relativePath, source);
-              else putBytes(folderRootOf(args), target, relativePath, source.bytes);
-              return {
-                pickedName,
-                status: name === pickedName ? "added" : "renamed",
-                relativePath,
-                sha256: "0".repeat(64),
-                size: bytes.length,
-                reason: null,
-              };
-            });
-            return slow(results);
+            return copyIntoFolder(folderRootOf(args), target, (args.sourcePaths as string[]) ?? [], destination).then(slow);
           }
+          case "import_offered_sources": {
+            if (!target) return gone();
+            const paths = (args.sourcePaths as string[]) ?? [];
+            const progress = args.progress as { onmessage?: (message: { done: number; total: number }) => void } | undefined;
+            return copyIntoFolder(folderRootOf(args), target, paths, "sources", (done) =>
+              progress?.onmessage?.({ done, total: paths.length }),
+            ).then(slow);
+          }
+          case "arm_source_drop":
+            return Promise.resolve(null);
           case "vault_path_exists": {
             if (!target) return gone();
             const path = relative(args.relativePath);
@@ -821,8 +915,15 @@ export async function installDesktopRailRuntime(
             const count = Object.keys(target.files).length + Object.keys(target.binaries).length;
             return slow(revision === 0 ? `fixture-${count}` : `fixture-${count}-r${revision}`);
           }
-          case "hash_vault_files":
-            return slow((args.relativePaths as string[]).map((relativePath) => ({ relativePath, hash: "0".repeat(64) })));
+          case "hash_vault_files": {
+            if (!target) return gone();
+            return Promise.all(
+              ((args.relativePaths as string[]) ?? []).map(async (relativePath) => {
+                const bytes = bytesOf(target, relative(relativePath));
+                return { relativePath, sha256: bytes === null ? null : await sha256Of(bytes) };
+              }),
+            ).then(slow);
+          }
           case "plugin:event|listen": {
             const id = Number(args.handler);
             const name = String(args.event);
@@ -844,8 +945,17 @@ export async function installDesktopRailRuntime(
             return null;
           case "discover_mcp_connectors":
             return slow({ servers: [], problems: [] });
-          case "discover_source_candidates":
-            return slow({ candidates: [], truncated: false, unreadableRoots: [] });
+          case "discover_source_candidates": {
+            // Only the open folder is walked, as with no project folder connected.
+            const roots = (args.roots as { rootPath: string; label: string; skipRelative?: string[] }[]) ?? [];
+            const candidates = roots.slice(0, 1).flatMap((walked) =>
+              input.sourceCandidates
+                .filter((file) => !(walked.skipRelative ?? []).some((skip) => file.relativePath.startsWith(`${skip}/`)))
+                .map((file) => ({ ...file, rootPath: walked.rootPath, rootLabel: walked.label, mtime: 1_700_000_000_000 })),
+            );
+            for (const candidate of candidates) rememberOffer(`${candidate.rootPath}/${candidate.relativePath}`, candidate.relativePath);
+            return slow({ candidates, truncated: false, unreadableRoots: [] });
+          }
           case "mcp_bundled_server":
             return slow({ path: `${root}/mcp`, available: true, reason: null });
           case "secret_status":
@@ -1030,7 +1140,7 @@ export async function installDesktopRailRuntime(
     {
       root: DESKTOP_VAULT_ROOT,
       latency: NATIVE_LATENCY_MS,
-      files: options.replaceFixture ? { ...extraFiles } : { ...FIXTURE_VAULT, ...extraFiles },
+      files: served,
       commits: [...(options.commits ?? COMMITS)],
       pending: PENDING,
       diff: options.diff ?? DIFF,
@@ -1044,12 +1154,89 @@ export async function installDesktopRailRuntime(
       folders: options.folders,
       ungrantedFolders: options.ungrantedFolders ? [...options.ungrantedFolders] : undefined,
       vaultPick: options.vaultPick === undefined ? DESKTOP_VAULT_ROOT : options.vaultPick,
-      externalFiles: options.externalFiles,
+      externalFiles,
       binaryFiles: options.binaryFiles,
       sourcePick: options.sourcePick,
       defaultVaultParent: options.defaultVaultParent,
       holdReadsUntilReleased: options.holdReadsUntilReleased ? [...options.holdReadsUntilReleased] : undefined,
+      sourceCandidates: proposed.map(({ relativePath, name, extension, size }) => ({ relativePath, name, extension, size })),
+      refuseImportsNamed: options.refuseImportsNamed ?? "",
     },
+  );
+}
+
+interface ProposedDocument {
+  relativePath: string;
+  name: string;
+  extension: string;
+  size: number;
+}
+
+const byteLength = (text: string) => new TextEncoder().encode(text).length;
+
+/** The documents the native walk would propose from a folder: its own name, depth and size rules. */
+function documentsTheWalkProposes(files: Record<string, string>): ProposedDocument[] {
+  return Object.entries(files).flatMap(([filePath, text]) => {
+    const parts = filePath.split("/");
+    const name = parts[parts.length - 1]!;
+    const size = byteLength(text);
+    const walked = parts.slice(0, -1).every((_, at) => discoveryAcceptsDirectory(parts.slice(0, at + 1).join("/")));
+    if (!walked || !discoveryAcceptsFile(name) || size < DISCOVERY_MIN_FILE_BYTES) return [];
+    return [{ relativePath: filePath, name, extension: discoveryExtension(name), size }];
+  });
+}
+
+/** Where a window drop's files sit: outside every served folder, so the copy reads them from there. */
+const DROP_ROOT = "/Users/probe/Desktop";
+
+/**
+ * Reports files, and optionally one folder, dropped on the window as the native side does: the pointer
+ * over the window, the walk, then the offer (what would be copied, and what the walk skipped by reason).
+ * A file dropped by itself is always offered; a folder is walked with the name rules of discovery.
+ * The offered files are placed outside the folder; the copy keeps each under the folders it was found in.
+ */
+export async function dropOnApp(
+  page: Page,
+  { files = [], folder }: { files?: { name: string; body: string }[]; folder?: { name: string; files: Record<string, string> } },
+): Promise<void> {
+  const offered: { path: string; relativePath: string; size: number; body: string }[] = files.map((file) => ({
+    path: `${DROP_ROOT}/${file.name}`,
+    relativePath: file.name,
+    size: byteLength(file.body),
+    body: file.body,
+  }));
+  const skipped: { relativePath: string; reason: DiscoverySkipReason }[] = [];
+  for (const [filePath, body] of Object.entries(folder?.files ?? {})) {
+    const relativePath = `${folder!.name}/${filePath}`;
+    const reason = discoverySkipReason(filePath.slice(filePath.lastIndexOf("/") + 1));
+    if (reason) skipped.push({ relativePath, reason });
+    else offered.push({ path: `${DROP_ROOT}/${relativePath}`, relativePath, size: byteLength(body), body });
+  }
+  const skippedCounts = { secretName: 0, licence: 0, notDocument: 0 };
+  for (const entry of skipped) skippedCounts[entry.reason] += 1;
+  const offer = {
+    files: offered.map(({ path: offeredPath, relativePath, size }) => ({ path: offeredPath, relativePath, size })),
+    skipped,
+    skippedCounts,
+    totalBytes: offered.reduce((sum, file) => sum + file.size, 0),
+    truncated: false,
+    holdsOpenFolder: [],
+  };
+  for (const file of offered) await addExternalFile(page, file.path, file.body);
+  await page.evaluate((files) => (window as unknown as DesktopFakeWindow).__desktopFake.offer(files), offer.files);
+  await emitNativeEvent(page, "source-drop", { phase: "over" });
+  await emitNativeEvent(page, "source-drop", { phase: "reading" });
+  await emitNativeEvent(page, "source-drop", { phase: "offered", offer });
+}
+
+/**
+ * Delivers a native event (`source-drop`, `vault-changed`) to the handlers the app registered with
+ * `listen`, as the native side emits it. An event nobody listens to is dropped, as it is natively.
+ */
+export async function emitNativeEvent(page: Page, event: string, payload: unknown): Promise<void> {
+  await page.evaluate(
+    ({ name, body }) => (window as unknown as DesktopFakeWindow).__desktopFake.emit(name, body),
+    { name: event, body: payload },
   );
 }
 
@@ -1113,6 +1300,8 @@ interface DesktopFakeWindow {
     pickSourceFiles(paths: string[]): void;
     addExternal(path: string, value: string | { bytes: number[] }): void;
     failWrites(patterns: string[]): void;
+    offer(files: { path: string; relativePath: string }[]): void;
+    emit(event: string, payload: unknown): void;
   };
 }
 

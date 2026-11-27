@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { installDesktopRailRuntime, mountDesktopVault } from '../../desktop-rail-arrival-harness';
 import { installLibraryWorkHarness } from '../../library-work-harness';
-import { hashServedFilesLikeTheDisk } from '../served-file-hashes';
 import { digest, wiki } from './library-question-desk-harness';
 
 const refund = '# Refund handling\nRefund approval queues a stock restoration job.\nThe job may complete in the next inventory batch.\n';
@@ -239,7 +238,6 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
     'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', 'f'.repeat(64), 'Refund approval immediately restores stock.'),
     'wiki/inventory-state.md': wiki('Inventory state', 'sources/inventory-state.md', digest(inventory), 'Refund approval does not immediately restore inventory.'),
   }, undefined, { replaceFixture: true });
-  await hashServedFilesLikeTheDisk(page);
   await mountDesktopVault(page, 'en');
   await page.goto('/en/library/?tab=wiki&guides=off');
   await page.getByTestId('library-workspace-wiki').click();

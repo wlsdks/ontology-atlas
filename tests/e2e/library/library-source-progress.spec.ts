@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
-import { hashServedFilesLikeTheDisk } from "./served-file-hashes";
 import { installLibraryWorkHarness } from "../library-work-harness";
 import { waitFrames } from "../settle";
 
@@ -110,7 +109,6 @@ async function openSources(page: Page, { vault = buildVault(), locale = "en" }: 
   // Tall enough that the windowed list draws every row, so a count of rows is a count of the list.
   await page.setViewportSize({ width: 1440, height: 2000 });
   await installDesktopRailRuntime(page, vault, undefined, { replaceFixture: true, writable: true });
-  await hashServedFilesLikeTheDisk(page);
   await mountDesktopVault(page, locale);
   await page.goto(`/${locale}/library/?tab=sources`);
   await page.locator('[data-testid="library-page"][data-library-state="nothing-open"]').waitFor({ timeout: 25_000 });
