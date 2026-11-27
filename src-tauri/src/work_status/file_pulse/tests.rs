@@ -213,6 +213,28 @@ fn dropped_notices_count_one_change_and_rescan_nothing() {
     assert_eq!(pulse.waiting_paths(), 0);
 }
 
+/// macOS names a folder above the watched ones when it dropped notices it cannot place (notify
+/// passes `/` or the roots' parent through), and coalesces a folder's change with its subfolders'.
+/// The change can be in any room under that folder, so each counts one; a drop under a build
+/// folder of the room holding it still counts none.
+#[test]
+fn a_dropped_notice_at_a_folder_above_the_rooms_counts_in_every_room_under_it() {
+    let all_rooms = |pulse: &mut Pulse| counts(pulse).len();
+    let (mut pulse, _) = forty_worktrees();
+    pulse.dropped_notices(Some(Path::new("/")), NOW_MS);
+    assert_eq!(all_rooms(&mut pulse), 41);
+
+    let (mut pulse, _) = forty_worktrees();
+    pulse.dropped_notices(Some(Path::new("/repo/.worktrees")), NOW_MS);
+    // The main checkout holds `.worktrees` itself; each linked worktree lies under it.
+    assert_eq!(all_rooms(&mut pulse), 41);
+
+    let (mut pulse, _) = forty_worktrees();
+    pulse.dropped_notices(Some(Path::new("/repo/node_modules")), NOW_MS);
+    pulse.dropped_notices(Some(Path::new("/elsewhere")), NOW_MS);
+    assert_eq!(counts(&mut pulse), []);
+}
+
 #[test]
 fn a_path_git_refuses_costs_only_itself_and_the_rest_wait_for_the_next_call() {
     let (mut pulse, _) = forty_worktrees();
