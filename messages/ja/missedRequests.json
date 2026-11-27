@@ -35,7 +35,7 @@
     "noMatch": "合うコミットなし",
     "row": "{date} · {worktree}",
     "young": "{count, plural, other {2日たっていない依頼#件は後で確認します。}}",
-    "emptyTitle": "抜けている依頼はありません",
+    "emptyTitle": "抜けた依頼はありません",
     "emptyBody": "{from}から{to}までの依頼は、どれも{branch}に合うコミットがあるか、あなたが印を付けました。"
   },
   "detail": {
@@ -45,7 +45,7 @@
     "closestBranch": "{branch}に合うコミットがありますが、{base}にマージされていません",
     "noneMatch": "この中に、頼んだことをしたコミットはありません。",
     "copy": "依頼をコピー",
-    "copied": "コピーしました",
+    "copied": "コピー済み",
     "resume": "再開コマンドをコピー",
     "done": "ほかで済んだ",
     "notNeeded": "不要",
