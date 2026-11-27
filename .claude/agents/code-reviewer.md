@@ -63,7 +63,7 @@ before any build and add `spec: pass` or `spec: revise` to the report.
   pass names. A finding is one of:
   - vague copy: words described instead of written ("show a friendly error"),
     or a listed key missing from `messages/en/` or `messages/ko/`;
-  - a missing state: an empty, loading, error, partial, largest-vault, or web
+  - a missing state: an empty, loading, error, partial, largest-vault, or website
     versus app cell that is neither specified nor out of scope with a reason;
   - acceptance that cannot fail: no observable condition, no named test or
     capture, or a check of the implementation ("the panel renders");

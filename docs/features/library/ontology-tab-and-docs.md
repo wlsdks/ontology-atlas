@@ -26,9 +26,9 @@ survive the compatibility hop; the return removes the incompatible slug, view, a
 - Back-to-workspace link · `Workspace` label · right-aligned engraved census (`concepts · relations`, mono numerals, sm+)
 
 #### Header (always visible)
-- Mobile tree-open button (<lg) · **vault chip**: source glyph and folder name; its menu holds the path, the folder and document counts, and the swap/re-pick action · `Local` badge (when source=local)
+- Mobile tree-open button (<lg) · **vault chip**: source glyph and folder name; its menu holds the path, the folder and document counts, and the swap/re-pick action
 - From `lg`, with the list open, the list's search, order and new tools stand after the chip as 36px tiles over the list column; the list starts with its own rows (2026-10-15)
-- **Source toggle** (radio: Sample / Local). Clicking Local opens the native folder picker when no vault is loaded (B2 2026-07 — the vault tools dropdown was retired; folder management now lives in Settings → Ontology folder)
+- Folder management lives in Settings → Ontology folder (B2 2026-07 — the vault tools dropdown was retired)
 - **Palette button** (`⌘K`)
 - **Inspector button**: opens the document outline, share/print actions, file actions, and backlinks only when requested, keeping the reading canvas quiet by default
 - **App settings entry**: the Ontology folder pane owns open/change/refresh/permission recovery
@@ -73,7 +73,7 @@ survive the compatibility hop; the return removes the incompatible slug, view, a
 
 #### Editor mode (`DocsVaultEditor`, local only)
 - Top bar: slug eyebrow · dirty indicator · saved flash · Preview toggle · Save · Cancel
-- Save contract: `Auto backup` shows whether an unsaved browser-local draft exists; `Final save` shows whether the markdown file on disk still needs the Save button / `⌘S`
+- Save contract: `Auto backup` shows whether an unsaved local draft exists; `Final save` shows whether the markdown file on disk still needs the Save button / `⌘S`
 - Format toolbar: Bold / Italic / Code / H1-3 / Bullet / Numbered / Checkbox / Quote / Link
 - Editor: textarea, monospace, optional 50/50 live preview (200 ms debounce)
 - Wikilink autocomplete (`[[…`): top 8 matching docs, `↑↓ Tab Enter`
@@ -93,4 +93,3 @@ view-doc · pin · unpin · copy URL · print · edit · new doc · rename · de
 - Local images: relative paths resolved to blob URLs via `resolveImage` callback; an SVG as a `data:` URL, so opening it in a tab never runs it in this origin
 - Remote images (`http:`/`https:`) are never loaded: a placeholder names the host and opens the image in a new tab only when pressed
 - Recent + pinned per-vault localStorage (key prefix includes vault folder name)
-- Sample/Local source toggle persisted to localStorage

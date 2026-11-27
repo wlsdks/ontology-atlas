@@ -4,16 +4,19 @@
  * resolved by walking up the ancestors and compositing translucent backgrounds, because skipping that
  * reports better than reality.
  *
+ * The website's pages are measured as a visitor sees them; every other route is measured in the
+ * app with the Storefront sample folder open (`scripts/lib/desktop-app/open-folder-in-app.mjs`).
+ *
  * Usage (run `pnpm build` first):
  *   node scripts/web/serve-static-export.mjs --port=4173 &
  *   node scripts/design/measure-contrast.mjs [baseUrl] [route...]
  */
 
 import { chromium } from "@playwright/test";
-import { rmSync } from "node:fs";
 
 import { judgeText, judgeAdjacentMarks } from "../lib/design/contrast.mjs";
 import { collectAdjacentMarks } from "../lib/design/contrast-collect.mjs";
+import { loadDesktopHarness, openSurfaces } from "../lib/desktop-app/open-folder-in-app.mjs";
 
 
 const [, , maybeBase, ...maybeRoutes] = process.argv;
@@ -35,6 +38,8 @@ export const DEFAULT_ROUTES = [
   "/ko/projects/",
   "/ko/project/storefront/",
   "/ko/project/storefront/edit/",
+  "/ko/project/fallback/?slug=storefront",
+  "/ko/project/fallback/?slug=storefront&mode=edit",
   "/ko/project/new/",
   "/ko/project/fallback/",
   "/ko/download/",
@@ -55,7 +60,6 @@ export const DEFAULT_ROUTES = [
   "/this-route-does-not-exist/",
 ];
 const VIEWPORT = { width: 1512, height: 900 };
-const PROFILE = `/tmp/atlas-contrast-${process.pid}`;
 
 function collectInPage() {
   const resolveBackground = (element) => {
@@ -117,16 +121,17 @@ function collectInPage() {
   return out;
 }
 
-const ctx = await chromium.launchPersistentContext(PROFILE, {
-  headless: true,
-  viewport: VIEWPORT,
-  deviceScaleFactor: 2,
+const browser = await chromium.launch({ headless: true });
+const surfaces = openSurfaces(browser, {
+  baseUrl: BASE,
+  files: (await loadDesktopHarness()).storefrontFiles(),
+  locale: "ko",
+  context: { viewport: VIEWPORT, deviceScaleFactor: 2 },
 });
-const page = ctx.pages()[0] ?? (await ctx.newPage());
 const report = [];
 
 for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
-  await page.goto(`${BASE}${route}?guides=off`, { waitUntil: "networkidle" });
+  const page = await surfaces.visit(`${route}${route.includes("?") ? "&" : "?"}guides=off`);
   await page.waitForTimeout(2500);
   const samples = await page.evaluate(collectInPage);
   const rawMarks = await page.evaluate(collectAdjacentMarks);
@@ -147,8 +152,8 @@ for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
   });
 }
 
-await ctx.close();
-rmSync(PROFILE, { recursive: true, force: true });
+await surfaces.close();
+await browser.close();
 
 console.log(`\n  text contrast — ${VIEWPORT.width}×${VIEWPORT.height} · WCAG 1.4.3 (body 4.5:1 · large text 3:1)\n`);
 let totalFail = 0;

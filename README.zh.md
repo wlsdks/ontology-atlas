@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://ontologyatlas.com/zh/download/"><strong>下载</strong></a> ·
-  <a href="https://ontologyatlas.com/zh/topology/">在浏览器中试用</a> ·
+  <a href="https://ontologyatlas.com/zh/sample/">查看示例地图</a> ·
   <a href="https://ontologyatlas.com/zh/guide/">指南</a>
 </p>
 
@@ -37,11 +37,11 @@
 
 ## 快速开始
 
-1. **安装**：从[下载页面](https://ontologyatlas.com/zh/download/)获取应用，或打开[浏览器版](https://ontologyatlas.com/zh/topology/)。
+1. **安装**：从[下载页面](https://ontologyatlas.com/zh/download/)获取应用。
 2. **打开文件夹**：Atlas 会原地读取其中的 Markdown，或在你的仓库中新建 `atlas/` 文件夹，并且在写入任何内容之前先显示路径。
 3. **连接智能体**：在 **智能体 › MCP** 中，为你使用的工具点击 **连接**，重启智能体，然后问问它你的下一个任务。
 
-macOS（Apple Silicon）版已签名并通过公证，应用内置 MCP 服务器。Windows x64 是未签名的测试版。在 Linux 上，请使用浏览器版，或在[源码检出](mcp/README.md#1-register-with-an-agent)中运行 MCP 服务器。[Releases](https://github.com/wlsdks/ontology-atlas/releases) 列出了每个版本的文件和校验和。在 GitHub 上标为 **Pre-release** 的版本是测试版：已安装的应用只会更新到正式版本，所以只有手动安装的人才会用到测试版。
+macOS（Apple Silicon）版已签名并通过公证，应用内置 MCP 服务器。Windows x64 是未签名的测试版。Linux 和 Intel Mac 没有对应的应用：请查看[示例地图](https://ontologyatlas.com/zh/sample/)，或在[源码克隆](mcp/README.md#1-register-with-an-agent)中运行 MCP 服务器来连接编码智能体。[Releases](https://github.com/wlsdks/ontology-atlas/releases) 列出了每个版本的文件和校验和。在 GitHub 上标为 **Pre-release** 的版本是测试版：已安装的应用只会更新到正式版本，所以只有手动安装的人才会用到测试版。
 
 ## 界面一览
 
@@ -56,7 +56,7 @@ macOS（Apple Silicon）版已签名并通过公证，应用内置 MCP 服务器
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/library.en.webp" alt="资料库：左侧是 Wiki 页面及其与来源是否一致，中间是查找框，下方是建议先读的来源" /><br /><b>资料库</b> — 文档放进去，带出处的 Wiki 页面出来；先找到段落，再到来源中核对。</td>
-<td width="50%"><img src="public/gateway/planning.en.webp" alt="规划：左侧是 Markdown 文件列表，右侧是打开的文档" /><br /><b>规划</b> — 在已打开文件夹的 <code>planning/</code> 中用 Markdown 写计划，应用和浏览器里都可以；macOS 应用还能就地阅读另一个文件夹。</td>
+<td width="50%"><img src="public/gateway/planning.en.webp" alt="规划：左侧是 Markdown 文件列表，右侧是打开的文档" /><br /><b>规划</b> — 在已打开文件夹的 <code>planning/</code> 中用 Markdown 写计划，在应用中使用；macOS 应用还能就地阅读另一个文件夹。</td>
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/changes.en.webp" alt="变更：一天内合并的变更数量、合并的时段，以及按范围分组的变更" /><br /><b>变更</b> — 一段时间内合并了什么，先计数、分组，再进入背后的拉取请求、提交和文件。</td>
@@ -135,7 +135,7 @@ without opening every file.
 ## 局限
 
 - **只有在应用内的对话中，Atlas 才会在智能体写入前询问你。** 在那里，文件修改和 Atlas 写入都要等你允许；为该文件夹开启自动批准后不再询问，但 shell 命令、提交、删除与合并概念以及文件夹外的路径始终会询问；Atlas 读取生成地图的代码文件夹、读取所连接代码文件夹中的文件除外。通过 MCP 连接的智能体按其自身工具的权限规则写入。[智能体](docs/features/agents.md)
-- **资料库的设置和检查需要在应用中进行。** 浏览器里可以获取应用或添加文件。[资料库](docs/features/library/workspace.md)
+- **Atlas 只能在已安装的应用中使用。** 应用提供 Apple Silicon Mac 版和测试版的 Windows x64 版。浏览器无法打开文件夹，网站只提供只读的示例地图。[下载](docs/features/download.md)
 - **变更只读取公开的 GitHub 拉取请求，** 需要你明确操作，列表可能不完整；不会读取私有拉取请求。[变更简报](docs/features/change-briefing.md)
 - **Git 的拉取可能更改仓库中任何位置的文件，** 而不只是已打开的文件夹。[Git](docs/features/git.md)
 
@@ -153,9 +153,11 @@ Atlas 还处在早期。我们的基准测试尚未显示使用 Atlas 能得到�
 
 ```bash
 pnpm install
-pnpm dev
+pnpm desktop:dev
 pnpm checks:changed -- --run
 ```
+
+`pnpm desktop:dev` 会运行应用，需要 Rust 工具链（[桌面应用](docs/DESKTOP-MACOS.md)）。`pnpm dev` 在浏览器中只提供网站的页面，所有应用地址都会显示一个说明 Atlas 运行在已安装应用中的页面。
 
 如何选择检查、推送前检查与 CI、合并、各通道的时间预算以及全部仓库命令，见[开发检查](docs/DEVELOPMENT-CHECKS.md)。
 

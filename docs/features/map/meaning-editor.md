@@ -84,7 +84,7 @@ permission card (below).
   the file changed on disk since. The toast stays ten seconds; after it is gone
   `⌘Z` on the map (outside a text field) takes the same write back, and the
   shortcut sheet lists it. Undo writes nothing once another folder is open. It
-  reads and writes through the same handles in the browser and the app.
+  reads and writes through the folder's own handle, as the edit did.
 
 ### Agent writes
 

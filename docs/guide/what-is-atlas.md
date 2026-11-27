@@ -61,10 +61,10 @@ and what checks its work), **Changes** and **Git**.
 - **macOS app** (Apple Silicon): signed and notarized, with the MCP server
   inside the app.
 - **Windows x64 beta**: unsigned, with the same folder and MCP features.
-- **Browser**: Chrome or Edge can open a folder from your disk and show the map.
-  The browser cannot register an agent, has no agent chat and does not store API
-  keys. Without a folder, it shows a sample map.
-- **Linux**: use the browser, or run the MCP server from a source checkout
+- **Website**: ontologyatlas.com introduces Atlas and shows a read-only sample
+  map. It opens no folder, registers no agent and stores no keys.
+- **Linux and Intel Mac**: there is no app. Look at the sample map, or run the
+  MCP server from a source checkout
   ([Connect a coding agent](/guide/connect-agent)).
 
 There is no account, no Atlas server and no telemetry. Your folder stays plain
@@ -89,8 +89,8 @@ own benchmark has not yet shown that agents give better answers with it
 2. [Atlas compared with code graphs, wikis, note apps and
    CLAUDE.md](/guide/atlas-compared): what Atlas holds that those tools do
    not, and when they are the better choice.
-3. [Getting started](/guide/first-five-minutes): download the app or try the
-   browser, then open or create your ontology folder.
+3. [Getting started](/guide/first-five-minutes): download the app or look at the
+   sample map, then open or create your ontology folder.
 4. [Connect a coding agent](/guide/connect-agent): let Claude Code, Codex or
    Cursor read the map over MCP.
 5. [Build the first map from your code](/guide/from-your-repo): let the agent

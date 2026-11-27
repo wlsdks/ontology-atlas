@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://ontologyatlas.com/ko/download/"><strong>받기</strong></a> ·
-  <a href="https://ontologyatlas.com/ko/topology/">브라우저에서 써보기</a> ·
+  <a href="https://ontologyatlas.com/ko/sample/">샘플 지도 보기</a> ·
   <a href="https://ontologyatlas.com/ko/guide/">가이드</a>
 </p>
 
@@ -42,11 +42,11 @@ diff로 보고 그대로 두거나, 고치거나, 거절해요.
 
 ## 빠른 시작
 
-1. **설치**: [다운로드 페이지](https://ontologyatlas.com/ko/download/)에서 앱을 받거나 [브라우저 버전](https://ontologyatlas.com/ko/topology/)을 여세요.
+1. **설치**: [다운로드 페이지](https://ontologyatlas.com/ko/download/)에서 앱을 받으세요.
 2. **폴더 열기**: Atlas는 폴더 안의 마크다운을 그 자리에서 읽거나 저장소에 `atlas/` 폴더를 새로 만들고, 무엇이든 쓰기 전에 경로를 먼저 보여 줘요.
 3. **에이전트 연결**: **에이전트 › MCP**에서 쓰는 도구의 **연결**을 누르고, 에이전트를 다시 시작한 뒤 다음 작업에 대해 물어보세요.
 
-macOS(Apple Silicon)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서버가 들어 있어요. Windows x64는 서명하지 않은 베타예요. Linux에서는 브라우저 버전을 쓰거나, [소스 체크아웃에서 MCP 서버를 실행](mcp/README.md#1-register-with-an-agent)하세요. [릴리스](https://github.com/wlsdks/ontology-atlas/releases)에 버전마다 파일과 체크섬이 있어요. GitHub에서 **Pre-release** 표시가 붙은 릴리스는 베타예요. 설치된 앱은 정식 릴리스로만 업데이트되기 때문에, 베타는 직접 내려받아 설치한 사람만 쓰게 돼요.
+macOS(Apple Silicon)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서버가 들어 있어요. Windows x64는 서명하지 않은 베타예요. Linux와 Intel Mac용 앱은 없어요. [샘플 지도](https://ontologyatlas.com/ko/sample/)를 보거나, [소스 체크아웃에서 MCP 서버를 실행](mcp/README.md#1-register-with-an-agent)해 코딩 에이전트를 연결하세요. [릴리스](https://github.com/wlsdks/ontology-atlas/releases)에 버전마다 파일과 체크섬이 있어요. GitHub에서 **Pre-release** 표시가 붙은 릴리스는 베타예요. 설치된 앱은 정식 릴리스로만 업데이트되기 때문에, 베타는 직접 내려받아 설치한 사람만 쓰게 돼요.
 
 ## 화면 둘러보기
 
@@ -61,7 +61,7 @@ macOS(Apple Silicon)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/library.ko.webp" alt="자료실: 왼쪽에 위키 문서와 원문 일치 여부, 가운데에 찾기 입력란, 그 아래 먼저 읽을 원문" /><br /><b>자료실</b> — 문서가 들어가면 출처가 달린 위키 문서가 나와요. 구절을 찾고 원문에서 확인해요.</td>
-<td width="50%"><img src="public/gateway/planning.ko.webp" alt="기획: 왼쪽에 마크다운 파일 목록, 오른쪽에 열어 둔 문서" /><br /><b>기획</b> — 열어 둔 폴더 안 <code>planning/</code>에 계획을 마크다운으로 써요. 앱과 브라우저 모두에서 되고, macOS 앱에서는 다른 폴더를 그대로 읽을 수도 있어요.</td>
+<td width="50%"><img src="public/gateway/planning.ko.webp" alt="기획: 왼쪽에 마크다운 파일 목록, 오른쪽에 열어 둔 문서" /><br /><b>기획</b> — 열어 둔 폴더 안 <code>planning/</code>에 계획을 마크다운으로 써요. 앱에서 쓰고, macOS 앱에서는 다른 폴더를 그대로 읽을 수도 있어요.</td>
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/changes.ko.webp" alt="변경: 하루 동안 머지된 변경 수, 머지된 시간대, 스코프별로 묶은 변경" /><br /><b>변경</b> — 기간 동안 무엇이 머지됐는지 세고 묶어서 보여 주고, 그 뒤의 풀 리퀘스트·커밋·파일로 이어져요.</td>
@@ -146,7 +146,7 @@ without opening every file.
 ## 한계
 
 - **Atlas가 에이전트의 쓰기를 먼저 묻는 곳은 앱 안 대화뿐이에요.** 거기서는 파일 수정과 Atlas 쓰기가 내 허락을 기다려요. 그 폴더에 자동 승인을 켜면 묻지 않지만, 셸 명령, 커밋, 개념 삭제와 병합, 폴더 밖 경로는 언제나 물어요. Atlas가 지도를 만든 코드 폴더를 읽는 것과 연결한 코드 폴더의 파일 읽기만은 예외예요. MCP로 연결한 에이전트는 그 도구의 권한 규칙에 따라 써요. [에이전트](docs/features/agents.md)
-- **자료실 설정과 점검은 앱에서 해요.** 브라우저에서는 앱을 받거나 파일을 추가할 수 있어요. [자료실](docs/features/library/workspace.md)
+- **Atlas는 설치한 앱에서만 써요.** 앱은 Apple Silicon Mac용과 베타인 Windows x64용이 있어요. 브라우저에서는 폴더를 열 수 없고, 웹사이트는 읽기 전용 샘플 지도만 보여 줘요. [다운로드](docs/features/download.md)
 - **변경은 공개 GitHub 풀 리퀘스트만 읽어요.** 직접 눌러야 읽고, 목록이 일부만 나올 수 있어요. 비공개 풀 리퀘스트는 읽지 않아요. [변경 브리핑](docs/features/change-briefing.md)
 - **Git의 Pull은 열어 둔 폴더만이 아니라 저장소 어디의 파일이든 바꿀 수 있어요.** [Git](docs/features/git.md)
 
@@ -167,9 +167,11 @@ Atlas는 아직 초기 단계예요. 우리 벤치마크에서는 Atlas를 썼�
 
 ```bash
 pnpm install
-pnpm dev
+pnpm desktop:dev
 pnpm checks:changed -- --run
 ```
+
+`pnpm desktop:dev`는 앱을 실행하며 Rust 툴체인이 필요해요([데스크톱](docs/DESKTOP-MACOS.md)). `pnpm dev`는 브라우저에서 웹사이트 페이지만 보여 주고, 앱 주소는 모두 Atlas가 설치한 앱에서 실행된다는 안내 페이지를 보여 줘요.
 
 검사 고르기, 푸시 전 검사와 CI, 머지, 레인 예산, 저장소 명령 전체는
 [개발 검사](docs/DEVELOPMENT-CHECKS.md)에 있어요.

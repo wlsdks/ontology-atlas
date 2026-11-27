@@ -22,15 +22,13 @@ reads, what stops it before it acts and what checks its work afterwards, and nob
 product domain. `?view=structure`, `?view=coverage`, `?view=sensors` and `?view=guides` are
 rewritten in place to `?view=overview`, so an old link and the tab a person presses agree.
 
-**The arrival depends on the surface, because Setup cannot answer on the web.** Almost the whole
-harness lives in dot directories and a browser's folder permission cannot see a dot entry at all,
-so the installed app arrives on Setup and a browser arrives on the blueprint, which is built from
-the bundled profile. An address that names a view always wins; `?role=` or `?stage=` with no
+**The arrival is Setup.** Almost the whole harness lives in dot directories, which only the
+installed app's read-only harness commands can read, so the app arrives on Setup. An address that names a view always wins; `?role=` or `?stage=` with no
 `?view=` opens Architecture, the only view with either.
 
 Without a reading, Setup is one centred stage (`HarnessUnreadStage`): a repository card forking to
 the three sections (Context, Guardrails, Verification), then the reason in one sentence and the one
-way forward. In a browser that is getting the app. In the app, a folder with no connected
+way forward. A folder with no connected
 repository still arrives on Setup, and the stage connects it in place (`HarnessConnectSource`): it
 names the Git repository that holds the opened folder and connects it in one press, with "Choose
 another folder" beside it; with no such repository the one button opens the folder picker. The
@@ -108,14 +106,12 @@ first. Pane 3 for such a hook says where it lives, who it reaches (with the same
 whether Git commits its file, its event, its command, and that every file's hooks run together.
 Until the first read answers, the repository's rows stay and pane 2 ends in `harness.scopes.reading`.
 
-**Where settings live** (`harness.scopes.open`) is a header action, and a second action on the
-browser's stage. It opens one centred dialog: a Claude Code / Codex switch; tabs for hooks,
+**Where settings live** (`harness.scopes.open`) is a header action. It opens one centred dialog: a Claude Code / Codex switch; tabs for hooks,
 permission rules (Claude Code only), skills, subagents and instruction files; the tool's scopes as
 one stack from the widest reach to the narrowest (`harness.scopes.order`); and the selected scope's
 file, who it affects, whether Git commits it, what it holds now and how it differs from its
 neighbours. Under the stack, hooks add up per scope, and one sentence says how the scopes combine
-for that kind. The app counts what each file holds; permission rules are counted, never shown. The
-web names the file patterns with no counts and its foot says so (`harness.scopes.webNote`). From
+for that kind. The app counts what each file holds; permission rules are counted, never shown. From
 User, **Show another settings file** opens the native picker for a settings folder moved with
 `CLAUDE_CONFIG_DIR` or `CODEX_HOME`; a file inside another Git repository is refused with
 `harness.scopes.pick.inRepository`. Escape closes the dialog.
@@ -141,10 +137,9 @@ happens on every visit regardless of speed is the **arrival**: the result rises 
 
 The whole reading goes through the installed app's read-only harness commands
 (`src-tauri/src/harness_source/`), classified by `entities/agent-files`, the classifier the docs
-sidebar uses — one store, not a second. A
-browser's folder permission cannot see a dot entry at all, so on the web these views name what they
-cannot reach instead of drawing a shorter list and calling it the inventory — and the destination
-opens on the blueprint there rather than on a card about what this browser cannot read.
+sidebar uses — one store, not a second. Where a
+read is refused or a file is out of reach, these views name what they cannot reach instead of
+drawing a shorter list and calling it the inventory.
 
 **A refused read is never an empty harness** (2026-10-17). Only a path that is not there reads as
 absent. Any other refusal fails the whole reading, and the screen says why instead of drawing
@@ -231,7 +226,7 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   profile and the observed imports disagree, plus unmapped, unruled and empty
   roles, with literal paths, and asks the person what the rule should be; it
   proposes no rule, role name or pattern and writes nothing. A verified agent takes
-  the chosen task as its opening turn; a browser copies the same sentence.
+  the chosen task as its opening turn.
 - `inspect_architecture` scans supported source imports and
   return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
   Observed role edges retain value/type-only/unknown usage counts and exact

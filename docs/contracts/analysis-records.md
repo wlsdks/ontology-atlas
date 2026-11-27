@@ -77,8 +77,8 @@ An incompatible newer attempt cannot make an older receipt look current.
 History retains both the original answer and the measurement for inspection.
 Atlas does not turn these counts into an uncalibrated maintainability score.
 
-Browsers can read records through an opened folder. Automatic archival and
-review writes require the installed app and a writable captured folder.
+Automatic archival and review writes require a writable captured folder in the
+installed app.
 Records remain local; this feature does not push, publish, or change a
 repository's ignore rules. Findings files a retired `analysis` command left
 beside the vault, and replaceable Architecture JSON receipts, remain separate

@@ -19,7 +19,7 @@ const NON_ENGLISH_SCRIPT_RE =
 const GENERATED_SUBJECT = /^(Merge |Revert |squash! |fixup! |amend! )/;
 
 /**
- * The prefix list from `.claude/rules/git.md`, section "Commit messages". An optional `(scope)` is
+ * The prefix list. This hook owns it; `.claude/rules/git.md` points here. An optional `(scope)` is
  * allowed; no other prefix is.
  */
 const ALLOWED_PREFIXES = [
@@ -70,7 +70,7 @@ export function formatRejection(verdict) {
       '      feat(map): let the walked constellation keep one fact per channel',
       '',
       '  Merge, revert, squash and fixup subjects are exempt; Git writes those.',
-      '  Basis: .claude/rules/git.md, section "Commit messages".',
+      '  Basis: .githooks/commit-msg-language.mjs, which owns the prefix list.',
       '  "wip" is not a prefix: the subject is what the reviewer and `git log`',
       '  archaeology get, so it has to say what changed.',
       '',
@@ -82,7 +82,7 @@ export function formatRejection(verdict) {
     '',
     ...verdict.offenders.map(({ line, text }) => `    ${line}: ${text}`),
     '',
-    '  Basis: .claude/rules/git.md, section "Commit messages".',
+    '  Basis: .githooks/commit-msg-language.mjs, and the English rule in .claude/rules/git.md.',
     '  The subject states what changed; the body states why.',
     '',
   ];

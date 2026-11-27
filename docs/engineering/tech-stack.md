@@ -72,7 +72,7 @@ choice is not made hastily on the day the gate opens.
 |---|---|---|
 | In-app question answering | Vercel AI SDK 5, provider-agnostic, bring your own key | The Q&A slice's gate. It works under static export and lets a person switch providers freely, which is what the no-bundled-credits promise requires |
 | Local models | Ollama and LM Studio over plain localhost | The same gate. Both speak the OpenAI-compatible shape and neither raises a CORS problem |
-| Cloud provider CORS | A Tauri sidecar proxy | The same gate. Calling Anthropic or OpenAI directly from a browser is assumed impossible `⚠`, and keys belong in the OS keychain (the Tauri v2 API name still needs checking `⚠`) |
+| Cloud provider CORS | A Tauri sidecar proxy | The same gate. Calling Anthropic or OpenAI directly from the WebView is assumed impossible `⚠`, and keys belong in the OS keychain (the Tauri v2 API name still needs checking `⚠`) |
 | Coordination server | Cloudflare Workers with Durable Objects, as the leading candidate | Real demand for team sync. Chosen for minimal solo operation and auditability; a self-built Rust or Go binary is the later migration if it ever earns one |
 | End-to-end encryption | `age`, through rage or Typage | The second step of sync. Git-native, multi-recipient, and post-quantum hybrid. Trust promise six — a public, auditable implementation — is a precondition, not a nice-to-have |
 | Payments | None. Owner decision, 2026-07-17 | Nothing. This is not for sale: open source, running on the person's own machine. Donations only, through GitHub Sponsors, optionally. Team sync, if it is ever built, stays self-hostable open source |

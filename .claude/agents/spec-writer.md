@@ -65,7 +65,7 @@ is a new spec that names the old one in `supersedes`.
 
 - **Flow**: numbered steps, each "When <the person does X>, Atlas <does Y>",
   including one where the agent is wrong or the evidence is missing.
-- **States**: every row has a web cell and a macOS app cell, and every state the
+- **States**: every row has a website cell and a macOS app cell, and every state the
   flow creates gets a row. A cell names what the person sees (a message key)
   and what they can do next, or reads `Out of scope — <reason>`. No blank cell.
 - **Copy**: the exact words, never a description of them. Write each new or

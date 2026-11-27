@@ -45,7 +45,7 @@ routes: []
   result opens its pane, scrolls to the row and focuses its control; a door result leaves in one
   press (typing "API", or the Korean word for key, then Enter reaches Agents → Models). Ranking: label start, a word
   start in the label, the label anywhere, keywords, then the pane name; Hangul-aware, catalog
-  order within a tier, at most 30 results. The web never offers an app-only row.
+  order within a tier, at most 30 results.
 - **⌘,** (Ctrl+, off macOS) asks a visible settings trigger to open the sheet
   (`requestSettingsOpen`); on an open sheet it focuses search. The shortcut sheet lists it.
 - The sheet is a modal like every `<Dialog>` (2026-09-25): opened by a click it takes focus itself, so Escape and Tab work at once, and a click on the dim beside the panel closes it and returns focus to the gear. Only the open sheet owns Escape (2026-09-26).
@@ -64,7 +64,7 @@ routes: []
    namespace. `tests/contract/settings/settings-catalog.contract.test.ts` fails when the two disagree.
 4. If the setting changes what can leave the computer, add or update the row in
    `model/outbound-paths.ts`; the outbound contract fails otherwise.
-5. App-only rows set `surface: 'desktop'` and are not drawn on the web.
+5. A row that needs the installed app's native side sets `surface: 'desktop'`.
 6. Update this page. Add a decision record when the setting moves a boundary (transfer, agent
    write) or a design spec.
 
@@ -81,8 +81,7 @@ routes: []
   native LLM path is currently enabled only on Unix/macOS;
   the public Windows beta fails closed until equivalent reparse-point and
   file-identity proof exists (the map, vault, and bundled MCP remain available).
-  In the browser the key field is not rendered — the card
-  explains why storage is desktop-only and links to `/download`. There is no
+  There is no
   chat surface: the panel says in plain words that asking your vault is still
   being shaped.
   - **Named vendors: Anthropic · OpenAI · Google Gemini — frozen at three.**
@@ -103,7 +102,6 @@ routes: []
     - **Unencrypted `http` is allowed only within this machine (loopback).**
       To point to an external machine, `https` is required, and addresses containing username/password are rejected — because the address remains in logs as-is.
     - **"Does not go out" is stated only when true.** If the address points to this computer, it writes "It does not leave this computer, and the log records the destination as `localhost:11434` — that is proof it did not leave." If the user points to another machine via `https`, this sentence is replaced with "This address is outside this computer."
-    - This branch cannot be used in web browsers (browser pages cannot send requests to the user's computer localhost). Therefore, a card stating "Not available here" explains the reason **separately** from the API key vault story and links to `/download`.
   - Every recorded call names its destination host. The audit line carries
     `host` (e.g. `generativelanguage.googleapis.com`), and the screen states
     that host before you press check — the strongest claim we can prove for a
@@ -121,7 +119,6 @@ routes: []
   - **In-app chat requires an app-owned permission gate.** Claude Agent qualifies through an isolated `CLAUDE_CONFIG_DIR` and linked existing credential. Codex qualifies through the newest upstream `@agentclientprotocol/codex-acp` adapter (1.10.0 as of 2026-09-07), isolated `approval_policy = "on-request"`, a forced `read-only` mode that since 1.8.0 is a workspace-write sandbox, and the server-owned Atlas write-consent checkpoint. Direct writes inside the vault may land without a card and are undone through Git (owner direction, 2026-09-07); Atlas MCP writes still ask, and both injected and self-registered Atlas MCP writes wait for `reject_once` or `allow_once`; every `allow_once` is consumed by one request.
   - **Atlas MCP and provider traffic are separate boundaries.** The Atlas MCP server is a local stdio child with no daemon, port, or network request. The coding agent using it may send prompts, context, and tool results to its own provider.
   - Modes measured to remove the permission gate are hidden. Unmeasured modes remain explicitly unverified; they are never treated as safe by default.
-  - Processes cannot be launched in browsers. On the web, a single line explaining why it doesn't work and where it does replaces the list.
 - The persistent shell mounts the rail settings trigger. Current agent work is
   exposed by `AgentActivityChip` in Topology's contextual map controls, while
   `AgentActivitySettings` controls its visibility and notifications in the

@@ -178,11 +178,13 @@ Use `pnpm test:run` for one-shot mode. `pnpm test` is watch mode.
 
 ---
 
-## Hosted demo
+## The website
 
-### The hosted demo shows different data than my vault
+### The website's map is not my folder
 
-The hosted demo serves *our* dogfood vault (the project's own `docs/ontology/`). Your vault data only appears when you self-host the workbench or run it locally and point it at your own markdown folder via `/docs`.
+`/sample` on the website draws a sample online store, read-only. It never shows your
+folder, because no page of the website opens one. Your folder opens only in the installed
+app: choose it on the app's first-run page.
 
 ---
 
@@ -190,4 +192,4 @@ The hosted demo serves *our* dogfood vault (the project's own `docs/ontology/`).
 
 - Open an issue: https://github.com/wlsdks/ontology-atlas/issues
 - Discussions: https://github.com/wlsdks/ontology-atlas/discussions
-- Include: OS, Node version (`node --version`), pnpm version, browser (for web issues), exact error message.
+- Include: OS, Node version (`node --version`), pnpm version, browser (for website issues), exact error message.

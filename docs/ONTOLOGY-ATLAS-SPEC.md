@@ -576,7 +576,7 @@ they read the Markdown after the frontmatter. The judgement lives in one place,
 `mcp/src/meaning/meaning-findings.mjs`, and reaches a reader through three channels: the
 `add_concepts` / `patch_concept` response, `query_ontology({operation:"maintenance_plan"})`,
 and `validate_vault`. `src/shared/lib/vault-document/meaning-findings.ts`
-is the browser port of the same rules, checked against the canonical module by
+is the renderer's port of the same rules, checked against the canonical module by
 `tests/contract/analysis/meaning-findings-parity.contract.test.ts`.
 
 Four of them carry a narrower scope than the other four, and for different
@@ -632,7 +632,7 @@ nothing. The candidates are now the source node's file **and** every
 repository-relative file path written in `relation_notes` for that edge, each
 clamped inside the repository and each required to exist as a file; any one of
 them naming the target is enough. That is also the only way a cross-boundary
-edge can be witnessed at all, since what proves a browser module depends on an
+edge can be witnessed at all, since what proves an app module depends on an
 MCP module is the bridge, the barrel or the contract test between them rather
 than either end. A path that does not resolve from the repository root is
 ignored rather than guessed at, which is why the message asks for a
