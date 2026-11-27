@@ -221,6 +221,7 @@ What each contributor command answers, sorted by command.
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |
 | `pnpm ui:audit -- --url=<base> --route=<path> [--setup=<module.mjs>]` | Prepare an interactive state with an optional local module, then measure rendered facts per width: horizontal overflow, occluded or unreachable controls, small touch targets, off-ramp type/radius/shadow values, low contrast, unequal repeated sets, scroll-end reserve |
 | `pnpm unit:durations -- <timings dir>` | Rebalances the Unit · Contract shards from downloaded `vitest-timings-*` artifacts of a full run |
+| `pnpm who-catches-what` | For each `fix` change among the 200 merged before `bf6670e469`, whether it corrected lines an earlier change wrote, which change, how long before, and what caught the fault, by the sealed rule in `scripts/records/who-catches-what-rule.md`; then how many concepts in `docs/ontology` are checked, stale or undated by `validate_vault`'s evidence rule. Reads Git, `gh` and the vault (`docs/specs/2026-11-27-when-people-cannot-keep-up.md`, criteria 2 and 3) |
 | `pnpm ui:look -- --route=<path> [--vault=fixture\|sample\|<dir>] [--widths=1440] [--audit]` | Builds and serves the static export on a free port (or uses `--url`), opens each route with a vault attached, and prints one screenshot path per route and width |
 
 Use `--scope=<selector>` to audit one visible modal or region. The selector must match exactly one visible element; the report includes its measured element count.
