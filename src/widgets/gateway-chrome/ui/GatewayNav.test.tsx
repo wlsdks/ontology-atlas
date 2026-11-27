@@ -18,6 +18,7 @@ vi.mock("@/i18n/navigation", () => ({
     </a>
   ),
   usePathname: () => pathname,
+  useRouter: () => ({ replace: () => {} }),
 }));
 
 vi.mock("next/navigation", () => ({
