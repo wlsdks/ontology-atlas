@@ -247,6 +247,7 @@
     "test:mcp:rpc": "node --test scripts/lib/mcp-test-rpc.test.mjs",
     "mcp:differential": "node scripts/mcp/differential/differential.mjs",
     "mcp:differential:check": "node scripts/mcp/differential/write-corpus.mjs --check && node scripts/mcp/differential/write-families.mjs --check",
+    "mcp:program-size:check": "node --test scripts/mcp/program-size/program-size-verdict.test.mjs && node scripts/mcp/program-size/check-program-size.mjs",
     "mcp:differential:bun-twin": "node scripts/mcp/differential/build-bun-twin.mjs",
     "test:mcp:differential":"node --test tests/differential/harness-detects-planted-difference.test.mjs",
     "record:new": "node scripts/records/new-record.mjs",
