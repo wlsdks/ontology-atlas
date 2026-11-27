@@ -34,10 +34,11 @@ one we built. You can check every statement here in the public source code.
   anywhere. Turn it off or delete it in Settings, under **Privacy · data** ›
   **Stored on this computer**.
 - **API keys for model providers** (app only). They are kept in the operating
-  system's credential store, such as the macOS Keychain. The browser version
-  does not accept keys at all.
-- **Small preferences**, such as the list of recent folders. The browser keeps
-  only a handle to the folder you opened, so it can offer that folder again.
+  system's credential store, such as the macOS Keychain. They are never written
+  to the folder or kept on a web page.
+- **Small preferences**, such as the list of recent folders. The app keeps each
+  folder's path in its own storage so it can offer that folder again; deleting
+  it changes nothing in the folder.
 
 Atlas reads only the folders you choose. When it reads a folder, it skips
 dotfiles and dot folders such as `.env` and `.git/`.
@@ -66,8 +67,8 @@ server, in `.ontology-atlas/llm-audit.jsonl` in the folder. To turn off the
 automatic update check, use Settings › **About** › **Check for updates
 automatically**.
 
-The browser version loads only the website's own files from ontologyatlas.com.
-It reads your folder on your computer and never uploads it.
+The website, ontologyatlas.com, loads only its own files and opens no folder on
+your computer. Atlas reads your folder in the app and never uploads it.
 
 ## Coding agents and MCP
 
@@ -103,8 +104,8 @@ revert it in Git.
   unknown-publisher warning, and a managed computer may block it. Before
   release, the build is scanned with Microsoft Defender, installed silently,
   and launched.
-- **Linux**: there is no app yet. Use the browser version, or run the MCP server
-  from source ([Connect a coding agent](/guide/connect-agent)).
+- **Linux and Intel Mac**: there is no app. Look at the sample map, or run the
+  MCP server from source ([Connect a coding agent](/guide/connect-agent)).
 
 On the [releases page](https://github.com/wlsdks/ontology-atlas/releases),
 each installer (`.dmg`, `.exe`) and the MCP bundle (`.mcpb`) has a `.sha256`

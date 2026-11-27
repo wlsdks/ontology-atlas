@@ -8,41 +8,37 @@ area: product
 # Getting started
 
 Start here to get your own ontology folder onto the map, then give a coding
-agent such as Claude Code or Codex its first task with it. You can start in the
-desktop app or in the browser.
+agent such as Claude Code or Codex its first task with it. You do this in the
+desktop app.
 
-## Choose the app or the browser
+## Get the app
 
-- **The app** is the full product. Download it from
-  [ontologyatlas.com](https://ontologyatlas.com/en/download/). The macOS build is
-  for Apple Silicon and is signed and notarized. The Windows x64 build is an
-  unsigned beta, so SmartScreen may warn before it runs.
-- **The browser version** needs no install. It opens a sample map right away,
-  and in Chrome or Edge it can also open a folder from your disk. Firefox and
-  other browsers without folder access show the sample and a link to the app.
+Download it from [ontologyatlas.com](https://ontologyatlas.com/en/download/).
+The macOS build is for Apple Silicon and is signed and notarized. The Windows x64
+build is an unsigned beta, so SmartScreen may warn before it runs.
 
-Some things work only in the app: reopening your folder without asking for
-access again, Git
-history, the agent chat beside the map, model API keys, and registering the MCP
-server with your coding agent in one click.
+The app reads your folder in place, reopens it next time without asking again,
+shows Git history, runs the agent chat beside the map, keeps model API keys in
+your system's credential store, and registers the MCP server with your coding
+agent in one click. A web page opens none of your folders, so ontologyatlas.com
+only introduces Atlas and hands over the app.
 
-## Look at the sample map (browser)
+There is no app for Linux or an Intel Mac. There, look at the sample map below,
+or run the MCP server from a source checkout:
+[Connect from a source checkout](/guide/connect-agent#connect-from-a-source-checkout).
 
-Without a folder, the browser shows a sample marked **Sample for now**. You can
-switch between two samples:
+## Look at the sample map
 
-- **Online store**: products, orders, members and delivery. Use it to learn how
-  to read the map with names everyone knows.
-- **This app's code**: the real ontology of the Ontology Atlas repository, built
-  and maintained by people and agents.
+Before you install, [the sample map](https://ontologyatlas.com/en/sample/) shows
+what Atlas draws. It is an online store: products, orders, members and
+delivery, with names everyone knows. It is read-only and opens no folder.
 
-The card shows the sample's size in concepts, relations and domains. Click a
-concept: the lines to what it depends on and to what uses it light up, and a
-panel names them. [Reading the map](/guide/reading-the-map) explains the rest.
+Click a concept: the lines to what it depends on and to what uses it light up,
+and a panel names them. [Reading the map](/guide/reading-the-map) explains the
+rest. In the app, Atlas draws your own code this way from the Markdown files in
+your folder.
 
 ## Open or create your ontology folder
-
-### In the app
 
 With no folder open, the app shows four ways to start:
 
@@ -60,13 +56,6 @@ With no folder open, the app shows four ways to start:
 The two "create" choices first ask **What will this folder hold?**: **A
 documents wiki**, **A map of your code**, or **Both**. You can add the other part
 later from Settings.
-
-### In the browser
-
-Press **Open a folder**. A short guide explains what happens, then offers
-**Choose existing folder** or **Start fresh with an empty folder**. After you
-pick, the browser asks you to allow access. That permission lets the page read
-the folder on your computer. Nothing is uploaded.
 
 ### What Atlas does with the folder
 
@@ -90,7 +79,7 @@ connect one in the app:
 
 The agent starts the Atlas MCP server on your computer when it needs it. The
 server opens no network port. [Connect a coding agent](/guide/connect-agent)
-covers each agent, connecting from the browser, and checking the connection.
+covers each agent, connecting from a source checkout, and checking the connection.
 
 If your folder has no concepts yet, let the agent draft them from your code:
 [Build the first map from your code](/guide/from-your-repo).

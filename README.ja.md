@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://ontologyatlas.com/ja/download/"><strong>ダウンロード</strong></a> ·
-  <a href="https://ontologyatlas.com/ja/topology/">ブラウザで試す</a> ·
+  <a href="https://ontologyatlas.com/ja/sample/">サンプルマップを見る</a> ·
   <a href="https://ontologyatlas.com/ja/guide/">ガイド</a>
 </p>
 
@@ -37,11 +37,11 @@
 
 ## クイックスタート
 
-1. **インストール**: [ダウンロードページ](https://ontologyatlas.com/ja/download/)からアプリを入手するか、[ブラウザ版](https://ontologyatlas.com/ja/topology/)を開きます。
+1. **インストール**: [ダウンロードページ](https://ontologyatlas.com/ja/download/)からアプリを入手します。
 2. **フォルダを開く**: Atlas はフォルダ内の Markdown をその場で読むか、リポジトリに `atlas/` フォルダを新しく作ります。何かを書き込む前に、必ずパスを表示します。
 3. **エージェントを接続**: **エージェント › MCP** で使っているツールの **接続** を押し、エージェントを再起動して、次のタスクについて質問してみましょう。
 
-macOS（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サーバーを同梱しています。Windows x64 は未署名のベータ版です。Linux では、ブラウザ版を使うか、[ソースのチェックアウトから MCP サーバーを実行](mcp/README.md#1-register-with-an-agent)してください。[Releases](https://github.com/wlsdks/ontology-atlas/releases) に、各バージョンのファイルとチェックサムがあります。GitHub で **Pre-release** と表示されたリリースはベータ版です。インストール済みのアプリは正式リリースにしか更新されないため、ベータ版は手動でインストールした人にだけ届きます。
+macOS（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サーバーを同梱しています。Windows x64 は未署名のベータ版です。Linux と Intel Mac 向けのアプリはありません。[サンプルマップ](https://ontologyatlas.com/ja/sample/)を見るか、[ソースのチェックアウトから MCP サーバーを実行](mcp/README.md#1-register-with-an-agent)してコーディングエージェントをつないでください。[Releases](https://github.com/wlsdks/ontology-atlas/releases) に、各バージョンのファイルとチェックサムがあります。GitHub で **Pre-release** と表示されたリリースはベータ版です。インストール済みのアプリは正式リリースにしか更新されないため、ベータ版は手動でインストールした人にだけ届きます。
 
 ## 画面を見る
 
@@ -56,7 +56,7 @@ macOS（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サ
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/library.en.webp" alt="資料室：左に Wiki ページとソースとの一致状態、中央に検索欄、その下に最初に読むソース" /><br /><b>資料室</b> — 文書を入れると、出典つきの Wiki ページが出てきます。一節を探し、ソースで確かめます。</td>
-<td width="50%"><img src="public/gateway/planning.en.webp" alt="企画：左に Markdown ファイルの一覧、右に開いた文書" /><br /><b>企画</b> — 開いているフォルダ内の <code>planning/</code> に、計画を Markdown で書きます。アプリでもブラウザでも使え、macOS アプリでは別のフォルダをその場で読むこともできます。</td>
+<td width="50%"><img src="public/gateway/planning.en.webp" alt="企画：左に Markdown ファイルの一覧、右に開いた文書" /><br /><b>企画</b> — 開いているフォルダ内の <code>planning/</code> に、計画を Markdown で書きます。アプリで使え、macOS アプリでは別のフォルダをその場で読むこともできます。</td>
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/changes.en.webp" alt="変更：1 日にマージされた変更の数、マージされた時間帯、スコープごとにまとめた変更" /><br /><b>変更</b> — 期間中に何がマージされたかを数えてまとめ、その元のプルリクエスト、コミット、ファイルへ進めます。</td>
@@ -135,7 +135,7 @@ without opening every file.
 ## 制限
 
 - **Atlas がエージェントの書き込みを事前に確認するのは、アプリ内のチャットだけです。** そこではファイルの編集と Atlas への書き込みがあなたの許可を待ちます。そのフォルダで自動承認をオンにすると確認しませんが、シェルコマンド、コミット、概念の削除と統合、フォルダ外のパスは常に確認します。ただし、地図を作ったコードフォルダを Atlas が読むことと、接続したコードフォルダのファイルを読むことは例外です。MCP で接続したエージェントは、そのツール自身の権限ルールに従って書き込みます。[エージェント](docs/features/agents.md)
-- **資料室の設定とチェックはアプリで行います。** ブラウザでは、アプリの入手かファイルの追加ができます。[資料室](docs/features/library/workspace.md)
+- **Atlas はインストールしたアプリでのみ使えます。** アプリは Apple Silicon の Mac 向けと、ベータ版の Windows x64 向けがあります。ブラウザではフォルダを開けず、ウェブサイトには読み取り専用のサンプルマップだけがあります。[ダウンロード](docs/features/download.md)
 - **変更が読むのは公開 GitHub のプルリクエストだけです。** 明示的な操作で読み、一覧が一部だけになることがあります。非公開のプルリクエストは読みません。[変更ブリーフィング](docs/features/change-briefing.md)
 - **Git のプルは、開いているフォルダに限らず、リポジトリ内のどのファイルでも変更することがあります。** [Git](docs/features/git.md)
 
@@ -153,9 +153,11 @@ Atlas はまだ初期段階です。私たちのベンチマークでは、Atlas
 
 ```bash
 pnpm install
-pnpm dev
+pnpm desktop:dev
 pnpm checks:changed -- --run
 ```
+
+`pnpm desktop:dev` はアプリを起動し、Rust ツールチェーンが必要です（[デスクトップ](docs/DESKTOP-MACOS.md)）。`pnpm dev` はブラウザでウェブサイトのページだけを表示し、アプリのアドレスにはすべて、Atlas はインストールしたアプリで動くことを伝えるページが表示されます。
 
 検査の選び方、プッシュ前の検査と CI、マージ、レーンの予算、リポジトリのコマンド一覧は[開発チェック](docs/DEVELOPMENT-CHECKS.md)にまとまっています。
 

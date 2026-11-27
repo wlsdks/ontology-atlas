@@ -78,7 +78,7 @@ In the desktop app, when the ontology folder is inside a Git repository, Atlas c
 
 - **Stale**: a cited file changed after the document did. The disc gets a small amber dot, and the domain caption counts it, for example "2 stale".
 - **Unknown**: the concept cites no file, or Atlas could not tell when the file changed. The disc is drawn as a dashed, hollow outline.
-- When nothing could be checked, for example in the browser version, a line under the project reads **Evidence not checked**.
+- When nothing could be checked, for example a folder without Git history, a line under the project reads **Evidence not checked**.
 
 These marks are not scores. They tell you where to read the code before you trust the text.
 

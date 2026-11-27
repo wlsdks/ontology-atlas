@@ -10,7 +10,7 @@ gateway: false
 
 This check is **experimental**. In the installed macOS app, open a local vault, then **Agents → Models**, and find **Jev evidence check** under External check. Save a TypeSafe API key once in this Mac's Keychain; Atlas displays only its last four characters and lets you replace or remove it. Choose **Run a check**, paste a specific claim and the source passage that supports or challenges it, read the exact JSON request shown under them, then choose **Send this request**. The app sends that text only to `https://api.typesafe.ai/v1/systemone` with `jev-latest` after your action. The response labels the evidence `supported`, `contradicted`, or `insufficient` with a confidence estimate. It is advice for your review: Atlas does not patch the vault or accept project meaning from this answer. A local metadata receipt is reserved before the request and excludes the key and text. The Keychain protects a saved key between launches, although access to an unlocked account or a compromised process remains a security risk. Remove the key from the same row when you no longer need it.
 
-The website shows the Models tab's desktop-only card; it cannot store a Jev key or send a judgment. The source-only synthetic probe below remains useful when you want to test the endpoint without sharing project text.
+Only the installed app can store a Jev key or send a judgment; the website does neither. The source-only synthetic probe below remains useful when you want to test the endpoint without sharing project text.
 
 The installed app's **Library → Wiki** question desk also works with no Jev
 key: local question search, source anchors, and the existing ACP answer path
