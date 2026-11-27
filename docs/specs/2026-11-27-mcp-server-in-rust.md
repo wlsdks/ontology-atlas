@@ -170,10 +170,13 @@ screen twins) becomes removable and is a later track.
 | Keep the Bun binary | nothing to build | all six pains stay | lost |
 | Keep JavaScript, change the packer | may drop LGPL (unverified) | size, memory, twins, scanners stay | lost |
 | Rust, function for function, byte-equal | pains 1 to 4 | JavaScript's structure in Rust; every scanner quirk reproduced; the owner rejected it | lost |
-| Rust built in its own idiom, same contract, declared changes | all six | the harness must tell declared from silent differences | chosen |
+| Rust built in its own idiom; answers judged on merit, every change listed | all six | the harness must tell listed from silent differences | chosen |
 | Rust with a new tool surface | freedom | breaks every saved prompt and agent skill | lost |
 
-### The contract that stays
+### The starting contract
+
+This is what the JavaScript server does today. It is the default only where nothing better is
+chosen; any part of it may change as a listed change below.
 
 Tool names, descriptions, input and output schemas, annotations and order; the `initialize`
 instructions, whose first 2,048 characters are the construction card; the negotiated protocol
@@ -186,13 +189,16 @@ dry run, `confirm`, `overwrite`, `force`, the consent question) and the lines in
 
 ### Declared behaviour changes
 
-An answer may differ from the JavaScript server's only as an entry here, mirrored with its request
+The Rust server is not held to the JavaScript server's answers. Each difference is judged on
+whether it is better for the person or the agent, and is kept only as an entry here, mirrored with its request
 ids in the harness manifest (`declaredChanges`) and summarised in the merge's change record. An
 entry names the tool, the field's JSON path, before, after and why. The harness treats it as an
 expected difference only at its request ids and paths; a difference elsewhere fails, and so does an
-entry whose difference no longer appears. Never declarable: bytes written to the vault, audit
-lines, the tool surface, and the set of `errorCode` values, so the rollback stays true and two
-servers can share one vault during an upgrade.
+entry whose difference no longer appears. Any part of the starting contract may be listed: refusals,
+limits, error text and codes, tool descriptions, and the bytes a write puts on disk. One limit
+holds: what a write puts on disk stays Markdown with frontmatter that the app of the same release
+reads, and a changed tool name or schema is also changed in the vault README and the agent skills
+in the same merge.
 
 | # | Tool, field | Before (JavaScript) | After (Rust) | Why |
 |---|---|---|---|---|
@@ -505,8 +511,8 @@ criterion.
    installed-app walk, the clean-host walks, the Windows job, `pnpm notice:check`,
    `pnpm mcp:differential -- --goldens`.
 9. **Safety first.** Given the Rust server before any reading or writing family is built, when the
-   corpus sends planted hostile inputs, then each is refused exactly as the JavaScript server
-   refuses it and nothing outside the vault is read or written: a slug with `..`, a null byte, an
+   corpus sends planted hostile inputs, then each is refused (the JavaScript server's refusal is
+   the floor, never the ceiling; a stricter refusal is a listed change) and nothing outside the vault is read or written: a slug with `..`, a null byte, an
    absolute path or a symlink out of the root (`mcp/src/vault/documents/slug-paths.mjs:61-126` and
    `:257-266`); a scan root outside the vault and repository
    (`mcp/src/server/runtime.mjs:85-105`); credential and hidden names
@@ -630,3 +636,8 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   one merge that also deletes the JavaScript, Bun and the LGPL notice; the clock and UID stream
   contract points to the harness slice's README; the decision record draft is removed now that
   both records exist.
+- 2026-11-27 (owner: the Rust server need not match the JavaScript; keep what is better, drop what
+  is not needed): answers, refusals, limits, error codes and written bytes are all judged on merit
+  and may change as listed entries; the harness only catches unlisted differences; JavaScript's
+  refusals are a floor for criterion 9. Reviews no longer treat "differs from JavaScript" as a
+  defect by itself.
