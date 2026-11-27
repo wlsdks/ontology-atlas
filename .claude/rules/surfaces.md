@@ -163,6 +163,24 @@ The sixth written exception, for Work status only:
 Another folder, a kept name or path, or a watch while hidden needs a new
 decision record.
 
+### Harness › Improve: agent memory and session files
+
+The seventh and eighth written exceptions, specified and not yet built
+(`docs/specs/2026-11-27-harness-self-improvement.md`):
+
+| | |
+|---|---|
+| 7: read | the repository's Claude Code memory folder by real path from config homes, and `autoMemoryDirectory` in user or managed settings only; its `.md` files |
+| 7: write | after a Keep, over an unchanged file: one path or index link changed, one link appended, one note deleted; a version first, then a swap |
+| 8: read | with its switch on: session lines whose `cwd` is the checkout or a listed worktree; typed text, tool name and `file_path`, the interrupt marker |
+| 8: send | after Send: ids and text only, logged first, to an agent with no MCP server and no allowed tool |
+| 8: write | one kept rule: a memory note, or one line appended to an existing `AGENTS.md`, `CLAUDE.md` or `.claude/rules/*.md` |
+| Never | note or session text in a log or error; a folder from project settings; a new instruction file |
+| Gate | the spec's criteria 2, 4, 8, 9 and 11 |
+| Records | `d73dd377` (7), `4919ff56` (8: read, send), `aa764ca0` (8: write) |
+
+Another folder, field, recipient or file needs a new decision record.
+
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event
