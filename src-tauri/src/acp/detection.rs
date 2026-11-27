@@ -73,9 +73,9 @@ pub(crate) fn detect_runtimes(
 ) -> Vec<AcpRuntimeStatus> {
     let dirs = candidate_bin_dirs(home, path_env, probe, managed_bin, managed_node_bin);
     // The login probe gets the launch PATH, or the wrapper misses node and reads as signed out.
-    let child_path = std::env::join_paths(dirs.iter())
-        .map(|joined| joined.to_string_lossy().to_string())
-        .unwrap_or_default();
+    let child_path = search_path::joined_without_unjoinable(dirs.iter())
+        .to_string_lossy()
+        .to_string();
 
     registry()
         .iter()
