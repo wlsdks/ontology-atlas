@@ -4,6 +4,7 @@
 //! order the files were listed.
 
 use crate::bounded_parse::{parse_bounded, ParseLimits, ParseRefusal, ParsedSource};
+use crate::go_imports::{read_go_imports, GoImport};
 use crate::import_edges::{ImportKind, UnresolvedReason};
 use crate::jvm_declarations::{read_jvm_source, JvmFile};
 use crate::python_imports::{read_python_imports, PythonImport};
@@ -19,6 +20,8 @@ pub enum FileReading {
     /// The regular imports in the order written, then the side-effect ones, as the two kinds were
     /// always listed.
     Script(Vec<ScriptImport>),
+    /// The imports of a Go file, and whether its import limit cut the list.
+    Go(Vec<GoImport>, bool),
     /// The file was not read, and why.
     Unreadable(UnresolvedReason),
 }
@@ -52,7 +55,11 @@ fn read_parsed(parsed: &ParsedSource<'_>, file_name: &str) -> Result<FileReading
         SourceLanguage::Kotlin => {
             FileReading::Jvm(Box::new(read_jvm_source(parsed, file_name, true)?))
         }
-        _ => {
+        SourceLanguage::Go => {
+            let (imports, limited) = read_go_imports(parsed);
+            FileReading::Go(imports, limited)
+        }
+        SourceLanguage::TypeScript | SourceLanguage::Tsx | SourceLanguage::JavaScript => {
             let (side, regular): (Vec<_>, Vec<_>) = read_script_imports(parsed)?
                 .into_iter()
                 .partition(|import| import.kind == ImportKind::Side);

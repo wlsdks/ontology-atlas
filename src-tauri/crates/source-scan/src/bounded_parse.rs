@@ -296,7 +296,7 @@ mod tests {
             self.entered += 1;
             self.parents_agree &= node.parent() == self.open.last().copied();
             self.open.push(node);
-            if node.kind() == "array" && self.entered % 2 == 0 {
+            if node.kind() == "array" && self.entered.is_multiple_of(2) {
                 Visit::Over
             } else {
                 Visit::Into

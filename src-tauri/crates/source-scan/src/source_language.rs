@@ -54,6 +54,11 @@ pub fn extension_of(name: &str) -> Option<&str> {
     (dot > 0).then(|| name.get(dot..)).flatten()
 }
 
+/// [`extension_of`] for the last part of a path.
+pub fn extension_of_file(file: &std::path::Path) -> Option<&str> {
+    extension_of(file.file_name()?.to_str()?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

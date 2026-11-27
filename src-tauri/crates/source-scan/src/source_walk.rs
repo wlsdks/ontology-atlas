@@ -92,15 +92,100 @@ pub fn list_sorted(files: &dyn SourceFiles, directory: &Path) -> Vec<(String, En
 /// file system could keep extending.
 pub const WALK_MAX_DEPTH: usize = 4096;
 
-enum Step {
-    Folder(PathBuf, usize),
-    File(PathBuf),
+/// What a walk is asked to stay within.
+#[derive(Debug, Clone, Copy)]
+pub struct WalkLimits {
+    /// The deepest folder that is listed, counted in folders below the start (the start is 0).
+    /// A folder one level deeper is still shown to the visitor, but its names are not read.
+    pub deepest_folder: usize,
+    /// The names the walk looks at before it stops, hidden and ignored ones included.
+    pub max_entries: usize,
+}
+
+impl WalkLimits {
+    /// Every folder a path can hold, and no limit on the names.
+    pub const UNBOUNDED_NAMES: Self = Self {
+        deepest_folder: WALK_MAX_DEPTH,
+        max_entries: usize::MAX,
+    };
+}
+
+/// One name in a folder the walk listed.
+pub struct Entry<'a> {
+    pub path: &'a Path,
+    pub name: &'a str,
+    pub kind: EntryKind,
+    /// How many folders lie between the walk's start and the folder that holds this name.
+    pub depth: usize,
+}
+
+/// What a visitor wants the walk to do next.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Flow {
+    Continue,
+    Stop,
+}
+
+struct Pending {
+    path: PathBuf,
+    name: String,
+    kind: EntryKind,
+    depth: usize,
+}
+
+/// Walks the folders below `start` in name order, with a folder's names where its own name falls:
+/// each file and folder `admit` accepts is shown to `visit` (a folder before what it holds), and
+/// a folder is entered when it is within `limits`. A stack stands in for recursion, so a tree
+/// thousands of folders deep costs the same stack as a flat one. Links and other kinds of entry
+/// are counted against the limit but never shown.
+pub fn walk_sorted(
+    files: &dyn SourceFiles,
+    start: &Path,
+    limits: WalkLimits,
+    admit: &dyn Fn(&Entry<'_>) -> bool,
+    visit: &mut dyn FnMut(&Entry<'_>) -> Flow,
+) {
+    let mut stack: Vec<Pending> = Vec::new();
+    push_listing(files, start, 0, &mut stack);
+    let mut looked_at = 0usize;
+    while let Some(pending) = stack.pop() {
+        looked_at += 1;
+        if looked_at > limits.max_entries {
+            return;
+        }
+        let entry = Entry {
+            path: &pending.path,
+            name: &pending.name,
+            kind: pending.kind,
+            depth: pending.depth,
+        };
+        if !matches!(entry.kind, EntryKind::File | EntryKind::Directory) || !admit(&entry) {
+            continue;
+        }
+        if visit(&entry) == Flow::Stop {
+            return;
+        }
+        if entry.kind == EntryKind::Directory && pending.depth < limits.deepest_folder {
+            push_listing(files, &pending.path, pending.depth + 1, &mut stack);
+        }
+    }
+}
+
+/// The names of `folder` onto the stack, so that the first in name order is taken first.
+fn push_listing(files: &dyn SourceFiles, folder: &Path, depth: usize, stack: &mut Vec<Pending>) {
+    let listed = list_sorted(files, folder);
+    stack.extend(listed.into_iter().rev().map(|(name, kind)| Pending {
+        path: folder.join(&name),
+        name,
+        kind,
+        depth,
+    }));
 }
 
 /// The files below `directory` whose extension passes `wanted`, in name order with a folder's
-/// files where its name falls, at most `max_files` in `found` altogether. A stack stands in for
-/// recursion, so a tree thousands of folders deep costs the same stack as a flat one.
-pub fn walk(
+/// files where its name falls, at most `max_files` in `found` altogether. Hidden names and the
+/// ignored ones are skipped.
+pub fn list_source_files(
     files: &dyn SourceFiles,
     directory: &Path,
     ignore: &IgnoredNames,
@@ -108,32 +193,30 @@ pub fn walk(
     wanted: &dyn Fn(&str) -> bool,
     found: &mut Vec<PathBuf>,
 ) {
-    let mut stack = vec![Step::Folder(directory.to_path_buf(), 0)];
-    while let Some(step) = stack.pop() {
-        if found.len() >= max_files {
-            return;
-        }
-        match step {
-            Step::File(path) => found.push(path),
-            Step::Folder(folder, depth) => {
-                let mut in_order: Vec<Step> = Vec::new();
-                for (name, kind) in list_sorted(files, &folder) {
-                    if ignore.has(&name) || name.starts_with('.') {
-                        continue;
-                    }
-                    let path = folder.join(&name);
-                    match kind {
-                        EntryKind::Directory if depth < WALK_MAX_DEPTH => {
-                            in_order.push(Step::Folder(path, depth + 1));
-                        }
-                        EntryKind::File if extension_of(&name).is_some_and(wanted) => {
-                            in_order.push(Step::File(path));
-                        }
-                        _ => {}
-                    }
-                }
-                stack.extend(in_order.into_iter().rev());
+    let admit = |entry: &Entry<'_>| {
+        !ignore.has(entry.name)
+            && !entry.name.starts_with('.')
+            && match entry.kind {
+                EntryKind::File => extension_of(entry.name).is_some_and(wanted),
+                _ => true,
             }
-        }
-    }
+    };
+    walk_sorted(
+        files,
+        directory,
+        WalkLimits::UNBOUNDED_NAMES,
+        &admit,
+        &mut |entry| {
+            if found.len() >= max_files {
+                return Flow::Stop;
+            }
+            if entry.kind == EntryKind::File {
+                found.push(entry.path.to_path_buf());
+                if found.len() >= max_files {
+                    return Flow::Stop;
+                }
+            }
+            Flow::Continue
+        },
+    );
 }

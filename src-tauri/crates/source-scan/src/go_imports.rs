@@ -15,14 +15,18 @@ use serde::Serialize;
 use tree_sitter::Node;
 
 use answer_format::collation::compare_text;
-use confined_files::{EntryKind, Refusal, SourceReadError};
+use confined_files::EntryKind;
 
-use crate::bounded_parse::{parse_bounded, ParseLimits, ParsedSource};
-use crate::import_edges::{ImportKind, ImportUsage, SourceRole};
+use crate::batch_reading::{read_in_batches, Batched};
+use crate::bounded_parse::ParsedSource;
+use crate::file_reading::FileReading;
+use crate::import_edges::{ImportKind, ImportUsage, SourceRole, UnresolvedReason};
 use crate::import_rollup::{evidence_priority, EdgeStats, EvidenceRow};
 use crate::path_facts::{resolve_below, PathFacts};
-use crate::source_language::{extension_of, SourceLanguage};
-use crate::source_walk::{list_sorted, IgnoredNames, GO_EXTENSION, WALK_MAX_DEPTH};
+use crate::source_language::extension_of;
+use crate::source_walk::{
+    list_sorted, walk_sorted, Entry, Flow, IgnoredNames, WalkLimits, GO_EXTENSION,
+};
 
 pub const GO_FILE_MAX_BYTES: usize = 256 * 1024;
 pub const GO_IMPORTS_PER_FILE_LIMIT: usize = 256;
@@ -273,14 +277,9 @@ impl GoLayout<'_, '_> {
     }
 }
 
-enum Pending {
-    Folder(PathBuf, usize),
-    File(PathBuf),
-}
-
 /// The Go files of the module in name order, a folder's files where its name falls, and whether
-/// more than `max_files` were found. A stack stands in for recursion, so a folder tree thousands
-/// deep cannot overflow, and folders deeper than [`WALK_MAX_DEPTH`] are not entered.
+/// more than `max_files` were found. Nested modules, `vendor`, `testdata` and the folders a Go
+/// tool skips (`_` and `.`) are not entered.
 fn list_go_files(
     layout: &GoLayout<'_, '_>,
     ignore: &IgnoredNames,
@@ -288,44 +287,36 @@ fn list_go_files(
 ) -> (Vec<PathBuf>, bool) {
     let detection_limit = max_files + 1;
     let mut files: Vec<PathBuf> = Vec::new();
-    let mut stack = vec![Pending::Folder(layout.facts.root().to_path_buf(), 0)];
-    while let Some(next) = stack.pop() {
-        match next {
-            Pending::File(path) => {
-                files.push(path);
-                if files.len() >= detection_limit {
-                    break;
-                }
-            }
-            Pending::Folder(directory, depth) => {
-                let mut in_order: Vec<Pending> = Vec::new();
-                for (name, kind) in list_sorted(layout.facts.files(), &directory) {
-                    if ignore.has(&name)
-                        || name.starts_with('.')
-                        || name.starts_with('_')
-                        || name == "vendor"
-                        || name == "testdata"
-                    {
-                        continue;
-                    }
-                    let path = directory.join(&name);
-                    match kind {
-                        EntryKind::Directory
-                            if depth < WALK_MAX_DEPTH && !layout.in_nested_module(&path) =>
-                        {
-                            in_order.push(Pending::Folder(path, depth + 1));
-                        }
-                        EntryKind::Directory => {}
-                        EntryKind::File if extension_of(&name) == Some(GO_EXTENSION) => {
-                            in_order.push(Pending::File(path));
-                        }
-                        _ => {}
-                    }
-                }
-                stack.extend(in_order.into_iter().rev());
-            }
+    let admit = |entry: &Entry<'_>| {
+        let name = entry.name;
+        if ignore.has(name)
+            || name.starts_with('.')
+            || name.starts_with('_')
+            || name == "vendor"
+            || name == "testdata"
+        {
+            return false;
         }
-    }
+        match entry.kind {
+            EntryKind::Directory => !layout.in_nested_module(entry.path),
+            _ => extension_of(name) == Some(GO_EXTENSION),
+        }
+    };
+    walk_sorted(
+        layout.facts.files(),
+        layout.facts.root(),
+        WalkLimits::UNBOUNDED_NAMES,
+        &admit,
+        &mut |entry| {
+            if entry.kind == EntryKind::File {
+                files.push(entry.path.to_path_buf());
+                if files.len() >= detection_limit {
+                    return Flow::Stop;
+                }
+            }
+            Flow::Continue
+        },
+    );
     let limited = files.len() > max_files;
     files.truncate(max_files);
     (files, limited)
@@ -367,52 +358,45 @@ pub fn scan_go_packages(
     evidence.files_scanned = files.len();
     evidence.file_scan_limited = limited;
     let mut targets: HashMap<String, Option<String>> = HashMap::new();
-    for file in &files {
-        let Some(from_file) = facts.relative(file) else {
-            continue;
-        };
-        let text = match facts.files().read_text(file) {
-            Ok(text) if text.len() <= GO_FILE_MAX_BYTES => text,
-            Ok(_) | Err(SourceReadError::Refused(Refusal::FileOverSizeLimit)) => {
-                evidence.skipped.push(GoSkippedFile {
-                    file: from_file,
-                    reason: format!("go-import-skip: exceeds {GO_FILE_MAX_BYTES} byte limit"),
-                });
-                continue;
+    read_in_batches(facts.files(), facts, &files, |batched| {
+        let (pending, reading) = match batched {
+            Batched::Unreadable(file) => {
+                if let Some(from_file) = facts.relative(file) {
+                    evidence.skipped.push(GoSkippedFile {
+                        file: from_file,
+                        reason: "go-import-skip: unreadable source file".to_string(),
+                    });
+                }
+                return;
             }
-            Err(_) => {
-                evidence.skipped.push(GoSkippedFile {
-                    file: from_file,
-                    reason: "go-import-skip: unreadable source file".to_string(),
-                });
-                continue;
-            }
+            Batched::Read(pending, reading) => (pending, reading),
         };
-        let Some(from_package) = file
+        let from_file = pending.from.clone();
+        let skip = |reason: String| GoSkippedFile {
+            file: from_file.clone(),
+            reason: format!("go-import-skip: {reason}"),
+        };
+        if let FileReading::Unreadable(UnresolvedReason::FileTooLarge) = reading {
+            evidence
+                .skipped
+                .push(skip(format!("exceeds {GO_FILE_MAX_BYTES} byte limit")));
+            return;
+        }
+        let Some(from_package) = pending
+            .path
             .parent()
             .and_then(|directory| layout.package_path(directory))
         else {
-            continue;
+            return;
         };
-        let (imports, limited_imports) = match parse_bounded(
-            SourceLanguage::Go,
-            &text,
-            ParseLimits::for_imports(GO_FILE_MAX_BYTES),
-        ) {
-            Ok(parsed) => read_go_imports(&parsed),
-            Err(_) => {
-                evidence.skipped.push(GoSkippedFile {
-                    file: from_file,
-                    reason: "go-import-skip: source not parsed".to_string(),
-                });
-                continue;
-            }
+        let FileReading::Go(imports, limited_imports) = reading else {
+            evidence.skipped.push(skip("source not parsed".to_string()));
+            return;
         };
         if limited_imports {
-            evidence.skipped.push(GoSkippedFile {
-                file: from_file.clone(),
-                reason: format!("go-import-skip: import limit {GO_IMPORTS_PER_FILE_LIMIT} reached"),
-            });
+            evidence.skipped.push(skip(format!(
+                "import limit {GO_IMPORTS_PER_FILE_LIMIT} reached"
+            )));
         }
         for import in imports {
             let to_package = targets
@@ -444,7 +428,7 @@ pub fn scan_go_packages(
                 import_usage: ImportUsage::Value,
             });
         }
-    }
+    });
     evidence.skipped.sort_by(|left, right| {
         compare_text(&left.file, &right.file)
             .then_with(|| compare_text(&left.reason, &right.reason))
@@ -487,7 +471,9 @@ fn collapse(imports: &[GoPackageImport]) -> Vec<GoModuleEdge> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bounded_parse::{parse_bounded, ParseLimits};
     use crate::planted_tree::PlantedTree;
+    use crate::source_language::SourceLanguage;
 
     fn scan(files: &[(&str, &str)], max_files: usize) -> GoPackageEvidence {
         let tree = PlantedTree::new(files);

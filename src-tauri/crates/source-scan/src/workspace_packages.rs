@@ -6,11 +6,11 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use confined_files::SourceFiles;
+use confined_files::{EntryKind, SourceFiles};
 
 use crate::config_json::Json;
 use crate::path_facts::{resolve_below, PathFacts};
-use crate::source_walk::{list_sorted, IgnoredNames};
+use crate::source_walk::{walk_sorted, Flow, IgnoredNames, WalkLimits};
 
 const DISCOVERY_MAX_ENTRIES: usize = 10_000;
 const PACKAGE_LIMIT: usize = 500;
@@ -20,8 +20,8 @@ const PATTERN_MAX_SEGMENTS: usize = 24;
 const PATTERN_MAX_GLOBSTARS: usize = 2;
 const PATTERN_MAX_WILDCARDS: usize = 16;
 const PATTERN_MATCH_STATE_LIMIT: usize = 250_000;
-/// No repository nests packages this deep; the cap keeps the walk's stack small.
-const DISCOVERY_MAX_DEPTH: usize = 64;
+/// No repository nests packages this deep; the cap keeps the walk short.
+const DISCOVERY_DEEPEST_FOLDER: usize = 63;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkspacePackage {
@@ -275,51 +275,34 @@ fn normalize_pattern(value: &str) -> Option<(String, bool)> {
 /// Every folder below the root holding a `package.json`, found in a bounded walk.
 fn package_directories(facts: &PathFacts<'_>, ignore: &IgnoredNames) -> Vec<Candidate> {
     let mut candidates = Vec::new();
-    let mut seen = 0usize;
-    visit_folder(facts, ignore, facts.root(), 0, &mut seen, &mut candidates);
+    let mut note_package = |directory: &Path| {
+        let manifest = directory.join("package.json");
+        if facts.is_file(&manifest) {
+            candidates.push(Candidate {
+                path: facts.relative(directory).unwrap_or_default(),
+                name: read_package_name(facts, &manifest),
+            });
+        }
+    };
+    note_package(facts.root());
+    walk_sorted(
+        facts.files(),
+        facts.root(),
+        WalkLimits {
+            deepest_folder: DISCOVERY_DEEPEST_FOLDER,
+            max_entries: DISCOVERY_MAX_ENTRIES,
+        },
+        &|entry| {
+            entry.kind == EntryKind::Directory
+                && !ignore.has(entry.name)
+                && !entry.name.starts_with('.')
+        },
+        &mut |entry| {
+            note_package(entry.path);
+            Flow::Continue
+        },
+    );
     candidates
-}
-
-fn visit_folder(
-    facts: &PathFacts<'_>,
-    ignore: &IgnoredNames,
-    directory: &Path,
-    depth: usize,
-    seen: &mut usize,
-    candidates: &mut Vec<Candidate>,
-) -> bool {
-    let manifest = directory.join("package.json");
-    if facts.is_file(&manifest) {
-        candidates.push(Candidate {
-            path: facts.relative(directory).unwrap_or_default(),
-            name: read_package_name(facts, &manifest),
-        });
-    }
-    if depth >= DISCOVERY_MAX_DEPTH {
-        return true;
-    }
-    for (name, kind) in list_sorted(facts.files(), directory) {
-        *seen += 1;
-        if *seen > DISCOVERY_MAX_ENTRIES {
-            return false;
-        }
-        if ignore.has(&name) || name.starts_with('.') {
-            continue;
-        }
-        if kind == confined_files::EntryKind::Directory
-            && !visit_folder(
-                facts,
-                ignore,
-                &directory.join(&name),
-                depth + 1,
-                seen,
-                candidates,
-            )
-        {
-            return false;
-        }
-    }
-    true
 }
 
 fn declared_literal_package(
