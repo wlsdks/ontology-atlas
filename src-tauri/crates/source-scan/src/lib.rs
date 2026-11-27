@@ -7,6 +7,8 @@
 //! The crate runs `git` only through `hardened-git` and reads files only through
 //! `confined-files`, so the app and the MCP server share one implementation of each rule.
 
+mod architecture_conformance;
+mod architecture_profile;
 mod autotools_c;
 mod bounded_parse;
 mod config_json;
@@ -22,6 +24,7 @@ mod jvm_resolution;
 mod module_grouping;
 mod path_dating;
 mod path_facts;
+mod path_pattern;
 mod python_imports;
 mod python_resolution;
 mod rust_dependencies;
@@ -40,6 +43,14 @@ pub use path_dating::{
     date_paths, Dating, DatingCommit, WantedPath, DATING_WINDOW_COMMITS, MAX_DATED_PATHS,
 };
 
+pub use architecture_conformance::{
+    build_architecture_brief, evaluate_architecture_conformance, ArchitectureBrief, Conformance,
+    ConformanceStatus, MeasuredSource, MeasuredStamp, MeasuredTool,
+};
+pub use architecture_profile::{
+    find_architecture_profiles, parse_architecture_profile, ArchitectureProfile, ProfileDocument,
+    ProfileError, ProfileErrorKind,
+};
 pub use bounded_parse::{parse_bounded, walk, ParseLimits, ParseRefusal, ParsedSource, Visit};
 pub use go_imports::GoPackageEvidence;
 pub use import_coverage::ImportCoverage;
