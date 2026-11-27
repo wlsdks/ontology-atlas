@@ -191,6 +191,27 @@ test.describe('the launch asks which folder when it knows more than one', () => 
       `a door card out-coloured the folder list on the app's launch screen (door ${appDoors.score} >= list ${appList.score})`,
     ).toBeLessThan(appList.score);
 
+    // ── The same chooser on the docs surface. One list, two seats:
+    // if these disagreed, the folder facts would depend on how you arrived.
+    await page.goto('/en/docs/?source=local&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('recent-vault-list')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId('recent-vault-row')).toHaveCount(2, { timeout: 30_000 });
+
+    // The second seat owes the same ranking, or the answer depends on how you arrived.
+    const docsList = await strongestChroma(page, '[data-testid="recent-vault-list"]');
+    const docsDoors = await strongestChroma(
+      page,
+      'main#main aside[aria-label] button:not([data-testid="recent-vault-open"]):not([data-testid="recent-vault-forget"]):not([data-testid="recent-vault-locate"])',
+    );
+    expect(docsDoors.subjects, 'no door card was measured on the docs chooser').toBeGreaterThan(0);
+    expect(docsList.score, 'the docs chooser list must carry a visible accent').toBeGreaterThan(
+      0.1,
+    );
+    expect(
+      docsDoors.score,
+      `a door card out-coloured the folder list on the docs chooser (door ${docsDoors.score} >= list ${docsList.score})`,
+    ).toBeLessThan(docsList.score);
+
     // ── Choosing the folder that was not current opens it, and the rail names it.
     const otherRow = page
       .locator('[data-testid="recent-vault-row"][data-current="false"]')

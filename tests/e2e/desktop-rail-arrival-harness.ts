@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+
 import type { Page } from "@playwright/test";
 
 import { FIXTURE_VAULT } from "./fixture-vault";
@@ -23,15 +26,16 @@ import { dogfoodVaultFiles } from "./map/dogfood-vault-files";
  * | `stubDirectoryPicker(page, files)` | `installDesktopRailRuntime(page, files, undefined, { replaceFixture: true })`; the picker is `pick_vault_directory`. |
  * | `writeFolderBeforePick` | put the files in `extraFiles`, or `writeDesktopFile` before the press. |
  * | `useDogfoodSample` or `demo:sample-source` (the bundled Atlas sample) | `{ replaceFixture: true }` with `atlasSampleFiles()` as `extraFiles`. |
- * | the Storefront sample (`/project/storefront`, the bundled Online Store) | the default: with no `replaceFixture` the folder holds `storefrontFiles()`. |
+ * | the Storefront sample (`/project/storefront`, the bundled Online Store) | the default: with no `replaceFixture` the folder holds `storefrontFiles()`; `{ replaceFixture: true }` with `storefrontSampleFiles()` serves the bundled sample itself. |
  * | `?shell=desktop` | drop it: the runtime is the desktop shell. |
  * | a browser handle written through OPFS | `writeDesktopFile` / `removeDesktopFile` / `renameDesktopFile`, read back with `readDesktopFile`. |
  * | `showOpenFilePicker` stubbed | `externalFiles` + `chooseSourceFiles` (`pick_source_files`, then `import_source_files`). |
  * | a records seed in IndexedDB (`demo-kv`) | `seedKnownDesktopFolders`, which writes the app's records with `desktopRootPath`. |
  * | `queryPermission` patched to `denied` | the app has no permission prompt: a folder it holds no grant for is `ungrantedFolders`, one that vanished is a root `folders` does not serve. |
  *
- * Seeding: `storefrontFiles()` is the shared fixture folder (Storefront), `atlasSampleFiles()` is
- * the product's own vault (`docs/ontology`), and any `Record<path, text>` is a folder. Texts are
+ * Seeding: `storefrontFiles()` is the shared fixture folder (Storefront), `storefrontSampleFiles()`
+ * the bundled Online Store (`samples/storefront`), `atlasSampleFiles()` the product's own vault
+ * (`docs/ontology`), and any `Record<path, text>` is a folder. Texts are
  * served as written: a `{{NOW-<ms>}}` token is not resolved here, so build the text in the spec.
  *
  * Several folders: `options.folders` serves each by its absolute path and makes every command
@@ -44,7 +48,10 @@ import { dogfoodVaultFiles } from "./map/dogfood-vault-files";
  * never overwrites them. Tests write and read the same store: `writeDesktopFile`,
  * `readDesktopFile`, `readDesktopBytes`, `removeDesktopFile`, `renameDesktopFile`,
  * `listDesktopFiles`; a write after the page opened changes `vault_fingerprint` and sends the
- * app's `vault-changed` event, which is how the app notices an outside edit.
+ * app's `vault-changed` event, which is how the app notices an outside edit. The app's own writes
+ * (`write_vault_text_file`, `create_vault_text_file`, `remove_vault_entry`) send it too, after the
+ * watcher's 500ms debounce, as the native watcher does. Every write gives the file a later
+ * modification time, which every read then answers: the app rereads only a file whose time moved.
  * `refuseDesktopWrites` makes matching writes fail. `options.binaryFiles` seeds files that hold
  * bytes: an image, or a `.md` that is not UTF-8, which a text read refuses as the disk does.
  *
@@ -265,11 +272,15 @@ export async function installDesktopRailRuntime(
         files: Record<string, string>;
         binaries: Record<string, number[]>;
         dirs: Set<string>;
+        /** The modification time of each file written since the page loaded; the rest keep `mtime`. */
+        stamps: Map<string, number>;
       }
-      const folders = new Map<string, Folder>([[root, { files, binaries: { ...(input.binaryFiles ?? {}) }, dirs: new Set() }]]);
+      const folders = new Map<string, Folder>([
+        [root, { files, binaries: { ...(input.binaryFiles ?? {}) }, dirs: new Set(), stamps: new Map() }],
+      ]);
       for (const [folderRoot, seed] of Object.entries(input.folders ?? {})) {
         if (folderRoot === root) Object.assign(files, seed);
-        else folders.set(folderRoot, { files: { ...seed }, binaries: {}, dirs: new Set() });
+        else folders.set(folderRoot, { files: { ...seed }, binaries: {}, dirs: new Set(), stamps: new Map() });
       }
       const strictRoots = input.folders !== undefined;
       const persist = Boolean(input.writable) || strictRoots;
@@ -306,7 +317,7 @@ export async function installDesktopRailRuntime(
       };
       for (const [folderRoot, changes] of Object.entries(overlay.folders)) {
         let folder = folders.get(folderRoot);
-        if (!folder) folders.set(folderRoot, (folder = { files: {}, binaries: {}, dirs: new Set() }));
+        if (!folder) folders.set(folderRoot, (folder = { files: {}, binaries: {}, dirs: new Set(), stamps: new Map() }));
         for (const [path, text] of Object.entries(changes.files)) {
           if (text === null) delete folder.files[path];
           else folder.files[path] = text;
@@ -330,6 +341,19 @@ export async function installDesktopRailRuntime(
       let sourceFiles: string[] | undefined = overlay.sourceFiles ?? input.sourcePick?.files;
       /** Bumped by every change after load, so the folder's fingerprint moves when a file does. */
       let revision = 0;
+      /** The modification time of every file the page loaded with. */
+      const mtime = Date.now();
+      let lastStamp = mtime;
+      /**
+       * Gives a written file a later modification time, as a disk does. The app keeps what it parsed
+       * of a file whose time has not moved, so one time for every file hid each write from every
+       * reread. Strictly later than the last stamp, because the clock alone repeats within a millisecond.
+       */
+      const stampWrite = (folder: Folder, path: string) => {
+        lastStamp = Math.max(Date.now(), lastStamp + 1);
+        folder.stamps.set(path, lastStamp);
+      };
+      const lastModifiedOf = (folder: Folder, path: string) => folder.stamps.get(path) ?? mtime;
 
       const hasEntry = (folder: Folder, path: string) => path in folder.files || path in folder.binaries;
       const isDirectory = (folder: Folder, path: string) =>
@@ -342,6 +366,7 @@ export async function installDesktopRailRuntime(
       const putText = (folderRoot: string, folder: Folder, path: string, text: string) => {
         delete folder.binaries[path];
         folder.files[path] = text;
+        stampWrite(folder, path);
         const changes = overlayOf(folderRoot);
         changes.files[path] = text;
         changes.binaries[path] = null;
@@ -351,6 +376,7 @@ export async function installDesktopRailRuntime(
       const putBytes = (folderRoot: string, folder: Folder, path: string, bytes: number[]) => {
         delete folder.files[path];
         folder.binaries[path] = bytes;
+        stampWrite(folder, path);
         const changes = overlayOf(folderRoot);
         changes.binaries[path] = bytes;
         changes.files[path] = null;
@@ -360,6 +386,7 @@ export async function installDesktopRailRuntime(
       const dropEntry = (folderRoot: string, folder: Folder, path: string) => {
         delete folder.files[path];
         delete folder.binaries[path];
+        folder.stamps.delete(path);
         const changes = overlayOf(folderRoot);
         changes.files[path] = null;
         changes.binaries[path] = null;
@@ -399,6 +426,13 @@ export async function installDesktopRailRuntime(
           : path in folder.files
             ? [...new TextEncoder().encode(folder.files[path])]
             : null;
+      /** A file as the watcher reports it: the stamp a read of it then answers, and its size. */
+      const fileChange = (folder: Folder, path: string) => ({
+        path,
+        kind: "file",
+        lastModified: lastModifiedOf(folder, path),
+        size: bytesOf(folder, path)?.length ?? 0,
+      });
       let failWrites: RegExp[] = [];
       const refusedWrite = (path: string): Promise<never> | null =>
         failWrites.some((pattern) => pattern.test(path)) ? Promise.reject(new Error(`QA write denied: ${path}`)) : null;
@@ -418,10 +452,10 @@ export async function installDesktopRailRuntime(
         },
         write: (folderRoot: string, path: string, value: string | { bytes: number[] }) => {
           let folder = folders.get(folderRoot);
-          if (!folder) folders.set(folderRoot, (folder = { files: {}, binaries: {}, dirs: new Set() }));
+          if (!folder) folders.set(folderRoot, (folder = { files: {}, binaries: {}, dirs: new Set(), stamps: new Map() }));
           if (typeof value === "string") putText(folderRoot, folder, path, value);
           else putBytes(folderRoot, folder, path, value.bytes);
-          reportChange(folderRoot, [{ path, kind: "file", lastModified: Date.now(), size: bytesOf(folder, path)?.length ?? 0 }]);
+          reportChange(folderRoot, [fileChange(folder, path)]);
         },
         remove: (folderRoot: string, path: string) => {
           const folder = folders.get(folderRoot);
@@ -441,10 +475,7 @@ export async function installDesktopRailRuntime(
           if (from in folder.files) putText(folderRoot, folder, to, folder.files[from]);
           else putBytes(folderRoot, folder, to, folder.binaries[from]);
           dropEntry(folderRoot, folder, from);
-          reportChange(folderRoot, [
-            { path: to, kind: "file", lastModified: Date.now(), size: bytesOf(folder, to)?.length ?? 0 },
-            { path: from, kind: "missing" },
-          ]);
+          reportChange(folderRoot, [fileChange(folder, to), { path: from, kind: "missing" }]);
         },
         list: (folderRoot: string) => {
           const folder = folders.get(folderRoot);
@@ -489,7 +520,6 @@ export async function installDesktopRailRuntime(
       const sentJevPayloads: string[] = [];
       (window as unknown as { __jevPayloads: string[] }).__jevPayloads = sentJevPayloads;
       const keyStatus = (provider: string) => ({ provider, stored: provider in keys, last4: keys[provider] ?? null });
-      const mtime = Date.now();
       const callbacks = new Map<number, (event: { event: string; payload: unknown }) => void>();
       let nextCallback = 1;
       /** The handlers the app registered through `listen`, by event name. */
@@ -499,9 +529,19 @@ export async function installDesktopRailRuntime(
           (callbacks.get(id) as ((event: unknown) => void) | undefined)?.({ event, id, payload });
         }
       };
+      type FolderChange = { path: string; kind: string; lastModified?: number; size?: number };
       /** What the native watcher reports when a file changes outside the app. */
-      const reportChange = (folderRoot: string, changes: { path: string; kind: string; lastModified?: number; size?: number }[], rescan = false) =>
+      const reportChange = (folderRoot: string, changes: FolderChange[], rescan = false) =>
         emitEvent("vault-changed", { root: folderRoot, changes: rescan ? [] : changes, rescan });
+      /**
+       * The native watcher sees the whole folder, so it reports the app's own writes as well, once
+       * its 500ms debounce has passed (`start_vault_watch`, `src-tauri/src/vault/watch.rs`): after
+       * the write has answered and the app has marked the file as its own.
+       */
+      const WATCH_DEBOUNCE_MS = 500;
+      const echoAppWrite = (folderRoot: string, changes: FolderChange[], rescan = false) => {
+        setTimeout(() => reportChange(folderRoot, changes, rescan), WATCH_DEBOUNCE_MS);
+      };
 
       /** Counts what the arriving screen asked the native side for, per command. */
       const calls: { command: string; at: number }[] = [];
@@ -514,7 +554,7 @@ export async function installDesktopRailRuntime(
         new Promise((resolve) => setTimeout(() => resolve(value), latency));
 
       /** `read_vault_text_files` answers framed bytes; see `src/shared/lib/vault-folder/vault-text-frames.ts`. */
-      const textFrames = (reads: { relativePath: string; text: string | null; error: string | null }[]): ArrayBuffer => {
+      const textFrames = (reads: { relativePath: string; text: string | null; error: string | null; lastModified: number }[]): ArrayBuffer => {
         const utf8 = new TextEncoder();
         const parts: Uint8Array[] = [];
         const length = (value: number) => {
@@ -536,7 +576,7 @@ export async function installDesktopRailRuntime(
             continue;
           }
           const stamp = new Uint8Array(8);
-          new DataView(stamp.buffer).setFloat64(0, mtime, true);
+          new DataView(stamp.buffer).setFloat64(0, read.lastModified, true);
           parts.push(stamp);
           text(read.text);
         }
@@ -682,10 +722,10 @@ export async function installDesktopRailRuntime(
             if (path in target.binaries) {
               const decoded = decodeText(target.binaries[path]);
               if (decoded === null) return Promise.reject(new Error("stream did not contain valid UTF-8"));
-              return afterHeldReads([path], () => slow({ text: decoded, lastModified: mtime }));
+              return afterHeldReads([path], () => slow({ text: decoded, lastModified: lastModifiedOf(target, path) }));
             }
             if (!(path in target.files)) return Promise.reject(enoent(path));
-            return afterHeldReads([path], () => slow({ text: target.files[path], lastModified: mtime }));
+            return afterHeldReads([path], () => slow({ text: target.files[path], lastModified: lastModifiedOf(target, path) }));
           }
           case "read_vault_text_files": {
             if (!target) return gone();
@@ -696,11 +736,13 @@ export async function installDesktopRailRuntime(
                   asked.map((relativePath) => {
                     const path = relative(relativePath);
                     const text = path in target.files ? target.files[path] : path in target.binaries ? decodeText(target.binaries[path]) : null;
-                    if (text !== null) return { relativePath, text, error: null };
+                    const lastModified = lastModifiedOf(target, path);
+                    if (text !== null) return { relativePath, text, error: null, lastModified };
                     return {
                       relativePath,
                       text: null,
                       error: path in target.binaries ? "stream did not contain valid UTF-8" : `missing ${path}`,
+                      lastModified,
                     };
                   }),
                 ),
@@ -749,7 +791,7 @@ export async function installDesktopRailRuntime(
             const body = bytesOf(target, path);
             if (body === null) return Promise.reject(enoent(path));
             const stamped = new Uint8Array(8 + body.length);
-            new DataView(stamped.buffer).setBigUint64(0, BigInt(mtime), true);
+            new DataView(stamped.buffer).setBigUint64(0, BigInt(lastModifiedOf(target, path)), true);
             stamped.set(body, 8);
             return slow(stamped.buffer);
           }
@@ -924,6 +966,7 @@ export async function installDesktopRailRuntime(
             const refused = refusedWrite(path);
             if (refused) return refused;
             putText(folderRootOf(args), target, path, String(args.content ?? ""));
+            echoAppWrite(folderRootOf(args), [fileChange(target, path)]);
             return slow(null);
           }
           case "create_vault_text_file": {
@@ -934,6 +977,7 @@ export async function installDesktopRailRuntime(
             if (refused) return refused;
             if (hasEntry(target, path)) return slow(false);
             putText(folderRootOf(args), target, path, String(args.content ?? ""));
+            echoAppWrite(folderRootOf(args), [fileChange(target, path)]);
             return slow(true);
           }
           case "remove_vault_entry": {
@@ -941,11 +985,14 @@ export async function installDesktopRailRuntime(
             if (!target) return gone();
             const path = relative(args.relativePath);
             if (path === "") return Promise.reject(new Error("refusing to remove the selected vault root"));
-            if (hasEntry(target, path)) dropEntry(folderRootOf(args), target, path);
-            else if (isDirectory(target, path)) {
+            if (hasEntry(target, path)) {
+              dropEntry(folderRootOf(args), target, path);
+              echoAppWrite(folderRootOf(args), [{ path, kind: "missing" }]);
+            } else if (isDirectory(target, path)) {
               const holdsFiles = [...Object.keys(target.files), ...Object.keys(target.binaries)].some((entry) => entry.startsWith(`${path}/`));
               if (holdsFiles && !args.recursive) return Promise.reject(new Error("Directory not empty (os error 66)"));
               dropDirectory(folderRootOf(args), target, path);
+              echoAppWrite(folderRootOf(args), [], true);
             } else return Promise.reject(enoent(path));
             return slow(null);
           }
@@ -1033,6 +1080,18 @@ export async function releaseDesktopReads(page: Page): Promise<void> {
 /** The Storefront folder: the shared fixture vault every install serves unless `replaceFixture` is set. */
 export function storefrontFiles(): Record<string, string> {
   return { ...FIXTURE_VAULT };
+}
+
+/** The bundled Online Store (`samples/storefront`) as a folder, for specs that measured that sample. */
+export function storefrontSampleFiles(): Record<string, string> {
+  const sample = path.resolve(__dirname, "../../samples/storefront");
+  const files: Record<string, string> = {};
+  for (const entry of readdirSync(sample, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+    const absolute = path.join(entry.parentPath, entry.name);
+    files[path.relative(sample, absolute).split(path.sep).join("/")] = readFileSync(absolute, "utf8");
+  }
+  return files;
 }
 
 /** The product's own vault (`docs/ontology`) as a folder, for specs that measured the Atlas sample. */

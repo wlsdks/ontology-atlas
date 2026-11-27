@@ -85,6 +85,20 @@ describe('createMarkdownReader', () => {
     ]);
   });
 
+  it('reads a document the native text read refuses through its handle, so the batch still answers', async () => {
+    const refused = 'stream did not contain valid UTF-8';
+    readTauriVaultTextFiles.mockResolvedValue([
+      { relativePath: 'a.md', text: 'native A', lastModified: 10, error: null },
+      { relativePath: 'legacy.md', text: null, lastModified: null, error: refused },
+    ]);
+    readTauriVaultTextFile.mockRejectedValue(new Error(refused));
+    const read = createMarkdownReader('/vault');
+    expect(await read([entry('a.md', 'A', 1), entry('legacy.md', '# ��\n', 2)])).toEqual([
+      { text: 'native A', lastModified: 10 },
+      { text: '# ��\n', lastModified: 2 },
+    ]);
+  });
+
   it('stops asking for batches after one batch call fails', async () => {
     readTauriVaultTextFile.mockResolvedValue(null);
     readTauriVaultTextFiles.mockRejectedValue(new Error('bridge down'));

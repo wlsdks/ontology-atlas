@@ -53,6 +53,34 @@ export function readStoredSource(): DocsVaultSource {
 }
 
 /**
+ * The source the docs surface settles on once it knows its shell, or `"keep"` to settle on the one
+ * it holds (a local intent). The installed app has one source, its folders, and no bundled sample,
+ * so it settles on local whether or not a folder is open: waiting for a manifest left the page on
+ * its loading frame for good while the launch asked which folder to open. A stored preference is
+ * never read there, or it would briefly revive the sample the app excludes.
+ */
+export function settledDocsSource({
+  installedShell,
+  hasLocalManifest,
+  querySource,
+  localIntent,
+  readStored,
+}: {
+  installedShell: boolean;
+  hasLocalManifest: boolean;
+  querySource: DocsVaultSource | null;
+  localIntent: boolean;
+  readStored: () => DocsVaultSource;
+}): DocsVaultSource | "keep" {
+  if (installedShell) return "local";
+  // A mounted folder wins on landing; `?source=server` stays an explicit web choice.
+  if (hasLocalManifest && querySource !== "server") return "local";
+  if (querySource) return querySource;
+  if (localIntent) return "keep";
+  return readStored();
+}
+
+/**
  * True when a local vault is loaded, or the launch stopped to let the person choose, and the
  * source is not already local: a live vault must never be silently replaced by the stored
  * Sample preference. Callers apply it once per mount so a later switch to Sample is respected.

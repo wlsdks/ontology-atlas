@@ -65,7 +65,11 @@ export function PageHeaderBar({
             {tabs}
           </div>
         ) : null}
-        {actions ? <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div> : null}
+        {/*
+          Alone beside the title, the actions are bounded by the row, so a child that declares
+          `min-w-0` gives way inside it instead of past the edge. Beside tabs, the tabs give way.
+        */}
+        {actions ? <div className={cn('ml-auto flex items-center gap-2', tabs ? 'shrink-0' : 'min-w-0')}>{actions}</div> : null}
       </div>
     </div>
   );

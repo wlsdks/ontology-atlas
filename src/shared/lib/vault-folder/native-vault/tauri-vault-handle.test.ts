@@ -98,6 +98,37 @@ describe('tauri vault handle', () => {
     expect(image.lastModified).toBe(1_790_000_000_456);
   });
 
+  it('holds the bytes of a markdown file the text read refuses, as a browser file does', async () => {
+    const legacy = [0x23, 0x20, 0xb0, 0xe1, 0x0a];
+    installInvoke(({ command }) => {
+      if (command === 'vault_path_exists') return true;
+      if (command === 'read_vault_text_file') throw new Error('stream did not contain valid UTF-8');
+      if (command === 'read_vault_binary_file') {
+        const stamped = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, ...legacy]);
+        new DataView(stamped.buffer).setBigUint64(0, BigInt(1_790_000_000_789), true);
+        return stamped.buffer;
+      }
+      throw new Error(`unexpected command: ${command}`);
+    });
+    const file = await (await createTauriVaultHandle('/vault').getFileHandle('legacy.md')).getFile();
+
+    expect([...new Uint8Array(await file.arrayBuffer())]).toEqual(legacy);
+    expect(file.type).toBe('text/markdown');
+    expect(file.lastModified).toBe(1_790_000_000_789);
+  });
+
+  it('keeps the text read reason when the bytes cannot be read either', async () => {
+    installInvoke(({ command }) => {
+      if (command === 'vault_path_exists') return true;
+      if (command === 'read_vault_text_file') throw new Error('No such file or directory (os error 2)');
+      if (command === 'read_vault_binary_file') throw new Error('binary read failed');
+      throw new Error(`unexpected command: ${command}`);
+    });
+    const handle = await createTauriVaultHandle('/vault').getFileHandle('gone.md');
+
+    await expect(handle.getFile()).rejects.toThrow('No such file or directory (os error 2)');
+  });
+
   it('creates directories, creates files, writes accumulated text, and removes files', async () => {
     const calls = installInvoke(({ command }) => {
       if (command === 'vault_path_exists') return false;

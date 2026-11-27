@@ -72,23 +72,38 @@ class TauriFileHandle {
     this.name = basename(relativePath);
   }
 
+  /**
+   * A `File` holds bytes, as a browser's does. Markdown is read as text first; the text read refuses
+   * bytes that are not UTF-8, so those are read as they are and the reader decides: Planning refuses
+   * to edit them, the vault decodes them as a browser would, and one such file never fails a whole
+   * folder. What the byte read refuses as well keeps the text read's reason.
+   */
   async getFile(): Promise<File> {
-    if (this.name.endsWith('.md')) {
-      const file = await this.invoke<TauriTextFile>('read_vault_text_file', {
+    if (!this.name.endsWith('.md')) return this.readBytes(mimeForPath(this.relativePath));
+    let file: TauriTextFile;
+    try {
+      file = await this.invoke<TauriTextFile>('read_vault_text_file', {
         rootPath: this.rootPath,
         relativePath: this.relativePath,
       });
-      return new File([file.text], this.name, {
-        type: 'text/markdown',
-        lastModified: file.lastModified,
+    } catch (textError) {
+      return this.readBytes('text/markdown').catch(() => {
+        throw textError;
       });
     }
+    return new File([file.text], this.name, {
+      type: 'text/markdown',
+      lastModified: file.lastModified,
+    });
+  }
+
+  private async readBytes(type: string): Promise<File> {
     const stamped = await this.invoke<ArrayBuffer>('read_vault_binary_file', {
       rootPath: this.rootPath,
       relativePath: this.relativePath,
     });
     return new File([new Uint8Array(stamped, BINARY_FILE_STAMP_BYTES)], this.name, {
-      type: mimeForPath(this.relativePath),
+      type,
       lastModified: Number(new DataView(stamped).getBigUint64(0, true)),
     });
   }
