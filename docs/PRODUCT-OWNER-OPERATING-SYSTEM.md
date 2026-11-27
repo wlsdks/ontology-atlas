@@ -7,7 +7,7 @@ area: process
 
 # Product Owner Operating System
 
-> A one-way product change gets one independent `reviewer` and a decision
+> A one-way product change gets one independent `code-reviewer` and a decision
 > record; every other change is built and verified.
 
 Atlas does not need a universal product-management framework. It needs a product
@@ -29,7 +29,7 @@ Atlas PO work starts from the current
 [Atlas product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis), not a
 generic feature scorecard. Its connected risks are source-first meaning
 construction, task-aware agent context, evidence-bound human change review,
-and accepted meaning reused in the next task. The reviewer judges its part of this
+and accepted meaning reused in the next task. The `code-reviewer` judges its part of this
 same product through the lenses its brief names. Do not require every small change to implement the whole loop.
 
 Judge a proposal by the state it helps a person reach, not by its feature count
@@ -108,7 +108,7 @@ The `AGENTS.md` workflow table decides. A change is one-way when it changes:
   newcomer reads first.
 
 A one-way change runs `pnpm decisions:find`, puts the person, moment, and
-recovery proof in the pull request, gets one `reviewer` with the lenses
+recovery proof in the pull request, gets one `code-reviewer` with the lenses
 `moment`, `evidence`, `boundaries`, and `smallest-slice`, and lands one decision
 record. Any other product behavior or copy is built and its behavior verified.
 Typos, dependency bumps, CI plumbing, lint configuration, isolated test
@@ -130,8 +130,8 @@ Fail when <observable condition>.
 
 Use source-hidden proof when the claim is that Atlas itself carries the
 understanding. Use the real runtime when the claim is interaction or control.
-Do not use a green unit test as proof of human comprehension, and do not ask a
-PO reviewer to repeat browser, motion, responsive, design, or journey gates.
+Do not use a green unit test as proof of human comprehension, and do not ask the
+`code-reviewer` to repeat browser, motion, responsive, design, or journey gates.
 
 This proof is the product contract. Whether the change is one-way only
 determines how much independent judgment it needs.
@@ -139,14 +139,14 @@ determines how much independent judgment it needs.
 ## Product spec
 
 A one-way change that will be built may get a product spec before its
-review, so the reviewer and the builder work from one concrete answer: who, at
+review, so the `code-reviewer` and the builder work from one concrete answer: who, at
 which moment, through which steps, in which states, with which exact words, and
-how anyone can tell it works. The `product-planner` agent writes it at max
+how anyone can tell it works. The `spec-writer` agent writes it at high
 effort with `pnpm doc:new -- --type=spec`; it cites a file, capture, or record
 for every claim about today, weighs the status quo against at least one other
 way to restore the ability, and never builds. Exact English and Korean copy go
-into `messages/`, because prose under `docs/` stays English. The one `reviewer`
-adds the `spec` lens before any build; the `planner` maps each acceptance
+into `messages/`, because prose under `docs/` stays English. The one `code-reviewer`
+adds the `spec` lens before any build; the `slice-planner` maps each acceptance
 criterion to a slice, `/ui-build` captures each state row, and the
 returned-slice review checks the criteria and the Out of scope list. A two-way
 change writes none; its one-screen pass is enough. The spec lands with the change
@@ -173,7 +173,7 @@ decision records. A significant decision gets a decision fragment.
 
 ## Independent review protocol
 
-One-way work gets one `reviewer` that did not write the change, applying
+One-way work gets one `code-reviewer` that did not write the change, applying
 `moment`, `evidence`, `boundaries`, and `smallest-slice`.
 
 1. Search narrowly with `pnpm decisions:find <terms>` for the same surface
@@ -182,21 +182,21 @@ One-way work gets one `reviewer` that did not write the change, applying
 2. Record the requested words, intended decision, scope, and recovery proof
    before review. Without a before-state, review cannot claim a causal delta.
    On a build decision, that record is the product spec.
-3. Give the reviewer the primary evidence and seal its first judgment before
+3. Give the `code-reviewer` the primary evidence and seal its first judgment before
    the author answers. If the execution environment weakens independence,
    record it.
 4. The author answers a finding once, only when it materially conflicts.
-5. If the decision is one-way and author and reviewer still disagree, take one
-   second opinion from a different model: from Claude Code, the Codex
-   `reviewer` brief (`codex exec --sandbox read-only` with
-   `.agents/agents/reviewer.md`); from Codex, the Claude Code `reviewer`. Give it
-   the same evidence and the disputed decision stated neutrally, but neither
-   argument, and no reply round. Send repository content only, never vault or
+5. If the decision is one-way and author and `code-reviewer` still disagree,
+   take one second opinion from a different model: from Claude Code, the Codex
+   `code-reviewer` brief (`codex exec --sandbox read-only` with
+   `.agents/agents/code-reviewer.md`); from Codex, the Claude Code
+   `code-reviewer`. Give it the same evidence and the disputed decision stated
+   neutrally, but neither argument, and no reply round. Send repository content only, never vault or
    user data. If no different model is available, say so.
 6. The accountable human owner decides; `unchanged` is valid. The decision
    fragment records the dissent and the falsifier.
 
-The reviewer consumes the outputs of `/ui-proof`, `/ui-proof`,
+The `code-reviewer` consumes the outputs of `/ui-proof`, `/ui-proof`,
 `/ui-proof`, `/ui-proof`, and `/ui-proof` rather than repeating
 those gates.
 

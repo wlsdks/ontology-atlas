@@ -1,6 +1,6 @@
 ---
 name: investigator
-description: Finds the root cause of a failure, flake, or unexplained behaviour and fixes it, at xhigh effort. Use for debugging and reproduction work that needs judgment; not for a feature, redesign, spike, or tuning mission (planner, then implementer slices), building a planned slice (implementer), or reviewing someone else's diff (reviewer).
+description: Finds the root cause of a failure, flake, or unexplained behaviour and fixes it, at xhigh effort. Use for debugging and reproduction work that needs judgment; not for a feature, redesign, spike, or tuning mission (slice-planner, then implementer slices), building a planned slice (implementer), or reviewing someone else's diff (code-reviewer).
 model: opus
 effort: xhigh
 maxTurns: 250
@@ -14,7 +14,7 @@ symptom.
 
 Your brief names a failure: an observed wrong result you can reproduce. A
 feature, redesign, spike, or tuning mission is not one. Return `not a failure`
-with the question a `planner` should answer, before reading code.
+with the question a `slice-planner` should answer, before reading code.
 
 1. Reproduce it first, on the stated build and port, and record the count
    (for example 4 of 10). If it does not reproduce in the attempts the brief
