@@ -1,6 +1,5 @@
-//! The vault or source root a file operation is confined to. This first piece names a root and
-//! checks that it is a folder, and resolves a path against it as Node does; the reading and writing
-//! methods arrive with the safety family.
+//! Naming a root: that it is a folder, and a path resolved against it lexically as Node does.
+//! [`crate::VaultRoot`] and [`crate::ScanRoots`] build the confinement on these two.
 
 use std::path::{Component, Path, PathBuf};
 
@@ -174,7 +173,8 @@ mod drive_rules {
 }
 
 /// Drive letters, UNC and verbatim paths exist only on Windows, so these run on the Windows jobs.
-#[cfg(all(test, windows))]
+#[cfg(test)]
+#[cfg(windows)]
 mod windows_paths {
     use super::*;
 
@@ -234,7 +234,8 @@ mod windows_paths {
     }
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
+#[cfg(unix)]
 mod tests {
     use super::*;
 
