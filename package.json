@@ -167,6 +167,7 @@
     "perf:vault-index": "node scripts/perf/perf-vault-index.mjs",
     "perf:vault-open": "node scripts/perf/perf-vault-open.mjs",
     "perf:app-open": "node scripts/perf/perf-app-open.mjs",
+    "perf:ui-move": "node scripts/perf/vite-move/measure-ui-move.mjs",
     "perf:meaning": "node scripts/perf/perf-meaning.mjs",
     "perf:meaning-quality": "node scripts/perf/meaning-quality.mjs",
     "perf:builtin-model": "node scripts/perf/perf-builtin-model.mjs",
