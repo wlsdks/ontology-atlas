@@ -9,10 +9,12 @@ import { GROUP_GLYPH_SLOT } from "./RelationGroupShell";
 import type { OntologyMapDetailPanelProps } from "./detail-panel-props";
 
 const PATH_CHARACTERS = 34;
+const CHANGED_DOT_CLASS = "h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-status-warning)]";
 
 /**
  * The concept's code, one press from the code reader beside the panel. It keeps its selected look
- * while the reader is open, and a second press closes the reader.
+ * while the reader is open, and a second press closes the reader. Below it, the reason the map rings
+ * this concept as needing its evidence rechecked.
  */
 export function CodeRow({ row }: { row: NonNullable<OntologyMapDetailPanelProps["codeRow"]> }) {
   const t = useTranslations("codeReader");
@@ -50,6 +52,14 @@ export function CodeRow({ row }: { row: NonNullable<OntologyMapDetailPanelProps[
           </span>
         ) : null}
       </button>
+      {row.changedEvidence ? (
+        <p data-testid="map-detail-panel-code-changed" className="mt-1 flex min-w-0 items-center gap-2 text-label leading-label text-[color:var(--map-panel-text-secondary)]">
+          <span aria-hidden className={CHANGED_DOT_CLASS} />
+          <span className="min-w-0 break-words">
+            {t(row.changedEvidence.gone ? "row.gone" : "row.changed", { path: row.changedEvidence.path })}
+          </span>
+        </p>
+      ) : null}
     </div>
   );
 }

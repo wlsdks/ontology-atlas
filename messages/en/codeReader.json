@@ -2,7 +2,9 @@
   "row": {
     "label": "Code",
     "open": "Read {path}",
-    "cites": "{count, plural, one {# cited range} other {# cited ranges}}"
+    "cites": "{count, plural, one {# cited range} other {# cited ranges}}",
+    "changed": "{path} changed after this document was written.",
+    "gone": "{path} is not at that path in this repository."
   },
   "title": "Code for {concept}",
   "lines": {
