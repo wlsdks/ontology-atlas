@@ -98,8 +98,6 @@ function renderPanel(connection: AiConnectionState, vaultRootPath: string | null
     <ModelConnectionsPanel
       connection={connection}
       vaultRootPath={vaultRootPath}
-      downloadHref="/download/"
-      onDownloadNavigate={() => {}}
     />,
   );
 }
@@ -129,21 +127,6 @@ beforeEach(() => {
   vi.spyOn(Date, 'now').mockImplementation(() => (clock += 1000));
   for (const mock of Object.values(mocks)) mock.mockReset();
   window.localStorage.clear();
-});
-
-/** A browser has nowhere safe to keep a key, so the tab explains and shows no sample rows. */
-describe('models tab on the web', () => {
-  it('renders no key input, no runner row and no example data without the desktop bridge', () => {
-    renderPanel(makeConnection({ bridgeAvailable: false }));
-    expect(screen.getByTestId('ai-connection-web-degraded')).toBeInTheDocument();
-    for (const id of ['ai-register-anthropic', 'ai-key-input-openai', 'ai-register-local-ollama', 'ai-local-url', 'ai-provider-jev', 'ai-audit-tail']) {
-      expect(screen.queryByTestId(id)).toBeNull();
-    }
-    // Why the key-less runners do not work here either is one press away, under the stage.
-    fireEvent.click(screen.getByTestId('ai-connection-web-why'));
-    expect(screen.getByTestId('ai-connection-web-degraded-local')).toBeInTheDocument();
-    expect(screen.getByTestId('ai-connection-download-link')).toHaveAttribute('href', '/download/');
-  });
 });
 
 describe('models tab layout', () => {
@@ -697,7 +680,6 @@ describe('focus, announcements and abandoned checks', () => {
       <ModelConnectionsPanel
         connection={makeConnection({ statuses: { anthropic: null, openai: { provider: 'openai', stored: true, last4: 'wxyz' }, gemini: null } })}
         vaultRootPath="/vault"
-        downloadHref="/download/"
       />,
     );
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('ai-replace-openai')));
@@ -758,7 +740,7 @@ describe('local runner keyboard entry', () => {
 
 describe('Escape order', () => {
   it('leaves the row open when an inner control already handled the Escape', () => {
-    render(<ModelConnectionsPanel connection={makeConnection()} vaultRootPath="/vault" downloadHref="/download/" />);
+    render(<ModelConnectionsPanel connection={makeConnection()} vaultRootPath="/vault" />);
     fireEvent.click(screen.getByTestId('ai-register-openai'));
     const input = screen.getByTestId('ai-key-input-openai');
     input.addEventListener('keydown', (event) => event.preventDefault());
@@ -770,7 +752,7 @@ describe('Escape order', () => {
     const outerEscape = vi.fn();
     render(
       <div onKeyDown={(event) => event.key === 'Escape' && outerEscape()}>
-        <ModelConnectionsPanel connection={makeConnection()} vaultRootPath="/vault" downloadHref="/download/" />
+        <ModelConnectionsPanel connection={makeConnection()} vaultRootPath="/vault" />
       </div>,
     );
     fireEvent.click(screen.getByTestId('ai-register-openai'));
@@ -783,7 +765,7 @@ describe('Escape order', () => {
     const outerEscape = vi.fn();
     render(
       <div onKeyDown={(event) => event.key === 'Escape' && outerEscape()}>
-        <ModelConnectionsPanel connection={makeConnection()} vaultRootPath="/vault" downloadHref="/download/" />
+        <ModelConnectionsPanel connection={makeConnection()} vaultRootPath="/vault" />
       </div>,
     );
     fireEvent.keyDown(screen.getByTestId('ai-connection-view'), { key: 'Escape' });

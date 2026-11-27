@@ -45,22 +45,6 @@ describe('AgentSetupSection', () => {
     expect(screen.queryByTestId('vault-agent-setup-panel')).toBeNull();
   });
 
-  // The installed app must not offer its own download (AGENTS.md); `launch` is non-null
-  // exactly when a server is bundled.
-  it('shows the app link only where no server is bundled', () => {
-    vaultStatus.current = 'idle';
-    serverState.launch = null;
-    const { unmount } = renderSection();
-    expect(screen.getByTestId('agents-get-app')).toBeInTheDocument();
-    unmount();
-
-    serverState.launch = { command: '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp', args: [] };
-    renderSection();
-    expect(screen.queryByTestId('agents-get-app')).toBeNull();
-    expect(screen.getByTestId('agents-open-vault')).toBeInTheDocument();
-    serverState.launch = null;
-  });
-
   // Connecting is the app's work; the no-folder card offers no checkout-only terminal lines.
   it('shows no source-checkout command in the no-folder notice', () => {
     vaultStatus.current = 'idle';

@@ -29,7 +29,6 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-import { buttonVariants } from '@/shared/ui/controls/button';
 
 import { AcpRuntimeSettings } from './AcpRuntimeSettings';
 
@@ -429,17 +428,6 @@ describe('runtime list: what the app cannot block', () => {
 });
 
 describe('runtime list: unavailable states', () => {
-  it('gives the reason and the way forward in a browser', () => {
-    bridge.available = false;
-    render(<AcpRuntimeSettings />);
-    expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webLabel');
-    expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webCaption');
-    // The named destination must be reachable (`.claude/rules/surfaces.md`).
-    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/agents/?tab=mcp');
-    // In a browser it does not even set out to look.
-    expect(bridge.detect).not.toHaveBeenCalled();
-  });
-
   it('says what to do when no runtime is usable', async () => {
     bridge.detect.mockResolvedValue([makeRuntime({ id: 'cursor', state: 'cli-missing' })]);
     render(<AcpRuntimeSettings />);
@@ -629,44 +617,6 @@ describe('runtime rows: marks, columns and the result block', () => {
     expect(badge).toHaveClass('min-w-18', 'justify-center');
   });
 
-  it('offers the Mac app as the one filled press, in the standard primary Button shape', () => {
-    bridge.available = false;
-    render(<AcpRuntimeSettings embedded />);
-    const getApp = screen.getByTestId('app-settings-runtimes-get-app');
-    expect(getApp).toHaveAttribute('href', '/download/');
-    // The primary Button's own classes: pills are kept for a state or a count.
-    for (const cls of buttonVariants({ variant: 'primary', size: 'sm' }).split(' ')) {
-      expect(getApp).toHaveClass(cls);
-    }
-    expect(getApp).not.toHaveClass('rounded-full');
-    expect(getApp).toHaveClass('atlas-touch-floor');
-    expect(getApp.className).not.toMatch(/indigo-a16/);
-  });
-
-  it('lists the tools the app looks for, read from the registry the app ships with', async () => {
-    bridge.available = false;
-    const registry = (await import('@/src-tauri/src/acp-registry.json')).default;
-    render(<AcpRuntimeSettings embedded />);
-    const toggle = screen.getByTestId('app-settings-runtimes-web-tools-toggle');
-    expect(toggle).toHaveTextContent(`webToolsHeading:${JSON.stringify({ count: registry.agents.length })}`);
-    fireEvent.click(toggle);
-    const list = await screen.findByTestId('app-settings-runtimes-web-tools');
-    for (const agent of registry.agents) {
-      expect(within(list).getByTestId(`app-settings-runtimes-web-tool-${agent.id}`)).toHaveTextContent(agent.name);
-    }
-    // Nothing to press and no state to claim in a browser: marks and names only.
-    expect(within(list).queryByRole('button')).toBeNull();
-    expect(within(list).queryByRole('link')).toBeNull();
-    expect(list.querySelector('[data-vendor-mark="monogram"]')).toBeNull();
-  });
-
-  it('keeps one winner on the web card: the app is the filled press, MCP steps back to a link', () => {
-    bridge.available = false;
-    render(<AcpRuntimeSettings embedded />);
-    const mcp = screen.getByTestId('app-settings-runtimes-mcp-link');
-    expect(mcp).not.toHaveClass('rounded-full');
-    expect(mcp).not.toHaveClass('border');
-  });
 });
 
 describe('pending chat setup guidance', () => {
