@@ -102,6 +102,12 @@ fn write_number(number: f64, out: &mut String) {
 /// escaped, everything else (U+2028 and U+2029 included) is written as it is.
 pub fn write_string(text: &str, out: &mut String) {
     out.push('"');
+    write_string_body(text, out);
+    out.push('"');
+}
+
+/// [`write_string`] without the quotes, for a string written in pieces.
+pub fn write_string_body(text: &str, out: &mut String) {
     let mut plain_from = 0;
     for (position, character) in text.char_indices() {
         let escape: Option<&str> = match character {
@@ -130,7 +136,6 @@ pub fn write_string(text: &str, out: &mut String) {
         plain_from = position + character.len_utf8();
     }
     out.push_str(text.get(plain_from..).unwrap_or_default());
-    out.push('"');
 }
 
 #[cfg(test)]

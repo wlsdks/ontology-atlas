@@ -4,7 +4,6 @@
 //! The server is a port of the JavaScript one (`mcp/src`), answer for answer: the same tools, the
 //! same words, the same bytes. It depends on the family crates and on no async runtime.
 
-pub mod consent;
 pub mod dispatch;
 pub mod envelope;
 pub mod js_text;
@@ -18,4 +17,3 @@ pub mod session;
 pub mod suggestions;
 pub mod surface;
 pub mod tools;
-pub mod write_log;

@@ -117,7 +117,15 @@ fn the_protocol_table_rows_are_byte_equal() {
         ("id object", format!("{{\"jsonrpc\":\"2.0\",\"id\":{{}},\"method\":\"ping\"}}\n{}", ping(9))),
         ("id above 2^53", format!("{{\"jsonrpc\":\"2.0\",\"id\":9007199254740992,\"method\":\"ping\"}}\n{}", ping(9))),
         ("id 2^53-1", "{\"jsonrpc\":\"2.0\",\"id\":9007199254740991,\"method\":\"ping\"}\n".to_string()),
-        ("id 1e2 and -0 and a string", "{\"jsonrpc\":\"2.0\",\"id\":1e2,\"method\":\"ping\"}\n{\"jsonrpc\":\"2.0\",\"id\":-0,\"method\":\"ping\"}\n{\"jsonrpc\":\"2.0\",\"id\":\"é😀\",\"method\":\"ping\"}\n".to_string()),
+        (
+            "lone surrogate ids echoed as written",
+            "{\"jsonrpc\":\"2.0\",\"id\":\"a\\ud800b\",\"method\":\"ping\"}\n{\"jsonrpc\":\"2.0\",\"id\":\"a\\uD801b\",\"method\":\"ping\"}\n{\"jsonrpc\":\"2.0\",\"id\":\"\\ude00\\ud83d\",\"method\":\"ping\"}\n{\"jsonrpc\":\"2.0\",\"id\":\"\\ud83d\\ude00\",\"method\":\"ping\"}\n".to_string(),
+        ),
+        (
+            "cancel names a lone surrogate id",
+            format!("{}{}{}{}", ping(2), "{\"jsonrpc\":\"2.0\",\"id\":\"a\\ud800b\",\"method\":\"ping\"}\n", "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/cancelled\",\"params\":{\"requestId\":\"a\\ud800b\"}}\n", ping(9)),
+        ),
+        ("id 1e2 and -0 and a string","{\"jsonrpc\":\"2.0\",\"id\":1e2,\"method\":\"ping\"}\n{\"jsonrpc\":\"2.0\",\"id\":-0,\"method\":\"ping\"}\n{\"jsonrpc\":\"2.0\",\"id\":\"é😀\",\"method\":\"ping\"}\n".to_string()),
         ("no jsonrpc", format!("{{\"id\":1,\"method\":\"ping\"}}\n{}", ping(9))),
         ("jsonrpc 1.0", format!("{{\"jsonrpc\":\"1.0\",\"id\":1,\"method\":\"ping\"}}\n{}", ping(9))),
         ("extra top-level key", format!("{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\",\"x\":1}}\n{}", ping(9))),

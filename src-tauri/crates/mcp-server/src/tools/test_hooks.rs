@@ -19,6 +19,7 @@ pub fn call(
     match name {
         "__test_panic" => Some(stop_unexpectedly()),
         "__test_hold" => Some(Ok(hold(context))),
+        "__test_write_marker" => Some(write_marker(arguments)),
         "__test_echo" => Some(Ok(Value::object([(
             "echo",
             Value::Object(arguments.clone()),
@@ -49,4 +50,14 @@ fn hold(context: &CallContext<'_>) -> Value {
         ("held", Value::Bool(true)),
         ("cancelled", Value::Bool(cancelled)),
     ])
+}
+
+/// Creates the file named by the `path` argument, so a test can see that a handler ran.
+fn write_marker(arguments: &Object) -> Result<Value, ToolError> {
+    let path = arguments
+        .get("path")
+        .and_then(Value::as_str)
+        .ok_or_else(|| ToolError::new("path must be a string."))?;
+    std::fs::write(path, "ran").map_err(|error| ToolError::new(format!("{error}")))?;
+    Ok(Value::object([("written", Value::Bool(true))]))
 }

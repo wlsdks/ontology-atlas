@@ -222,6 +222,29 @@ fn a_cancellation_in_the_same_chunk_as_its_request_leaves_the_request_unanswered
 }
 
 #[test]
+fn a_cancelled_request_still_runs_its_handler_and_only_its_answer_is_dropped() {
+    let marker = std::env::temp_dir().join(format!("mcp-cancel-marker-{}", std::process::id()));
+    let _ = std::fs::remove_file(&marker);
+    let cancel = "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/cancelled\",\"params\":{\"requestId\":2}}\n";
+    let path =
+        mcp_server::json::to_json(&mcp_server::json::Value::string(marker.to_string_lossy()));
+    let run = rust(
+        &[],
+        &format!(
+            "{}{cancel}{}",
+            call(2, "__test_write_marker", &format!("{{\"path\":{path}}}")),
+            then_ping()
+        ),
+    );
+    assert_eq!(run.lines, [PING_9]);
+    assert!(
+        marker.exists(),
+        "the handler ran although its request was cancelled"
+    );
+    let _ = std::fs::remove_file(&marker);
+}
+
+#[test]
 fn a_cancellation_naming_no_request_in_flight_changes_nothing() {
     let cancel = "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/cancelled\",\"params\":{\"requestId\":99}}\n";
     let run = rust(&[], &format!("{cancel}{}", then_ping()));
@@ -302,7 +325,7 @@ fn standard_input_closing_ends_a_waiting_call_and_the_server() {
 
 #[test]
 fn standard_output_closed_by_the_client_ends_the_server_quietly() {
-    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_ontology-atlas-mcp"));
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_ontology-atlas-mcp-rust"));
     command
         .env("OATLAS_VAULT", support::storefront())
         .stdin(std::process::Stdio::piped())
@@ -350,6 +373,29 @@ fn a_line_longer_than_the_buffer_ends_the_session_without_a_panic() {
     );
     assert!(!run.stderr.contains("panicked"));
     assert_eq!(run.code, Some(0));
+}
+
+/// Declared difference from the JavaScript server, which answers at any depth: beyond the parser's
+/// bound a line is dropped like any other that is not a message, and the session goes on.
+#[test]
+fn a_request_nested_beyond_the_parsers_bound_is_dropped_and_the_session_goes_on() {
+    let depth = mcp_server::json::MAX_DEPTH + 50;
+    let nested = format!("{}{}", "[".repeat(depth), "]".repeat(depth));
+    let run = rust(
+        &[],
+        &format!(
+            "{}{}",
+            request(
+                2,
+                "tools/call",
+                &format!("{{\"name\":\"git_status\",\"arguments\":{{\"a\":{nested}}}}}")
+            ),
+            then_ping()
+        ),
+    );
+    assert_eq!(run.lines, [PING_9]);
+    assert_eq!(run.code, Some(0));
+    assert!(!run.stderr.contains("overflow"), "{}", run.stderr);
 }
 
 #[test]
@@ -456,6 +502,9 @@ fn a_retired_tool_is_still_known_and_a_blank_argument_is_refused_before_the_hand
     );
 }
 
+/// The expected text names a Unix path; on Windows the oracle test compares the same words with
+/// the JavaScript server's.
+#[cfg(unix)]
 #[test]
 fn a_missing_vault_root_prints_two_lines_and_exits_one() {
     let run = rust(&[("OATLAS_VAULT", "/definitely/not/here/")], "");

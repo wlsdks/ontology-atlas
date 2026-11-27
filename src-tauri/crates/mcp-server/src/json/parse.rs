@@ -2,8 +2,10 @@
 
 use super::value::{Object, Value};
 
-/// A line nested deeper than this is refused instead of parsed. `JSON.parse` goes deeper; no
-/// request an agent sends does, and a bound keeps the recursion inside the thread's stack.
+/// A line nested deeper than this is refused instead of parsed, and a refused line gets no answer.
+/// Declared difference: the JavaScript server answers a request nested far deeper (it was probed to
+/// a million levels). No request an agent sends nests this deep, and a bound keeps the recursion,
+/// and the drop of the value built, inside the thread's stack.
 pub const MAX_DEPTH: usize = 100_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,10 +24,27 @@ impl std::error::Error for ParseError {}
 /// whitespace. A lone surrogate escape (`\ud800`) becomes U+FFFD, since a Rust string cannot hold
 /// one.
 pub fn parse(text: &str) -> Result<Value, ParseError> {
+    parse_with(text, false)
+}
+
+/// The character that opens an escape in a string read by [`parse_keeping_surrogates`].
+pub const SURROGATE_ESCAPE: char = '\u{f8ff}';
+
+/// [`parse`] for the one place that must tell lone surrogates apart: a request id is written back
+/// as it came, and two ids that differ only in a lone surrogate are two requests. Every string comes
+/// back in a reversible form: a lone surrogate `\udXXX` is [`SURROGATE_ESCAPE`] followed by
+/// U+E000 + (XXX - 0xD800), and a genuine [`SURROGATE_ESCAPE`] is doubled. Only ids are read from
+/// such a parse; the rest of a message is read with [`parse`].
+pub fn parse_keeping_surrogates(text: &str) -> Result<Value, ParseError> {
+    parse_with(text, true)
+}
+
+fn parse_with(text: &str, keep_surrogates: bool) -> Result<Value, ParseError> {
     let mut parser = Parser {
         bytes: text.as_bytes(),
         text,
         position: 0,
+        keep_surrogates,
     };
     parser.skip_whitespace();
     let value = parser.value(0)?;
@@ -41,6 +60,7 @@ struct Parser<'a> {
     bytes: &'a [u8],
     text: &'a str,
     position: usize,
+    keep_surrogates: bool,
 }
 
 impl Parser<'_> {
@@ -202,19 +222,49 @@ impl Parser<'_> {
             let byte = self.peek().ok_or(ParseError)?;
             match byte {
                 b'"' => {
-                    out.push_str(self.text.get(plain_from..self.position).ok_or(ParseError)?);
+                    self.push_plain(&mut out, plain_from)?;
                     self.position += 1;
                     return Ok(out);
                 }
                 0..=0x1f => return Err(ParseError),
                 b'\\' => {
-                    out.push_str(self.text.get(plain_from..self.position).ok_or(ParseError)?);
+                    self.push_plain(&mut out, plain_from)?;
                     self.position += 1;
                     self.escape(&mut out)?;
                     plain_from = self.position;
                 }
                 _ => self.position += 1,
             }
+        }
+    }
+
+    /// Appends the unescaped run that starts at `from` and ends here.
+    fn push_plain(&self, out: &mut String, from: usize) -> Result<(), ParseError> {
+        let run = self.text.get(from..self.position).ok_or(ParseError)?;
+        if self.keep_surrogates && run.contains(SURROGATE_ESCAPE) {
+            for character in run.chars() {
+                self.push_character(out, character);
+            }
+        } else {
+            out.push_str(run);
+        }
+        Ok(())
+    }
+
+    fn push_character(&self, out: &mut String, character: char) {
+        out.push(character);
+        if self.keep_surrogates && character == SURROGATE_ESCAPE {
+            out.push(character);
+        }
+    }
+
+    /// A surrogate escape with no partner: U+FFFD, or its reversible form when asked to keep it.
+    fn push_lone_surrogate(&self, out: &mut String, code: u32) {
+        if self.keep_surrogates {
+            out.push(SURROGATE_ESCAPE);
+            out.push(char::from_u32(0xe000 + (code - 0xd800)).unwrap_or('\u{fffd}'));
+        } else {
+            out.push('\u{fffd}');
         }
     }
 
@@ -232,32 +282,35 @@ impl Parser<'_> {
             b't' => out.push('\t'),
             b'u' => {
                 let first = self.hex4()?;
-                let character = match first {
+                let paired = match first {
                     0xd800..=0xdbff => self.low_surrogate(first),
-                    0xdc00..=0xdfff => '\u{fffd}',
-                    other => char::from_u32(other).unwrap_or('\u{fffd}'),
+                    0xdc00..=0xdfff => None,
+                    other => Some(char::from_u32(other).unwrap_or('\u{fffd}')),
                 };
-                out.push(character);
+                match paired {
+                    Some(character) => self.push_character(out, character),
+                    None => self.push_lone_surrogate(out, first),
+                }
             }
             _ => return Err(ParseError),
         }
         Ok(())
     }
 
-    /// The character a high surrogate escape and the low surrogate escape after it make; U+FFFD
+    /// The character a high surrogate escape and the low surrogate escape after it make; `None`
     /// when no low surrogate follows.
-    fn low_surrogate(&mut self, high: u32) -> char {
+    fn low_surrogate(&mut self, high: u32) -> Option<char> {
         let follows = self.bytes.get(self.position..self.position + 2) == Some(b"\\u");
         if follows {
             let resume = self.position;
             self.position += 2;
             if let Ok(low @ 0xdc00..=0xdfff) = self.hex4() {
                 let code = 0x10000 + ((high - 0xd800) << 10) + (low - 0xdc00);
-                return char::from_u32(code).unwrap_or('\u{fffd}');
+                return Some(char::from_u32(code).unwrap_or('\u{fffd}'));
             }
             self.position = resume;
         }
-        '\u{fffd}'
+        None
     }
 }
 

@@ -10,6 +10,6 @@ mod parse;
 mod value;
 mod write;
 
-pub use parse::{parse, ParseError, MAX_DEPTH};
+pub use parse::{parse, parse_keeping_surrogates, ParseError, MAX_DEPTH, SURROGATE_ESCAPE};
 pub use value::{Object, Value};
-pub use write::{to_json, to_json_pretty, write_json, write_string};
+pub use write::{to_json, to_json_pretty, write_json, write_string, write_string_body};

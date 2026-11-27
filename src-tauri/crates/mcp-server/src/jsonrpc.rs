@@ -4,9 +4,13 @@
 //! is what the SDK does: its message schema is strict, so an extra top-level key, a `null` id, an
 //! id that is not a safe integer or a string, or `params` that is not an object all drop the line.
 
-use crate::json::{to_json, Object, Value};
+use crate::json::{to_json, write_string_body, Object, Value, SURROGATE_ESCAPE};
 
 /// A request id. Numbers must be safe integers; `1.5`, `null` and `true` are not ids.
+///
+/// A text id is kept in a reversible form so that a lone surrogate (which a Rust string cannot
+/// hold) is written back as it came and two ids differing only in one stay two ids: see
+/// [`crate::json::parse_keeping_surrogates`]. Build one with [`Id::text`], never from a raw string.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Id {
     Number(i64),
@@ -14,10 +18,49 @@ pub enum Id {
 }
 
 impl Id {
-    pub fn to_value(&self) -> Value {
+    /// A text id for a string with no lone surrogate in it.
+    pub fn text(text: &str) -> Self {
+        let mut encoded = String::with_capacity(text.len());
+        for character in text.chars() {
+            encoded.push(character);
+            if character == SURROGATE_ESCAPE {
+                encoded.push(character);
+            }
+        }
+        Self::Text(encoded)
+    }
+
+    /// The id as JSON, a lone surrogate written as the escape `JSON.stringify` gives it.
+    pub fn to_json(&self) -> String {
         match self {
-            Self::Number(number) => Value::integer(*number),
-            Self::Text(text) => Value::string(text.clone()),
+            Self::Number(number) => to_json(&Value::integer(*number)),
+            Self::Text(encoded) => {
+                let mut out = String::with_capacity(encoded.len() + 2);
+                out.push('"');
+                let mut plain = String::new();
+                let mut characters = encoded.chars();
+                while let Some(character) = characters.next() {
+                    if character != SURROGATE_ESCAPE {
+                        plain.push(character);
+                        continue;
+                    }
+                    match characters.next() {
+                        Some(unit @ '\u{e000}'..='\u{e7ff}') => {
+                            write_string_body(&plain, &mut out);
+                            plain.clear();
+                            out.push_str(&format!(
+                                "\\u{:04x}",
+                                0xd800 + (u32::from(unit) - 0xe000)
+                            ));
+                        }
+                        Some(other) => plain.push(other),
+                        None => plain.push(SURROGATE_ESCAPE),
+                    }
+                }
+                write_string_body(&plain, &mut out);
+                out.push('"');
+                out
+            }
         }
     }
 }
@@ -35,7 +78,7 @@ pub(crate) fn safe_integer(number: f64) -> i64 {
 
 fn read_id(value: &Value) -> Option<Id> {
     match value {
-        Value::String(text) => Some(Id::Text(text.clone())),
+        Value::String(text) => Some(Id::text(text)),
         Value::Number(number)
             if number.is_finite() && number.fract() == 0.0 && number.abs() <= MAX_SAFE_INTEGER =>
         {
@@ -205,7 +248,7 @@ pub fn raw_result_line(id: &Id, result_json: &str) -> String {
     line.push_str("{\"result\":");
     line.push_str(result_json);
     line.push_str(",\"jsonrpc\":\"2.0\",\"id\":");
-    line.push_str(&to_json(&id.to_value()));
+    line.push_str(&id.to_json());
     line.push_str("}\n");
     line
 }
@@ -218,7 +261,7 @@ pub fn error_line(id: &Id, error: &RpcError) -> String {
     ]);
     format!(
         "{{\"jsonrpc\":\"2.0\",\"id\":{},\"error\":{}}}\n",
-        to_json(&id.to_value()),
+        id.to_json(),
         to_json(&body)
     )
 }
@@ -335,7 +378,7 @@ mod tests {
             "{\"result\":{},\"jsonrpc\":\"2.0\",\"id\":7}\n"
         );
         assert_eq!(
-            error_line(&Id::Text("a".to_string()), &RpcError::method_not_found()),
+            error_line(&Id::text("a"), &RpcError::method_not_found()),
             "{\"jsonrpc\":\"2.0\",\"id\":\"a\",\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}\n"
         );
     }

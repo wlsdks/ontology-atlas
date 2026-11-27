@@ -14,7 +14,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
-use crate::json::{parse, Object, Value};
+use crate::json::{parse, parse_keeping_surrogates, Object, Value};
 use crate::jsonrpc::{classify, error_line, result_line, Id, Incoming, RpcError};
 use crate::methods::{handle_request, Reply};
 use crate::runtime::Config;
@@ -194,11 +194,16 @@ impl Session {
 
     /// Hands one chunk's messages over together, so a cancellation in the same chunk as the request
     /// it names is seen before any worker starts that request.
-    fn deliver(&self, messages: Vec<Incoming>) {
+    fn deliver(&self, messages: Vec<Inbound>) {
         let mut state = lock(&self.state);
         for message in messages {
             match message {
-                Incoming::Request { id, method, params } => {
+                Inbound::Cancel(id) => {
+                    if let Some(flag) = state.in_flight.get(&id) {
+                        flag.store(true, Ordering::SeqCst);
+                    }
+                }
+                Inbound::Message(Incoming::Request { id, method, params }) => {
                     let cancelled = Arc::new(AtomicBool::new(false));
                     state.in_flight.insert(id.clone(), Arc::clone(&cancelled));
                     state.queue.push_back(Job {
@@ -208,17 +213,9 @@ impl Session {
                         cancelled,
                     });
                 }
-                Incoming::Notification { method, params } => {
-                    if method == "notifications/cancelled" {
-                        if let Some(id) = params.as_ref().and_then(cancelled_request) {
-                            if let Some(flag) = state.in_flight.get(&id) {
-                                flag.store(true, Ordering::SeqCst);
-                            }
-                        }
-                    }
-                }
-                // Answers to questions the server asked belong to the consent family.
-                Incoming::Response { .. } | Incoming::ErrorResponse { .. } => {}
+                // Answers to questions the server asked belong to the consent family, and no other
+                // notification is acted on.
+                Inbound::Message(_) => {}
             }
         }
         drop(state);
@@ -268,11 +265,11 @@ impl Session {
         }
     }
 
-    /// Answers one request, unless it was cancelled: a cancelled request gets no answer at all.
+    /// Runs one request and answers it, unless it was cancelled: a cancelled request gets no
+    /// answer at all. Its handler still runs, as the SDK's does: the cancellation reaches a handler
+    /// only through the flag, which the consent wait reads, so a write that was already asked for
+    /// is not half-skipped.
     fn answer(self: &Arc<Self>, job: &Job) {
-        if job.cancelled.load(Ordering::SeqCst) {
-            return;
-        }
         let outcome = catch_unwind(AssertUnwindSafe(|| {
             handle_request(self, &job.method, job.params.as_ref(), &job.cancelled)
         }))
@@ -289,9 +286,23 @@ impl Session {
     }
 }
 
-fn cancelled_request(params: &Object) -> Option<Id> {
+/// What the reader hands over: a message, or the id a `notifications/cancelled` names.
+#[derive(Debug, PartialEq)]
+enum Inbound {
+    Message(Incoming),
+    Cancel(Id),
+}
+
+/// `kept` is the same line read by [`parse_keeping_surrogates`], when it has a lone surrogate.
+fn cancelled_request(params: &Object, kept: Option<&Value>) -> Option<Id> {
     match params.get("requestId")? {
-        Value::String(text) => Some(Id::Text(text.clone())),
+        Value::String(text) => {
+            let exact = kept
+                .and_then(|line| line.get("params"))
+                .and_then(|kept_params| kept_params.get("requestId"))
+                .and_then(Value::as_str);
+            Some(exact.map_or_else(|| Id::text(text), |encoded| Id::Text(encoded.to_string())))
+        }
         Value::Number(number)
             if number.fract() == 0.0 && number.abs() <= 9_007_199_254_740_991.0 =>
         {
@@ -301,9 +312,52 @@ fn cancelled_request(params: &Object) -> Option<Id> {
     }
 }
 
+/// Whether a line writes a surrogate by escape (`\ud800` to `\udfff`, any case), the only way a
+/// lone one gets into a message.
+fn has_surrogate_escape(line: &str) -> bool {
+    line.as_bytes().windows(4).any(|window| {
+        matches!(
+            window,
+            [b'\\', b'u', b'd' | b'D', b'8'..=b'9' | b'a'..=b'f' | b'A'..=b'F']
+        )
+    })
+}
+
+/// One line as the reader hands it over. A request id and a cancelled request id are read again
+/// when the line holds a surrogate escape, so a lone surrogate in one is neither lost nor merged
+/// with another id.
+fn read_line(text: &str) -> Option<Inbound> {
+    let value = parse(text).ok()?;
+    let message = classify(&value)?;
+    let kept = if has_surrogate_escape(text) {
+        parse_keeping_surrogates(text).ok()
+    } else {
+        None
+    };
+    Some(match message {
+        Incoming::Request { id, method, params } => {
+            let id = match kept.as_ref().and_then(|line| line.get("id")) {
+                Some(Value::String(encoded)) => Id::Text(encoded.clone()),
+                _ => id,
+            };
+            Inbound::Message(Incoming::Request { id, method, params })
+        }
+        Incoming::Notification { method, params } if method == "notifications/cancelled" => {
+            match params
+                .as_ref()
+                .and_then(|params| cancelled_request(params, kept.as_ref()))
+            {
+                Some(id) => Inbound::Cancel(id),
+                None => Inbound::Message(Incoming::Notification { method, params }),
+            }
+        }
+        other => Inbound::Message(other),
+    })
+}
+
 /// Every complete line in `pending`, read as a message; the lines are removed and a partial last
 /// line stays. A line that is not JSON, or not a valid message, is dropped without an answer.
-fn take_messages(pending: &mut Vec<u8>) -> Vec<Incoming> {
+fn take_messages(pending: &mut Vec<u8>) -> Vec<Inbound> {
     let mut messages = Vec::new();
     let mut start = 0;
     while let Some(offset) = pending
@@ -315,11 +369,7 @@ fn take_messages(pending: &mut Vec<u8>) -> Vec<Incoming> {
         if line.last() == Some(&b'\r') {
             line = line.get(..line.len() - 1).unwrap_or_default();
         }
-        if let Some(message) = parse(&String::from_utf8_lossy(line))
-            .ok()
-            .as_ref()
-            .and_then(classify)
-        {
+        if let Some(message) = read_line(&String::from_utf8_lossy(line)) {
             messages.push(message);
         }
         start = end + 1;
@@ -355,7 +405,45 @@ mod tests {
         let mut pending = b"{\"jsonrpc\":\"2.0\",\"id\":\"\xff\",\"method\":\"ping\"}\n".to_vec();
         let messages = take_messages(&mut pending);
         assert!(
-            matches!(messages.first(), Some(Incoming::Request { id: Id::Text(text), .. }) if text == "\u{fffd}")
+            matches!(messages.first(), Some(Inbound::Message(Incoming::Request { id: Id::Text(text), .. })) if text == "\u{fffd}")
         );
+    }
+
+    fn request_id(line: &str) -> Id {
+        match read_line(line) {
+            Some(Inbound::Message(Incoming::Request { id, .. })) => id,
+            other => panic!("not a request: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn two_ids_differing_in_a_lone_surrogate_stay_two_ids_and_are_written_back_as_sent() {
+        let high = request_id(r#"{"jsonrpc":"2.0","id":"a\ud800b","method":"ping"}"#);
+        let other = request_id(r#"{"jsonrpc":"2.0","id":"a\ud801b","method":"ping"}"#);
+        let replacement =
+            request_id("{\"jsonrpc\":\"2.0\",\"id\":\"a\u{fffd}b\",\"method\":\"ping\"}");
+        assert_ne!(high, other);
+        assert_ne!(high, replacement);
+        assert_eq!(high.to_json(), r#""a\ud800b""#);
+        assert_eq!(other.to_json(), r#""a\ud801b""#);
+        assert_eq!(replacement.to_json(), "\"a\u{fffd}b\"");
+        let paired = request_id(r#"{"jsonrpc":"2.0","id":"😀","method":"ping"}"#);
+        assert_eq!(paired.to_json(), "\"\u{1f600}\"");
+        let private_use =
+            request_id("{\"jsonrpc\":\"2.0\",\"id\":\"\u{f8ff}\u{e001}\",\"method\":\"ping\"}");
+        assert_eq!(private_use.to_json(), "\"\u{f8ff}\u{e001}\"");
+        assert_ne!(private_use, high);
+    }
+
+    #[test]
+    fn a_cancellation_finds_the_id_with_a_lone_surrogate_it_names() {
+        let line = r#"{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":"a\ud800b"}}"#;
+        let target = request_id(r#"{"jsonrpc":"2.0","id":"a\ud800b","method":"ping"}"#);
+        assert_eq!(read_line(line), Some(Inbound::Cancel(target)));
+        let other = request_id(r#"{"jsonrpc":"2.0","id":"a\ud801b","method":"ping"}"#);
+        assert_ne!(read_line(line), Some(Inbound::Cancel(other)));
+        let plain =
+            r#"{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":"x"}}"#;
+        assert_eq!(read_line(plain), Some(Inbound::Cancel(Id::text("x"))));
     }
 }

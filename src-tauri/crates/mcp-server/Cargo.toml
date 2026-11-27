@@ -10,8 +10,11 @@ publish = false
 name = "mcp_server"
 path = "src/lib.rs"
 
+# Named apart from the shipped program until cut-over: the app's build script writes the sidecar
+# `ontology-atlas-mcp` into `target/<profile>/`, and a Cargo binary of that name would overwrite it,
+# so the dev app would serve this unfinished server. The cut-over renames it back.
 [[bin]]
-name = "ontology-atlas-mcp"
+name = "ontology-atlas-mcp-rust"
 path = "src/main.rs"
 
 [dependencies]

@@ -54,7 +54,7 @@ pub fn javascript_oracle_available() -> bool {
 
 fn command(program: Program, environment: &[(&str, &str)]) -> Command {
     let mut command = match program {
-        Program::Rust => Command::new(env!("CARGO_BIN_EXE_ontology-atlas-mcp")),
+        Program::Rust => Command::new(env!("CARGO_BIN_EXE_ontology-atlas-mcp-rust")),
         Program::JavaScript => {
             let mut node = Command::new("node");
             node.arg(repository_root().join("mcp/src/index.js"));

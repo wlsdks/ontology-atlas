@@ -187,6 +187,7 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_missing_vault_prints_the_two_lines_the_javascript_server_prints() {
         let cwd = std::env::temp_dir();
