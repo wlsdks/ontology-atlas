@@ -1,0 +1,50 @@
+//! A list an answer cuts at `limit`: how many there were, whether some are missing, and the rows
+//! kept.
+
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct RowPage<T> {
+    total: usize,
+    limited: bool,
+    rows: Vec<T>,
+}
+
+impl<T> RowPage<T> {
+    /// `rows` are the first `limit` of `total`.
+    pub fn new(total: usize, limit: usize, rows: Vec<T>) -> Self {
+        Self {
+            total,
+            limited: total > limit,
+            rows,
+        }
+    }
+
+    /// `rows` are what was kept of `total` found, and `cut` says the search itself stopped early,
+    /// so more may exist than `total` counts.
+    pub fn counted(total: usize, limit: usize, cut: bool, rows: Vec<T>) -> Self {
+        Self {
+            total,
+            limited: cut || total > limit,
+            rows,
+        }
+    }
+}
+
+/// A list of nodes under `nodes`, as `domain_profile`-style rows write it.
+#[derive(Serialize)]
+pub struct NodePage<T> {
+    total: usize,
+    limited: bool,
+    nodes: Vec<T>,
+}
+
+impl<T> NodePage<T> {
+    pub fn new(total: usize, limit: usize, nodes: Vec<T>) -> Self {
+        Self {
+            total,
+            limited: total > limit,
+            nodes,
+        }
+    }
+}

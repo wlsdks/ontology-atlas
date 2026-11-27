@@ -73,6 +73,17 @@ pub struct QueryRequest {
     pub include_isolated: Option<bool>,
     pub include_external: Option<bool>,
     pub include_unresolved: Option<bool>,
+    pub item_limit: Option<usize>,
+    pub include_orphans: Option<bool>,
+    /// `pattern`: the relations a `pattern_walk` takes one step each.
+    pub pattern: Option<Vec<String>>,
+    /// `seed`, which `subgraph` and `builder_context` read when `slug` is absent.
+    pub seed: Option<String>,
+    /// `project`, which `project_scope` and `project_map` read when `slug` is absent.
+    pub project: Option<String>,
+    /// `type`, the relation a `relation_check` proposes; `relation` is its other spelling.
+    pub relation_type: Option<String>,
+    pub relation: Option<String>,
 }
 
 impl QueryRequest {
@@ -94,6 +105,13 @@ impl QueryRequest {
             include_isolated: None,
             include_external: None,
             include_unresolved: None,
+            item_limit: None,
+            include_orphans: None,
+            pattern: None,
+            seed: None,
+            project: None,
+            relation_type: None,
+            relation: None,
         }
     }
 

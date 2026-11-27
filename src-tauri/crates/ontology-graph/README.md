@@ -33,6 +33,13 @@ from the whole graph.
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
 | `walks/neighbors.rs`, `walks/paths.rs` | `neighbors`, `path`, `all_paths`: breadth-first, shortest and budgeted iterative search |
 | `walks/dependency_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn) |
+| `walks/neighborhood.rs`, `walks/hop.rs`, `walks/row_page.rs` | `Neighborhood`: the exact breadth-first search that `reachability`, `impact`, `blast_radius`, `subgraph` and `builder_context` cut; `Hop`; the page of rows an answer cuts at `limit` |
+| `walks/reachability.rs`, `walks/lineage.rs` | `reachability` and `lineage`: what a node reaches, and its containers and contents |
+| `walks/pattern_walk.rs` | `pattern_walk`: simple paths that follow a list of relations, a layer at a time |
+| `walks/impact.rs`, `walks/blast_radius.rs`, `walks/dependency_qualification.rs`, `walks/containment.rs` | `impact` and `blast_radius` over declared `depends_on` edges, whether each edge carries a reason, and the nearest domain of a node |
+| `walks/subgraph.rs`, `walks/builder_context.rs`, `walks/builder_focus.rs` | `subgraph`, and `builder_context`: the same cut with the workbench's focus name, canvas position and handoff |
+| `walks/explain_relation.rs`, `walks/relation_check.rs` | `explain_relation` and `relation_check`: how two nodes relate, and whether a proposed edge fits the graph's patterns |
+| `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs`, `walks/project_root.rs`, `walks/scope.rs` | `containment_tree`, `project_scope` and `project_map`: what each project holds, and which project a call means |
 | `selection/clusters.rs` | `components` and `communities` (label propagation) |
 | `selection/centrality.rs` | `centrality`: PageRank and degree rankings |
 | `selection/graph_summary.rs` | `overview`, `schema`, `facets` |
