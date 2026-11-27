@@ -1,7 +1,7 @@
 {
   "stage": {
     "title": "Token 用在了哪里",
-    "body": "一次检查会读取本机上此仓库最近 30 天的 Claude Code 会话，显示上下文 token 用在了哪里，并为每项发现给出要改之处。只读取数量、模型名称和时间。只有在你打开某一轮时才显示消息，且不修改任何文件。",
+    "body": "一次检查会读取本机上此仓库最近 30 天的 Claude Code 会话，显示上下文 token 用在了哪里，并为每项发现给出要改之处。保留的是数量、时间、短会话 ID，以及模型、effort、智能体和工具服务器的名称，且不修改任何文件。",
     "files": "最近 30 天 {files} 个会话文件，{size}",
     "start": "检查 token 用量",
     "local": "不会向任何地方发送数据。"
@@ -65,12 +65,7 @@
     "title": "发生位置",
     "row": "{session} · 第 {turn} 轮 · {time} · {tokens} token",
     "session": "会话 {id}",
-    "subagent": "会话 {id} 中的 {agent}",
-    "showMessage": "显示这一轮之前的消息",
-    "message": "刚刚从 {file} 读取。仅在此面板打开期间保留。",
-    "noMessage": "这一轮之前没有你输入的消息，是智能体发起的。",
-    "hidden": "这条消息似乎包含密钥或 token，因此不显示。",
-    "changed": "检查之后此会话文件已更改或移动。再次检查即可打开这一轮。"
+    "subagent": "会话 {id} 中的 {agent}"
   },
   "compare": {
     "pick": "比较基准日",
@@ -79,10 +74,11 @@
     "clear": "清除",
     "none": "选择日期后，会比较其前后。",
     "tooFew": "{date} 之后只有 {days} 天达到 500 轮以上；判断需要 3 天。",
-    "same": "没有可检测的差异：{date} 之后每日数值仍在常见范围（{low} 至 {high}）内。",
-    "lower": "{date} 之后下降：之前 {before}，之后 {after}，低于常见范围。",
-    "higher": "{date} 之后上升：之前 {before}，之后 {after}，高于常见范围。",
-    "left": "已排除少于 500 轮的 {days} 天。"
+    "same": "没有可检测的差异：{date} 之后的平均值 {after} 在常见范围（{low} 至 {high}）内。",
+    "lower": "{date} 之后下降：之前 {before}，之后平均 {after}，低于常见范围。",
+    "higher": "{date} 之后上升：之前 {before}，之后平均 {after}，高于常见范围。",
+    "left": "已排除少于 500 轮的 {days} 天。",
+    "tooFewBefore": "{date} 之前只有 {days} 天达到 500 轮以上；要了解常见范围需要 7 天。"
   },
   "money": {
     "title": "Claude Code 的估算",
@@ -93,10 +89,9 @@
     "none": "这些会话中没有 Claude Code 的费用估算。"
   },
   "partial": {
-    "files": "有 {count} 个文件未能读取：{reason}。其数值未计入。",
+    "files": "有 {count} 个文件未能读取（{reason}）。其数值未计入。",
     "lines": "跳过了 {count} 行超过 4 MiB 的内容。",
-    "unknown": "有 {count} 条记录的格式 Atlas 不认识；依赖它们的数值显示为未知。",
-    "elsewhere": "有 {count} 个会话文件运行在已不属于此仓库的文件夹中，因此未计入。"
+    "unknown": "有 {count} 条记录缺少 Atlas 需要的数值；这些数值显示为未知。"
   },
   "unknown": "未知",
   "empty": {
@@ -108,7 +103,7 @@
   },
   "web": {
     "title": "检查 token 用量需要使用应用",
-    "body": "Claude Code 把会话文件放在你的主文件夹中，浏览器无法打开该文件夹。应用只在本机读取其中的数值。"
+    "body": "Claude Code 把会话文件放在你的主文件夹中，浏览器无法打开该文件夹。应用在本机读取这些文件，保留数量、时间、短会话 ID，以及模型、effort、智能体和工具服务器的名称。"
   },
   "card": {
     "running": "正在检查 token 用量 · {done}/{total}",
@@ -118,5 +113,11 @@
   "action": {
     "copy": "复制",
     "openImprove": "打开“改进”"
+  },
+  "reason": {
+    "notFound": "未找到",
+    "denied": "无权限",
+    "notRegular": "不是普通文件",
+    "unreadable": "无法读取"
   }
 }

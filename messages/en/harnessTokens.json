@@ -1,7 +1,7 @@
 {
   "stage": {
     "title": "Where your tokens go",
-    "body": "One inspection reads this repository's Claude Code sessions from the last 30 days on this computer and shows where context tokens went, with a change for each finding. It reads counts, model names and times. It shows a message only when you open one turn, and it changes no file.",
+    "body": "One inspection reads this repository's Claude Code sessions from the last 30 days on this computer and shows where context tokens went, with a change for each finding. It keeps counts, times, short session ids, and model, effort, agent and tool server names, and it changes no file.",
     "files": "{files, plural, one {# session file} other {# session files}}, {size}, in the last 30 days",
     "start": "Inspect token use",
     "local": "Nothing is sent anywhere."
@@ -65,12 +65,7 @@
     "title": "Where it happened",
     "row": "{session} · turn {turn} · {time} · {tokens} tokens",
     "session": "Session {id}",
-    "subagent": "{agent} in session {id}",
-    "showMessage": "Show the message before this turn",
-    "message": "Read from {file} just now. Atlas keeps it only while this panel is open.",
-    "noMessage": "No message you typed comes before this turn; an agent started it.",
-    "hidden": "This message looks like it holds a key or token, so Atlas does not show it.",
-    "changed": "This session file changed or moved after the inspection. Inspect again to open this turn."
+    "subagent": "{agent} in session {id}"
   },
   "compare": {
     "pick": "Compare from",
@@ -79,10 +74,11 @@
     "clear": "Clear",
     "none": "Pick a date to compare the days before and after it.",
     "tooFew": "Only {days, plural, one {# day} other {# days}} after {date} had 500 turns or more; 3 are needed to judge.",
-    "same": "No detectable difference: since {date} the daily figure stayed inside the usual range, {low} to {high}.",
-    "lower": "Lower since {date}: {after} against {before} before, below the usual range.",
-    "higher": "Higher since {date}: {after} against {before} before, above the usual range.",
-    "left": "{days, plural, one {# day} other {# days}} with under 500 turns left out."
+    "same": "No detectable difference: the average since {date}, {after}, is inside the usual range, {low} to {high}.",
+    "lower": "Lower since {date}: an average of {after} against {before} before, below the usual range.",
+    "higher": "Higher since {date}: an average of {after} against {before} before, above the usual range.",
+    "left": "{days, plural, one {# day} other {# days}} with under 500 turns left out.",
+    "tooFewBefore": "Only {days, plural, one {# day} other {# days}} before {date} had 500 turns or more; 7 are needed to know the usual range."
   },
   "money": {
     "title": "Claude Code's estimate",
@@ -93,10 +89,9 @@
     "none": "Claude Code wrote no cost estimate in these sessions."
   },
   "partial": {
-    "files": "{count, plural, one {# file was} other {# files were}} not read: {reason}. Their figures are not included.",
+    "files": "{count, plural, one {# file was} other {# files were}} not read ({reason}). Their figures are not included.",
     "lines": "{count, plural, one {# line over 4 MiB was} other {# lines over 4 MiB were}} skipped.",
-    "unknown": "{count, plural, one {# record had} other {# records had}} a shape Atlas does not know; figures that need them show as unknown.",
-    "elsewhere": "{count, plural, one {# session file ran} other {# session files ran}} in a folder that is no longer this repository, so they are not counted."
+    "unknown": "{count, plural, one {# record lacked} other {# records lacked}} a figure Atlas needs; those figures show as unknown."
   },
   "unknown": "unknown",
   "empty": {
@@ -108,7 +103,7 @@
   },
   "web": {
     "title": "Inspecting token use needs the app",
-    "body": "Claude Code keeps its session files in your home folder, which a browser cannot open. The app reads their counts on this computer."
+    "body": "Claude Code keeps its session files in your home folder, which a browser cannot open. The app reads them on this computer and keeps counts, times, short session ids, and model, effort, agent and tool server names."
   },
   "card": {
     "running": "Inspecting token use · {done} of {total}",
@@ -118,5 +113,11 @@
   "action": {
     "copy": "Copy",
     "openImprove": "Open Improve"
+  },
+  "reason": {
+    "notFound": "not found",
+    "denied": "no permission",
+    "notRegular": "not a regular file",
+    "unreadable": "could not be read"
   }
 }
