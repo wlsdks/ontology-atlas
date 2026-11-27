@@ -302,7 +302,8 @@ export function AtlasGitPanel({
       remoteBusy={remoteBusy}
       onRemoteAction={(kind) => void runRemote(kind)}
       pendingCount={hasChanges ? changes.length : 0}
-      className={narrow ? undefined : "flex-nowrap max-w-[50vw]"}
+      // The header row bounds the line; a cap of its own cut `main` short at 1040px with the row half empty.
+      className={narrow ? undefined : "flex-nowrap"}
     />
   );
 
