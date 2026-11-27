@@ -11,8 +11,8 @@ const EDGES: readonly SparkEdge[] = ['top', 'right', 'bottom', 'left'];
 const FLARE_PEAK_AT = 0.15;
 
 /**
- * A room's pulse for each counted change that arrives while it is drawn, never for the count it was
- * drawn with. Each change mounts its own pulse, which plays once and then holds nothing running.
+ * A room's pulse for each flash that arrives while it is drawn (`nextFlashes` spaces them), never
+ * for the count it was drawn with. Each change mounts its own pulse, which plays once and then holds nothing running.
  */
 export function RoomPulse({ flash }: { flash: number }) {
   const [drawnWith] = useState(flash);
