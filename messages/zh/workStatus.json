@@ -323,6 +323,15 @@
       "background": "在后台运行 {name} 的构建",
       "backgroundNote": "它会以最低优先级继续运行，磁盘和网络也会变慢，让其他工作先完成。构建仍在运行，所以负载数字不变。再按一次可恢复。",
       "backgroundOn": "在后台运行中"
-    }
+    },
+    "subagents": {
+      "title": "{count} 个子代理正在运行",
+      "row": "{type} · {model} · {where}",
+      "noWorktree": "无工作树",
+      "quiet": "已安静 {minutes} 分钟",
+      "unknown": "子代理情况未知",
+      "unknownWhy": "Atlas 读取 Claude Code 自己的子代理文件，其格式没有公开文档。这个会话的文件没有找到，或不是 Atlas 认识的格式，所以宁可不显示也不猜测。其他内容不受影响。"
+    },
+    "adviceSubagents": "{name} 正在运行 {count} 个子代理，每个都会把自己的检查加到这份负载上。"
   }
 }

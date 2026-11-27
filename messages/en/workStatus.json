@@ -323,6 +323,15 @@
       "background": "Run {name}'s build in the background",
       "backgroundNote": "It keeps running at the lowest priority, with slower disk and network, so other work finishes first. The load stays the same, since the build still runs. Press again to set it back.",
       "backgroundOn": "In the background"
-    }
+    },
+    "subagents": {
+      "title": "{count, plural, one {# subagent running} other {# subagents running}}",
+      "row": "{type} · {model} · {where}",
+      "noWorktree": "no worktree",
+      "quiet": "quiet for {minutes} min",
+      "unknown": "Subagents unknown",
+      "unknownWhy": "Atlas reads Claude Code's own subagent files, whose form is not documented. For this session they were not found or not in a form Atlas knows, so it shows none rather than guess. Nothing else is affected."
+    },
+    "adviceSubagents": "{name} is running {count} subagents, and each adds its checks to this load."
   }
 }

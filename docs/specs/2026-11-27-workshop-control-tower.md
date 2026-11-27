@@ -12,7 +12,8 @@ supersedes: [docs/specs/2026-11-22-work-status-coordination.md]
 
 **In one minute.** A band at the top of Workshop says in one word whether this computer is keeping
 up (Room to spare, Busy, Overloaded), draws who uses its cores and memory, one segment per agent
-session, and says how many worktrees running work it keeps up with. It replaces the header's
+session with the subagents it is running and their model, and says how many worktrees running
+work it keeps up with. It replaces the header's
 "Memory is running low", "CPU is full" and "GPU is full". This slice only reads. The controls that
 follow, each on one press, are in `docs/specs/2026-11-27-workshop-control-tower-controls.md`
 under `docs/records/decisions/2026-11-27-workshop-control-tower-actions-ed30a160-8c82-4942-a3ca-40c0e59f1c53.md`.
@@ -32,7 +33,9 @@ His screenshot of that day, relayed by the lead and not saved to a path: the hea
 on this Mac · 35 merges today · memory is short · CPU is full"; four stage rooms; below them
 "8 working · 17 worktrees" grouped by session, Claude Code 1 holding 12 worktrees and Claude Code 2
 three; each card with branch, state, commits and last commit. No judgment, capacity picture or
-control. Nobody learning coding agents, or not writing code, has been watched here (criterion 8).
+control. Later that day, relayed by the lead: subagents must be seen in this first slice, with
+each one's model, so he can tell whether a model he does not want is ever used. Nobody learning
+coding agents, or not writing code, has been watched here (criterion 8).
 
 ## Today
 
@@ -55,6 +58,7 @@ control. Nobody learning coding agents, or not writing code, has been watched he
   (`WorkStatusPage.tsx:83-87`).
 - **Subagents** are seen only as a worktree's lock, whose pid is the session's
   (`src-tauri/src/work_status/worktrees/lock.rs:1-3`); a subagent without a worktree has no trace.
+  The session list never reads `sessionId` (record `929c2179`).
 - **A working folder** is read for processes under an agent program and for `java`
   (`src-tauri/src/work_status/agent_processes.rs:213-219`, `load.rs:163`).
 - **Windows** reads no process or load (`.claude/rules/surfaces.md:104`).
@@ -76,8 +80,27 @@ scratchpad, not committed, since they hold folder names):
   "used" would read as full while macOS says normal.
 - **Locks.** 25 worktrees; 8 locks name one session's pid and 1 another's.
 
+**Subagent files, measured by the lead and the spec writer, 2026-11-27, 23:10 to 23:55** (Claude
+Code under an Orca profile, config home `~/Library/Application Support/orca/claude-profiles/<id>/home`;
+four profiles hold this project):
+
+- Each subagent leaves `agent-<id>.meta.json` and `agent-<id>.jsonl` in
+  `<config>/projects/<session cwd as dashes>/<session id>/subagents/`, under its parent session's
+  folder even when it has a worktree. One session had 27 pairs; the lead counted 492 in the project.
+- A meta file has exactly twelve keys: `agentType`, `description`, `isBuiltIn`, `model`,
+  `pickedEffortModel`, `requestNonInteractive`, `requestShape`, `spawnDepth`,
+  `spawnedWithWorktree`, `toolUseId`, `worktreeBranch`, `worktreePath`. None says running or
+  finished. `description` is text the agent wrote.
+- When a subagent stops, its parent session's own `.jsonl` gains a user record whose text begins
+  `<task-notification>`, with `<task-id>` the agent's id and a `<status>`; values seen: `completed`,
+  `failed`, `killed`, `stopped`. 455 such records in one session's file of 66 MB. The same tags
+  also appear quoted inside tool output, so only the record's own opening counts.
+- A running subagent's `.jsonl` was written 11 s earlier; finished ones minutes to hours. A
+  subagent waiting on a long command writes nothing meanwhile.
+- A subagent is no process: 5 `claude` processes ran for about 4 sessions while subagents worked.
+
 Unknown: whether the knee holds for checks that run minutes rather than 0.25 s; how efficiency
-cores change it; any Mac but this one.
+cores change it; any Mac but this one; how a running subagent's load compares with an idle one's.
 
 ## Patterns that already worked
 
@@ -108,8 +131,10 @@ spec's slices: stop leftover processes, remove merged worktrees, a build in the 
 | **Chosen: a band on Workshop, verdict, picture, fit** | the cause in 5 seconds where the rooms are | one more band to keep true (Risk 2) |
 
 **The request, challenged.** "Too many subagents" is a symptom: subagents cost little, and their
-checks cost much. So the fit counts worktrees running work, not agents. Someone who presses "CPU is
-full" today to find rooms presses a segment instead; the words go.
+checks cost much. So the fit counts worktrees running work, not agents. Seeing subagents still
+answers the owner's question of which session runs how many, and of which model; a count alone
+warns of nothing, since no count was measured to slow this Mac. Someone who presses "CPU is full"
+today to find rooms presses a segment instead; the words go.
 
 ## Flow
 
@@ -122,10 +147,17 @@ full" today to find rooms presses a segment instead; the words go.
    critical Overloaded. It steps down one level only after 30 s under 0.8 or 2.0.
 3. When it is Overloaded, the band names the heaviest session and the fit: "8 worktrees are
    running work and this computer keeps up with about 6."
-4. When the person presses a segment, Atlas outlines that session's rooms, in either arrangement.
-5. When the read is missing (load off, a failed sample, no session list, Windows), Atlas says less:
-   no verdict from a missing figure, segments named `{tool} {number}`, a subagent without a
-   worktree counted only in its session's segment, and the band says which.
+4. When a Claude Code session runs subagents, its segment carries one mark per running subagent.
+   When the person presses a segment, Atlas outlines that session's rooms, in either arrangement,
+   and lists each running subagent: type, model, and its worktree's branch or "no worktree".
+5. When the verdict is Busy or Overloaded and the heaviest session runs two or more subagents, the
+   advice adds how many, since each one adds its checks to the load.
+6. When a subagent waits on a long command, nothing is written, so it stays running and says how
+   long it has been quiet; it ends only with its end record or its session.
+7. When the read is missing (load off, a failed sample, no session list, Windows), Atlas says less:
+   no verdict from a missing figure, segments named `{tool} {number}`, and the band says which.
+   When the subagent files are missing or in a form Atlas does not know, the segment says
+   "Subagents unknown", never an error.
 
 ## States
 
@@ -142,6 +174,10 @@ full" today to find rooms presses a segment instead; the words go.
 | Memory pressure warning or critical | Out of scope — same | the memory bar's frame amber or red with `tower.pressure.*`; `tower.adviceMemory` |
 | GPU at 90 % or more for six samples | Out of scope — same | the GPU bar in amber with `tower.gpu` |
 | No agent running work | Out of scope — same | `tower.other` alone; `tower.noneRunning` instead of slots |
+| Subagents running | Out of scope — same | marks on the segment; on press, `tower.subagents.title` over one `tower.subagents.row` each |
+| A subagent quiet for 10 minutes or more | Out of scope — same | its row adds `tower.subagents.quiet`; still counted running |
+| Busy or Overloaded, two or more subagents in the heaviest session | Out of scope — same | `tower.adviceSubagents` after the advice |
+| Subagents unknown: session list off or failed, no folder, a key or status Atlas does not know | Out of scope — same | `tower.subagents.unknown` on that segment, `tower.subagents.unknownWhy` as its hint; nothing else changes |
 | A sample failed | Out of scope — same | `tower.verdict.unread` and `tower.failed`; bars empty |
 | No GPU figure | Out of scope — same | no GPU bar |
 | Largest: 34 worktrees, 12 sessions | Out of scope — same | 12 segments; one under 2 % of the bar joins `tower.moreSessions`; inks repeat after five |
@@ -161,6 +197,8 @@ building, in both arrangements. While it shows, the page sends every session pid
 - **Memory bar:** each session's memory in its ink over the whole memory; the frame takes
   pressure's tone. **GPU:** a thin bar when reported; it carries the header's GPU warning, which is
   dropped on purpose so the band says each fact once.
+- **Subagents:** one small mark per running subagent under its session's segment, up to twelve,
+  then `+{n}`; a quiet one dimmed. The press list is short: type, model, branch.
 - **Slots:** one square per worktree running work; the first "fits" squares inside a line, the
   rest outside it.
 - **Motion:** widths ease to each sample; a rise to Overloaded flares the beacon once, at most once
@@ -177,6 +215,22 @@ the worktrees with 0.1 core or more under an agent, averaged over the samples of
 minutes (one sample at first). The load average counts other programs too, so the fit charges
 their load to the worktrees (1.3 of 8 cores when measured). Another Mac gets its own core count
 and pressure; 2.5 holds there only until it is measured there (Later 3).
+
+**Subagents** (record `67a26c36`; read with each session-list read, while Workshop is visible and
+that list is on). Config homes: `~/.claude`, `CLAUDE_CONFIG_DIR` when the app sees it, and Orca's
+`claude-profiles/*/home`, as Harness Improve finds them. For each listed Claude Code session, its
+folder is `projects/<its cwd, each / and . as ->/<its sessionId>/subagents/`. **Running:** a
+`agent-<id>.meta.json` there, the session's pid alive, and no end record for that id in the
+session's own `.jsonl`. An end record is a line whose record is the user's own text, beginning
+`<task-notification>`, with `<task-id>` the id and `<status>` one of `completed`, `failed`,
+`killed`, `stopped`; a tag quoted inside tool output is not one. **Quiet:** running, with its own
+`.jsonl` unwritten for 10 minutes. **Unknown:** the list off or failed, no folder in any home, a
+meta key outside the twelve measured, a meta over 64 KiB or a link, or another status value. From a
+meta only `agentType`, `model` and `worktreePath` are kept; the path becomes a listed worktree's id
+or "no worktree" and is dropped. `description` and every other key's value are never kept, shown,
+logged or sent. The session's `.jsonl` is read on from the last offset, keeping only ids and
+statuses. **The warning** rides on the verdict: the measured load came from checks, and the four
+`claude` programs used 0.13 core together, so a count of subagents on a calm Mac warns of nothing.
 
 ## Copy
 
@@ -203,6 +257,12 @@ controls' keys under `tower.leftover`, `.remove` and `.build` belong to the cont
 | `tower.failed` | under `.unread` | Atlas could not read this computer's load just now and tries again in 5 seconds. |
 | `tower.windows` | the band on Windows | On Windows, Atlas does not read this computer's load yet, so it does not judge it. Worktrees and sessions still show. |
 | `tower.about` | the band's info hint | Atlas compares the work waiting for the CPU, macOS's average over the last minute, with this computer's cores, and judges memory by macOS's own pressure level. Busy: more work than cores, or memory pressure high. Overloaded: 2.5 times the work the cores can run, or memory pressure critical. The fit is the worktrees running work times 2.5, divided by how many times over the cores the last 5 minutes ran; other programs' work counts against them too. A subagent with no worktree of its own runs inside its session's program and is counted there. |
+| `tower.subagents.title` | over the press list | {count, plural, one {# subagent running} other {# subagents running}} |
+| `tower.subagents.row` | one per running subagent | {type} · {model} · {where} |
+| `tower.subagents.noWorktree` | `{where}` without a worktree | no worktree |
+| `tower.subagents.quiet` | after a quiet row | quiet for {minutes} min |
+| `tower.subagents.unknown` / `.unknownWhy` | on a segment / its hint | Subagents unknown / Atlas reads Claude Code's own subagent files, whose form is not documented. For this session they were not found or not in a form Atlas knows, so it shows none rather than guess. Nothing else is affected. |
+| `tower.adviceSubagents` | after the advice | {name} is running {count} subagents, and each adds its checks to this load. |
 | `tower.sessionNever` | info hint on the heaviest segment | Atlas does not stop agent sessions. To stop one, press Esc or Ctrl-C in its own window, where you can see what it was doing. |
 
 ## Edge cases
@@ -210,7 +270,11 @@ controls' keys under `tower.leftover`, `.remove` and `.build` belong to the cont
 - **Zero, one, largest.** No agent: Other programs and `tower.noneRunning`. One session: one
   segment. 12 sessions over 34 worktrees: small segments join; the fit counts worktrees.
 - **First run.** Load is on by default; the band comes with the first sample; nothing is stored.
-- **Hangul.** A 60-character Hangul name in `tower.top` is cut at a syllable; numbers never.
+- **Hangul.** A 60-character Hangul name in `tower.top` is cut at a syllable; numbers never. A
+  custom subagent type in Hangul is cut the same way, at 40 characters, with control characters
+  removed.
+- **Subagents: zero, one, largest.** None: no marks. One: one mark. 27 in one session, as
+  measured: twelve marks and `+15`, and the press list scrolls.
 - **A moved, renamed or unreadable folder.** The repository states take the page; no band.
 - **Two edits at once.** Nothing here writes; two Workshop windows each sample on their own.
 - **Offline.** Nothing here uses the network. **Load 104 on 12 cores:** the queue stops at three bar
@@ -220,6 +284,8 @@ controls' keys under `tower.leftover`, `.remove` and `.build` belong to the cont
 
 - Every control: `docs/specs/2026-11-27-workshop-control-tower-controls.md`.
 - Ending an agent session or a subagent: refused in record `ed30a160`; a subagent has no process.
+- A subagent's `description`, prompt or conversation: agent-written text, never read into a field.
+- Codex's and Gemini CLI's subagents: no file of theirs was measured.
 - A warning while Workshop is hidden or on another screen: the third exception reads load only
   while it is visible (`.claude/rules/surfaces.md:100`).
 - Push holds, build-folder deletion, findings from GitHub and the local model from the superseded
@@ -239,17 +305,27 @@ controls' keys under `tower.leftover`, `.remove` and `.build` belong to the cont
 3. **The fit.** Given samples with 8 worktrees at 0.1 core or more and a 5-minute load of 34.3 on
    12 cores, the fit is 6; with none, no fit; with one at 1.2, 25; with one sample only, it is
    computed from that sample. Checked: the same test.
-4. **Only the load average is new.** Given a sampled source, then `MacLoad` carries the 1- and
+4. **Subagents, planted.** Given two temporary config homes, one an Orca-style profile, and a
+   listed session whose folder holds: A, running (no end record, written 5 s ago); B, ended by a
+   `completed` record; C, in a long command (no end record, unwritten for 40 minutes); D, whose
+   end record appears only quoted inside a tool result; E, with `description` holding
+   `ATLAS_PLANTED_7f3c`; F, with a thirteenth key; then A, C, D and E read running, C quiet for
+   40 minutes, B absent, F unknown; the planted string, the session id and every path are in no
+   payload or log; a meta that is a link is not opened; a missing folder gives unknown and no
+   error; a second read reads only the bytes added since. Checked:
+   `src-tauri/src/work_status/subagents/tests.rs` (new).
+5. **The picture reads, in By folder, without nagging.** Given the bridge in By folder at load 34.3
+   with two sessions at 6.1 and 0.7 cores, the first running three subagents (one `opus`, one
+   with no worktree), then the page sent both session pids, the band says Overloaded, the first
+   segment is about half the bar and labelled with three marks, its press list shows each model
+   and "no worktree", `tower.adviceSubagents` shows, the queue says `×2.9`, pressing a segment
+   outlines that session's rooms, and the header shows no `header.memory`, `.cpu` or `.gpu`. With
+   criterion 2's swinging fixture, no toast, dialog, notification or rail mark appears and the
+   beacon flares at most once. At 1280 and 1920 px in English and Korean no text leaves the band.
+   Checked: `tests/e2e/work-status-tower.spec.ts` (new); a `pnpm ui:look` capture.
+6. **Nothing else new in the load read.** Given a sampled source, then `MacLoad` carries the 1- and
    5-minute load average, the count of process reads is unchanged, and a planted
    `ATLAS_PLANTED_7f3c` argument appears nowhere. Checked: `src-tauri/src/work_status/load/tests.rs`.
-5. **The picture reads, in By folder.** Given the bridge in By folder at load 34.3 with two sessions
-   at 6.1 and 0.7 cores, then the page sent both session pids, the band says Overloaded, the first
-   segment is about half the bar and labelled, the queue says `×2.9`, pressing a segment outlines
-   that session's rooms, and the header shows no `header.memory`, `.cpu` or `.gpu`. At 1280 and
-   1920 px in English and Korean no text leaves the band. Checked:
-   `tests/e2e/work-status-tower.spec.ts` (new); a `pnpm ui:look` capture.
-6. **No nagging.** Given the swinging fixture of criterion 2, then no toast, dialog, notification or
-   rail mark appears and the beacon flares at most once. Checked: the same e2e spec.
 7. **Recovery.** When load is switched off, the band leaves and no load ask is sent; on again, it
    returns with the next sample; the Windows build shows `tower.windows`; every locale has each key
    with equal arguments. Checked: the same e2e spec, `tests/contract/messages/`.
@@ -265,8 +341,9 @@ controls' keys under `tower.leftover`, `.remove` and `.build` belong to the cont
 2. **The band is amber all day** because the owner runs at 2.9 by choice, and he stops seeing it.
    Answer: it never interrupts and flares once in 10 minutes; criterion 8 asks; the record's
    falsifier says when to move the line.
-3. **The fit is distrusted** when it says 6 and 8 run fine. Answer: `tower.about` shows the formula
-   and that other programs count, the advice says "about", and criterion 8 asks.
+3. **Claude Code changes its subagent files** in a release, and subagents vanish or a finished one
+   reads running. Answer: a key or status Atlas does not know reads "Subagents unknown", never a
+   guess; criterion 4 plants each case; the fit and verdict do not depend on these files.
 
 ## Later
 
@@ -274,7 +351,7 @@ controls' keys under `tower.leftover`, `.remove` and `.build` belong to the cont
 2. Windows: CPU, memory and processes through `windows-sys`, already in the lockfile.
 3. The knee measured on a second Mac, then per Mac: when someone else runs Workshop.
 4. The fit handed to agents through an MCP read tool: when the owner tells an agent the fit by hand.
-5. A subagent's own meta file for "running" or "finished": when worktree locks mislead.
+5. A warning on the subagent count alone: when a count is measured to slow this Mac at calm load.
 
 ## Owner question
 
@@ -289,3 +366,8 @@ new record.
   on opening; session pids are sent in both arrangements; the GPU warning moves into the band;
   `tower.about` says multiply and that other programs count; criterion 1 checks both ways; 2.5 is
   this Mac's until measured elsewhere.
+- 2026-11-27: the owner asked, through the lead, to see subagents in this slice. Each session's
+  running subagents, with type, model and worktree, come from Claude Code's own subagent files
+  under record `67a26c36`; unknown forms read "Subagents unknown"; the warning rides on the load
+  verdict, since no subagent count was measured to slow this Mac. Criterion 4 plants each case;
+  the old criteria 4 and 6 fold into 5 and 6, and Later 5 now covers only a count-based warning.
