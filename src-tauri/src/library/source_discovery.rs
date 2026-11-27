@@ -6,9 +6,9 @@ use std::path::Path;
 use crate::canonical_source_root;
 
 use super::discovery_rules::{
-    discovery_accepts_directory, discovery_accepts_file, is_markdown_name, lower_extension,
-    DISCOVERY_MAX_CANDIDATES, DISCOVERY_MAX_DEPTH, DISCOVERY_MIN_FILE_BYTES,
-    DISCOVERY_VAULT_OWNED_DIRS,
+    discovery_accepts_directory, discovery_accepts_file, lower_extension,
+    offered_only_from_open_folder, DISCOVERY_MAX_CANDIDATES, DISCOVERY_MAX_DEPTH,
+    DISCOVERY_MIN_FILE_BYTES, DISCOVERY_VAULT_OWNED_DIRS,
 };
 use super::source_offer::{remember_source_offer, SourceOffer};
 
@@ -20,8 +20,8 @@ pub struct SourceDiscoveryRoot {
     /// The open folder passes `sources` so imported files are not proposed again.
     #[serde(default)]
     pub skip_relative: Vec<String>,
-    /// The open folder, the only root whose Markdown is offered; a bound code root's
-    /// Markdown is developer documentation.
+    /// The open folder, the only root whose Markdown and HTML are offered; a bound code
+    /// root's are developer documentation and served pages.
     #[serde(default)]
     pub open_folder: bool,
 }
@@ -98,7 +98,7 @@ fn walk_candidates(
             walk_candidates(&entry.path(), root, &relative, depth + 1, report);
         } else if file_type.is_file()
             && discovery_accepts_file(&name)
-            && (root.open_folder || !is_markdown_name(&name))
+            && (root.open_folder || !offered_only_from_open_folder(&name))
         {
             let Ok(metadata) = entry.metadata() else {
                 continue;

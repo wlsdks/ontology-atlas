@@ -643,8 +643,9 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
 - **Find documents** — proposes candidates from the open folder and from each bound
   project root, **metadata only**, nothing copied until a person ticks a box in a blocking
   dialog with every box unticked. Document formats only (`pdf docx doc xlsx xls csv pptx
-  ppt txt rtf odt ods odp epub`), dotfiles, dependency and build directories, and
-  credential-shaped names excluded. Refusals are remembered in `localStorage` per folder —
+  ppt txt rtf odt ods odp epub`, and Markdown and HTML from the open folder alone, since a
+  bound project root's are developer documentation and served pages), dotfiles, dependency
+  and build directories, and credential-shaped names excluded. Refusals are remembered in `localStorage` per folder —
   a per-machine convenience, never a second store in the vault. A file-name/path filter
   narrows the metadata list without opening files. Selections survive filtering; confirmation
   copies all selected candidates and remembers only visible, unselected candidates as passed
