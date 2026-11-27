@@ -473,3 +473,198 @@ fn standard_input_reaches_git_and_is_then_closed() {
         "ce013625030ba8dba906f756967f9e9ca394464a"
     );
 }
+
+/// A config that names more than the pre-read can hold is refused whatever git's exit status was:
+/// a flood must never leave a run without its filter guard. The limit is a parameter, so the test
+/// plants a config the read cannot hold; it needs no shell and runs on every platform.
+#[test]
+fn a_config_read_that_reaches_its_limit_is_refused_not_trusted() {
+    use hardened_git::filter_overrides::discover_filter_overrides_with_limit;
+    use hardened_git::HardeningError;
+
+    let base = TempDir::new("config-limit");
+    clear_filter_cache();
+    let repo = new_repository(&base, "repo");
+    support::plain_git(&repo, &["config", "filter.a.clean", "cat"]);
+    // `filter.a.clean\n` is fifteen bytes, and git exits zero after writing it.
+    assert_eq!(
+        discover_filter_overrides_with_limit(&repo, 8),
+        Err(HardeningError::ConfigReadUnfinished)
+    );
+    assert_eq!(
+        discover_filter_overrides_with_limit(&repo, 14),
+        Err(HardeningError::ConfigReadUnfinished),
+        "one byte short"
+    );
+    let overrides =
+        discover_filter_overrides_with_limit(&repo, 15).expect("a read that fits is trusted");
+    assert!(overrides.contains(&"filter.a.clean=cat".to_string()));
+}
+
+/// Each weapon below is a repository the server could be pointed at: its own config makes `git`
+/// run a program on a plain read. The first half of every test proves the fixture fires under an
+/// unhardened `git`; the second that the hardened run leaves no marker.
+#[cfg(unix)]
+mod planted_weapons {
+    use super::support::{commit_note, plain_git};
+    use super::*;
+    use std::io::Write;
+    use std::os::unix::fs::PermissionsExt;
+    use std::process::{Command, Stdio};
+
+    fn write_script(path: &Path, marker: &Path) {
+        std::fs::write(
+            path,
+            format!(
+                "#!/bin/sh\nprintf executed > '{}'\ncat \"$1\" 2>/dev/null\nexit 0\n",
+                marker.display()
+            ),
+        )
+        .expect("script");
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+    }
+
+    /// A repository with one committed note and one uncommitted change to it.
+    fn changed_note(base: &TempDir) -> std::path::PathBuf {
+        let repo = new_repository(base, "repo");
+        commit_note(&repo);
+        std::fs::write(repo.join("note.md"), "# two\n").expect("change");
+        repo
+    }
+
+    fn assert_fires_then_stays_quiet(
+        label: &str,
+        build: impl Fn(&TempDir, &Path) -> std::path::PathBuf,
+        args: &[&str],
+    ) {
+        let weapon = TempDir::new(&format!("{label}-weapon"));
+        let weapon_marker = weapon.join("EXECUTED");
+        let weapon_repo = build(&weapon, &weapon_marker);
+        plain_git_lenient(&weapon_repo, args);
+        assert!(
+            weapon_marker.exists(),
+            "fixture precondition: {label} fires under an unhardened git"
+        );
+
+        let base = TempDir::new(&format!("{label}-fix"));
+        clear_filter_cache();
+        let marker = base.join("EXECUTED");
+        let repo = build(&base, &marker);
+        hardened(&repo, args);
+        assert!(
+            !marker.exists(),
+            "{label} must not run under the hardened run"
+        );
+    }
+
+    #[test]
+    fn diff_external_program_does_not_run_on_a_hardened_diff() {
+        assert_fires_then_stays_quiet(
+            "diff-external",
+            |base, marker| {
+                let repo = changed_note(base);
+                let program = base.join("external-diff.sh");
+                write_script(&program, marker);
+                plain_git(
+                    &repo,
+                    &["config", "diff.external", program.to_str().expect("utf8")],
+                );
+                repo
+            },
+            &["diff"],
+        );
+    }
+
+    #[test]
+    fn a_textconv_driver_does_not_run_on_a_hardened_diff() {
+        assert_fires_then_stays_quiet(
+            "textconv",
+            |base, marker| {
+                let repo = changed_note(base);
+                std::fs::write(repo.join(".gitattributes"), "*.md diff=evil\n")
+                    .expect("attributes");
+                let program = base.join("textconv.sh");
+                write_script(&program, marker);
+                plain_git(
+                    &repo,
+                    &[
+                        "config",
+                        "diff.evil.textconv",
+                        program.to_str().expect("utf8"),
+                    ],
+                );
+                repo
+            },
+            &["diff"],
+        );
+    }
+
+    #[test]
+    fn a_signature_check_program_does_not_run_on_a_hardened_log() {
+        assert_fires_then_stays_quiet(
+            "show-signature",
+            |base, marker| {
+                let repo = new_repository(base, "repo");
+                commit_note(&repo);
+                let tree = plain_git(&repo, &["rev-parse", "HEAD^{tree}"]);
+                let object = format!(
+                    "tree {}\nauthor Fixture <fixture@example.invalid> 1700000000 +0000\ncommitter Fixture <fixture@example.invalid> 1700000000 +0000\ngpgsig -----BEGIN PGP SIGNATURE-----\n fixture\n -----END PGP SIGNATURE-----\n\nFixture\n",
+                    tree.trim()
+                );
+                let mut hash = Command::new("git")
+                    .args(["hash-object", "-t", "commit", "-w", "--stdin"])
+                    .current_dir(&repo)
+                    .env_clear()
+                    .envs(isolated_environment())
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .spawn()
+                    .expect("spawn hash-object");
+                hash.stdin
+                    .take()
+                    .expect("stdin")
+                    .write_all(object.as_bytes())
+                    .expect("write commit object");
+                let output = hash.wait_with_output().expect("hash-object");
+                assert!(output.status.success());
+                let commit = String::from_utf8(output.stdout).expect("utf8");
+                plain_git(&repo, &["update-ref", "HEAD", commit.trim()]);
+                let program = base.join("fake-gpg");
+                write_script(&program, marker);
+                plain_git(&repo, &["config", "log.showSignature", "true"]);
+                plain_git(
+                    &repo,
+                    &["config", "gpg.program", program.to_str().expect("utf8")],
+                );
+                repo
+            },
+            &["log", "-1", "--format=%H"],
+        );
+    }
+
+    #[test]
+    fn an_ext_transport_does_not_run_on_a_hardened_network_verb() {
+        assert_fires_then_stays_quiet(
+            "ext-transport",
+            |base, marker| {
+                let repo = new_repository(base, "repo");
+                commit_note(&repo);
+                let program = base.join("ext-transport.sh");
+                write_script(&program, marker);
+                // The hostile config allows the transport git refuses by default.
+                plain_git(&repo, &["config", "protocol.ext.allow", "always"]);
+                plain_git(
+                    &repo,
+                    &[
+                        "remote",
+                        "add",
+                        "origin",
+                        &format!("ext::{}", program.display()),
+                    ],
+                );
+                repo
+            },
+            &["ls-remote", "origin"],
+        );
+    }
+}
