@@ -31,6 +31,7 @@ pub use body_delivery::{
     describe_body_delivery, BodyDelivery, BodyInfo, BodyMode, EXCERPT_MAX_CHARS,
     FULL_BODY_MAX_CHARS, FULL_BODY_MAX_DOCUMENTS, SUMMARY_MAX_CHARS,
 };
+pub use body_findings::{body_findings, BodyFinding};
 pub use document::{Document, RawShape};
 pub use document_cache::{CacheCounts, DocumentCache};
 pub use kind_census::{kind_census, KindCensus, KindCounts};

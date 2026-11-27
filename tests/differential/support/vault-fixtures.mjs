@@ -132,6 +132,20 @@ function capabilityNode(slug, title, domain, extra = {}) {
   });
 }
 
+/** A vault of capabilities `a` and `b` in one domain, where `plant` writes the `b` that breaks identity. */
+function identityVault(plant) {
+  return {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      write(dir, v('loops.md'), projectNode('loops', 'Loops', ['domains/loops']));
+      write(dir, v('domains/loops.md'), domainNode('domains/loops', 'Loops', ['capabilities/a', 'capabilities/b']));
+      write(dir, v('capabilities/a.md'), capabilityNode('capabilities/a', 'Capability A', 'domains/loops'));
+      plant(dir, v);
+    },
+  };
+}
+
 const FIXTURE_BUILDERS = {
   empty: { vaultRel: 'vault', build: (dir) => mkdirSync(path.join(dir, 'vault'), { recursive: true }) },
 
@@ -139,6 +153,106 @@ const FIXTURE_BUILDERS = {
     vaultRel: 'vault',
     build(dir) {
       write(dir, 'vault/only.md', projectNode('only', 'Only Node', []));
+    },
+  },
+
+  // A graph built to make walks disagree: two rings sharing a node, a diamond of equal-length
+  // paths, a chain, a second component and a node nothing touches.
+  tangle: {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      const slugs = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'].map((name) => `capabilities/${name}`);
+      const edges = {
+        a: ['b'], b: ['c', 'd'], c: ['a', 'e'], d: ['a', 'e'], e: ['f', 'b'], f: ['g'],
+        g: [], h: ['i'], i: ['j'], j: ['h'], k: [], l: ['k', 'a'],
+      };
+      write(dir, v('tangle.md'), projectNode('tangle', 'Tangle', ['domains/loops', 'domains/rest']));
+      write(dir, v('domains/loops.md'), domainNode('domains/loops', 'Loops', slugs.slice(0, 10)));
+      write(dir, v('domains/rest.md'), domainNode('domains/rest', 'Rest', slugs.slice(10)));
+      for (const [name, targets] of Object.entries(edges)) {
+        const domain = 'kl'.includes(name) ? 'domains/rest' : 'domains/loops';
+        write(
+          dir,
+          v(`capabilities/${name}.md`),
+          capabilityNode(`capabilities/${name}`, `Capability ${name.toUpperCase()}`, domain, {
+            dependencies: `[${targets.map((target) => `capabilities/${target}`).join(', ')}]`,
+          }),
+        );
+      }
+    },
+  },
+
+  // Four vaults whose identity cannot be told apart: each stops every graph command.
+  'identity-uid-missing': identityVault((dir, v) => {
+    write(dir, v('capabilities/b.md'), capabilityNode('capabilities/b', 'Capability B', 'domains/loops', {}).replace(/^uid: .*\n/m, ''));
+  }),
+  'identity-uid-invalid': identityVault((dir, v) => {
+    write(dir, v('capabilities/b.md'), capabilityNode('capabilities/b', 'Capability B', 'domains/loops', { uid: 'NOT-A-UID' }));
+  }),
+  'identity-uid-duplicate': identityVault((dir, v) => {
+    write(dir, v('capabilities/b.md'), capabilityNode('capabilities/b', 'Capability B', 'domains/loops', { uid: uid('capabilities/a') }));
+  }),
+  'identity-merged-collision': identityVault((dir, v) => {
+    write(dir, v('capabilities/b.md'), capabilityNode('capabilities/b', 'Capability B', 'domains/loops', { merged_uids: `[${uid('capabilities/a')}]` }));
+  }),
+
+  // `capabilities/a` leans on two nodes that collate as one name (U+00AD is ignored by the
+  // collation), so which community it joins is decided by something other than their names.
+  'communities-ties': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      const slugs = ['capabilities/a', 'capabilities/ab', 'capabilities/a\u00adb', 'capabilities/c'];
+      write(dir, v('ties.md'), projectNode('ties', 'Ties', ['domains/ties']));
+      write(dir, v('domains/ties.md'), domainNode('domains/ties', 'Ties', slugs));
+      write(dir, v('capabilities/a.md'), capabilityNode('capabilities/a', 'Capability A', 'domains/ties', {
+        dependencies: '[capabilities/ab, capabilities/a\u00adb]',
+      }));
+      write(dir, v('capabilities/ab.md'), capabilityNode('capabilities/ab', 'Capability AB', 'domains/ties', {
+        dependencies: '[capabilities/c]',
+      }));
+      write(dir, v('capabilities/a\u00adb.md'), capabilityNode('capabilities/a\u00adb', 'Capability A soft hyphen B', 'domains/ties'));
+      write(dir, v('capabilities/c.md'), capabilityNode('capabilities/c', 'Capability C', 'domains/ties'));
+    },
+  },
+
+  // A node whose name is a whole number: an object in JavaScript lists such a key before every
+  // other, whatever order the keys were added in.
+  'numeric-names': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      write(dir, v('2024.md'), projectNode('2024', 'Year 2024', ['domains/year']));
+      write(dir, v('domains/year.md'), domainNode('domains/year', 'Year', ['capabilities/plan']));
+      write(dir, v('capabilities/plan.md'), capabilityNode('capabilities/plan', 'Plan', 'domains/year', {
+        dependencies: '[capabilities/review]',
+      }));
+      write(dir, v('capabilities/review.md'), capabilityNode('capabilities/review', 'Review', 'domains/year'));
+      write(dir, v('7.md'), node({ slug: '7', kind: 'document', title: 'Seven' }));
+    },
+  },
+
+  // Cycles, a name two nodes answer to, and references to nothing: the faults that are issues, not
+  // refusals, so the graph still compiles.
+  'ambiguous-dangling': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      write(dir, v('capabilities/a.md'), node({
+        slug: 'capabilities/a', kind: 'capability', title: 'A',
+        extra: { dependencies: '[b, missing-thing]', elements: '[src/code.rs]' },
+      }));
+      write(dir, v('capabilities/b.md'), node({
+        slug: 'capabilities/b', kind: 'capability', title: 'B',
+        extra: { dependencies: '[capabilities/a, capabilities/b]' },
+      }));
+      write(dir, v('domains/shared.md'), node({ slug: 'domains/shared', kind: 'domain', title: 'Shared' }));
+      write(dir, v('capabilities/shared.md'), node({ slug: 'capabilities/shared', kind: 'capability', title: 'Shared' }));
+      write(dir, v('capabilities/c.md'), node({
+        slug: 'capabilities/c', kind: 'capability', title: 'C', extra: { relates: '[shared]' },
+      }));
+      write(dir, v('notes.md'), 'No frontmatter, so no node.\n');
     },
   },
 

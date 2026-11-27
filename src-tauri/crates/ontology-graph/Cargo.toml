@@ -7,7 +7,25 @@ license = "MIT"
 publish = false
 
 [dependencies]
+answer-format = { path = "../answer-format" }
 vault-document = { path = "../vault-document" }
+serde = { version = "1", features = ["derive"] }
+# Answers list their keys in the order they were added; MIT or Apache-2.0, already linked by
+# vault-document and mcp-server.
+indexmap = { version = "2", features = ["serde"] }
+# The hash of a compiled graph is a SHA-256; the workspace links this exact version already.
+sha2 = { version = "0.11.1", default-features = false }
+# Edit distance for the slugs a missing name is offered; MIT, already in the lockfile.
+strsim = "0.11"
+# Why a vault cannot be compiled, with the words an agent reads.
+thiserror = "2"
+
+[dev-dependencies]
+# The tests plant a vault in a temporary folder and compile what the document cache reads of it.
+confined-files = { path = "../confined-files" }
+tempfile = "3"
+# The hostile-vault tests read an answer back as JSON to assert on its fields.
+serde_json = "1"
 
 [lints]
 workspace = true
