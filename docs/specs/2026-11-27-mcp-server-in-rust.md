@@ -738,3 +738,12 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   the zero-row hint reads the parsed filter (row 15); `find_backlinks` and the kind census use the
   one collation (row 16). The reads keep a document cache between calls, revalidated by stat, with
   a racy window of two seconds. The `''` dialect point is recorded under Later for a joint fix.
+- 2026-11-28 (lessons from two public migration reports, Anthropic's Messages API move to Rust,
+  2026-11-25, and claude.com's "How Anthropic runs large-scale code migrations", 2026-07-16):
+  their tests passed about 98% while only about a quarter of real inputs matched, so the corpus is
+  not enough. Before slice 14, a replay step feeds both servers the MCP calls that real agent
+  sessions on this machine made (read from local session transcripts, never sent anywhere; only the
+  call shape and arguments, against the same vault copy) and counts differing answers; every
+  difference is fixed or declared. Every assertion a slice weakened is listed for the final review,
+  because their audit found more than a hundred weakened ones. The one switch stays (no gradual
+  move), since the replay stands in for their shadow traffic.
