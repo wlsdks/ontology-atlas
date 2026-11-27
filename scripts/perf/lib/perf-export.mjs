@@ -1,4 +1,4 @@
-// The static export both perf commands measure: the production build with names kept
+// The static export the perf commands measure: the production build with names kept
 // (`next build --no-mangling`), so a CPU profile names source functions. Built into `out/` and
 // marked with the commit it came from; any other `out/` is rebuilt.
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
-export const EXPORT_DIR = join(ROOT, 'out');
+const EXPORT_DIR = join(ROOT, 'out');
 const STAMP = join(EXPORT_DIR, '.perf-export.json');
 
 function head() {

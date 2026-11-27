@@ -36,7 +36,7 @@ const WEBSITE_PAGES = /^\/(?:[a-z]{2}\/)?(?:download|guide|changelog|sample)(?:[
 const NOT_FOUND_PAGES = /this-route-does-not-exist/;
 
 /** True when `route` is a page of the website, measured in a plain browser rather than in the app. */
-export function isWebsiteRoute(route) {
+function isWebsiteRoute(route) {
   return WEBSITE_PAGES.test(route) || NOT_FOUND_PAGES.test(route);
 }
 

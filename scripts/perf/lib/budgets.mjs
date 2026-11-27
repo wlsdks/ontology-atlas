@@ -3,10 +3,6 @@ import { readFileSync } from 'node:fs';
 
 const BUDGETS = JSON.parse(readFileSync(new URL('../budgets.json', import.meta.url), 'utf8'));
 
-export function getBudgets() {
-  return BUDGETS;
-}
-
 /** The limit for `files` documents of `shape`: the exact size, else the next larger budgeted size. */
 function limitFor(row, shape, files) {
   const table = { ...row.limits['*'], ...row.limits[shape] };
