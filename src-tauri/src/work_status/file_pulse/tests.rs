@@ -574,11 +574,12 @@ mod with_the_watcher {
         let repo = base.join("repo");
         std::fs::create_dir_all(&repo).expect("repo folder");
         let repo = std::fs::canonicalize(&repo).expect("canonical repo");
+        // macOS can report the setup's own writes after the watcher starts, seconds late and in no
+        // fixed order, so the setup writes only under `.git`, where no notice counts: the ignore
+        // rules go to `info/exclude`, which every linked worktree reads, and the commit is empty.
         git(&repo, &["init", "-q", "-b", "main"]);
-        std::fs::write(repo.join(".gitignore"), "logs/\n.worktrees/\n").expect("gitignore");
-        std::fs::write(repo.join("tracked.txt"), "a").expect("tracked");
-        git(&repo, &["add", "."]);
-        git(&repo, &["commit", "-qm", "init"]);
+        std::fs::write(repo.join(".git/info/exclude"), "logs/\n.worktrees/\n").expect("exclude");
+        git(&repo, &["commit", "-q", "--allow-empty", "-m", "init"]);
         for index in 0..40 {
             git(
                 &repo,
@@ -605,8 +606,6 @@ mod with_the_watcher {
         set_watching(true);
         assert!(ask(&repo, &drawn).is_some());
         assert!(watcher_is_alive());
-        // Notices the setup left in flight settle before the baseline.
-        std::thread::sleep(Duration::from_millis(1500));
         let before = ask(&repo, &drawn).expect("a read");
         let calls_before = GIT_CALLS.load(Ordering::SeqCst);
 
