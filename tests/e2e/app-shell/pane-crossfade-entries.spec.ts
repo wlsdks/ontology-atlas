@@ -32,6 +32,8 @@ test('a link inside the pane that leads to another screen crossfades the pane', 
 
 test('a destination shortcut crossfades the pane to another screen', async ({ page }) => {
   await page.goto('/en/library/?guides=off');
+  // A `G` pressed before the shell installs its listener is not heard; the mark says when it is.
+  await expect(page.locator('html')).toHaveAttribute('data-destination-shortcuts', 'live');
   const main = page.locator('main').first();
   await main.focus();
   await expect(main).toBeFocused();
