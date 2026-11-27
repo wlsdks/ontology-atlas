@@ -432,7 +432,9 @@ function DocsVaultContent({
 
       {source === 'local' &&
       (localVault.status === 'error' ||
-        localVault.status === 'permission-needed') ? (
+        localVault.status === 'permission-needed') &&
+      /* The chooser marks a vanished folder itself; the banner's "showing sample documents" is false there. */
+      !(showDesktopWelcome && localVault.errorCode === 'path-missing') ? (
         <div
           className="flex flex-none items-center gap-2 border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-2 text-body text-[color:var(--color-status-danger)]"
           role="status"

@@ -40,7 +40,7 @@ export const rules = [
   },
   {
     order: 720,
-    command: 'pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/vault-session/vault-launch-chooser.spec.ts',
     reason: 'Playwright config or webServer behavior changed',
     matches: [/^playwright\.config\.ts$/],
   },

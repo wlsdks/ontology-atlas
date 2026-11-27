@@ -8,7 +8,6 @@ import {
   mountDesktopVault,
   renameDesktopFile,
 } from "../desktop-rail-arrival-harness";
-import { hashServedFilesLikeTheDisk } from "./served-file-hashes";
 
 /**
  * The Sources home on a real folder: 54 sources in five first-level folders, 14 with a wiki page.
@@ -75,7 +74,6 @@ function buildVault({ written = true }: { written?: boolean } = {}): Record<stri
 async function openSources(page: Page, { vault = buildVault(), locale = "en", width = 1920, height = 1080 } = {}) {
   await page.setViewportSize({ width, height });
   await installDesktopRailRuntime(page, vault, undefined, { replaceFixture: true, writable: true });
-  await hashServedFilesLikeTheDisk(page);
   await mountDesktopVault(page, locale);
   await page.goto(`/${locale}/library/?tab=sources`);
   await page.locator('[data-testid="library-page"][data-library-state="nothing-open"]').waitFor({ timeout: 25_000 });

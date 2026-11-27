@@ -76,9 +76,11 @@ test('a source poll cannot publish an unfinished copy or move its working contro
   await run(page, '__finishPicker');
   await page.waitForFunction(() => (window as unknown as { __writing?: boolean }).__writing === true);
   const before = await button.boundingBox();
-  const walk = await page.evaluate(() => (window as unknown as { __sourceWalks: number }).__sourceWalks);
+  // The listings the app asked the native side for, from the fake's own record of every call.
+  const listings = () => page.evaluate(() => (window as unknown as { __nativeCalls: { command: string }[] }).__nativeCalls.filter((call) => call.command === 'list_vault_directory').length);
+  const walk = await listings();
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-  await page.waitForFunction((before) => (window as unknown as { __sourceWalks: number }).__sourceWalks > before, walk);
+  await expect.poll(listings).toBeGreaterThan(walk);
   const samples = await page.evaluate(() => new Promise<Array<{ box: Pick<DOMRect, 'x' | 'y' | 'width' | 'height'> | null; text: string }>>(resolve => {
     const frames: Array<{ box: Pick<DOMRect, 'x' | 'y' | 'width' | 'height'> | null; text: string }> = [];
     const tick = () => {

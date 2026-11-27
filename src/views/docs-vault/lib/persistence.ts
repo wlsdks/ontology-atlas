@@ -189,7 +189,9 @@ export function shouldShowDesktopVaultWelcome({
     !hasLocalManifest &&
     (localVaultStatus === "idle" ||
       localVaultStatus === "opening" ||
-      localVaultStatus === "loading")
+      localVaultStatus === "loading" ||
+      // A folder that vanished or refused the restore leaves nothing to show but the chooser.
+      localVaultStatus === "error")
   );
 }
 

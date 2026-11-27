@@ -13,8 +13,6 @@ export const MERGE_SMOKE_SPECS = Object.freeze([
   'vault-session/vault-launch-chooser.spec.ts',
   'projects/user-journey-a.spec.ts',
   // Opening a vault folder.
-  'vault-session/local-vault-picker.spec.ts',
-  'vault-session/open-vault-cta.spec.ts',
   'vault-session/vault-progressive-open.spec.ts',
   // The map draws, and selecting a node frames and inspects it.
   'map/map-smoke.spec.ts',

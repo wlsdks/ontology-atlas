@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { installDesktopRailRuntime, mountDesktopVault } from '../../desktop-rail-arrival-harness';
 import { installLibraryWorkHarness } from '../../library-work-harness';
-import { hashServedFilesLikeTheDisk } from '../served-file-hashes';
 import { digest, wiki } from './library-question-desk-harness';
 
 const refund = '# Refund handling\nRefund approval queues a stock restoration job.\nThe job may complete in the next inventory batch.\n';
@@ -239,22 +238,18 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
     'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', 'f'.repeat(64), 'Refund approval immediately restores stock.'),
     'wiki/inventory-state.md': wiki('Inventory state', 'sources/inventory-state.md', digest(inventory), 'Refund approval does not immediately restore inventory.'),
   }, undefined, { replaceFixture: true });
-  await hashServedFilesLikeTheDisk(page);
   await mountDesktopVault(page, 'en');
   await page.goto('/en/library/?tab=wiki&guides=off');
   await page.getByTestId('library-workspace-wiki').click();
   await expect(page.getByTestId('library-question-desk')).toBeVisible();
+  // The app reads the wiki pages in the background after the folder opens, and the index shows the answer of that
+  // read: the page whose source changed says so. A search begun before then would say the folder changed after it.
+  await expect(page.getByTestId('library-index').getByRole('heading', { name: /Needs a look/ })).toBeVisible();
   await page.getByTestId('question-desk-input').fill('Does refund approval immediately restore stock?');
   await page.getByTestId('question-desk-search').click();
   const results = page.getByTestId('question-desk-results');
   await expect(results).toBeVisible();
-  // The app reads the wiki pages in the background after the folder opens. A search begun before that ends says the folder
-  // changed after it, and searching again reads every page.
-  const outdated = page.getByText('The folder changed after this search. Search again to use the current files.');
-  await expect(async () => {
-    if (await outdated.isVisible()) await page.getByTestId('question-desk-search').click();
-    await expect(outdated).toBeHidden({ timeout: 2_000 });
-  }).toPass({ timeout: 20_000 });
+  await expect(page.getByText('The folder changed after this search. Search again to use the current files.')).toBeHidden();
   await page.getByTestId('question-desk-coverage-info').click();
   const coverage = page.getByTestId('question-desk-coverage-info-popover');
   await expect(coverage).toContainText('Wiki 2/2 · Sources 2/2');
@@ -266,7 +261,7 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   // inventory line says the same sentence as the claim citing it, so that pair is one row.
   await expect(results.getByRole('button', { name: 'Refund approval queues a stock restoration job.' })).toHaveCount(1);
   await expect(results.getByRole('button', { name: 'Refund approval does not immediately restore inventory.' })).toHaveCount(1);
-  await expect(page.getByTestId('question-desk-results-head')).toContainText('5 passages found');
+  await expect(page.getByTestId('question-desk-results-head').getByRole('heading')).toHaveText('5 passages found');
   const stale = page.getByTestId('question-desk-lead').filter({ has: page.getByRole('button', { name: 'Refund approval immediately restores stock.' }) });
   await expect(stale).toContainText('Source needs review');
   // With no coding agent connected the report press is offered but cannot be used, and says why.

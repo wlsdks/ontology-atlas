@@ -271,10 +271,16 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     await expect(list).toBeVisible({ timeout: 60_000 });
     await expect(page.getByTestId('recent-vault-row')).toHaveCount(2);
 
-    const notices = page.locator('[data-testid="recent-vault-notice-unknown"]');
-    await expect(notices).toHaveCount(1, { timeout: 30_000 });
+    // Only the refused folder's own row carries the notice. The app keeps that row openable (`canOpenReachability`
+    // admits `unknown`, so a press can ask for the grant again), unlike a browser's `blocked` row, which was not.
+    const refused = page.getByTestId('recent-vault-row').filter({ hasText: SECOND_FOLDER.split('/').pop() });
+    await expect(refused).toHaveCount(1);
+    await expect(refused.getByTestId('recent-vault-notice-unknown')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('recent-vault-notice-unknown')).toHaveCount(1);
+    await expect(refused.getByTestId('recent-vault-open')).toHaveCount(1);
+    await expect(page.getByTestId('recent-vault-row').filter({ hasText: FIRST_FOLDER.split('/').pop() }).getByTestId('recent-vault-notice-unknown')).toHaveCount(0);
     await expect(page.getByTestId('recent-vault-missing-group')).toHaveCount(0);
     // The action that is actually available on a folder that will not open.
-    await expect(page.getByTestId('recent-vault-forget').first()).toBeVisible();
+    await expect(refused.getByTestId('recent-vault-forget')).toBeVisible();
   });
 });

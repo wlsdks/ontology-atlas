@@ -1,0 +1,7 @@
+import { test } from "@playwright/test";
+import { openLibraryWorkScenario } from "../../../e2e/library-work-harness";
+
+test("opens the library", async ({ page }) => {
+  await openLibraryWorkScenario(page, {});
+  await page.goto("/en/library/");
+});

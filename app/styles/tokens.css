@@ -128,7 +128,8 @@
   --color-paper-page-fold: color-mix(in srgb, var(--color-text-primary) 38%, var(--color-elevated));
   --color-paper-page-title: color-mix(in srgb, var(--color-canvas) 88%, transparent);
   --color-paper-edge: var(--color-border-strong);
-  --color-paper-fold: var(--color-indigo-a32);
+  /* The ink at a42: the folded corner reads at 3:1 against the source paper (the ratchet's adjacent-mark floor). */
+  --color-paper-fold: rgba(233, 231, 224, 0.42);
   --color-paper-line: var(--color-overlay-3);
   --color-paper-line-page: color-mix(in srgb, var(--color-canvas) 34%, transparent);
 

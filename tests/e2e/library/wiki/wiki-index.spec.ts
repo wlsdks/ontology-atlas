@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { installDesktopRailRuntime, mountDesktopVault, removeDesktopFile } from "../../desktop-rail-arrival-harness";
-import { hashServedFilesLikeTheDisk } from "../served-file-hashes";
 
 /**
  * The Wiki column is the wiki's index (`docs/specs/2026-11-21-library-index-column.md`, criteria
@@ -84,7 +83,6 @@ async function openWiki(page: Page, vault: Record<string, string>, { locale = "e
   await page.setViewportSize({ width, height });
   // The folder is served whole before the press, so the wait below times the Library reading it, not the fixture writing it.
   await installDesktopRailRuntime(page, vault, undefined, { replaceFixture: true, writable: true });
-  await hashServedFilesLikeTheDisk(page);
   await mountDesktopVault(page, locale);
   await page.goto(`/${locale}/library/?tab=wiki`);
   await page.getByTestId("wiki-index").locator("[data-index-row]").first().waitFor({ timeout: 60_000 });

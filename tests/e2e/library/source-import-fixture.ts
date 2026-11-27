@@ -8,8 +8,7 @@ const PICKED_FILE = '/Users/probe/Downloads/motion.txt';
  * Opens the Library of an empty folder in the installed app, with the native add-documents dialog and
  * the copy into `sources/` held by the spec: `__finishPicker` / `__cancelPicker` answer the open dialog (each is a function only while one is open),
  * and `__finishWrite` lets the held copy land (or fail, with `failure`). `__writing` is true while a
- * copy waits, `__writes` counts the copies that landed, and `__sourceWalks` counts the directory
- * listings the app asked the native side for. Only the first copy is held: a second pick of the same
+ * copy waits and `__writes` counts the copies that landed. Only the first copy is held: a second pick of the same
  * file is a duplicate the native side refuses before it writes.
  */
 export async function openEmptyLibrary(page: Page, failure = false) {
@@ -28,10 +27,9 @@ export async function openEmptyLibrary(page: Page, failure = false) {
     type Invoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
     const audit = window as unknown as {
       __finishPicker?: () => void; __cancelPicker?: () => void; __finishWrite?: () => void;
-      __writing?: boolean; __writes: number; __sourceWalks: number;
+      __writing?: boolean; __writes: number;
     };
     audit.__writes = 0;
-    audit.__sourceWalks = 0;
     const bridge = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } }).__TAURI_INTERNALS__;
     const nativeInvoke = bridge.invoke.bind(bridge);
     bridge.invoke = async (command, args = {}) => {
@@ -54,7 +52,6 @@ export async function openEmptyLibrary(page: Page, failure = false) {
         });
         audit.__writes++;
       }
-      if (command === 'list_vault_directory') audit.__sourceWalks++;
       return nativeInvoke(command, args);
     };
   }, failure);
