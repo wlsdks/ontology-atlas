@@ -11,7 +11,8 @@ use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
-use mcp_server::json::parse;
+use serde::Deserialize;
+use serde_json::value::RawValue;
 
 /// The variables the server reads; each test starts from none of them.
 const SERVER_VARIABLES: [&str; 7] = [
@@ -118,9 +119,13 @@ pub fn run_to_end(program: Program, environment: &[(&str, &str)], input: &[u8]) 
 
 /// An answer line's id as the key answers are matched by, `None` for a line that is not an answer.
 pub fn answer_id(line: &str) -> Option<String> {
-    let value = parse(line).ok()?;
-    let id = value.get("id")?;
-    Some(mcp_server::json::to_json(id))
+    #[derive(Deserialize)]
+    struct Line<'a> {
+        #[serde(borrow)]
+        id: &'a RawValue,
+    }
+    let line: Line<'_> = serde_json::from_str(line).ok()?;
+    Some(line.id.get().to_string())
 }
 
 /// The answers of a run by request id. Two requests answered in another order are still equal: the

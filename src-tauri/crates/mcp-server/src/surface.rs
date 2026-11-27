@@ -4,11 +4,17 @@
 //! During the port the JavaScript registry (`mcp/src/server/registry.mjs`) is the one authored
 //! source. `scripts/mcp/surface/generate-surface.mjs` writes a copy into `surface/`, which this
 //! module embeds; `pnpm mcp:surface:check` is red when the registry changed and the copy did not.
+//! Each tool is sent to the agent as the text the generator wrote, never read and written again.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
-use crate::json::{parse, to_json, Value};
+use answer_format::utf16;
+use answer_format::OrderedMap;
+use serde::de::IgnoredAny;
+use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
+
 use crate::runtime::{Modes, ToolProfile};
 
 const TOOLS_JSON: &str = include_str!("../surface/tools.json");
@@ -19,12 +25,59 @@ const INSTRUCTIONS_TEMPLATE: &str = include_str!("../surface/instructions.txt");
 #[derive(Debug)]
 pub struct ToolDef {
     pub name: String,
-    /// The tool as `JSON.stringify` writes it into the `tools/list` answer.
-    pub advertised_json: String,
+    /// The tool as the generator wrote it, which is how `tools/list` sends it.
+    advertised: &'static RawValue,
     /// The names of the arguments the tool accepts, in schema order.
     pub argument_names: Vec<String>,
     /// The `readOnlyHint` annotation: a read tool.
     pub read_only: bool,
+}
+
+/// What the server reads of a tool in `surface/tools.json`.
+#[derive(Deserialize)]
+struct ToolHeader {
+    name: String,
+    #[serde(rename = "inputSchema", default)]
+    input_schema: InputSchema,
+    #[serde(default)]
+    annotations: Annotations,
+}
+
+#[derive(Default, Deserialize)]
+struct InputSchema {
+    #[serde(default)]
+    properties: OrderedMap<IgnoredAny>,
+}
+
+#[derive(Default, Deserialize)]
+struct Annotations {
+    #[serde(rename = "readOnlyHint", default)]
+    read_only: bool,
+}
+
+/// `surface/registry.json`.
+#[derive(Deserialize)]
+struct Registry {
+    #[serde(rename = "serverName")]
+    server_name: String,
+    #[serde(rename = "serverVersion")]
+    server_version: String,
+    #[serde(rename = "toolInventoryPlaceholder")]
+    placeholder: String,
+    #[serde(rename = "readTools")]
+    read_tools: HashSet<String>,
+    #[serde(rename = "constructionTools")]
+    construction_tools: HashSet<String>,
+    #[serde(rename = "retiredTools")]
+    retired_tools: Vec<RetiredTool>,
+    #[serde(rename = "topLevelNonBlankArguments")]
+    non_blank: HashMap<String, Vec<String>>,
+}
+
+#[derive(Deserialize)]
+struct RetiredTool {
+    name: String,
+    replacement: String,
 }
 
 #[derive(Debug)]
@@ -40,126 +93,63 @@ pub struct Surface {
     placeholder: String,
 }
 
-fn strings(value: Option<&Value>) -> Vec<String> {
-    value
-        .and_then(Value::as_array)
-        .map(|items| {
-            items
-                .iter()
-                .filter_map(|item| item.as_str().map(str::to_string))
-                .collect()
-        })
-        .unwrap_or_default()
+/// The `tools/list` result.
+#[derive(Serialize)]
+pub struct ToolsList<'a> {
+    tools: Vec<&'a RawValue>,
 }
 
+#[derive(Debug, thiserror::Error)]
+#[error("the embedded tool surface is unreadable: {0}")]
+struct SurfaceError(#[from] serde_json::Error);
+
 impl Surface {
-    fn load() -> Result<Self, String> {
-        let tools_value =
-            parse(TOOLS_JSON).map_err(|_| "surface/tools.json is not JSON".to_string())?;
-        let registry =
-            parse(REGISTRY_JSON).map_err(|_| "surface/registry.json is not JSON".to_string())?;
-        let mut tools = Vec::new();
-        let mut by_name = HashMap::new();
-        for tool in tools_value.as_array().unwrap_or_default() {
-            let name = tool
-                .get("name")
-                .and_then(Value::as_str)
-                .ok_or("a tool has no name")?
-                .to_string();
-            let argument_names = tool
-                .get("inputSchema")
-                .and_then(|schema| schema.get("properties"))
-                .and_then(Value::as_object)
-                .map(|properties| properties.keys().map(str::to_string).collect())
-                .unwrap_or_default();
-            let read_only = tool
-                .get("annotations")
-                .and_then(|annotations| annotations.get("readOnlyHint"))
-                .and_then(Value::as_bool)
-                .unwrap_or(false);
-            by_name.insert(name.clone(), tools.len());
+    fn load() -> Result<Self, SurfaceError> {
+        let registry: Registry = serde_json::from_str(REGISTRY_JSON)?;
+        let adverts: Vec<&'static RawValue> = serde_json::from_str(TOOLS_JSON)?;
+        let mut tools = Vec::with_capacity(adverts.len());
+        let mut by_name = HashMap::with_capacity(adverts.len());
+        for advertised in adverts {
+            let header: ToolHeader = serde_json::from_str(advertised.get())?;
+            by_name.insert(header.name.clone(), tools.len());
             tools.push(ToolDef {
-                name,
-                advertised_json: to_json(tool),
-                argument_names,
-                read_only,
+                name: header.name,
+                advertised,
+                argument_names: header
+                    .input_schema
+                    .properties
+                    .keys()
+                    .map(str::to_string)
+                    .collect(),
+                read_only: header.annotations.read_only,
             });
         }
-        let retired = registry
-            .get("retiredTools")
-            .and_then(Value::as_array)
-            .unwrap_or_default()
-            .iter()
-            .filter_map(|entry| {
-                Some((
-                    entry.get("name")?.as_str()?.to_string(),
-                    entry.get("replacement")?.as_str()?.to_string(),
-                ))
-            })
-            .collect();
-        let non_blank = registry
-            .get("topLevelNonBlankArguments")
-            .and_then(Value::as_object)
-            .map(|object| {
-                object
-                    .iter()
-                    .map(|(name, list)| (name.to_string(), strings(Some(list))))
-                    .collect()
-            })
-            .unwrap_or_default();
         Ok(Self {
             tools,
             by_name,
-            read_tools: strings(registry.get("readTools")).into_iter().collect(),
-            retired,
-            construction: strings(registry.get("constructionTools"))
+            read_tools: registry.read_tools,
+            retired: registry
+                .retired_tools
                 .into_iter()
+                .map(|tool| (tool.name, tool.replacement))
                 .collect(),
-            non_blank,
-            server_name: registry
-                .get("serverName")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .to_string(),
-            server_version: registry
-                .get("serverVersion")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .to_string(),
-            placeholder: registry
-                .get("toolInventoryPlaceholder")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .to_string(),
+            construction: registry.construction_tools,
+            non_blank: registry.non_blank,
+            server_name: registry.server_name,
+            server_version: registry.server_version,
+            placeholder: registry.placeholder,
         })
     }
 
-    /// The embedded surface, parsed on first use. A broken copy is a build defect the surface test
-    /// finds; the server then answers with an empty surface rather than stopping.
+    /// The embedded surface, read on first use. The files are compiled in, so a failure is a defect
+    /// of the build that the surface tests find, not a state a running server is in.
+    #[allow(
+        clippy::expect_used,
+        reason = "the embedded files are fixed at build time and read by the tests"
+    )]
     pub fn embedded() -> &'static Surface {
         static SURFACE: OnceLock<Surface> = OnceLock::new();
-        SURFACE.get_or_init(|| {
-            Surface::load().unwrap_or_else(|reason| {
-                let _ = std::io::Write::write_all(
-                    &mut std::io::stderr(),
-                    format!(
-                        "[ontology-atlas-mcp] the embedded tool surface is unreadable: {reason}\n"
-                    )
-                    .as_bytes(),
-                );
-                Surface {
-                    tools: Vec::new(),
-                    by_name: HashMap::new(),
-                    read_tools: HashSet::new(),
-                    retired: HashMap::new(),
-                    construction: HashSet::new(),
-                    non_blank: HashMap::new(),
-                    server_name: "ontology-atlas-mcp".to_string(),
-                    server_version: String::new(),
-                    placeholder: String::new(),
-                }
-            })
-        })
+        SURFACE.get_or_init(|| Surface::load().expect("the embedded tool surface is valid"))
     }
 
     /// A tool by name, retired ones included: the registry stays complete so the unknown-tool hint
@@ -192,7 +182,7 @@ impl Surface {
             .filter(|tool| !self.retired.contains_key(&tool.name))
             .map(|tool| tool.name.as_str())
             .collect();
-        names.sort_by(|left, right| crate::js_text::compare_utf16(left, right));
+        utf16::sort(&mut names);
         names
     }
 
@@ -210,25 +200,15 @@ impl Surface {
             .collect()
     }
 
-    /// The `tools/list` result: `{"tools":[...]}` with each tool exactly as the registry advertises.
-    pub fn tools_list_result_json(&self, modes: &Modes) -> String {
-        let listed = self.tools_for_list(modes);
-        let mut out = String::with_capacity(
-            listed
-                .iter()
-                .map(|tool| tool.advertised_json.len() + 1)
-                .sum::<usize>()
-                + 12,
-        );
-        out.push_str("{\"tools\":[");
-        for (position, tool) in listed.iter().enumerate() {
-            if position > 0 {
-                out.push(',');
-            }
-            out.push_str(&tool.advertised_json);
+    /// The `tools/list` result: each listed tool exactly as the registry advertises it.
+    pub fn tools_list(&self, modes: &Modes) -> ToolsList<'_> {
+        ToolsList {
+            tools: self
+                .tools_for_list(modes)
+                .into_iter()
+                .map(|tool| tool.advertised)
+                .collect(),
         }
-        out.push_str("]}");
-        out
     }
 
     /// The `initialize` instructions: the template with the live tool inventory in its place.
@@ -250,7 +230,7 @@ fn names_line(tools: &[&ToolDef]) -> String {
         .join(" · ")
 }
 
-/// `buildToolInventorySection`: how many tools, and their names by read and write.
+/// How many tools, and their names by read and write.
 fn inventory_section(listed: &[&ToolDef]) -> String {
     let (read, write): (Vec<&ToolDef>, Vec<&ToolDef>) =
         listed.iter().copied().partition(|tool| tool.read_only);
@@ -267,6 +247,7 @@ fn inventory_section(listed: &[&ToolDef]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use answer_format::json::to_string;
 
     fn surface() -> &'static Surface {
         Surface::embedded()
@@ -332,17 +313,23 @@ mod tests {
 
     #[test]
     fn the_listed_answer_is_the_advertised_tools_joined_in_order() {
-        let json = surface().tools_list_result_json(&Modes::FULL);
+        let json = to_string(&surface().tools_list(&Modes::FULL)).expect("writes");
         assert!(json.starts_with("{\"tools\":[{\"name\":\"connection_info\""));
         assert!(json.ends_with("}]}"));
-        let parsed = parse(&json).expect("valid JSON");
-        assert_eq!(
-            parsed
-                .get("tools")
-                .and_then(Value::as_array)
-                .map(<[Value]>::len),
-            Some(33)
-        );
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(parsed["tools"].as_array().map(Vec::len), Some(33));
+        let advertised: Vec<&str> = TOOLS_JSON
+            .lines()
+            .filter(|line| line.starts_with('{'))
+            .collect();
+        assert_eq!(advertised.len(), 33 + 7);
+        assert!(json.contains(
+            advertised
+                .first()
+                .copied()
+                .unwrap_or_default()
+                .trim_end_matches(',')
+        ));
     }
 
     #[test]
@@ -350,5 +337,19 @@ mod tests {
         let names = surface().allowed_tool_names();
         assert_eq!(names.len(), 33);
         assert!(names.windows(2).all(|pair| pair.first() < pair.get(1)));
+    }
+
+    #[test]
+    fn a_tool_knows_its_arguments_in_schema_order() {
+        let tool = surface().tool("list_concepts").expect("registered");
+        assert_eq!(
+            tool.argument_names,
+            ["kind", "domain", "since", "offset", "summary", "limit"]
+        );
+        assert!(surface()
+            .tool("git_status")
+            .expect("registered")
+            .argument_names
+            .is_empty());
     }
 }

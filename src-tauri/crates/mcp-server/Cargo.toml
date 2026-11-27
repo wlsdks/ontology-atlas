@@ -18,17 +18,20 @@ name = "ontology-atlas-mcp-rust"
 path = "src/main.rs"
 
 [dependencies]
+answer-format = { path = "../answer-format" }
 confined-files = { path = "../confined-files" }
 hardened-git = { path = "../hardened-git" }
 vault-document = { path = "../vault-document" }
 ontology-graph = { path = "../ontology-graph" }
 source-evidence = { path = "../source-evidence" }
-# Writes a number as JavaScript's `Number.prototype.toString` does, so an answer's digits equal the
-# JavaScript server's. Apache-2.0 option of `Apache-2.0 OR BSL-1.0`; no dependencies of its own.
-ryu-js = "1"
-# Linear-time patterns for the answer envelope's error classification (already in the lockfile
-# through the app). Only the features the patterns need: case folding and Perl classes.
-regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-case", "unicode-perl"] }
+# Answers are typed structs written as JSON. `raw_value` sends the tool list as the text the
+# generator wrote and keeps what an agent nests in its arguments unread until a handler wants it.
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value"] }
+# One variant per `errorCode`, each with its message.
+thiserror = "2"
+# Edit distance for "did you mean"; MIT, already in the lockfile through the app's dependencies.
+strsim = "0.11"
 
 [features]
 # Pause points and answers only a test build has: tools not yet ported reply `not_ported`, and

@@ -3,8 +3,9 @@
 
 use std::io::Write;
 
+use crate::protocol::Session;
 use crate::runtime::Config;
-use crate::session::Session;
+use crate::surface::Surface;
 
 fn write_stderr(text: &str) {
     // A closed standard error is nobody's problem here; `eprintln!` would panic on it.
@@ -23,6 +24,8 @@ pub fn run_stdio() -> i32 {
             return 1;
         }
     };
+    // Read the embedded surface now: a build with a broken copy stops here, not at a first request.
+    Surface::embedded();
     std::panic::set_hook(Box::new(|information| {
         // One line, no backtrace: a tool's panic is answered as an error and the session goes on.
         write_stderr(&format!(

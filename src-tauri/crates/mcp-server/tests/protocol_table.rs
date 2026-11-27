@@ -226,8 +226,7 @@ fn a_cancelled_request_still_runs_its_handler_and_only_its_answer_is_dropped() {
     let marker = std::env::temp_dir().join(format!("mcp-cancel-marker-{}", std::process::id()));
     let _ = std::fs::remove_file(&marker);
     let cancel = "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/cancelled\",\"params\":{\"requestId\":2}}\n";
-    let path =
-        mcp_server::json::to_json(&mcp_server::json::Value::string(marker.to_string_lossy()));
+    let path = answer_format::json::quote(&marker.to_string_lossy());
     let run = rust(
         &[],
         &format!(
@@ -375,11 +374,11 @@ fn a_line_longer_than_the_buffer_ends_the_session_without_a_panic() {
     assert_eq!(run.code, Some(0));
 }
 
-/// Declared difference from the JavaScript server, which answers at any depth: beyond the parser's
-/// bound a line is dropped like any other that is not a message, and the session goes on.
+/// The JavaScript server answers at any depth (it was probed to a million levels); so does this one,
+/// because what an agent nests inside `arguments` stays unread text.
 #[test]
-fn a_request_nested_beyond_the_parsers_bound_is_dropped_and_the_session_goes_on() {
-    let depth = mcp_server::json::MAX_DEPTH + 50;
+fn a_request_nested_a_hundred_and_fifty_thousand_deep_is_answered_and_the_session_goes_on() {
+    let depth = 150_000;
     let nested = format!("{}{}", "[".repeat(depth), "]".repeat(depth));
     let run = rust(
         &[],
@@ -393,7 +392,15 @@ fn a_request_nested_beyond_the_parsers_bound_is_dropped_and_the_session_goes_on(
             then_ping()
         ),
     );
-    assert_eq!(run.lines, [PING_9]);
+    let by_id = support::by_id(&run);
+    assert_eq!(by_id.len(), 2);
+    assert!(
+        by_id
+            .iter()
+            .any(|(id, line)| id == "2"
+                && line.contains("Unknown argument \\\"a\\\" for git_status."))
+    );
+    assert!(by_id.iter().any(|(id, line)| id == "9" && line == PING_9));
     assert_eq!(run.code, Some(0));
     assert!(!run.stderr.contains("overflow"), "{}", run.stderr);
 }
@@ -541,4 +548,55 @@ fn an_unknown_tool_profile_stops_the_start_even_when_the_vault_is_missing_too() 
         "Error: Invalid OATLAS_TOOL_PROFILE \"bogus\"; use full or construction, or unset it, then restart the server.\n"
     );
     assert_eq!(run.code, Some(1));
+}
+
+/// Declared change 3: half of a surrogate pair is not text, so a string an agent sends with one in
+/// it is read with U+FFFD in its place, where the JavaScript server writes it back as the escape.
+/// A request id is the exception: it is written back exactly as sent.
+#[test]
+fn a_lone_surrogate_in_a_string_is_read_as_the_replacement_character_but_never_in_an_id() {
+    let escape = "\\ud800";
+    let line = format!(
+        "{{\"jsonrpc\":\"2.0\",\"id\":\"i{escape}\",\"method\":\"tools/call\",\"params\":{{\"name\":\"a{escape}b\",\"arguments\":{{}}}}}}\n"
+    );
+    let run = rust(&[], &line);
+    let answer = run.lines.first().expect("answered");
+    assert!(answer.contains("Unknown tool: a\u{fffd}b."), "{answer}");
+    assert!(
+        answer.ends_with(&format!(",\"jsonrpc\":\"2.0\",\"id\":\"i{escape}\"}}")),
+        "{answer}"
+    );
+}
+
+/// Declared change 4: the fields of an unknown-argument answer are the names as sent. The JavaScript
+/// server reads them back out of its own message, so a comma splits a name, edge spaces are trimmed
+/// and a quote drops the fields altogether.
+#[test]
+fn unknown_argument_names_are_reported_as_sent_whatever_punctuation_they_hold() {
+    let run = rust(
+        &[],
+        &format!(
+            "{}{}",
+            call(2, "list_concepts", "{\"a,b\":1,\" c \":2}"),
+            call(3, "list_concepts", "{\"a\\\"b\":1}")
+        ),
+    );
+    let by_id = support::by_id(&run);
+    let answer = |id: &str| {
+        by_id
+            .iter()
+            .find(|(key, _)| key == id)
+            .map(|(_, line)| line.clone())
+            .expect("answered")
+    };
+    assert!(
+        answer("2").contains("\"receivedArguments\":[\" c \",\"a,b\"]"),
+        "{}",
+        answer("2")
+    );
+    assert!(
+        answer("3").contains("\"receivedArgument\":\"a\\\"b\""),
+        "{}",
+        answer("3")
+    );
 }

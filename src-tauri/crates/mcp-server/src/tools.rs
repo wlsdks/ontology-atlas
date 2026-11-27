@@ -2,9 +2,10 @@
 //! absent from it is, in the release build, absent from dispatch: the JavaScript server stays the
 //! shipped one until every tool answers here and the differential harness finds them equal.
 
+use crate::answer::ToolOutput;
+use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
-use crate::envelope::ToolError;
-use crate::json::{Object, Value};
+use crate::error::ToolError;
 
 #[cfg(feature = "test-hooks")]
 mod test_hooks;
@@ -13,8 +14,8 @@ mod test_hooks;
 pub fn call(
     context: &CallContext<'_>,
     name: &str,
-    arguments: &Object,
-) -> Option<Result<Value, ToolError>> {
+    arguments: &Arguments,
+) -> Option<Result<ToolOutput, ToolError>> {
     #[cfg(feature = "test-hooks")]
     if let Some(result) = test_hooks::call(context, name, arguments) {
         return Some(result);

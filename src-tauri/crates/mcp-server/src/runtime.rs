@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use confined_files::confined_root::{ensure_vault_root, resolve_path, VaultRootError};
 
-use crate::js_text::js_trim;
+use answer_format::whitespace::trim;
 
 /// Which tools `tools/list` shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -49,7 +49,7 @@ impl StartupError {
     pub fn lines(&self) -> Vec<String> {
         match self {
             Self::InvalidProfile(value) => {
-                let quoted = crate::json::to_json(&crate::json::Value::string(value.clone()));
+                let quoted = answer_format::json::quote(value);
                 vec![format!(
                     "Error: Invalid OATLAS_TOOL_PROFILE {quoted}; use full or construction, or unset it, then restart the server."
                 )]
@@ -69,7 +69,7 @@ impl StartupError {
 fn is_on(value: Option<&str>) -> bool {
     value.is_some_and(|text| {
         matches!(
-            js_trim(text).to_lowercase().as_str(),
+            trim(text).to_lowercase().as_str(),
             "1" | "true" | "yes" | "on"
         )
     })
