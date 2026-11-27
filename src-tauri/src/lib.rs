@@ -590,3 +590,27 @@ mod shutdown_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod startup_tests {
+    /// `run` needs a live event loop, so its first step is pinned in the code above the tests:
+    /// the open-file limit rises before any file or FSEvents stream opens. `open_file_limit`'s
+    /// own test proves what the raise does.
+    #[test]
+    fn the_app_raises_the_open_file_limit_before_anything_else() {
+        let file = include_str!("lib.rs");
+        let (code, _) = file
+            .split_once("mod log_tests {")
+            .expect("the tests follow the code they pin");
+        let code: String = code.split_whitespace().collect();
+        let first = [
+            "pubfnrun(){",
+            "#[cfg(target_os=\"macos\")]",
+            "raise_open_file_limit();",
+        ];
+        assert!(
+            code.contains(&first.concat()),
+            "`run` no longer raises the open-file limit first"
+        );
+    }
+}
