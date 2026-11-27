@@ -1,28 +1,30 @@
 /**
  * Graph readability measurement: collection, not judgement. It pulls coordinates only; the metrics
  * are computed in `scripts/lib/design/graph-readability.mjs`, which is pure and probeable with fixtures.
- * Usage: `node scripts/design/measure-graph-readability.mjs [baseUrl]` on a static export.
+ * Usage: `node scripts/design/measure-graph-readability.mjs [baseUrl]` on a static export. Each
+ * row opens its own folder in the faked app runtime (`scripts/lib/desktop-app/open-folder-in-app.mjs`).
  */
 
 import { chromium } from "@playwright/test";
-import { rmSync } from "node:fs";
 
 import { measureReadability } from "../lib/design/graph-readability.mjs";
+import { loadDesktopHarness, openFolderInApp } from "../lib/desktop-app/open-folder-in-app.mjs";
+import { scaleVaultFiles } from "../perf/lib/vaults.mjs";
 
 const BASE = process.argv[2] ?? "http://localhost:4173";
-const PROFILE = `/tmp/atlas-readability-${process.pid}`;
 
 /**
- * The sizes measured. **The real dogfood vault is the first row** — measuring only
+ * The sizes measured. **The product's own vault is the first row** — measuring only
  * synthetic graphs would leave the screen we look at daily never measured.
  */
 const CASES = [
-  { q: "", label: "dogfood vault" },
-  { q: "synth=300", label: "synthetic 300" },
-  { q: "synth=3000", label: "synthetic 3000" },
+  { files: async () => (await loadDesktopHarness()).atlasSampleFiles(), label: "dogfood vault" },
+  { files: async () => scaleVaultFiles(300, "all"), label: "300 files" },
+  { files: async () => scaleVaultFiles(3000, "all"), label: "3000 files" },
 ];
 
 /** Fixed viewport — crossings are counted in screen coordinates, so the window size is part of the measurement condition. */
+const VIEWPORT = { width: 1512, height: 900 };
 
 function collectInPage() {
   const api = window.__atlasMap;
@@ -37,22 +39,23 @@ function collectInPage() {
   };
 }
 
-const ctx = await chromium.launchPersistentContext(PROFILE, {
+const browser = await chromium.launch({
   headless: true, // The layout is deterministic and needs no real input
-  viewport: VIEWPORT,
-  deviceScaleFactor: 2,
 });
-
-const page = ctx.pages()[0] ?? (await ctx.newPage());
 const rows = [];
 
-for (const { q, label } of CASES) {
-  const query = ["guides=off", "e2e=1", q].filter(Boolean).join("&");
-  await page.goto(`${BASE}/ko/topology?${query}`, { waitUntil: "networkidle" });
+for (const { files, label } of CASES) {
+  // A fresh context per row: the app restores the folder it last opened.
+  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2 });
+  const page = await context.newPage();
+  await openFolderInApp(page, await files(), { baseUrl: BASE, locale: "ko" });
+  await page.goto(`${BASE}/ko/topology/?guides=off&e2e=1`, { waitUntil: "networkidle" });
+  await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
   // Wait for the physics simulation to converge. **Measuring before convergence
   // measures an intermediate state, not the layout.**
   await page.waitForTimeout(6000);
   const raw = await page.evaluate(collectInPage);
+  await context.close();
   if (raw.error) {
     rows.push({ label, error: raw.error });
     continue;
@@ -65,8 +68,7 @@ for (const { q, label } of CASES) {
   });
 }
 
-await ctx.close();
-rmSync(PROFILE, { recursive: true, force: true });
+await browser.close();
 
 console.log(`\n  graph readability — ${VIEWPORT.width}×${VIEWPORT.height}, after convergence\n`);
 for (const r of rows) {

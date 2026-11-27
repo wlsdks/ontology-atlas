@@ -1,5 +1,5 @@
-// Generated vaults for perf:web-open and perf:app-open, kept between runs because a 50,000-file
-// folder takes a while to write. `--clean` in either command removes them.
+// Generated vaults for perf:app-open and the map tools, kept between runs because a 50,000-file
+// folder takes a while to write. `--clean` in `perf:app-open` removes them.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -38,6 +38,14 @@ export function prepareVault(files, shape) {
     writeFileSync(facts, JSON.stringify(known));
   }
   return { dir: directory, files, shape, ...known };
+}
+
+/** The Markdown of the generated vault as `{ path: text }`, the form the faked app runtime serves. */
+export function scaleVaultFiles(files, shape) {
+  const { dir } = prepareVault(files, shape);
+  const served = {};
+  for (const rel of listVaultFiles(dir)) if (rel.endsWith('.md')) served[rel] = readFileSync(join(dir, rel), 'utf8');
+  return served;
 }
 
 /** What the map's concept census counts: concepts other than documents. */
