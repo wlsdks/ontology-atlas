@@ -1,8 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
-import projectPages from "../../../messages/ko/projectPages.json";
-
-const detail = projectPages.detail;
 
 const PROJECT_PAGE = "/ko/project/storefront/?guides=off";
 
