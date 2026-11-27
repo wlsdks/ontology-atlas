@@ -104,3 +104,23 @@ fn a_hub_fifty_thousand_nodes_depend_on_is_listed_by_the_limit_not_by_its_degree
     assert_eq!(matched["nodes"].as_array().map(Vec::len), Some(LIMIT));
     assert_eq!(matched["limited"], true);
 }
+
+/// `maintenance_plan` reads the body of every node, and a body is a file read and a parse, so a plan
+/// that read each body twice or in one thread took 3.5 seconds on this hub in a release build; one
+/// read per body, spread over the cores, takes about one. The bound is the best of three runs in an
+/// unoptimised test build (about 0.4 seconds on a quiet twelve-core machine), loose enough for a
+/// loaded one and tight enough that a second read of every body fails it.
+#[test]
+fn maintenance_plan_on_the_hub_reads_each_body_once_and_answers_within_the_bound() {
+    const BOUND: std::time::Duration = std::time::Duration::from_millis(1_500);
+    let graph = vault(HUB, |number| if number == 0 { Vec::new() } else { vec![0] });
+    let best = (0..3)
+        .map(|_| {
+            let started = std::time::Instant::now();
+            ask(&graph, "maintenance_plan");
+            started.elapsed()
+        })
+        .min()
+        .expect("three runs");
+    assert!(best < BOUND, "maintenance_plan on the hub took {best:?}");
+}
