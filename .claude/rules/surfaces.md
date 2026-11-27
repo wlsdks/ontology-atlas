@@ -51,7 +51,7 @@ never a parallel router or surface fork.
 | Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts`, `src-tauri/src/connectors/secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
 | Connector runtimes | `src/shared/lib/connectors/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors/runtimes.rs` | typed absolute path; **not** a degradation card, because only a convenience is missing |
 | Folder watch | `start_vault_watch` in `src-tauri/src/vault/watch.rs`, `TauriVaultWatchBridge.tsx` | periodic reread (`poll-cadence.ts`); delayed, not unavailable |
-| Library sources | `src/shared/lib/vault-folder/native-vault/tauri-library-sources.ts`, `src-tauri/src/library/` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC; Planning's Add files reuses it |
+| Library sources | `src/shared/lib/vault-folder/native-vault/tauri-library-sources.ts`, `src-tauri/src/library/` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC; Planning's Add files uses the same import with its `planning` destination |
 | Discovery outside the folder | `discover_source_candidates` in `src-tauri/src/library/source_discovery.rs` | degradation card `find-documents-web-limit`; a bound project root is an absolute path |
 | Reveal a file in Finder | `reveal_vault_file` in `src-tauri/src/library/reveal.rs` | hands over the granted file; reveal, never launch |
 | Work status | `src/shared/lib/work-status/tauri-work-status.ts`, `src-tauri/src/work_status/` | degradation card `work-status-get-app`; a browser cannot run Git or read a lock holder's start time |
@@ -103,7 +103,7 @@ The third written exception, for Work status only:
 | Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes, a per-program GPU figure |
 | Platforms | macOS and Linux for the agent processes; the load read on macOS only; Windows reads none |
 | Gate | `src-tauri/src/work_status/worktrees/tests.rs`; for load, the tests under `src-tauri/src/work_status/load/` |
-| Record | `docs/records/decisions/2026-11-22-work-status-agent-processes-87d3ada9-4740-430a-8cee-a580ce7e638e.md`; load: `docs/records/decisions/2026-11-25-work-status-load-read-43842310-f121-42ab-973d-4b72806a0f94.md`; per session: `docs/records/decisions/2026-11-25-work-status-session-load-635500f0-5355-46c2-a37f-93d4cac16afc.md` |
+| Record | `87d3ada9`; load: `43842310`; per session: `635500f0` |
 
 A new field, a signal or a send needs a new decision record.
 
@@ -138,9 +138,9 @@ The fifth written exception, for Work status only:
 | A name never reaches | a file, a log, error text, storage, a URL, an argument the page sends back to Rust, an agent session, or the network |
 | Subagents | with each list, in `~/.claude`, a visible `CLAUDE_CONFIG_DIR` and Orca profile homes: `projects/<cwd>/<sessionId>/subagents/`; `agentType`, `model`, worktree and file times from `agent-*.meta.json` (another key: unknown); from the session's `.jsonl`, its `cwd` (a listed worktree, else skip) and `<task-notification>` ids and statuses; the page gets type, model, worktree id or unknown. Never `description` or other text (`67a26c36`) |
 | Never read | a session's `id`; `sessionId` stays in Rust; any field outside the documented ones makes its entry unknown |
-| Platforms | macOS only |
-| Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection`, and the planted-name tests of criterion 2 in `docs/specs/2026-11-25-work-status-live.md`); `src/shared/lib/work-status/signals/sessions.test.ts` |
-| Record | `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md`; names: `docs/records/decisions/2026-11-25-work-status-session-names-3c8614d6-9b02-4b18-9e12-95d935c9434c.md` |
+| Platforms | macOS; no other platform runs it |
+| Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection` and the planted-name tests); `src/shared/lib/work-status/signals/sessions.test.ts` |
+| Record | `929c2179`; names: `3c8614d6` |
 
 Another program, argument or variable, or a run without the sandbox, needs a
 new decision record.
@@ -151,7 +151,7 @@ The sixth written exception, for Work status only:
 
 | | |
 |---|---|
-| Watch | the OS's file-change notices, through the `notify` crate the app already ships, for the folder of each worktree drawn as a room; one watcher for every room; never a shelf worktree's own folder or a folder Git does not list for this repository; a notice from a worktree nested inside a watched folder is dropped, never counted |
+| Watch | the OS's file-change notices (the shipped `notify` crate) for the folder of each worktree drawn as a room; one watcher for every room; never a shelf worktree's own folder or a folder Git does not list for this repository; a notice from a worktree nested inside a watched folder is dropped, never counted |
 | When | while Work status is visible and its Watch file changes switch (on by default) is on; hidden or switched off, no watcher is alive, and switched off, no count is held |
 | Counted | a notice whose path is not under `.git`, not under a fixed list of dependency and build folder names, and not ignored by Git; Git gives that verdict through `runner.rs`, at most one call per worktree in 10 s, never twice for one path until that worktree's `.gitignore` changes |
 | Kept in Rust memory | per worktree: the time of the last counted change, counts per 10 s step for 60 minutes (99 at most), and a one-way hash of each path Git already judged (4,096 at most) |
@@ -159,7 +159,7 @@ The sixth written exception, for Work status only:
 | Never | a file opened or stat'ed; a name or path from a notice in a payload, log, file or the network |
 | Platforms | macOS; no other platform watches |
 | Gate | the tests under `src-tauri/src/work_status/file_pulse/` |
-| Record | `docs/records/decisions/2026-11-25-work-status-file-change-notices-1c163935-120b-4f73-9c2e-9cf11f023ee3.md` |
+| Record | `1c163935` |
 
 Another folder, a kept name or path, or a watch while hidden needs a new
 decision record.
@@ -197,18 +197,24 @@ The ninth, specified, not built (`docs/specs/2026-11-27-workshop-control-tower-c
 
 Another read, signal or target needs a new record.
 
-### Workshop › Asked, not done
+### Harness › Tokens: session usage figures
 
-The tenth, specified, not built (`docs/specs/2026-11-27-missed-requests.md`,
-`19077fe5`): after a press or its nightly switch, this repository's typed
-Claude Code messages go one at a time to a loopback model;
-results stay in app data; never agent text or tool fields.
+The tenth, specified, not built (`docs/specs/2026-11-28-harness-token-inspector.md`):
+
+| | |
+|---|---|
+| Read | after Inspect token use, Claude Code session files (regular, no link below `projects/`) in folders whose name begins with this repository's encoding, counted when their first `cwd` is in it: ids, model, usage, effort, times, cache misses, compactions, `cost-state`, tool groups, sizes and call names |
+| Never | message, tool or error text, a session-file path or a full session id in a payload, log or file; a stored figure |
+| Gate, record | `no_planted_text_leaves_any_inspector_result`; `d55c209e` |
+
+Another file, field or stored figure needs a new record.
 
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event
-carries (about 0.5 s from save to map, mostly the 500 ms debounce, measured
-2026-11-19; a burst past a fifth of the vault walks it); the web rereads the folder (1.5 s after activity, 5 s idle, paused in hidden
+carries (0.45–0.61 s from save to map end to end, measured 2026-11-19, most of
+it the watcher's 500 ms debounce; a burst past a fifth of the vault walks it);
+the web rereads the folder (1.5 s after activity, 5 s idle, paused in hidden
 tabs). Gate the event-driven invariant, never milliseconds. Do
 not add folder watch to `DEGRADED_SURFACES`, never claim "instant" on the web,
 and prefer "updates automatically" for the app.
@@ -229,18 +235,19 @@ exposed to any injected script) and writing agent config from the web (no
 absolute path; `WebManualConnectPanel.tsx` renders the config locally instead).
 
 A degradation card states why the ability is unavailable, where it works
-(usually `/download/`), and what remains possible here
-(`atlas-git-web-get-app`, `ai-connection-web-degraded`). "Coming soon" is no
-reason; calling an available path unavailable is false too.
+(usually `/download/`), and what remains possible here, as
+in `atlas-git-web-get-app`. "Coming soon" is
+not a reason, and calling an available path unavailable is equally false.
 
 ## Web smoke and the degradation registry
 
 `tests/e2e/web-surface-smoke.spec.ts` is the web's only standing signal: the
 gateway renders a real map with facts and two live next actions; the fallback
 workbench reads a fake folder with correct counts; every `DEGRADED_SURFACES`
-entry, which every new app-only ability joins, gives a reason and a destination
-that opens. It runs nightly, before every stable release, and by planned
-dispatch for any runtime change, `src-tauri/**` included.
+entry gives a reason and a destination that opens. Add every new app-only
+ability to `DEGRADED_SURFACES`. It runs in every nightly browser run and
+before every stable release; a planned dispatch runs it for any runtime change,
+including `src-tauri/**`.
 
 `DEGRADED_SURFACES` holds only web-versus-app absence. Absence below a viewport
 breakpoint belongs to `tests/e2e/design-audits/responsive-overflow-audit.spec.ts`, and a
@@ -252,7 +259,7 @@ app separately".
 The app bundle, whose connect button writes absolute paths, or a source checkout
 whose MCP server runs as `node <checkout>/mcp/src/index.js` and whose only
 command, `node <checkout>/cli init`, scaffolds a vault. Neither `ontology-atlas` nor
-`ontology-atlas-mcp` is on npm. Code
+`ontology-atlas-mcp` exists on npm; `npx ontology-atlas init` is a 404. Code
 authority: `src/shared/config/mcp/mcp-server-launch.ts`. Gate:
 `tests/contract/release/npm-channel-retired.contract.test.ts`.
 
@@ -262,6 +269,7 @@ The one installation `forbidden.md` allows. All four conditions must hold: the
 user initiates it, sees the exact command first, it installs into an app-owned
 location, and the version is pinned. Downloading a Node runtime was approved in
 decision (89); any other runtime family needs a new record.
-The pinned npx adapter a conversation start fetches into npx's cache is not
-one: it is that launch's own download, moved earlier, for chat-eligible
-runtimes only (`docs/records/decisions/2026-11-24-acp-adapter-download-app-owned-d4b27660-5946-4463-a9d1-71f4f65a17da.md`).
+The pinned npx adapter a conversation start fetches into npx's own cache is not
+such an install: it is the session launch's own download moved ahead of the
+session, for chat-eligible runtimes only
+(`docs/records/decisions/2026-11-24-acp-adapter-download-app-owned-d4b27660-5946-4463-a9d1-71f4f65a17da.md`).
