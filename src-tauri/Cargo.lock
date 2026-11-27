@@ -805,6 +805,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "walkdir",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3046,12 +3047,15 @@ dependencies = [
  "indexmap 2.14.0",
  "mcp-server",
  "ontology-graph",
+ "regex",
  "serde",
  "serde_json",
  "sha2 0.11.1",
  "source-evidence",
  "strsim",
+ "tempfile",
  "thiserror 2.0.21",
+ "uuid",
  "vault-document",
 ]
 

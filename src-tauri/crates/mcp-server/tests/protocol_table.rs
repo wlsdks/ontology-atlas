@@ -2,6 +2,12 @@
 //! standard input and output. Each expectation was recorded from the JavaScript server; the
 //! `oracle` tests run both programs and compare them.
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "these tests start the program and read and plant the files a write leaves"
+)]
+
 mod support;
 
 use std::time::Duration;

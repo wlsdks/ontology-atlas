@@ -156,6 +156,26 @@ children, 982 ms reads files, 361 ms is `lstat`.
 New in Atlas's combination: the product is the files on disk, so after every write the two vault
 folders are compared byte for byte, and no declared change may touch them.
 
+## One way per concern
+
+Every crate and every tool does each of these the one way named here; a second way is a defect
+the reviewer rejects, and changing the way changes it everywhere in the same slice.
+
+| Concern | The one way |
+|---|---|
+| Reading or writing a file | `confined-files` (`VaultRoot`, `SourceRoot`, `write_atomically`); nothing else names `std::fs` (clippy and `family_boundary`) |
+| A write to the vault | a `WritePermit` from `write_checkpoint`: read-only, consent, reservation, one write at a time, then the audit line |
+| Running git | `hardened-git`'s typed reads; no other process spawn |
+| Errors | a `thiserror` enum per crate with typed reasons; the server maps each to one public `errorCode`; no error text parsed for meaning |
+| Arguments | `Arguments::read`/`read_all` into typed structs; refusals as `invalid_arguments` naming the argument |
+| Answers and text an agent reads | `answer-format` (numbers, UTF-16 counts, time as JavaScript wrote it); one answer text written once |
+| Ids | `uuid` v4 |
+| Order of names | one collation in `answer-format`, used by every sorted answer |
+| Concurrency | the protocol's worker threads, `rayon` for data parallel work; no async runtime |
+| Logging | `tracing`, no subscriber in release; standard error only for the lines the contract names |
+| Tests | `cargo nextest`; `proptest` for rules over inputs, `insta` for answer shapes, the differential harness for agent-visible behaviour |
+| Names | a crate, module or file is named for what it owns or exports; a tool's handler is found from the tool's name |
+
 ## Problem and alternatives
 
 The pains, ranked by what the person gets back: (1) LGPL code inside a file Atlas ships; (2) every
@@ -217,7 +237,14 @@ merge.
 | 3 | every answer that repeats a string the agent sent (tool name, method), and every argument holding a lone surrogate escape such as half an emoji | the half is kept and written back as the escape, `"\ud800"`, and a handler receives it | a name is read with U+FFFD and written as that character; an argument that holds one is refused as `invalid_arguments`, naming it, before any handler runs; a request `id` is written back exactly as sent | half of an emoji is not text; the JavaScript server stores such a value in the vault as U+FFFD without saying so, so a refusal tells the agent what it sent instead of saving something else |
 | 4 | `unknown_tool` and `unknown_argument` `structuredContent`: `receivedTool`, `receivedArgument`, `receivedArguments`, `unknownArguments`, `toolName` and the fields beside them | the fields are read back out of the message text, so a name with a full stop, a comma, a quote, edge spaces or nothing in it gets the wrong fields or none | the fields are always written, from the typed values the message was made from; the message, the code and every other name are unchanged | a field is never parsed out of message text, and an agent repairing a call is given the name it sent |
 | 5 | `unknown_argument` message and fields | unknown arguments are listed with integer-like names first, as a script object orders them, and a `__proto__` argument is dropped without a word so the call runs | they are listed in the order sent, and `__proto__` is an argument like any other, so it is refused as unknown | that order is an accident of JavaScript objects no client can rely on (a JavaScript client reorders keys again), and an argument ignored in silence runs a call the agent did not write |
-| 6 | `get_concepts` row for a file that exists and cannot be read (a link that loops, a permission) | `Could not capture a stable file snapshot: <absolute path> (ELOOP: ..., open '<absolute path>')`, classed `invalid_arguments` because the OS text holds the words "too many" | `Could not read the file of "<slug>": too many symbolic links encountered (ELOOP)`, classed `tool_error` | the answer shows an agent a path on the user's disk it never named, and the code says the agent mistyped an argument when the file is the problem |
+| 6 | A write whose call is cancelled while its consent question is open | the question stays open and a late yes can still write | the call withdraws its question (`notifications/cancelled`) and never writes; a later answer to it is ignored. Corpus: replays from slice 10 | a yes that arrives after the agent was told the call ended must not change the vault |
+| 7 | A ninth consent question open at once | all are sent | the ninth write is refused as a `tool_error` that writes nothing; answers nobody asked for take no place. Corpus: replays from slice 10 | a client that never answers must not hold every thread |
+| 8 | The consent question of a one-row `add_concepts` or `add_relations` | the one slug or the two endpoints are put in the question as sent, so a hidden character (right-to-left mark, zero-width space) passes through while every other tool's question spells it out | they are spelled out by name in the question, as in every other tool's. Corpus: replays from slice 10 | what a person approves is what will be written |
+| 9 | A refusal to write for lack of a yes (not approved, no way to ask, no answer in time) | the code follows the words of the message, so a summary that says "conflict" or "not found" is read as one | always `tool_error`, with the same words; a real conflict or missing file found by the write keeps `conflict`, `vault_conflict` and `not_found` | a refusal is not a conflict, and the code is never read back from text. Corpus: replays from slice 10 |
+| 10 | A consent question that fails: a closed connection, an answer that cannot be read, a client that cannot be reached | the SDK's error text | the server's own words, each saying that no change was made; the code stays `tool_error`. Corpus: replays from slice 10 | the agent reports what happened instead of retrying |
+| 11 | An audit line that cannot be written | the failure is swallowed in silence | one line on standard error naming the tool and the cause, `[ontology-atlas-mcp] audit line not written after <tool>: <cause>`, and a panic while writing it is reported the same way; the write's answer never changes. Corpus: replays from slice 10 | a finished write is not a failure, and the person can still find out the log is broken |
+| 12 | An `activity.jsonl` or `map-analysis.jsonl` whose last line was torn (no final newline) | the next line is appended to the torn one and both are lost to a reader | the torn line is ended with a newline before the next line; the format of every line is unchanged. Corpus: replays from slice 10 | one interrupted write must not make the next line unreadable |
+| 13 | `get_concepts` row for a file that exists and cannot be read (a link that loops, a permission) | `Could not capture a stable file snapshot: <absolute path> (ELOOP: ..., open '<absolute path>')`, classed `invalid_arguments` because the OS text holds the words "too many" | `Could not read the file of "<slug>": too many symbolic links encountered (ELOOP)`, classed `tool_error` | the answer shows an agent a path on the user's disk it never named, and the code says the agent mistyped an argument when the file is the problem |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -623,8 +650,10 @@ None — the owner delegated the open points and the lead decided them on 2026-1
    languages in one pull request. Reverse by lifting the freeze for one named family.
 3. The integration branch merges when every family is equal or declared and no figure is worse
    than the Bun binary's; the goals are not gates. Reverse by promoting a goal to a gate.
-4. Declared changes never touch bytes on disk, audit lines, the surface or the set of error codes.
-   Reverse with a new decision that also states the rollback.
+4. Declared changes never touch the format of bytes on disk, of audit lines, or the set of error
+   codes (a new code may be added); the surface changes only as a listed row. The one change to a
+   file's bytes is row 12: a newline ending a torn last line of an audit file before the next
+   line. Reverse with a new decision that also states the rollback.
 5. `source-evidence` splits into `source-scan` and `repository-survey`; the eighth crate is
    `answer-format`. Reverse by merging the crates before the merge, when nothing outside depends
    on the names.
@@ -684,3 +713,15 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   the line end and none is ever written, checked from the bytes the program writes; the worker
   stack is 8 MiB on every platform in place of 256 MiB; tests for a vault path with backslashes,
   slashes and a verbatim prefix are `cfg(windows)` and run in CI only.
+- 2026-11-28 (owner: every function and rule must be consistent; different ways for the same thing are hard to manage): added "One way per concern"; reviewers reject a second way.
+- 2026-11-28 (slice 2b, review round): a dry run is decided once, in `Permit::pass`, which hands a
+  handler a preview permit that cannot write or ask; a write passes read-only mode, consent and the
+  session's write lock in that order, and the lock is held through the audit lines so two approved
+  writes to one concept lose nothing. The sidecar code moved to `confined-files` (no-follow opens,
+  handle-based identity, the folder flushed after a rename), `mcp-server` joined the clippy family
+  with its own file refusing a write around the permit, and a planted handler proves clippy refuses
+  it. The consent window is 60 seconds again, because clients on the JavaScript SDK give up then and
+  a yes after the agent was told the call failed is worse than a second question. Rows 6 to 12 list
+  the changes this slice makes. Windows: a link is refused by the handle's reparse tag and hard
+  links by the link count; the code is not compiled on this machine (no Windows target), so
+  `cfg(windows)` rests on the cited Microsoft documentation until CI runs it.

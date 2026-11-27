@@ -14,6 +14,7 @@ pub mod confined_root;
 mod markdown_walk;
 mod modified_time;
 mod os_error;
+mod plain_file;
 mod private_names;
 mod real_paths;
 mod scan_root;
@@ -23,6 +24,7 @@ mod source_disk;
 mod source_snapshot;
 mod temporary_name;
 mod vault_root;
+mod vault_sidecar;
 mod write_plan;
 
 pub use atomic_write::{
@@ -49,6 +51,7 @@ pub use source_snapshot::{
     MAX_TRANSPORT_BYTES, SNAPSHOT_CONTRACT, SNAPSHOT_DESCRIPTOR,
 };
 pub use vault_root::{ConfinedPath, SlugError, VaultRoot, WritablePath};
+pub use vault_sidecar::{Revision, SidecarError, Stored, StoredTail, Unsafe, VaultSidecar};
 pub use write_plan::{
     apply_all_or_nothing, Applied, ApplyOptions, PlanEntry, PlannedOperation, Reservations,
     ReservedForPerson,

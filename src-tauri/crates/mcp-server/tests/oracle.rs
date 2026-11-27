@@ -7,6 +7,12 @@
 //! Without Node and the server's packages the tests print a line and pass, unless
 //! `OATLAS_REQUIRE_ORACLE` is set, which makes a missing oracle a failure.
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "these tests start the program and read and plant the files a write leaves"
+)]
+
 mod support;
 
 use support::{

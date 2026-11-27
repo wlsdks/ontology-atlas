@@ -77,17 +77,29 @@ const FAMILY: [(&str, &[&str]); 5] = [
             "sha2",
             "strsim",
             "thiserror",
+            "uuid",
         ],
     ),
 ];
 
-/// Family crates whose clippy file is added by their own slice, and why.
-const CLIPPY_PENDING: [(&str, &str); 1] = [(
-    "mcp-server",
-    "its test hooks and tests write and spawn on purpose; the slice adds the file with the allow",
-)];
-
 const CANONICAL_CLIPPY: &str = include_str!("family_clippy.toml");
+
+/// The lines `mcp-server` adds to `disallowed-methods`: a vault is written only through a permit.
+const MCP_SERVER_EXTRA: &str = include_str!("mcp_server_clippy_extra.toml");
+
+/// The clippy file a family crate carries: the shared one, and for `mcp-server` the permit lines
+/// at the end of its `disallowed-methods` list.
+fn expected_clippy(family: &str) -> String {
+    if family == "mcp-server" {
+        let list_end = CANONICAL_CLIPPY.len() - "]\n".len();
+        format!(
+            "{}{MCP_SERVER_EXTRA}]\n",
+            CANONICAL_CLIPPY.get(..list_end).unwrap_or_default()
+        )
+    } else {
+        CANONICAL_CLIPPY.to_string()
+    }
+}
 
 fn crates_folder() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -206,18 +218,15 @@ fn a_dependency_that_wraps_the_disk_is_named_and_a_listed_or_dev_one_is_not() {
 }
 
 #[test]
-fn every_family_crate_carries_the_shared_clippy_file_unless_its_slice_adds_it() {
+fn every_family_crate_carries_the_shared_clippy_file() {
     let mut checked = 0;
     for (family, _) in FAMILY {
-        if CLIPPY_PENDING.iter().any(|(pending, _)| *pending == family) {
-            continue;
-        }
         let file = crates_folder().join(family).join("clippy.toml");
         let found = fs::read_to_string(&file).unwrap_or_default();
         assert_eq!(
             found,
-            CANONICAL_CLIPPY,
-            "{} must be a copy of tests/family_clippy.toml",
+            expected_clippy(family),
+            "{} must be a copy of tests/family_clippy.toml (mcp-server: plus tests/mcp_server_clippy_extra.toml)",
             file.display()
         );
         checked += 1;
@@ -336,4 +345,111 @@ fn clippy_with_the_shared_file_refuses_every_planted_way_to_reach_the_disk() {
         !report.lines().any(|line| line.contains("clean.rs")),
         "a file that only names paths and bytes was refused:\n{report}"
     );
+}
+
+/// Planted ways for a write handler of `mcp-server` to write around its permit, each in its own file,
+/// and the one file (`write_checkpoint.rs`) that may.
+const PLANTED_PERMIT_BYPASSES: [(&str, &str); 4] = [
+    (
+        "handler_write_path",
+        "use confined_files::VaultRoot;\npub fn handler(vault: &VaultRoot) { let _ = vault.write_path(\"a\"); }\n",
+    ),
+    (
+        "handler_writable",
+        "use confined_files::VaultRoot;\npub fn handler(vault: &VaultRoot) { let _ = vault.writable(\"a\"); }\n",
+    ),
+    (
+        "handler_plan",
+        "pub fn handler() { let _ = confined_files::apply_all_or_nothing(Vec::new()); }\n",
+    ),
+    (
+        "handler_atomic_write",
+        "pub fn handler(path: &confined_files::WritablePath) { let _ = confined_files::write_atomically(path); }\n",
+    ),
+];
+
+const CHECKPOINT_FILE: &str = "#![allow(clippy::disallowed_methods, reason = \"the one file that makes write paths\")]\n\
+use confined_files::VaultRoot;\npub fn permit(vault: &VaultRoot) { let _ = vault.write_path(\"a\"); }\n";
+
+const PERMIT_CLEAN: &str = "use confined_files::VaultRoot;\npub fn handler(vault: &VaultRoot) { let _ = vault.read_path(\"a\"); }\n";
+
+/// A stand-in for `confined-files` with the same item paths, so the planted crate builds offline.
+const STAND_IN: &str = "pub struct VaultRoot;\npub struct WritablePath;\n\
+impl VaultRoot {\n    pub fn write_path(&self, _slug: &str) -> WritablePath { WritablePath }\n\
+    pub fn writable(&self, _file: &str) -> WritablePath { WritablePath }\n\
+    pub fn read_path(&self, _slug: &str) -> usize { 0 }\n}\n\
+pub fn apply_all_or_nothing(_plan: Vec<u8>) -> usize { 0 }\n\
+pub fn write_atomically(_target: &WritablePath) -> usize { 0 }\n";
+
+#[test]
+fn a_write_handler_that_goes_around_its_permit_fails_clippy_with_the_servers_own_file() {
+    let work = tempfile::tempdir().expect("temp dir");
+    let stand_in = work.path().join("confined-files");
+    fs::create_dir_all(stand_in.join("src")).expect("stand-in folders");
+    fs::write(
+        stand_in.join("Cargo.toml"),
+        "[package]\nname = \"confined-files\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[workspace]\n",
+    )
+    .expect("stand-in manifest");
+    fs::write(stand_in.join("src/lib.rs"), STAND_IN).expect("stand-in");
+    let krate = work.path().join("planted");
+    let source = krate.join("src");
+    fs::create_dir_all(&source).expect("folders");
+    fs::write(
+        krate.join("Cargo.toml"),
+        "[package]\nname = \"planted\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n\
+[dependencies]\nconfined-files = { path = \"../confined-files\" }\n\n[workspace]\n",
+    )
+    .expect("manifest");
+    let mut lib = String::new();
+    for (name, text) in PLANTED_PERMIT_BYPASSES {
+        fs::write(source.join(format!("{name}.rs")), text).expect("planted");
+        lib.push_str(&format!("pub mod {name};\n"));
+    }
+    fs::write(source.join("write_checkpoint.rs"), CHECKPOINT_FILE).expect("checkpoint");
+    fs::write(source.join("permit_clean.rs"), PERMIT_CLEAN).expect("clean");
+    lib.push_str("pub mod write_checkpoint;\npub mod permit_clean;\n");
+    fs::write(source.join("lib.rs"), lib).expect("lib");
+    let configuration = work.path().join("configuration");
+    fs::create_dir_all(&configuration).expect("configuration");
+    fs::copy(
+        crates_folder().join("mcp-server/clippy.toml"),
+        configuration.join("clippy.toml"),
+    )
+    .expect("the server's clippy.toml");
+
+    let output = Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
+        .args([
+            "clippy",
+            "--quiet",
+            "--message-format",
+            "short",
+            "--manifest-path",
+        ])
+        .arg(krate.join("Cargo.toml"))
+        .args(["--", "-D", "warnings"])
+        .env("CLIPPY_CONF_DIR", &configuration)
+        .env("CARGO_TARGET_DIR", work.path().join("target"))
+        .env_remove("RUSTC_WORKSPACE_WRAPPER")
+        .output()
+        .expect("cargo clippy runs");
+    let report = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !output.status.success(),
+        "clippy passed the planted handlers:\n{report}"
+    );
+    for (name, _) in PLANTED_PERMIT_BYPASSES {
+        assert!(
+            report
+                .lines()
+                .any(|line| line.contains(&format!("{name}.rs")) && line.contains("disallowed")),
+            "{name} was not refused:\n{report}"
+        );
+    }
+    for allowed in ["write_checkpoint.rs", "permit_clean.rs"] {
+        assert!(
+            !report.lines().any(|line| line.contains(allowed)),
+            "{allowed} was refused:\n{report}"
+        );
+    }
 }

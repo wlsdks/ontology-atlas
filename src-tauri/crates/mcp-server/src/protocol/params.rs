@@ -104,6 +104,8 @@ fn params_members(params: &Params) -> Members<'_> {
 pub struct Initialize {
     pub protocol_version: String,
     pub capabilities: ClientCapabilities,
+    /// `clientInfo.name`: the program that is connected, which an audit line names.
+    pub client_name: String,
 }
 
 /// Checks `initialize` params. An invalid one is answered with error -32603 and these words.
@@ -123,8 +125,13 @@ pub fn initialize(params: Option<&Params>) -> Result<Initialize, Issues> {
         );
     }
     let client_info = members.get("clientInfo").copied();
+    let mut client_name = String::new();
     match members_of_object(client_info) {
         Some(info) => {
+            client_name = info
+                .get("name")
+                .and_then(|raw| string_value(raw))
+                .unwrap_or_default();
             let path = ["params", "clientInfo"];
             expect_string(&info, "name", &path, true, &mut issues);
             expect_string(&info, "title", &path, false, &mut issues);
@@ -150,6 +157,7 @@ pub fn initialize(params: Option<&Params>) -> Result<Initialize, Issues> {
             .unwrap_or_default(),
         capabilities: capabilities
             .map_or_else(ClientCapabilities::default, ClientCapabilities::announced),
+        client_name,
     })
 }
 

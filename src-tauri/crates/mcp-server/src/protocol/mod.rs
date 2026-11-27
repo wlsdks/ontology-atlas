@@ -19,6 +19,7 @@ mod message;
 mod methods;
 mod params;
 mod reply;
+mod server_requests;
 mod surrogates;
 
 use std::collections::{HashMap, VecDeque};
@@ -29,14 +30,16 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
 
 pub use capabilities::ClientCapabilities;
 pub use id::Id;
-pub use message::{Params, Request};
+pub use message::{ClientReply, Params, Request};
 pub use methods::SUPPORTED_PROTOCOL_VERSIONS;
 pub use reply::{Answer, RpcError};
+pub use server_requests::{ClientAnswer, ServerRequestWait, MAX_OPEN_REQUESTS};
 
 use message::{read_line, Inbound};
 use methods::handle_request;
 use reply::write_reply;
 
+use crate::audit::AuditLog;
 use crate::runtime::Config;
 
 /// The stack of a worker. A handler keeps its nesting in the heap, so this only has to hold what a
@@ -66,10 +69,19 @@ struct State {
     /// replaces it, as the SDK's abort controllers do.
     in_flight: HashMap<Id, Arc<AtomicBool>>,
     client_capabilities: ClientCapabilities,
+    /// `clientInfo.name` of the latest valid `initialize`.
+    client_name: String,
+    /// Requests the server made and the client has not answered, by id; `Some` once it answered.
+    server_requests: HashMap<Id, Option<ClientReply>>,
+    /// The id of the next request the server makes; the SDK's count starts at 0.
+    next_server_request: i64,
 }
 
 pub struct Session {
     config: Config,
+    audit: AuditLog,
+    /// Held by the one write in progress, from its approval to its audit line.
+    write_lock: Mutex<()>,
     output: Mutex<Box<dyn Write + Send>>,
     state: Mutex<State>,
     wakeup: Condvar,
@@ -83,6 +95,8 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 impl Session {
     pub fn new(config: Config, output: Box<dyn Write + Send>) -> Arc<Self> {
         Arc::new(Self {
+            audit: AuditLog::new(config.vault_root.clone()),
+            write_lock: Mutex::new(()),
             config,
             output: Mutex::new(output),
             state: Mutex::new(State::default()),
@@ -129,6 +143,15 @@ impl Session {
         &self.config
     }
 
+    /// Waits for any write in progress to finish, then is the write in progress until dropped.
+    pub(crate) fn lock_writes(&self) -> MutexGuard<'_, ()> {
+        lock(&self.write_lock)
+    }
+
+    pub fn audit(&self) -> &AuditLog {
+        &self.audit
+    }
+
     pub fn is_closed(&self) -> bool {
         lock(&self.state).closed
     }
@@ -138,8 +161,15 @@ impl Session {
         lock(&self.state).client_capabilities
     }
 
-    fn set_client_capabilities(&self, capabilities: ClientCapabilities) {
-        lock(&self.state).client_capabilities = capabilities;
+    /// The name the client gave itself in `initialize`; empty until it has.
+    pub fn client_name(&self) -> String {
+        lock(&self.state).client_name.clone()
+    }
+
+    fn set_client(&self, capabilities: ClientCapabilities, name: String) {
+        let mut state = lock(&self.state);
+        state.client_capabilities = capabilities;
+        state.client_name = name;
     }
 
     fn close(&self) {
@@ -149,16 +179,19 @@ impl Session {
 
     /// Writes the answer to one request. A closed standard output ends the session; nothing panics.
     fn send(&self, id: &Id, outcome: &Result<Answer, RpcError>) {
-        let written = write_reply(&mut **lock(&self.output), id, outcome);
-        if written.is_err() {
-            // Nobody reads the answers any more: stop starting work, finish what is running.
-            {
-                let mut state = lock(&self.state);
-                state.closed = true;
-                state.broken = true;
-            }
-            self.wakeup.notify_all();
+        if write_reply(&mut **lock(&self.output), id, outcome).is_err() {
+            self.stop_after_output_failure();
         }
+    }
+
+    /// Nobody reads the answers any more: stop starting work, finish what is running.
+    fn stop_after_output_failure(&self) {
+        {
+            let mut state = lock(&self.state);
+            state.closed = true;
+            state.broken = true;
+        }
+        self.wakeup.notify_all();
     }
 
     /// Runs `wait` (a call that blocks until a person answers) without holding up the queue: a
@@ -215,6 +248,13 @@ impl Session {
                 Inbound::Cancel(id) => {
                     if let Some(flag) = state.in_flight.get(&id) {
                         flag.store(true, Ordering::SeqCst);
+                    }
+                }
+                Inbound::Answer { id, reply } => {
+                    // An answer to a request nobody is waiting for, or a second answer, changes
+                    // nothing, as in the SDK.
+                    if let Some(slot @ None) = state.server_requests.get_mut(&id) {
+                        *slot = Some(reply);
                     }
                 }
                 Inbound::Request(request) => {

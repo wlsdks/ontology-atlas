@@ -15,7 +15,7 @@ use serde::{Serialize, Serializer};
 use serde_json::value::RawValue;
 
 use crate::error::ToolError;
-use crate::raw_json::{string_value, Kind};
+use crate::raw_json::{elements, string_value, Kind};
 
 /// The members of the `arguments` object, in the order the agent sent them.
 #[derive(Debug, Default)]
@@ -64,6 +64,19 @@ impl Arguments {
         (Kind::of(raw) == Kind::String)
             .then(|| string_value(raw))
             .flatten()
+    }
+
+    /// The elements of the argument when it is an array, each left as text.
+    pub fn elements(&self, key: &str) -> Option<Vec<&RawValue>> {
+        elements(self.get(key)?)
+    }
+
+    /// Whether the call asks for no change: `dryRun` or `dry_run` is the boolean `true`. Any other
+    /// value, `"true"` or `1`, is not a dry run, as a write tool reads it.
+    pub fn is_dry_run(&self) -> bool {
+        ["dryRun", "dry_run"]
+            .iter()
+            .any(|key| self.get(key).is_some_and(|raw| raw.get() == "true"))
     }
 
     /// One argument as `T`: `None` when it was not sent, and an invalid-argument failure naming it
