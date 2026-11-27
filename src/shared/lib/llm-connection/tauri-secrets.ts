@@ -73,10 +73,6 @@ export interface LlmVerifyResult {
   body: string | null;
 }
 
-export function isSecretBridgeAvailable(): boolean {
-  return getInvoke() !== null;
-}
-
 /**
  * A key saved on one surface is used on another, so a save or delete announces once and listeners
  * re-query the keychain, which stays the source of truth.

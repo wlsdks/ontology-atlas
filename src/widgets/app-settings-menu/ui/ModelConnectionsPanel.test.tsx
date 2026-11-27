@@ -77,7 +77,6 @@ const NS = 'agents.models';
 
 function makeConnection(overrides: Partial<AiConnectionState> = {}): AiConnectionState {
   return {
-    bridgeAvailable: true,
     statuses: { anthropic: null, openai: null, gemini: null },
     applyStatus: vi.fn(),
     jevStatus: null,

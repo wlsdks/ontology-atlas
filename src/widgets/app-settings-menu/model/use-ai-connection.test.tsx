@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useAiConnection } from './use-ai-connection';
 
-vi.mock('@/shared/lib/llm-connection/tauri-secrets', () => ({ isSecretBridgeAvailable: () => false, SECRET_PROVIDERS: [] }));
+vi.mock('@/shared/lib/llm-connection/tauri-secrets', () => ({ SECRET_PROVIDERS: [] }));
 vi.mock('@/shared/lib/llm-connection/tauri-jev', () => ({ jevSecretStatus: vi.fn() }));
 
 describe('audit loading lifecycle', () => {

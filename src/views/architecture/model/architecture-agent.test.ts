@@ -47,10 +47,9 @@ describe('Architecture guarded ACP admission', () => {
     ).toEqual([{ id: 'claude-acp', label: 'Claude Code' }]);
   });
 
-  it('degrades a browser to clipboard and holds an incomplete desktop probe', () => {
+  it('holds an incomplete probe, and falls to the clipboard once it finds no runtime', () => {
     expect(
       resolveArchitectureAgentRoute({
-        bridgeAvailable: false,
         runtimeCheckComplete: true,
         serverCheckComplete: true,
         runtime: null,
@@ -60,7 +59,6 @@ describe('Architecture guarded ACP admission', () => {
     ).toBe('clipboard');
     expect(
       resolveArchitectureAgentRoute({
-        bridgeAvailable: true,
         runtimeCheckComplete: false,
         serverCheckComplete: false,
         runtime: null,
@@ -74,7 +72,6 @@ describe('Architecture guarded ACP admission', () => {
     const admitted = { id: 'claude-acp', label: 'Claude Code' };
     expect(
       resolveArchitectureAgentRoute({
-        bridgeAvailable: true,
         runtimeCheckComplete: true,
         serverCheckComplete: true,
         runtime: admitted,
@@ -84,7 +81,6 @@ describe('Architecture guarded ACP admission', () => {
     ).toBe('agent');
     expect(
       resolveArchitectureAgentRoute({
-        bridgeAvailable: true,
         runtimeCheckComplete: true,
         serverCheckComplete: true,
         runtime: admitted,
@@ -98,7 +94,6 @@ describe('Architecture guarded ACP admission', () => {
     const admitted = { id: 'claude-acp', label: 'Claude Code' };
     expect(
       resolveArchitectureAgentRoute({
-        bridgeAvailable: true,
         runtimeCheckComplete: true,
         serverCheckComplete: false,
         runtime: admitted,
@@ -108,7 +103,6 @@ describe('Architecture guarded ACP admission', () => {
     ).toBe('checking');
     expect(
       resolveArchitectureAgentRoute({
-        bridgeAvailable: true,
         runtimeCheckComplete: true,
         serverCheckComplete: true,
         runtime: admitted,

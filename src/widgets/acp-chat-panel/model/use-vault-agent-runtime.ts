@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   connectorAcpServers,
@@ -13,10 +13,7 @@ import { useVaultConnectors } from "@/features/mcp-connectors";
 import { keptAwayRuntimeId } from "./kept-panels";
 import { useRememberedTool } from "./use-remembered-tool";
 import { useAgentServer, useLocalVault } from "@/entities/vault-session";
-import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from "@/shared/lib/agent-chat/tauri-acp";
-
-const subscribeDesktopRuntime = () => () => undefined;
-const readServerDesktopRuntime = () => false;
+import { detectAcpRuntimes, type AcpRuntimeStatus } from "@/shared/lib/agent-chat/tauri-acp";
 
 export interface VaultAgentRuntime {
   id: string;
@@ -25,8 +22,8 @@ export interface VaultAgentRuntime {
 
 /**
  * What the ask can promise: `agent` may open a dock; `checking` is the moment before both the
- * runtime probe and the bundled-server read have answered; `unavailable` is the browser, an
- * app without a guarded runtime, a folder without a native path, or a server that cannot launch.
+ * runtime probe and the bundled-server read have answered; `unavailable` is an app without a
+ * guarded runtime, a folder without a native path, or a server that cannot launch.
  */
 export type VaultAgentRoute = "checking" | "agent" | "unavailable";
 
@@ -42,21 +39,18 @@ export function selectVaultAgentRuntimes(
 }
 
 export function resolveVaultAgentRoute({
-  bridgeAvailable,
   runtimeCheckComplete,
   serverCheckComplete,
   runtime,
   vaultRoot,
   serverReady,
 }: {
-  bridgeAvailable: boolean;
   runtimeCheckComplete: boolean;
   serverCheckComplete: boolean;
   runtime: VaultAgentRuntime | null;
   vaultRoot: string | null;
   serverReady: boolean;
 }): VaultAgentRoute {
-  if (!bridgeAvailable) return "unavailable";
   if (!runtimeCheckComplete || !serverCheckComplete) return "checking";
   if (runtime && vaultRoot && serverReady) return "agent";
   return "unavailable";
@@ -73,7 +67,6 @@ export function useVaultAgentRuntime(
     connectors?: boolean;
   } = {},
 ): {
-  bridgeAvailable: boolean;
   runtimes: VaultAgentRuntime[];
   runtime: VaultAgentRuntime | null;
   runtimeId: string | null;
@@ -86,17 +79,11 @@ export function useVaultAgentRuntime(
 } {
   const localVault = useLocalVault();
   const agentServer = useAgentServer();
-  const bridgeAvailable = useSyncExternalStore(
-    subscribeDesktopRuntime,
-    isAcpBridgeAvailable,
-    readServerDesktopRuntime,
-  );
   const [runtimes, setRuntimes] = useState<VaultAgentRuntime[]>([]);
   const [runtimeId, setRuntimeId] = useState<string | null>(null);
   const [runtimeCheckComplete, setRuntimeCheckComplete] = useState(false);
 
   useEffect(() => {
-    if (!bridgeAvailable) return;
     let cancelled = false;
     const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
       if (cancelled) return;
@@ -120,7 +107,7 @@ export function useVaultAgentRuntime(
     return () => {
       cancelled = true;
     };
-  }, [bridgeAvailable]);
+  }, []);
 
   const chooseRuntime = useRememberedTool({ vaultRoot, runtimes, runtimeId, setRuntimeId });
   const runtime = runtimes.find((candidate) => candidate.id === runtimeId) ?? null;
@@ -156,7 +143,6 @@ export function useVaultAgentRuntime(
   const serverCheckComplete = agentServer.launch !== null || agentServer.reason !== null;
   const serverReady = agentServer.launch !== null;
   const route = resolveVaultAgentRoute({
-    bridgeAvailable,
     runtimeCheckComplete,
     serverCheckComplete,
     runtime,
@@ -165,7 +151,6 @@ export function useVaultAgentRuntime(
   });
 
   return {
-    bridgeAvailable,
     runtimes,
     runtime,
     runtimeId,

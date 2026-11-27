@@ -9,12 +9,10 @@ import { listen } from "@tauri-apps/api/event";
 const FOLLOW_DEBOUNCE_MS = 300;
 
 export function useFollowVaultChanges({
-  desktop,
   vaultPath,
   refresh,
   followBusy,
 }: {
-  desktop: boolean;
   vaultPath: string | null;
   refresh: () => Promise<void>;
   followBusy: boolean;
@@ -41,7 +39,7 @@ export function useFollowVaultChanges({
    * this side writes the echo is skipped, since a mid-commit read would show a half state.
    */
   useEffect(() => {
-    if (!desktop || !vaultPath) return;
+    if (!vaultPath) return;
     let cancelled = false;
     let unlisten: (() => void) | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -65,5 +63,5 @@ export function useFollowVaultChanges({
       if (timer) clearTimeout(timer);
       unlisten?.();
     };
-  }, [desktop, vaultPath]);
+  }, [vaultPath]);
 }
