@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import en from '../../../messages/en.json';
-import { seedFirstRunSeen } from '../first-run-seed';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 
 /**
  * Off `/`, hydration waits for the message catalog chunk, so a static page stands as server HTML
@@ -27,7 +27,8 @@ async function holdCatalogChunk(page: Page) {
 
 test('focus placed on the loading stand-in before hydration moves to the screen that replaces it', async ({ page }) => {
   test.skip(!process.env.PLAYWRIGHT_STATIC, 'only the static export serves the stand-in as the page HTML');
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page);
   const catalog = await holdCatalogChunk(page);
   await page.goto('/en/library/?guides=off', { waitUntil: 'domcontentloaded' });
 

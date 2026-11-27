@@ -1,9 +1,9 @@
-import { waitForDocumentPaint, waitForFiniteAnimations, waitForGatewayDrawn } from '../visual-ready';
+import { waitForDocumentPaint, waitForFiniteAnimations } from '../visual-ready';
 import { expect, test, type ElementHandle, type Page } from "@playwright/test";
 
 import { judgeText } from "../../../scripts/lib/design/contrast.mjs";
 import { AUDITED_ROUTES } from "../audited-routes";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /**
  * Hover is measured by hovering and reading `getComputedStyle`; stylesheet inference picks the wrong
@@ -180,8 +180,9 @@ const HOVER_ROUTES = AUDITED_ROUTES;
 
 for (const route of HOVER_ROUTES) {
   test(`hover contrast: ${route}`, async ({ page }) => {
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page);
     await page.setViewportSize(VIEWPORT);
+    await mountDesktopVault(page, "ko");
     const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
     await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
       waitUntil: "domcontentloaded",
@@ -195,7 +196,8 @@ for (const route of HOVER_ROUTES) {
       ).toBeVisible();
     }
     await page.waitForSelector("main", { timeout: 20_000 });
-    if (route === "/ko/") await waitForGatewayDrawn(page);
+    // `/` exports a stand-in and chooses first run or the map in the browser, after `load`.
+    if (route === "/ko/") await expect(page.getByTestId("app-nav-rail")).toBeVisible();
     await waitForDocumentPaint(page);
     const { offenders, compared, colorChanged, mainCompared } = await auditRoute(page);
     console.info(JSON.stringify({ route, compared, colorChanged, mainCompared }));
@@ -222,11 +224,12 @@ for (const route of HOVER_ROUTES) {
  * failed silently exactly here.
  */
 test("the instrument does not spin idle: it has something to compare and catches a planted shortfall", async ({ page }) => {
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   await page.setViewportSize(VIEWPORT);
+  await mountDesktopVault(page, "ko");
   await page.goto("/ko/?guides=off", { waitUntil: "domcontentloaded" });
   await page.waitForSelector("main", { timeout: 20_000 });
-  await waitForGatewayDrawn(page);
+  await expect(page.getByTestId("app-nav-rail")).toBeVisible();
   await waitForDocumentPaint(page);
 
   const { colorChanged } = await auditRoute(page);

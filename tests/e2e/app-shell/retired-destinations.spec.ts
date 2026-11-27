@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /*
  * A retired destination stays a static page that replaces itself with its target, so a saved link or
@@ -40,7 +40,8 @@ const START = { url: "/ko/automations/?guides=off", at: /\/ko\/automations\/\?gu
 test.describe("retired Analysis addresses", () => {
   for (const row of ANALYSIS_ROWS) {
     test(`${row.from} lands on its target without a history entry`, async ({ page }) => {
-      await seedFirstRunSeen(page);
+      await installDesktopRailRuntime(page);
+      await mountDesktopVault(page, "ko");
       await page.goto(START.url, { waitUntil: "domcontentloaded" });
       await expect(page).toHaveURL(START.at);
 
@@ -56,7 +57,8 @@ test.describe("retired Analysis addresses", () => {
   }
 
   test("the rail offers no Analysis door", async ({ page }) => {
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page, "ko");
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("app-nav-rail-item-map")).toBeVisible({ timeout: 30_000 });

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
 import { waitForAnimationsDone, waitFrames } from "../settle";
 
 /**
@@ -60,7 +60,8 @@ const WATCH = `(() => {
 })()`;
 
 test("after crossing from the rail to the library, the arriving door accepts a press within one crossfade", async ({ page }) => {
-  await seedFirstRunSeen(page);
+  // The folder dialog is cancelled: the door has to stay on screen for the second press to be aimed at it.
+  await installDesktopRailRuntime(page, {}, undefined, { vaultPick: null });
 
   // Every press is logged with its own timestamp, so the assertion reads the element the
   // click actually reached rather than trusting a locator's own retry.
@@ -132,6 +133,9 @@ test("after crossing from the rail to the library, the arriving door accepts a p
   );
 
   await page.mouse.click(aim.x, aim.y);
+  // The app covers the screen while its folder dialog is open; the cancelled answer lifts it, and only then is the door there to press again.
+  await expect(page.getByTestId("vault-route-identity-pending")).toHaveCount(0);
+  await expect(door).toBeVisible();
   // measurement window: the second press lands a fixed gap after the first, which is what it proves.
   await page.waitForTimeout(SECOND_PRESS_GAP_MS);
   await page.mouse.click(aim.x, aim.y);
@@ -203,7 +207,7 @@ test("after crossing from the rail to the library, the arriving door accepts a p
  * logged beside it as a figure to read, and nothing asserts on it.
  */
 test("none of the animations running in the transition is longer than the declared crossfade", async ({ page }) => {
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
     const seen: {
       animations: { pseudo: string; name: string; duration: number }[] | null;

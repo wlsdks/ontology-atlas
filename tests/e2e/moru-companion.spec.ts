@@ -1,16 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { createRequire } from 'node:module';
-import { stubDirectoryPicker } from './vault-picker-stub';
-import { FIXTURE_VAULT } from './fixture-vault';
-import { seedFirstRunSeen } from './first-run-seed';
+import { installDesktopRailRuntime, mountDesktopVault } from './desktop-rail-arrival-harness';
+
+test.beforeEach(async ({ page }) => {
+  await installDesktopRailRuntime(page);
+});
 
 test('paints the still companion at a deep-linked welcome before any interaction', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await stubDirectoryPicker(page, FIXTURE_VAULT);
-  await seedFirstRunSeen(page);
-  await page.goto('/en/topology/?guides=off', { waitUntil: 'networkidle' });
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await mountDesktopVault(page, 'en');
   await expect(page.getByTestId('first-run-starter')).toHaveCount(0);
   await page.goto('/en/download/?guides=off', { waitUntil: 'networkidle' });
   const stage = page.locator('[data-moru-playground]');
@@ -53,14 +51,13 @@ test('hover lets an airborne hop land before holding the character', async ({ pa
 });
 
 test('a pending folder choice replaces play with the existing waiting state', async ({ page }) => {
+  // The folder dialog stays open: its answer never comes.
   await page.addInitScript(() => {
-    Object.assign(window, { isTauri: true, __TAURI_INTERNALS__: {
-      transformCallback: () => 0,
-      invoke: (command: string) => command === 'pick_vault_directory'
-        ? new Promise(() => {}) : Promise.reject(new Error('Native operation unavailable in the chooser fixture')),
-    } });
+    const runtime = window as unknown as { __TAURI_INTERNALS__: { invoke: (command: string, args?: Record<string, unknown>) => Promise<unknown> } };
+    const answer = runtime.__TAURI_INTERNALS__.invoke;
+    runtime.__TAURI_INTERNALS__.invoke = (command, args) => command === 'pick_vault_directory' ? new Promise(() => {}) : answer(command, args);
   });
-  await page.goto('/en/?shell=desktop&guides=off');
+  await page.goto('/en/?guides=off');
   const stage = page.locator('[data-moru-playground]');
   await expect(stage).toHaveAttribute('data-moru-context', 'folder');
   const previousStage = await stage.elementHandle();
@@ -113,7 +110,7 @@ test('petting has no pressed backdrop and returns to ambient play after a finite
 });
 
 test('keyboard petting and its context menu preserve focus and an explicit pause', async ({ page }) => {
-  await page.goto('/en/?shell=desktop&guides=off');
+  await page.goto('/en/?guides=off');
   const pet = page.getByRole('button', { name: 'Pet Moru' });
   await pet.focus();
   await page.keyboard.press('Enter');
@@ -135,7 +132,7 @@ test('keyboard petting and its context menu preserve focus and an explicit pause
 
 test('reduced motion offers still feedback without starting any animation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/en/?shell=desktop&guides=off');
+  await page.goto('/en/?guides=off');
   const pet = page.getByRole('button', { name: 'Pet Moru' });
   await pet.click();
   await expect(pet).toHaveAttribute('data-moru-reaction', 'shy');

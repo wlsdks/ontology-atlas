@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { atlasSampleFiles, installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { openLibraryWorkScenario } from "../library-work-harness";
 import { waitForAnimationsDone, waitForBoxStill, waitForPageSettled } from "../settle";
 
@@ -30,7 +31,7 @@ interface Opener {
     readonly mimeType: string;
     readonly body: string;
   };
-  /** Built-in sample needed before this route exposes its conditional surface. */
+  /** The Atlas sample as the folder, needed before this route exposes its conditional surface. */
   readonly dogfood?: boolean;
   /** Protocol-level installed-app work state needed before the receipt history exists. */
   readonly libraryWorkReceipt?: boolean;
@@ -89,12 +90,16 @@ const CONSTRUCTION_REVIEW_FILE = JSON.stringify({
   },
 });
 
+/** A coding agent that is installed and signed in, so the agent tile opens its dock. */
+const READY_RUNTIME = { id: "codex-acp", label: "Codex", verified: true, isolated: true, icon: null, brandInk: null, description: "", website: null, license: null, launchKind: "npx", cliPath: "/fixture/cli", adapterPath: null, adapterPackage: null, state: "ready" };
+
 const OPENERS: readonly Opener[] = [
   {
+    // The app has the agent tile where the web has the meaning-review chip; both open the same dock.
     name: "Map meaning review",
     route: "/ko/topology/",
-    trigger: "topology-meaning-workbench-toggle",
-    surface: '[data-testid="analysis-workbench"]',
+    trigger: "topology-vault-agent-toggle",
+    surface: '[data-testid="acp-chat-panel"]',
   },
   {
     name: "Settings sheet",
@@ -176,10 +181,9 @@ async function openAndAudit(page: Page, o: Opener) {
     await harness.wait(page);
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "waiting");
   }
-  if (o.dogfood) {
-    await page.addInitScript(() => {
-      window.localStorage.setItem("demo:sample-source:v1", "dogfood");
-    });
+  if (!o.libraryWorkReceipt) {
+    await installDesktopRailRuntime(page, o.dogfood ? atlasSampleFiles() : {}, { fast: [READY_RUNTIME], probed: [READY_RUNTIME] }, o.dogfood ? { replaceFixture: true } : {});
+    await mountDesktopVault(page, o.route.startsWith("/en/") ? "en" : "ko");
   }
   /*
    * A route may already carry a query, so the separator is chosen rather than assumed: appending a
@@ -235,9 +239,8 @@ async function openAndAudit(page: Page, o: Opener) {
   }, WCAG_TAGS);
 }
 
-test("accessibility ratchet (open surfaces): zero new rule violations and no growth in existing counts", async ({ page }) => {
-  test.setTimeout(180_000);
-  await page.setViewportSize({ width: 1512, height: 900 });
+test("accessibility ratchet (open surfaces): zero new rule violations and no growth in existing counts", async ({ browser, baseURL }) => {
+  test.setTimeout(240_000);
 
   expect(OPENERS.length, "if the list of surfaces to open is empty, the test is green over an empty set").toBeGreaterThanOrEqual(5);
   expect(
@@ -250,7 +253,10 @@ test("accessibility ratchet (open surfaces): zero new rule violations and no gro
   const thin: string[] = [];
 
   for (const o of OPENERS) {
-    const r = await openAndAudit(page, o);
+    // Each surface opens in its own window of the app: a window remembers the folder it chose, and one holds Atlas's own vault.
+    const context = await browser.newContext({ baseURL, viewport: { width: 1512, height: 900 } });
+    const page = await context.newPage();
+    const r = await openAndAudit(page, o).finally(() => context.close());
     if (r.rulesPassed < MIN_RULES_PASSED) {
       thin.push(`  ${o.name}: rules applied to content and passed: ${r.rulesPassed}`);
     }

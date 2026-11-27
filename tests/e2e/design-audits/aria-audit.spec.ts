@@ -1,4 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+
+import { atlasSampleFiles, installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /**
  * Detects interactive elements that are not accessible, per route.
@@ -11,27 +15,50 @@ import { expect, test } from "@playwright/test";
  * automatically.
  */
 
-/* With no vault chosen this screen renders the sample vault, so the slug must be a node in the sample. */
+/* The slug must be a node of the Storefront folder the app has open. */
 const FOCUS_NODE_ID = "capability:cart";
 
+/** Each route is read in the folder it measured: Storefront, or the Atlas sample for its own project. */
 const ROUTES = [
-  "/en/",
-  "/en/project/ontology-atlas/",
-  "/en/docs/",
-  "/en/topology/",
-  `/ko/topology/?mode=focus&p=${encodeURIComponent(FOCUS_NODE_ID)}`,
-];
+  { url: "/en/", folder: "storefront" },
+  { url: "/en/project/ontology-atlas/", folder: "atlas" },
+  { url: "/en/docs/", folder: "storefront" },
+  { url: "/en/topology/", folder: "storefront" },
+  { url: `/ko/topology/?mode=focus&p=${encodeURIComponent(FOCUS_NODE_ID)}`, folder: "storefront" },
+] as const;
+
+/** The bundled Online Store (`samples/storefront`) as a folder: the Storefront this audit measured, with its `cart` capability. */
+function storefrontSampleFiles(): Record<string, string> {
+  const root = path.resolve(__dirname, "../../../samples/storefront");
+  const files: Record<string, string> = {};
+  for (const entry of readdirSync(root, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+    const absolute = path.join(entry.parentPath, entry.name);
+    files[path.relative(root, absolute).split(path.sep).join("/")] = readFileSync(absolute, "utf8");
+  }
+  return files;
+}
+
+/** A window of its own: the app remembers the folder a window chose, so two folders need two. */
+async function openApp(browser: Browser, baseURL: string | undefined, folder: "storefront" | "atlas"): Promise<Page> {
+  const context = await browser.newContext({ baseURL, viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  await installDesktopRailRuntime(page, folder === "atlas" ? atlasSampleFiles() : storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await mountDesktopVault(page, "en");
+  return page;
+}
 
 /** Minimum scanned count: an empty violation list passes automatically on a screen that never mounted. */
 const MIN_SCANNED_PER_ROUTE = 5;
 
-test("detects buttons and links without accessible names", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+test("detects buttons and links without accessible names", async ({ browser, baseURL }) => {
+  const apps = { storefront: await openApp(browser, baseURL, "storefront"), atlas: await openApp(browser, baseURL, "atlas") };
   const findings: string[] = [];
   /** How many were scanned per screen — the denominator that blocks "passed having seen 0". */
   const scannedPerRoute: string[] = [];
 
-  for (const url of ROUTES) {
+  for (const { url, folder } of ROUTES) {
+    const page = apps[folder];
     await page.goto(url === "/en/docs/" ? "/en/library/?tab=ontology" : url, {
       waitUntil: "domcontentloaded",
     });
@@ -121,13 +148,14 @@ test("detects buttons and links without accessible names", async ({ page }) => {
    * (`atlas-map-probe.ts`). So the page is opened once more at the instrument address
    * rather than the audit address.
    */
-  await page.goto(`/ko/topology/?e2e=1&mode=focus&p=${encodeURIComponent(FOCUS_NODE_ID)}`, {
+  const storefront = apps.storefront;
+  await storefront.goto(`/ko/topology/?e2e=1&mode=focus&p=${encodeURIComponent(FOCUS_NODE_ID)}`, {
     waitUntil: "domcontentloaded",
   });
   await expect
     .poll(
       () =>
-        page.evaluate(() => {
+        storefront.evaluate(() => {
           const map = (window as unknown as { __atlasMap?: { selection?: () => { nodeId: string | null } } }).__atlasMap;
           return map?.selection?.().nodeId ?? null;
         }),
