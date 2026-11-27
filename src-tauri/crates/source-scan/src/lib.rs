@@ -1,8 +1,15 @@
 //! Files under a source root, read for what they say about the meaning recorded beside them.
-//! This slice holds staleness: when a cited path last changed ([`path_dating`]) and what a cited
-//! file said then and says now ([`evidence_texts`]), and where a folder lies inside its
-//! repository ([`folder_placement`]). Imports, outlines, declarations and evidence
-//! search join as their tools are ported.
+//!
+//! - Staleness: when a cited path last changed ([`path_dating`]), what a cited file said then and
+//!   says now ([`evidence_texts`]), and where a folder lies inside its repository
+//!   ([`folder_placement`]).
+//! - Imports: every source file below a root read from its syntax tree, placed on the files and
+//!   packages it names, judged against the vault's `depends_on` edges ([`import_scan`],
+//!   [`import_reconciliation`], [`import_review`], [`import_focus`]).
+//! - Architecture: those edges against a profile's layers and rules ([`architecture_profile`],
+//!   [`architecture_conformance`]).
+//!
+//! Outlines, declarations and evidence search join as their tools are ported.
 //!
 //! The crate runs `git` only through `hardened-git` and reads files only through
 //! `confined-files`, so the app and the MCP server share one implementation of each rule.

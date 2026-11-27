@@ -18,7 +18,7 @@ one thing it asks of the vault is a `VaultFacts` the caller builds.
 
 | File | Owns |
 |---|---|
-| `src/source_language.rs` | The six languages with a grammar and which extension is which |
+| `src/source_language.rs` | The eight languages with a grammar (TypeScript, TSX, JavaScript, Python, Go, Java, Kotlin, Rust) and which extension is which |
 | `src/bounded_parse.rs` | One parse under a byte cap, a binary test, a time budget and a node budget; walking a tree without recursion |
 | `src/script_imports.rs` | TypeScript and JavaScript imports from the tree: static, dynamic, `require`, re-exports, type position |
 | `src/python_imports.rs` | Python `import` and `from` statements, relative levels kept |
@@ -26,13 +26,13 @@ one thing it asks of the vault is a `VaultFacts` the caller builds.
 | `src/jvm_declarations.rs` | Java and Kotlin package, imports, declared types and the types a file names, in any script |
 | `src/go_imports.rs` | Go packages: the imports of every file of a package, read as one |
 | `src/file_reading.rs` | What reading one file gives, by language, from its text alone |
-| `src/batch_reading.rs` | A batch of files parsed on up to eight threads, the readings returned in the order given |
+| `src/batch_reading.rs` | A batch of files parsed on a pool of eight threads (`rayon`), the readings in the order given |
 
 ## Placing imports
 
 | File | Owns |
 |---|---|
-| `src/source_walk.rs` | The files below a root, in byte order, ignored names and the file cap |
+| `src/source_walk.rs` | The one walk below a root: byte order, ignored names, depth and entry limits, a visitor; the credential-named files it left unread are counted |
 | `src/path_facts.rs` | Questions about paths below the root, asked through `confined-files` |
 | `src/workspace_packages.rs` | Package roots a repository declares |
 | `src/script_resolution.rs` | A script specifier to a file: relative, `tsconfig` aliases, workspace packages |
@@ -55,7 +55,12 @@ one thing it asks of the vault is a `VaultFacts` the caller builds.
 | `src/import_review.rs` | The next relation to review, and the recovery packet when an endpoint is not modelled |
 | `src/import_focus.rs` | The edges around one file, paged by a cursor |
 | `src/import_delivery.rs` | Which review a request asks for, and the automatic choice between a whole answer and a compact one under 128 KiB |
-| `src/review_refusal.rs` | A refused review request and its kind |
+
+## Refusals
+
+| File | Owns |
+|---|---|
+| `src/source_scan_error.rs` | `SourceScanError`: the one error of this crate, its sentence and its `code()` |
 
 ## Architecture profiles
 
