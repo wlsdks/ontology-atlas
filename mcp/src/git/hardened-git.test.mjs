@@ -276,3 +276,57 @@ test('a config that never finishes reading refuses the run instead of hanging', 
     rmSync(base, { recursive: true, force: true });
   }
 });
+
+// A repo that sets log.showSignature and names its own gpg.program runs that
+// program on every `git log` over a commit carrying a signature header.
+function buildSignatureRepo(base, marker) {
+  const repo = join(base, 'repo');
+  mkdirSync(repo, { recursive: true });
+  plainGit(repo, ['init', '-q']);
+  seedIdentity(repo);
+  commitOne(repo);
+  const tree = plainGit(repo, ['rev-parse', 'HEAD^{tree}']).trim();
+  const signed = [
+    `tree ${tree}`,
+    'author atlas test <test@example.invalid> 1700000000 +0000',
+    'committer atlas test <test@example.invalid> 1700000000 +0000',
+    'gpgsig -----BEGIN PGP SIGNATURE-----',
+    ' AAAA',
+    ' -----END PGP SIGNATURE-----',
+    '',
+    'signed',
+    '',
+  ].join('\n');
+  const objectPath = join(base, 'commit.txt');
+  writeFileSync(objectPath, signed);
+  const commit = plainGit(repo, ['hash-object', '-t', 'commit', '-w', objectPath]).trim();
+  plainGit(repo, ['update-ref', 'HEAD', commit]);
+  const program = join(base, 'gpg.sh');
+  writeFileSync(program, `#!/bin/sh\ntouch ${marker}\nexit 1\n`);
+  chmodSync(program, 0o755);
+  plainGit(repo, ['config', 'log.showSignature', 'true']);
+  plainGit(repo, ['config', 'gpg.program', program]);
+  return repo;
+}
+
+test('a hostile gpg.program does not run on a hardened log or show', { skip: process.platform === 'win32' && 'the planted program is a shell script' }, () => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-mcp-sec-signature-'));
+  clearFilterCache();
+  try {
+    const marker = join(base, 'GPG_PROGRAM_EXECUTED');
+    const repo = buildSignatureRepo(base, marker);
+    const logArgs = ['log', '-z', '--max-count=21', '--format=%H', '--', '.'];
+
+    spawnSync('git', ['-C', repo, ...logArgs], { encoding: 'utf8' });
+    assert.ok(existsSync(marker), 'fixture precondition: unhardened log runs gpg.program');
+    rmSync(marker);
+
+    for (const args of [logArgs, ['show', '--format=%H', 'HEAD']]) {
+      const result = spawnSync('git', hardenedGitArgv(repo, args), { encoding: 'utf8' });
+      assert.equal(result.status, 0, `${args[0]} still succeeds: ${result.stderr}`);
+      assert.ok(!existsSync(marker), `hardened ${args[0]} must not run a repo-named gpg.program`);
+    }
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});

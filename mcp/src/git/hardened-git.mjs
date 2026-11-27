@@ -40,6 +40,7 @@ const LOCAL_READ_ENV = { GIT_NO_LAZY_FETCH: '1', GIT_ALLOW_PROTOCOL: '' };
 const CONFIG_READ_TIMEOUT_MS = 5000;
 
 const DIFF_FAMILY = new Set(['diff', 'log', 'show']);
+const SIGNATURE_FAMILY = new Set(['log', 'show']);
 const NETWORK_SUBCOMMANDS = new Set(['fetch', 'pull', 'push', 'clone', 'ls-remote']);
 
 function subcommandOf(args) {
@@ -129,8 +130,9 @@ function filterOverridesFor(cwd) {
   return overrides;
 }
 
-// diff/log/show honour diff.external and per-driver textconv, both config-supplied
-// commands; disable them right after the subcommand.
+// diff/log/show honour diff.external and per-driver textconv, and log/show honour
+// log.showSignature, which runs gpg.program; all config-supplied commands, so
+// disable them right after the subcommand.
 function withDiffFamilyGuard(args) {
   const out = [];
   let guarded = false;
@@ -148,6 +150,7 @@ function withDiffFamilyGuard(args) {
     }
     if (typeof arg === 'string' && arg.startsWith('-')) continue;
     if (DIFF_FAMILY.has(arg)) out.push('--no-ext-diff', '--no-textconv');
+    if (SIGNATURE_FAMILY.has(arg)) out.push('--no-show-signature');
     guarded = true;
   }
   return out;
