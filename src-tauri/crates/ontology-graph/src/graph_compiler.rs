@@ -12,8 +12,8 @@ use vault_document::{neighbor_refs, normalized_refs, relation_note_for, LoadedDo
 
 use crate::compile_issue::{sort_issues, CompileIssue};
 use crate::compiled_graph::{
-    Alias, AmbiguousAlias, CanonicalizationAction, CompiledGraph, Edge, EdgeCounts, EdgeId, Node,
-    NodeId, Target,
+    AliasEntry, AmbiguousAlias, CanonicalizationAction, CompiledGraph, Edge, EdgeCounts, EdgeId,
+    Node, NodeId, Target,
 };
 use crate::graph_hash::hash_graph;
 use crate::identity_error::{IdentityError, IdentityFault};
@@ -136,12 +136,12 @@ fn identity_faults(nodes: &[&LoadedDocument]) -> Vec<IdentityFault> {
 }
 
 /// The names that reach each node: its slug, its last segment and the `slug:` it declares.
-struct AliasTable {
-    entries: Vec<(String, Vec<String>)>,
-    index: HashMap<String, usize>,
+struct AliasTable<'a> {
+    entries: Vec<(&'a str, Vec<&'a str>)>,
+    index: HashMap<&'a str, usize>,
 }
 
-impl AliasTable {
+impl<'a> AliasTable<'a> {
     fn new() -> Self {
         Self {
             entries: Vec::new(),
@@ -149,7 +149,7 @@ impl AliasTable {
         }
     }
 
-    fn add(&mut self, alias: &str, slug: &str) {
+    fn add(&mut self, alias: &'a str, slug: &'a str) {
         let key = trim(alias);
         if key.is_empty() {
             return;
@@ -157,14 +157,14 @@ impl AliasTable {
         let at = match self.index.get(key) {
             Some(at) => *at,
             None => {
-                self.entries.push((key.to_string(), Vec::new()));
-                self.index.insert(key.to_string(), self.entries.len() - 1);
+                self.entries.push((key, Vec::new()));
+                self.index.insert(key, self.entries.len() - 1);
                 self.entries.len() - 1
             }
         };
         if let Some((_, slugs)) = self.entries.get_mut(at) {
-            if !slugs.iter().any(|known| known == slug) {
-                slugs.push(slug.to_string());
+            if !slugs.contains(&slug) {
+                slugs.push(slug);
             }
         }
     }
@@ -181,9 +181,9 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
 
     let mut ordered: Vec<&LoadedDocument> = node_documents.clone();
     ordered.sort_by(|left, right| compare_text(left.slug(), right.slug()));
-    let mut by_slug: HashMap<String, NodeId> = HashMap::with_capacity(ordered.len());
+    let mut by_slug: HashMap<&str, NodeId> = HashMap::with_capacity(ordered.len());
     for (index, document) in ordered.iter().enumerate() {
-        by_slug.insert(document.slug().to_string(), NodeId::from_index(index));
+        by_slug.insert(document.slug(), NodeId::from_index(index));
     }
 
     let mut alias_table = AliasTable::new();
@@ -199,23 +199,23 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
         }
     }
     let mut alias_entries = alias_table.entries;
-    alias_entries.sort_by(|left, right| compare_text(&left.0, &right.0));
-    let mut aliases = Vec::new();
+    alias_entries.sort_by(|left, right| compare_text(left.0, right.0));
+    let mut aliases: Vec<AliasEntry> = Vec::with_capacity(alias_entries.len());
     let mut ambiguous_aliases = Vec::new();
-    let mut by_alias: HashMap<String, NodeId> = HashMap::new();
+    let mut by_alias: HashMap<&str, NodeId> = HashMap::with_capacity(alias_entries.len());
     for (alias, mut slugs) in alias_entries {
         slugs.sort_by(|left, right| utf16::compare(left, right));
         match slugs.as_slice() {
             [only] => {
                 if let Some(node) = by_slug.get(only) {
-                    by_alias.insert(alias.clone(), *node);
+                    by_alias.insert(alias, *node);
+                    aliases.push(AliasEntry::new(alias, *node));
                 }
-                aliases.push(Alias {
-                    alias,
-                    slug: only.clone(),
-                });
             }
-            _ => ambiguous_aliases.push(AmbiguousAlias { alias, slugs }),
+            _ => ambiguous_aliases.push(AmbiguousAlias {
+                alias: alias.to_string(),
+                slugs: slugs.iter().map(|slug| (*slug).to_string()).collect(),
+            }),
         }
     }
 
@@ -378,8 +378,8 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
     let mut by_code_units: Vec<usize> = (0..nodes.len()).collect();
     by_code_units.sort_by(|left, right| {
         utf16::compare(
-            nodes.get(*left).map_or("", |node| node.slug.as_str()),
-            nodes.get(*right).map_or("", |node| node.slug.as_str()),
+            nodes.get(*left).map_or("", |node| node.slug()),
+            nodes.get(*right).map_or("", |node| node.slug()),
         )
     });
     let mut code_unit_rank = vec![0_u32; nodes.len()];
@@ -400,8 +400,6 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
         max_mtime,
         skipped_non_node_count,
         edge_counts: counts,
-        by_slug,
-        by_alias,
         outgoing,
         incoming,
         code_unit_rank,
@@ -441,27 +439,5 @@ fn node_of(document: &LoadedDocument) -> Node {
         .collect();
     merged_uids.sort_by(|left, right| utf16::compare(left, right));
     merged_uids.dedup();
-    let title = match frontmatter
-        .truthy("title")
-        .or_else(|| frontmatter.truthy("name"))
-    {
-        Some(value) => value.clone(),
-        None => Value::Text(document.slug().to_string()),
-    };
-    let path = frontmatter
-        .text("path")
-        .filter(|path| !trim(path).is_empty())
-        .map(String::from);
-    Node {
-        uid: valid_uid(document).unwrap_or_default().to_string(),
-        merged_uids,
-        slug: document.slug().to_string(),
-        kind: frontmatter.text("kind").unwrap_or_default().to_string(),
-        title,
-        domain: frontmatter.get("domain").cloned(),
-        path,
-        mtime: document.modified_ms().unwrap_or(0.0),
-        out_degree: 0,
-        in_degree: 0,
-    }
+    Node::new(document, merged_uids, document.modified_ms().unwrap_or(0.0))
 }

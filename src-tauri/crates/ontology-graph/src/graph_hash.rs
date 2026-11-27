@@ -41,7 +41,7 @@ impl Serialize for Covered<'_> {
         map.serialize_entry("version", &COMPILER_VERSION)?;
         map.serialize_entry("nodes", &CoveredNodes(self.0))?;
         map.serialize_entry("edges", &CoveredEdges(self.0))?;
-        map.serialize_entry("aliases", self.0.aliases())?;
+        map.serialize_entry("aliases", &self.0.aliases())?;
         map.serialize_entry("ambiguousAliases", self.0.ambiguous_aliases())?;
         map.serialize_entry("issues", self.0.issues())?;
         map.end()
@@ -62,14 +62,14 @@ impl Serialize for CoveredNode<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let node = self.0;
         let mut map = serializer.serialize_map(None)?;
-        map.serialize_entry("uid", &node.uid)?;
-        if !node.merged_uids.is_empty() {
-            map.serialize_entry("merged_uids", &node.merged_uids)?;
+        map.serialize_entry("uid", &node.uid())?;
+        if !node.merged_uids().is_empty() {
+            map.serialize_entry("merged_uids", &node.merged_uids())?;
         }
-        map.serialize_entry("slug", &node.slug)?;
-        map.serialize_entry("kind", &node.kind)?;
-        map.serialize_entry("title", &node.title)?;
-        if let Some(domain) = &node.domain {
+        map.serialize_entry("slug", &node.slug())?;
+        map.serialize_entry("kind", &node.kind())?;
+        map.serialize_entry("title", &node.title())?;
+        if let Some(domain) = node.domain() {
             map.serialize_entry("domain", domain)?;
         }
         map.serialize_entry("outDegree", &node.out_degree)?;

@@ -28,7 +28,7 @@ fn suggest_slugs(graph: &CompiledGraph, candidate: &str) -> Vec<String> {
     let mut containing: Vec<&str> = Vec::new();
     let tail_units: Vec<u16> = lower_tail.encode_utf16().collect();
     for node in graph.nodes() {
-        let slug = node.slug.as_str();
+        let slug = node.slug();
         if slug == candidate {
             continue;
         }
@@ -98,7 +98,7 @@ pub fn resolve(
         if edge.reference != candidate || edge.is_resolved() {
             continue;
         }
-        let from = graph.node(edge.from).slug.as_str();
+        let from = graph.node(edge.from).slug();
         if !referenced_by.contains(&(from, edge.via)) {
             referenced_by.push((from, edge.via));
         }

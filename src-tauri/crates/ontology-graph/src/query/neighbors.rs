@@ -96,7 +96,7 @@ pub fn neighbors<'a>(
     graph.sort_by_code_units(&mut neighbor_nodes);
     Ok(NeighborsAnswer {
         operation: "neighbors",
-        center: &graph.node(center).slug,
+        center: graph.node(center).slug(),
         node: graph.node(center),
         total: all.len(),
         limited: all.len() > rows.len(),

@@ -146,8 +146,8 @@ pub fn path<'a>(
     let max_hops = request.max_hops.unwrap_or(DEFAULT_MAX_HOPS);
     let direction = Direction::for_paths(request.direction);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
-    let from_slug = graph.node(from).slug.as_str();
-    let to_slug = graph.node(to).slug.as_str();
+    let from_slug = graph.node(from).slug();
+    let to_slug = graph.node(to).slug();
     Ok(
         match shortest_path(graph, from, to, max_hops, direction, types.as_ref()) {
             Some(found) => PathAnswer::Found(PathFound {
@@ -159,7 +159,7 @@ pub fn path<'a>(
                 hops: found
                     .hops
                     .iter()
-                    .map(|node| graph.node(*node).slug.as_str())
+                    .map(|node| graph.node(*node).slug())
                     .collect(),
                 nodes: summaries(graph, found.hops.iter().copied()),
                 edges: path_edges(graph, &found.edges),
@@ -339,7 +339,7 @@ pub fn all_paths<'a>(
     let hops_key = |walk: &Walk| {
         walk.hops
             .iter()
-            .map(|node| graph.node(*node).slug.as_str())
+            .map(|node| graph.node(*node).slug())
             .collect::<Vec<_>>()
             .join("\0")
     };
@@ -373,7 +373,7 @@ pub fn all_paths<'a>(
             hops: walk
                 .hops
                 .iter()
-                .map(|node| graph.node(*node).slug.as_str())
+                .map(|node| graph.node(*node).slug())
                 .collect(),
             nodes: summaries(graph, walk.hops.iter().copied()),
             edges: path_edges(graph, &walk.edges),
@@ -383,8 +383,8 @@ pub fn all_paths<'a>(
 
     let paths_complete = !truncated_by_budget && total <= limit;
     let base = BaseQuery {
-        from: &graph.node(from).slug,
-        to: &graph.node(to).slug,
+        from: graph.node(from).slug(),
+        to: graph.node(to).slug(),
         direction,
         max_hops,
         limit,
@@ -440,8 +440,8 @@ pub fn all_paths<'a>(
     };
     Ok(AllPathsAnswer {
         operation: "all_paths",
-        from: &graph.node(from).slug,
-        to: &graph.node(to).slug,
+        from: graph.node(from).slug(),
+        to: graph.node(to).slug(),
         found: total > 0,
         direction,
         max_hops,

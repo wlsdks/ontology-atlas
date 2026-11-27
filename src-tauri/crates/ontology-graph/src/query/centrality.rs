@@ -2,6 +2,7 @@
 //! of rounds; authorities (most distinct dependents), hubs (most distinct dependencies) and bridges
 //! (both at once).
 
+use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use answer_format::collation::compare_text;
@@ -19,6 +20,22 @@ const DEFAULT_LIMIT: usize = 10;
 
 /// The share of rank each node holds after `iterations` rounds. A node with no outgoing edge
 /// spreads its rank over every node.
+fn row(graph: &CompiledGraph, id: NodeId, standing: Standing) -> CentralityRow<'_> {
+    let node = graph.node(id);
+    CentralityRow {
+        uid: node.uid(),
+        slug: node.slug(),
+        kind: node.kind(),
+        title: node.title(),
+        domain: node.domain(),
+        in_degree: standing.in_degree,
+        out_degree: standing.out_degree,
+        degree: standing.degree(),
+        page_rank: standing.page_rank,
+        bridge_score: standing.bridge_score(),
+    }
+}
+
 fn page_rank(graph: &CompiledGraph, outgoing: &[Vec<NodeId>], iterations: usize) -> Vec<f64> {
     let total = graph.nodes().len();
     if total == 0 {
@@ -97,7 +114,7 @@ struct CentralityRow<'a> {
     uid: &'a str,
     slug: &'a str,
     kind: &'a str,
-    title: &'a Value,
+    title: Cow<'a, Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     domain: Option<&'a Value>,
     #[serde(rename = "inDegree")]
@@ -111,13 +128,36 @@ struct CentralityRow<'a> {
     bridge_score: usize,
 }
 
-fn by_rank(left: &CentralityRow<'_>, right: &CentralityRow<'_>) -> Ordering {
-    right
+/// What ranks a node, kept apart from the node's own fields so that ranking fifty thousand nodes
+/// holds a few numbers each and an answer writes names for the few that are listed.
+#[derive(Clone, Copy)]
+struct Standing {
+    in_degree: usize,
+    out_degree: usize,
+    page_rank: f64,
+}
+
+impl Standing {
+    fn degree(self) -> usize {
+        self.in_degree + self.out_degree
+    }
+
+    fn bridge_score(self) -> usize {
+        self.in_degree * self.out_degree
+    }
+}
+
+fn by_rank(graph: &CompiledGraph, standings: &[Standing], left: NodeId, right: NodeId) -> Ordering {
+    let (Some(first), Some(second)) = (standings.get(left.index()), standings.get(right.index()))
+    else {
+        return Ordering::Equal;
+    };
+    second
         .page_rank
-        .partial_cmp(&left.page_rank)
+        .partial_cmp(&first.page_rank)
         .unwrap_or(Ordering::Equal)
-        .then_with(|| right.degree.cmp(&left.degree))
-        .then_with(|| compare_text(left.slug, right.slug))
+        .then_with(|| second.degree().cmp(&first.degree()))
+        .then_with(|| compare_text(graph.node(left).slug(), graph.node(right).slug()))
 }
 
 #[derive(Serialize)]
@@ -170,69 +210,59 @@ pub fn centrality<'a>(
         })
         .collect();
     let mut outgoing: Vec<Vec<NodeId>> = vec![Vec::new(); count];
-    let mut incoming: Vec<Vec<NodeId>> = vec![Vec::new(); count];
-    let mut seen: std::collections::HashSet<(NodeId, NodeId)> = std::collections::HashSet::new();
     for id in &selected {
         let edge = graph.edge(*id);
         let Some(to) = edge.to() else { continue };
-        if !seen.insert((edge.from, to)) {
-            continue;
-        }
         if let Some(list) = outgoing.get_mut(edge.from.index()) {
             list.push(to);
         }
-        if let Some(list) = incoming.get_mut(to.index()) {
-            list.push(edge.from);
+    }
+    let mut in_degrees = vec![0_usize; count];
+    for list in &mut outgoing {
+        list.sort_unstable();
+        list.dedup();
+        for target in list.iter() {
+            if let Some(slot) = in_degrees.get_mut(target.index()) {
+                *slot += 1;
+            }
         }
     }
     let scores = page_rank(graph, &outgoing, iterations);
-    let mut rows: Vec<CentralityRow<'a>> = graph
-        .node_ids()
-        .map(|id| {
-            let node = graph.node(id);
-            let in_degree = incoming.get(id.index()).map_or(0, Vec::len);
-            let out_degree = outgoing.get(id.index()).map_or(0, Vec::len);
-            CentralityRow {
-                uid: &node.uid,
-                slug: &node.slug,
-                kind: &node.kind,
-                title: &node.title,
-                domain: node.domain.as_ref(),
-                in_degree,
-                out_degree,
-                degree: in_degree + out_degree,
-                page_rank: round_score(scores.get(id.index()).copied().unwrap_or(0.0)),
-                bridge_score: in_degree * out_degree,
-            }
+    let standings: Vec<Standing> = (0..count)
+        .map(|index| Standing {
+            in_degree: in_degrees.get(index).copied().unwrap_or(0),
+            out_degree: outgoing.get(index).map_or(0, Vec::len),
+            page_rank: round_score(scores.get(index).copied().unwrap_or(0.0)),
         })
         .collect();
-    rows.sort_by(by_rank);
-    let top = |mut sorted: Vec<CentralityRow<'a>>,
-               order: &dyn Fn(&CentralityRow<'a>, &CentralityRow<'a>) -> Ordering| {
-        sorted.sort_by(order);
-        sorted.truncate(limit);
-        sorted
+    let standing = |id: NodeId| {
+        standings.get(id.index()).copied().unwrap_or(Standing {
+            in_degree: 0,
+            out_degree: 0,
+            page_rank: 0.0,
+        })
     };
-    let bridges = top(rows.clone(), &|left, right| {
-        right
-            .bridge_score
-            .cmp(&left.bridge_score)
-            .then_with(|| by_rank(left, right))
-    });
-    let authorities = top(rows.clone(), &|left, right| {
-        right
-            .in_degree
-            .cmp(&left.in_degree)
-            .then_with(|| by_rank(left, right))
-    });
-    let hubs = top(rows.clone(), &|left, right| {
-        right
-            .out_degree
-            .cmp(&left.out_degree)
-            .then_with(|| by_rank(left, right))
-    });
-    let mut page_rank_rows = rows;
-    page_rank_rows.truncate(limit);
+    let ranked: Vec<NodeId> = {
+        let mut ids: Vec<NodeId> = graph.node_ids().collect();
+        ids.sort_by(|left, right| by_rank(graph, &standings, *left, *right));
+        ids
+    };
+    let top = |key: &dyn Fn(Standing) -> usize| -> Vec<CentralityRow<'a>> {
+        let mut ids = ranked.clone();
+        ids.sort_by_key(|id| std::cmp::Reverse(key(standing(*id))));
+        ids.into_iter()
+            .take(limit)
+            .map(|id| row(graph, id, standing(id)))
+            .collect()
+    };
+    let bridges = top(&Standing::bridge_score);
+    let authorities = top(&|standing| standing.in_degree);
+    let hubs = top(&|standing| standing.out_degree);
+    let page_rank_rows: Vec<CentralityRow<'a>> = ranked
+        .iter()
+        .take(limit)
+        .map(|id| row(graph, *id, standing(*id)))
+        .collect();
     Ok(CentralityAnswer {
         operation: "centrality",
         graph: CentralityGraph {

@@ -147,7 +147,7 @@ fn counts_by(values: impl Iterator<Item = String>) -> ObjectMap<usize> {
 }
 
 fn by_kind(graph: &CompiledGraph) -> ObjectMap<usize> {
-    counts_by(graph.nodes().iter().map(|node| node.kind.clone()))
+    counts_by(graph.nodes().iter().map(|node| node.kind().to_string()))
 }
 
 fn by_domain(graph: &CompiledGraph) -> ObjectMap<usize> {
@@ -285,7 +285,7 @@ impl Serialize for ArraysAnswer<'_> {
         if self.edges.paginated {
             map.serialize_entry("edgesPagination", &self.edges.meta())?;
         }
-        map.serialize_entry("aliases", graph.aliases())?;
+        map.serialize_entry("aliases", &graph.aliases())?;
         map.serialize_entry("ambiguousAliases", graph.ambiguous_aliases())?;
         map.serialize_entry("issues", graph.issues())?;
         map.serialize_entry("canonicalizationActions", graph.canonicalization_actions())?;
@@ -349,7 +349,7 @@ fn edge_ids_by_node(
             continue;
         };
         let at = *slot.get_or_insert_with(|| {
-            lists.push((graph.node(node).slug.clone(), Vec::new()));
+            lists.push((graph.node(node).slug().to_string(), Vec::new()));
             lists.len() - 1
         });
         if let Some((_, list)) = lists.get_mut(at) {
@@ -376,7 +376,7 @@ fn slugs_by<'a>(
             groups.len() - 1
         });
         if let Some((_, slugs)) = groups.get_mut(index) {
-            slugs.push(&node.slug);
+            slugs.push(node.slug());
         }
     }
     for (_, slugs) in &mut groups {
@@ -393,21 +393,21 @@ impl<'a> Indexes<'a> {
             .map(|id| graph.edge_view(id).id())
             .collect();
         let mut by_uid: Vec<&Node> = graph.nodes().iter().collect();
-        by_uid.sort_by(|left, right| compare_text(&left.uid, &right.uid));
+        by_uid.sort_by(|left, right| compare_text(left.uid(), right.uid()));
         let mut merged: Vec<(&str, &str)> = graph
             .nodes()
             .iter()
             .flat_map(|node| {
-                node.merged_uids
+                node.merged_uids()
                     .iter()
-                    .map(move |uid| (uid.as_str(), node.slug.as_str()))
+                    .map(move |uid| (uid.as_str(), node.slug()))
             })
             .collect();
         merged.sort_by(|left, right| compare_text(left.0, right.0));
         Self {
             out: edge_ids_by_node(graph, &ids, |edge| Some(edge.from)),
             incoming: edge_ids_by_node(graph, &ids, Edge::to),
-            by_kind: slugs_by(graph, |node| Some(node.kind.as_str())),
+            by_kind: slugs_by(graph, |node| Some(node.kind())),
             by_domain: slugs_by(graph, Node::domain_name),
             edge_by_id: ObjectMap(
                 ids.into_iter()
@@ -419,19 +419,19 @@ impl<'a> Indexes<'a> {
                 graph
                     .aliases()
                     .iter()
-                    .map(|entry| (entry.alias.clone(), entry.slug.as_str()))
+                    .map(|entry| (entry.alias.to_string(), entry.slug))
                     .collect(),
             ),
             uid_to_slug: ObjectMap(
                 by_uid
                     .iter()
-                    .map(|node| (node.uid.clone(), node.slug.as_str()))
+                    .map(|node| (node.uid().to_string(), node.slug()))
                     .collect(),
             ),
             slug_to_uid: ObjectMap(
                 by_uid
                     .iter()
-                    .map(|node| (node.slug.clone(), node.uid.as_str()))
+                    .map(|node| (node.slug().to_string(), node.uid()))
                     .collect(),
             ),
             merged_uid_to_slug: ObjectMap(

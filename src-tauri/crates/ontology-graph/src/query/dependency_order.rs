@@ -42,7 +42,7 @@ fn normalized(graph: &CompiledGraph, nodes: &[NodeId], edges: &[EdgeId]) -> Cycl
     let mut start = 0;
     for (index, node) in nodes.iter().enumerate().skip(1) {
         let lowest = nodes.get(start).copied().unwrap_or(*node);
-        if compare_text(&graph.node(*node).slug, &graph.node(lowest).slug).is_lt() {
+        if compare_text(graph.node(*node).slug(), graph.node(lowest).slug()).is_lt() {
             start = index;
         }
     }
@@ -52,7 +52,7 @@ fn normalized(graph: &CompiledGraph, nodes: &[NodeId], edges: &[EdgeId]) -> Cycl
     rotated_edges.extend_from_slice(edges.get(..start).unwrap_or_default());
     let slugs: Vec<&str> = rotated
         .iter()
-        .map(|node| graph.node(*node).slug.as_str())
+        .map(|node| graph.node(*node).slug())
         .collect();
     let key = slugs.join("->");
     let mut closed = rotated;
@@ -61,7 +61,7 @@ fn normalized(graph: &CompiledGraph, nodes: &[NodeId], edges: &[EdgeId]) -> Cycl
     }
     let sort_key = closed
         .iter()
-        .map(|node| graph.node(*node).slug.as_str())
+        .map(|node| graph.node(*node).slug())
         .collect::<Vec<_>>()
         .join("\0");
     Cycle {
@@ -278,7 +278,7 @@ pub fn cycles<'a>(
             nodes: cycle
                 .nodes
                 .iter()
-                .map(|node| graph.node(*node).slug.as_str())
+                .map(|node| graph.node(*node).slug())
                 .collect(),
             node_summaries: summaries(graph, cycle.nodes.iter().copied()),
             edges: cycle
@@ -468,7 +468,7 @@ pub fn topological_order<'a>(
         .take(limit)
         .map(|(rank, node)| OrderedRow {
             rank: *rank,
-            slug: &graph.node(*node).slug,
+            slug: graph.node(*node).slug(),
             node: NodeSummary::of(graph, *node),
         })
         .collect();
@@ -501,7 +501,7 @@ pub fn topological_order<'a>(
         blocked: blocked
             .iter()
             .map(|node| BlockedRow {
-                slug: &graph.node(*node).slug,
+                slug: graph.node(*node).slug(),
                 remaining_in_degree: indegree.get(node.index()).copied().unwrap_or(0),
                 node: NodeSummary::of(graph, *node),
             })

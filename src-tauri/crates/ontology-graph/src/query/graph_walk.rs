@@ -19,7 +19,7 @@ pub fn edge_order_key(graph: &CompiledGraph, id: EdgeId) -> String {
     let edge = graph.edge(id);
     format!(
         "{}:{}:{}:{}",
-        graph.node(edge.from).slug,
+        graph.node(edge.from).slug(),
         edge.via,
         name_reached(graph, id),
         edge.reference
@@ -63,5 +63,5 @@ pub fn traversal_steps(
 }
 
 fn step_key(graph: &CompiledGraph, next: NodeId, id: EdgeId) -> String {
-    format!("{}:{}", graph.node(next).slug, edge_order_key(graph, id))
+    format!("{}:{}", graph.node(next).slug(), edge_order_key(graph, id))
 }

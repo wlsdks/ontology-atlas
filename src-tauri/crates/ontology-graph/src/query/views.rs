@@ -1,6 +1,7 @@
 //! The small shapes the operations repeat: a node as a one-line summary, an edge as each operation
 //! shows it, and a count table in the order agents read it.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use answer_format::collation::compare_text;
@@ -15,7 +16,7 @@ pub struct NodeSummary<'a> {
     uid: &'a str,
     slug: &'a str,
     kind: &'a str,
-    title: &'a Value,
+    title: Cow<'a, Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     domain: Option<&'a Value>,
     #[serde(rename = "inDegree")]
@@ -28,11 +29,11 @@ impl<'a> NodeSummary<'a> {
     pub fn of(graph: &'a CompiledGraph, id: NodeId) -> Self {
         let node = graph.node(id);
         Self {
-            uid: &node.uid,
-            slug: &node.slug,
-            kind: &node.kind,
-            title: &node.title,
-            domain: node.domain.as_ref(),
+            uid: node.uid(),
+            slug: node.slug(),
+            kind: node.kind(),
+            title: node.title(),
+            domain: node.domain(),
             in_degree: node.in_degree,
             out_degree: node.out_degree,
         }
@@ -69,7 +70,7 @@ impl<'a> DirectedEdge<'a> {
         Self {
             direction,
             id: view.id(),
-            from: graph.node(edge.from).slug.as_str(),
+            from: graph.node(edge.from).slug(),
             to: name_reached(graph, id),
             via: edge.via,
             reference: &edge.reference,
@@ -99,12 +100,12 @@ impl<'a> PathEdge<'a> {
         let edge = graph.edge(id);
         Self {
             id: graph.edge_view(id).id(),
-            from: graph.node(edge.from).slug.as_str(),
+            from: graph.node(edge.from).slug(),
             to: name_reached(graph, id),
             via: edge.via,
             rationale: edge.rationale.as_deref(),
-            traversed_from: graph.node(entered).slug.as_str(),
-            traversed_to: graph.node(left).slug.as_str(),
+            traversed_from: graph.node(entered).slug(),
+            traversed_to: graph.node(left).slug(),
         }
     }
 }
@@ -129,7 +130,7 @@ impl<'a> CompiledEdge<'a> {
         let edge = graph.edge(id);
         Self {
             id: graph.edge_view(id).id(),
-            from: graph.node(edge.from).slug.as_str(),
+            from: graph.node(edge.from).slug(),
             to: name_reached(graph, id),
             via: edge.via,
             relation_type: crate::query::relation_set::public_relation_type(edge.via),
@@ -144,7 +145,7 @@ impl<'a> CompiledEdge<'a> {
 pub fn name_reached(graph: &CompiledGraph, id: EdgeId) -> &str {
     let edge = graph.edge(id);
     match edge.to() {
-        Some(node) => graph.node(node).slug.as_str(),
+        Some(node) => graph.node(node).slug(),
         None => &edge.reference,
     }
 }
@@ -180,7 +181,7 @@ pub fn kind_counts(
     graph: &CompiledGraph,
     nodes: impl IntoIterator<Item = NodeId>,
 ) -> ObjectMap<usize> {
-    sorted_counts(nodes.into_iter().map(|id| graph.node(id).kind.as_str()))
+    sorted_counts(nodes.into_iter().map(|id| graph.node(id).kind()))
 }
 
 /// The domains of `nodes` that have one, counted.

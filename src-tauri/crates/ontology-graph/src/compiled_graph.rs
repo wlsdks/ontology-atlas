@@ -2,12 +2,14 @@
 //! read. Nodes are listed in slug order and edges in edge order, and a node or an edge is named by
 //! its place in that list, so a query walks numbers and writes names only when it answers.
 
-use std::collections::HashMap;
+use std::borrow::Cow;
+use std::cmp::Ordering;
 
 use answer_format::collation::compare_text;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use vault_document::frontmatter::Value;
+use vault_document::LoadedDocument;
 
 use crate::compile_issue::CompileIssue;
 
@@ -41,35 +43,85 @@ impl EdgeId {
 }
 
 /// One document with a `kind:`, as the graph holds it.
+///
+/// A node reads its fields from the document it was made of, which the document cache already
+/// holds: fifty thousand nodes keep a handle each, not a second copy of every name.
 #[derive(Debug, Clone)]
 pub struct Node {
-    pub uid: String,
-    pub merged_uids: Vec<String>,
-    pub slug: String,
-    pub kind: String,
-    /// `title`, else `name`, else the slug, as the file holds the value.
-    pub title: Value,
-    pub domain: Option<Value>,
-    pub path: Option<String>,
+    document: LoadedDocument,
+    merged_uids: Box<[String]>,
     pub mtime: f64,
     pub out_degree: u32,
     pub in_degree: u32,
 }
 
 impl Node {
+    pub(crate) fn new(document: &LoadedDocument, merged_uids: Vec<String>, mtime: f64) -> Self {
+        Self {
+            document: document.clone(),
+            merged_uids: merged_uids.into(),
+            mtime,
+            out_degree: 0,
+            in_degree: 0,
+        }
+    }
+
+    pub fn uid(&self) -> &str {
+        match self.document.frontmatter().get("uid") {
+            Some(Value::Text(text)) => text,
+            _ => "",
+        }
+    }
+
+    /// The uids this node absorbed, sorted by UTF-16 code unit.
+    pub fn merged_uids(&self) -> &[String] {
+        &self.merged_uids
+    }
+
+    pub fn slug(&self) -> &str {
+        self.document.slug()
+    }
+
+    pub fn kind(&self) -> &str {
+        self.document.frontmatter().text("kind").unwrap_or_default()
+    }
+
+    /// `title`, else `name`, else the slug, as the file holds the value.
+    pub fn title(&self) -> Cow<'_, Value> {
+        let frontmatter = self.document.frontmatter();
+        match frontmatter
+            .truthy("title")
+            .or_else(|| frontmatter.truthy("name"))
+        {
+            Some(value) => Cow::Borrowed(value),
+            None => Cow::Owned(Value::Text(self.slug().to_string())),
+        }
+    }
+
+    pub fn domain(&self) -> Option<&Value> {
+        self.document.frontmatter().get("domain")
+    }
+
+    pub fn path(&self) -> Option<&str> {
+        self.document
+            .frontmatter()
+            .text("path")
+            .filter(|path| !answer_format::whitespace::trim(path).is_empty())
+    }
+
     pub fn degree(&self) -> u32 {
         self.out_degree + self.in_degree
     }
 
     /// The title as `String(title)` writes it.
     pub fn title_text(&self) -> String {
-        self.title.display_text()
+        self.title().display_text()
     }
 
     /// The domain when it is text with something in it: what a count by domain and a lookup of the
     /// domain node read.
     pub fn domain_name(&self) -> Option<&str> {
-        match &self.domain {
+        match self.domain() {
             Some(Value::Text(text)) if !answer_format::whitespace::trim(text).is_empty() => {
                 Some(text)
             }
@@ -81,17 +133,17 @@ impl Node {
 impl Serialize for Node {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut map = serializer.serialize_map(None)?;
-        map.serialize_entry("uid", &self.uid)?;
+        map.serialize_entry("uid", self.uid())?;
         if !self.merged_uids.is_empty() {
             map.serialize_entry("merged_uids", &self.merged_uids)?;
         }
-        map.serialize_entry("slug", &self.slug)?;
-        map.serialize_entry("kind", &self.kind)?;
-        map.serialize_entry("title", &self.title)?;
-        if let Some(domain) = &self.domain {
+        map.serialize_entry("slug", self.slug())?;
+        map.serialize_entry("kind", self.kind())?;
+        map.serialize_entry("title", &self.title())?;
+        if let Some(domain) = self.domain() {
             map.serialize_entry("domain", domain)?;
         }
-        if let Some(path) = &self.path {
+        if let Some(path) = self.path() {
             map.serialize_entry("path", path)?;
         }
         map.serialize_entry("mtime", &self.mtime)?;
@@ -154,12 +206,12 @@ pub struct EdgeView<'a> {
 
 impl EdgeView<'_> {
     pub fn from_slug(&self) -> &str {
-        &self.graph.node(self.edge.from).slug
+        self.graph.node(self.edge.from).slug()
     }
 
     pub fn to_name(&self) -> &str {
         match self.edge.target {
-            Target::Node(node) => &self.graph.node(node).slug,
+            Target::Node(node) => self.graph.node(node).slug(),
             Target::External | Target::Unresolved => &self.edge.reference,
         }
     }
@@ -193,10 +245,70 @@ impl Serialize for EdgeView<'_> {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct Alias {
-    pub alias: String,
-    pub slug: String,
+/// A name that reaches one node, kept in collation order beside its node.
+#[derive(Debug, Clone)]
+pub(crate) struct AliasEntry {
+    alias: Box<str>,
+    node: NodeId,
+}
+
+impl AliasEntry {
+    pub(crate) fn new(alias: &str, node: NodeId) -> Self {
+        Self {
+            alias: alias.into(),
+            node,
+        }
+    }
+}
+
+/// An alias and the slug it reaches, as the indexes and the hash write them.
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct Alias<'a> {
+    pub alias: &'a str,
+    pub slug: &'a str,
+}
+
+/// The aliases of a graph, in collation order, each read from the node it reaches.
+#[derive(Clone, Copy)]
+pub struct Aliases<'a> {
+    graph: &'a CompiledGraph,
+}
+
+impl<'a> Aliases<'a> {
+    pub fn len(&self) -> usize {
+        self.graph.aliases.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.graph.aliases.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = Alias<'a>> + 'a {
+        let graph = self.graph;
+        graph.aliases.iter().map(move |entry| Alias {
+            alias: &entry.alias,
+            slug: graph.node(entry.node).slug(),
+        })
+    }
+}
+
+impl Serialize for Aliases<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_seq(self.iter())
+    }
+}
+
+/// Where in `items` the key is exactly `name`, when `items` are in collation order of their keys.
+/// Strings that collate alike but differ sit side by side, so that run is searched.
+fn find_exact<T>(items: &[T], name: &str, key: impl Fn(&T) -> &str) -> Option<usize> {
+    let start = items.partition_point(|item| compare_text(key(item), name) == Ordering::Less);
+    let run = items
+        .get(start..)?
+        .iter()
+        .take_while(|item| compare_text(key(item), name) == Ordering::Equal);
+    run.enumerate()
+        .find(|(_, item)| key(item) == name)
+        .map(|(offset, _)| start + offset)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -252,7 +364,7 @@ pub struct EdgeCounts {
 pub struct CompiledGraph {
     pub(crate) nodes: Vec<Node>,
     pub(crate) edges: Vec<Edge>,
-    pub(crate) aliases: Vec<Alias>,
+    pub(crate) aliases: Vec<AliasEntry>,
     pub(crate) ambiguous_aliases: Vec<AmbiguousAlias>,
     pub(crate) issues: Vec<CompileIssue>,
     pub(crate) canonicalization_actions: Vec<CanonicalizationAction>,
@@ -260,8 +372,6 @@ pub struct CompiledGraph {
     pub(crate) max_mtime: f64,
     pub(crate) skipped_non_node_count: usize,
     pub(crate) edge_counts: EdgeCounts,
-    pub(crate) by_slug: HashMap<String, NodeId>,
-    pub(crate) by_alias: HashMap<String, NodeId>,
     pub(crate) outgoing: Vec<Vec<EdgeId>>,
     pub(crate) incoming: Vec<Vec<EdgeId>>,
     /// Where each node's slug stands in UTF-16 code unit order, which is how most lists of slugs
@@ -282,8 +392,8 @@ impl CompiledGraph {
         &self.issues
     }
 
-    pub fn aliases(&self) -> &[Alias] {
-        &self.aliases
+    pub fn aliases(&self) -> Aliases<'_> {
+        Aliases { graph: self }
     }
 
     pub fn ambiguous_aliases(&self) -> &[AmbiguousAlias] {
@@ -339,7 +449,7 @@ impl CompiledGraph {
     }
 
     pub fn node_by_slug(&self, slug: &str) -> Option<NodeId> {
-        self.by_slug.get(slug).copied()
+        find_exact(&self.nodes, slug, |node| node.slug()).map(NodeId::from_index)
     }
 
     /// The edges a node declares, in edge order.
@@ -364,10 +474,11 @@ impl CompiledGraph {
 
     /// The node a name reaches: its slug, else an alias that names one node only.
     pub fn resolve_name(&self, name: &str) -> Option<NodeId> {
-        self.by_slug
-            .get(name)
-            .or_else(|| self.by_alias.get(name))
-            .copied()
+        self.node_by_slug(name).or_else(|| {
+            find_exact(&self.aliases, name, |entry| &entry.alias)
+                .and_then(|at| self.aliases.get(at))
+                .map(|entry| entry.node)
+        })
     }
 
     /// Puts nodes in the order a JavaScript `sort()` puts their slugs: by UTF-16 code unit.
@@ -382,6 +493,6 @@ impl CompiledGraph {
 
     /// The `compareText` order of two nodes.
     pub fn compare_nodes(&self, left: NodeId, right: NodeId) -> std::cmp::Ordering {
-        compare_text(&self.node(left).slug, &self.node(right).slug)
+        compare_text(self.node(left).slug(), self.node(right).slug())
     }
 }

@@ -13,8 +13,8 @@ mod query;
 pub use compile_answer::{compile_answer, CompileAnswer, CompileRequest, COMPILE_PAGE_MAX};
 pub use compile_issue::{CompileIssue, IssueSeverity};
 pub use compiled_graph::{
-    Alias, AmbiguousAlias, CanonicalizationAction, CompiledGraph, Edge, EdgeCounts, EdgeId,
-    EdgeView, Node, NodeId, Target,
+    Alias, Aliases, AmbiguousAlias, CanonicalizationAction, CompiledGraph, Edge, EdgeCounts,
+    EdgeId, EdgeView, Node, NodeId, Target,
 };
 pub use graph_compiler::compile;
 pub use identity_error::{IdentityError, IdentityFault};

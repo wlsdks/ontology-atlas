@@ -1,6 +1,7 @@
 //! `overview`, `schema` and `facets`: what the whole graph holds. Counts, the most connected
 //! nodes, and the patterns of kind, relation and kind that its edges make.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use answer_format::collation::compare_text;
@@ -23,7 +24,7 @@ pub struct Hub<'a> {
     uid: &'a str,
     slug: &'a str,
     kind: &'a str,
-    title: &'a Value,
+    title: Cow<'a, Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     domain: Option<&'a Value>,
     #[serde(rename = "inDegree")]
@@ -41,17 +42,17 @@ pub fn top_hubs(graph: &CompiledGraph, limit: usize) -> Vec<Hub<'_>> {
             .degree()
             .cmp(&left.degree())
             .then_with(|| right.in_degree.cmp(&left.in_degree))
-            .then_with(|| compare_text(&left.slug, &right.slug))
+            .then_with(|| compare_text(left.slug(), right.slug()))
     });
     nodes
         .into_iter()
         .take(limit)
         .map(|node| Hub {
-            uid: &node.uid,
-            slug: &node.slug,
-            kind: &node.kind,
-            title: &node.title,
-            domain: node.domain.as_ref(),
+            uid: node.uid(),
+            slug: node.slug(),
+            kind: node.kind(),
+            title: node.title(),
+            domain: node.domain(),
             in_degree: node.in_degree,
             out_degree: node.out_degree,
             degree: node.degree(),
@@ -87,9 +88,9 @@ pub fn schema_patterns(graph: &CompiledGraph) -> Vec<SchemaPattern<'_>> {
     let mut at: HashMap<(&str, &str, &str), usize> = HashMap::new();
     for id in graph.edge_ids() {
         let edge = graph.edge(id);
-        let from_kind = graph.node(edge.from).kind.as_str();
+        let from_kind = graph.node(edge.from).kind();
         let to_kind = match edge.target {
-            Target::Node(node) => graph.node(node).kind.as_str(),
+            Target::Node(node) => graph.node(node).kind(),
             Target::External => "external",
             Target::Unresolved => "unresolved",
         };
@@ -117,7 +118,7 @@ pub fn schema_patterns(graph: &CompiledGraph) -> Vec<SchemaPattern<'_>> {
         }
         if pattern.examples.len() < 3 {
             pattern.examples.push(EdgeExample {
-                from: &graph.node(edge.from).slug,
+                from: graph.node(edge.from).slug(),
                 to: crate::query::views::name_reached(graph, id),
                 reference: &edge.reference,
             });

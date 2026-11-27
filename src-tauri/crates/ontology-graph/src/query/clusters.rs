@@ -87,7 +87,7 @@ pub(crate) fn connected_components(
             let slug = |group: &Vec<NodeId>| {
                 group
                     .first()
-                    .map_or("", |node| graph.node(*node).slug.as_str())
+                    .map_or("", |node| graph.node(*node).slug())
                     .to_string()
             };
             compare_text(&slug(left), &slug(right))
@@ -339,8 +339,8 @@ pub fn communities<'a>(
             .then_with(|| right.internal_edges.cmp(&left.internal_edges))
             .then_with(|| {
                 compare_text(
-                    &graph.node(left.representative).slug,
-                    &graph.node(right.representative).slug,
+                    graph.node(left.representative).slug(),
+                    graph.node(right.representative).slug(),
                 )
             })
     });
@@ -367,7 +367,7 @@ pub fn communities<'a>(
         .enumerate()
         .map(|(index, group)| CommunityRow {
             id: index + 1,
-            label: &graph.node(group.label).slug,
+            label: graph.node(group.label).slug(),
             size: group.nodes.len(),
             internal_edges: group.internal_edges,
             boundary_edges: group.boundary_edges,
