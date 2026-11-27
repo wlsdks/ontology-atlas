@@ -1,6 +1,8 @@
 /** Reads vault files with bounded concurrency, in native batches in the app, and falls back to one read at a time. */
 
+import { failureCodeOf } from '@/shared/lib/failures/failure-code';
 import {
+  readTauriVaultBytes,
   readTauriVaultTextFile,
   readTauriVaultTextFiles,
 } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
@@ -44,21 +46,33 @@ interface MarkdownFile {
   lastModified: number;
 }
 
+type ManifestFile = Pick<File, 'lastModified' | 'text'>;
 
 /**
- * The app's text read refuses a document that is not UTF-8; its handle then reads the bytes, which
- * `text()` decodes as a browser does, so one such document never stops the folder from opening.
+ * A document the app's text read refused as not UTF-8, read once more as bytes and decoded as a
+ * browser does, so one such document never stops the folder from opening.
  */
-export async function manifestFile(entry: WalkEntry, nativeRoot: string | null): Promise<Pick<File, 'lastModified' | 'text'>> {
+async function bytesAsText(nativeRoot: string, entry: WalkEntry): Promise<ManifestFile> {
+  const read = await readTauriVaultBytes(nativeRoot, entry.relativePath);
+  if (!read) return entry.handle.getFile();
+  return { lastModified: read.lastModified, text: async () => new TextDecoder().decode(read.bytes) };
+}
+
+export async function manifestFile(entry: WalkEntry, nativeRoot: string | null): Promise<ManifestFile> {
   if (entry.kind === 'md' && nativeRoot) {
-    const native = await readTauriVaultTextFile(nativeRoot, entry.relativePath).catch(() => null);
-    if (native) return { lastModified: native.lastModified, text: async () => native.text };
+    try {
+      const native = await readTauriVaultTextFile(nativeRoot, entry.relativePath);
+      if (native) return { lastModified: native.lastModified, text: async () => native.text };
+    } catch (error) {
+      if (failureCodeOf(error) !== 'not-utf8') throw error;
+      return bytesAsText(nativeRoot, entry);
+    }
   }
   return entry.handle.getFile();
 }
 
-async function readMarkdownFile(entry: WalkEntry, nativeRoot: string | null): Promise<MarkdownFile> {
-  const file = await manifestFile(entry, nativeRoot);
+async function readMarkdownFile(entry: WalkEntry, nativeRoot: string | null, refusedAsNotUtf8 = false): Promise<MarkdownFile> {
+  const file = refusedAsNotUtf8 && nativeRoot ? await bytesAsText(nativeRoot, entry) : await manifestFile(entry, nativeRoot);
   return { text: await file.text(), lastModified: file.lastModified };
 }
 
@@ -77,10 +91,11 @@ export function createMarkdownReader(nativeRoot: string | null) {
       batchUnavailable = true;
     }
     const reads = entries.map((entry, at) => ({ entry, read: answered?.[at] }));
-    return mapPooled(reads, fallbackConcurrency, async ({ entry, read }) =>
-      read && read.relativePath === entry.relativePath && read.text !== null && read.lastModified !== null
-        ? { text: read.text, lastModified: read.lastModified }
-        : one(entry),
-    );
+    return mapPooled(reads, fallbackConcurrency, async ({ entry, read }) => {
+      if (!read || read.relativePath !== entry.relativePath) return one(entry);
+      if (read.text !== null && read.lastModified !== null) return { text: read.text, lastModified: read.lastModified };
+      // The frame already says why: a refusal as not UTF-8 goes straight to the bytes.
+      return readMarkdownFile(entry, nativeRoot, failureCodeOf(read.error) === 'not-utf8');
+    });
   };
 }

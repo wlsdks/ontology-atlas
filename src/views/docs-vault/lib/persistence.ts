@@ -53,11 +53,11 @@ export function readStoredSource(): DocsVaultSource {
 }
 
 /**
- * The source the docs surface settles on once it knows its shell, or `"keep"` to settle on the one
- * it holds (a local intent). The installed app has one source, its folders, and no bundled sample,
- * so it settles on local whether or not a folder is open: waiting for a manifest left the page on
- * its loading frame for good while the launch asked which folder to open. A stored preference is
- * never read there, or it would briefly revive the sample the app excludes.
+ * The source the docs surface settles on, or `"keep"` to settle on the one it holds (a local
+ * intent). The installed app has one source, its folders, and no bundled sample, so it settles on
+ * local whether or not a folder is open; a folder chooser is a local screen too. Once the shell is
+ * known to be the app, the stored web preference is not consulted; a pass that runs before the
+ * shell is known reads it as the web does.
  */
 export function settledDocsSource({
   installedShell,

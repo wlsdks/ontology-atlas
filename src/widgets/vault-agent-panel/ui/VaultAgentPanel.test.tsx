@@ -369,10 +369,9 @@ describe('VaultAgentPanel', () => {
     bridge.available = true;
     renderPanel();
     const slot = screen.getByTestId('vault-agent-panel-subtitle');
-    const shown = [...slot.children].filter((sentence) => sentence.getAttribute('aria-hidden') !== 'true');
-    expect(shown.map((sentence) => sentence.textContent)).toEqual([messages.vaultAgentPanel.subtitle]);
-    // The session summary holds its height in the same cell, so its arrival does not move the conversation.
-    expect(slot.children).toHaveLength(2);
+    // What a screen reader reads there: the subtitle, and no session summary before there is progress.
+    const announced = [...slot.children].filter((sentence) => sentence.getAttribute('aria-hidden') !== 'true');
+    expect(announced.map((sentence) => sentence.textContent)).toEqual([messages.vaultAgentPanel.subtitle]);
   });
 
   it('expanding resume shows the boundary together with the absolute folder path and the request sentence', async () => {

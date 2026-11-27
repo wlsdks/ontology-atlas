@@ -175,12 +175,11 @@ describe("settledDocsSource", () => {
     });
 
   it("settles the installed app on its folders before any folder is open", () => {
-    // Waiting for a manifest here held the docs page on its loading frame while the launch asked which folder.
     expect(settle({ installedShell: true })).toBe("local");
     expect(settle({ installedShell: true, querySource: "server" })).toBe("local");
   });
 
-  it("never reads the stored preference in the installed app", () => {
+  it("does not consult the stored preference once the shell is the installed app", () => {
     const readStored = vi.fn(() => "server" as const);
     settle({ installedShell: true, readStored });
     expect(readStored).not.toHaveBeenCalled();

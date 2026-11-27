@@ -3,9 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import { useManualWriteUndo } from "./use-manual-write-undo";
 
+/** A body in EUC-KR: bytes that are not UTF-8. */
+const NOT_UTF8 = Uint8Array.from([0x23, 0x20, 0xb0, 0xe1, 0x0a]);
+
 function setup() {
-  const files = new Map<string, string>([["domains/a", "old"]]);
-  const handleFor = (slug: string) => ({ getFile: async () => ({ text: async () => files.get(slug) ?? "" }) });
+  const files = new Map<string, string | Uint8Array<ArrayBuffer>>([["domains/a", "old"]]);
+  const handleFor = (slug: string) => ({ getFile: async () => new File([files.get(slug) ?? ""], "a.md") });
   const vault = {
     get fileHandles() {
       return new Map([...files.keys()].map((slug) => [slug, handleFor(slug)]));
@@ -60,5 +63,28 @@ describe("undo of a manual write from the keyboard", () => {
     expect(vault.deleteDoc).not.toHaveBeenCalled();
     expect(files.get("domains/a")).toBe("new");
     expect(toast.show).toHaveBeenLastCalledWith("manualWrite.undoOtherFolder", "info");
+  });
+
+  it("refuses a write to a file that is not UTF-8 before it runs, so Undo never holds its text", async () => {
+    const { files, vault, edit } = setup();
+    files.set("domains/a", NOT_UTF8);
+
+    await expect(edit()).rejects.toMatchObject({ code: "not-utf8" });
+    expect(vault.saveDoc).not.toHaveBeenCalled();
+    expect(files.get("domains/a")).toBe(NOT_UTF8);
+  });
+
+  it("leaves a file that stopped being UTF-8 after the write as it is, as changed since", async () => {
+    const { files, vault, toast, hook, edit } = setup();
+    await edit();
+    vault.saveDoc.mockClear();
+    files.set("domains/a", NOT_UTF8);
+
+    await act(async () => {
+      hook.result.current.undoLastManualWrite();
+    });
+    expect(vault.saveDoc).not.toHaveBeenCalled();
+    expect(files.get("domains/a")).toBe(NOT_UTF8);
+    expect(toast.show).toHaveBeenLastCalledWith("manualWrite.undoChanged", "error");
   });
 });

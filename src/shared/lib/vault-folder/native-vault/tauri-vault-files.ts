@@ -102,6 +102,21 @@ export async function readTauriVaultTextFile(
   return { text: file.text, lastModified: file.lastModified };
 }
 
+/** `read_vault_binary_file` answers a little-endian u64 mtime, then the file's bytes. */
+export function unstampTauriVaultBytes(stamped: ArrayBuffer): { bytes: Uint8Array<ArrayBuffer>; lastModified: number } {
+  return { bytes: new Uint8Array(stamped, 8), lastModified: Number(new DataView(stamped).getBigUint64(0, true)) };
+}
+
+/** A file's bytes as they are on disk, whatever their encoding; `null` without the bridge. */
+export async function readTauriVaultBytes(
+  rootPath: string,
+  relativePath: string,
+): Promise<{ bytes: Uint8Array<ArrayBuffer>; lastModified: number } | null> {
+  const invoke = getTauriInvoke();
+  if (!invoke) return null;
+  return unstampTauriVaultBytes(await invoke<ArrayBuffer>('read_vault_binary_file', { rootPath, relativePath }));
+}
+
 export async function readTauriVaultTextFiles(
   rootPath: string,
   relativePaths: readonly string[],

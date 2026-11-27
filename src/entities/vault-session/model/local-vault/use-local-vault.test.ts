@@ -121,17 +121,16 @@ function fakeRootHandle(name = 'vault'): FileSystemDirectoryHandle {
   return { kind: 'directory', name } as unknown as FileSystemDirectoryHandle;
 }
 
-function fakeFileHandle(initial: { text: string; lastModified: number }) {
+/** `bytes` stands for a file that holds them rather than `text`, until something writes it. */
+function fakeFileHandle(initial: { text: string; lastModified: number; bytes?: Uint8Array<ArrayBuffer> }) {
   const state = { ...initial };
   const write = vi.fn(async (data: string) => {
     state.text = data;
+    state.bytes = undefined;
   });
   const close = vi.fn(async () => {});
   const createWritable = vi.fn(async () => ({ write, close }));
-  const getFile = vi.fn(async () => ({
-    text: async () => state.text,
-    lastModified: state.lastModified,
-  }));
+  const getFile = vi.fn(async () => new File([state.bytes ?? state.text], 'doc.md', { lastModified: state.lastModified }));
   const handle = {
     kind: 'file',
     name: 'doc.md',
@@ -140,6 +139,14 @@ function fakeFileHandle(initial: { text: string; lastModified: number }) {
   } as unknown as FileSystemFileHandle;
   return { handle, write, close, createWritable, getFile, state };
 }
+
+/** ASCII frontmatter, then a body in EUC-KR: bytes that are not UTF-8. */
+const NOT_UTF8 = Uint8Array.from([
+  ...new TextEncoder().encode('---\nkind: capability\ntitle: Legacy\n---\n\n'),
+  0xb0,
+  0xe1,
+  0x0a,
+]);
 
 function makeRecord(handle: FileSystemDirectoryHandle): LocalFsHandleRecord {
   return {
@@ -358,6 +365,20 @@ describe('useLocalVaultInternal: saveDoc conflict contract (regression guard aga
 
     expect(fh.write).not.toHaveBeenCalled();
   });
+
+  it('refuses to save over a document that is not UTF-8, so its bytes stay', async () => {
+    const fh = fakeFileHandle({ text: '', bytes: NOT_UTF8, lastModified: 1000 });
+    const result = await loadedHookWithDoc(fh);
+
+    await expect(
+      act(async () => {
+        await result.current.saveDoc('note', '# replaced\n', { expectedMtime: 1000 });
+      }),
+    ).rejects.toMatchObject({ code: 'not-utf8' });
+
+    expect(fh.createWritable).not.toHaveBeenCalled();
+    expect(fh.state.bytes).toBe(NOT_UTF8);
+  });
 });
 
 describe('useLocalVaultInternal: updateFrontmatter conflict contract', () => {
@@ -451,6 +472,25 @@ describe('useLocalVaultInternal: updateFrontmatter conflict contract', () => {
 
     expect(fh.createWritable).not.toHaveBeenCalled();
     expect(fh.state.text).toBe('---\ntitle: A\n---\n\nbody');
+  });
+
+  it('refuses a frontmatter edit of a document that is not UTF-8, so its bytes stay', async () => {
+    const fh = fakeFileHandle({ text: '', bytes: NOT_UTF8, lastModified: 1000 });
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(fakeRootHandle('my-vault')));
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({ fileHandles: new Map([['note', fh.handle]]) }),
+    );
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await expect(
+      act(async () => {
+        await result.current.updateFrontmatter('note', { relates: ['capabilities/x'] });
+      }),
+    ).rejects.toMatchObject({ code: 'not-utf8' });
+
+    expect(fh.createWritable).not.toHaveBeenCalled();
+    expect(fh.state.bytes).toBe(NOT_UTF8);
   });
 });
 
@@ -752,14 +792,14 @@ describe('useLocalVaultInternal: protecting existing files (createDoc / renameDo
     expect(removeEntry).toHaveBeenCalledWith('a.md');
   });
 
-  function reclassifyFixture(referrerText: string) {
+  function reclassifyFixture(referrerText: string, referrerBytes?: Uint8Array<ArrayBuffer>) {
     const source = fakeFileHandle({
       text:
         '---\nuid: 292f0e3a-23a8-4bad-9f87-7a38e1f1a01c\nslug: capabilities/companion-memories\n' +
         'kind: capability\ntitle: Companion memories\n---\n\nBody.\n',
       lastModified: 1000,
     });
-    const referrer = fakeFileHandle({ text: referrerText, lastModified: 1000 });
+    const referrer = fakeFileHandle({ text: referrerText, bytes: referrerBytes, lastModified: 1000 });
     const created = fakeFileHandle({ text: '', lastModified: 0 });
     const removeEntry = vi.fn(async () => {});
     const elements = { kind: 'directory', name: 'elements', getFileHandle: vi.fn(async () => created.handle) };
@@ -846,6 +886,57 @@ describe('useLocalVaultInternal: protecting existing files (createDoc / renameDo
     expect(report?.referrers).toEqual([
       { slug: 'domains/human-workbench', moved: [], kept: [], failed: true },
     ]);
+  });
+
+  it('renameDoc: a referrer that is not UTF-8 keeps its bytes and is reported, not rewritten', async () => {
+    const body = WORKBENCH.slice(0, WORKBENCH.indexOf('Body.'));
+    const bytes = Uint8Array.from([...new TextEncoder().encode(body), 0xb0, 0xe1, 0x0a]);
+    const { referrer } = reclassifyFixture('', bytes);
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    let report: Awaited<ReturnType<typeof result.current.renameDoc>> | undefined;
+    await act(async () => {
+      report = await result.current.renameDoc('capabilities/companion-memories', 'elements/companion-memories', {
+        rewriteBacklinks: true,
+        frontmatterUpdates: { kind: 'element' },
+      });
+    });
+
+    expect(referrer.createWritable).not.toHaveBeenCalled();
+    expect(referrer.state.bytes).toBe(bytes);
+    expect(report?.referrers).toEqual([
+      { slug: 'domains/human-workbench', moved: [], kept: [], failed: true },
+    ]);
+  });
+
+  it('renameDoc: refuses to move a document that is not UTF-8, so nothing is written or removed', async () => {
+    const source = fakeFileHandle({ text: '', bytes: NOT_UTF8, lastModified: 1000 });
+    const created = fakeFileHandle({ text: '', lastModified: 0 });
+    const removeEntry = vi.fn(async () => {});
+    const capabilities = { kind: 'directory', name: 'capabilities', getFileHandle: vi.fn(async () => created.handle), removeEntry };
+    const root = {
+      kind: 'directory',
+      name: 'my-vault',
+      getDirectoryHandle: vi.fn(async () => capabilities),
+    } as unknown as FileSystemDirectoryHandle;
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({ fileHandles: new Map([['capabilities/a', source.handle]]) }),
+    );
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await expect(
+      act(async () => {
+        await result.current.renameDoc('capabilities/a', 'capabilities/b');
+      }),
+    ).rejects.toMatchObject({ code: 'not-utf8' });
+
+    expect(created.createWritable).not.toHaveBeenCalled();
+    expect(removeEntry).not.toHaveBeenCalled();
+    expect(source.state.bytes).toBe(NOT_UTF8);
   });
 
   it('reclassifyDoc: a kind change in place moves referrer entries too', async () => {

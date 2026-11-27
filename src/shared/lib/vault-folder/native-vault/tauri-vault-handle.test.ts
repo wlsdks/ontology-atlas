@@ -117,16 +117,29 @@ describe('tauri vault handle', () => {
     expect(file.lastModified).toBe(1_790_000_000_789);
   });
 
-  it('keeps the text read reason when the bytes cannot be read either', async () => {
-    installInvoke(({ command }) => {
+  it('answers any other failure of the text read as it is, without reading the bytes', async () => {
+    const calls = installInvoke(({ command }) => {
       if (command === 'vault_path_exists') return true;
       if (command === 'read_vault_text_file') throw new Error('No such file or directory (os error 2)');
-      if (command === 'read_vault_binary_file') throw new Error('binary read failed');
       throw new Error(`unexpected command: ${command}`);
     });
     const handle = await createTauriVaultHandle('/vault').getFileHandle('gone.md');
 
     await expect(handle.getFile()).rejects.toThrow('No such file or directory (os error 2)');
+    expect(calls.map((call) => call.command)).not.toContain('read_vault_binary_file');
+  });
+
+  it('refuses to write bytes that are not UTF-8 rather than replacing them', async () => {
+    const calls = installInvoke(({ command }) => {
+      if (command === 'vault_path_exists') return true;
+      if (command === 'write_vault_text_file') return undefined;
+      throw new Error(`unexpected command: ${command}`);
+    });
+    const file = await createTauriVaultHandle('/vault').getFileHandle('legacy.md');
+    const writable = await file.createWritable();
+
+    await expect(writable.write(Uint8Array.from([0x23, 0x20, 0xb0, 0xe1, 0x0a]).buffer)).rejects.toMatchObject({ code: 'not-utf8' });
+    expect(calls.map((call) => call.command)).not.toContain('write_vault_text_file');
   });
 
   it('creates directories, creates files, writes accumulated text, and removes files', async () => {

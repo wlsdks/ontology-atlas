@@ -30,6 +30,9 @@ const ALREADY_EXISTS_SIGNATURES = [
   'os error 17)',
 ] as const;
 
+/** Rust's `fs::read_to_string` refusing bytes that are not UTF-8, on every platform. */
+const NOT_UTF8_SIGNATURES = ['did not contain valid utf-8'] as const;
+
 /** `detail` is machine fact only (a path, an OS error) and stays English; prose would be untranslatable. */
 export class CodedFailure extends Error {
   readonly code: string;
@@ -77,6 +80,7 @@ export function failureCodeOf(error: unknown): string | null {
   if (matches(text, PERMISSION_DENIED_SIGNATURES)) return 'permission-denied';
   if (matches(text, MISSING_TARGET_SIGNATURES)) return 'target-missing';
   if (matches(text, ALREADY_EXISTS_SIGNATURES)) return 'already-exists';
+  if (matches(text, NOT_UTF8_SIGNATURES)) return 'not-utf8';
   return null;
 }
 
