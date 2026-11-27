@@ -5,7 +5,7 @@ import path from "node:path";
  * Every file that declares the app version. The MCP server ships the app's version so the
  * registry takes each release (docs/records/decisions/2026-11-28-mcp-version-follows-app-3ef6b195-7e4f-400f-a928-76ed621a31f2.md).
  */
-export const APP_VERSION_FILES = {
+const APP_VERSION_FILES = {
   package: "package.json",
   tauri: "src-tauri/tauri.conf.json",
   cargo: "src-tauri/Cargo.toml",
