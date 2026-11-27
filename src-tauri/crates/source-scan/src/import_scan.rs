@@ -14,22 +14,19 @@ use answer_format::collation::compare_text;
 use confined_files::{Refusal, SourceFiles, SourceReadError};
 
 use crate::autotools_c::detect_autotools_c;
-use crate::bounded_parse::{parse_bounded, ParseLimits, ParseRefusal};
+use crate::batch_reading::{read_batch, PendingFile};
+use crate::file_reading::FileReading;
 use crate::go_imports::{scan_go_packages, GoPackageEvidence, GO_FILE_MAX_BYTES};
 use crate::import_coverage::ImportCoverage;
 use crate::import_edges::{
-    ExternalImport, Findings, ImportEdge, ImportKind, UnresolvedImport, UnresolvedReason,
+    ExternalImport, Findings, ImportEdge, UnresolvedImport, UnresolvedReason,
 };
 use crate::import_rollup::EdgeStats;
-use crate::jvm_declarations::read_jvm_source;
 use crate::jvm_resolution::{place_jvm_imports, JvmSource};
 use crate::module_grouping::module_of;
 use crate::path_facts::{join_below, PathFacts};
-use crate::python_imports::read_python_imports;
 use crate::python_resolution::{discover_root_packages, PythonResolver};
-use crate::rust_dependencies::read_rust_dependencies;
 use crate::rust_resolution::{read_root_package_name, RustResolver};
-use crate::script_imports::read_script_imports;
 use crate::script_resolution::{read_tsconfig_aliases, ScriptResolver};
 use crate::source_language::{extension_of, SourceLanguage};
 use crate::source_walk::{is_scanned_extension, walk, IgnoredNames, RUST_EXTENSION};
@@ -39,6 +36,9 @@ use crate::workspace_packages::{discover_workspace_packages, WorkspaceDiscovery,
 pub const SOURCE_FILE_MAX_BYTES: usize = 2 * 1024 * 1024;
 /// Rust files are read at the Go limit: a larger one is mostly generated tables.
 pub const RUST_FILE_MAX_BYTES: usize = GO_FILE_MAX_BYTES;
+/// A batch of texts held for parsing at once ends at this many bytes or files.
+const BATCH_MAX_BYTES: usize = 16 * 1024 * 1024;
+const BATCH_MAX_FILES: usize = 512;
 pub const DEFAULT_MAX_FILES: usize = 5000;
 pub const MAX_MAX_FILES: usize = 50_000;
 pub const DEFAULT_SOURCE_FOLDERS: [&str; 6] = ["src", "source", "lib", "app", "apps", "packages"];
@@ -136,66 +136,46 @@ pub fn scan_imports(
     );
     let mut jvm_sources: Vec<JvmSource> = Vec::new();
 
-    for file in &listed {
-        let Some(from) = facts.relative(file) else {
-            continue;
-        };
-        let Some(extension) = file_extension(file) else {
-            continue;
-        };
-        let Some(language) = SourceLanguage::of_extension(extension) else {
-            continue;
-        };
-        let max_bytes = if extension == RUST_EXTENSION {
-            RUST_FILE_MAX_BYTES
-        } else {
-            SOURCE_FILE_MAX_BYTES
-        };
-        let text = match files.read_text(file) {
-            Ok(text) if text.len() <= max_bytes => text,
-            Ok(_) | Err(SourceReadError::Refused(Refusal::FileOverSizeLimit)) => {
-                findings.could_not_place(&from, "<source-text>", UnresolvedReason::FileTooLarge);
+    let mut next_file = 0;
+    while next_file < listed.len() {
+        // The texts of a batch are read in listed order and parsed together; the readings are
+        // placed one after another, so the answer is that of reading one file at a time.
+        let mut batch: Vec<PendingFile> = Vec::new();
+        let mut batch_bytes = 0;
+        while let Some(file) = listed.get(next_file) {
+            if batch_bytes >= BATCH_MAX_BYTES || batch.len() >= BATCH_MAX_FILES {
+                break;
+            }
+            next_file += 1;
+            let Some(pending) = pending_file(files, &facts, file) else {
                 continue;
-            }
-            Err(_) => continue,
-        };
-        let parsed = match parse_bounded(language, &text, ParseLimits::for_imports(max_bytes)) {
-            Ok(parsed) => parsed,
-            Err(ParseRefusal::TooLarge) => {
-                findings.could_not_place(&from, "<source-text>", UnresolvedReason::FileTooLarge);
-                continue;
-            }
-            Err(_) => {
-                findings.could_not_place(&from, "<source-text>", UnresolvedReason::SourceNotParsed);
-                continue;
-            }
-        };
-        match language {
-            SourceLanguage::Rust => {
-                let dependencies = read_rust_dependencies(&parsed);
-                rust.place(&mut findings, &ignore, file, &from, &dependencies);
-            }
-            SourceLanguage::Python => {
-                for import in read_python_imports(&parsed) {
-                    python.place(&mut findings, &ignore, file, &from, &import);
+            };
+            batch_bytes += pending.weight();
+            batch.push(pending);
+        }
+        let readings = read_batch(&batch);
+        for (pending, reading) in batch.iter().zip(readings) {
+            let (file, from) = (&pending.path, &pending.from);
+            match reading {
+                FileReading::Unreadable(reason) => {
+                    findings.could_not_place(from, "<source-text>", reason);
                 }
-            }
-            SourceLanguage::Java | SourceLanguage::Kotlin => {
-                let name = from.rsplit('/').next().unwrap_or(&from);
-                jvm_sources.push(JvmSource {
+                FileReading::Rust(dependencies) => {
+                    rust.place(&mut findings, &ignore, file, from, &dependencies);
+                }
+                FileReading::Python(imports) => {
+                    for import in &imports {
+                        python.place(&mut findings, &ignore, file, from, import);
+                    }
+                }
+                FileReading::Jvm(read) => jvm_sources.push(JvmSource {
                     path: from.clone(),
-                    file: read_jvm_source(&parsed, name, language == SourceLanguage::Kotlin),
-                });
-            }
-            _ => {
-                // The regular imports in the order written, then the side-effect ones, as the
-                // two kinds were always listed.
-                let imports = read_script_imports(&parsed);
-                let (side, regular): (Vec<_>, Vec<_>) = imports
-                    .into_iter()
-                    .partition(|import| import.kind == ImportKind::Side);
-                for import in regular.iter().chain(side.iter()) {
-                    script.place(&mut findings, &ignore, file, &from, import);
+                    file: *read,
+                }),
+                FileReading::Script(imports) => {
+                    for import in &imports {
+                        script.place(&mut findings, &ignore, file, from, import);
+                    }
                 }
             }
         }
@@ -219,6 +199,37 @@ pub fn scan_imports(
         module_edges,
         package_import_evidence: go,
     }
+}
+
+/// The file's text, or why it has none to read; `None` for a file the scan does not read at all
+/// (a name that is no source, a read that failed).
+fn pending_file(
+    files: &dyn SourceFiles,
+    facts: &PathFacts<'_>,
+    file: &std::path::Path,
+) -> Option<PendingFile> {
+    let from = facts.relative(file)?;
+    let extension = file_extension(file)?;
+    let language = SourceLanguage::of_extension(extension)?;
+    let max_bytes = if extension == RUST_EXTENSION {
+        RUST_FILE_MAX_BYTES
+    } else {
+        SOURCE_FILE_MAX_BYTES
+    };
+    let text = match files.read_text(file) {
+        Ok(text) if text.len() <= max_bytes => Ok(text.into_owned()),
+        Ok(_) | Err(SourceReadError::Refused(Refusal::FileOverSizeLimit)) => {
+            Err(UnresolvedReason::FileTooLarge)
+        }
+        Err(_) => return None,
+    };
+    Some(PendingFile {
+        path: file.to_path_buf(),
+        from,
+        language,
+        max_bytes,
+        text,
+    })
 }
 
 fn file_extension(file: &std::path::Path) -> Option<&str> {

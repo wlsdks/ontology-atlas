@@ -10,9 +10,11 @@
 mod architecture_conformance;
 mod architecture_profile;
 mod autotools_c;
+mod batch_reading;
 mod bounded_parse;
 mod config_json;
 mod evidence_texts;
+mod file_reading;
 mod folder_placement;
 mod go_imports;
 mod import_coverage;
