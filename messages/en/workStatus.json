@@ -206,9 +206,6 @@
     "title": "Nothing in {repo} is at work",
     "body": "Merged and long-untouched worktrees wait on the shelf below."
   },
-  "web": {
-    "body": "A browser cannot run git or read this computer's processes. Workshop opens in the Atlas app."
-  },
   "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git.",
   "header": {
     "waiting": "{count} waiting for you",
