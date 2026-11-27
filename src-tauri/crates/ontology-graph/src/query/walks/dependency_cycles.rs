@@ -1,11 +1,10 @@
-//! `cycles` and `topological_order`: whether dependencies loop, and in what order they can be
-//! built. Both read the `dependencies` relation unless the call names others.
+//! `cycles`: whether dependencies loop. It reads the `dependencies` relation unless the call names
+//! others.
 //!
-//! The cycle search is Johnson's minimum-vertex rule: each simple cycle is found once, from its
+//! The search is Johnson's minimum-vertex rule: each simple cycle is found once, from its
 //! lowest-ranked node, up to `maxHops` edges long. Its recursion is as deep as the path it is
 //! extending, which `maxHops` caps at twenty, and the whole search spends a budget of expanded
-//! states that it reports when it runs out. The order is Kahn's algorithm by layers over distinct
-//! prerequisite pairs; it holds no recursion.
+//! states that it reports when it runs out.
 
 use std::collections::{HashMap, HashSet};
 
@@ -22,24 +21,20 @@ use crate::query::request::QueryRequest;
 const DEFAULT_CYCLE_LIMIT: usize = 20;
 const DEFAULT_CYCLE_DEPTH: usize = 8;
 const DEFAULT_SEARCH_BUDGET: usize = 5000;
-const DEFAULT_ORDER_LIMIT: usize = 100;
 
-fn dependency_types(request: &QueryRequest) -> Result<Option<RelationSet>, QueryError> {
-    match &request.types {
-        Some(_) => RelationSet::parse(request.types.as_deref(), "types"),
-        None => Ok(Some(RelationSet::dependencies())),
-    }
-}
-
-struct Cycle {
-    nodes: Vec<NodeId>,
-    edges: Vec<EdgeId>,
-    key: String,
+/// A loop of dependencies, rotated to start at its lowest node and closed by repeating it.
+pub struct DependencyCycle {
+    /// The nodes around the loop, the first again at the end.
+    pub nodes: Vec<NodeId>,
+    /// The edge that leaves each node but the last.
+    pub edges: Vec<EdgeId>,
+    /// The nodes' slugs joined by `->`, which names the cycle.
+    pub key: String,
     sort_key: String,
 }
 
 /// The cycle rotated to start at its lowest slug, closed by repeating that slug.
-fn normalized(graph: &CompiledGraph, nodes: &[NodeId], edges: &[EdgeId]) -> Cycle {
+fn normalized(graph: &CompiledGraph, nodes: &[NodeId], edges: &[EdgeId]) -> DependencyCycle {
     let mut start = 0;
     for (index, node) in nodes.iter().enumerate().skip(1) {
         let lowest = nodes.get(start).copied().unwrap_or(*node);
@@ -65,7 +60,7 @@ fn normalized(graph: &CompiledGraph, nodes: &[NodeId], edges: &[EdgeId]) -> Cycl
         .map(|node| graph.node(*node).slug())
         .collect::<Vec<_>>()
         .join("\0");
-    Cycle {
+    DependencyCycle {
         nodes: closed,
         edges: rotated_edges,
         key,
@@ -81,7 +76,7 @@ struct CycleSearch<'a> {
     search_budget: usize,
     path: Vec<NodeId>,
     edge_path: Vec<EdgeId>,
-    shortest: Vec<Cycle>,
+    shortest: Vec<DependencyCycle>,
     longest_kept: usize,
     total: usize,
     expanded: usize,
@@ -201,18 +196,27 @@ pub struct CyclesAnswer<'a> {
     evidence: CycleEvidence,
 }
 
-pub fn cycles<'a>(
-    graph: &'a CompiledGraph,
-    request: &QueryRequest,
-) -> Result<CyclesAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_CYCLE_LIMIT);
-    let max_depth = request
-        .max_hops
-        .or(request.depth)
-        .unwrap_or(DEFAULT_CYCLE_DEPTH);
-    let types = dependency_types(request)?;
-    let search_budget = request.search_budget(DEFAULT_SEARCH_BUDGET)?;
+/// What a search for cycles found, before any of it is written.
+pub struct CycleFacts {
+    /// The shortest cycles, up to the limit, shortest first and equally long ones in the order
+    /// of their slugs.
+    pub cycles: Vec<DependencyCycle>,
+    /// Every cycle found within the bounds, kept or not.
+    pub total: usize,
+    pub expanded_states: usize,
+    /// The search spent its budget, so `total` is a lower bound.
+    pub truncated: bool,
+}
 
+/// The cycles of the edges `types` allows, at most `max_depth` edges long, keeping the shortest
+/// `limit`, within a budget of `search_budget` expanded states.
+pub fn find_cycles(
+    graph: &CompiledGraph,
+    types: Option<&RelationSet>,
+    max_depth: usize,
+    limit: usize,
+    search_budget: usize,
+) -> CycleFacts {
     let mut successors: HashMap<NodeId, Vec<EdgeId>> = HashMap::new();
     for node in graph.node_ids() {
         let mut seen: HashSet<NodeId> = HashSet::new();
@@ -220,7 +224,7 @@ pub fn cycles<'a>(
         for &edge_id in graph.outgoing(node) {
             let edge = graph.edge(edge_id);
             if let Some(to) = edge.to() {
-                if allowed(types.as_ref(), edge.via) && seen.insert(to) {
+                if allowed(types, edge.via) && seen.insert(to) {
                     first_edges.push(edge_id);
                 }
             }
@@ -253,11 +257,32 @@ pub fn cycles<'a>(
         search.expand(start, start);
     }
     search.keep_shortest();
+    CycleFacts {
+        cycles: search.shortest,
+        total: search.total,
+        expanded_states: search.expanded,
+        truncated: search.truncated,
+    }
+}
+
+pub fn cycles<'a>(
+    graph: &'a CompiledGraph,
+    request: &QueryRequest,
+) -> Result<CyclesAnswer<'a>, QueryError> {
+    let limit = request.limit.unwrap_or(DEFAULT_CYCLE_LIMIT);
+    let max_depth = request
+        .max_hops
+        .or(request.depth)
+        .unwrap_or(DEFAULT_CYCLE_DEPTH);
+    let types = RelationSet::dependencies_unless_named(request.types.as_deref())?;
+    let search_budget = request.search_budget(DEFAULT_SEARCH_BUDGET)?;
+
+    let search = find_cycles(graph, types.as_ref(), max_depth, limit, search_budget);
 
     let complete = !search.truncated && search.total <= limit;
     let relation_types = types.as_ref().map(RelationSet::sorted_names);
     let rows: Vec<CycleRow<'a>> = search
-        .shortest
+        .cycles
         .iter()
         .map(|cycle| CycleRow {
             id: cycle.key.clone(),
@@ -280,7 +305,7 @@ pub fn cycles<'a>(
         relation_types: relation_types.clone(),
         max_depth,
         search_budget,
-        expanded_states: search.expanded,
+        expanded_states: search.expanded_states,
         exhaustive: !search.truncated,
         truncated_by_budget: search.truncated,
         total_cycles: search.total,
@@ -316,182 +341,5 @@ pub fn cycles<'a>(
                 types: relation_types,
             }),
         },
-    })
-}
-
-#[derive(Serialize)]
-struct OrderedRow<'a> {
-    rank: usize,
-    slug: &'a str,
-    node: NodeSummary<'a>,
-}
-
-#[derive(Serialize)]
-struct LayerRow<'a> {
-    rank: usize,
-    nodes: Vec<NodeSummary<'a>>,
-    limited: bool,
-}
-
-#[derive(Serialize)]
-struct BlockedRow<'a> {
-    slug: &'a str,
-    #[serde(rename = "remainingInDegree")]
-    remaining_in_degree: usize,
-    node: NodeSummary<'a>,
-}
-
-#[derive(Serialize)]
-pub struct TopologicalOrderAnswer<'a> {
-    operation: &'static str,
-    #[serde(rename = "relationTypes")]
-    relation_types: Option<Vec<&'static str>>,
-    #[serde(rename = "prerequisiteFirst")]
-    prerequisite_first: bool,
-    #[serde(rename = "includeIsolated")]
-    include_isolated: bool,
-    acyclic: bool,
-    #[serde(rename = "totalNodes")]
-    total_nodes: usize,
-    #[serde(rename = "orderedCount")]
-    ordered_count: usize,
-    #[serde(rename = "selectedEdges")]
-    selected_edges: usize,
-    limited: bool,
-    order: Vec<OrderedRow<'a>>,
-    layers: Vec<LayerRow<'a>>,
-    blocked: Vec<BlockedRow<'a>>,
-}
-
-pub fn topological_order<'a>(
-    graph: &'a CompiledGraph,
-    request: &QueryRequest,
-) -> Result<TopologicalOrderAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_ORDER_LIMIT);
-    let types = dependency_types(request)?;
-    let include_isolated = request.include_isolated.unwrap_or(false);
-    let count = graph.nodes().len();
-
-    let selected: Vec<EdgeId> = graph
-        .edge_ids()
-        .filter(|id| {
-            let edge = graph.edge(*id);
-            edge.is_resolved() && allowed(types.as_ref(), edge.via)
-        })
-        .collect();
-    let mut in_set = vec![include_isolated; count];
-    let mut dependents: Vec<Vec<NodeId>> = vec![Vec::new(); count];
-    let mut indegree = vec![0_usize; count];
-    let mut pairs: HashSet<(NodeId, NodeId)> = HashSet::new();
-    for id in &selected {
-        let edge = graph.edge(*id);
-        let Some(prerequisite) = edge.to() else {
-            continue;
-        };
-        let dependent = edge.from;
-        for node in [dependent, prerequisite] {
-            if let Some(slot) = in_set.get_mut(node.index()) {
-                *slot = true;
-            }
-        }
-        if !pairs.insert((prerequisite, dependent)) {
-            continue;
-        }
-        if let Some(list) = dependents.get_mut(prerequisite.index()) {
-            list.push(dependent);
-        }
-        if let Some(slot) = indegree.get_mut(dependent.index()) {
-            *slot += 1;
-        }
-    }
-    let slugs: Vec<NodeId> = graph
-        .node_ids()
-        .filter(|n| in_set.get(n.index()).copied().unwrap_or(false))
-        .collect();
-
-    let mut ready: Vec<NodeId> = slugs
-        .iter()
-        .copied()
-        .filter(|node| indegree.get(node.index()).copied() == Some(0))
-        .collect();
-    ready.sort_unstable();
-    let mut ordered: Vec<(usize, NodeId)> = Vec::new();
-    let mut layers: Vec<(usize, Vec<NodeId>)> = Vec::new();
-    let mut rank = 0;
-    while !ready.is_empty() {
-        let layer = std::mem::take(&mut ready);
-        for node in &layer {
-            ordered.push((rank, *node));
-        }
-        let mut next_ready: Vec<NodeId> = Vec::new();
-        for node in &layer {
-            let mut following = dependents.get(node.index()).cloned().unwrap_or_default();
-            following.sort_unstable();
-            for next in following {
-                if let Some(slot) = indegree.get_mut(next.index()) {
-                    *slot = slot.saturating_sub(1);
-                    if *slot == 0 {
-                        next_ready.push(next);
-                    }
-                }
-            }
-        }
-        next_ready.sort_unstable();
-        next_ready.dedup();
-        layers.push((rank, layer));
-        ready = next_ready;
-        rank += 1;
-    }
-    let mut blocked: Vec<NodeId> = slugs
-        .iter()
-        .copied()
-        .filter(|node| indegree.get(node.index()).copied().unwrap_or(0) > 0)
-        .collect();
-    blocked.sort_unstable();
-
-    let order_rows: Vec<OrderedRow<'a>> = ordered
-        .iter()
-        .take(limit)
-        .map(|(rank, node)| OrderedRow {
-            rank: *rank,
-            slug: graph.node(*node).slug(),
-            node: NodeSummary::of(graph, *node),
-        })
-        .collect();
-    let mut remaining = limit;
-    let mut layer_rows: Vec<LayerRow<'a>> = Vec::new();
-    for (rank, nodes) in &layers {
-        if remaining == 0 {
-            break;
-        }
-        let shown = nodes.len().min(remaining);
-        layer_rows.push(LayerRow {
-            rank: *rank,
-            nodes: summaries(graph, nodes.iter().take(shown).copied()),
-            limited: nodes.len() > shown,
-        });
-        remaining -= shown;
-    }
-    Ok(TopologicalOrderAnswer {
-        operation: "topological_order",
-        relation_types: types.as_ref().map(RelationSet::sorted_names),
-        prerequisite_first: true,
-        include_isolated,
-        acyclic: blocked.is_empty(),
-        total_nodes: slugs.len(),
-        ordered_count: ordered.len(),
-        selected_edges: selected.len(),
-        limited: ordered.len() > limit || blocked.len() > limit,
-        order: order_rows,
-        layers: layer_rows,
-        blocked: blocked
-            .iter()
-            .take(limit)
-            .map(|node| BlockedRow {
-                slug: graph.node(*node).slug(),
-                remaining_in_degree: indegree.get(node.index()).copied().unwrap_or(0),
-                node: NodeSummary::of(graph, *node),
-            })
-            .collect(),
     })
 }

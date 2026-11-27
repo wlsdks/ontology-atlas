@@ -23,16 +23,29 @@ from the whole graph.
 |---|---|
 | `mod.rs` | `run`: the family an operation belongs to, and the `compiledSummary` that closes every answer |
 | `operation.rs` | `Operation`: every operation, its name, and whether a plan may target it |
-| `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer |
+| `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer, and the defaults and caps a walk applies to `depth` and `direction` |
 | `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node, an operation not answered yet |
 | `relation_set.rs` | `RelationSet`: the relation names a call may select, with their aliases |
 | `node_resolution.rs` | `resolve`: a slug or alias to a node, or the slugs near a name that is none |
 | `node_summary.rs` | `NodeIdentity`, `NodeSummary`: the node row every answer writes |
+| `node_mask.rs` | `NodeMask`: a set of nodes, one flag each |
+| `step.rs` | `Step`: the edge a walk takes and the node it leads to |
+| `containment_steps.rs` | `containment_steps`, `children`, `has_parent`: what a node holds and what holds it, from its own edges |
+| `domain_lookup.rs` | `DomainLookup`: the domain a node belongs to, for every node from one search down from the domains |
+| `project_root.rs` | `project_roots`, `project_root`: the project nodes of a graph, and which one a call means |
+| `scope.rs` | `Scope`, `ScopeEdges`: a node and everything it holds, and where the edges that start inside end |
 | `edge_rows.rs` | the edge rows of an answer: directed, on a path, compiled |
 | `name_counts.rs` | counts by kind, domain or relation, in the order of the names |
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
 | `walks/neighbors.rs`, `walks/paths.rs` | `neighbors`, `path`, `all_paths`: breadth-first, shortest and budgeted iterative search |
-| `walks/dependency_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn) |
+| `walks/dependency_cycles.rs`, `walks/topological_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn); `find_cycles` and `order_dependencies` give selection the typed facts, so it never reads the written answer |
+| `walks/neighborhood.rs`, `walks/hop.rs`, `walks/row_page.rs` | `Neighborhood`: the exact breadth-first search that `reachability`, `impact`, `blast_radius`, `subgraph` and `builder_context` cut; `Hop`; the page of rows an answer cuts at `limit` |
+| `walks/reachability.rs`, `walks/lineage.rs` | `reachability` and `lineage`: what a node reaches, and its containers and contents |
+| `walks/pattern_walk.rs` | `pattern_walk`: simple paths that follow a list of relations, a layer at a time |
+| `walks/impact.rs`, `walks/blast_radius.rs`, `walks/dependency_qualification.rs` | `impact` and `blast_radius` over declared `depends_on` edges, and whether each edge carries a reason |
+| `walks/subgraph.rs`, `walks/builder_context.rs`, `walks/builder_focus.rs` | `subgraph`, and `builder_context`: the same cut with the workbench's focus name, canvas position and handoff |
+| `walks/explain_relation.rs`, `walks/relation_check.rs` | `explain_relation` and `relation_check`: how two nodes relate, and whether a proposed edge fits the graph's patterns |
+| `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs` | `containment_tree`, `project_scope` and `project_map`: what holds what, and what each project holds |
 | `selection/clusters.rs` | `components` and `communities` (label propagation) |
 | `selection/centrality.rs` | `centrality`: PageRank and degree rankings |
 | `selection/graph_summary.rs` | `overview`, `schema`, `facets` |

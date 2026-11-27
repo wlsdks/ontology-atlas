@@ -52,6 +52,9 @@ impl Direction {
 /// The most expanded states one search may be given to spend.
 pub const SEARCH_BUDGET_MAX: usize = 50_000;
 
+/// The most hops a call may ask for; the tool layer refuses more.
+pub const DEPTH_MAX: usize = 20;
+
 /// The arguments of one `query_ontology` call that the operations read, each read once by the
 /// tool layer. The operation asks for the argument its own way: `search_budget` is judged only by
 /// the two operations that spend one, after they have resolved their nodes.
@@ -73,6 +76,17 @@ pub struct QueryRequest {
     pub include_isolated: Option<bool>,
     pub include_external: Option<bool>,
     pub include_unresolved: Option<bool>,
+    pub item_limit: Option<usize>,
+    pub include_orphans: Option<bool>,
+    /// `pattern`: the relations a `pattern_walk` takes one step each.
+    pub pattern: Option<Vec<String>>,
+    /// `seed`, which `subgraph` and `builder_context` read when `slug` is absent.
+    pub seed: Option<String>,
+    /// `project`, which `project_scope` and `project_map` read when `slug` is absent.
+    pub project: Option<String>,
+    /// `type`, the relation a `relation_check` proposes; `relation` is its other spelling.
+    pub relation_type: Option<String>,
+    pub relation: Option<String>,
 }
 
 impl QueryRequest {
@@ -94,6 +108,33 @@ impl QueryRequest {
             include_isolated: None,
             include_external: None,
             include_unresolved: None,
+            item_limit: None,
+            include_orphans: None,
+            pattern: None,
+            seed: None,
+            project: None,
+            relation_type: None,
+            relation: None,
+        }
+    }
+
+    /// The hops a walk may take: the call's `depth` or `default`, never more than [`DEPTH_MAX`].
+    pub fn depth_or(&self, default: usize) -> usize {
+        self.depth.unwrap_or(default).min(DEPTH_MAX)
+    }
+
+    /// The direction as the call sent it, `undirected` included.
+    pub fn direction_or(&self, default: Direction) -> Direction {
+        self.direction.unwrap_or(default)
+    }
+
+    /// The direction for an answer that only knows incoming, outgoing and both: `undirected` is
+    /// read as `both`.
+    pub fn direction_undirected_as_both(&self, default: Direction) -> Direction {
+        match self.direction {
+            None => default,
+            Some(Direction::Undirected) => Direction::Both,
+            Some(other) => other,
         }
     }
 

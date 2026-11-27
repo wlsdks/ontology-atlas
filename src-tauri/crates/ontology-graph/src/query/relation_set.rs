@@ -71,6 +71,15 @@ impl RelationSet {
         Self(vec!["dependencies"])
     }
 
+    /// What `cycles` and `topological_order` read: the relations the call names, else
+    /// `dependencies`.
+    pub fn dependencies_unless_named(types: Option<&[String]>) -> Result<Option<Self>, QueryError> {
+        match types {
+            Some(_) => Self::parse(types, "types"),
+            None => Ok(Some(Self::dependencies())),
+        }
+    }
+
     /// Whether an edge that carries `via` is in the set.
     pub fn allows(&self, via: &str) -> bool {
         self.0.contains(&via)

@@ -7,10 +7,11 @@ use std::collections::{BTreeMap, HashSet};
 use answer_format::collation::compare_text;
 use serde::Serialize;
 
-use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use indexmap::IndexMap;
 
 use super::graph_walk::traversal_steps;
+use super::hop::{path_edges, Hop};
+use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::name_counts::sorted_counts;
 use crate::query::node_resolution::resolve;
@@ -55,9 +56,6 @@ pub struct PathMissing<'a> {
     nodes: [&'a str; 0],
     edges: [&'a str; 0],
 }
-
-/// One edge of a path: the edge, the node it was entered from and the node it leads to.
-type Hop = (EdgeId, NodeId, NodeId);
 
 struct Visit {
     node: NodeId,
@@ -111,7 +109,11 @@ pub(crate) fn shortest_path(
             }
             if step.next == to {
                 let mut hops = vec![to];
-                let mut edges = vec![(step.edge, current_node, to)];
+                let mut edges = vec![Hop {
+                    edge: step.edge,
+                    entered: current_node,
+                    left: to,
+                }];
                 let mut at = current_index;
                 while let Some(visit) = queue.get(at) {
                     let Some(parent) = visit.parent else { break };
@@ -133,7 +135,11 @@ pub(crate) fn shortest_path(
                 node: step.next,
                 depth: current_depth + 1,
                 parent: Some(current_index),
-                via: Some((step.edge, current_node, step.next)),
+                via: Some(Hop {
+                    edge: step.edge,
+                    entered: current_node,
+                    left: step.next,
+                }),
             });
         }
     }
@@ -165,7 +171,7 @@ pub fn path<'a>(
                     .map(|node| graph.node(*node).slug())
                     .collect(),
                 nodes: summaries(graph, found.hops.iter().copied()),
-                edges: path_edges(graph, &found.edges),
+                edges: path_edges(graph, found.edges.iter().copied()),
             }),
             None => PathAnswer::Missing(PathMissing {
                 operation: "path",
@@ -179,12 +185,6 @@ pub fn path<'a>(
             }),
         },
     )
-}
-
-fn path_edges<'a>(graph: &'a CompiledGraph, hops: &[Hop]) -> Vec<PathEdge<'a>> {
-    hops.iter()
-        .map(|(edge, entered, left)| PathEdge::of(graph, *edge, *entered, *left))
-        .collect()
 }
 
 /// The question an `all_paths` answer repeats, so a follow-up query can be made from it.
@@ -317,7 +317,11 @@ pub fn all_paths<'a>(
             let mut hops = current.hops.clone();
             hops.push(step.next);
             let mut edges = current.edges.clone();
-            edges.push((step.edge, current.node, step.next));
+            edges.push(Hop {
+                edge: step.edge,
+                entered: current.node,
+                left: step.next,
+            });
             stack.push(Walk {
                 node: step.next,
                 hops,
@@ -333,7 +337,7 @@ pub fn all_paths<'a>(
         let relations: Vec<&'static str> = walk
             .edges
             .iter()
-            .map(|(edge, _, _)| graph.edge(*edge).via)
+            .map(|hop| graph.edge(hop.edge).via)
             .collect();
         if seen.insert((walk.hops.clone(), relations)) {
             unique.push(walk);
@@ -378,8 +382,8 @@ pub fn all_paths<'a>(
                 .map(|node| graph.node(*node).slug())
                 .collect(),
             nodes: summaries(graph, walk.hops.iter().copied()),
-            edges: path_edges(graph, &walk.edges),
-            by_relation: sorted_counts(walk.edges.iter().map(|(edge, _, _)| graph.edge(*edge).via)),
+            edges: path_edges(graph, walk.edges.iter().copied()),
+            by_relation: sorted_counts(walk.edges.iter().map(|hop| graph.edge(hop.edge).via)),
         })
         .collect();
 

@@ -32,10 +32,7 @@ fn filtered_edges(
     request: &QueryRequest,
     types: Option<&RelationSet>,
 ) -> Vec<(&'static str, EdgeId)> {
-    let direction = match request.direction {
-        None | Some(Direction::Undirected) => Direction::Both,
-        Some(other) => other,
-    };
+    let direction = request.direction_undirected_as_both(Direction::Both);
     let include_external = request.include_external.unwrap_or(false);
     let include_unresolved = request.include_unresolved.unwrap_or(false);
     let passes = |id: EdgeId| {
