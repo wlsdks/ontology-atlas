@@ -368,6 +368,18 @@
       "witness": "scripts/perf/perf-node-drag.mjs"
     },
     {
+      "key": "scripts:runtime:exports:scripts/lib/desktop-app/open-folder-in-app.mjs:openSurfaces",
+      "reason": "The manual contrast and accessibility instruments open the website and the app side by side through it; manual instruments are not runtime entries, so the lane cannot see this consumer.",
+      "consumer": "scripts/design/measure-contrast.mjs",
+      "witness": "openSurfaces"
+    },
+    {
+      "key": "scripts:runtime:exports:scripts/perf/lib/vaults.mjs:scaleVaultFiles",
+      "reason": "The manual drag probe and the graph-readability instrument serve a generated vault to the faked app runtime through it; manual instruments are not runtime entries, so the lane cannot see this consumer.",
+      "consumer": "scripts/perf/perf-node-drag.mjs",
+      "witness": "scaleVaultFiles"
+    },
+    {
       "key": "scripts:runtime:files:scripts/perf/perf-vault.mjs:scripts/perf/perf-vault.mjs",
       "reason": "Manual vault-performance probe is an explicit focused-check recommendation.",
       "consumer": "scripts/lib/check-rules/dogfood.mjs",

@@ -194,7 +194,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ root entry derives the loaded-vault map, desktop first run, the launch chooser, and hosted gateway from runtime state/,
+    /✓ root entry derives the loaded-vault map, desktop first run and the launch chooser from runtime state, and hands a plain browser to the download page/,
   );
   assert.match(
     result.stdout,

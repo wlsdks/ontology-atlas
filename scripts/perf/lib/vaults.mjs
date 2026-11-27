@@ -64,7 +64,7 @@ export function cleanVaults() {
 }
 
 /** The files of a vault, relative and sorted. */
-export function listVaultFiles(directory) {
+function listVaultFiles(directory) {
   const out = [];
   const visit = (folder, prefix) => {
     for (const entry of readdirSync(folder, { withFileTypes: true })) {

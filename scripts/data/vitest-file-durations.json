@@ -984,7 +984,6 @@
     "jsdom:src/views/project-detail/model/agent-handoff-snippet.test.ts": 2.83,
     "jsdom:src/views/project-detail/model/connected-projects.test.ts": 1.023,
     "jsdom:src/views/project-detail/model/domain-composition.test.ts": 0.931,
-    "jsdom:src/views/project-detail/model/project-breadcrumb.test.ts": 3.063,
     "jsdom:src/views/project-detail/model/project-brief.test.ts": 0.964,
     "jsdom:src/views/project-detail/model/project-changed.test.ts": 1.374,
     "jsdom:src/views/project-detail/model/project-tagline.test.ts": 0.912,

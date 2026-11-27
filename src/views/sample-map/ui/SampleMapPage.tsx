@@ -1,11 +1,10 @@
 import { getTranslations } from 'next-intl/server';
-import { deriveOntologyFromVault, resolveStaticVaultSource } from '@/entities/docs-vault';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { buttonVariants } from '@/shared/ui/controls/button';
 import { GatewayNav } from '@/widgets/gateway-chrome';
-import { buildSampleMapGraph } from '../lib/sample-map-graph';
+import { readSampleCensus } from '../lib/read-sample-census';
 import { SampleMapStage } from './SampleMapStage';
 
 /**
@@ -15,11 +14,7 @@ import { SampleMapStage } from './SampleMapStage';
  */
 export async function SampleMapPage({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: 'sampleMap' });
-  const { conceptCount, relationCount } = buildSampleMapGraph(
-    deriveOntologyFromVault(resolveStaticVaultSource('storefront').manifest),
-    locale,
-  ).census;
-  if (conceptCount === 0) throw new Error('samples/storefront holds no concept, so /sample would draw an empty map');
+  const { conceptCount, relationCount } = readSampleCensus(locale);
 
   return (
     <div className="flex min-h-full w-full flex-col bg-[color:var(--color-canvas)]">

@@ -10,7 +10,7 @@
   "trustLineHandheld": "免费 · 无需注册 · 无需安装",
   "heroWindowsCta": "Windows x64 测试版",
   "sampleCta": "查看示例地图",
-  "otherComputers": "应用可在 Apple Silicon Mac 和 Windows x64（测试版）上运行。在 Intel Mac、Linux 或手机上，可以查看 “<sample>示例地图</sample>”，或按照《<guide>从源代码运行 MCP 服务器</guide>》指南连接编码代理。",
+  "otherComputers": "应用可在 Apple Silicon Mac 和 Windows x64（测试版）上运行。在 Intel Mac、Linux 或手机上，可以查看 <sample>“示例地图”</sample>，或按照 <guide>《从源代码运行 MCP 服务器》</guide> 指南连接编码代理。",
   "githubCta": "在 GitHub 上查看源码",
   "windowsUnsignedShort": "未签名",
   "demoHeading": "打开本仓库文件夹的应用录屏",

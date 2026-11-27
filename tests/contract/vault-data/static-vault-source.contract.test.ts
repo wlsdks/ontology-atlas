@@ -6,8 +6,9 @@ import path from 'node:path';
  * Single-source guard: in static mode the answer to which bundled vault is in use must come from
  * `useStaticVaultSource`, which downloads the sample on demand and never in the installed app.
  * `resolveStaticVaultSource` statically imports all five JSON files, so only the build-time and
- * `/download` callers named below may use it. Walks with node:fs and asserts the file count, since a
- * missing external tool returns 0 hits quietly.
+ * `/download` callers named below may use it (the guide pages and the `/sample` map's size line).
+ * Walks with node:fs and asserts the file count, since a missing external tool returns 0 hits
+ * quietly.
  */
 
 const SRC_DIR = path.join(process.cwd(), 'src');
@@ -32,6 +33,7 @@ const FORBIDDEN_BINDINGS = [
 const STATIC_IMPORTERS: Record<string, Set<string>> = {
   resolveStaticVaultSource: new Set([
     path.join('src', 'views', 'gateway-doc', 'lib', 'read-vault-doc.ts'),
+    path.join('src', 'views', 'sample-map', 'lib', 'read-sample-census.ts'),
   ]),
   dogfoodManifest: new Set([
     path.join('src', 'features', 'vault-ontology', 'model', 'use-dogfood-insight.ts'),
