@@ -77,3 +77,35 @@ functions. The app's `git_paths_last_change`, `git_bound_evidence_dates` and
 `git_evidence_text_pairs` call the last group; the MCP server's `infer_imports` and
 `inspect_architecture` call the rest. Outlines, declarations and evidence search join as their
 tools are ported.
+
+## Program size
+
+Measured 2026-11-28 on macOS arm64 with `cargo-bloat` 0.12.1 and `size`, on a release build with
+`strip` turned off (`CARGO_PROFILE_RELEASE_STRIP=none`). `cargo-bloat` reads the symbols of Rust
+code, so a grammar's tables and C functions show as `[Unknown]` or as a few KiB
+(`tree_sitter_typescript` 3.2 KiB); the per-grammar figure is therefore the compiled C objects each
+grammar's build leaves in `target/release/build/<grammar>/out`, read with `size`. The scan refers
+to every grammar, so the linker keeps all of it.
+
+| Grammar | Compiled objects |
+|---|---|
+| `tree-sitter-kotlin-ng` | 3,365 KiB |
+| `tree-sitter-typescript` (TypeScript and TSX) | 2,794 KiB |
+| `tree-sitter-rust` | 1,093 KiB |
+| `tree-sitter-python` | 444 KiB |
+| `tree-sitter-java` | 405 KiB |
+| `tree-sitter-javascript` | 404 KiB |
+| `tree-sitter-go` | 213 KiB |
+| `tree-sitter` (the runtime) | 175 KiB |
+
+- **The MCP program** (`ontology-atlas-mcp-rust`, stripped) is 13.2 MiB with the grammars and about
+  4.1 MiB without them, against 62.6 MiB for the Bun program built in the same run. `source_scan`
+  is 372 KiB of `.text`, the largest crate after `std`. The goals are 20 MiB with and 10 MiB
+  without; both hold, so no grammar is dropped. `pnpm mcp:program-size:check` repeats the
+  measurement and fails when the Rust program is larger than the Bun one.
+- **The app** (`ontology-atlas`, 28.6 MiB unstripped) holds no grammar. It calls only the dating,
+  placement and evidence functions of this crate, so the linker removes every parser (`nm` finds
+  no `tree_sitter` or `ts_parser` symbol in its release binary). An app feature that scans imports
+  would add the 8.5 MiB above.
+- Kotlin and TypeScript are 70 percent of the grammar weight; they are the two to weigh against
+  the answers they give if a goal ever tightens.
