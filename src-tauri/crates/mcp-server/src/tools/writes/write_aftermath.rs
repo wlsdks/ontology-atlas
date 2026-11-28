@@ -267,7 +267,7 @@ pub fn measure_coverage(
     context: &CallContext<'_>,
     documents: &[LoadedDocument],
 ) -> Option<Coverage> {
-    if context.config().repo_resolution == "process.cwd" {
+    if !context.config().repo_grounded {
         return None;
     }
     let target = ScanTarget::allow_named(context, None, "repoRoot").ok()?;
@@ -417,7 +417,7 @@ pub struct SourceState {
 pub fn source_state(context: &CallContext<'_>) -> SourceState {
     use hardened_git::{RepoPath, Repository};
     let config = context.config();
-    if config.repo_resolution == "process.cwd" {
+    if !config.repo_grounded {
         return SourceState::default();
     }
     let repository = Repository::at(&config.repo_root);

@@ -301,7 +301,7 @@ fn depth_message(
     answers_given: bool,
 ) -> Result<Option<String>, ToolError> {
     let config = call.config();
-    let target = if config.repo_resolution == "process.cwd" {
+    let target = if !config.repo_grounded {
         None
     } else {
         Some(ScanTarget::allow_named(call, None, "repoRoot")?)

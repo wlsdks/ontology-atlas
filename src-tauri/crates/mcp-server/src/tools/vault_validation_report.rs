@@ -58,7 +58,7 @@ pub fn build_report(
 ) -> Result<VaultReport, ToolError> {
     let index = ReferenceIndex::new(documents);
     let config = context.config();
-    let named = repo_root.is_some() || config.repo_resolution != "process.cwd";
+    let named = repo_root.is_some() || config.repo_grounded;
     let target = ScanTarget::allow_named(context, repo_root, "repoRoot")?;
     // A root that is not there is one finding, not one for each path that cites a file under it. Only
     // a root read from the disk can be missing: a census holds what the app listed.

@@ -102,6 +102,11 @@ pub struct Config {
     /// How each root was found: the variable that named it, `git.rev-parse`, or `process.cwd`.
     pub vault_resolution: &'static str,
     pub repo_resolution: &'static str,
+    /// Whether there is evidence the repository belongs to this vault: the launcher named it, or
+    /// the vault lies inside it. A repository found only from the folder the server started in is
+    /// someone else's, and measuring the vault against it would report drift from code the vault
+    /// never described.
+    pub repo_grounded: bool,
 }
 
 /// An environment variable that is set to something: an empty one counts as unset, as it does for
@@ -144,9 +149,14 @@ impl Config {
         // else the one the server was started in, else the folder it was started in. It is found
         // once, here, and never again.
         let named_repository = set_variable(&lookup, "OATLAS_REPO_ROOT");
+        let vault_repository = named_repository
+            .is_none()
+            .then(|| repository_top(&vault_root))
+            .flatten();
+        let repo_grounded = named_repository.is_some() || vault_repository.is_some();
         let (repo_root, repo_resolution) = match named_repository {
             Some(named) => (named, "OATLAS_REPO_ROOT"),
-            None => match repository_top(&vault_root).or_else(|| repository_top(cwd)) {
+            None => match vault_repository.or_else(|| repository_top(cwd)) {
                 Some(found) => (found, "git.rev-parse"),
                 None => (cwd.to_path_buf(), "process.cwd"),
             },
@@ -157,6 +167,7 @@ impl Config {
             vault_root,
             vault_resolution,
             repo_resolution,
+            repo_grounded,
         })
     }
 
@@ -169,6 +180,7 @@ impl Config {
             vault_root,
             vault_resolution: "OATLAS_VAULT",
             repo_resolution: "OATLAS_REPO_ROOT",
+            repo_grounded: true,
         }
     }
 
@@ -348,6 +360,25 @@ mod tests {
         ));
         assert!(config.repo_root.join(".git").exists());
         assert_ne!(config.repo_root, here, "the crate is not the top");
+    }
+
+    #[test]
+    fn a_repository_found_only_from_the_working_folder_is_not_the_vaults() {
+        let here = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let vault = tempfile::tempdir().expect("a vault outside any repository");
+        let config = Config::from_lookup(
+            |name| (name == "OATLAS_VAULT").then(|| vault.path().to_string_lossy().into_owned()),
+            here,
+        )
+        .expect("the folders exist");
+        assert_eq!(config.repo_resolution, "git.rev-parse");
+        assert!(!config.repo_grounded);
+        let config = Config::from_lookup(
+            |name| (name == "OATLAS_REPO_ROOT").then(|| here.to_string_lossy().into_owned()),
+            here,
+        )
+        .expect("the folder exists");
+        assert!(config.repo_grounded);
     }
 
     #[test]
