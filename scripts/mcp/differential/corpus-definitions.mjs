@@ -1138,7 +1138,7 @@ add('evidence', 'read-source-office-and-tables', { vault: 'library' }, [
   sourceBytes('plan.docx', docxOf([
     para('Order plan', 'Heading1'), para('Charge the card first.'), para('Order plan', 'Heading1'), para('Then ship it.'),
     '<w:tbl><w:tr><w:tc><w:p><w:r><w:t>sku</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>qty &amp; unit</w:t></w:r></w:p></w:tc></w:tr></w:tbl>',
-    para('Notes', 'Heading2'), para('㄰ㅏㄱ'),
+    para('Notes', 'Heading2'), para('\u3130\u314f\u3131'),
   ].join(''))),
   sourceBytes('refs.docx', docxOf(para('Refund &#x110000; and &#12345678901; kept as written, &#x41; is A'))),
   sourceBytes('book.xlsx', xlsxOf([
@@ -1213,18 +1213,18 @@ add('evidence', 'read-source-argument-bounds', { vault: 'library' }, [
   call('read_source', { path: 5 }),
 ]);
 add('evidence', 'find-evidence-unicode-and-typos', { vault: 'storefront' }, [
-  { $: 'write-file', path: 'capabilities/ko-note.md', text: `---\nuid: 3c1f4b8e-5a2d-4c7e-9b1a-0d6e8f2a4c10\nslug: capabilities/ko-note\nkind: capability\ntitle: ${'주문 취소'.normalize('NFD')}\ndomain: domains/order\n---\n\nBody about ${'결제 승인'.normalize('NFD')} and Café au lait.\n` },
+  { $: 'write-file', path: 'capabilities/ko-note.md', text: `---\nuid: 3c1f4b8e-5a2d-4c7e-9b1a-0d6e8f2a4c10\nslug: capabilities/ko-note\nkind: capability\ntitle: ${'\uc8fc\ubb38 \ucde8\uc18c'.normalize('NFD')}\ndomain: domains/order\n---\n\nBody about ${'\uacb0\uc81c \uc2b9\uc778'.normalize('NFD')} and Café au lait.\n` },
   { $: 'touch', path: 'capabilities/ko-note.md', mtimeMs: 1_700_000_500_000 },
-  call('find_evidence', { title: '주문 취소' }),
-  call('find_evidence', { title: '주문 취소'.normalize('NFD') }),
-  call('find_evidence', { title: '결제 승인' }),
+  call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc18c' }),
+  call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc18c'.normalize('NFD') }),
+  call('find_evidence', { title: '\uacb0\uc81c \uc2b9\uc778' }),
   call('find_evidence', { title: 'Café au lait' }),
   call('find_evidence', { title: 'CAFÉ' }),
   call('find_evidence', { title: 'Crat' }),
   call('find_evidence', { title: 'Plce Order' }),
   call('find_evidence', { title: 'Adres Bok' }),
   call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc190' }),
-  call('find_evidence', { title: '취소 주문 승' }),
+  call('find_evidence', { title: '\ucde8\uc18c \uc8fc\ubb38 \uc2b9' }),
   call('find_evidence', { title: 'refund policy for returns' }),
   call('find_evidence', { title: 'x'.repeat(300) }),
 ]);
