@@ -8,7 +8,7 @@
 
 use std::collections::HashSet;
 
-use answer_format::whitespace::{is_line_terminator, is_whitespace, trim};
+use answer_format::whitespace::{collapse_whitespace, is_line_terminator, is_whitespace, trim};
 
 use crate::meaning_wording::{
     boundary_missing, definition_missing, epistemic_exclusion, uncertainty_missing, BoundarySide,
@@ -52,20 +52,7 @@ fn is_epistemic_kind(kind: &str) -> bool {
 
 /// `\s+` collapsed to one space, trimmed and lowercased.
 fn fold(text: &str) -> String {
-    let mut folded = String::with_capacity(text.len());
-    let mut pending_space = false;
-    for character in text.chars() {
-        if is_whitespace(character) {
-            pending_space = !folded.is_empty();
-            continue;
-        }
-        if pending_space {
-            folded.push(' ');
-            pending_space = false;
-        }
-        folded.push(character);
-    }
-    folded.to_lowercase()
+    collapse_whitespace(text).to_lowercase()
 }
 
 /// A list marker (`-`, `*`, `+`, `1.`, `1)`) or a blockquote caret off the start of one line.
