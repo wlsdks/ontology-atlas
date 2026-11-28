@@ -225,7 +225,7 @@ pub fn measure_coverage(
     }
     let target = ScanTarget::allow_named(context, None, "repoRoot").ok()?;
     let source = target.source_with_limit(WITNESS_TEXT_MAX_BYTES);
-    let survey = kept_survey(context, &target, &[]);
+    let survey = kept_survey(context, &target, &[]).ok()?;
     let reads = context.source_reads().reads_under(target.source_root());
     measure_against_survey(documents, &survey, &reads, &source).coverage
 }
