@@ -13354,38 +13354,6 @@
       "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 15,
-      "path": "result.content[0].text",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 15,
-      "path": "result.structuredContent",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
       "case": "survey/index-project-retired",
       "where": "answer",
       "id": 1,

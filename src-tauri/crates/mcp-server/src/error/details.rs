@@ -531,3 +531,29 @@ mod tests {
         );
     }
 }
+
+/// The fields a contract check names for the repair of one value, in the order it names them: the
+/// path first, then what that kind of mistake adds.
+#[derive(Debug)]
+pub struct RepairFields(pub Vec<(&'static str, serde_json::Value)>);
+
+impl Serialize for RepairFields {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        for (name, value) in &self.0 {
+            map.serialize_entry(name, value)?;
+        }
+        map.end()
+    }
+}
+
+impl ToolError {
+    /// A value that breaks a contract the server keeps whole, with the fields that say how to
+    /// repair it.
+    pub fn broken_contract(message: String, fields: Vec<(&'static str, serde_json::Value)>) -> Self {
+        Self {
+            details: Some(Box::new(Details::Repair(RepairFields(fields)))),
+            ..Self::new(ErrorCode::InvalidArguments, message)
+        }
+    }
+}

@@ -1842,6 +1842,64 @@ add('survey', 'analyze-repo-structure-analysis-python-and-go', { vault: 'miniatu
   planted('internal/label/label.go', 'package label\n\nfunc Print() {}\n'),
   call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
 ]);
+// A `proposal` or `qualification` that breaks its whole contract is refused with the field, the
+// rule, the object's shape, one valid example and the repair fields, by both servers. Every input
+// here breaks the contract in exactly one place, so none reaches the review itself.
+const WITNESSES = { concepts: [], relations: [], evidence: [], paths: [] };
+const ANSWER = { answer: 'what it is', status: 'answered', witnesses: WITNESSES };
+const proposalWith = (change = {}) => ({
+  project: { slug: 'projects/shop', title: 'Shop', definition: 'A small shop.', evidence: ['README.md'], confidence: 0.8 },
+  domains: [],
+  capabilities: [],
+  elements: [],
+  relations: [],
+  competencyAnswers: { scope: ANSWER, domains: ANSWER, abilities: ANSWER, evidence: ANSWER, impact: ANSWER },
+  ...change,
+});
+const projectWith = (change) => proposalWith({ project: { ...proposalWith().project, ...change } });
+const DIGEST = `sha256:${'0'.repeat(64)}`;
+const qualificationWith = (change = {}) => ({
+  contract: 'constructionQualification:v1',
+  qualificationId: 'qualification-1',
+  subject: { projectSlug: 'projects/shop', graphDigest: DIGEST, sourceDigest: DIGEST },
+  ...change,
+});
+let deep = 1;
+for (let level = 0; level < 70; level += 1) deep = [deep];
+const review = (args) => call('analyze_repo_structure', { rootPath: '$PARENT', ...args });
+add('survey', 'analyze-repo-structure-malformed-review-inputs', { vault: 'miniature-repo' }, [
+  review({ proposal: {} }),
+  review({ proposal: 'a proposal' }),
+  review({ proposal: [] }),
+  review({ proposal: { projekt: proposalWith().project } }),
+  review({ proposal: proposalWith({ project: {} }) }),
+  review({ proposal: projectWith({ confidense: 1 }) }),
+  review({ proposal: projectWith({ confidence: 2 }) }),
+  review({ proposal: projectWith({ confidence: 'high' }) }),
+  review({ proposal: projectWith({ slug: ' projects/shop' }) }),
+  review({ proposal: projectWith({ slug: '' }) }),
+  review({ proposal: projectWith({ title: 'two\nlines' }) }),
+  review({ proposal: projectWith({ evidence: [] }) }),
+  review({ proposal: projectWith({ evidence: ['README.md', 'README.md'] }) }),
+  review({ proposal: projectWith({ includes: ['a', 'b', 'a'] }) }),
+  review({ proposal: proposalWith({ domains: Array.from({ length: 201 }, () => ({})) }) }),
+  review({ proposal: proposalWith({ domains: [{ slug: 'domains/x' }] }) }),
+  review({ proposal: proposalWith({ relations: [{ from: 'a', to: 'b', type: 'depend_on', why: 'because', evidence: ['README.md'], confidence: 0.5 }] }) }),
+  review({ proposal: proposalWith({ relations: [{ from: 'a', to: 'b', type: 'depends_on', why: 'x'.repeat(301), evidence: ['README.md'], confidence: 0.5 }] }) }),
+  review({ proposal: proposalWith({ relation: [] }) }),
+  review({ proposal: proposalWith({ competencyAnswers: { scope: { ...ANSWER, status: 'done' }, domains: ANSWER, abilities: ANSWER, evidence: ANSWER, impact: ANSWER } }) }),
+  review({ proposal: proposalWith({ competencyAnswers: { scope: ANSWER } }) }),
+  review({ proposal: deep }),
+  review({ qualification: {} }),
+  review({ qualification: 'a packet' }),
+  review({ qualification: qualificationWith({ contract: 'constructionQualification:v2' }) }),
+  review({ qualification: qualificationWith({ qualificationId: '' }) }),
+  review({ qualification: qualificationWith({ subject: { projectSlug: 'projects/shop', graphDigest: 'sha256:abc', sourceDigest: DIGEST } }) }),
+  review({ qualification: qualificationWith({ subject: { projectSlug: 7, graphDigest: DIGEST, sourceDigest: DIGEST } }) }),
+  review({ qualification: qualificationWith({ extra: true }) }),
+  review({ qualification: qualificationWith({ acceptance: { decision: 'accepted', decidedBy: 'someone', decidedAt: 'yesterday', planDigest: DIGEST, planRevision: 1, acceptedGapIds: [] } }) }),
+  review({ proposal: projectWith({ confidence: 2 }), qualification: {} }),
+]);
 add('survey', 'index-project-retired', { vault: 'miniature-repo' }, [call('index_project', { rootPath: '$PARENT' })]);
 
 // ---------------------------------------------------------------------------------------------

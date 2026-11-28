@@ -21,6 +21,7 @@ use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
+use crate::schema_check::{check_against_schema, review_schemas, Json};
 
 const IGNORE_MAX_ITEMS: usize = 200;
 const MAX_DEPTH_MAX: f64 = 10.0;
@@ -79,6 +80,18 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         return Err(ToolError::failed(
             "sourceOnly requires sourceReads with 1\u{2013}16 exact selectors.",
         ));
+    }
+    // The whole contracts are checked first, as the script server does, so a malformed proposal or
+    // qualification is refused with the field to repair; a well-formed one is still not reviewed here.
+    for (name, schema) in [
+        ("proposal", &review_schemas().proposal),
+        ("qualification", &review_schemas().qualification),
+    ] {
+        if is_set(arguments, name) {
+            if let Some(value) = arguments.read::<Json>(name)? {
+                check_against_schema(&value, schema, name)?;
+            }
+        }
     }
     if is_set(arguments, "proposal") || is_set(arguments, "qualification") {
         return Err(not_answered("Reviewing a proposal or a qualification"));

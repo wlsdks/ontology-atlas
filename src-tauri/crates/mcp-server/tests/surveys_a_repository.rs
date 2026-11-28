@@ -115,6 +115,14 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
         ),
         (
             r#"{"proposal":{"concepts":[]}}"#,
+            "proposal is missing required field \"project\"",
+        ),
+        (
+            r#"{"qualification":{"contract":"constructionQualification:v2"}}"#,
+            "qualification is missing required field \"qualificationId\"",
+        ),
+        (
+            r#"{"proposal":{"project":{"slug":"projects/shop","title":"Shop","definition":"A shop.","evidence":["README.md"],"confidence":0.8},"domains":[],"capabilities":[],"elements":[],"relations":[],"competencyAnswers":{"scope":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"domains":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"abilities":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"evidence":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"impact":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}}}}}"#,
             "Reviewing a proposal or a qualification is not answered by this build",
         ),
         (r#"{"view":"nonsense"}"#, "view must be \"breadth\" or \"analysis\"."),
