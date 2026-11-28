@@ -1,0 +1,102 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import { routing } from "../../../src/i18n/routing";
+
+/**
+ * What the prerendered website promises a reader and a crawler, on the folder `pnpm site:build` writes:
+ * the words are in the document before any script runs, the script that follows adopts them without a
+ * single hydration complaint, and moving between pages is a page load, as the pages are separate documents.
+ * Every pass here can fail: a page that waited for scripts, or one the browser re-rendered instead of
+ * adopting, turns a line red.
+ */
+
+/** One page of each kind the site writes, with a sentence that only the page itself says. */
+const PUBLIC_PAGES = [
+  { path: "/guide/", reads: "gateway-doc-body" },
+  { path: "/guide/relations/", reads: "gateway-doc-body" },
+  { path: "/changelog/", reads: "gateway-doc-body" },
+  { path: "/sample/", reads: "sample-map-size" },
+  { path: "/download/", reads: "download-gnb" },
+] as const;
+
+function listenForProblems(page: Page): string[] {
+  const problems: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") problems.push(`console: ${message.text().slice(0, 240)}`);
+  });
+  page.on("pageerror", (error) => problems.push(`pageerror: ${error.message.slice(0, 240)}`));
+  return problems;
+}
+
+test.describe("the prerendered website", () => {
+  test.describe("with scripts off", () => {
+    test.use({ javaScriptEnabled: false });
+
+    test("has a public page's words in the document, and draws no map", async ({ page }) => {
+      for (const { path, reads } of PUBLIC_PAGES) {
+        await page.goto(`/en${path}`);
+        await expect(page.getByTestId(reads), path).toBeVisible();
+        await expect(page.locator("main h1"), path).toHaveCount(1);
+        // The download page's own stage is canvas markup in the document; the map and the sample's map run in scripts.
+        if (path !== "/download/") await expect(page.locator("canvas"), path).toHaveCount(0);
+      }
+    });
+
+    test("has the guide's chapter text, not a loading picture", async ({ page }) => {
+      await page.goto("/en/guide/relations/");
+      const body = await page.getByTestId("gateway-doc-body").innerText();
+      expect(body.length, "the chapter body is empty").toBeGreaterThan(1500);
+      await expect(page.getByTestId("gateway-doc-empty")).toHaveCount(0);
+    });
+
+    test("has an app address's page that says the app is needed", async ({ page }) => {
+      await page.goto("/en/topology/");
+      await expect(page.getByTestId("app-only-page")).toBeVisible();
+    });
+  });
+
+  test("adopts every public page in every language without a hydration complaint", async ({ page }) => {
+    const problems = listenForProblems(page);
+    for (const locale of routing.locales) {
+      for (const { path } of PUBLIC_PAGES) {
+        const address = `/${locale}${path}`;
+        await page.goto(address);
+        await page.waitForLoadState("networkidle");
+        // React owns the whole document once it has hydrated it, and marks it so.
+        const adopted = await page.evaluate(() => ({
+          prerendered: document.getElementById("root")!.dataset.prerendered,
+          owned: Object.keys(document).some((key) => key.startsWith("__reactContainer")),
+        }));
+        expect(adopted.prerendered, address).toBe(address);
+        expect(adopted.owned, `${address} was never hydrated`).toBe(true);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  test("keeps the server's markup in the document while it hydrates", async ({ page }) => {
+    await page.goto("/en/guide/relations/", { waitUntil: "commit" });
+    // Mark a node of the prerendered page before scripts run; hydration keeps it, a fresh render replaces it.
+    await page.waitForSelector('[data-testid="gateway-doc-body"]', { state: "attached" });
+    await page.evaluate(() => {
+      document.querySelector('[data-testid="gateway-doc-body"]')!.setAttribute("data-server-node", "kept");
+    });
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator('[data-server-node="kept"]')).toHaveCount(1);
+  });
+
+  test("moves from one guide chapter to the next as a page load", async ({ page, request }) => {
+    const html = await (await request.get("/en/guide/")).text();
+    test.skip(html.includes("/_next/"), "Next's export moves between guide chapters inside one document; this is the Vite prerender's rule");
+
+    await page.goto("/en/guide/");
+    await page.waitForLoadState("networkidle");
+    const documents: string[] = [];
+    page.on("request", (pending) => {
+      if (pending.resourceType() === "document") documents.push(new URL(pending.url()).pathname);
+    });
+    await page.getByTestId("guide-nav-relations").first().click();
+    await page.waitForURL("**/en/guide/relations/");
+    expect(documents).toEqual(["/en/guide/relations/"]);
+  });
+});

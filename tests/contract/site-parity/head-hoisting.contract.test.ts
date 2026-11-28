@@ -3,7 +3,7 @@ import { prerenderToNodeStream } from 'react-dom/static';
 import { describe, expect, it } from 'vitest';
 
 import { MetadataTags } from '../../../src/app/routes/-site/metadata-tags';
-import { SiteDocument, type SiteDocumentProps } from '../../../scripts/web/site/SiteDocument';
+import { SiteDocument, type SiteDocumentProps } from '../../../src/app/document/SiteDocument';
 
 /**
  * The prerender leans on one React 19 behaviour: a `<title>`, `<meta>` or `<link>` rendered anywhere below a
@@ -29,10 +29,12 @@ const page = () =>
   render(
     documentAround(
       {
-        locale: 'en',
-        assets,
-        bootScript: 'document.documentElement.dataset.boot = "1";',
-        entry: { recordedFacts: {}, hydratesPath: '/en/guide/' },
+        page: {
+          locale: 'en',
+          assets,
+          bootScript: 'document.documentElement.dataset.boot = "1";',
+          entry: { recordedFacts: {}, hydratesPath: '/en/guide/' },
+        },
         head: createElement(MetadataTags, {
           resolved: { title: 'Guide · Atlas', metadata: { description: 'Reads the guide' } },
         }),
@@ -66,7 +68,7 @@ describe('React hoists a page head into the document head', () => {
       default: () => createElement('article', null, Array.from({ length: 4000 }, (_, index) => createElement('p', { key: index }, `Line ${index} of a long chapter`))),
     }));
     const html = await render(
-      documentAround({ locale: 'en', assets, bootScript: '' }, createElement(Suspense, { fallback: 'Loading' }, createElement(Chapter))),
+      documentAround({ page: { locale: 'en', assets, bootScript: '' } }, createElement(Suspense, { fallback: 'Loading' }, createElement(Chapter))),
     );
     expect(html).not.toContain('hidden=""');
     expect(html).not.toContain('<template');

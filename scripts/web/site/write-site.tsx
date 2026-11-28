@@ -10,6 +10,7 @@ import { LocaleRedirect } from '@/shared/ui/routing/locale-redirect';
 import { GatewayEntryFallback } from '@/shared/ui/fallbacks/gateway-entry-fallback';
 import { AppOnlyPage } from '@/views/app-only';
 import { absoluteUrl } from '@/shared/config';
+import { SiteDocument, type SiteAssets, type SiteDocumentPage } from '../../../src/app/document/SiteDocument';
 import { APP_ONLY_FACE_CLASS, workbenchFaceClass } from '../../../src/app/providers/AppAddressFaces';
 import { createAtlasRouter } from '../../../src/app/router/create-atlas-router';
 import { MetadataTags } from '../../../src/app/routes/-site/metadata-tags';
@@ -20,10 +21,9 @@ import { llmsFullTxt, llmsTxt } from './llms';
 import { recordBuildFacts } from './record-build-facts';
 import { robotsTxt } from './robots';
 import { rootRedirectScript } from './root-redirect-script';
-import { SiteDocument, type SiteAssets } from './SiteDocument';
 import { sitemapEntries, sitemapXml } from './sitemap';
 
-export type { SiteAssets } from './SiteDocument';
+export type { SiteAssets } from '../../../src/app/document/SiteDocument';
 
 /** One written file: its path inside the site folder, with `/` on every platform, and its text. */
 export interface SiteFile {
@@ -47,6 +47,12 @@ interface WriterContext {
   loadingPicture: string;
 }
 
+const documentPage = (
+  locale: AppLocale,
+  context: WriterContext,
+  entry?: SiteDocumentPage['entry'],
+): SiteDocumentPage => ({ locale, assets: context.assets, bootScript: context.bootScript, ...(entry ? { entry } : {}) });
+
 /** A page of the public site: loaded through the router, written with the record of what the build knew, hydrated in the browser. */
 async function writeRouterPage(page: Extract<SitePage, { kind: 'router' }>, context: WriterContext): Promise<string> {
   const { facts, recorded } = recordBuildFacts();
@@ -55,12 +61,7 @@ async function writeRouterPage(page: Extract<SitePage, { kind: 'router' }>, cont
   const failed = router.state.matches.find((match) => match.status !== 'success');
   if (failed) throw new Error(`${page.path} did not load: ${failed.routeId} is ${failed.status}${failed.error ? ` (${String(failed.error)})` : ''}`);
   return renderToHtml(
-    <SiteDocument
-      locale={page.locale}
-      assets={context.assets}
-      bootScript={context.bootScript}
-      entry={{ recordedFacts: recorded, hydratesPath: page.path }}
-    >
+    <SiteDocument page={documentPage(page.locale, context, { recordedFacts: recorded, hydratesPath: page.path })}>
       <RouterProvider router={router} />
     </SiteDocument>,
   );
@@ -76,7 +77,7 @@ async function writeAppAddress(page: Extract<SitePage, { kind: 'app-address' | '
   const resolved = screenMetadata(page.head, page.locale, messageReader(page.locale, messages));
   const atEntry = page.kind === 'locale-entry';
   return renderToHtml(
-    <SiteDocument locale={page.locale} head={<MetadataTags resolved={resolved} />} assets={context.assets} bootScript={context.bootScript}>
+    <SiteDocument page={documentPage(page.locale, context)} head={<MetadataTags resolved={resolved} />}>
       {atEntry ? (
         <div data-face="workbench" className={workbenchFaceClass(true)}>
           <IntlProvider locale={page.locale} messages={{ download: messages.download }} timeZone="UTC">
@@ -103,10 +104,8 @@ function writeRoot(context: WriterContext): Promise<string> {
   const metadata = { ...siteMetadata(), alternates: { canonical: absoluteUrl(`/${defaultLocale}/download/`) } };
   return renderToHtml(
     <SiteDocument
-      locale={defaultLocale}
+      page={documentPage(defaultLocale, context)}
       head={<MetadataTags resolved={{ metadata, title: 'Ontology Atlas' }} />}
-      assets={context.assets}
-      bootScript={context.bootScript}
       inlineScript={rootRedirectScript()}
     >
       <LocaleRedirect />
@@ -126,11 +125,8 @@ async function writeNotFound(context: WriterContext): Promise<string> {
   const metadata = { ...siteMetadata(), robots: { index: false, follow: true } };
   return renderToHtml(
     <SiteDocument
-      locale={defaultLocale}
+      page={documentPage(defaultLocale, context, { recordedFacts: recorded })}
       head={<MetadataTags resolved={{ metadata, title: 'Ontology Atlas' }} />}
-      assets={context.assets}
-      bootScript={context.bootScript}
-      entry={{ recordedFacts: recorded }}
     >
       <RouterProvider router={router} />
     </SiteDocument>,

@@ -63,11 +63,3 @@ export function replayBuildFacts(recorded: RecordedFacts): BuildFacts {
     },
   };
 }
-
-export const EMBEDDED_FACTS_ID = 'atlas-build-facts';
-
-/** The record a prerendered page carries, or none in the dev server and in a plain `index.html`. */
-export function readEmbeddedFacts(root: Pick<Document, 'getElementById'> = document): BuildFacts {
-  const element = root.getElementById(EMBEDDED_FACTS_ID);
-  return replayBuildFacts(element?.textContent ? (JSON.parse(element.textContent) as RecordedFacts) : {});
-}
