@@ -11,7 +11,7 @@ import { canonicalDiskSlug, suggestSimilarSlugs, vaultSlugExists } from './docum
 import { FULL_BODY_MAX_CHARS, describeBodyDelivery, extractSummaryExcerpt } from './documents/body-delivery.mjs';
 import { drainNodeEligibilityFindings, resetNodeEligibilityGate } from './writes/eligibility-gate.mjs';
 import { deleteDoc, patchFrontmatter, updateDoc, writeDoc } from './writes/doc-writes.mjs';
-import { detectDuplicateTitle, findOrphans, findPath } from './graph/graph-queries.mjs';
+import { detectDuplicateTitle, findPath } from './graph/graph-queries.mjs';
 
 let root;
 
@@ -170,24 +170,6 @@ describe('findPath — edge metadata (R+)', () => {
     assert.equal(findPath(pathRoot, 'd1', 'elements/foo'), null);
   });
 
-  it('an ambiguous ref keeps every candidate out of the orphan list', () => {
-    writeFileSync(
-      join(pathRoot, 'capabilities', 'foo.md'),
-      '---\nslug: capabilities/foo\nkind: capability\ndomain: identity\n---\n',
-    );
-    writeFileSync(
-      join(pathRoot, 'elements', 'foo.md'),
-      '---\nslug: elements/foo\nkind: element\n---\n',
-    );
-    writeFileSync(
-      join(pathRoot, 'd1.md'),
-      '---\nslug: d1\nkind: document\ncapabilities: [foo]\n---\n',
-    );
-    const orphanSlugs = findOrphans(pathRoot).orphans.map((row) => row.slug);
-    assert.equal(orphanSlugs.includes('capabilities/foo'), false);
-    assert.equal(orphanSlugs.includes('elements/foo'), false);
-  });
-
   it('resolves an inline domain: parent as a path edge', () => {
     const r = findPath(pathRoot, 'capabilities/auth', 'domains/identity');
     assert.ok(r, 'the capability.domain path must exist');
@@ -246,52 +228,6 @@ describe('findPath — edge metadata (R+)', () => {
       () => findPath(pathRoot, 'project', 'elements/token', 21),
       /maxHops must be <= 20/,
     );
-  });
-});
-
-describe('findOrphans — graph frontmatter keys', () => {
-  let orphanRoot;
-  beforeEach(() => {
-    orphanRoot = mkdtempSync(join(tmpdir(), 'ontology-atlas-vault-orphans-'));
-    mkdirSync(join(orphanRoot, 'capabilities'), { recursive: true });
-    mkdirSync(join(orphanRoot, 'domains'), { recursive: true });
-    writeFileSync(
-      join(orphanRoot, 'project.md'),
-      '---\nslug: project\nkind: project\ndomains: [identity]\n---\n',
-    );
-    writeFileSync(
-      join(orphanRoot, 'domains', 'identity.md'),
-      '---\nslug: domains/identity\nkind: domain\n---\n',
-    );
-    writeFileSync(
-      join(orphanRoot, 'capabilities', 'auth.md'),
-      '---\nslug: capabilities/auth\nkind: capability\ndomain: identity\n---\n',
-    );
-  });
-  afterEach(() => {
-    rmSync(orphanRoot, { recursive: true, force: true });
-  });
-
-  it('orphan detection honours domains[] and inline domain: references', () => {
-    const result = findOrphans(orphanRoot, { kind: 'domain' });
-    assert.equal(
-      result.orphans.some((node) => node.slug === 'domains/identity'),
-      false,
-    );
-  });
-
-  it('project and vault-readme root documents are excluded from default orphan cleanup candidates', () => {
-    writeFileSync(
-      join(orphanRoot, 'README.md'),
-      '---\nkind: vault-readme\ntitle: README\n---\n',
-    );
-    const result = findOrphans(orphanRoot);
-    assert.equal(result.orphans.some((node) => node.kind === 'project'), false);
-    assert.equal(result.orphans.some((node) => node.kind === 'vault-readme'), false);
-
-    const explicit = findOrphans(orphanRoot, { excludeKinds: [] });
-    assert.equal(explicit.orphans.some((node) => node.kind === 'project'), true);
-    assert.equal(explicit.orphans.some((node) => node.kind === 'vault-readme'), true);
   });
 });
 

@@ -48,50 +48,6 @@ export function listKinds(rootPath) {
 }
 
 /**
- * Docs no other node points at from a frontmatter graph key, matched like
- * findBacklinks. `excludeKinds` defaults to ['project', 'vault-readme'].
- */
-export function findOrphans(rootPath, options = {}) {
-  const docs = loadVaultDocs(rootPath);
-  const kindFilter = typeof options.kind === 'string' ? options.kind : null;
-  const excludeKinds = new Set(
-    Array.isArray(options.excludeKinds)
-      ? options.excludeKinds
-      : ['project', 'vault-readme'],
-  );
-  // An ambiguous ref counts as a reference to every candidate, so no document a
-  // vault plainly names is reported as an orphan.
-  const { resolveCandidates } = buildRefIndex(docs);
-  const referenced = new Set();
-  for (const doc of docs) {
-    for (const { ref } of collectNeighborRefs(doc)) {
-      for (const candidate of resolveCandidates(ref)) {
-        if (candidate !== doc.slug) referenced.add(candidate);
-      }
-    }
-  }
-  const orphans = [];
-  for (const doc of docs) {
-    const kind = doc.frontmatter.kind;
-    if (typeof kind !== 'string' || !kind) continue;
-    if (excludeKinds.has(kind)) continue;
-    if (kindFilter && kind !== kindFilter) continue;
-    if (referenced.has(doc.slug)) continue;
-    orphans.push({
-      uid: doc.frontmatter.uid,
-      slug: doc.slug,
-      kind,
-      title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-      // Same row shape as list_concepts and find_backlinks, so an agent can filter
-      // orphans without a follow-up get_concepts.
-      domain: doc.frontmatter.domain,
-      mtime: doc.mtime,
-    });
-  }
-  return { total: orphans.length, orphans };
-}
-
-/**
  * Shortest undirected path between two slugs over the graph keys and their
  * backlinks, by BFS. Endpoints match an absolute slug or its last segment. null
  * when there is no path within `maxHops` (default 5).
@@ -232,7 +188,7 @@ function bodyLinksTo(body, needle) {
 }
 
 /**
- * The reference index findPath, findOrphans and findBacklinks share. An ambiguous
+ * The reference index findPath and findBacklinks share. An ambiguous
  * ref asserts no edge (`resolve` → null) but is a candidate referrer of every
  * match, so "is this referenced?" stays conservative.
  */

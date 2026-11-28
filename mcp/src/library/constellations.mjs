@@ -178,7 +178,7 @@ function getSavedConstellation({
     };
   }
   const folder = constellationFolders(loaded.parsed.value).find((candidate) => candidate.id === id);
-  if (!folder) throw new Error(`Saved constellation not found: ${id}. Use list_constellations to see IDs in this vault.`);
+  if (!folder) throw new Error(`Saved constellation not found: ${id}. Call get_constellation with no id to see the IDs in this vault.`);
 
   const allItems = itemsFor(loaded.parsed.value, folder.id);
   const { rows: pageItems, pagination } = paginate(allItems, offset, limit);

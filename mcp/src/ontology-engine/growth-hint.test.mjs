@@ -4,8 +4,8 @@ import { test } from 'node:test';
 import {
   buildFindPathGrowthHint,
   buildSlugNotFoundGrowthHint,
-  buildQueryConceptsZeroRowsGrowthHint,
-  buildFindEvidenceZeroHitsGrowthHint,
+  buildFilterZeroRowsGrowthHint,
+  buildMentionsZeroHitsGrowthHint,
   findNearTitleMatches,
 } from './growth-hint.mjs';
 
@@ -86,8 +86,8 @@ test('buildSlugNotFoundGrowthHint — no candidates → add_concepts scaffold', 
 });
 
 
-test('buildQueryConceptsZeroRowsGrowthHint — filter references a kind absent from vault census', () => {
-  const hint = buildQueryConceptsZeroRowsGrowthHint({
+test('buildFilterZeroRowsGrowthHint — filter references a kind absent from vault census', () => {
+  const hint = buildFilterZeroRowsGrowthHint({
     filter: 'kind=widget AND has(elements)',
     byKind: { capability: 5, element: 10 },
     byDomain: { auth: 3 },
@@ -96,8 +96,8 @@ test('buildQueryConceptsZeroRowsGrowthHint — filter references a kind absent f
   assert.deepEqual(hint.exampleCall, { tool: 'list_concepts', args: { limit: 1 } });
 });
 
-test('buildQueryConceptsZeroRowsGrowthHint — filter references a domain absent from vault census', () => {
-  const hint = buildQueryConceptsZeroRowsGrowthHint({
+test('buildFilterZeroRowsGrowthHint — filter references a domain absent from vault census', () => {
+  const hint = buildFilterZeroRowsGrowthHint({
     filter: 'domain=billing',
     byKind: { capability: 5 },
     byDomain: { auth: 3 },
@@ -105,8 +105,8 @@ test('buildQueryConceptsZeroRowsGrowthHint — filter references a domain absent
   assert.match(hint.reason, /domain="billing" has 0 nodes in this vault/);
 });
 
-test('buildQueryConceptsZeroRowsGrowthHint — kind/domain both exist → generic loosen-filter suggestion', () => {
-  const hint = buildQueryConceptsZeroRowsGrowthHint({
+test('buildFilterZeroRowsGrowthHint — kind/domain both exist → generic loosen-filter suggestion', () => {
+  const hint = buildFilterZeroRowsGrowthHint({
     filter: 'kind=capability AND domain=auth AND NOT has(elements)',
     byKind: { capability: 5 },
     byDomain: { auth: 3 },
@@ -115,8 +115,8 @@ test('buildQueryConceptsZeroRowsGrowthHint — kind/domain both exist → generi
   assert.match(hint.suggestion, /Loosen the filter/);
 });
 
-test('buildQueryConceptsZeroRowsGrowthHint — filter with no kind/domain equality → generic suggestion', () => {
-  const hint = buildQueryConceptsZeroRowsGrowthHint({
+test('buildFilterZeroRowsGrowthHint — filter with no kind/domain equality → generic suggestion', () => {
+  const hint = buildFilterZeroRowsGrowthHint({
     filter: 'has(elements)',
     byKind: {},
     byDomain: {},
@@ -147,12 +147,12 @@ test('findNearTitleMatches — empty query tokens → empty result', () => {
   assert.deepEqual(findNearTitleMatches('   ', candidates), []);
 });
 
-test('buildFindEvidenceZeroHitsGrowthHint — with near matches suggests checking before adding', () => {
-  const hint = buildFindEvidenceZeroHitsGrowthHint({
-    title: 'Token Issuance',
+test('buildMentionsZeroHitsGrowthHint — with near matches suggests checking before adding', () => {
+  const hint = buildMentionsZeroHitsGrowthHint({
+    text: 'Token Issuance',
     nearMatches: [{ slug: 'capabilities/token-issue', title: 'Token Issue', score: 0.5 }],
   });
-  assert.match(hint.reason, /No vault doc mentions "Token Issuance"/);
+  assert.match(hint.reason, /No vault node mentions "Token Issuance"/);
   assert.match(hint.suggestion, /Token Issue \(capabilities\/token-issue\)/);
   assert.deepEqual(hint.exampleCall, {
     tool: 'get_concepts',
@@ -160,8 +160,8 @@ test('buildFindEvidenceZeroHitsGrowthHint — with near matches suggests checkin
   });
 });
 
-test('buildFindEvidenceZeroHitsGrowthHint — no near matches → add_concepts scaffold with slugified title', () => {
-  const hint = buildFindEvidenceZeroHitsGrowthHint({ title: 'Brand New Concept', nearMatches: [] });
+test('buildMentionsZeroHitsGrowthHint — no near matches → add_concepts scaffold with slugified title', () => {
+  const hint = buildMentionsZeroHitsGrowthHint({ text: 'Brand New Concept', nearMatches: [] });
   assert.match(hint.reason, /no similarly-titled node exists/);
   assert.deepEqual(hint.exampleCall, {
     tool: 'add_concepts',
@@ -171,7 +171,7 @@ test('buildFindEvidenceZeroHitsGrowthHint — no near matches → add_concepts s
 
 
 test('a Hangul title does not collapse to untitled', () => {
-  const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '인증 도메인' });
+  const hint = buildMentionsZeroHitsGrowthHint({ text: '인증 도메인' });
   // Replacing `[^a-z0-9]` erased Korean, so every Korean concept collided on
   // 'untitled' (`init --locale=ko` is supported).
   assert.notEqual(hint.exampleCall.args.concepts[0].slug, 'untitled');
@@ -179,22 +179,22 @@ test('a Hangul title does not collapse to untitled', () => {
 });
 
 test('English titles behave as before', () => {
-  const hint = buildFindEvidenceZeroHitsGrowthHint({ title: 'Payment Billing' });
+  const hint = buildMentionsZeroHitsGrowthHint({ text: 'Payment Billing' });
   assert.equal(hint.exampleCall.args.concepts[0].slug, 'payment-billing');
 });
 
 test('still falls back to untitled when no slug character remains', () => {
-  const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '!!! ???' });
+  const hint = buildMentionsZeroHitsGrowthHint({ text: '!!! ???' });
   assert.equal(hint.exampleCall.args.concepts[0].slug, 'untitled');
 });
 
 test('zero-row census treats inherited dictionary names as absent', () => {
   for (const domain of ['constructor', 'toString', 'hasOwnProperty']) {
-    const missing = buildQueryConceptsZeroRowsGrowthHint({ filter: `domain="${domain}"`, byDomain: {} });
+    const missing = buildFilterZeroRowsGrowthHint({ filter: `domain="${domain}"`, byDomain: {} });
     assert.ok(missing.reason.includes(`domain="${domain}" has 0 nodes`));
-    const present = buildQueryConceptsZeroRowsGrowthHint({ filter: `domain="${domain}"`, byDomain: Object.fromEntries([[domain, 1]]) });
+    const present = buildFilterZeroRowsGrowthHint({ filter: `domain="${domain}"`, byDomain: Object.fromEntries([[domain, 1]]) });
     assert.ok(!present.reason.includes('has 0 nodes'));
   }
-  const missingKind = buildQueryConceptsZeroRowsGrowthHint({ filter: 'kind="constructor"', byKind: {} });
+  const missingKind = buildFilterZeroRowsGrowthHint({ filter: 'kind="constructor"', byKind: {} });
   assert.ok(missingKind.reason.includes('kind="constructor" has 0 nodes'));
 });

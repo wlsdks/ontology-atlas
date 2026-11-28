@@ -54,7 +54,7 @@ const MEANING_NEXT_ACTION_HINTS = Object.freeze({
     + 'with connect_project_source.',
   record_source_role:
     'No concept in this project names its code file yet. Find the file that '
-    + 'carries each capability or element (find_evidence, read_source) and '
+    + 'carries each capability or element (list_concepts mentions, read_source) and '
     + 'record it as that node\'s `path:` with patch_concept; leave out a '
     + 'concept whose file you cannot identify.',
   review_inventory_limit:

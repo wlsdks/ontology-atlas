@@ -15,6 +15,15 @@ function formatUnknownToolError(name) {
   return `Unknown tool: ${name}.${suggestionText} Allowed tools: ${allowedNames.join(', ')}.`;
 }
 
+/** The answer to a call to a retired name that no longer runs: what to call instead, and nothing else. */
+function retiredToolError(name) {
+  const replacement = RETIRED_TOOL_REPLACEMENTS.get(name);
+  return Object.assign(new Error(`${name} is retired and no longer runs; use ${replacement}.`), {
+    errorCode: 'tool_retired',
+    repairFields: { retiredTool: name, replacement },
+  });
+}
+
 function okResponseBytes(result) {
   return Buffer.byteLength(JSON.stringify(ok(result)), 'utf8');
 }
@@ -144,7 +153,7 @@ function structuredErrorDetails(message) {
   }
 
   const missingSlug = message.match(
-    /^(.+?): "([^"]+)"\. Use list_concepts\(\) to see all slugs, or find_evidence\(\{title:"[^"]*"\}\) to search by title\.(?: If the endpoint is real but absent, create it first with add_concepts\(\{concepts:\[\{slug, kind, title\}\]\}\)\.)?(?: Similar slugs in this vault: (.+)\.)?$/i,
+    /^(.+?): "([^"]+)"\. Use list_concepts\(\) to see all slugs, or list_concepts\(\{mentions:"[^"]*"\}\) to search by title\.(?: If the endpoint is real but absent, create it first with add_concepts\(\{concepts:\[\{slug, kind, title\}\]\}\)\.)?(?: Similar slugs in this vault: (.+)\.)?$/i,
   );
   if (missingSlug) {
     const [, subject, slug, similarText] = missingSlug;
@@ -152,7 +161,7 @@ function structuredErrorDetails(message) {
     return omitUndefined({
       missingSubject: subject,
       missingSlug: slug,
-      recoveryTools: ['list_concepts', 'find_evidence'],
+      recoveryTools: ['list_concepts'],
       createTool: hasCreateHint ? 'add_concepts' : undefined,
       similarSlugs: similarText ? extractQuotedList(similarText) : [],
     });
@@ -166,7 +175,7 @@ function structuredErrorDetails(message) {
     return {
       missingSubject: subject,
       missingSlug: slug,
-      recoveryTools: ['list_concepts', 'find_evidence'],
+      recoveryTools: ['list_concepts'],
       createTool: 'add_concepts',
       similarSlugs: similarText ? splitCommaList(similarText) : [],
     };
@@ -261,5 +270,6 @@ export {
   ok,
   okResponseBytes,
   error,
+  retiredToolError,
   structuredRowErrorDetails,
 };

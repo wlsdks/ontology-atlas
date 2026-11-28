@@ -172,7 +172,7 @@ const PROJECT_SOURCE_REMEDY_SCHEMA = Object.freeze({
 const PROJECT_SOURCE_NEXT_CALL_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
-    tool: { type: 'string', enum: ['connect_project_source', 'disconnect_project_source'] },
+    tool: { type: 'string', enum: ['connect_project_source'] },
     arguments: { type: 'object', additionalProperties: true },
   },
   required: ['tool', 'arguments'],

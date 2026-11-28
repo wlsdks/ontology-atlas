@@ -59,7 +59,7 @@ export class VaultDocChangedError extends Error {
 /**
  * Bodies read back for cached documents, most recent last, held up to a byte
  * budget so a repeated search does not reopen the same files. Measured at 50,000
- * files: one find_evidence call reads well under this; a call that needs every
+ * files: one list_concepts `mentions` call reads well under this; a call that needs every
  * body reads the rest from disk without growing the cache.
  */
 export const BODY_CACHE_MAX_BYTES = 32 * 1024 * 1024;

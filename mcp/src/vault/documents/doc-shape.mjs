@@ -1,6 +1,6 @@
 // What the document cache computes from a file's text while it holds it, so the
 // text can be let go: the frontmatter fence's shape, where the body starts, the
-// body's link targets and a fingerprint find_evidence filters by.
+// body's link targets and a fingerprint list_concepts `mentions` filters by.
 
 /**
  * How the file opens, as `validateVaultDocument` reads it after stripping a BOM
@@ -133,7 +133,7 @@ export function linkKeysHold(keys, needle) {
 }
 
 /**
- * A fingerprint of the lowercased body for find_evidence: every run of three and of
+ * A fingerprint of the lowercased body for list_concepts `mentions`: every run of three and of
  * five characters sets one bit in a table of about one bit per character (256 to
  * 65,536 bits). A body holding a needle holds each of the needle's runs, so a bit
  * the needle needs and the table lacks proves the needle absent and the body is
@@ -198,7 +198,7 @@ function lowered(body) {
   return body;
 }
 
-/** The fingerprint of `body` as find_evidence matches it, lowercased. */
+/** The fingerprint of `body` as `mentions` matches it, lowercased. */
 export function evidenceSignature(body) {
   if (body.length < SHORT_RUN) return null;
   const text = lowered(body);

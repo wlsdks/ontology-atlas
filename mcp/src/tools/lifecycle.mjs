@@ -1,6 +1,6 @@
 /**
- * The destructive node lifecycle: `rename_concept`, `reclassify_concept`,
- * `merge_concepts`, `delete_concept` — each a dry-run preview first, then a
+ * The destructive node lifecycle: `rename_concept` (which also changes the kind, with
+ * `newKind`), `merge_concepts`, `delete_concept` — each a dry-run preview first, then a
  * confirmed write that rewrites every backlink.
  */
 
@@ -67,8 +67,17 @@ function unwritableReferrerWarnings(result, oldSlug) {
     'so that reference was left as it was: update it by hand.');
 }
 
-function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {
+function renameConcept({ oldSlug, newSlug, newKind, domain, body, confirm = false, overwrite = false, expected_mtime }) {
   requireNonBlankString(oldSlug, 'oldSlug');
+  if (newKind !== undefined) {
+    requireOptionalBoolean(overwrite, 'overwrite');
+    if (overwrite) throw new Error('overwrite must not be combined with newKind: a kind change never replaces an existing file.');
+    return changeConceptKind({ slug: oldSlug, newKind, newSlug, domain, body, confirm, expected_mtime });
+  }
+  for (const [name, value] of Object.entries({ domain, body })) {
+    if (value !== undefined) throw new Error(`${name} applies only with newKind; it must be omitted from a plain rename.`);
+  }
+  if (newSlug === undefined) throw new Error('At least one of newSlug or newKind is required.');
   requireNonBlankString(newSlug, 'newSlug');
   requireOptionalBoolean(confirm, 'confirm');
   requireOptionalBoolean(overwrite, 'overwrite');
@@ -225,7 +234,7 @@ function looksLikeGeneratedStarter(body, kind) {
   return Boolean(markers[kind]?.test(text));
 }
 
-function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = false, expected_mtime }) {
+function changeConceptKind({ slug, newKind, newSlug, domain, body, confirm = false, expected_mtime }) {
   requireNonBlankString(slug, 'slug');
   requireNonBlankString(newKind, 'newKind');
   if (!ADD_CONCEPT_KINDS.has(newKind)) throw new Error(formatAllowedValueError('newKind', newKind, [...ADD_CONCEPT_KINDS]));
@@ -235,10 +244,10 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   if (domain !== undefined && domain !== null) requireNonBlankString(domain, 'domain');
   if (body !== undefined && typeof body !== 'string') throw new Error('body must be a string.');
   if ((newKind === 'capability' || newKind === 'element') && (domain === undefined || domain === null)) {
-    throw new Error(`domain is required when reclassifying to kind "${newKind}".`);
+    throw new Error(`domain is required when changing the kind to "${newKind}".`);
   }
   const canonicalOld = resolveExistingVaultSlug(slug);
-  requireNodeNotReservedForHuman(readDocIfPresent(canonicalOld ?? slug), 'reclassify_concept');
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalOld ?? slug), 'rename_concept');
   if (!canonicalOld) throw new Error(missingSlugMessage('Source slug does not exist in vault', slug));
   const canonicalNew = newSlug || canonicalOld;
   if (canonicalNew !== canonicalOld && vaultSlugExists(VAULT_ROOT, canonicalNew)) throw new Error(`Target slug already exists: "${canonicalNew}".`);
@@ -247,9 +256,9 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) throw new VaultConflictError(canonicalOld, expected_mtime, sourceDoc.mtime);
   const oldKind = sourceDoc.frontmatter.kind;
-  // Slug flatness — reclassify writes directly too, so the new (kind, slug) pair is measured.
-  const reclassifySlugIssue = flatSlugIssue(newKind, canonicalNew);
-  if (reclassifySlugIssue) throw new Error(reclassifySlugIssue);
+  // Slug flatness — a kind change writes directly too, so the new (kind, slug) pair is measured.
+  const kindChangeSlugIssue = flatSlugIssue(newKind, canonicalNew);
+  if (kindChangeSlugIssue) throw new Error(kindChangeSlugIssue);
   const title = sourceDoc.frontmatter.title || canonicalNew.split('/').pop();
   let nextBody = sourceDoc.body;
   let bodyAction = 'preserved';
@@ -385,7 +394,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
 
   // Folding a node into one of another kind is a kind change for every referrer: an entry in
   // the list for the absorbed node's kind moves to the list for the survivor's (the same rule as
-  // reclassify_concept), and one the referrer's kind keeps no list for is named in `warnings`.
+  // rename_concept with newKind), and one the referrer's kind keeps no list for is named in `warnings`.
   const intoKind = typeof intoDoc.frontmatter?.kind === 'string' ? intoDoc.frontmatter.kind.trim() : '';
   const fromKind = typeof fromDoc.frontmatter?.kind === 'string' ? fromDoc.frontmatter.kind.trim() : '';
   const kindOption = intoKind && fromKind && intoKind !== fromKind ? { targetKind: intoKind } : {};
@@ -562,7 +571,6 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
 
 export {
   renameConcept,
-  reclassifyConcept,
   mergeConcepts,
   deleteConcept,
 };

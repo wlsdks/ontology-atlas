@@ -1,5 +1,5 @@
 import { CONSTRUCTION_GUIDE_TOPICS } from '../../construction/construction-card.mjs';
-import { NODE_KIND_VALUES, RELATION_TYPE_VALUES } from '../../ontology-engine.mjs';
+import { RELATION_TYPE_VALUES } from '../../ontology-engine.mjs';
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import { READ_SOURCE_DEFAULT_LIMIT, READ_SOURCE_MAX_LIMIT } from '../../library/source-text.mjs';
 import {
@@ -476,114 +476,6 @@ export const LIST_KINDS_TOOL = {
       },
     },
     required: ['total', 'byKind', 'referencedOnlyTotal', 'conceptsIncludingReferenced'],
-    additionalProperties: false,
-  },
-};
-
-export const FIND_ORPHANS_TOOL = {
-  name: 'find_orphans',
-  description:
-    'List orphan nodes, docs that no other node references via any frontmatter array key: a cleanup starting point. Matches like find_backlinks; root/sentinel kinds like project and vault-readme are excluded by default.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      kind: nonBlankStringSchema(
-        'Restrict to one kind. Omit for all kinds.',
-        { enum: NODE_KIND_VALUES },
-      ),
-      excludeKinds: {
-        type: 'array',
-        maxItems: NODE_KIND_VALUES.length,
-        items: { ...NON_BLANK_STRING_SCHEMA, enum: NODE_KIND_VALUES },
-        description:
-          'Kinds to exclude, default [\'project\', \'vault-readme\']; [] includes every kind.',
-      },
-    },
-  },
-  outputSchema: {
-    type: 'object',
-    properties: {
-      total: { type: 'integer', minimum: 0 },
-      orphans: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
-            slug: NON_BLANK_STRING_SCHEMA,
-            kind: NON_BLANK_STRING_SCHEMA,
-            title: NON_BLANK_STRING_SCHEMA,
-            domain: { type: 'string' },
-            mtime: { type: 'number', minimum: 0 },
-          },
-          required: ['uid', 'slug', 'kind', 'title', 'mtime'],
-          additionalProperties: false,
-        },
-      },
-    },
-    required: ['total', 'orphans'],
-    additionalProperties: false,
-  },
-};
-
-export const QUERY_CONCEPTS_TOOL = {
-  name: 'query_concepts',
-  description:
-    'Typed filter DSL: find vault nodes by predicate, for questions a path search cannot answer, such as capabilities with zero elements. query_ontology `match_nodes` filters by degree instead.\n' +
-    'Grammar (case-insensitive): filter := atom (AND|OR atom)* ; atom := NOT? predicate ; predicate := key=value | key!=value | has(key)\n' +
-    'Keys: kind, domain, slug, title for equality; any graph frontmatter array key for has(...). Example: `kind=capability AND domain=auth AND NOT has(elements)`. No match returns a `growthHint`.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      filter: nonBlankStringSchema(
-        'e.g. kind=capability AND has(elements). Supports NOT / AND / OR. Wrap values containing whitespace or special characters in quotes.',
-      ),
-      limit: {
-        type: 'integer',
-        minimum: 1,
-        maximum: 500,
-        description: 'Default 100.',
-      },
-    },
-    required: ['filter'],
-  },
-  outputSchema: {
-    type: 'object',
-    properties: {
-      filter: NON_BLANK_STRING_SCHEMA,
-      parsedAs: NON_BLANK_STRING_SCHEMA,
-      total: { type: 'integer', minimum: 0 },
-      matches: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
-            slug: NON_BLANK_STRING_SCHEMA,
-            kind: NON_BLANK_STRING_SCHEMA,
-            title: NON_BLANK_STRING_SCHEMA,
-            domain: { type: 'string' },
-            capabilities: {
-              type: 'array',
-              items: NON_BLANK_STRING_SCHEMA,
-            },
-            elements: {
-              type: 'array',
-              items: NON_BLANK_STRING_SCHEMA,
-            },
-            mtime: { type: 'number', minimum: 0 },
-          },
-          required: ['uid', 'slug', 'kind', 'title', 'mtime'],
-          additionalProperties: false,
-        },
-      },
-      limited: { type: 'boolean' },
-      growthHint: {
-        ...GROWTH_HINT_OUTPUT_SCHEMA,
-        description: 'Only present when total=0 — flags a referenced kind/domain with 0 nodes in this vault census, or a generic loosen-the-filter nudge otherwise.',
-      },
-    },
-    required: ['filter', 'parsedAs', 'total', 'matches', 'limited'],
     additionalProperties: false,
   },
 };

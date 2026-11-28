@@ -69,7 +69,7 @@ function docNotFoundError(slug, docs) {
   err.repairFields = {
     missingSubject: 'Doc not found',
     missingSlug: slug,
-    recoveryTools: ['list_concepts', 'find_evidence'],
+    recoveryTools: ['list_concepts'],
     createTool: 'add_concepts',
     similarSlugs: candidateSlugs,
     ...(referencedBy.length > 0 ? { referencedBy } : {}),
@@ -83,7 +83,7 @@ function uidNotFoundError(uid) {
   err.repairFields = {
     missingSubject: 'Doc not found for uid',
     missingUid: uid,
-    recoveryTools: ['list_concepts', 'find_evidence'],
+    recoveryTools: ['list_concepts'],
   };
   return err;
 }
@@ -213,7 +213,7 @@ function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
   if (rawSourceSlug) return rawSourceSlugIssue(rawSourceSlug);
   const suggestions = suggestSimilarSlugs(VAULT_ROOT, slug);
   const lines = [
-    `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence({title:"${slug}"}) to search by title.`,
+    `${prefix}: "${slug}". Use list_concepts() to see all slugs, or list_concepts({mentions:"${slug}"}) to search by title.`,
   ];
   if (createHint) {
     lines.push('If the endpoint is real but absent, create it first with add_concepts({concepts:[{slug, kind, title}]}).');

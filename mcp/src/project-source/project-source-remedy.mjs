@@ -6,7 +6,6 @@
 const PROJECT_SOURCE_REMEDY_CONTRACT = 'projectSourceRemedy:v1';
 
 const PROJECT_SOURCE_CONNECT_TOOL = 'connect_project_source';
-const PROJECT_SOURCE_DISCONNECT_TOOL = 'disconnect_project_source';
 
 /**
  * What a person still has to supply before the remedy can run.
@@ -119,6 +118,6 @@ export function projectSourceRemedy(view) {
 export function undoPlan(projectSlug) {
   if (!projectSlug) return null;
   return {
-    tool: { name: PROJECT_SOURCE_DISCONNECT_TOOL, arguments: { projectSlug, confirm: true } },
+    tool: { name: PROJECT_SOURCE_CONNECT_TOOL, arguments: { projectSlug, disconnect: true, confirm: true } },
   };
 }

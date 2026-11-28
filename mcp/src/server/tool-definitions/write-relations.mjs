@@ -151,59 +151,70 @@ export const ADD_RELATIONS_TOOL = {
   },
 };
 
+/** The answer when the relation is only removed. */
+const REMOVE_ANSWER_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+    ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+    exists: { type: 'boolean' }, from: NON_BLANK_STRING_SCHEMA, to: NON_BLANK_STRING_SCHEMA,
+    type: NON_BLANK_STRING_SCHEMA, key: NON_BLANK_STRING_SCHEMA,
+    removedRationale: { type: 'string' }, postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+  },
+  required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'exists', 'from', 'to', 'type', 'key'],
+  additionalProperties: false,
+};
+
+/** The answer when `replaceWith` moves the relation to a new target or type. */
+const REPLACE_ANSWER_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+    ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+    from: NON_BLANK_STRING_SCHEMA,
+    oldRelation: RELATION_RESULT_SCHEMA, newRelation: RELATION_RESULT_SCHEMA,
+    notice: { type: 'string' },
+    postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+  },
+  required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'from', 'oldRelation', 'newRelation'],
+  additionalProperties: false,
+};
+
 export const REMOVE_RELATION_TOOL = {
   name: 'remove_relation',
   description:
-    'Safely remove one exact typed relation and its `relation_notes` rationale from a source node. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime conflict protection. Use this instead of replacing a whole frontmatter array with patch_concept. `type:"contains"` also finds the typed key add_relations stored it under.',
+    'Safely remove one exact typed relation and its `relation_notes` rationale from a source node. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime conflict protection. Use this instead of replacing a whole frontmatter array with patch_concept. `type:"contains"` also finds the typed key add_relations stored it under. ' +
+    'With `replaceWith: { to, type, why? }` it atomically replaces the relation with a new target and/or type instead, moving or replacing its rationale in the same frontmatter write; a replacement that is `depends_on` needs a `why` or an inherited rationale.',
   inputSchema: {
     type: 'object',
     properties: {
       from: NON_BLANK_STRING_SCHEMA,
       to: NON_BLANK_STRING_SCHEMA,
       type: ADD_RELATION_TYPE_SCHEMA,
+      replaceWith: {
+        type: 'object',
+        description: 'Replace instead of remove: the relation that takes its place.',
+        properties: {
+          to: NON_BLANK_STRING_SCHEMA,
+          type: ADD_RELATION_TYPE_SCHEMA,
+          why: { type: 'string', maxLength: 300 },
+        },
+        required: ['to', 'type'],
+        additionalProperties: false,
+      },
       confirm: { type: 'boolean', description: 'True to write; default dry-run.' },
       expected_mtime: { type: 'number', minimum: 0 },
     },
     required: ['from', 'to', 'type'],
   },
+  // One object for both answers: the removal, and the replacement (`replaceWith`).
   outputSchema: {
     type: 'object',
     properties: {
-      ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
-      ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
-      exists: { type: 'boolean' }, from: NON_BLANK_STRING_SCHEMA, to: NON_BLANK_STRING_SCHEMA,
-      type: NON_BLANK_STRING_SCHEMA, key: NON_BLANK_STRING_SCHEMA,
-      removedRationale: { type: 'string' }, postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      ...REMOVE_ANSWER_OUTPUT_SCHEMA.properties,
+      ...REPLACE_ANSWER_OUTPUT_SCHEMA.properties,
     },
-    required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'exists', 'from', 'to', 'type', 'key'],
-    additionalProperties: false,
-  },
-};
-
-export const REPLACE_RELATION_TOOL = {
-  name: 'replace_relation',
-  description:
-    'Atomically replace one exact relation with a new target and/or type, moving or replacing its rationale in the same frontmatter write. `contains` as oldType or newType maps to the typed key exactly as add_relations does. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      from: NON_BLANK_STRING_SCHEMA, oldTo: NON_BLANK_STRING_SCHEMA,
-      oldType: ADD_RELATION_TYPE_SCHEMA, newTo: NON_BLANK_STRING_SCHEMA,
-      newType: ADD_RELATION_TYPE_SCHEMA, why: { type: 'string', maxLength: 300 },
-      confirm: { type: 'boolean' }, expected_mtime: { type: 'number', minimum: 0 },
-    },
-    required: ['from', 'oldTo', 'oldType', 'newTo', 'newType'],
-  },
-  outputSchema: {
-    type: 'object',
-    properties: {
-      ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
-      ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
-      from: NON_BLANK_STRING_SCHEMA,
-      oldRelation: RELATION_RESULT_SCHEMA, newRelation: RELATION_RESULT_SCHEMA,
-      postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
-    },
-    required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'from', 'oldRelation', 'newRelation'],
+    required: REMOVE_ANSWER_OUTPUT_SCHEMA.required.filter((key) => REPLACE_ANSWER_OUTPUT_SCHEMA.required.includes(key)),
     additionalProperties: false,
   },
 };

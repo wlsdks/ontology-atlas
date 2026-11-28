@@ -1,5 +1,5 @@
 /**
- * The frontmatter array keys read as graph edges. findOrphans, findPath and the
+ * The frontmatter array keys read as graph edges. findBacklinks, findPath and the
  * rest share this one list; a private copy is how they drifted before.
  */
 import { compareText } from '../../compare-text.mjs';

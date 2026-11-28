@@ -20,6 +20,7 @@ import { server } from './server/instance.mjs';
 import {
   READ_ONLY_MODE,
   READ_TOOL_NAMES,
+  isRetiredAndGone,
   RETIRED_TOOL_REPLACEMENTS,
   TOOLS_FOR_LIST,
   TOOL_BY_NAME,
@@ -29,21 +30,14 @@ import {
   error,
   formatUnknownToolError,
   ok,
+  retiredToolError,
 } from './server/rpc.mjs';
 import { VAULT_ROOT } from './server/runtime.mjs';
 import { normalizeToolArguments } from './server/validate.mjs';
 import { withVaultReadSnapshot, withVaultWriteSnapshot } from './vault/documents/document-cache.mjs';
 import { logWrite } from './server/write-log.mjs';
 import { absorbDocumentTool } from './tools/absorb.mjs';
-import {
-  gitHistoryTool,
-  gitSnapshotTool,
-  gitStatusTool,
-} from './tools/git.mjs';
-import {
-  getConstellationTool,
-  listConstellationsTool,
-} from './tools/constellations.mjs';
+import { getConstellationTool } from './tools/constellations.mjs';
 import {
   compileOntologyTool,
   queryOntologyTool,
@@ -51,26 +45,21 @@ import {
 import {
   deleteConcept,
   mergeConcepts,
-  reclassifyConcept,
   renameConcept,
 } from './tools/lifecycle.mjs';
 import {
   connectProjectSourceTool,
-  disconnectProjectSourceTool,
   finalizeProjectMeaningTool,
 } from './tools/project-source.mjs';
 import {
   connectionInfoTool,
   findBacklinksTool,
-  findEvidence,
   findNeighborsTool,
-  findOrphansTool,
   findPathTool,
   getConcept,
   getConceptsBatch,
   listConcepts,
   listKindsTool,
-  queryConceptsTool,
   readSourceTool,
 } from './tools/read.mjs';
 import { analyzeRepoStructureTool } from './tools/repo-analysis/analyze-structure.mjs';
@@ -90,7 +79,6 @@ import {
   addRelation,
   addRelationsBatch,
   removeRelation,
-  replaceRelation,
 } from './tools/writes/write-relations.mjs';
 import {
   CONSENT_DECLINED,
@@ -104,12 +92,17 @@ server.setRequestHandler('tools/list', async () => ({ tools: TOOLS_FOR_LIST }));
 
 // A read tool sees one snapshot of the vault: its helpers share one stamp pass. Any
 // other call reads every file fresh once, on its first load, and stamp-checks after.
-server.setRequestHandler('tools/call', async (request) => withRetiredToolNote(
-  request.params.name,
-  await (READ_TOOL_NAMES.has(request.params.name)
-    ? withVaultReadSnapshot(() => callTool(request))
-    : withVaultWriteSnapshot(() => callTool(request))),
-));
+server.setRequestHandler('tools/call', async (request) => {
+  const { name } = request.params;
+  // Nothing runs, so nothing is read, snapshotted or asked of a person first.
+  if (isRetiredAndGone(name)) return error(retiredToolError(name));
+  return withRetiredToolNote(
+    name,
+    await (READ_TOOL_NAMES.has(name)
+      ? withVaultReadSnapshot(() => callTool(request))
+      : withVaultWriteSnapshot(() => callTool(request))),
+  );
+});
 
 function withRetiredToolNote(name, response) {
   const replacement = RETIRED_TOOL_REPLACEMENTS.get(name);
@@ -152,33 +145,19 @@ async function callTool(request) {
     switch (name) {
       case 'connection_info':
         return ok(connectionInfoTool(args));
-      case 'git_status':
-        return ok(gitStatusTool());
-      case 'git_history':
-        return ok(gitHistoryTool(args));
-      case 'git_snapshot':
-        // The commit is the audit record; logging activity after it would dirty the
-        // vault again.
-        return ok(gitSnapshotTool(args));
       case 'list_concepts':
         return ok(listConcepts(args));
-      case 'list_constellations':
-        return ok(listConstellationsTool(args));
       case 'get_constellation':
         return ok(getConstellationTool(args));
       case 'get_concept':
         return ok(getConcept(args));
       case 'get_concepts':
         return ok(getConceptsBatch(args));
-      case 'find_evidence':
-        return ok(findEvidence(args));
       case 'finalize_project_meaning':
         // The handler logs the body it writes; the receipt itself gets no activity line.
         return ok(finalizeProjectMeaningTool(args));
       case 'connect_project_source':
         return ok(logWrite(name, args, connectProjectSourceTool(args)));
-      case 'disconnect_project_source':
-        return ok(logWrite(name, args, disconnectProjectSourceTool(args)));
       case 'add_concept':
         return ok(logWrite(name, args, addConcept(args)));
       case 'add_concepts':
@@ -187,8 +166,6 @@ async function callTool(request) {
         return ok(logWrite(name, args, addRelation(args)));
       case 'remove_relation':
         return ok(logWrite(name, args, removeRelation(args)));
-      case 'replace_relation':
-        return ok(logWrite(name, args, replaceRelation(args)));
       case 'add_relations':
         return ok(logWrite(name, args, addRelationsBatch(args)));
       case 'patch_concept':
@@ -201,10 +178,6 @@ async function callTool(request) {
         return ok(findPathTool(args));
       case 'list_kinds':
         return ok(listKindsTool());
-      case 'find_orphans':
-        return ok(findOrphansTool(args));
-      case 'query_concepts':
-        return ok(queryConceptsTool(args));
       case 'compile_ontology':
         return ok(compileOntologyTool(args));
       case 'query_ontology':
@@ -225,8 +198,6 @@ async function callTool(request) {
         return ok(indexProjectTool(args));
       case 'rename_concept':
         return ok(logWrite(name, args, renameConcept(args)));
-      case 'reclassify_concept':
-        return ok(logWrite(name, args, reclassifyConcept(args)));
       case 'merge_concepts':
         return ok(logWrite(name, args, mergeConcepts(args)));
       case 'delete_concept':
