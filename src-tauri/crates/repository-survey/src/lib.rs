@@ -34,6 +34,7 @@ mod subcommand_rows;
 mod survey_areas;
 mod survey_cache;
 mod survey_files;
+mod survey_of_census;
 mod survey_text;
 mod tooling_path;
 mod unit_collection;
@@ -54,6 +55,7 @@ pub use source_class::SourceClass;
 pub use survey_areas::AreaLocator;
 pub use survey_cache::{SurveyAsked, SurveyCache};
 pub use survey_files::SurveyFiles;
+pub use survey_of_census::survey_of_census;
 pub use survey_text::{format_count, repo_line, repo_text};
 pub use unit_collection::{
     collect_source_units, CollectOptions, Collection, ProductReading, SurveyedFile, MAX_FILES,

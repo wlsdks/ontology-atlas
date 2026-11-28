@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use serde::Serialize;
 
 use answer_format::collation::compare_text;
-use confined_files::SourceFiles;
+use confined_files::{ReadBoundary, SourceFiles};
 
 use crate::autotools_c::detect_autotools_c;
 use crate::batch_reading::{read_in_batches, Batched};
@@ -75,6 +75,9 @@ pub struct ImportScan {
     pub module_edges: Vec<ModuleEdge>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package_import_evidence: Option<GoPackageEvidence>,
+    /// What the scan stood on, when it read from a census: set by the caller that ends the run.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_boundary: Option<ReadBoundary>,
 }
 
 /// Reads the repository `files` shows. `root_label` is the root as the caller wrote it, echoed in
@@ -124,7 +127,15 @@ pub fn scan_imports(
         credential_named_files +=
             list_source_files(files, root, &ignore, max_files, &wanted, &mut listed).len();
     }
-    let go = scan_go_packages(&facts, &ignore, max_files.saturating_sub(listed.len()));
+    let go = scan_go_packages(
+        &facts,
+        &ignore,
+        max_files.saturating_sub(listed.len()),
+        facts
+            .files()
+            .answers_from_census()
+            .then_some(source_folders.as_slice()),
+    );
     credential_named_files += go.as_ref().map_or(0, |go| go.credential_named_files);
     let go = go.map(|go| go.evidence);
 
@@ -193,6 +204,7 @@ pub fn scan_imports(
         unresolved: findings.unresolved,
         module_edges,
         package_import_evidence: go,
+        read_boundary: None,
     }
 }
 
@@ -238,7 +250,13 @@ fn scan_roots(
     if discovery.has_declaration {
         configured_root_exists = true;
     }
-    for package in &discovery.packages {
+    // A census holds the files its own folders list, so a package outside them is not a root.
+    let package_roots = if facts.files().answers_from_census() {
+        &[][..]
+    } else {
+        &discovery.packages[..]
+    };
+    for package in package_roots {
         let root = join_below(facts.root(), &package.path);
         if facts.is_own_directory(&root) {
             roots.push(root);

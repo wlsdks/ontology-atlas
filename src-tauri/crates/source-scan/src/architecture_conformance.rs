@@ -586,6 +586,7 @@ mod tests {
             unresolved: Vec::new(),
             module_edges: Vec::new(),
             package_import_evidence: None,
+            read_boundary: None,
         }
     }
 

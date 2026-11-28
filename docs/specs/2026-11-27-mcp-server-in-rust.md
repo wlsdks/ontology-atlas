@@ -289,6 +289,9 @@ merge.
 | 64 | `validate_vault`, two files whose names fold to one slug (a name composed and decomposed, which a Linux file system keeps apart and macOS does not) | the second file is read in place of the first and its node is lost without a word | one `duplicate-file-name` error on the shared slug, and one row for it | a lost node is the worst silent loss a vault can have; naming the collision lets the person rename one file. Test: the unit test in `slug_collision.rs`; a corpus case cannot be built because the file system of the machine that makes the corpus (macOS) keeps one spelling of the name. |
 | 65 | `validate_vault` `coverage` | one sentence of about 12,000 characters on a repository the size of this one: the breadth count, every ability not placed, the areas not mapped yet, the reads, the rules and the roles | an object of counts: `breadth` (abilities, own node, named, excluded, and `unplaced` with its total, the first ten rows and a `nextOffset` that the existing `offset` argument pages through), `areas` (counted, not mapped, abilities, uncovered, share, `keepLines` and `mapNext`), `reads`; it is absent when the survey found no ability and no area. The Roles sentence is not ported | the unplaced list alone was about 7,000 tokens in every answer, and an agent needs the first ten and the count, not the list. `keepLines` holds the `Not mapped yet` lines exactly as the app reads them. A write that reports only what changed is slice 10's: `Coverage` is plain data that compares equal, so a write can send the difference of two. Test: `coverage.rs` (a page lists ten rows from its offset) and the `miniature-repo` case |
 | 66 | the message of a finding of `validate_vault`, and `summary.byCode.<code>.remedy` | each message carries the repair sentence of its code (47 percent of the characters of a page repeated them) and the page folds a repeat into "Repair as the first ... says" | a message names the node, the target and the files; the repair is one `remedy` string in `summary.byCode` for each code that has one (`rule-without-read-lines`, `dependency-both-ways`, `relation-note-on-unread`, `path-without-code`, `path-shared`, `not-mapped-line-mismatch`, `folder-only-evidence`, `dependency-unjudged`, `dependency-unwitnessed`, `starter-example-node`). A page holds more rows for its 40,000 characters, so `returned`, `nextOffset` and the hint differ with it | a repair stated once costs one sentence, not one for each file, and the fold meant a reader met the sentence in the first row only. Codes from the document schema keep their own messages and the fold. Test: the `storefront`, `edge-bytes` and `miniature-repo` cases |
+| 67 | `analyze_repo_structure` `sourceReads` while the app supplies a census (`OATLAS_CONFINED_SOURCE_READS=1`) | the selectors are answered from the disk, because only the JavaScript import scan reads the census; a file replaced or a link planted after the census was taken is read | refused by name before any file is opened. Corpus: every `safety/confined-*` case with `sourceReads` | the mode exists so that nothing is read behind the app's back; selected reads open files and pin lines to the bytes they stood on, which a census run does not answer yet, so reading them from the disk would break the promise |
+| 68 | the `analyze_repo_structure` breadth map while the census is missing, truncated, over a limit, of another contract or of another folder | the survey reads the disk and only the import edges are left out (the scan's failure is caught), so a census the script server rejected still lets it read the repository | refused with the census's own message (`Confined source snapshot descriptor is unavailable`, `... is incomplete`, `... root mismatch`); with a usable census the map is built from it and equals the script server's. Corpus: `safety/confined-*` | a refused census must not turn into a quiet read of the disk |
+| 69 | `validate_vault` and the briefs that carry its first page, for a repository-grounded report while the app supplies a census | the survey, the path check and the evidence dating read the disk and Git | a usable census gives coverage, issues and path drift measured against the census, and evidence reported as not dated (`census-has-no-git-history`, a census holds no history); no census refuses the call with its message. Corpus: `safety/confined-source-reads-on` | the same promise as rows 67 and 68 for the one other tool that read repository files |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -1106,3 +1109,24 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   the "Depth ... an earlier session recorded" sentence is not ported) and the empty-argument
   `read_source` call inside the two `every-tool` cases (row 39). Not built: the census path, the
   members of one saved constellation, and the Depth sentence.
+- 2026-11-28: the census path is wired (`fix/mcp-rust-confined-census`). With
+  `OATLAS_CONFINED_SOURCE_READS=1`, `infer_imports` and `inspect_architecture` scan the census
+  alone and `infer_imports` carries its `readBoundary` (files with hashes, every probe, every
+  folder listed), equal to the script server's byte for byte on `safety/confined-reads-valid-snapshot`
+  once the harness names the snapshot's root by its real path (macOS `/var` is a link, so the
+  script server rejected every valid snapshot there as another root). `analyze_repo_structure`
+  builds its breadth map from the census (`repository-survey::survey_of_census`: no disk, no Git,
+  never kept; the import scan gets a run of its own so a refusal there blanks only the import
+  edges, as in the script server), and `validate_vault` measures coverage and path drift against
+  it. `read_source` reads only the vault, so it no longer refuses. A census run asks every probe
+  (no parent shortcut), takes no workspace package as a scan root, looks for a JVM type under
+  every source root and limits Go files to the source folders, which is what the script server's
+  confined mode does and what its read boundary records. Questioned: the script server's confined
+  mode reads the disk for the breadth map, `sourceReads` and `validate_vault`, and a census it
+  rejected still let it read the repository. Two ways were weighed: copy that (every case agrees,
+  the promise breaks) or make the census the only source (rows 67 to 69 declare the differences).
+  The second won. Found and fixed: a descriptor number the environment names but the app never
+  opened (`OATLAS_SOURCE_SNAPSHOT_FD=198`) aborted the process when std dropped it; the number is
+  probed with `fstat` first. Not built: `sourceReads` from the census (row 67), which needs
+  `source-reads` to open files from a `SourceFiles` instead of a `SourceRoot`; the evidence dating
+  of `validate_vault` under a census (row 69), which needs Git history a census does not carry.

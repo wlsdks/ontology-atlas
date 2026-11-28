@@ -7,6 +7,7 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 
+use confined_files::SourceFiles;
 use indexmap::IndexMap;
 
 use crate::ability_row::{ability_row_text, AbilityRow, MEMBERS_SHOWN};
@@ -113,6 +114,9 @@ pub struct SurveyRequest<'a> {
     pub git_ignored: &'a HashSet<String>,
     /// Files of an earlier survey that cannot have changed, by path; they are not read again.
     pub kept_files: &'a HashMap<&'a str, &'a SurveyedFile>,
+    /// The files the import scan reads when they are not the survey's own: a census run gives the
+    /// scan a run of its own, so a refusal there blanks the import edges and nothing else.
+    pub import_files: Option<&'a dyn SourceFiles>,
 }
 
 /// The built map and the text the agent reads.
@@ -674,7 +678,7 @@ pub fn build_breadth_map(files: &SurveyFiles<'_>, request: &SurveyRequest<'_>) -
     );
     let ignore_set: HashSet<&str> = request.ignore.iter().map(String::as_str).collect();
     let imports = unit_imports(
-        files.source(),
+        request.import_files.unwrap_or_else(|| files.source()),
         request.root_path,
         &collection,
         request.ignore,

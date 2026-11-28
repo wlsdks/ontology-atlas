@@ -206,7 +206,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let request = read_request(arguments)?;
     let requested_mode = resolve_import_review_mode(&request.mode_arguments())?;
     let target = ScanTarget::open(context, request.root_path.as_deref())?;
-    let scan = target.scan(&request.scan_options());
+    let scan = target.scan(&request.scan_options())?;
 
     if requested_mode == Some(ReviewMode::Focus) {
         return focus_answer(&scan, &request);

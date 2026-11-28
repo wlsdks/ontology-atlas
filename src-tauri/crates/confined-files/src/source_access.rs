@@ -138,6 +138,19 @@ pub trait SourceFiles {
     /// The names in a directory, in byte order of the name; hidden and credential names are
     /// not among them.
     fn list_directory(&self, path: &Path) -> Result<DirectoryListing, SourceReadError>;
+
+    /// Whether every answer comes from a census the app supplied. A scan then asks every probe it
+    /// would ask (the census records each one, and the script server's does too), looks only at
+    /// the folders and files its own walk reached, and never discovers anything on the disk.
+    fn answers_from_census(&self) -> bool {
+        false
+    }
+
+    /// Whether a read of this run was refused. The disk refuses one read at a time and says
+    /// nothing more; a census run that refused any read answers nothing at all.
+    fn refused_a_read(&self) -> bool {
+        false
+    }
 }
 
 /// `path` folded lexically against `root` (a relative path is taken below it) and checked to be

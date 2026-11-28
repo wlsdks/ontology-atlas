@@ -263,6 +263,7 @@ impl SurveyCache {
                 vault_exclusion: asked.vault_exclusion.clone(),
                 git_ignored: &git_ignored,
                 kept_files: &kept,
+                import_files: None,
             },
         )
     }
