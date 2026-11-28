@@ -10,17 +10,18 @@ Every module of `src/` is named here once.
 | Question | File |
 |---|---|
 | How is a file split into bytes I can change one line of? | `document.rs` (`Document`, `RawShape`, `parts`, `entry_range`) |
-| How is a frontmatter block read? | `frontmatter/`: `block.rs` walks entries; `entry_line`, `inline`, `block_scalar`, `quoting`, `javascript_number` read one shape each; `line.rs` is one line; `value.rs` is what a key holds; `diagnostic.rs` is a fault on a line; `key_order.rs` writes keys in the order a script object lists them |
+| How is a frontmatter block read? | `frontmatter/`: `block.rs` walks entries; `entry_line`, `inline`, `block_scalar`, `quoting`, `javascript_number` read one shape each; `line.rs` is one line; `value.rs` is what a key holds; `key.rs` is a key's name (a name the format defines is stored once for the program); `diagnostic.rs` is a fault on a line; `key_order.rs` writes keys in the order a script object lists them |
 | What kinds, fields and review states exist? | `schema.rs` (`KNOWN_KINDS`, `GRAPH_ARRAY_KEYS`), `starter_body.rs` |
 | What is wrong with one document? | `validation.rs`, `body_findings.rs`, `evidence_limit.rs`, `meaning_wording.rs` |
-| What is wrong only across the vault? | `vault_issues.rs` (dangling references, duplicate slugs and uids) |
-| What does a name mean? | `reference_index.rs` (relation references), `slug_resolution.rs` (a slug or uid an agent typed) |
+| What is wrong only across the vault? | `vault_issues.rs` (dangling references, duplicate slugs and uids: `find` for every document, `about` for the few a call names) |
+| What does a name mean? | `reference_index.rs` (relation references), `slug_resolution.rs` (a slug or uid an agent typed), `slug_list.rs` (`SlugList`: the slugs one name means, held without a list when it means one) |
 | Which nodes does one node point at? | `relations.rs` |
 | What did one file come to? | `loaded_document.rs` (frontmatter, faults, link targets, a digest; the text is not kept) |
 | Which link targets does a body hold? | `body_links.rs` (listed once per file; a name it cannot answer from the list reads the body) |
 | What is kept between calls? | `document_cache.rs` |
 | Every file read for one call | `loaded_vault.rs` |
-| Which documents mention a title? | `evidence_search.rs` (`search_evidence`: substring in the title, the references or the body, scored; bodies read on every core), `search_text.rs` (lower case and one Unicode form), `body_signature.rs` (a bit fingerprint a first read leaves, so a search for text a body lacks opens no file), `near_titles.rs` (titles a typo or a shared word away, `strsim`) |
+| How are many files read? | `reader_threads.rs` (`read_on_reader_threads`: three threads read, `READER_THREADS` says why three, and the pool parses what was read) |
+| Which documents mention a title? | `evidence_search.rs` (`search_evidence`: substring in the title, the references or the body, scored; bodies read on a few threads and searched on every core), `search_text.rs` (lower case and one Unicode form), `search_needle.rs` (the folded text with its runs hashed once and the number each document's memo of its last answer is kept under), `body_signature.rs` (a bit fingerprint a first read leaves, so a search for text a body lacks opens no file), `near_titles.rs` (titles a typo or a shared word away, `strsim`) |
 | The six plain reads | `kind_census.rs`, `backlinks.rs`, `orphans.rs`, `query_filter.rs`, `review.rs`, `body_delivery.rs`, `read_hints.rs` |
 
 ## What it promises

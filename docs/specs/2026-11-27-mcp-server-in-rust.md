@@ -941,3 +941,43 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   executables, workers, families). It is equal to the script server on the survey family except
   rows 45 to 48 (48 is the one list of folder names every scan skips). Row 46 stays open: exact source reads, the analysis view and the review of a
   proposal or qualification are refused by name until they are ported.
+- 2026-11-28 (the 50,000-file scale gate): the Rust server failed `pnpm perf:mcp:scale -- --check`
+  on flow a, 229 MB after 20 calls against 185 MB, and its first `get_concepts` cost 8.6 s of CPU.
+  Two causes. Every file was opened and read on every core, and on APFS those opens wait on kernel
+  locks the threads spend as CPU (6.8 s of system time on twelve threads against 1.4 s on one).
+  And the server kept or rebuilt more than it needed: a node's frontmatter was an `IndexMap` (89 MB
+  of a 189 MB live heap), a stale graph lived beside the next one while it compiled (33 MB each),
+  and every call rebuilt vault-wide tables of 50,000 entries whose freed blocks the allocator keeps
+  and the system counts. **Reading:** three threads read and the pool parses what they read
+  (`READER_THREADS` in `vault-document/src/reader_threads.rs` keeps the table). The first
+  `get_concepts` on flows a and b took 783 to 990 ms wall at 2.8 to 4.3 s CPU, against 1,210 to
+  1,643 ms and 7.9 to 12.8 s on every core and 1,417 to 1,577 ms on one thread; a fourth thread
+  only added CPU. The count is fixed, not a share of the cores, because the volume serializes the
+  opens however many cores ask. A repeat call's stamps stay on the calling thread (on three
+  threads they cost 60 to 100 ms more CPU and 4 MB per call), so a second call takes about 25 to
+  30 ms more wall than on every core, at a third of the CPU. **Memory:** a frontmatter is a boxed
+  list of (Key, Value) with the format's key names stored once (54 MB, and 6 MB less once each
+  list drops its growth room); the stale graph is dropped before the next compile;
+  `get_concepts` judges vault-wide faults only for the slugs it names (`VaultIssues::about`, equal
+  per slug to `find`); the name indexes hold one slug without a list and leave out the aliases no
+  lookup can reach; the graph keeps each node's edges as a run of one list found by offsets. The
+  differential families vault-read, graph, imports and evidence are unchanged (only `agent_brief`,
+  not ported yet, differs). The gate, CPU ms of the first and second call, before and after
+  (three runs after, on a machine at load average 9 to 12):
+
+  | Call | Flow a before | Flow a after | Flow b before | Flow b after |
+  |---|---|---|---|---|
+  | `get_concepts` | 8,620 / 540 | 4,060–11,080 / 150–180 | 8,720 / 520 | 3,340–3,600 / 120–150 |
+  | `find_backlinks` | 480 / 450 | 150–170 / 160–170 | 490 / 500 | 120–170 / 120–150 |
+  | `query_ontology` path | 920 / 420 | 570 / 120 | 490 / 500 | 140–160 / 100–140 |
+  | `compile_ontology` | 460 / 390 | 130–150 / 130–150 | 440 / 450 | 100–140 / 110–130 |
+  | `find_evidence`, phrase | 8,540 / 440 | 4,210–4,760 / 150 | 8,780 / 460 | 4,780–5,750 / 130–160 |
+  | `find_evidence`, word | 3,800 / 480 | 1,410–1,760 / 170–190 | 5,090 / 480 | 1,540–2,390 / 160–180 |
+  | `get_concepts` after a 1-file edit | 550 | 150–160 | 520 | 120–150 |
+  | Footprint after 20 calls, and peak | 229 MB | 181–183 MB | 150 MB | 130–132 MB |
+
+  Not met: the lead's target of 165 MB on flow a. The end figure stands over a live heap of 130 MB;
+  the rest is free memory the allocator keeps (29 MB of large blocks the reads and the compile
+  freed, and about 35 MB free in small regions), which varies from run to run and which
+  `malloc_zone_pressure_relief` after each call did not return. One run's first `get_concepts`
+  took 11.1 s of CPU while other builds loaded the machine; first calls are not gated.

@@ -121,7 +121,7 @@ impl Document {
                 };
                 (
                     Layout::Framed(framed),
-                    Frontmatter::from_entries(&read.entries),
+                    Frontmatter::from_entries(read.entries),
                     read.diagnostics,
                 )
             }

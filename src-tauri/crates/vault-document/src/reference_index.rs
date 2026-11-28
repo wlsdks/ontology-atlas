@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 use icu_normalizer::ComposingNormalizerBorrowed;
 
 use crate::loaded_document::LoadedDocument;
+use crate::slug_list::SlugList;
 
 /// The slug a reference is looked up as: slugs come from the file walk in NFC, so a reference typed
 /// in another form names the same document.
@@ -23,44 +24,43 @@ pub fn tail_of(slug: &str) -> &str {
 #[derive(Debug)]
 pub struct ReferenceIndex<'a> {
     slugs: HashSet<&'a str>,
-    /// Slugs by the last segment they end in, for slugs that have more than one segment.
-    by_tail: HashMap<&'a str, Vec<&'a str>>,
-    /// The first document to declare each `slug:`, NFC.
-    by_declared_slug: HashMap<String, &'a str>,
-    /// Slugs by each of the endings that follow a `/`, in vault order.
-    by_suffix: HashMap<&'a str, Vec<&'a str>>,
+    /// The first document to declare each `slug:` that is not itself a slug, NFC: the file's own
+    /// text when it is NFC. An alias that is a slug is never asked for here: the slug answers first.
+    by_declared_slug: HashMap<Cow<'a, str>, &'a str>,
+    /// Slugs by each of the endings that follow a `/`, in vault order. An ending with no `/` in it
+    /// is a last segment, so this answers for last segments too.
+    by_suffix: HashMap<&'a str, SlugList<'a>>,
 }
 
 impl<'a> ReferenceIndex<'a> {
     pub fn new(documents: &'a [LoadedDocument]) -> Self {
         let mut slugs = HashSet::with_capacity(documents.len());
-        let mut by_tail: HashMap<&str, Vec<&str>> = HashMap::new();
-        let mut by_suffix: HashMap<&str, Vec<&str>> = HashMap::new();
-        let mut by_declared_slug: HashMap<String, &str> = HashMap::new();
+        let mut by_suffix: HashMap<&str, SlugList<'a>> = HashMap::with_capacity(documents.len());
+        let mut by_declared_slug: HashMap<Cow<'a, str>, &str> = HashMap::new();
         for document in documents {
             let slug = document.slug();
             slugs.insert(slug);
-            let tail = tail_of(slug);
-            if tail != slug {
-                by_tail.entry(tail).or_default().push(slug);
-            }
             for (position, _) in slug.match_indices('/') {
                 if let Some(suffix) = slug.get(position + 1..) {
-                    by_suffix.entry(suffix).or_default().push(slug);
+                    by_suffix
+                        .entry(suffix)
+                        .and_modify(|slugs| slugs.push(slug))
+                        .or_insert(SlugList::One(slug));
                 }
             }
         }
         for document in documents {
             if let Some(declared) = document.frontmatter().text("slug") {
-                let alias = nfc(declared).into_owned();
-                if !answer_format::whitespace::trim(&alias).is_empty() {
+                let alias = nfc(declared);
+                if !answer_format::whitespace::trim(&alias).is_empty()
+                    && !slugs.contains(alias.as_ref())
+                {
                     by_declared_slug.entry(alias).or_insert(document.slug());
                 }
             }
         }
         Self {
             slugs,
-            by_tail,
             by_declared_slug,
             by_suffix,
         }
@@ -72,8 +72,7 @@ impl<'a> ReferenceIndex<'a> {
     }
 
     /// Every document `reference` may name: the one it spells exactly, else the one that declares
-    /// it, else every slug that ends in it as a last segment, else every slug that ends in it after
-    /// a `/`.
+    /// it, else every slug that ends in it after a `/`, as a last segment or a longer ending.
     pub fn candidates(&self, reference: &str) -> Vec<&'a str> {
         let reference = nfc(reference);
         if let Some(slug) = self.slugs.get(reference.as_ref()) {
@@ -82,12 +81,9 @@ impl<'a> ReferenceIndex<'a> {
         if let Some(slug) = self.by_declared_slug.get(reference.as_ref()) {
             return vec![slug];
         }
-        if let Some(tails) = self.by_tail.get(reference.as_ref()) {
-            return tails.clone();
-        }
         self.by_suffix
             .get(reference.as_ref())
-            .cloned()
+            .map(|slugs| slugs.as_slice().to_vec())
             .unwrap_or_default()
     }
 
@@ -104,7 +100,6 @@ impl<'a> ReferenceIndex<'a> {
         let reference = nfc(reference);
         self.slugs.contains(reference.as_ref())
             || self.by_declared_slug.contains_key(reference.as_ref())
-            || self.by_tail.contains_key(reference.as_ref())
             || self.by_suffix.contains_key(reference.as_ref())
     }
 }

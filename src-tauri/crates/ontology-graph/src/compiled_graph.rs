@@ -11,6 +11,7 @@ use serde::{Serialize, Serializer};
 use vault_document::frontmatter::{Scalar, Value};
 use vault_document::LoadedDocument;
 
+use crate::adjacency::Adjacency;
 use crate::compile_issue::CompileIssue;
 
 /// A node's place in [`CompiledGraph::nodes`]: the nodes are in slug order, so ids compare as slugs
@@ -392,8 +393,8 @@ pub struct CompiledGraph {
     pub(crate) max_mtime: f64,
     pub(crate) skipped_non_node_count: usize,
     pub(crate) edge_counts: EdgeCounts,
-    pub(crate) outgoing: Vec<Vec<EdgeId>>,
-    pub(crate) incoming: Vec<Vec<EdgeId>>,
+    pub(crate) outgoing: Adjacency,
+    pub(crate) incoming: Adjacency,
 }
 
 impl CompiledGraph {
@@ -471,18 +472,12 @@ impl CompiledGraph {
 
     /// The edges a node declares, in edge order.
     pub fn outgoing(&self, node: NodeId) -> &[EdgeId] {
-        self.outgoing
-            .get(node.index())
-            .map(Vec::as_slice)
-            .unwrap_or_default()
+        self.outgoing.at(node)
     }
 
     /// The edges that resolve to a node, in edge order.
     pub fn incoming(&self, node: NodeId) -> &[EdgeId] {
-        self.incoming
-            .get(node.index())
-            .map(Vec::as_slice)
-            .unwrap_or_default()
+        self.incoming.at(node)
     }
 
     pub fn edge_counts(&self) -> EdgeCounts {

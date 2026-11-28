@@ -16,13 +16,13 @@ fn array_index(key: &str) -> Option<u32> {
 }
 
 /// `entries` in the order a JavaScript object lists them.
-pub fn in_object_order<'a, T>(
-    entries: impl Iterator<Item = (&'a String, T)>,
-) -> Vec<(&'a String, T)> {
-    let mut indexed: Vec<(u32, (&'a String, T))> = Vec::new();
-    let mut named: Vec<(&'a String, T)> = Vec::new();
+pub fn in_object_order<'a, K: AsRef<str> + ?Sized, T>(
+    entries: impl Iterator<Item = (&'a K, T)>,
+) -> Vec<(&'a K, T)> {
+    let mut indexed: Vec<(u32, (&'a K, T))> = Vec::new();
+    let mut named: Vec<(&'a K, T)> = Vec::new();
     for (key, value) in entries {
-        match array_index(key) {
+        match array_index(key.as_ref()) {
             Some(index) => indexed.push((index, (key, value))),
             None => named.push((key, value)),
         }

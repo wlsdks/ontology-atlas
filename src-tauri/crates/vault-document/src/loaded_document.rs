@@ -6,7 +6,8 @@
 //! version the rest was read from. A document that was named, not listed, keeps its body.
 
 use std::borrow::Cow;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, OnceLock};
 
 use confined_files::{ConfinedPath, FileSnapshot, OsErrorCode, StableReadError};
 use sha2::{Digest, Sha256};
@@ -15,12 +16,9 @@ use crate::body_links::BodyLinks;
 use crate::body_signature::BodySignature;
 use crate::document::{Document, RawShape};
 use crate::frontmatter::{Diagnostic, Frontmatter, Value};
+use crate::search_needle::SearchNeedle;
 use crate::search_text::folded;
 use crate::validation::{validate_document, Issue};
-
-/// A needle longer than this is not remembered, so a query of thousands of words is not copied
-/// into every document of a vault of fifty thousand.
-const REMEMBERED_NEEDLE_MAX_BYTES: usize = 256;
 
 /// Why a file could not be read.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -86,10 +84,14 @@ struct Record {
     body: Option<String>,
     /// What a text search may skip this body by, made by the first search that reads it.
     signature: OnceLock<BodySignature>,
-    /// The last needle `body_includes` was asked, and its answer: a search repeated for a word most
-    /// bodies hold reads no file. It is dropped with the record when the file changes.
-    last_needle: Mutex<Option<(String, bool)>>,
+    /// The memo number of the last needle `body_includes` was asked (`SearchNeedle`), shifted
+    /// left by one, with the answer in the low bit; zero before any. A search repeated for a word
+    /// most bodies hold reads no file. It is dropped with the record when the file changes.
+    last_answer: AtomicU64,
 }
+
+/// What a body search took from the disk for one document: `None` when the body was kept.
+pub(crate) type BodyRead = Option<Result<Option<FileSnapshot>, StableReadError>>;
 
 impl LoadedDocument {
     /// Reads `snapshot`, the bytes of `file` that were read as `slug`. `keep_body` keeps the body.
@@ -125,7 +127,7 @@ impl LoadedDocument {
                 digest,
                 body: kept,
                 signature: OnceLock::new(),
-                last_needle: Mutex::new(None),
+                last_answer: AtomicU64::new(0),
             }),
         }
     }
@@ -185,66 +187,75 @@ impl LoadedDocument {
     /// The body as readers see it: LF line endings only. A body that was not kept is read from the
     /// file again, which must still be the version the rest was read from.
     pub fn body(&self) -> Result<Cow<'_, str>, FileReadError> {
-        if let Some(body) = &self.record.body {
-            return Ok(Cow::Borrowed(body));
-        }
+        let read = self.read_body();
+        self.body_from(read)
+    }
+
+    /// The file read again for its body, or `None` when the body was kept: the part of
+    /// [`Self::body`] that reaches the disk.
+    pub(crate) fn read_body(&self) -> BodyRead {
+        self.record
+            .body
+            .is_none()
+            .then(|| self.record.file.read_snapshot())
+    }
+
+    /// The body from what [`Self::read_body`] took, refused when the file is no longer the version
+    /// the rest was read from.
+    pub(crate) fn body_from(&self, read: BodyRead) -> Result<Cow<'_, str>, FileReadError> {
+        let Some(read) = read else {
+            return Ok(Cow::Borrowed(
+                self.record.body.as_deref().unwrap_or_default(),
+            ));
+        };
         let slug = self.slug();
-        let snapshot = match self.record.file.read_snapshot() {
+        let changed = || FileReadError::Changed {
+            slug: slug.to_string(),
+        };
+        let snapshot = match read {
             Ok(Some(snapshot)) => snapshot,
-            Ok(None) => {
-                return Err(FileReadError::Changed {
-                    slug: slug.to_string(),
-                })
-            }
+            Ok(None) => return Err(changed()),
             Err(error) => return Err(FileReadError::of(slug, error)),
         };
         if !self.was_read_from(&snapshot.bytes) {
-            return Err(FileReadError::Changed {
-                slug: slug.to_string(),
-            });
+            return Err(changed());
         }
         Ok(Cow::Owned(
             Document::from_bytes(snapshot.bytes).body().into_owned(),
         ))
     }
 
-    /// Whether the body, folded to lower case and one Unicode form, holds `folded_needle`. The first
-    /// call reads the body and keeps a fingerprint of it, so a later search for text the body lacks
-    /// opens no file.
-    pub fn body_includes(&self, folded_needle: &str) -> Result<bool, FileReadError> {
-        if let Some(answer) = self.remembered_answer(folded_needle) {
-            return Ok(answer);
+    /// Whether the body, folded to lower case and one Unicode form, holds `needle`, when that is
+    /// known without reading it: from the memo of the last search, or from the fingerprint the
+    /// first read left.
+    pub(crate) fn known_body_answer(&self, needle: &SearchNeedle) -> Option<bool> {
+        let last = self.record.last_answer.load(Ordering::Relaxed);
+        if last >> 1 == needle.memo_number() {
+            return Some(last & 1 == 1);
         }
-        if let Some(signature) = self.record.signature.get() {
-            if !signature.may_contain(folded_needle) {
-                return Ok(false);
-            }
-        }
-        let body = self.body()?;
+        let signature = self.record.signature.get()?;
+        (!signature.may_contain(needle)).then_some(false)
+    }
+
+    /// Whether the body holds `needle`, from what [`Self::read_body`] took: folds the body, leaves
+    /// its fingerprint on the first read, and remembers the answer.
+    pub(crate) fn body_includes_from(
+        &self,
+        read: BodyRead,
+        needle: &SearchNeedle,
+    ) -> Result<bool, FileReadError> {
+        let body = self.body_from(read)?;
         let folded_body = folded(&body);
         let signature = self
             .record
             .signature
             .get_or_init(|| BodySignature::of(&folded_body));
-        let answer = signature.may_contain(folded_needle) && folded_body.contains(folded_needle);
-        self.remember_answer(folded_needle, answer);
+        let answer = signature.may_contain(needle) && folded_body.contains(needle.text());
+        self.record.last_answer.store(
+            needle.memo_number() << 1 | u64::from(answer),
+            Ordering::Relaxed,
+        );
         Ok(answer)
-    }
-
-    fn remembered_answer(&self, folded_needle: &str) -> Option<bool> {
-        let last = self.record.last_needle.lock().ok()?;
-        last.as_ref()
-            .filter(|(needle, _)| needle == folded_needle)
-            .map(|(_, answer)| *answer)
-    }
-
-    fn remember_answer(&self, folded_needle: &str, answer: bool) {
-        if folded_needle.len() > REMEMBERED_NEEDLE_MAX_BYTES {
-            return;
-        }
-        if let Ok(mut last) = self.record.last_needle.lock() {
-            *last = Some((folded_needle.to_string(), answer));
-        }
     }
 
     /// `frontmatter.kind` when it is a non-blank text: what makes a document a node.

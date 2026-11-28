@@ -20,7 +20,8 @@ pub enum Value {
     Number(f64),
     Bool(bool),
     List(Vec<String>),
-    Map(IndexMap<String, Scalar>),
+    /// Boxed: a map is rare, and unboxed it would make every value of every key as large as one.
+    Map(Box<IndexMap<String, Scalar>>),
 }
 
 impl Value {

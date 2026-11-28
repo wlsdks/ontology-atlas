@@ -20,11 +20,14 @@ mod near_titles;
 mod orphans;
 mod query_filter;
 mod read_hints;
+mod reader_threads;
 mod reference_index;
 mod relations;
 mod review;
 pub mod schema;
+mod search_needle;
 mod search_text;
+mod slug_list;
 mod slug_resolution;
 pub mod starter_body;
 mod validation;
@@ -53,6 +56,7 @@ pub use relations::{
     dependency_refs, neighbor_refs, normalized_refs, relation_note_for, NeighborRef,
 };
 pub use review::{describe_review, Review};
+pub use slug_list::SlugList;
 pub use slug_resolution::{
     find_graph_references, resolve_uid, suggest_similar_slugs, AmbiguousName, SlugLookup,
 };

@@ -2,7 +2,7 @@
 //! `slug:` alias or a last segment; and, when it means none, the slugs it may have meant. A name
 //! that means two documents is refused rather than guessed.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use answer_format::whitespace::trim;
 use confined_files::VaultRoot;
@@ -11,6 +11,7 @@ use crate::frontmatter::Value;
 use crate::loaded_document::LoadedDocument;
 use crate::read_hints::Reference;
 use crate::reference_index::tail_of;
+use crate::slug_list::SlugList;
 
 /// A name that means more than one document, in the words an agent reads.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -20,31 +21,41 @@ pub struct AmbiguousName(pub String);
 /// The documents of a vault by the names they answer to.
 #[derive(Debug)]
 pub struct SlugLookup<'a> {
-    by_slug: HashMap<&'a str, &'a LoadedDocument>,
-    by_tail: HashMap<&'a str, Vec<&'a str>>,
-    by_declared_slug: HashMap<&'a str, Vec<&'a str>>,
+    slugs: HashSet<&'a str>,
+    by_tail: HashMap<&'a str, SlugList<'a>>,
+    /// The documents declaring each `slug:` that is not itself a slug: the slug answers first.
+    by_declared_slug: HashMap<&'a str, SlugList<'a>>,
 }
 
 impl<'a> SlugLookup<'a> {
     pub fn new(documents: &'a [LoadedDocument]) -> Self {
-        let mut by_slug = HashMap::with_capacity(documents.len());
-        let mut by_tail: HashMap<&str, Vec<&str>> = HashMap::new();
-        let mut by_declared_slug: HashMap<&str, Vec<&str>> = HashMap::new();
+        let mut slugs = HashSet::with_capacity(documents.len());
+        let mut by_tail: HashMap<&str, SlugList<'a>> = HashMap::with_capacity(documents.len());
+        let mut by_declared_slug: HashMap<&str, SlugList<'a>> = HashMap::new();
         for document in documents {
-            by_slug.entry(document.slug()).or_insert(document);
+            let slug = document.slug();
+            slugs.insert(slug);
             by_tail
-                .entry(tail_of(document.slug()))
-                .or_default()
-                .push(document.slug());
-            if let Some(declared) = document.frontmatter().text("slug") {
-                by_declared_slug
-                    .entry(trim(declared))
-                    .or_default()
-                    .push(document.slug());
+                .entry(tail_of(slug))
+                .and_modify(|slugs| slugs.push(slug))
+                .or_insert(SlugList::One(slug));
+        }
+        for document in documents {
+            let Some(declared) = document.frontmatter().text("slug") else {
+                continue;
+            };
+            let declared = trim(declared);
+            if slugs.contains(declared) {
+                continue;
             }
+            let slug = document.slug();
+            by_declared_slug
+                .entry(declared)
+                .and_modify(|slugs| slugs.push(slug))
+                .or_insert(SlugList::One(slug));
         }
         Self {
-            by_slug,
+            slugs,
             by_tail,
             by_declared_slug,
         }
@@ -57,7 +68,7 @@ impl<'a> SlugLookup<'a> {
         if trim(name).is_empty() {
             return Ok(None);
         }
-        if self.by_slug.contains_key(name) {
+        if self.slugs.contains(name) {
             return Ok(Some(name.to_string()));
         }
         if let Some(on_disk) = root.canonical_disk_slug(name) {
@@ -66,7 +77,7 @@ impl<'a> SlugLookup<'a> {
         let declared = self
             .by_declared_slug
             .get(name)
-            .map_or(&[][..], Vec::as_slice);
+            .map_or(&[][..], SlugList::as_slice);
         match declared {
             [] => {}
             [only] => return Ok(Some((*only).to_string())),
@@ -77,7 +88,7 @@ impl<'a> SlugLookup<'a> {
                 )))
             }
         }
-        match self.by_tail.get(name).map_or(&[][..], Vec::as_slice) {
+        match self.by_tail.get(name).map_or(&[][..], SlugList::as_slice) {
             [] => Ok(None),
             [only] => Ok(Some((*only).to_string())),
             several => Err(AmbiguousName(format!(

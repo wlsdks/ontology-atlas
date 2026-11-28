@@ -16,14 +16,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use confined_files::{ConfinedPath, FileStamp, StableReadError, VaultRoot};
-use rayon::prelude::*;
+use confined_files::{ConfinedPath, FileSnapshot, FileStamp, StableReadError, VaultRoot};
 
 use crate::loaded_document::{FileReadError, LoadedDocument};
-
-/// How many files one task looks at: enough that a folder's files share its handle, few enough
-/// that every core has work.
-const STAMP_CHUNK: usize = 1024;
+use crate::reader_threads::{read_on_reader_threads, Reading};
 
 /// A file this recently written or changed, when it was read, is not trusted yet.
 const RACY_WINDOW_NANOSECONDS: i128 = 2_000_000_000;
@@ -79,6 +75,17 @@ fn now_nanoseconds() -> i128 {
         .map_or(0, |elapsed| i128::try_from(elapsed.as_nanos()).unwrap_or(0))
 }
 
+/// The kept document of a file whose stamp is the one a settled entry was read at.
+fn kept(
+    cached: Option<&Entry>,
+    looked_at: &Result<Option<FileStamp>, StableReadError>,
+) -> Option<LoadedDocument> {
+    cached
+        .filter(|entry| entry.settled)
+        .filter(|entry| matches!(looked_at, Ok(Some(stamp)) if *stamp == entry.stamp))
+        .map(|entry| entry.document.clone())
+}
+
 impl DocumentCache {
     pub fn new() -> Self {
         Self::default()
@@ -127,19 +134,40 @@ impl DocumentCache {
                 by_path.get(file.as_path()).copied()
             }
         };
-        // One look at every name first, a folder's files together; then each file is kept or read.
-        let stamps: Vec<_> = files
-            .par_chunks(STAMP_CHUNK)
-            .flat_map_iter(ConfinedPath::stamps)
-            .collect();
-        let outcomes: Vec<Outcome> = files
-            .par_iter()
-            .zip(stamps)
-            .enumerate()
-            .map(|(position, (file, stamp))| {
-                self.refresh(root, file, cached_for(position, file), stamp)
-            })
-            .collect();
+        // One look at every name, a folder's files together, on this thread: on three threads the
+        // looks of a repeat call cost 60 to 100 ms more CPU on the scale gate and left the process
+        // 4 MB larger after each call (`reader_threads` says why). A settled file whose stamp
+        // holds is kept, the rest are read. A kept document is one word per file; only the files
+        // read hold a whole outcome.
+        let stamps = ConfinedPath::stamps(files);
+        let mut kept_documents: Vec<Option<LoadedDocument>> = Vec::with_capacity(files.len());
+        let mut unsettled: Vec<(&ConfinedPath, Option<&Entry>)> = Vec::new();
+        for (position, (file, stamp)) in files.iter().zip(stamps).enumerate() {
+            let cached = cached_for(position, file);
+            let document = kept(cached, &stamp);
+            if document.is_none() {
+                unsettled.push((file, cached));
+            }
+            kept_documents.push(document);
+        }
+        let mut read = read_on_reader_threads(
+            &unsettled,
+            |(file, _)| {
+                self.reads.fetch_add(1, Ordering::Relaxed);
+                let snapshot = file.read_snapshot();
+                let bytes = snapshot
+                    .as_ref()
+                    .ok()
+                    .and_then(Option::as_ref)
+                    .map_or(0, |snapshot| snapshot.bytes.len());
+                Reading {
+                    value: snapshot,
+                    bytes,
+                }
+            },
+            |(file, cached), snapshot| self.outcome_of(root, file, *cached, snapshot),
+        )
+        .into_iter();
         // At the first change, the files before it, which were all kept, start the new entries.
         let keep_before = |position: usize, next: &mut Vec<Entry>| {
             next.reserve(files.len());
@@ -150,7 +178,13 @@ impl DocumentCache {
         let mut documents = Vec::with_capacity(files.len());
         let mut changed = !same_listing;
         let mut next: Vec<Entry> = Vec::new();
-        for (position, (file, outcome)) in files.iter().zip(outcomes).enumerate() {
+        for (position, (file, kept_document)) in files.iter().zip(kept_documents).enumerate() {
+            // The files read come back in the order they were listed, so each file not kept takes
+            // the next outcome.
+            let outcome = match kept_document {
+                Some(document) => Outcome::Kept(document),
+                None => read.next().unwrap_or(Outcome::Gone),
+            };
             match outcome {
                 Outcome::Kept(document) => {
                     if changed {
@@ -181,18 +215,15 @@ impl DocumentCache {
         Ok(documents)
     }
 
-    fn refresh(
+    /// What a file that was read again comes to: gone, failed, the kept document when the bytes
+    /// are the ones it was read from, or a new read of them.
+    fn outcome_of(
         &self,
         root: &VaultRoot,
         file: &ConfinedPath,
         cached: Option<&Entry>,
-        looked_at: Result<Option<FileStamp>, StableReadError>,
+        snapshot: Result<Option<FileSnapshot>, StableReadError>,
     ) -> Outcome {
-        if let Some(entry) = cached.filter(|entry| entry.settled) {
-            if matches!(looked_at, Ok(Some(stamp)) if stamp == entry.stamp) {
-                return Outcome::Kept(entry.document.clone());
-            }
-        }
         let slug = match cached {
             Some(entry) => entry.document.slug().to_string(),
             None => match root.slug_of(file) {
@@ -200,8 +231,7 @@ impl DocumentCache {
                 None => return Outcome::Gone,
             },
         };
-        self.reads.fetch_add(1, Ordering::Relaxed);
-        let snapshot = match file.read_snapshot() {
+        let snapshot = match snapshot {
             Ok(Some(snapshot)) => snapshot,
             Ok(None) => return Outcome::Gone,
             Err(error) => return Outcome::Failed(FileReadError::of(&slug, error)),

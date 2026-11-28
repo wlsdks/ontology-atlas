@@ -150,7 +150,14 @@ fn read_entry_at(lines: &[Line<'_>], index: usize, block: &mut ReadBlock) -> usi
             }
             Some(Nested::Mapping) => {
                 let (members, next) = read_block_mapping(lines, index + 1, &mut block.diagnostics);
-                block.finish_entry(key, Value::Map(members), index, next, line_number, true);
+                block.finish_entry(
+                    key,
+                    Value::Map(Box::new(members)),
+                    index,
+                    next,
+                    line_number,
+                    true,
+                );
                 next
             }
             None => {
@@ -187,7 +194,7 @@ fn read_entry_at(lines: &[Line<'_>], index: usize, block: &mut ReadBlock) -> usi
         let members = read_inline_mapping(&value, line_number, &mut block.diagnostics);
         block.finish_entry(
             key,
-            Value::Map(members),
+            Value::Map(Box::new(members)),
             index,
             index + 1,
             line_number,
@@ -353,6 +360,11 @@ impl ReadBlock {
         if check_relation && GRAPH_ARRAY_KEYS.contains(&key.as_str()) && value.as_list().is_none() {
             self.diagnostics
                 .push(Diagnostic::relation_not_a_list(line_number, &key));
+        }
+        let mut value = value;
+        if let Value::List(items) = &mut value {
+            // A list is kept for as long as its document is: without the room it grew into.
+            items.shrink_to_fit();
         }
         self.entries.push(ReadEntry {
             key,
