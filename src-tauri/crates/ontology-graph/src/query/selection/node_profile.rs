@@ -12,14 +12,12 @@ use crate::query::edge_rows::CompiledEdge;
 use crate::query::name_counts::sorted_counts;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::{NODE_PROFILE_DEPTH, NODE_PROFILE_LIMIT};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{public_relation_type, RelationSet};
 use crate::query::request::QueryRequest;
 use crate::query::step::Step;
 use crate::query::walks::lineage::{lineage_reach, LineageRows};
-
-const DEFAULT_LIMIT: usize = 20;
-const DEFAULT_DEPTH: usize = 3;
 
 #[derive(Serialize)]
 struct Degree {
@@ -181,8 +179,8 @@ pub fn node_profile<'a>(
     request: &QueryRequest,
 ) -> Result<NodeProfileAnswer<'a>, QueryError> {
     let center = resolve(graph, request.slug.as_deref(), "slug")?;
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
-    let depth = request.depth_or(DEFAULT_DEPTH);
+    let limit = request.limit.unwrap_or(NODE_PROFILE_LIMIT);
+    let depth = request.depth_or(NODE_PROFILE_DEPTH);
     let include_external = request.include_external.unwrap_or(true);
     let include_unresolved = request.include_unresolved.unwrap_or(true);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;

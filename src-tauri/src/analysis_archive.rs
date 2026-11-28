@@ -1,39 +1,19 @@
 //! App-owned append-only diagnostic Markdown. A model cannot choose a path,
 //! replace a prior run, or use this command to write an ontology concept.
 
+use analysis_archive_format::{is_record_file_name, is_uuid_v4, ARCHIVE_DIRECTORY, MAX_RECORD_BYTES};
 use serde::Serialize;
 use std::fs;
 use std::io::{Read, Write};
 #[cfg(not(unix))]
 use std::path::Path;
 
-const LIMIT: usize = 2_000_000;
-const DIRECTORY: &str = ".ontology-atlas/analyses";
-
 fn validate_file_name(name: &str) -> Result<(), String> {
-    if !name.is_ascii() || name.len() != 64 || !name.ends_with(".md") {
-        return Err("invalid analysis file name".into());
+    if is_record_file_name(name) {
+        Ok(())
+    } else {
+        Err("invalid analysis file name".into())
     }
-    let bytes = name.as_bytes();
-    for (index, byte) in bytes.iter().enumerate() {
-        let valid = match index {
-            4 | 7 | 13 | 16 | 19 | 24 | 33 | 38 | 43 | 48 => *byte == b'-',
-            10 => *byte == b'T',
-            23 => *byte == b'Z',
-            61 => *byte == b'.',
-            62 => *byte == b'm',
-            63 => *byte == b'd',
-            25..=60 => byte.is_ascii_digit() || (b'a'..=b'f').contains(byte),
-            _ => byte.is_ascii_digit(),
-        };
-        if !valid {
-            return Err("invalid analysis file name".into());
-        }
-    }
-    if bytes.get(39) != Some(&b'4') || !matches!(bytes.get(44), Some(b'8' | b'9' | b'a' | b'b')) {
-        return Err("analysis file name must carry a UUIDv4".into());
-    }
-    Ok(())
 }
 
 #[derive(Debug, Serialize)]
@@ -61,7 +41,7 @@ fn header_string(content: &str, key: &str) -> Result<String, String> {
 
 fn validate_envelope(file_name: &str, content: &str) -> Result<(), String> {
     validate_file_name(file_name)?;
-    if content.len() > LIMIT {
+    if content.len() > MAX_RECORD_BYTES {
         return Err("analysis record exceeds the supported byte budget".into());
     }
     if header_string(content, "analysis_schema")? != "atlas-analysis/v1" {
@@ -74,18 +54,7 @@ fn validate_envelope(file_name: &str, content: &str) -> Result<(), String> {
         return Err("unsupported analysis record type".into());
     }
     let id = header_string(content, "id")?;
-    let bytes = id.as_bytes();
-    if bytes.len() != 36
-        || bytes.iter().enumerate().any(|(index, byte)| {
-            if matches!(index, 8 | 13 | 18 | 23) {
-                *byte != b'-'
-            } else {
-                !byte.is_ascii_digit() && !(b'a'..=b'f').contains(byte)
-            }
-        })
-        || bytes.get(14) != Some(&b'4')
-        || !matches!(bytes.get(19), Some(b'8' | b'9' | b'a' | b'b'))
-    {
+    if !is_uuid_v4(&id) {
         return Err("analysis id must be a UUIDv4".into());
     }
     let created_at = header_string(content, "created_at")?;
@@ -122,7 +91,7 @@ pub(crate) fn read_analysis_record_text(
         let root = super::canonical_root(&root_path)?;
         use std::os::fd::{AsRawFd, FromRawFd};
         let parent =
-            crate::confined_files::open_absolute_directory_no_follow(&root.join(DIRECTORY))?;
+            crate::confined_files::open_absolute_directory_no_follow(&root.join(ARCHIVE_DIRECTORY))?;
         let name = std::ffi::CString::new(file_name).map_err(|error| error.to_string())?;
         let fd = unsafe {
             libc::openat(
@@ -136,15 +105,15 @@ pub(crate) fn read_analysis_record_text(
         }
         let mut file = unsafe { fs::File::from_raw_fd(fd) };
         let metadata = file.metadata().map_err(|error| error.to_string())?;
-        if !metadata.is_file() || metadata.len() > LIMIT as u64 {
+        if !metadata.is_file() || metadata.len() > MAX_RECORD_BYTES as u64 {
             return Err("analysis record is not a bounded regular file".into());
         }
         let mut text = String::new();
         (&mut file)
-            .take((LIMIT + 1) as u64)
+            .take((MAX_RECORD_BYTES + 1) as u64)
             .read_to_string(&mut text)
             .map_err(|error| error.to_string())?;
-        if text.len() > LIMIT {
+        if text.len() > MAX_RECORD_BYTES {
             return Err("analysis record exceeds the supported byte budget".into());
         }
         let after = file.metadata().map_err(|error| error.to_string())?;
@@ -175,18 +144,18 @@ fn read_portable_record(root_path: &str, file_name: &str) -> Result<String, Stri
             return Err("analysis record path must not contain symlinks".into());
         }
     }
-    let target = super::resolve_existing_inside(root_path, &format!("{DIRECTORY}/{file_name}"))?;
+    let target = super::resolve_existing_inside(root_path, &format!("{ARCHIVE_DIRECTORY}/{file_name}"))?;
     let mut file = fs::File::open(target).map_err(|error| error.to_string())?;
     let metadata = file.metadata().map_err(|error| error.to_string())?;
-    if !metadata.is_file() || metadata.len() > LIMIT as u64 {
+    if !metadata.is_file() || metadata.len() > MAX_RECORD_BYTES as u64 {
         return Err("analysis record is not a bounded regular file".into());
     }
     let mut text = String::new();
     (&mut file)
-        .take((LIMIT + 1) as u64)
+        .take((MAX_RECORD_BYTES + 1) as u64)
         .read_to_string(&mut text)
         .map_err(|error| error.to_string())?;
-    if text.len() > LIMIT {
+    if text.len() > MAX_RECORD_BYTES {
         return Err("analysis record exceeds the supported byte budget".into());
     }
     let after = file.metadata().map_err(|error| error.to_string())?;
@@ -207,7 +176,7 @@ fn append_after_open(
     if let Some(reason) = super::vault_root_rejection(&root) {
         return Err(format!("vault root is not eligible: {reason}"));
     }
-    let relative = format!("{DIRECTORY}/{file_name}");
+    let relative = format!("{ARCHIVE_DIRECTORY}/{file_name}");
 
     #[cfg(unix)]
     let created = {
@@ -218,7 +187,7 @@ fn append_after_open(
         // the file we wrote, even when the old directory is still inside the vault.
         use std::os::unix::fs::MetadataExt;
         let pinned = parent.metadata().map_err(|error| error.to_string())?;
-        let named_path = root.join(DIRECTORY);
+        let named_path = root.join(ARCHIVE_DIRECTORY);
         let named = fs::symlink_metadata(&named_path).map_err(|error| error.to_string())?;
         if named.file_type().is_symlink()
             || named.dev() != pinned.dev()
@@ -231,7 +200,7 @@ fn append_after_open(
 
     #[cfg(not(unix))]
     let created = {
-        let directory = super::resolve_directory_target_inside(&root_path, DIRECTORY)?;
+        let directory = super::resolve_directory_target_inside(&root_path, ARCHIVE_DIRECTORY)?;
         fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
         super::ensure_inside_canonical(&root_path, &directory)?;
         after_open();
@@ -266,7 +235,7 @@ fn existing_matches(
     }
     let mut existing = String::new();
     (&mut file)
-        .take((LIMIT + 1) as u64)
+        .take((MAX_RECORD_BYTES + 1) as u64)
         .read_to_string(&mut existing)
         .map_err(|error| error.to_string())?;
     if existing != contents {
@@ -398,7 +367,7 @@ mod tests {
             std::process::id(),
             temporary_name()
         ));
-        let leftover = root.join(DIRECTORY).join(temporary_name());
+        let leftover = root.join(ARCHIVE_DIRECTORY).join(temporary_name());
         fs::create_dir_all(leftover.parent().unwrap()).unwrap();
         fs::write(&leftover, "partial").unwrap();
         let root = fs::canonicalize(root).unwrap();
@@ -452,10 +421,10 @@ mod tests {
                 .is_err()
         );
         assert_eq!(
-            fs::read_to_string(root.join(DIRECTORY).join(name)).unwrap(),
+            fs::read_to_string(root.join(ARCHIVE_DIRECTORY).join(name)).unwrap(),
             body
         );
-        assert_eq!(fs::read_dir(root.join(DIRECTORY)).unwrap().count(), 1);
+        assert_eq!(fs::read_dir(root.join(ARCHIVE_DIRECTORY)).unwrap().count(), 1);
         assert_eq!(
             read_analysis_record_text(root.to_string_lossy().to_string(), analysis_name()).unwrap(),
             body
@@ -476,7 +445,7 @@ mod tests {
         append_analysis_record(path.clone(), name.clone(), body.clone()).unwrap();
         assert_eq!(read_portable_record(&path, &name).unwrap(), body);
         assert!(read_portable_record(&path, &format!("../{name}")).is_err());
-        fs::write(root.join(DIRECTORY).join(&name), vec![b'x'; LIMIT + 1]).unwrap();
+        fs::write(root.join(ARCHIVE_DIRECTORY).join(&name), vec![b'x'; MAX_RECORD_BYTES + 1]).unwrap();
         assert!(read_portable_record(&path, &name).is_err());
         fs::remove_dir_all(root).unwrap();
     }
@@ -485,9 +454,9 @@ mod tests {
     #[test]
     fn portable_reader_refuses_a_linked_record_even_inside_the_vault() {
         let (root, name, body) = fixture();
-        fs::create_dir_all(root.join(DIRECTORY)).unwrap();
+        fs::create_dir_all(root.join(ARCHIVE_DIRECTORY)).unwrap();
         fs::write(root.join("original.md"), body).unwrap();
-        std::os::unix::fs::symlink(root.join("original.md"), root.join(DIRECTORY).join(&name))
+        std::os::unix::fs::symlink(root.join("original.md"), root.join(ARCHIVE_DIRECTORY).join(&name))
             .unwrap();
         assert!(read_portable_record(&root.to_string_lossy(), &name).is_err());
         fs::remove_dir_all(root).unwrap();
@@ -501,7 +470,7 @@ mod tests {
         );
         assert!(!root.join(".ontology-atlas").exists());
         append_analysis_record(root.to_string_lossy().to_string(), name.clone(), body).unwrap();
-        fs::write(root.join(DIRECTORY).join(&name), vec![b'x'; LIMIT + 1]).unwrap();
+        fs::write(root.join(ARCHIVE_DIRECTORY).join(&name), vec![b'x'; MAX_RECORD_BYTES + 1]).unwrap();
         assert!(read_analysis_record_text(root.to_string_lossy().to_string(), name).is_err());
         fs::remove_dir_all(root).unwrap();
     }
@@ -521,7 +490,7 @@ mod tests {
             body.replace("atlas-analysis/v1", "unknown")
         )
         .is_err());
-        assert!(!root.join(DIRECTORY).exists());
+        assert!(!root.join(ARCHIVE_DIRECTORY).exists());
         fs::remove_dir_all(root).unwrap();
     }
 
@@ -533,23 +502,23 @@ mod tests {
         let outside = root.join("outside");
         fs::create_dir_all(&outside).unwrap();
         fs::create_dir_all(root.join(".ontology-atlas")).unwrap();
-        symlink(&outside, root.join(DIRECTORY)).unwrap();
+        symlink(&outside, root.join(ARCHIVE_DIRECTORY)).unwrap();
         assert!(append_analysis_record(
             root.to_string_lossy().to_string(),
             name.clone(),
             body.clone()
         )
         .is_err());
-        fs::remove_file(root.join(DIRECTORY)).unwrap();
-        fs::create_dir(root.join(DIRECTORY)).unwrap();
+        fs::remove_file(root.join(ARCHIVE_DIRECTORY)).unwrap();
+        fs::create_dir(root.join(ARCHIVE_DIRECTORY)).unwrap();
         let moved = root.join("original-analyses");
         let result = append_after_open(
             root.to_string_lossy().to_string(),
             name.clone(),
             body,
             || {
-                fs::rename(root.join(DIRECTORY), &moved).unwrap();
-                symlink(&outside, root.join(DIRECTORY)).unwrap();
+                fs::rename(root.join(ARCHIVE_DIRECTORY), &moved).unwrap();
+                symlink(&outside, root.join(ARCHIVE_DIRECTORY)).unwrap();
             },
         );
         assert!(result.is_err());

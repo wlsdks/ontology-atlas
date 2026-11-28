@@ -6,7 +6,9 @@ mod support;
 
 use std::time::{Duration, Instant};
 
-use ontology_graph::{compile, run_query, CompiledGraph, Operation, QueryError, QueryRequest};
+use ontology_graph::{
+    compile, run_query, CompiledGraph, Direction, Operation, QueryError, QueryRequest,
+};
 use serde_json::Value;
 use support::{node, plant};
 
@@ -74,39 +76,209 @@ fn at(operation: &str, number: usize) -> QueryRequest {
     }
 }
 
-#[test]
-fn a_plan_states_the_arguments_each_operation_takes_when_a_call_leaves_them_out() {
-    let graph = chain();
-    for operation in ["reachability", "impact", "blast_radius", "subgraph"] {
-        let planned = plan(&graph, operation, at("query_plan", 3));
-        let ran = json_of(&graph, &at(operation, 3));
-        for field in ["direction", "depth"] {
-            assert_eq!(
-                planned["normalized"][field], ran[field],
-                "{operation} {field}"
-            );
+const BIG: usize = 230;
+/// Nodes in pairs that depend on each other: more cycles and more components than any default limit.
+const PAIRED: usize = 50;
+
+fn big_slug(number: usize) -> String {
+    format!("capabilities/c{number:03}")
+}
+
+/// A project that holds one domain of `BIG` capabilities, each depending on the first and on the one
+/// before it, the first depending back on the second (a cycle), and `PAIRED` capabilities in
+/// two-node cycles: most default limits of most operations are past their end somewhere in it.
+fn big_vault() -> CompiledGraph {
+    let mut files: Vec<(String, String)> = (0..BIG)
+        .map(|number| {
+            let mut lines = String::new();
+            if number == 0 {
+                lines.push_str(&format!("  - {}\n", big_slug(1)));
+            } else {
+                lines.push_str(&format!(
+                    "  - {}\n  - {}\n",
+                    big_slug(0),
+                    big_slug(number - 1)
+                ));
+            }
+            (
+                format!("{}.md", big_slug(number)),
+                node(
+                    100 + number,
+                    "capability",
+                    &format!("dependencies:\n{lines}"),
+                ),
+            )
+        })
+        .collect();
+    for paired in 0..PAIRED {
+        let partner = paired ^ 1;
+        files.push((
+            format!("capabilities/pair{paired:02}.md"),
+            node(
+                1000 + paired,
+                "capability",
+                &format!("dependencies:\n  - capabilities/pair{partner:02}\n"),
+            ),
+        ));
+    }
+    let held: String = (0..BIG)
+        .map(|number| format!("  - {}\n", big_slug(number)))
+        .collect();
+    files.push((
+        "domains/core.md".to_string(),
+        node(2, "domain", &format!("capabilities:\n{held}")),
+    ));
+    files.push((
+        "atlas.md".to_string(),
+        node(1, "project", "domains:\n  - domains/core\n"),
+    ));
+    compile(&plant(&files).documents).expect("compiles")
+}
+
+/// The call each operation needs to answer on `big_vault`, whatever else it has defaults for.
+fn subject_of(target: &str) -> QueryRequest {
+    let hub = Some(big_slug(0));
+    let request = call(target);
+    match target {
+        "path" | "all_paths" | "explain_relation" => QueryRequest {
+            from: Some(big_slug(100)),
+            to: hub,
+            ..request
+        },
+        "relation_check" => QueryRequest {
+            from: Some(big_slug(100)),
+            to: Some(big_slug(101)),
+            relation_type: Some("relates".to_string()),
+            ..request
+        },
+        "pattern_walk" => QueryRequest {
+            slug: hub,
+            pattern: Some(vec!["depends_on".to_string()]),
+            ..request
+        },
+        "containment_tree" => QueryRequest {
+            slug: Some("atlas".to_string()),
+            ..request
+        },
+        "project_scope" | "project_map" => QueryRequest {
+            project: Some("atlas".to_string()),
+            ..request
+        },
+        "domain_profile" | "lineage" => QueryRequest {
+            slug: Some("domains/core".to_string()),
+            ..request
+        },
+        "recommend_relations" => {
+            let mut request = request;
+            request.selection.arguments.kind = Some("capability".to_string());
+            request
         }
+        "neighbors" | "reachability" | "impact" | "blast_radius" | "subgraph"
+        | "builder_context" | "node_profile" | "similar_nodes" => QueryRequest {
+            slug: hub,
+            ..request
+        },
+        _ => request,
     }
-    let between = |operation: &str| QueryRequest {
-        from: Some(slug(0)),
-        to: Some(slug(5)),
-        ..call(operation)
-    };
-    let planned = plan(&graph, "all_paths", between("query_plan"));
-    let ran = json_of(&graph, &between("all_paths"));
-    for field in ["direction", "maxHops", "limit", "searchBudget"] {
+}
+
+/// The plan of the call `request` makes.
+fn planning(request: &QueryRequest) -> QueryRequest {
+    QueryRequest {
+        operation: Operation::QueryPlan,
+        target_operation: Some(request.operation),
+        ..request.clone()
+    }
+}
+
+/// `request` with the arguments a plan stated for it set: what the plan says the operation would
+/// use, put where the operation reads it.
+fn with_stated(request: &QueryRequest, stated: &Value) -> QueryRequest {
+    let count = |name: &str| stated[name].as_u64().and_then(|n| usize::try_from(n).ok());
+    let mut request = request.clone();
+    request.direction = stated["direction"].as_str().and_then(Direction::parse);
+    request.depth = count("depth");
+    request.max_hops = count("maxHops");
+    request.iterations = count("iterations");
+    request.limit = count("limit");
+    request.search_budget = stated["searchBudget"].as_f64();
+    request
+}
+
+#[test]
+fn a_plan_for_every_operation_states_what_the_operation_does_when_a_call_leaves_it_out() {
+    let graph = big_vault();
+    let mut planned_count = 0;
+    for target in Operation::plan_target_names() {
+        let sent = subject_of(target);
+        let planned = json_of(&graph, &planning(&sent));
+        let stated = &planned["normalized"];
+        let bare = run_query(&graph, &sent);
+        if matches!(bare, Err(QueryError::NotAnsweredYet(_))) {
+            continue;
+        }
+        let expected = json_of(&graph, &sent);
+        let with_stated_arguments = json_of(&graph, &with_stated(&sent, stated));
         assert_eq!(
-            planned["normalized"][field], ran[field],
-            "all_paths {field}"
+            with_stated_arguments, expected,
+            "{target}: running with the arguments its plan states changes the answer"
         );
+        planned_count += 1;
     }
+    assert_eq!(planned_count, 34);
+}
+
+#[test]
+fn a_plan_states_a_limit_where_the_operation_has_one_and_none_where_it_has_not() {
+    let graph = big_vault();
+    let limit_of = |target: &str| {
+        json_of(&graph, &planning(&subject_of(target)))["normalized"]["limit"].clone()
+    };
+    assert_eq!(limit_of("node_profile"), 20);
+    assert_eq!(limit_of("explain_relation"), 20);
+    assert_eq!(limit_of("centrality"), 10);
+    assert_eq!(limit_of("containment_tree"), 200);
+    assert_eq!(limit_of("health"), Value::Null);
+    assert_eq!(limit_of("path"), Value::Null);
+}
+
+#[test]
+fn a_plan_counts_what_the_operation_counts() {
+    let graph = chain();
     let planned = plan(&graph, "match_nodes", call("query_plan"));
     let ran = json_of(&graph, &call("match_nodes"));
     assert_eq!(planned["estimate"]["totalMatches"], ran["totalMatches"]);
     let planned = plan(&graph, "match_edges", call("query_plan"));
     let ran = json_of(&graph, &call("match_edges"));
     assert_eq!(planned["estimate"]["totalMatches"], ran["totalMatches"]);
-    assert_eq!(planned["normalized"]["limit"], 100);
+}
+
+#[test]
+fn a_plan_names_its_start_the_way_the_operation_does() {
+    let graph = big_vault();
+    let by_seed = |operation: &str, name: &str| QueryRequest {
+        seed: Some(name.to_string()),
+        ..call(operation)
+    };
+    for operation in ["reachability", "impact", "blast_radius"] {
+        let refused = run_query(&graph, &by_seed(operation, &big_slug(0))).err();
+        assert!(refused.is_some(), "{operation} takes no seed");
+        let planned = run_query(
+            &graph,
+            &plan_of(operation, by_seed("query_plan", &big_slug(0))),
+        )
+        .err();
+        assert_eq!(planned, refused, "{operation}");
+    }
+    let focus = "domain:core";
+    let planned = plan(&graph, "builder_context", by_seed("query_plan", focus));
+    let ran = json_of(&graph, &by_seed("builder_context", focus));
+    assert_eq!(planned["normalized"]["slug"], ran["focus"]);
+    assert_eq!(planned["normalized"]["slug"], "domains/core");
+    let planned = plan(&graph, "subgraph", by_seed("query_plan", &big_slug(5)));
+    assert_eq!(planned["normalized"]["slug"], big_slug(5));
+    assert!(run_query(&graph, &by_seed("subgraph", focus)).is_err());
+    assert!(run_query(&graph, &plan_of("subgraph", by_seed("query_plan", focus))).is_err());
 }
 
 #[test]

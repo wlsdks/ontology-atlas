@@ -18,13 +18,13 @@ use super::proposed_action::ProposedAction;
 use crate::compiled_graph::CompiledGraph;
 use crate::query::name_counts::kind_counts;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::WORKSPACE_BRIEF_LIMIT;
 use crate::query::project_root::project_roots;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use crate::query::walks::project_map::{fitted_map, DomainRow, DomainSummary, MapSummary};
 use crate::query::walks::row_page::NodePage;
 
-const DEFAULT_LIMIT: usize = 10;
 /// A project's page is asked for at most this many items per list.
 const PROJECT_ITEM_LIMIT: usize = 20;
 /// A next action that shows rows shows at most this many.
@@ -201,7 +201,7 @@ pub fn workspace_brief<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<WorkspaceBriefAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(WORKSPACE_BRIEF_LIMIT);
     let arguments = &request.selection.arguments;
     let mut question = HealthQuestion::from_request(request);
     question.component_limit = arguments.component_limit.unwrap_or(limit);

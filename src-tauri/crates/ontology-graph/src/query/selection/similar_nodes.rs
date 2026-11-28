@@ -11,13 +11,13 @@ use super::clusters::undirected_adjacency;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::SIMILAR_NODES_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::QueryRequest;
 use crate::query::walks::row_page::RowPage;
 use vault_document::frontmatter::Value;
 
-const DEFAULT_LIMIT: usize = 10;
 const TEXT_WEIGHT: f64 = 0.35;
 const FACT_WEIGHT: f64 = 0.1;
 const FACT_BONUS: f64 = 0.1;
@@ -159,7 +159,7 @@ pub fn similar_nodes<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<SimilarNodesAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(SIMILAR_NODES_LIMIT);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let arguments = &request.selection.arguments;
     let source = request

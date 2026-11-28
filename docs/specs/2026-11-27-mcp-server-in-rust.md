@@ -175,6 +175,8 @@ the reviewer rejects, and changing the way changes it everywhere in the same sli
 | Logging | `tracing`, no subscriber in release; standard error only for the lines the contract names |
 | Tests | `cargo nextest`; `proptest` for rules over inputs, `insta` for answer shapes, the differential harness for agent-visible behaviour |
 | Names | a crate, module or file is named for what it owns or exports; a tool's handler is found from the tool's name |
+| What an operation does with an argument a call leaves out | `ontology-graph`'s `operation_defaults.rs`: the operation applies it and `query_plan` states it; no operation keeps a default of its own |
+| What the app and the server agree on about the analysis records (folder, byte limit, file name) | the `analysis-archive-format` crate, which the app and `mcp-server` both link; the TypeScript twin cannot link it, so a test in the crate holds its folder and limit equal |
 
 ## Problem and alternatives
 
@@ -273,8 +275,8 @@ merge.
 | 39 | `read_source` `path`, `from`, `limit` and `sheet` | the advertised schema says `path` is text that is not blank, the rest integers, `from` and `sheet` at least 1, `limit` 1 to 1000, but the handler accepted `0`, `-1`, `1.5`, `"2"` and `5000` and clamped or coerced them, after it had looked at the path, and read a missing or non-text `path` as a path outside `sources/` | each is checked as advertised, by name, before the path is looked at: `from must be a positive integer.`, `limit must be <= 1000.` | a window that was silently moved is a citation that points at other units than the agent asked for. Corpus: `read-source-argument-bounds`, `read-source-miniature-repo` |
 | 40 | `find_evidence` for text that is not ASCII: the match, the `score`, the near titles of a search that found nothing | text is compared as lower-cased UTF-16, so a title typed composed (NFC) never finds a note saved decomposed (NFD, how macOS names files); the shared-word tie-break counts `a-z` and `0-9` only, so a Korean or accented exact title scores 1 where an ASCII one scores 1.1; a Korean title never has a near title | text is compared lower-cased and in one Unicode form, so both spellings find each other; words are the letters and digits of any script, so the tie-break works in every script (an exact Korean title scores 1.1); a title one slip or one swap away (`strsim` optimal string alignment distance, 0.7 or closer) is offered with the titles that share words. Corpus: `find-evidence-edge-names`, `find-evidence-unicode-and-typos` | the product's first users write Korean, and a search that misses the same word in another Unicode form says "nothing" when something is there |
 | 41 | `read_source` for a source that is damaged or hostile | a damaged DOCX or XLSX fails with the library's bare text and no path (`not a zip file: no end-of-central-directory record`); a character reference outside Unicode in a DOCX stops the read with `Invalid code point 1114112`; a text file with a NUL byte is read line by line with the NUL in a unit; a path of any length is looked up part by part | the failure names the path, the format and the cause (`read_source: `sources/x.docx` could not be read as a DOCX: it has no end-of-central-directory record, so it is not a ZIP file.`); a reference that names no character is kept as written and the rest of the document is read; a text file with a NUL in its first 8,000 bytes (Git's test) is `binary` with a note and no units; a path over 4,096 bytes is `invalid_arguments` before the disk is asked. Corpus: `read-source-hostile-files`, `read-source-office-and-tables` | a read must end in an answer an agent can act on, whatever a stranger's vault holds, and a NUL in a unit is not text an agent can cite |
-| 42 | `query_ontology` `analysis_history` and `analysis_record`, the refusals and the readable records: a `analysisCursor` that is no record file name, an archive folder that is a link or not a folder, a record the format refuses, a record whose header holds U+2028 or U+2029, a line of metadata that is not JSON | an invalid cursor is a `tool_error`; an unsafe folder and a corrupt record are `invalid_arguments` because their sentences hold "must be"; a record the app's own writer made with U+2028 or U+2029 in a header value cannot be read at all (a regular expression's `.` stops at them) and its row reads "Analysis metadata must use the supported JSON flow values." | an invalid cursor is `invalid_arguments` (the caller's to fix); an unsafe folder and a corrupt record are `tool_error` (the vault's); a record with line separators in its header is read and listed. A header nested deeper than 128 levels or holding half a surrogate pair is a `problems` row, a record deleted while it is read says "Analysis record disappeared while it was read.", and an operating-system failure carries the system's words and no path. Corpus: `analysis-records-written-by-the-app`, `analysis-records-damaged`, `analysis-records-over-a-hundred-files-paged-by-cursor`, `analysis-records-with-line-separators`, `analysis-folder-is-a-link`, `analysis-record-is-a-link` | the code names who must act, not which words an error holds; a record the app wrote must be readable by the app's own server |
-| 43 | `query_ontology` `query_plan`: the arguments it states, the call it suggests and the code of its refusals | the plan applies defaults of its own that differ from the operation's: `subgraph` direction `outgoing` (the operation uses `both`), `explain_relation` limit 100 (20) and `centrality` limit 100 (10), so the counts, `indexesUsed` and cost class that follow differ with them; `normalized.types` writes the internal name `dependencies` for `depends_on`; a `neighbors` plan drops `includeExternal` and `includeUnresolved` from `suggestedQuery`; a plan for an operation that reads the whole graph drops its `slug`, `domain`, `project`, `depth` and `pattern` from `suggestedQuery`, a plan for an operation without a limit of its own states `limit` 100, and a `match_edges` plan repeats `types` as `relationTypes`; a wrong call (no `targetOperation`, no `slug`, structural `types` for `impact`) is a `tool_error` | one table of defaults, shared with the operations, so a plan states what the operation would use; `types` use the public relation names; `neighbors` keeps both flags; every target's `suggestedQuery` carries the subject arguments the call sent; `limit` is stated only where the operation has a default or the call sent one, otherwise `null`; `searchBudget` only for `all_paths`; `relationTypes` is gone; a wrong call is `invalid_arguments` (row 29). Corpus: `query-plan-storefront`, `query-plan-tangle`, `query-plan-containment-tangle`, `query-plan-empty`, `query-plan-one-node` | a suggested call that is not the call that was planned sends an agent to a different answer than it was told |
+| 42 | `query_ontology` `analysis_history` and `analysis_record`, the refusals: a `analysisCursor` that is no record file name, an archive folder that is a link or not a folder, a record the format refuses | an invalid cursor is a `tool_error`; an unsafe folder and a corrupt record are `invalid_arguments` because their sentences hold "must be" | an invalid cursor is `invalid_arguments` (the caller's to fix); an unsafe folder and a corrupt record are `tool_error` (the vault's). A record deleted while it is read says "Analysis record disappeared while it was read.", and an operating-system failure carries the system's words and no path. Corpus: `analysis-records-written-by-the-app`, `analysis-records-damaged`, `analysis-records-over-a-hundred-files-paged-by-cursor`, `analysis-folder-is-a-link`, `analysis-record-is-a-link` | the code names who must act, not which words an error holds |
+| 43 | `query_ontology` `query_plan`: the arguments it states, the call it suggests and the code of its refusals | the plan applies defaults of its own that differ from the operation's: `subgraph` direction `outgoing` (the operation uses `both`), `explain_relation` limit 100 (20) and `centrality` limit 100 (10), so the counts, `indexesUsed` and cost class that follow differ with them; `normalized.types` writes the internal name `dependencies` for `depends_on`; a `neighbors` plan drops `includeExternal` and `includeUnresolved` from `suggestedQuery`; a plan for an operation that reads the whole graph drops its `slug`, `domain`, `project`, `depth` and `pattern` from `suggestedQuery`, a plan for an operation without a limit of its own states `limit` 100, and a `match_edges` plan repeats `types` as `relationTypes`; a wrong call (no `targetOperation`, no `slug`, structural `types` for `impact`) is a `tool_error` | one table of defaults, shared with the operations, so a plan states what the operation would use; `types` use the public relation names; `neighbors` keeps both flags; every target's `suggestedQuery` carries the subject arguments the call sent; `limit` is stated only where the operation has a default or the call sent one (a plan for `node_profile` that sends none states 20), otherwise `null`; a plan names its start as the operation does: `seed` is read where the operation reads it (`subgraph`, `builder_context`) and refused where it is not (`reachability`, `impact`, `blast_radius`), and `builder_context` reads a focus name such as `domain:order`; `searchBudget` only for `all_paths`; `relationTypes` is gone; a wrong call is `invalid_arguments` (row 29). Corpus: `query-plan-storefront`, `query-plan-tangle`, `query-plan-containment-tangle`, `query-plan-empty`, `query-plan-one-node` | a suggested call that is not the call that was planned sends an agent to a different answer than it was told |
 | 44 | the `errorCode` of a wrong `query_ontology` `agent_brief` call: `task` without `detail: "compact"`, `detail: "compact"` without `task`, a `detail` that is neither, an `expectedGraphHash` or `reviewRevision` that is not the digest it names | `tool_error`, because the script server's classifier knew only sentences that hold "must be" and a few other phrases | `invalid_arguments`, as row 29 gives the walks; the sentences are unchanged. Corpus: `agent-brief-operations`, `agent-brief-storefront` | an agent that sent a wrong argument should be told to fix the call |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
@@ -337,12 +339,13 @@ confinement, the read snapshot, the clock) is a value passed in and owned. The J
 for what a tool must answer, never for how its modules are cut. A reviewer who finds a Rust module
 that mirrors a JavaScript file's functions one to one asks why.
 
-Eight crates join `crates/vault-index` in the workspace at `src-tauri/Cargo.toml:9-20`. All but
+Nine crates join `crates/vault-index` in the workspace at `src-tauri/Cargo.toml:9-21`. All but
 `mcp-server` depend on neither `tauri` nor an async runtime, so the app links them; all inherit the
 workspace lints against `unwrap`, indexing and `panic` (`src-tauri/Cargo.toml:22-27`).
 
 | Crate | Owns | App twin it replaces |
 |---|---|---|
+| `analysis-archive-format` | where the analysis records are kept (folder, byte limit) and what a record file is called, for the app that writes them and the server that reads them | the app's own copies of the file-name rule, folder and limit in `src-tauri/src/analysis_archive.rs` |
 | `answer-format` | text agents read as JavaScript wrote it: UTF-16 length and cuts, whitespace, number text, `JSON.stringify` for typed answers. The `'en'` order and integer-first key order join when the first family needs them | none; takes `js_text.rs` out of `mcp-server` |
 | `confined-files` | the one type that opens, walks, reads and writes files under a vault or source root; slug and root paths, credential and hidden names, snapshot limits | `src-tauri/src/confined_files.rs` may fold in (not read closely) |
 | `hardened-git` | the one table and runner for spawning `git` | the hardening table of `git/runner.rs` |
@@ -682,6 +685,21 @@ Left to later slices by the selection operations of slice 4:
   (one Markdown file each), not `map-analysis.jsonl`, and write nothing, so they need no consent
   and leave no audit line.
 
+Left to a later slice by the review of the analysis and plan operations:
+
+- The analysis reader opens a record through `VaultSidecar`, which checks the folder and then
+  opens the name; the app's `openat` through an open folder leaves no gap between the two. Making
+  every sidecar read, append and replace open through the folder it checked (Unix `openat`; on
+  Windows the handle-based identity stays) is one change to `confined-files` for all of them, not
+  one for the archive, so it waits for the slice that next touches `VaultSidecar`.
+- Narrow the thirty-three whole-text rows of `graph/query-plan-*` in `declared-changes.json` to the
+  leaves that differ once the harness's leaf mode (`feat/mcp-rust-harness`) is on the
+  integration branch, then drop the answers pinned in `mcp-server/tests/plan_answers.rs` that the
+  leaf rows state.
+- `query_plan` for an operation that reads the whole graph does not refuse the call that the
+  operation would refuse for a missing required argument (`node_profile` without `slug`); it
+  states the call it was sent. The operations' own refusals are not a table the plan can read.
+
 Slice 10 may start after slice 4 under named fields if the manifest shows that the bytes a write
 puts on disk depend only on built functions.
 
@@ -852,10 +870,11 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   32); the facts only the tool layer can read are a named gap, declared per answer (row 37).
 - 2026-11-28 (harness triage): the Rust program does not yet read `ATLAS_DIFF_CLOCK_MS` or `ATLAS_DIFF_UID_SEED`, the two inputs the differential harness pins (`scripts/mcp/differential/README.md`); no crate mentions either. Slice 10 owns it, because the writers are the first code that draws a UID or reads the clock: behind a cargo feature the release build lacks, the clock returns the pinned milliseconds and each UID stream draws as the README says, and the write families compare against JavaScript only once it does.
 - 2026-11-28 (graph-remaining slice; each item questioned, approaches weighed): the analysis
-  archive is a module of `mcp-server` (`src/analysis_records/`), not a ninth crate, because it has
-  one reader and a crate would edit the workspace manifest every slice shares; records are
+  archive's reader is a module of `mcp-server` (`src/analysis_records/`), not a crate of its own,
+  because only the server lists and judges records; records are
   validated over an ordered value so every refusal keeps its sentence and key order, instead of
-  typed structures that would renumber them. The plan shares its defaults with the operations
+  typed structures that would renumber them. (The review below corrects the reason: the app also
+  reads and writes the archive, and the facts they share became a crate.) The plan shares its defaults with the operations
   (`operation_defaults.rs`) rather than keeping a second table that drifts, which is how the
   script server's plan came to state a direction and a limit its operations never used (row 43).
 - 2026-11-28 (slice 7, evidence search and raw sources): `find_evidence` and `read_source` answer from
@@ -871,3 +890,38 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   reads through a new family crate, `raw-source-text` (units from bytes), and
   `confined-files::VaultRoot::read_raw_source` (the disk); rows 38 to 41 declare what changed.
 
+- 2026-11-28 (review of the graph-remaining slice; each item questioned, approaches weighed):
+  **Defaults.** Every default an operation applies to a missing argument lives in
+  `operation_defaults.rs` (the limits of all thirty-five operations the plan can describe, the
+  `neighbors` direction, the depths, the cycle and ranking rounds); each operation reads it, the
+  plan states it through `default_limit`, and a test runs every operation bare and with the
+  arguments its plan states and requires the same answer. A table the plan keeps of its own
+  was the other way and is how the script server's plan drifted. **Start of an expansion.** One
+  function names the node an expansion starts from (`StartName`: `slug`; `slug` or `seed`; a focus
+  name), asked by the operation and by the plan; a plan for `builder_context` read no focus name
+  and a plan for `reachability` accepted a `seed` the operation refuses. **Producer fix in the
+  script reader** (`mcp/src/analysis-history/analysis-record.mts`), chosen over declaring the
+  differences: a header line is read as everything up to a line feed or carriage return (a
+  regular expression's `.` stopped at U+2028 and U+2029, so a record the app's writer made could
+  not be read by the app's own server), a string with half of a surrogate pair is refused (the
+  Rust reader's JSON reader refuses it anywhere in a header, so the script reader checks every
+  string and name), a header value nested more than 127 containers deep is refused in the one
+  sentence the Rust reader uses for a line it cannot read, and a line that is not JSON says that
+  sentence too. The row 42 entries for U+2028 are gone because the two servers agree. Tests:
+  `archive_tests.rs` (depth 127 read, 128 refused; half a surrogate pair) and
+  `analysis-record.test.ts`. **One home for the archive format.** The file-name rule, the folder
+  and the 2,000,000-byte limit are the `analysis-archive-format` crate, linked by the app and by
+  `mcp-server`; the alternative, folding them into `confined-files`, was weighed and lost because
+  that crate owns opening and writing files under a root, not what one family of files is
+  called. Its test holds the TypeScript twin's folder and byte limit equal. The app keeps its
+  `openat` read, which no folder swap can race; the server's reader checks the folder and then
+  opens the name, so the same swap between those two steps is possible there (Later). **The
+  declared whole-text rows of the plan.** The thirty-three declared rows of the plan cases excuse
+  a whole answer, so a wrong word inside one would pass. The harness on this branch has no leaf
+  mode (it is on `feat/mcp-rust-harness`), so each of the thirty-three answers is stated in full
+  in `mcp-server/tests/plan_answers.rs` (rows under `tests/plan_answers/`), read when it was
+  pinned and changed only by a person who reads the difference; the rows narrow to leaf paths
+  when that harness lands (Later). **The quadratic repeat check** over `basis.documents` (a hash
+  set; a basis of 5,000 documents is read in under 100 ms). **One rule per check:**
+  `HistoryLimit` is the one place the page size is
+  judged, and `analysisMode` reads `AnalysisMode::NAMES`.

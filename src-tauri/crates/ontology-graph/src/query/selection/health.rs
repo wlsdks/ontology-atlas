@@ -11,17 +11,16 @@ use super::dependency_view::{self, default_types};
 use super::outside_checks::OutsideChecks;
 use super::relation_recommendations::{recommend, Recommendation};
 use crate::compiled_graph::{CompiledGraph, NodeId};
+use crate::query::operation_defaults::{
+    HEALTH_COMPONENT_LIMIT, HEALTH_CYCLE_LIMIT, HEALTH_NODE_LIMIT, HEALTH_ORDER_LIMIT,
+    HEALTH_RECOMMENDATION_LIMIT,
+};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::QueryRequest;
 use crate::query::walks::dependency_cycles::CycleRow;
 use crate::query::walks::topological_order::BlockedRow;
 
-const DEFAULT_COMPONENT_LIMIT: usize = 5;
-const DEFAULT_NODE_LIMIT: usize = 10;
-const DEFAULT_CYCLE_LIMIT: usize = 5;
-const DEFAULT_RECOMMENDATION_LIMIT: usize = 20;
-const DEFAULT_ORDER_LIMIT: usize = 20;
 /// Kinds that hold the graph together without being part of what it describes; a group made only
 /// of them is not an island worth reporting.
 const IGNORED_COMPONENT_KINDS: [&str; 1] = ["vault-readme"];
@@ -267,13 +266,13 @@ impl HealthQuestion {
             .clone()
             .or_else(|| request.types.clone());
         Self {
-            component_limit: arguments.component_limit.unwrap_or(DEFAULT_COMPONENT_LIMIT),
-            node_limit: request.node_limit.unwrap_or(DEFAULT_NODE_LIMIT),
-            cycle_limit: arguments.cycle_limit.unwrap_or(DEFAULT_CYCLE_LIMIT),
+            component_limit: arguments.component_limit.unwrap_or(HEALTH_COMPONENT_LIMIT),
+            node_limit: request.node_limit.unwrap_or(HEALTH_NODE_LIMIT),
+            cycle_limit: arguments.cycle_limit.unwrap_or(HEALTH_CYCLE_LIMIT),
             recommendation_limit: arguments
                 .recommendation_limit
-                .unwrap_or(DEFAULT_RECOMMENDATION_LIMIT),
-            order_limit: arguments.order_limit.unwrap_or(DEFAULT_ORDER_LIMIT),
+                .unwrap_or(HEALTH_RECOMMENDATION_LIMIT),
+            order_limit: arguments.order_limit.unwrap_or(HEALTH_ORDER_LIMIT),
             max_hops: request.max_hops.or(request.depth),
             dependency_types: arguments.dependency_types.clone(),
             scoped: component_types.is_some(),

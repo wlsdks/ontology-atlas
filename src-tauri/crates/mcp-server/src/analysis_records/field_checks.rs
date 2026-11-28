@@ -2,6 +2,7 @@
 //! sentence the way the writer names it, so an agent that reads a `problems` row knows which line of
 //! the file to look at.
 
+use analysis_archive_format::is_uuid_v4;
 use indexmap::IndexMap;
 
 use super::record_fault::RecordFault;
@@ -13,24 +14,6 @@ pub type Row = IndexMap<String, RecordValue>;
 pub const TEXT_MAX: usize = 100_000;
 /// The most items most lists may hold.
 pub const LIST_MAX: usize = 200;
-
-/// Whether `text` is a version 4 UUID in lower case, `8-4-4-4-12`.
-pub fn is_uuid(text: &str) -> bool {
-    let groups: Vec<&str> = text.split('-').collect();
-    let lengths_fit = groups.len() == 5
-        && groups
-            .iter()
-            .zip([8_usize, 4, 4, 4, 12])
-            .all(|(group, length)| group.len() == length);
-    let lower_hex = text
-        .bytes()
-        .all(|byte| byte == b'-' || byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte));
-    let version_four = groups.get(2).is_some_and(|group| group.starts_with('4'));
-    let variant = groups
-        .get(3)
-        .is_some_and(|group| group.starts_with(['8', '9', 'a', 'b']));
-    lengths_fit && lower_hex && version_four && variant
-}
 
 /// Whether `text` is `sha256:` and 64 lower-case hexadecimal digits.
 pub fn is_digest(text: &str) -> bool {
@@ -102,7 +85,7 @@ pub fn one_of(value: &RecordValue, values: &[&str], name: &str) -> Result<(), Re
 }
 
 pub fn uuid(value: &RecordValue, name: &str) -> Result<(), RecordFault> {
-    if value.as_text().is_some_and(is_uuid) {
+    if value.as_text().is_some_and(is_uuid_v4) {
         Ok(())
     } else {
         Err(RecordFault::new(format!("{name} must be a UUIDv4.")))

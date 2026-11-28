@@ -9,6 +9,7 @@ use serde::Serialize;
 use super::row_page::NodePage;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::{PROJECT_MAP_ITEM_LIMIT, PROJECT_MAP_LIMIT};
 use crate::query::project_root::project_root;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
@@ -16,8 +17,6 @@ use crate::query::scope::{EdgeCounts, Scope, ScopeEdges};
 
 /// The characters an answer keeps to, counted in pretty-printed JSON.
 const MAP_TEXT_CHARS: usize = 36_000;
-const DEFAULT_LIMIT: usize = 50;
-const DEFAULT_ITEM_LIMIT: usize = 20;
 const DOMAIN_HOTSPOTS_MAX: usize = 5;
 
 /// A node with its total degree, as the most connected nodes of a scope are listed.
@@ -304,8 +303,8 @@ pub fn project_map<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<ProjectMapAnswer<'a>, QueryError> {
-    let requested = request.item_limit.unwrap_or(DEFAULT_ITEM_LIMIT);
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let requested = request.item_limit.unwrap_or(PROJECT_MAP_ITEM_LIMIT);
+    let limit = request.limit.unwrap_or(PROJECT_MAP_LIMIT);
     let project = project_root(graph, request, "project_map")?;
     Ok(fitted_map(graph, project, limit, requested))
 }

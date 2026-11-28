@@ -95,6 +95,9 @@ const DIGEST = /^sha256:[0-9a-f]{64}$/;
 const FILE_NAME = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.md$/;
 const RUN_KEYS = ['schema', 'recordType', 'id', 'createdAt', 'mode', 'scope', 'request', 'origin', 'basis', 'evidence', 'observations', 'profileSnapshot', 'toolReads', 'sourceAccess', 'findings', 'qualification', 'answer'];
 const REVIEW_KEYS = ['schema', 'recordType', 'id', 'createdAt', 'runId', 'findingId', 'disposition', 'actor', 'rationale'];
+const UNSUPPORTED_METADATA = 'Analysis metadata must use the supported JSON flow values.';
+/** The most containers one metadata value may nest. The Rust reader refuses a deeper one, so a record the app writes must stay within it. */
+const METADATA_DEPTH_MAX = 127;
 
 function object(value: unknown, name: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value) || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) throw new Error(`${name} must be a plain object.`);
@@ -108,7 +111,7 @@ function fields(value: Record<string, unknown>, keys: readonly string[], name: s
 }
 
 function text(value: unknown, name: string, allowEmpty = false, max = 100_000): asserts value is string {
-  if (typeof value !== 'string' || (!allowEmpty && !value.trim()) || value.length > max) {
+  if (typeof value !== 'string' || !value.isWellFormed() || (!allowEmpty && !value.trim()) || value.length > max) {
     throw new Error(`${name} must be ${allowEmpty ? 'a' : 'a non-empty'} bounded string.`);
   }
 }
@@ -145,6 +148,24 @@ function timestamp(value: unknown): asserts value is string {
   text(value, 'createdAt', false, 24);
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString() !== value) {
     throw new Error('createdAt must be an exact UTC timestamp.');
+  }
+}
+
+/** One metadata value as the Rust reader takes it: JSON, nested within the depth limit, with no half of a surrogate pair in a string or a name. */
+function metadataValue(source: string): unknown {
+  let value: unknown;
+  try {
+    value = JSON.parse(source, (key, member) => {
+      if (!key.isWellFormed() || (typeof member === 'string' && !member.isWellFormed())) throw new Error(UNSUPPORTED_METADATA);
+      return member;
+    });
+  } catch { throw new Error(UNSUPPORTED_METADATA); }
+  let level: unknown[] = [value];
+  for (let depth = 0; ; depth += 1) {
+    const containers = level.filter((item): item is object => typeof item === 'object' && item !== null);
+    if (!containers.length) return value;
+    if (depth >= METADATA_DEPTH_MAX) throw new Error(UNSUPPORTED_METADATA);
+    level = containers.flatMap((item) => Object.values(item));
   }
 }
 
@@ -306,11 +327,11 @@ export function parseAnalysisRecord(markdown: string): AnalysisRecord {
   if (!closing || closing.index > 1_500_000) throw new Error('Analysis frontmatter is incomplete.');
   const headers: Record<string, unknown> = Object.create(null);
   for (const line of rest.slice(0, closing.index).split(/\r?\n/)) {
-    const pair = /^([a-zA-Z][a-zA-Z0-9_]*): (.*)$/.exec(line);
-    if (!pair) throw new Error('Analysis metadata must use the supported JSON flow values.');
+    const pair = /^([a-zA-Z][a-zA-Z0-9_]*): ([^\r\n]*)$/.exec(line);
+    if (!pair) throw new Error(UNSUPPORTED_METADATA);
     const key = pair[1] === 'analysis_schema' ? 'schema' : pair[1] === 'record_type' ? 'recordType' : pair[1] === 'created_at' ? 'createdAt' : pair[1];
     if (Object.hasOwn(headers, key)) throw new Error(`Duplicate analysis metadata: ${key}.`);
-    headers[key] = JSON.parse(pair[2]);
+    headers[key] = metadataValue(pair[2]);
   }
   const body = rest.slice(closing.index + closing[0].length);
   headers[headers.recordType === 'review' ? 'rationale' : 'answer'] = body;

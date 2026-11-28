@@ -7,10 +7,11 @@ edition = "2021"
 license = "MIT"
 
 [workspace]
-# The eight `mcp-server` family crates depend on neither `tauri` nor an async runtime, so the app can
+# The `mcp-server` family crates depend on neither `tauri` nor an async runtime, so the app can
 # link them; `mcp-server` alone builds the `ontology-atlas-mcp` program.
 members = [
   "crates/vault-index",
+  "crates/analysis-archive-format",
   "crates/answer-format",
   "crates/confined-files",
   "crates/hardened-git",
@@ -94,6 +95,8 @@ vault-index = { path = "crates/vault-index" }
 hardened-git = { path = "crates/hardened-git" }
 source-scan = { path = "crates/source-scan" }
 confined-files = { path = "crates/confined-files" }
+# Where the analysis records are kept and what a record file is called, which `mcp-server` reads by too.
+analysis-archive-format = { path = "crates/analysis-archive-format" }
 # The built-in bge-m3 model: candle reads `pytorch_model.bin` without executing it; tokenizers and
 # safetensors are the copies candle already resolves (`fancy-regex` keeps them pure Rust); url is
 # already in the graph through tauri and parses the download's redirect targets.

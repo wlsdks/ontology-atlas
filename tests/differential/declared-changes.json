@@ -9338,134 +9338,6 @@
       "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
     },
     {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.records",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.problems",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.returned",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/records",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/problems",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/returned",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the text is the record's JSON, where the JavaScript server refused it with the plain sentence \"Analysis metadata must use the supported JSON flow values.\"; the structured answer is declared leaf by leaf beside it."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.isError",
-      "change": 42,
-      "reason": "A record whose header holds U+2028 or U+2029, which the app's own writer can produce, is read and listed (row 42); the JavaScript reader refused it as not JSON."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.ok",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.errorCode",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.error",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.contract",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.operation",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.fileName",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.record",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.meaningAuthority",
-      "change": 42,
-      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
-    },
-    {
       "case": "graph/query-plan-containment-tangle",
       "where": "answer",
       "id": 1,
@@ -10477,22 +10349,6 @@
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 35,
-      "path": "result.structuredContent.normalized.limit",
-      "change": 43,
-      "reason": "Row 43: lineage has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
-    },
-    {
-      "case": "graph/query-plan-storefront",
-      "where": "answer",
-      "id": 35,
-      "path": "result.structuredContent.execution.suggestedQuery.limit",
-      "change": 43,
-      "reason": "Row 43: lineage has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
-    },
-    {
-      "case": "graph/query-plan-storefront",
-      "where": "answer",
-      "id": 35,
       "path": "result.structuredContent.execution.suggestedQuery.slug",
       "change": 43,
       "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
@@ -10520,22 +10376,6 @@
       "path": "result.content[0].text#/normalized/depth",
       "change": 43,
       "reason": "Row 43: the plan carries the depth the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
-    },
-    {
-      "case": "graph/query-plan-storefront",
-      "where": "answer",
-      "id": 35,
-      "path": "result.content[0].text#/normalized/limit",
-      "change": 43,
-      "reason": "Row 43: lineage has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
-    },
-    {
-      "case": "graph/query-plan-storefront",
-      "where": "answer",
-      "id": 35,
-      "path": "result.content[0].text#/execution/suggestedQuery/limit",
-      "change": 43,
-      "reason": "Row 43: lineage has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
     },
     {
       "case": "graph/query-plan-storefront",
@@ -10573,22 +10413,6 @@
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 36,
-      "path": "result.structuredContent.normalized.limit",
-      "change": 43,
-      "reason": "Row 43: pattern_walk has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
-    },
-    {
-      "case": "graph/query-plan-storefront",
-      "where": "answer",
-      "id": 36,
-      "path": "result.structuredContent.execution.suggestedQuery.limit",
-      "change": 43,
-      "reason": "Row 43: pattern_walk has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
-    },
-    {
-      "case": "graph/query-plan-storefront",
-      "where": "answer",
-      "id": 36,
       "path": "result.structuredContent.execution.suggestedQuery.slug",
       "change": 43,
       "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
@@ -10616,22 +10440,6 @@
       "path": "result.content[0].text#/normalized/pattern",
       "change": 43,
       "reason": "Row 43: the plan carries the pattern the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
-    },
-    {
-      "case": "graph/query-plan-storefront",
-      "where": "answer",
-      "id": 36,
-      "path": "result.content[0].text#/normalized/limit",
-      "change": 43,
-      "reason": "Row 43: pattern_walk has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
-    },
-    {
-      "case": "graph/query-plan-storefront",
-      "where": "answer",
-      "id": 36,
-      "path": "result.content[0].text#/execution/suggestedQuery/limit",
-      "change": 43,
-      "reason": "Row 43: pattern_walk has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
     },
     {
       "case": "graph/query-plan-storefront",

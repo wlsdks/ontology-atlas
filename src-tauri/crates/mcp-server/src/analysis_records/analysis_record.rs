@@ -3,6 +3,8 @@
 //! about one finding of a run. The format is the app's: it writes the files, so a record is judged
 //! by its rules and never repaired.
 
+use std::collections::HashSet;
+
 use super::field_checks::{
     digest, field, fields, list, nullable_text, object, one_of, strings, text, timestamp, uuid,
     Row, LIST_MAX, TEXT_MAX,
@@ -268,7 +270,7 @@ fn check_basis(basis: &Row) -> Result<(), RecordFault> {
     if !field(basis, "profileHash").is_null() {
         digest(field(basis, "profileHash"), "profile hash")?;
     }
-    let mut seen: Vec<&str> = Vec::new();
+    let mut seen: HashSet<&str> = HashSet::new();
     for item in list(
         field(basis, "documents"),
         "basis documents",
@@ -278,10 +280,9 @@ fn check_basis(basis: &Row) -> Result<(), RecordFault> {
         fields(document, &["slug", "digest"], "basis document")?;
         let slug = text(field(document, "slug"), "basis slug", false, 1024)?;
         digest(field(document, "digest"), "basis document digest")?;
-        if seen.contains(&slug) {
+        if !seen.insert(slug) {
             return Err(RecordFault::new("Duplicate basis document."));
         }
-        seen.push(slug);
     }
     Ok(())
 }

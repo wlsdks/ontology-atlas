@@ -9,14 +9,12 @@ use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::containment_steps::parents;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::{DOMAIN_PROFILE_ITEM_LIMIT, DOMAIN_PROFILE_LIMIT};
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use crate::query::scope::{Scope, ScopeEdgeGroup, ScopeEdges};
 use crate::query::walks::project_map::DomainSummary;
 use crate::query::walks::row_page::NodePage;
-
-const DEFAULT_LIMIT: usize = 100;
-const DEFAULT_ITEM_LIMIT: usize = 20;
 
 /// The domain `name` means, or why it is none.
 pub fn resolve_domain(graph: &CompiledGraph, name: Option<&str>) -> Result<NodeId, QueryError> {
@@ -60,8 +58,8 @@ pub fn domain_profile<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<DomainProfileAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
-    let item_limit = request.item_limit.unwrap_or(DEFAULT_ITEM_LIMIT);
+    let limit = request.limit.unwrap_or(DOMAIN_PROFILE_LIMIT);
+    let item_limit = request.item_limit.unwrap_or(DOMAIN_PROFILE_ITEM_LIMIT);
     let named = request
         .slug
         .as_deref()

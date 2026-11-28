@@ -8,10 +8,9 @@ use std::cmp::Ordering;
 use answer_format::collation::compare_text;
 use serde::Serialize;
 
-use super::clusters::DEFAULT_ITERATIONS;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::node_summary::NodeIdentity;
-use crate::query::operation_defaults::CENTRALITY_LIMIT;
+use crate::query::operation_defaults::{CENTRALITY_LIMIT, ITERATIONS};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
@@ -190,7 +189,7 @@ pub fn centrality<'a>(
     request: &QueryRequest,
 ) -> Result<CentralityAnswer<'a>, QueryError> {
     let limit = request.limit.unwrap_or(CENTRALITY_LIMIT);
-    let iterations = request.iterations.unwrap_or(DEFAULT_ITERATIONS);
+    let iterations = request.iterations.unwrap_or(ITERATIONS);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let count = graph.nodes().len();
     let selected: Vec<EdgeId> = graph

@@ -4,11 +4,10 @@
 //! as typed values, so the two never disagree about what a cycle is.
 
 use crate::compiled_graph::CompiledGraph;
+use crate::query::operation_defaults::{CYCLES_MAX_HOPS, CYCLES_SEARCH_BUDGET};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
-use crate::query::walks::dependency_cycles::{
-    find_cycles, CycleRow, DEFAULT_CYCLE_DEPTH, DEFAULT_SEARCH_BUDGET,
-};
+use crate::query::walks::dependency_cycles::{find_cycles, CycleRow};
 use crate::query::walks::topological_order::{order_dependencies, BlockedRow};
 
 /// The relations the dependency walks read unless the call names others.
@@ -36,9 +35,9 @@ pub fn cycles<'a>(
     let found = find_cycles(
         graph,
         relations.as_ref(),
-        max_hops.unwrap_or(DEFAULT_CYCLE_DEPTH),
+        max_hops.unwrap_or(CYCLES_MAX_HOPS),
         limit,
-        DEFAULT_SEARCH_BUDGET,
+        CYCLES_SEARCH_BUDGET,
     );
     let cycles: Vec<CycleRow<'a>> = found
         .cycles

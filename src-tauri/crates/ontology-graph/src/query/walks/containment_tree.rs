@@ -9,13 +9,11 @@ use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::containment_steps::{children, has_parent};
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::{CONTAINMENT_TREE_DEPTH, CONTAINMENT_TREE_LIMIT};
 use crate::query::project_root::project_roots;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use crate::query::scope::Scope;
-
-const DEFAULT_DEPTH: usize = 20;
-const DEFAULT_LIMIT: usize = 200;
 
 #[derive(Serialize)]
 struct TreeNode<'a> {
@@ -151,8 +149,8 @@ pub fn containment_tree<'a>(
         .as_deref()
         .map(|name| resolve(graph, Some(name), "slug"))
         .transpose()?;
-    let depth = request.depth_or(DEFAULT_DEPTH);
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let depth = request.depth_or(CONTAINMENT_TREE_DEPTH);
+    let limit = request.limit.unwrap_or(CONTAINMENT_TREE_LIMIT);
     let roots = match named {
         Some(root) => vec![root],
         None => default_roots(graph, request.include_orphans.unwrap_or(false)),

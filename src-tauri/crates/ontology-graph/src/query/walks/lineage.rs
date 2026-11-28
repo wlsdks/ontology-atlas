@@ -16,11 +16,9 @@ use crate::query::edge_rows::PathEdge;
 use crate::query::node_mask::NodeMask;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::{LINEAGE_DEPTH, LINEAGE_LIMIT};
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
-
-const DEFAULT_DEPTH: usize = 20;
-const DEFAULT_LIMIT: usize = 100;
 
 /// A node that holds, or is held by, the center, and how.
 #[derive(Debug, Clone, Copy)]
@@ -192,8 +190,8 @@ pub fn lineage<'a>(
     request: &QueryRequest,
 ) -> Result<LineageAnswer<'a>, QueryError> {
     let center = resolve(graph, request.slug.as_deref(), "slug")?;
-    let depth = request.depth_or(DEFAULT_DEPTH);
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let depth = request.depth_or(LINEAGE_DEPTH);
+    let limit = request.limit.unwrap_or(LINEAGE_LIMIT);
     let reach = lineage_reach(graph, center, depth, limit);
     Ok(LineageAnswer {
         operation: "lineage",

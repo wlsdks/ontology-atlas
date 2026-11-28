@@ -13,7 +13,7 @@ use super::argument_checks::{
     optional_one_of, optional_positive_integer, optional_text_list, required_non_blank_text,
 };
 use crate::analysis_records::{
-    AnalysisArchive, AnalysisMode, ArchiveError, HistoryQuery, HISTORY_LIMIT_DEFAULT,
+    AnalysisArchive, AnalysisMode, ArchiveError, HistoryLimit, HistoryQuery,
 };
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
@@ -139,6 +139,7 @@ struct AnalysisArguments {
     record_id: Option<String>,
     cursor: Option<String>,
     mode: Option<AnalysisMode>,
+    limit: Option<HistoryLimit>,
 }
 
 /// Reads every argument of the call once, in the JavaScript server's order, into the request.
@@ -165,7 +166,7 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
     }
     let record_id = optional_non_blank_text(arguments, "recordId")?;
     let analysis_cursor = optional_non_blank_text(arguments, "analysisCursor")?;
-    let analysis_mode = optional_one_of(arguments, "analysisMode", &["meaning", "architecture"])?;
+    let analysis_mode = optional_one_of(arguments, "analysisMode", &AnalysisMode::NAMES)?;
     let is = |name: &str| operation.name() == name;
     if is("analysis_record") && record_id.is_none() {
         required_non_blank_text(arguments, "recordId")?;
@@ -179,18 +180,15 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
         ));
     }
     let limit_sent = argument(arguments, "limit")?;
-    if is("analysis_history") {
-        if let Some(limit) = &limit_sent {
-            let fine = limit
-                .as_f64()
-                .is_some_and(|n| n.fract() == 0.0 && (1.0..=100.0).contains(&n));
-            if !fine {
-                return Err(invalid(
-                    "Analysis history limit must be between 1 and 100 scanned files.",
-                ));
-            }
-        }
-    }
+    let history_limit = if is("analysis_history") {
+        limit_sent
+            .as_ref()
+            .map(|limit| HistoryLimit::from_sent(limit.as_f64()))
+            .transpose()
+            .map_err(|error| archive_refusal(&error))?
+    } else {
+        None
+    };
     let mut texts: Vec<(&str, Option<String>)> = Vec::with_capacity(TEXT_ARGUMENTS.len());
     for key in TEXT_ARGUMENTS {
         texts.push((key, optional_non_blank_text(arguments, key)?));
@@ -371,6 +369,7 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
         record_id,
         cursor: analysis_cursor,
         mode: analysis_mode.and_then(AnalysisMode::parse),
+        limit: history_limit,
     };
     Ok((request, analysis))
 }
@@ -530,7 +529,7 @@ fn answer_from_archive(
     match operation {
         AnalysisOperation::History => {
             let query = HistoryQuery {
-                limit: request.limit.unwrap_or(HISTORY_LIMIT_DEFAULT),
+                limit: analysis.limit.unwrap_or_default(),
                 cursor: analysis.cursor,
                 mode: analysis.mode,
                 project: request.project.clone(),

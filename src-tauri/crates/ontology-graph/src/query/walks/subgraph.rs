@@ -2,11 +2,11 @@
 
 use serde::Serialize;
 
+use super::expansion_start::expansion_start;
 use super::neighborhood::{Neighborhood, NodeAtDistance};
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::node_mask::NodeMask;
-use crate::query::node_resolution::resolve;
 use crate::query::operation_defaults::{Expansion, SUBGRAPH};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
@@ -30,14 +30,13 @@ pub struct Subgraph {
 }
 
 impl Subgraph {
-    /// The subgraph around the node `name` names.
+    /// The subgraph around the node the call names, as `defaults` reads the name.
     pub fn of_call(
         graph: &CompiledGraph,
         request: &QueryRequest,
-        name: Option<&str>,
         defaults: &Expansion,
     ) -> Result<Self, QueryError> {
-        let seed = resolve(graph, name, "slug")?;
+        let seed = expansion_start(graph, request, defaults)?;
         let direction = defaults.direction(request);
         let depth = defaults.depth(request);
         let limit = defaults.limit(request);
@@ -128,8 +127,7 @@ pub fn subgraph<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<SubgraphAnswer<'a>, QueryError> {
-    let name = request.slug.as_deref().or(request.seed.as_deref());
-    let slice = Subgraph::of_call(graph, request, name, &SUBGRAPH)?;
+    let slice = Subgraph::of_call(graph, request, &SUBGRAPH)?;
     Ok(SubgraphAnswer {
         operation: "subgraph",
         seed: graph.node(slice.seed).slug(),

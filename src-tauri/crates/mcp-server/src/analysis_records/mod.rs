@@ -12,11 +12,9 @@ mod evidence_digest;
 mod field_checks;
 mod name_page;
 mod record_fault;
-mod record_file_name;
 mod record_summary;
 mod record_text;
 mod record_value;
 
-pub use analysis_archive::{AnalysisArchive, ArchiveError, HistoryQuery};
+pub use analysis_archive::{AnalysisArchive, ArchiveError, HistoryLimit, HistoryQuery};
 pub use analysis_record::AnalysisMode;
-pub use archive_limits::HISTORY_LIMIT_DEFAULT;

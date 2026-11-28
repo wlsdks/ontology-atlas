@@ -4,17 +4,19 @@
 
 use std::path::PathBuf;
 
+use analysis_archive_format::{
+    is_record_file_name, is_record_of, is_uuid_v4, record_file_name, ARCHIVE_FOLDER,
+    MAX_RECORD_BYTES,
+};
 use confined_files::{SidecarError, Unsafe, VaultSidecar};
 use serde::Serialize;
 use thiserror::Error;
 
 use super::analysis_record::{AnalysisMode, AnalysisRecord, RecordKind};
-use super::archive_limits::{ARCHIVE_FOLDER, HISTORY_LIMIT_MAX, MAX_RECORD_BYTES};
+use super::archive_limits::{HISTORY_LIMIT_DEFAULT, HISTORY_LIMIT_MAX};
 use super::evidence_digest::evidence_problems;
-use super::field_checks::is_uuid;
 use super::name_page::NamePage;
 use super::record_fault::RecordFault;
-use super::record_file_name::{is_record_file_name, is_record_of, record_file_name};
 use super::record_summary::RecordSummary;
 use super::record_text::parse_record;
 use super::record_value::RecordValue;
@@ -25,7 +27,10 @@ const MEANING_AUTHORITY: &str = "diagnostic-records-only";
 /// about the vault.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ArchiveError {
-    #[error("Analysis history limit must be between 1 and 100 scanned files.")]
+    #[error(
+        "Analysis history limit must be between 1 and {} scanned files.",
+        HISTORY_LIMIT_MAX
+    )]
     InvalidLimit,
     #[error("Invalid analysis history cursor.")]
     InvalidCursor,
@@ -42,10 +47,40 @@ pub enum ArchiveError {
     Unreadable(String),
 }
 
+/// How many record files one `analysis_history` call reads: a whole number from 1 to
+/// [`HISTORY_LIMIT_MAX`]. The one place the range is judged.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HistoryLimit(usize);
+
+impl HistoryLimit {
+    /// The limit a call sent, `None` when it sent something that is no number.
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "the candidates are at most a hundred"
+    )]
+    pub fn from_sent(number: Option<f64>) -> Result<Self, ArchiveError> {
+        let sent = number.ok_or(ArchiveError::InvalidLimit)?;
+        (1..=HISTORY_LIMIT_MAX)
+            .find(|candidate| *candidate as f64 == sent)
+            .map(Self)
+            .ok_or(ArchiveError::InvalidLimit)
+    }
+
+    pub fn get(self) -> usize {
+        self.0
+    }
+}
+
+impl Default for HistoryLimit {
+    fn default() -> Self {
+        Self(HISTORY_LIMIT_DEFAULT)
+    }
+}
+
 /// What one `analysis_history` call asks for.
 #[derive(Debug, Clone, Default)]
 pub struct HistoryQuery {
-    pub limit: usize,
+    pub limit: HistoryLimit,
     pub cursor: Option<String>,
     pub mode: Option<AnalysisMode>,
     pub project: Option<String>,
@@ -171,9 +206,6 @@ impl AnalysisArchive {
     /// `limit` files, so `mode` and `project` can leave it with fewer rows than files; `hasMore`
     /// and `nextCursor` follow the files, never the rows.
     pub fn history(&self, query: &HistoryQuery) -> Result<HistoryAnswer, ArchiveError> {
-        if !(1..=HISTORY_LIMIT_MAX).contains(&query.limit) {
-            return Err(ArchiveError::InvalidLimit);
-        }
         if query
             .cursor
             .as_deref()
@@ -181,7 +213,7 @@ impl AnalysisArchive {
         {
             return Err(ArchiveError::InvalidCursor);
         }
-        let mut page = NamePage::new(query.limit, query.cursor.clone());
+        let mut page = NamePage::new(query.limit.get(), query.cursor.clone());
         for name in self.folder.file_names().map_err(listing_failure)? {
             let name = name.map_err(|error| listing_failure(error.into()))?;
             if is_record_file_name(&name) {
@@ -223,7 +255,7 @@ impl AnalysisArchive {
 
     /// The one record with this id, whole.
     pub fn record(&self, id: &str) -> Result<RecordAnswer, ArchiveError> {
-        if !is_uuid(id) {
+        if !is_uuid_v4(id) {
             return Err(ArchiveError::InvalidRecordId);
         }
         let mut names: Vec<String> = Vec::new();
