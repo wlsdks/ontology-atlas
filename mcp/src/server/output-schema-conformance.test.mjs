@@ -109,9 +109,12 @@ test('confirmed writes answer with a post-write maintenance summary that matches
     writeVaultFile(vault, 'capabilities/target', '---\nuid: 00000000-0000-4000-8000-000000000002\nkind: capability\ntitle: Target\n---\nThe target.\n');
     writeVaultFile(vault, 'capabilities/caller', '---\nuid: 00000000-0000-4000-8000-000000000003\nkind: capability\ntitle: Caller\ndomain: domains/core\ndepends_on: [capabilities/target]\nrelates: [capabilities/target]\n---\nThe caller.\n');
     writeVaultFile(vault, 'capabilities/spare', '---\nuid: 00000000-0000-4000-8000-000000000004\nkind: capability\ntitle: Spare\n---\nThe spare.\n');
+    writeVaultFile(vault, 'capabilities/other', '---\nuid: 00000000-0000-4000-8000-000000000005\nkind: capability\ntitle: Other\n---\nThe other.\n');
 
     const answers = await answersAgainstDeclaredSchemas(vault, [
       ['remove_relation', { from: 'capabilities/caller', to: 'capabilities/target', type: 'relates', confirm: true }],
+      ['remove_relation', { from: 'capabilities/caller', to: 'capabilities/target', type: 'depends_on', replaceWith: { to: 'capabilities/spare', type: 'depends_on', why: 'The caller waits on the spare now.' }, confirm: true }],
+      ['rename_concept', { oldSlug: 'capabilities/other', newKind: 'element', domain: 'domains/core', confirm: true }],
       ['rename_concept', { oldSlug: 'capabilities/spare', newSlug: 'capabilities/extra', confirm: true }],
     ]);
 
@@ -139,11 +142,14 @@ test('a construction pass of reads and writes matches the contract and the adver
       ['list_concepts', {}],
       ['get_concepts', { slugs: ['capabilities/caller'], body: 'full' }],
       ['get_concepts', { slugs: ['capabilities/caller', 'capabilities/missing'] }],
-      ['find_evidence', { title: 'target' }],
+      ['list_concepts', { mentions: 'target' }],
+      ['list_concepts', { mentions: 'no node says this' }],
       ['query_ontology', { operation: 'neighbors', slug: 'capabilities/caller' }],
       ['query_ontology', { operation: 'path', from: 'capabilities/caller', to: 'domains/core' }],
-      ['find_orphans', {}],
-      ['query_concepts', { filter: 'kind=capability' }],
+      ['query_ontology', { operation: 'match_nodes', hasIncoming: false }],
+      ['list_concepts', { filter: 'kind=capability' }],
+      ['list_concepts', { filter: 'kind=document' }],
+      ['get_constellation', {}],
       ['compile_ontology', {}],
       ['query_ontology', { operation: 'impact', slug: 'capabilities/target' }],
       ['validate_vault', {}],

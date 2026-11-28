@@ -38,7 +38,7 @@ export function strictArgsFailure(response) {
   if (structured.unknownArguments[0]?.name !== 'lmit' || structured.unknownArguments[0]?.suggestion !== 'limit') {
     return 'strict arguments structured error missing canonical unknown argument hint';
   }
-  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'offset', 'since', 'summary'])) {
+  if (!sameArray(structured?.allowedArguments, ['domain', 'filter', 'kind', 'limit', 'mentions', 'offset', 'since', 'summary'])) {
     return 'strict arguments structured error missing allowed arguments';
   }
   return null;
@@ -67,7 +67,7 @@ export function strictMultiArgsFailure(response) {
   if (!sameArray(structured?.receivedArguments, ['lmit', 'summry'])) {
     return 'strict multi-argument structured error missing received arguments';
   }
-  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'offset', 'since', 'summary'])) {
+  if (!sameArray(structured?.allowedArguments, ['domain', 'filter', 'kind', 'limit', 'mentions', 'offset', 'since', 'summary'])) {
     return 'strict multi-argument structured error missing allowed arguments';
   }
   if (!Array.isArray(structured?.unknownArguments) || structured.unknownArguments.length !== 2) {
@@ -218,49 +218,24 @@ export function strictRelationFilterFailure(response) {
   });
 }
 
-export function strictFindOrphansKindFailure(
+export function strictListConceptsFilterFailure(
   response,
   { field = 'kind', received = 'capabilty', suggestion = 'capability' } = {},
 ) {
   if (response?.result?.isError !== true) {
-    return 'strict find_orphans kind response was not rejected';
+    return 'strict list_concepts filter response was not rejected';
   }
   const text = response.result.content?.[0]?.text || '';
   if (!new RegExp(`${escapeRegExp(field)} must be one of`, 'i').test(text)) {
-    return `strict find_orphans kind response did not report the invalid ${field} filter`;
+    return `strict list_concepts filter response did not report the invalid ${field}`;
   }
   if (!new RegExp(`Received: "${escapeRegExp(received)}"`, 'i').test(text)) {
-    return `strict find_orphans kind response did not report the invalid ${field} value`;
+    return `strict list_concepts filter response did not report the invalid ${field} value`;
   }
   if (!new RegExp(`Did you mean "${escapeRegExp(suggestion)}"\\?`, 'i').test(text)) {
-    return `strict find_orphans kind response did not suggest the closest ${field} value`;
+    return `strict list_concepts filter response did not suggest the closest ${field} value`;
   }
-  return structuredValueRepairFailure(response, 'strict find_orphans kind', {
-    valueName: field,
-    received,
-    suggestion,
-    allowedValues: NODE_KIND_VALUES,
-  });
-}
-
-export function strictQueryConceptsFilterFailure(
-  response,
-  { field = 'kind', received = 'capabilty', suggestion = 'capability' } = {},
-) {
-  if (response?.result?.isError !== true) {
-    return 'strict query_concepts filter response was not rejected';
-  }
-  const text = response.result.content?.[0]?.text || '';
-  if (!new RegExp(`${escapeRegExp(field)} must be one of`, 'i').test(text)) {
-    return `strict query_concepts filter response did not report the invalid ${field}`;
-  }
-  if (!new RegExp(`Received: "${escapeRegExp(received)}"`, 'i').test(text)) {
-    return `strict query_concepts filter response did not report the invalid ${field} value`;
-  }
-  if (!new RegExp(`Did you mean "${escapeRegExp(suggestion)}"\\?`, 'i').test(text)) {
-    return `strict query_concepts filter response did not suggest the closest ${field} value`;
-  }
-  return structuredValueRepairFailure(response, 'strict query_concepts filter', {
+  return structuredValueRepairFailure(response, 'strict list_concepts filter', {
     valueName: field,
     received,
     suggestion,
@@ -418,4 +393,20 @@ export function strictMatchEdgesTypeFailure(response) {
     suggestion: 'depends_on',
     allowedValues: RELATION_TYPE_VALUES,
   });
+}
+
+export function retiredToolFailure(response, { retiredTool, replacementIncludes }) {
+  if (response?.result?.isError !== true) {
+    return `retired ${retiredTool} response was not rejected`;
+  }
+  const structuredFailure = structuredErrorFailure(response, `retired ${retiredTool}`, { errorCode: 'tool_retired' });
+  if (structuredFailure) return structuredFailure;
+  const structured = response.result.structuredContent;
+  if (structured.retiredTool !== retiredTool || typeof structured.replacement !== 'string' || !structured.replacement.includes(replacementIncludes)) {
+    return `retired ${retiredTool} structured error missing the replacement`;
+  }
+  if (!structured.error.includes(structured.replacement)) {
+    return `retired ${retiredTool} message does not name its replacement`;
+  }
+  return null;
 }

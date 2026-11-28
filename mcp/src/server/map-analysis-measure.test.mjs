@@ -53,7 +53,7 @@ test('a relation write walks the repository zero times', () => {
     ['add_relation', { from: 'capabilities/a', to: 'capabilities/b' }, { from: 'capabilities/a' }],
     ['add_relations', {}, { relations: [{ ok: true, from: 'capabilities/a' }] }],
     ['remove_relation', { from: 'capabilities/a' }, { from: 'capabilities/a' }],
-    ['replace_relation', { from: 'capabilities/a' }, { from: 'capabilities/a' }],
+    ['remove_relation', { from: 'capabilities/a', replaceWith: { to: 'capabilities/c', type: 'relates' } }, { from: 'capabilities/a' }],
   ];
   for (const [name, args, result] of relationWrites) {
     assert.equal(recordWriteInMapAnalysis({ recorder, measureShare: measure, name, args, result, agent: null }), true, name);

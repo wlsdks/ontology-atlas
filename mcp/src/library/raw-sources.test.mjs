@@ -45,7 +45,7 @@ before(async () => {
       { jsonrpc: '2.0', method: 'notifications/initialized' },
       call(2, 'list_concepts'),
       call(3, 'list_kinds'),
-      call(4, 'query_concepts', { filter: 'kind=domain' }),
+      call(4, 'list_concepts', { filter: 'kind=domain' }),
       call(5, 'compile_ontology'),
       call(6, 'find_backlinks', { slug: 'domains/planning' }),
       call(7, 'get_concept', { slug: RAW_SOURCE_SLUG }),
@@ -77,7 +77,7 @@ test('a Markdown file under sources/ that carries kind: is on no read surface', 
   assert.deepEqual(docSlugs, ['domains/planning', 'wiki/roadmap-notes']);
   assert.deepEqual(structured(2).nodes.map((node) => node.slug), ['domains/planning']);
   assert.deepEqual(structured(3).byKind, { domain: 1 });
-  assert.deepEqual(structured(4).matches.map((match) => match.slug), ['domains/planning']);
+  assert.deepEqual(structured(4).nodes.map((node) => node.slug), ['domains/planning']);
   assert.equal(structured(5).nodeCount, 1);
   assert.equal(structured(6).total, 0, 'a relation written inside a raw source is not a backlink');
 });

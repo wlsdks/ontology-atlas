@@ -9,7 +9,6 @@ import {
   RELATION_TYPE_VALUES,
 } from '../../../src/ontology-engine.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../../../src/validate.mjs';
-import { NODE_UID_PATTERN } from '../../../src/schema.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 import { outputPropertyAt, propertyAt } from './schema-primitives.mjs';
@@ -210,73 +209,6 @@ export function vaultQueryToolsSchemaFailure(tools) {
     if (!/health\/workspace_brief/.test(option.description || '')) {
       return `query_ontology ${propertyName} health tuning description drift`;
     }
-  }
-
-  const findOrphansTool = tools.find((candidate) => candidate?.name === 'find_orphans');
-  if (!findOrphansTool) return 'tools/list response missing find_orphans tool';
-  if (
-    !/List orphan nodes/i.test(findOrphansTool.description || '') ||
-    !/docs that no other node references via any frontmatter array key/i.test(findOrphansTool.description || '') ||
-    !/cleanup starting point/i.test(findOrphansTool.description || '') ||
-    !/Root\/sentinel kinds like project and vault-readme are excluded by default/i.test(findOrphansTool.description || '')
-  ) {
-    return 'find_orphans description missing cleanup guidance';
-  }
-  const orphanKindSchema = propertyAt(findOrphansTool, ['properties', 'kind']);
-  if (
-    orphanKindSchema?.type !== 'string' ||
-    (orphanKindSchema.minLength ?? 1) !== 1 ||
-    !sameArray(orphanKindSchema.enum, NODE_KIND_VALUES) ||
-    !/Restrict to one kind/i.test(orphanKindSchema.description || '') ||
-    !/Omit for all kinds/i.test(orphanKindSchema.description || '')
-  ) {
-    return 'find_orphans.kind schema guidance drift';
-  }
-  if (findOrphansTool.outputSchema?.type !== 'object') {
-    return 'find_orphans outputSchema root drift';
-  }
-  if (!sameArray(findOrphansTool.outputSchema?.required, ['total', 'orphans'])) {
-    return 'find_orphans outputSchema required drift';
-  }
-  if (findOrphansTool.outputSchema?.additionalProperties !== false) {
-    return 'find_orphans outputSchema root openness drift';
-  }
-  const orphansTotalSchema = outputPropertyAt(findOrphansTool, ['properties', 'total']);
-  if (orphansTotalSchema?.type !== 'integer' || orphansTotalSchema.minimum !== 0) {
-    return 'find_orphans outputSchema total drift';
-  }
-  const orphansRowsSchema = outputPropertyAt(findOrphansTool, ['properties', 'orphans']);
-  if (
-    orphansRowsSchema?.type !== 'array' ||
-    orphansRowsSchema.items?.type !== 'object' ||
-    !sameArray(orphansRowsSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])
-  ) {
-    return 'find_orphans outputSchema rows drift';
-  }
-  if (orphansRowsSchema.items?.additionalProperties !== false) {
-    return 'find_orphans outputSchema row openness drift';
-  }
-  if (orphansRowsSchema.items?.properties?.uid?.type !== 'string' || orphansRowsSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
-    return 'find_orphans outputSchema row uid drift';
-  }
-  for (const propertyName of ['slug', 'kind', 'title']) {
-    if (orphansRowsSchema.items?.properties?.[propertyName]?.type !== 'string') {
-      return `find_orphans outputSchema row ${propertyName} drift`;
-    }
-  }
-  if (orphansRowsSchema.items?.properties?.mtime?.type !== 'number' || orphansRowsSchema.items?.properties?.mtime?.minimum !== 0) {
-    return 'find_orphans outputSchema row mtime drift';
-  }
-  const excludeKinds = propertyAt(findOrphansTool, ['properties', 'excludeKinds']);
-  if (
-    excludeKinds?.type !== 'array' ||
-    excludeKinds?.items?.type !== 'string' ||
-    !sameArray(excludeKinds?.items?.enum, NODE_KIND_VALUES)
-  ) {
-    return 'find_orphans.excludeKinds schema drift';
-  }
-  if (!/project/.test(excludeKinds.description || '') || !/vault-readme/.test(excludeKinds.description || '')) {
-    return 'find_orphans.excludeKinds default description drift';
   }
   return null;
 }

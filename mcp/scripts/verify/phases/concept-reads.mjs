@@ -1,11 +1,11 @@
 import {
   findBacklinksFailure,
-  findEvidenceFailure,
+  listConceptsMentionsFailure,
   conceptRowFailure,
   getConceptsFailure,
-  limitedQueryConceptsFailure,
+  limitedListConceptsFilterFailure,
   listConceptsFailure,
-  queryConceptsFailure,
+  listConceptsFilterFailure,
   vaultWarningsNotice,
 } from '../checks/concept-reads.mjs';
 import { structuredContentFailure } from '../checks/structured-content.mjs';
@@ -14,16 +14,16 @@ import { formatCount, log } from '../output.mjs';
 import { buildGetConceptSmokeSlug, buildGraphQuerySmokeArgs } from '../requests/follow-ups.mjs';
 
 export function verifyConceptReads(responses, {
-  limitedQueryConceptsSmoke,
+  limitedFilterSmoke,
   callRes,
   projectProbeRes,
 }) {
   const getConceptsRes = responses.find((r) => r.id === 11);
   const getConceptRes = responses.find((r) => r.id === 31);
-  const findEvidenceRes = responses.find((r) => r.id === 32);
+  const mentionsRes = responses.find((r) => r.id === 32);
   const findBacklinksRes = responses.find((r) => r.id === 33);
-  const queryConceptsRes = responses.find((r) => r.id === 34);
-  const limitedQueryConceptsRes = responses.find((r) => r.id === 37);
+  const filterRes = responses.find((r) => r.id === 34);
+  const limitedFilterRes = responses.find((r) => r.id === 37);
   let listPayload = null;
   let graphSmokeArgs = null;
   let getConceptVerified = false;
@@ -121,26 +121,26 @@ export function verifyConceptReads(responses, {
     return false;
   }
 
-  if (!findEvidenceRes || !findEvidenceRes.result) {
-    log('fail', 'no find_evidence response');
+  if (!mentionsRes || !mentionsRes.result) {
+    log('fail', 'no list_concepts mentions response');
     return false;
   }
   try {
-    const text = findEvidenceRes.result.content?.[0]?.text || '';
+    const text = mentionsRes.result.content?.[0]?.text || '';
     const parsed = JSON.parse(text);
-    const failure = findEvidenceFailure(parsed);
+    const failure = listConceptsMentionsFailure(parsed);
     if (failure) {
       log('fail', failure);
       return false;
     }
-    const structuredFailure = structuredContentFailure(findEvidenceRes, parsed, 'find_evidence');
+    const structuredFailure = structuredContentFailure(mentionsRes, parsed, 'list_concepts mentions');
     if (structuredFailure) {
       log('fail', structuredFailure);
       return false;
     }
-    log('ok', `find_evidence: ${formatCount(parsed.matches.length, 'evidence result')} for "${parsed.query}"`);
+    log('ok', `list_concepts mentions: ${formatCount(parsed.nodes.length, 'evidence result')} for "${parsed.query}"`);
   } catch (err) {
-    log('fail', `failed to parse find_evidence response: ${err.message}`);
+    log('fail', `failed to parse list_concepts mentions response: ${err.message}`);
     return false;
   }
 
@@ -171,56 +171,56 @@ export function verifyConceptReads(responses, {
     }
   }
 
-  if (!queryConceptsRes || !queryConceptsRes.result) {
-    log('fail', 'no query_concepts response');
+  if (!filterRes || !filterRes.result) {
+    log('fail', 'no list_concepts filter response');
     return false;
   }
   try {
-    const text = queryConceptsRes.result.content?.[0]?.text || '';
+    const text = filterRes.result.content?.[0]?.text || '';
     const parsed = JSON.parse(text);
-    const failure = queryConceptsFailure(parsed);
+    const failure = listConceptsFilterFailure(parsed);
     if (failure) {
       log('fail', failure);
       return false;
     }
-    const structuredFailure = structuredContentFailure(queryConceptsRes, parsed, 'query_concepts');
+    const structuredFailure = structuredContentFailure(filterRes, parsed, 'list_concepts filter');
     if (structuredFailure) {
       log('fail', structuredFailure);
       return false;
     }
-    log('ok', `query_concepts: ${formatCount(parsed.matches.length, 'query result')} / ${formatCount(parsed.total, 'total query result')}`);
+    log('ok', `list_concepts filter: ${formatCount(parsed.nodes.length, 'query result')} / ${formatCount(parsed.total, 'total query result')}`);
   } catch (err) {
-    log('fail', `failed to parse query_concepts response: ${err.message}`);
+    log('fail', `failed to parse list_concepts filter response: ${err.message}`);
     return false;
   }
 
-  let limitedQueryConceptsVerified = false;
-  if (limitedQueryConceptsSmoke) {
-    if (!limitedQueryConceptsRes || !limitedQueryConceptsRes.result) {
-      log('fail', 'no query_concepts_limited response');
+  let limitedFilterVerified = false;
+  if (limitedFilterSmoke) {
+    if (!limitedFilterRes || !limitedFilterRes.result) {
+      log('fail', 'no limited list_concepts filter response');
       return false;
     }
     try {
-      const text = limitedQueryConceptsRes.result.content?.[0]?.text || '';
+      const text = limitedFilterRes.result.content?.[0]?.text || '';
       const parsed = JSON.parse(text);
-      const failure = limitedQueryConceptsFailure(
+      const failure = limitedListConceptsFilterFailure(
         parsed,
-        limitedQueryConceptsSmoke.excludedSlug,
-        limitedQueryConceptsSmoke.expectedTotal,
+        limitedFilterSmoke.excludedSlug,
+        limitedFilterSmoke.expectedTotal,
       );
       if (failure) {
         log('fail', failure);
         return false;
       }
-      const structuredFailure = structuredContentFailure(limitedQueryConceptsRes, parsed, 'query_concepts_limited');
+      const structuredFailure = structuredContentFailure(limitedFilterRes, parsed, 'limited list_concepts filter');
       if (structuredFailure) {
         log('fail', structuredFailure);
         return false;
       }
-      limitedQueryConceptsVerified = true;
-      log('ok', `query_concepts limited: ${formatCount(parsed.matches.length, 'query result')} / ${formatCount(parsed.total, 'total query result')} (limited ${parsed.limited})`);
+      limitedFilterVerified = true;
+      log('ok', `list_concepts filter limited: ${formatCount(parsed.nodes.length, 'query result')} / ${formatCount(parsed.total, 'total query result')} (limited ${parsed.limited})`);
     } catch (err) {
-      log('fail', `failed to parse query_concepts_limited response: ${err.message}`);
+      log('fail', `failed to parse limited list_concepts filter response: ${err.message}`);
       return false;
     }
   }
@@ -229,6 +229,6 @@ export function verifyConceptReads(responses, {
     graphSmokeArgs,
     getConceptVerified,
     findBacklinksVerified,
-    limitedQueryConceptsVerified,
+    limitedFilterVerified,
   };
 }

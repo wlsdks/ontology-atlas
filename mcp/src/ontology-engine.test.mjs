@@ -3961,7 +3961,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(row.didYouMean, 'domains/checkout');
     assert.equal(row.proposedAction, null);
     assert.match(row.reason, /domains\/checkout/);
-    assert.match(row.reason, /`replace_relation` from "capabilities\/refund", oldTo "check", newTo "domains\/checkout", oldType and newType "relates"/);
+    assert.match(row.reason, /patch_concept "capabilities\/refund" so its "relates" entry "check" reads "domains\/checkout"/);
   });
 
   // An ambiguous near-match tail must not produce a confident guess.

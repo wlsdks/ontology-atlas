@@ -2,14 +2,14 @@ import { maintenanceFilterEnumSummary } from '../checks/maintenance-cursor.mjs';
 import {
   strictArgsFailure,
   strictEnumFailure,
-  strictFindOrphansKindFailure,
+  retiredToolFailure,
   strictGraphKindFilterFailure,
   strictListConceptsKindFailure,
   strictMaintenanceFilterFailure,
   strictMatchEdgesTypeFailure,
   strictMatchNodesSortFailure,
   strictMultiArgsFailure,
-  strictQueryConceptsFilterFailure,
+  strictListConceptsFilterFailure,
   strictRecommendRelationsKindFilterFailure,
   strictRelationCheckFailure,
   strictRelationFilterFailure,
@@ -54,10 +54,9 @@ export function verifyStrictFilters(responses) {
   const strictRecommendRelationsUnsupportedKindFilterRes = responses.find((r) => r.id === 52);
   const strictMatchNodesSortFilterRes = responses.find((r) => r.id === 53);
   const strictMatchEdgesTypeFilterRes = responses.find((r) => r.id === 54);
-  const strictFindOrphansKindFilterRes = responses.find((r) => r.id === 56);
-  const strictFindOrphansExcludeKindFilterRes = responses.find((r) => r.id === 57);
-  const strictQueryConceptsKindFilterRes = responses.find((r) => r.id === 58);
-  const strictQueryConceptsHasKeyFilterRes = responses.find((r) => r.id === 59);
+  const retiredToolRes = responses.find((r) => r.id === 71);
+  const strictListConceptsFilterKindRes = responses.find((r) => r.id === 58);
+  const strictListConceptsFilterHasKeyRes = responses.find((r) => r.id === 59);
   const strictListConceptsKindFilterRes = responses.find((r) => r.id === 60);
   const strictGraphFromKindFilterRes = responses.find((r) => r.id === 48);
   const strictGraphToKindFilterRes = responses.find((r) => r.id === 49);
@@ -89,37 +88,35 @@ export function verifyStrictFilters(responses) {
     return false;
   }
   log('ok', 'strict relation filters: invalid dependencyTypes rejected with closest-value hint');
-  const strictFindOrphansKindFilter = strictFindOrphansKindFailure(strictFindOrphansKindFilterRes);
-  if (strictFindOrphansKindFilter) {
-    log('fail', strictFindOrphansKindFilter);
-    return false;
-  }
-  const strictFindOrphansExcludeKindFilter = strictFindOrphansKindFailure(strictFindOrphansExcludeKindFilterRes, { field: 'excludeKinds items' });
-  if (strictFindOrphansExcludeKindFilter) {
-    log('fail', strictFindOrphansExcludeKindFilter);
-    return false;
-  }
-  log('ok', 'strict find_orphans filters: invalid kind/excludeKinds rejected with closest-value hints');
   const strictListConceptsKindFilter = strictListConceptsKindFailure(strictListConceptsKindFilterRes);
   if (strictListConceptsKindFilter) {
     log('fail', strictListConceptsKindFilter);
     return false;
   }
   log('ok', 'strict list_concepts filters: invalid kind rejected with closest-value hint');
-  const strictQueryConceptsKindFilter = strictQueryConceptsFilterFailure(strictQueryConceptsKindFilterRes);
-  if (strictQueryConceptsKindFilter) {
-    log('fail', strictQueryConceptsKindFilter);
+  const strictListConceptsFilterKind = strictListConceptsFilterFailure(strictListConceptsFilterKindRes);
+  if (strictListConceptsFilterKind) {
+    log('fail', strictListConceptsFilterKind);
     return false;
   }
-  const strictQueryConceptsHasKeyFilter = strictQueryConceptsFilterFailure(
-    strictQueryConceptsHasKeyFilterRes,
+  const strictListConceptsFilterHasKey = strictListConceptsFilterFailure(
+    strictListConceptsFilterHasKeyRes,
     { field: 'has key', received: 'capabilties', suggestion: 'capabilities' },
   );
-  if (strictQueryConceptsHasKeyFilter) {
-    log('fail', strictQueryConceptsHasKeyFilter);
+  if (strictListConceptsFilterHasKey) {
+    log('fail', strictListConceptsFilterHasKey);
     return false;
   }
-  log('ok', 'strict query_concepts filters: invalid kind/has-key rejected with closest-value hints');
+  log('ok', 'strict list_concepts filter: invalid kind/has-key rejected with closest-value hints');
+  const retiredTool = retiredToolFailure(retiredToolRes, {
+    retiredTool: 'find_orphans',
+    replacementIncludes: "match_nodes",
+  });
+  if (retiredTool) {
+    log('fail', retiredTool);
+    return false;
+  }
+  log('ok', 'retired tool: a retired name answers tool_retired with the call that replaces it');
   const strictRelationCheck = strictRelationCheckFailure(strictRelationCheckRes);
   if (strictRelationCheck) {
     log('fail', strictRelationCheck);

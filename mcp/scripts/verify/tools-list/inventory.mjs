@@ -1,15 +1,9 @@
 export const EXPECTED_READ_TOOLS = [
   'connection_info',
-  'git_status',
-  'git_history',
   'list_concepts',
-  'list_constellations',
   'get_constellation',
   'get_concepts',
-  'find_evidence',
   'find_backlinks',
-  'find_orphans',
-  'query_concepts',
   'compile_ontology',
   'query_ontology',
   'validate_vault',
@@ -24,29 +18,22 @@ export const EXPECTED_WRITE_TOOLS = [
   'add_concepts',
   'add_relations',
   'remove_relation',
-  'replace_relation',
   'patch_concept',
   'delete_concept',
   'rename_concept',
-  'reclassify_concept',
   'merge_concepts',
   'absorb_document',
-  'git_snapshot',
   'finalize_project_meaning',
   'connect_project_source',
-  'disconnect_project_source',
 ];
 
 export const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];
 export const EXPECTED_DESTRUCTIVE_TOOLS = [
-  'git_snapshot',
-  'disconnect_project_source',
+  'connect_project_source',
   'delete_concept',
   'merge_concepts',
   'rename_concept',
   'remove_relation',
-  'replace_relation',
-  'reclassify_concept',
   'absorb_document',
 ];
 export const EXPECTED_IDEMPOTENT_TOOLS = [

@@ -166,7 +166,6 @@ test('the question names the vault-visible effect', () => {
   assert.equal(describeWrite('add_concept', { slug: 'domains/cart' }), 'Create concept domains/cart');
   assert.equal(describeWrite('add_relations', { relations: [1, 2, 3] }), 'Add 3 relation(s)');
   assert.equal(describeWrite('delete_concept', { slug: 'x' }), 'Delete concept x');
-  assert.equal(describeWrite('git_snapshot', {}), 'Commit the vault');
   assert.equal(describeWrite('some_new_tool', {}), 'Run some_new_tool');
 });
 
@@ -175,7 +174,9 @@ test('the question names the targets each tool actually receives', () => {
     [describeWrite('connect_project_source', { projectSlug: 'atlas', rootPath: '/Users/me/code/app' }), ['atlas', '"/Users/me/code/app"']],
     [describeWrite('rename_concept', { oldSlug: 'domains/a', newSlug: 'domains/b' }), ['domains/a', 'domains/b']],
     [describeWrite('merge_concepts', { fromSlug: 'elements/x', intoSlug: 'elements/y' }), ['elements/x', 'elements/y']],
-    [describeWrite('replace_relation', { from: 'a', oldTo: 'b', newTo: 'c' }), ['a', 'b', 'c']],
+    [describeWrite('remove_relation', { from: 'a', to: 'b', type: 'relates', replaceWith: { to: 'c', type: 'relates' } }), ['a', 'b', 'c']],
+    [describeWrite('rename_concept', { oldSlug: 'capabilities/a', newKind: 'element' }), ['capabilities/a', 'kind']],
+    [describeWrite('connect_project_source', { projectSlug: 'atlas', disconnect: true }), ['Disconnect']],
     [describeWrite('absorb_document', { filePath: '/repo/AGENTS.md' }), ['"/repo/AGENTS.md"']],
   ];
   for (const [card, targets] of cards) {
@@ -201,10 +202,10 @@ test('the card spells out a line break or invisible character in any value inste
     ['add_concept', { slug: hidden }],
     ['patch_concept', { slug: hidden }],
     ['delete_concept', { slug: hidden }],
-    ['reclassify_concept', { slug: hidden }],
+    ['rename_concept', { oldSlug: hidden, newKind: 'element' }],
     ['add_relation', { from: hidden, to: hidden }],
     ['remove_relation', { from: hidden, to: hidden }],
-    ['replace_relation', { from: hidden, oldTo: hidden, newTo: hidden }],
+    ['remove_relation', { from: hidden, to: hidden, replaceWith: { to: hidden, type: 'relates' } }],
     ['rename_concept', { oldSlug: hidden, newSlug: hidden }],
     ['merge_concepts', { fromSlug: hidden, intoSlug: hidden }],
     ['absorb_document', { filePath: hidden }],

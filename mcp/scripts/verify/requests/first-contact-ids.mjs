@@ -23,7 +23,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [16, 'strict_args'],
   [17, 'strict_enum'],
   [18, 'project_probe'],
-  [19, 'find_orphans'],
+  [19, 'orphan_match_nodes'],
   [20, 'health_tuned'],
   [21, 'workspace_brief_tuned'],
   [22, 'strict_maintenance_phase_filter'],
@@ -36,10 +36,10 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [29, 'add_relations_row_isolation'],
   [30, 'maintenance_resume_cursor'],
   [31, 'get_concepts_single'],
-  [32, 'find_evidence'],
+  [32, 'list_concepts_mentions'],
   [33, 'find_backlinks'],
-  [34, 'query_concepts'],
-  [37, 'query_concepts_limited'],
+  [34, 'list_concepts_filter'],
+  [37, 'list_concepts_filter_limited'],
   [38, 'analyze_repo_structure'],
   [39, 'infer_imports'],
   [40, 'strict_relation_filter'],
@@ -56,10 +56,8 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [52, 'strict_recommend_relations_unsupported_kind_filter'],
   [53, 'strict_match_nodes_sort_filter'],
   [54, 'strict_match_edges_type_filter'],
-  [56, 'strict_find_orphans_kind_filter'],
-  [57, 'strict_find_orphans_exclude_kind_filter'],
-  [58, 'strict_query_concepts_kind_filter'],
-  [59, 'strict_query_concepts_has_key_filter'],
+  [58, 'strict_list_concepts_filter_kind'],
+  [59, 'strict_list_concepts_filter_has_key'],
   [60, 'strict_list_concepts_kind_filter'],
   [61, 'patch_concept_conflict_guard'],
   [62, 'add_concepts_batch_cap'],
@@ -70,8 +68,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [67, 'all_paths'],
   [69, 'absorb_document_dry_run'],
   [70, 'infer_imports_focus'],
-  [71, 'git_status'],
-  [72, 'git_history'],
+  [71, 'retired_tool'],
   [73, 'connection_info'],
 ]);
 
@@ -79,7 +76,7 @@ export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
   30, // maintenance_resume_cursor: sent only when maintenance has an action to resume after.
   31, // get_concepts_single: sent only when list_concepts returns a real node.
   33, // find_backlinks: sent only when list_concepts returns a real node.
-  37, // query_concepts_limited: sent only when the vault has a non-trivial excluded slug.
+  37, // list_concepts_filter_limited: sent only when the vault has a non-trivial excluded slug.
   43, // rename_concept_dry_run: sent only when a real writable node exists.
   44, // merge_concepts_dry_run: sent only when two real writable nodes exist.
   45, // delete_concept_dry_run: sent only when a real writable node exists.

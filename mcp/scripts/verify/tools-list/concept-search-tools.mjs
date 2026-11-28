@@ -1,82 +1,45 @@
-import { isDeepStrictEqual } from 'node:util';
-import { NODE_UID_PATTERN } from '../../../src/schema.mjs';
-
 import { sameArray } from '../value-checks.mjs';
 import { backlinkRowsSchemaFailure, outputPropertyAt, propertyAt } from './schema-primitives.mjs';
 
 export function conceptSearchToolsSchemaFailure(tools) {
-  const findEvidenceTool = tools.find((tool) => tool?.name === 'find_evidence');
-  if (!findEvidenceTool) return 'tools/list response missing find_evidence tool';
+  const listConceptsTool = tools.find((tool) => tool?.name === 'list_concepts');
+  if (!listConceptsTool) return 'tools/list response missing list_concepts tool';
   if (
-    !/Find vault docs that mention a given concept by title/i.test(findEvidenceTool.description || '') ||
-    !/Each match includes a prose `?excerpt`?/i.test(findEvidenceTool.description || '') ||
-    !/without an extra get_concepts call/i.test(findEvidenceTool.description || '')
+    !/by text with `mentions`/i.test(listConceptsTool.description || '') ||
+    !/by a predicate with `filter`/i.test(listConceptsTool.description || '') ||
+    !/adds `matchedIn` and `score`/i.test(listConceptsTool.description || '')
   ) {
-    return 'find_evidence description missing excerpt guidance';
+    return 'list_concepts description missing mentions and filter guidance';
   }
-  const findEvidenceTitleSchema = propertyAt(findEvidenceTool, ['properties', 'title']);
+  const mentionsSchema = propertyAt(listConceptsTool, ['properties', 'mentions']);
   if (
-    findEvidenceTitleSchema?.type !== 'string' ||
-    (findEvidenceTitleSchema.minLength ?? 1) !== 1 ||
-    !/case-insensitive substring match/i.test(findEvidenceTitleSchema.description || '')
+    mentionsSchema?.type !== 'string' ||
+    (mentionsSchema.minLength ?? 1) !== 1 ||
+    !/case-insensitive/i.test(mentionsSchema.description || '')
   ) {
-    return 'find_evidence inputSchema title guidance drift';
+    return 'list_concepts inputSchema mentions guidance drift';
   }
-  if (findEvidenceTool.outputSchema?.type !== 'object') {
-    return 'find_evidence outputSchema root drift';
-  }
-  if (!sameArray(findEvidenceTool.outputSchema?.required, ['query', 'matches'])) {
-    return 'find_evidence outputSchema required drift';
-  }
-  if (findEvidenceTool.outputSchema?.additionalProperties !== false) {
-    return 'find_evidence outputSchema root openness drift';
-  }
-  if (outputPropertyAt(findEvidenceTool, ['properties', 'query'])?.type !== 'string') {
-    return 'find_evidence outputSchema query drift';
-  }
-  const evidenceMatchesSchema = outputPropertyAt(findEvidenceTool, ['properties', 'matches']);
+  const filterSchema = propertyAt(listConceptsTool, ['properties', 'filter']);
   if (
-    evidenceMatchesSchema?.type !== 'array' ||
-    evidenceMatchesSchema.items?.type !== 'object' ||
-    !sameArray(evidenceMatchesSchema.items?.required, ['slug', 'isNode', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'])
+    filterSchema?.type !== 'string' ||
+    (filterSchema.minLength ?? 1) !== 1 ||
+    !/has\(key\)/i.test(filterSchema.description || '')
   ) {
-    return 'find_evidence outputSchema matches drift';
+    return 'list_concepts inputSchema filter DSL guidance drift';
   }
-  const evidenceIdentityBranches = [
-    {
-      properties: { isNode: { const: true } },
-      required: ['uid', 'kind'],
-    },
-    {
-      properties: { isNode: { const: false } },
-      not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
-    },
-  ];
-  if (!isDeepStrictEqual(evidenceMatchesSchema.items?.oneOf, evidenceIdentityBranches)) {
-    return 'find_evidence outputSchema match identity drift';
+  if (listConceptsTool.outputSchema?.type !== 'object') {
+    return 'list_concepts outputSchema root drift';
   }
-  if (evidenceMatchesSchema.items?.additionalProperties !== false) {
-    return 'find_evidence outputSchema match openness drift';
+  if (listConceptsTool.outputSchema?.additionalProperties !== false) {
+    return 'list_concepts outputSchema root openness drift';
   }
-  if (evidenceMatchesSchema.items?.properties?.uid?.type !== 'string' || evidenceMatchesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
-    return 'find_evidence outputSchema match uid drift';
-  }
-  if (evidenceMatchesSchema.items?.properties?.isNode?.type !== 'boolean') {
-    return 'find_evidence outputSchema match isNode drift';
-  }
-  for (const propertyName of ['slug', 'kind', 'title', 'excerpt']) {
-    if (evidenceMatchesSchema.items?.properties?.[propertyName]?.type !== 'string') {
-      return `find_evidence outputSchema match ${propertyName} drift`;
+  for (const propertyName of ['filter', 'parsedAs', 'query']) {
+    if (outputPropertyAt(listConceptsTool, ['properties', propertyName])?.type !== 'string') {
+      return `list_concepts outputSchema ${propertyName} drift`;
     }
   }
-  if (evidenceMatchesSchema.items?.properties?.mtime?.type !== 'number' || evidenceMatchesSchema.items?.properties?.mtime?.minimum !== 0) {
-    return 'find_evidence outputSchema match mtime drift';
-  }
-  if (!sameArray(evidenceMatchesSchema.items?.properties?.matchedIn?.enum, ['frontmatter', 'body'])) {
-    return 'find_evidence outputSchema match matchedIn drift';
-  }
-  if (evidenceMatchesSchema.items?.properties?.score?.type !== 'number' || evidenceMatchesSchema.items?.properties?.score?.minimum !== 0) {
-    return 'find_evidence outputSchema match score drift';
+  if (outputPropertyAt(listConceptsTool, ['properties', 'growthHint'])?.type !== 'object') {
+    return 'list_concepts outputSchema growthHint drift';
   }
 
   const findBacklinksTool = tools.find((tool) => tool?.name === 'find_backlinks');
@@ -120,71 +83,5 @@ export function conceptSearchToolsSchemaFailure(tools) {
   );
   if (backlinksMatchesFailure) return backlinksMatchesFailure;
 
-  const queryConceptsTool = tools.find((tool) => tool?.name === 'query_concepts');
-  if (!queryConceptsTool) return 'tools/list response missing query_concepts tool';
-  if (
-    !/Typed filter DSL/i.test(queryConceptsTool.description || '') ||
-    !/filter\s*:=\s*atom/i.test(queryConceptsTool.description || '') ||
-    !/predicate\s*:=\s*key=value \| key!=value \| has\(key\)/i.test(queryConceptsTool.description || '') ||
-    !/kind=capability AND domain=auth AND NOT has\(elements\)/i.test(queryConceptsTool.description || '')
-  ) {
-    return 'query_concepts description missing typed filter DSL guidance';
-  }
-  const queryFilterSchema = propertyAt(queryConceptsTool, ['properties', 'filter']);
-  if (
-    queryFilterSchema?.type !== 'string' ||
-    !/Supports NOT \/ AND \/ OR/i.test(queryFilterSchema.description || '') ||
-    !/Wrap values containing whitespace or special characters/i.test(queryFilterSchema.description || '')
-  ) {
-    return 'query_concepts inputSchema filter DSL guidance drift';
-  }
-  const queryLimitSchema = propertyAt(queryConceptsTool, ['properties', 'limit']);
-  if (
-    queryLimitSchema?.type !== 'integer' ||
-    queryLimitSchema.minimum !== 1 ||
-    queryLimitSchema.maximum !== 500 ||
-    !/defaults? (to )?100/i.test(queryLimitSchema.description || '')
-  ) {
-    return 'query_concepts inputSchema limit default description drift';
-  }
-  if (queryConceptsTool.outputSchema?.type !== 'object') {
-    return 'query_concepts outputSchema root drift';
-  }
-  if (!sameArray(queryConceptsTool.outputSchema?.required, ['filter', 'parsedAs', 'total', 'matches', 'limited'])) {
-    return 'query_concepts outputSchema required drift';
-  }
-  if (queryConceptsTool.outputSchema?.additionalProperties !== false) {
-    return 'query_concepts outputSchema root openness drift';
-  }
-  const queryConceptsTotalSchema = outputPropertyAt(queryConceptsTool, ['properties', 'total']);
-  if (queryConceptsTotalSchema?.type !== 'integer' || queryConceptsTotalSchema.minimum !== 0) {
-    return 'query_concepts outputSchema total drift';
-  }
-  const queryConceptsLimitedSchema = outputPropertyAt(queryConceptsTool, ['properties', 'limited']);
-  if (queryConceptsLimitedSchema?.type !== 'boolean') {
-    return 'query_concepts outputSchema limited drift';
-  }
-  const queryConceptsRowsSchema = outputPropertyAt(queryConceptsTool, ['properties', 'matches']);
-  if (
-    queryConceptsRowsSchema?.type !== 'array' ||
-    queryConceptsRowsSchema.items?.type !== 'object' ||
-    !sameArray(queryConceptsRowsSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])
-  ) {
-    return 'query_concepts outputSchema rows drift';
-  }
-  if (queryConceptsRowsSchema.items?.additionalProperties !== false) {
-    return 'query_concepts outputSchema row openness drift';
-  }
-  if (queryConceptsRowsSchema.items?.properties?.uid?.type !== 'string' || queryConceptsRowsSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
-    return 'query_concepts outputSchema row uid drift';
-  }
-  for (const propertyName of ['slug', 'kind', 'title']) {
-    if (queryConceptsRowsSchema.items?.properties?.[propertyName]?.type !== 'string') {
-      return `query_concepts outputSchema row ${propertyName} drift`;
-    }
-  }
-  if (queryConceptsRowsSchema.items?.properties?.mtime?.type !== 'number' || queryConceptsRowsSchema.items?.properties?.mtime?.minimum !== 0) {
-    return 'query_concepts outputSchema row mtime drift';
-  }
   return null;
 }

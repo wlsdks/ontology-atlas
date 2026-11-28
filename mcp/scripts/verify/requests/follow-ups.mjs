@@ -77,7 +77,7 @@ export function buildGraphQuerySmokeRequests(graphSmoke) {
   return { requests, expectedResponseIds };
 }
 
-export function buildLimitedQueryConceptsSmokeRequest(listPayload) {
+export function buildLimitedListConceptsFilterSmokeRequest(listPayload) {
   const nodes = Array.isArray(listPayload?.nodes) ? listPayload.nodes : [];
   const slug = nodes.find((node) => typeof node?.slug === 'string' && node.slug.length > 0)?.slug;
   const total = Number.isInteger(listPayload?.total) ? listPayload.total : nodes.length;
@@ -87,7 +87,7 @@ export function buildLimitedQueryConceptsSmokeRequest(listPayload) {
       jsonrpc: '2.0',
       id: 37,
       method: 'tools/call',
-      params: { name: 'query_concepts', arguments: { filter: `slug!=${slug}`, limit: 1 } },
+      params: { name: 'list_concepts', arguments: { filter: `slug!=${slug}`, limit: 1 } },
     },
     excludedSlug: slug,
     expectedTotal: total - 1,
