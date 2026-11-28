@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
-import { NODE_UID_PATTERN } from '../../../src/schema.mjs';
+import { NODE_UID_PATTERN } from '../server-vocabularies.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 

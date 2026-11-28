@@ -6,8 +6,8 @@ import {
   QUERY_ONTOLOGY_OPERATIONS,
   QUERY_PLAN_TARGET_OPERATIONS,
   RELATION_TYPE_VALUES,
-} from '../../../src/ontology-engine.mjs';
-import { VAULT_ISSUE_CODE_VALUES } from '../../../src/validate.mjs';
+  VAULT_ISSUE_CODE_VALUES,
+} from '../server-vocabularies.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 import { outputPropertyAt, propertyAt } from './schema-primitives.mjs';

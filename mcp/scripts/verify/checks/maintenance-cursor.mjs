@@ -1,8 +1,4 @@
-import {
-  MAINTENANCE_KIND_VALUES,
-  MAINTENANCE_PHASE_VALUES,
-  MAINTENANCE_SEVERITY_VALUES,
-} from '../../../src/ontology-engine.mjs';
+import { MAINTENANCE_KIND_VALUES, MAINTENANCE_PHASE_VALUES, MAINTENANCE_SEVERITY_VALUES } from '../server-vocabularies.mjs';
 
 export function maintenanceBucketOutputSummary(parsed) {
   const summarize = (bucket) => {

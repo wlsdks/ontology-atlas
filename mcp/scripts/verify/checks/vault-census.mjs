@@ -1,4 +1,4 @@
-import { VAULT_ISSUE_CODE_VALUES } from '../../../src/validate.mjs';
+import { VAULT_ISSUE_CODE_VALUES } from '../server-vocabularies.mjs';
 
 import { formatCount } from '../output.mjs';
 import { listConceptsFailure } from './concept-reads.mjs';

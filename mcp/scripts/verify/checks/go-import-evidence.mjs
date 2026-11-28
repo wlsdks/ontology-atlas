@@ -1,4 +1,4 @@
-import { IMPORT_SOURCE_ROLE_VALUES, IMPORT_USAGE_VALUES } from '../../../src/infer-imports.mjs';
+import { IMPORT_SOURCE_ROLE_VALUES, IMPORT_USAGE_VALUES } from '../server-vocabularies.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 

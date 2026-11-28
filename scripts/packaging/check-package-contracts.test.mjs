@@ -17,8 +17,7 @@ import {
   MAINTENANCE_SEVERITY_VALUES,
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
-} from '../../mcp/src/ontology-engine.mjs';
-import { SERVER_VERSION } from '../../mcp/src/server-version.mjs';
+} from '../../mcp/scripts/verify/server-vocabularies.mjs';
 import { parseMcpToolMetadataFromDescription } from '../../mcp/scripts/package-metadata.mjs';
 import {
   checkPackage,
@@ -286,17 +285,11 @@ describe('package contract helpers', () => {
     }
   });
 
-  it('keeps the embedded SERVER_VERSION in sync with mcp/package.json', () => {
+  it('keeps the version the server embeds in sync with mcp/package.json', () => {
     const pkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
-    // The `Server` construction lives in `server/instance.mjs`, the file that must import the version
-    // instead of writing one in.
-    const source = readFileSync('mcp/src/server/instance.mjs', 'utf-8');
+    const surface = JSON.parse(readFileSync('src-tauri/crates/mcp-server/surface/registry.json', 'utf-8'));
 
-    assert.equal(SERVER_VERSION, pkg.version);
-    assert.equal(isCoveredByFiles('src/server-version.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/server/instance.mjs', pkg.files), true);
-    assert.match(source, /import \{ SERVER_VERSION \} from '\.\.\/server-version\.mjs'/);
-    assert.doesNotMatch(source, /version: '\d+\.\d+\.\d+'/);
+    assert.equal(surface.serverVersion, pkg.version);
   });
 
   it('keeps MCP npm test runnable from the lean published tarball', () => {

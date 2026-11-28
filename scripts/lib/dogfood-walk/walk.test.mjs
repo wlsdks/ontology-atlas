@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { QUERY_ONTOLOGY_OPERATIONS } from "../../../mcp/src/ontology-engine.mjs";
+import { QUERY_ONTOLOGY_OPERATIONS } from "../../../mcp/scripts/verify/server-vocabularies.mjs";
 import { stderrWarnings, stepFailure } from "./run-dogfood-walk.mjs";
 import {
   OPERATIONS_NOT_WALKED,

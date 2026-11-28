@@ -3,7 +3,7 @@ import {
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
   WRITE_RELATION_TYPE_VALUES,
-} from '../../../src/ontology-engine.mjs';
+} from '../server-vocabularies.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 import { nonBlankStringSchemaFailure, outputPropertyAt, propertyAt } from './schema-primitives.mjs';
