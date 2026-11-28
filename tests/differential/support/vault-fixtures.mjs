@@ -454,6 +454,18 @@ const FIXTURE_BUILDERS = {
     },
   },
 
+  // Three domains an agent can name loosely: `a` for `domains/a`, `Domains/C` for `domains/c`.
+  'loose-names': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      write(dir, v('loose.md'), projectNode('loose', 'Loose', ['domains/a', 'domains/b', 'domains/c']));
+      write(dir, v('domains/a.md'), node({ slug: 'domains/a', kind: 'domain', title: 'A', extra: { depends_on: '[domains/b]' } }));
+      write(dir, v('domains/b.md'), node({ slug: 'domains/b', kind: 'domain', title: 'B' }));
+      write(dir, v('domains/c.md'), node({ slug: 'domains/c', kind: 'domain', title: 'C' }));
+    },
+  },
+
   'edge-bytes': {
     vaultRel: 'vault',
     build(dir) {

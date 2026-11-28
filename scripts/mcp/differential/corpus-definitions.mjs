@@ -2009,6 +2009,10 @@ add('safety', 'write-refused-by-a-reserved-referrer', { vault: 'reserved-referre
   call('merge_concepts', { fromSlug: 'capabilities/target', intoSlug: 'capabilities/other', confirm: true }),
   call('get_concepts', { slugs: ['capabilities/target'] }),
 ]);
+add('writes', 'patch-concept-batch-names-one-node-twice', { vault: 'storefront' }, [
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', body: 'First.' }, { slug: 'Capabilities/Cart', body: 'Second.' }] }),
+  call('get_concepts', { slugs: ['capabilities/cart'], body: 'full' }),
+]);
 add('writes', 'patch-concept-preserves-bytes-of-odd-files', { vault: 'edge-bytes' }, [
   call('patch_concept', { slug: 'capabilities/crlf', frontmatter: { note: 'edited' }, expected_mtime: mtimeOf('capabilities/crlf.md') }),
   call('patch_concept', { slug: 'capabilities/bom', frontmatter: { note: 'edited' }, expected_mtime: mtimeOf('capabilities/bom.md') }),
@@ -2140,7 +2144,7 @@ add('library', 'absorb-document', { vault: 'library' }, [
   call('absorb_document', { filePath: '' }),
   call('absorb_document', { filePath: '$VAULT/sources/data.csv', confirm: true }),
 ]);
-add('library', 'absorb-document-folders', { vault: 'library' }, [
+add('library', 'absorb-document-folders', { vault: 'library', env: { OATLAS_REPO_ROOT: '$VAULT' } }, [
   { $: 'write-file', path: '../outside/.ssh/notes.md', text: '# Notes\n\nSome prose about annotating.\n' },
   { $: 'write-file', path: '../outside/secrets/notes.md', text: '# Notes\n\nSome prose about annotating.\n' },
   { $: 'write-file', path: '.github/AGENTS.md', text: '# Rules\n\nSome prose about annotating.\n' },
@@ -2377,7 +2381,7 @@ add('safety', 'write-with-consent-kind-change', { vault: 'storefront', env: { OA
   call('rename_concept', { oldSlug: 'capabilities/cart', newKind: 'element', newSlug: 'elements/cart', domain: 'domains/order', body: 'Replaced.', confirm: true }),
   call('list_concepts', { limit: 1 }),
 ]);
-add('safety', 'write-with-consent-absorb-outside-the-repository', { vault: 'library', env: { OATLAS_WRITE_CONSENT: 'true' }, capabilities: { elicitation: { form: {} } }, elicit: 'decline' }, [
+add('safety', 'write-with-consent-absorb-outside-the-repository', { vault: 'library', env: { OATLAS_WRITE_CONSENT: 'true', OATLAS_REPO_ROOT: '$VAULT' }, capabilities: { elicitation: { form: {} } }, elicit: 'decline' }, [
   call('absorb_document', { filePath: '$PARENT/outside/absorb-me.md', allowOutsideRepo: true, confirm: true }),
   call('absorb_document', { filePath: '$PARENT/outside/absorb-me.md', allowOutsideRepo: true, confirm: false }),
 ]);
