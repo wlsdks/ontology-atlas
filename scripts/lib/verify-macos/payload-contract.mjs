@@ -96,6 +96,19 @@ export function validateFixtureVaultGrant(launchStdout) {
   return null;
 }
 
+/** Tauri serves the app from `tauri://localhost` on macOS and Linux and from `http://tauri.localhost` under WebView2. */
+const APP_ORIGINS = ["tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"];
+
+function isAppAddress(href) {
+  if (typeof href !== "string") return false;
+  try {
+    const { protocol, host } = new URL(href);
+    return APP_ORIGINS.includes(`${protocol}//${host}`);
+  } catch {
+    return false;
+  }
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   expectedFixtureVault = null,
@@ -109,8 +122,8 @@ export function validateWebviewVerifyPayload(payload, {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
   }
-  if (typeof payload.href !== "string" || !payload.href.startsWith("tauri://")) {
-    return "WebView did not report a tauri:// URL";
+  if (!isAppAddress(payload.href)) {
+    return `WebView did not report the app's own address (${APP_ORIGINS.join(", ")}), but ${payload.href ?? "none"}`;
   }
   if (payload.readyState !== "complete") {
     return `WebView document was not complete (readyState=${payload.readyState ?? "unknown"})`;

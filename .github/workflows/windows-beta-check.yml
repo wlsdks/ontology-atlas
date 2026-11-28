@@ -271,8 +271,13 @@ jobs:
           # The app's own verifier opens the map under a fixture vault and prints what rendered; the script
           # ends the app. It fails when the app exits early, reaches another route, or prints nothing over its
           # pipes (a GUI-subsystem process inherits only the handles its parent names).
-          node scripts/verify-windows/verify-windows-app-launch.mjs "--app=$app" "--vault=$vault" --route=/en/topology/
-          if ($LASTEXITCODE -ne 0) { throw "The installed app did not render /en/topology/ (exit $LASTEXITCODE)." }
+          # The success line is required as well as the exit code: a script that never reached its entry
+          # point also exits 0.
+          $report = (node scripts/verify-windows/verify-windows-app-launch.mjs "--app=$app" "--vault=$vault" --route=/en/topology/) -join "`n"
+          $verifierExit = $LASTEXITCODE
+          Write-Host $report
+          if ($verifierExit -ne 0) { throw "The installed app did not render /en/topology/ (exit $verifierExit)." }
+          if ($report -notmatch '(?m)^\[verify-windows\] /en/topology/ rendered in the installed app\s*$') { throw "The verifier exited 0 without its success line, so nothing was proven." }
 
       - name: Stage Windows beta artifact
         if: github.event_name != 'pull_request'
