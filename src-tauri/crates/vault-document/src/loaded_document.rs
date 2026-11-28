@@ -130,6 +130,23 @@ impl LoadedDocument {
         }
     }
 
+    /// What the file says wrong of itself, judged with the slug it sits at: a finding's sentence
+    /// names the node by that slug, and a node outside its kind folder is only known by it. The file
+    /// is read again for this; if it changed since, what was read earlier stands.
+    pub fn issues_at_slug(&self) -> Vec<Issue> {
+        let Ok(bytes) = self.record.file.read_bytes() else {
+            return self.record.issues.clone();
+        };
+        if !self.was_read_from(&bytes) {
+            return self.record.issues.clone();
+        }
+        let document = Document::from_bytes(bytes);
+        if document.shape() == RawShape::Empty {
+            return Vec::new();
+        }
+        validate_document(&document, Some(&self.record.slug))
+    }
+
     /// Whether `bytes` are the ones this document was read from.
     pub(crate) fn was_read_from(&self, bytes: &[u8]) -> bool {
         digest_of(bytes) == self.record.digest

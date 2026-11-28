@@ -3032,6 +3032,7 @@ dependencies = [
  "hardened-git",
  "indexmap 2.14.0",
  "mcp-server",
+ "meaning-findings",
  "ontology-graph",
  "raw-source-text",
  "regex",
@@ -3045,6 +3046,19 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "uuid",
+ "vault-document",
+ "vault-validation",
+]
+
+[[package]]
+name = "meaning-findings"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "regex",
+ "serde_json",
+ "tempfile",
  "vault-document",
 ]
 
@@ -6406,6 +6420,23 @@ dependencies = [
  "sha2 0.11.1",
  "vault-index",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "vault-validation"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "hardened-git",
+ "meaning-findings",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "source-scan",
+ "tempfile",
+ "vault-document",
 ]
 
 [[package]]

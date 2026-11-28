@@ -21,6 +21,8 @@ members = [
   "crates/repository-survey",
   "crates/repository-candidates",
   "crates/construction-review",
+  "crates/meaning-findings",
+  "crates/vault-validation",
   "crates/raw-source-text",
   "crates/mcp-server",
 ]

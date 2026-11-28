@@ -224,6 +224,11 @@ impl VaultRoot {
         list_markdown_files(&self.root)
     }
 
+    /// Every Markdown file under `sources/`, which the vault never reads as a node.
+    pub fn raw_source_markdown_files(&self) -> Vec<ConfinedPath> {
+        crate::markdown_walk::list_raw_source_markdown(&self.root)
+    }
+
     /// The slug of a file below the vault: its path with `/` separators and no `.md`, in NFC.
     /// macOS often lists Korean names as NFD while frontmatter is typed as NFC, and the byte
     /// mismatch would drop those nodes' relations. Only the identifier is normalised; the disk
