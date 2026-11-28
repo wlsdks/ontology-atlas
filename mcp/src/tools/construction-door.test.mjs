@@ -257,7 +257,7 @@ test('a build write answers with each row, its mtime and one line per finding on
   assert.equal(created.postWriteMaintenance, undefined);
   assert.doesNotMatch(JSON.stringify(created), new RegExp(root.replaceAll('/', '\\/')), 'no absolute path leaves the server');
   const dangling = created.findings.filter((line) => line.startsWith('Graph reference'));
-  assert.equal(dangling.length, 2, 'the compile issue and the step that resolves it are two kinds, one line each');
+  assert.equal(dangling.length, 1, 'the compile issue repeats the step that resolves it, so the reference is said once');
   const resolving = dangling.filter((line) => line.includes(' Next: add_concepts('));
   assert.equal(resolving.length, 1, 'two steps of one kind share one line');
   assert.match(resolving[0], /^Graph reference "capabilities\/charge" .* Next: add_concepts\(.*\) Same for 1 more: capabilities\/refund\.$/);
