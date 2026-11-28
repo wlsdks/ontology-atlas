@@ -18,11 +18,11 @@ use crate::frontmatter::{Diagnostic, Frontmatter, Value};
 use crate::search_text::folded;
 use crate::validation::{validate_document, Issue};
 
-/// Why a file could not be read.
 /// A needle longer than this is not remembered, so a query of thousands of words is not copied
 /// into every document of a vault of fifty thousand.
 const REMEMBERED_NEEDLE_MAX_BYTES: usize = 256;
 
+/// Why a file could not be read.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum FileReadError {
     /// The file is there and cannot be read: a link that loops, a permission, a lock held by
