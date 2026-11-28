@@ -20,6 +20,19 @@ use support::{
     INITIALIZED,
 };
 
+/// The names that answer `tool_retired` and run nothing, wherever the call comes from.
+const RETIRED_NAMES: [&str; 9] = [
+    "git_status",
+    "git_history",
+    "git_snapshot",
+    "list_constellations",
+    "find_evidence",
+    "find_orphans",
+    "query_concepts",
+    "replace_relation",
+    "reclassify_concept",
+];
+
 fn oracle_ready() -> bool {
     if javascript_oracle_available() {
         return true;
@@ -173,23 +186,25 @@ fn the_protocol_table_rows_are_byte_equal() {
         ("unknown argument", call(2, "list_concepts", "{\"limt\":1}")),
         ("unknown argument without a near one", call(2, "list_concepts", "{\"bogus\":1}")),
         ("two unknown arguments", call(2, "list_concepts", "{\"bogus\":1,\"limt\":2}")),
-        ("unknown argument on a tool with none", call(2, "git_status", "{\"x\":1}")),
+        ("unknown argument on a tool with none", call(2, "list_kinds", "{\"x\":1}")),
         ("unknown argument on a retired tool", call(2, "get_concept", "{\"slugg\":\"a\"}")),
         ("unknown argument with unicode keys", call(2, "list_concepts", "{\"한글\":1,\"é\":2,\"\u{1f600}\":3}")),
         ("blank domain", call(2, "list_concepts", "{\"domain\":\"  \"}")),
         ("padded domain", call(2, "list_concepts", "{\"domain\":\" x\"}")),
         ("padded domain with a no-break space", call(2, "list_concepts", "{\"domain\":\"x\u{a0}\"}")),
         ("domain with a byte-order mark", call(2, "list_concepts", "{\"domain\":\"\u{feff}x\"}")),
-        ("title with a vertical tab padding", call(2, "find_evidence", "{\"title\":\"\u{b}x\"}")),
+        ("title with a vertical tab padding", call(2, "list_concepts", "{\"mentions\":\"\u{b}x\"}")),
         ("domain with a null byte", call(2, "list_concepts", "{\"domain\":\"a\\u0000b\"}")),
         ("domain with a line break inside", call(2, "list_concepts", "{\"domain\":\"a\\nb\"}")),
         ("domain with a line separator inside", call(2, "list_concepts", "{\"domain\":\"a\u{2028}b\"}")),
         ("write under read-only mode", call(2, "add_concepts", "{}")),
+        ("retired names answer with their replacement", RETIRED_NAMES.iter().enumerate().map(|(index, name)| call(u32::try_from(index).unwrap() + 2, name, "{\"anything\":1}")).collect::<String>()),
+        ("retired writes under read-only mode", RETIRED_NAMES.iter().enumerate().map(|(index, name)| call(u32::try_from(index).unwrap() + 2, name, "{}")).collect::<String>()),
         ("deep arguments", format!("{}{}", request(2, "tools/call", &format!("{{\"name\":\"list_concepts\",\"arguments\":{}{}}}", "[".repeat(3000), "]".repeat(3000))), request(3, "tools/call", &format!("{{\"name\":\"list_concepts\",\"arguments\":{}1{}}}", "{\"a\":".repeat(3000), "}".repeat(3000))))),
         ("a large id and long text", request(2, "tools/call", &format!("{{\"name\":\"{}\"}}", "n".repeat(100_000)))),
     ];
     for (label, input) in &scenarios {
-        let environment: &[(&str, &str)] = if *label == "write under read-only mode" {
+        let environment: &[(&str, &str)] = if label.ends_with("under read-only mode") {
             &[("OATLAS_READ_ONLY", "1")]
         } else {
             &[]

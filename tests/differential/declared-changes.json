@@ -531,14 +531,6 @@
       "case": "vault-read/query-concepts-filter-bounds-late-clock",
       "where": "answer",
       "id": 2,
-      "path": "result.structuredContent.matches",
-      "change": 14,
-      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the answer the JavaScript server wrote."
-    },
-    {
-      "case": "vault-read/query-concepts-filter-bounds-late-clock",
-      "where": "answer",
-      "id": 2,
       "path": "result.structuredContent.limited",
       "change": 14,
       "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the answer the JavaScript server wrote."
@@ -604,14 +596,6 @@
       "where": "answer",
       "id": 4,
       "path": "result.structuredContent.total",
-      "change": 14,
-      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the answer the JavaScript server wrote."
-    },
-    {
-      "case": "vault-read/query-concepts-filter-bounds-late-clock",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.matches",
       "change": 14,
       "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the answer the JavaScript server wrote."
     },
@@ -691,14 +675,6 @@
       "case": "vault-read/query-concepts-filter-bounds",
       "where": "answer",
       "id": 2,
-      "path": "result.structuredContent.matches",
-      "change": 14,
-      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the answer the JavaScript server wrote."
-    },
-    {
-      "case": "vault-read/query-concepts-filter-bounds",
-      "where": "answer",
-      "id": 2,
       "path": "result.structuredContent.limited",
       "change": 14,
       "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the answer the JavaScript server wrote."
@@ -764,14 +740,6 @@
       "where": "answer",
       "id": 4,
       "path": "result.structuredContent.total",
-      "change": 14,
-      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the answer the JavaScript server wrote."
-    },
-    {
-      "case": "vault-read/query-concepts-filter-bounds",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.matches",
       "change": 14,
       "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the answer the JavaScript server wrote."
     },
@@ -870,38 +838,6 @@
       "path": "result.structuredContent.growthHint.reason",
       "change": 15,
       "reason": "The kind and domain a zero-row hint reports missing are the ones the parsed filter requires, whole: a name inside a quoted title is not a kind, and a domain with a non-ASCII letter is not cut where the letters stop (row 15)."
-    },
-    {
-      "case": "git/no-git-executable",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/reason",
-      "change": 17,
-      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
-    },
-    {
-      "case": "git/no-git-executable",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.reason",
-      "change": 17,
-      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
-    },
-    {
-      "case": "git/no-git-executable",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/reason",
-      "change": 17,
-      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
-    },
-    {
-      "case": "git/no-git-executable",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.reason",
-      "change": 17,
-      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -10186,22 +10122,6 @@
     {
       "case": "evidence/find-evidence-edge-names",
       "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/matches/0/score",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.matches[0].score",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
       "id": 4,
       "path": "result.content[0].text#/total",
       "change": 40,
@@ -10211,39 +10131,7 @@
       "case": "evidence/find-evidence-edge-names",
       "where": "answer",
       "id": 4,
-      "path": "result.content[0].text#/matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/bodyHint",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 4,
       "path": "result.structuredContent.total",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.bodyHint",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -10259,151 +10147,7 @@
       "case": "evidence/find-evidence-edge-names",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/matches/0/uid",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/matches/0/slug",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/matches/0/title",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/matches/0/domain",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/matches/0/mtime",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/matches/0/excerpt",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/matches/0/bodyChars",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/bodyHint",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
       "path": "result.structuredContent.total",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.matches[0].uid",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.matches[0].slug",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.matches[0].title",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.matches[0].domain",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.matches[0].mtime",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.matches[0].excerpt",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.matches[0].bodyChars",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.bodyHint",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -10427,14 +10171,6 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 1,
-      "path": "result.content[0].text#/matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 1,
       "path": "result.structuredContent.growthHint",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
@@ -10444,30 +10180,6 @@
       "where": "answer",
       "id": 1,
       "path": "result.structuredContent.total",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/matches/0/score",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.matches[0].score",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -10491,14 +10203,6 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 3,
-      "path": "result.content[0].text#/matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 3,
       "path": "result.structuredContent.growthHint",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
@@ -10508,14 +10212,6 @@
       "where": "answer",
       "id": 3,
       "path": "result.structuredContent.total",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.matches",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -10539,14 +10235,6 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 4,
-      "path": "result.content[0].text#/matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 4,
       "path": "result.structuredContent.growthHint",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
@@ -10556,254 +10244,6 @@
       "where": "answer",
       "id": 4,
       "path": "result.structuredContent.total",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.matches",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growthHint/reason",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growthHint/suggestion",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growthHint/exampleCall/tool",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growthHint/exampleCall/args/concepts",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growthHint/exampleCall/args/slugs",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growthHint.reason",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growthHint.suggestion",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growthHint.exampleCall.tool",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growthHint.exampleCall.args.concepts",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growthHint.exampleCall.args.slugs",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/growthHint/reason",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/growthHint/suggestion",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/growthHint/exampleCall/tool",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/growthHint/exampleCall/args/concepts",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/growthHint/exampleCall/args/slugs",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.growthHint.reason",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.growthHint.suggestion",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.growthHint.exampleCall.tool",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.growthHint.exampleCall.args.concepts",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.growthHint.exampleCall.args.slugs",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growthHint/reason",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growthHint/suggestion",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growthHint/exampleCall/tool",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growthHint/exampleCall/args/concepts",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growthHint/exampleCall/args/slugs",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growthHint.reason",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growthHint.suggestion",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growthHint.exampleCall.tool",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growthHint.exampleCall.args.concepts",
-      "change": 40,
-      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
-    },
-    {
-      "case": "evidence/find-evidence-unicode-and-typos",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growthHint.exampleCall.args.slugs",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -12542,6 +11982,646 @@
       "path": "result.content[0].text",
       "change": 52,
       "reason": "An outline signature is cut to 160 UTF-16 units without cutting through a surrogate pair: the script server keeps the first half of an emoji at the cut, a lone surrogate that its answer shows as U+FFFD, and the Rust server stops before that emoji (row 52). The trim (U+FEFF removed, U+0085 kept) and every other cut are equal."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.census",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.vaultRoot",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.nodes",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.returned",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.pagination",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.vaultWarnings",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.census",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.vaultRoot",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.nodes",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.returned",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.pagination",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.vaultWarnings",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.census",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.vaultRoot",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.nodes",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.returned",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.pagination",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.vaultWarnings",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.census",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.vaultRoot",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.nodes",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.returned",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.pagination",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.vaultWarnings",
+      "change": 14,
+      "reason": "Row 14: a filter nested deeper than 32 levels or holding more than 256 clauses is refused as invalid_arguments before the vault is read, so the refusal replaces the listing the JavaScript server wrote."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/nodes/0/score",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.nodes[0].score",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/pagination/total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/pagination/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.pagination.total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.pagination.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/nodes/0/uid",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/nodes/0/slug",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/nodes/0/title",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/nodes/0/domain",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/nodes/0/mtime",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/pagination/total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/pagination/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.nodes[0].uid",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.nodes[0].slug",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.nodes[0].title",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.nodes[0].domain",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.nodes[0].mtime",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.pagination.total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.pagination.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/pagination/total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/pagination/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.pagination.total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.pagination.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/nodes/0/score",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.nodes[0].score",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/pagination/total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/pagination/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.pagination.total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.pagination.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/pagination/total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/pagination/returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.nodes",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.pagination.total",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.pagination.returned",
+      "change": 40,
+      "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
+    },
+    {
+      "case": "git/no-git-executable",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/summaryFreshness/hint",
+      "change": 17,
+      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
+    },
+    {
+      "case": "git/no-git-executable",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.summaryFreshness.hint",
+      "change": 17,
+      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
     }
   ]
 }

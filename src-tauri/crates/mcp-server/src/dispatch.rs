@@ -161,6 +161,11 @@ fn run_checked(
     name: &str,
     arguments: Option<Arguments>,
 ) -> Result<ToolOutput, ToolError> {
+    // Nothing runs, so nothing is checked, read or asked of a person first: the name is answered
+    // with the call that does its job now.
+    if let Some(replacement) = surface.retired_and_gone(name) {
+        return Err(ToolError::tool_retired(name, replacement));
+    }
     // A write tool is refused in read-only mode even when the caller's cached `tools/list` still
     // shows it, and before its arguments are read; an unknown name reaches the unknown-tool error
     // below.

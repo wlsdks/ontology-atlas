@@ -1,6 +1,6 @@
-//! The repository a vault is kept in, found the way every git tool needs it: the repository the
-//! server was started for, the vault as a real path below its top, and why there is none when
-//! there is none.
+//! The repository a vault is kept in, found for the reads that date evidence against it: the
+//! repository the server was started for, the vault placed below its top, and why there is none
+//! when there is none.
 
 use std::path::PathBuf;
 
@@ -12,19 +12,16 @@ use source_scan::{place_folder, FolderPlacementError};
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
 
-/// A vault inside a repository, as the git tools read it.
+/// A vault inside a repository.
 pub struct VaultRepository {
     /// Opened at the top of the working tree.
     pub repository: Repository,
     pub top_level: PathBuf,
-    /// The vault's real path.
-    pub vault: PathBuf,
     /// Where the vault lies below the top; `.` when the vault is the top.
     pub scope: RepoPath,
-    pub shallow: bool,
 }
 
-/// Why a git tool has nothing to read, written as the answer it gives (`ok` is false).
+/// Why there is no repository to read, written as the answer a caller gives (`ok` is false).
 #[derive(Debug, Serialize)]
 pub struct NoRepository {
     operation: &'static str,
@@ -87,10 +84,8 @@ pub fn locate_from(
     match place_folder(&top_level, &config.vault_root) {
         Ok(placed) => Ok(Located::Found(Box::new(VaultRepository {
             repository: Repository::at(&top_level),
-            vault: placed.real,
             scope: placed.path,
             top_level,
-            shallow: facts.shallow,
         }))),
         Err(FolderPlacementError::Outside { real }) => {
             missing("vault-outside-repository", &top_level, &real)

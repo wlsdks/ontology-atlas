@@ -21,17 +21,12 @@ mod compiled_graph;
 mod concept_row;
 mod connection_info;
 mod find_backlinks;
-mod find_evidence;
-mod find_orphans;
 mod get_concepts;
-mod git_history;
-mod git_status;
 mod import_answers;
 mod import_scan_target;
 mod infer_imports;
 mod inspect_architecture;
 mod list_concepts;
-mod query_concepts;
 mod query_ontology;
 mod read_source;
 mod read_vault;
@@ -65,15 +60,10 @@ pub fn call(
         "list_concepts" => Some(list_concepts::call(context, arguments)),
         "get_concepts" => Some(get_concepts::call(context, arguments)),
         "find_backlinks" => Some(find_backlinks::call(context, arguments)),
-        "find_orphans" => Some(find_orphans::call(context, arguments)),
-        "find_evidence" => Some(find_evidence::call(context, arguments)),
         "read_source" => Some(read_source::call(context, arguments)),
-        "query_concepts" => Some(query_concepts::call(context, arguments)),
         "compile_ontology" => Some(compile_ontology::call(context, arguments)),
         "query_ontology" => Some(query_ontology::call(context, arguments)),
         "validate_vault" => Some(validate_vault::call(context, arguments)),
-        "git_status" => Some(git_status::call(context)),
-        "git_history" => Some(git_history::call(context, arguments)),
         "infer_imports" => Some(infer_imports::call(context, arguments)),
         "inspect_architecture" => Some(inspect_architecture::call(context, arguments)),
         "analyze_repo_structure" => Some(analyze_repo_structure::call(context, arguments)),
