@@ -2,10 +2,11 @@
 //! the hashed runs its signature checks, and the number its memo of the last answer is kept under.
 //!
 //! A memo keeps a number, not the text, so a search over fifty thousand documents copies the
-//! needle into none of them. One number names one text: a search for the text the last search
-//! looked for gets its number again, any other text a number never given before, so a memo can
-//! only answer for the very text it was made for.
+//! needle into none of them. One number names one text: a text asked recently gets its number
+//! again, any other text a number never given before, so a memo can only answer for the very text
+//! it was made for. Searches that run at the same time keep their numbers apart.
 
+use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, PoisonError};
 
@@ -49,18 +50,30 @@ impl SearchNeedle {
     }
 }
 
-/// The number of `text`: the last search's when it looked for the same text, a new one otherwise.
+/// How many texts keep their numbers: the last ones asked.
+const RECENT_TEXTS: usize = 64;
+
+/// A longer text gets a new number each time it is asked: it is kept nowhere, and a query of
+/// thousands of words is rarely asked twice.
+const RECENT_TEXT_MAX_BYTES: usize = 1024;
+
+/// The number of `text`: the one it was given when it was asked recently, a new one otherwise. A
+/// number is never given to a second text, even after its text is forgotten.
 fn memo_number_of(text: &str) -> u64 {
-    static LAST: Mutex<Option<(String, u64)>> = Mutex::new(None);
+    static RECENT: Mutex<VecDeque<(Box<str>, u64)>> = Mutex::new(VecDeque::new());
     static NEXT: AtomicU64 = AtomicU64::new(1);
-    let mut last = LAST.lock().unwrap_or_else(PoisonError::into_inner);
-    if let Some((last_text, number)) = last.as_ref() {
-        if last_text == text {
-            return *number;
-        }
+    if text.len() > RECENT_TEXT_MAX_BYTES {
+        return NEXT.fetch_add(1, Ordering::Relaxed);
+    }
+    let mut recent = RECENT.lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some((_, number)) = recent.iter().find(|(known, _)| **known == *text) {
+        return *number;
     }
     let number = NEXT.fetch_add(1, Ordering::Relaxed);
-    *last = Some((text.to_string(), number));
+    if recent.len() >= RECENT_TEXTS {
+        recent.pop_front();
+    }
+    recent.push_back((text.into(), number));
     number
 }
 
@@ -68,14 +81,19 @@ fn memo_number_of(text: &str) -> u64 {
 mod tests {
     use super::*;
 
-    /// Other tests search at the same time, so only what holds under any interleaving is asserted.
+    /// Other tests search at the same time; together they ask far fewer than `RECENT_TEXTS` texts.
     #[test]
-    fn two_texts_never_share_a_number() {
+    fn a_text_keeps_its_number_while_others_are_asked_and_no_two_share_one() {
         let ledger = SearchNeedle::new("ledger".into()).memo_number();
         let order = SearchNeedle::new("order".into()).memo_number();
-        let ledger_again = SearchNeedle::new("ledger".into()).memo_number();
+        assert_eq!(SearchNeedle::new("ledger".into()).memo_number(), ledger);
         assert_ne!(ledger, order);
-        assert_ne!(ledger_again, order);
         assert!(ledger != 0 && order != 0);
+        let long = "w".repeat(RECENT_TEXT_MAX_BYTES + 1);
+        assert_ne!(
+            SearchNeedle::new(long.clone()).memo_number(),
+            SearchNeedle::new(long).memo_number(),
+            "a long text is kept nowhere"
+        );
     }
 }
