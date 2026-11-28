@@ -1,6 +1,7 @@
 //! The one line a person reads to decide: what a write will do to the vault.
 //!
-//! The words are the JavaScript server's, which clients and the app's permission card already show.
+//! The words are the JavaScript server's, which clients and the app's permission card already show,
+//! except where that card said less than the write does (spec rows 130, 131 and 137).
 //! Every value an agent sent is spelled through [`shown`], so a control character in a slug cannot
 //! reshape the card; the JavaScript server forgot that for the slug of a one-row batch.
 
@@ -116,11 +117,18 @@ fn remove_relation(sent: &Sent<'_>) -> String {
     }
 }
 
-/// `rename_concept` renames a concept, or with `newKind` changes its kind. A kind change may also
-/// move it (`newSlug`), set its domain or replace its body, and the card names each of them.
+/// `rename_concept` renames a concept, or with `newKind` changes its kind. A rename with
+/// `overwrite` replaces a concept already at the new name. A kind change may also move it
+/// (`newSlug`), set or remove its domain and replace its body, and the card names each of them as
+/// the handler does it: a capability or an element takes the `domain` sent, any other kind loses
+/// the one it had, and a body left out is regenerated when it is still the generated starter.
 fn rename_concept(sent: &Sent<'_>) -> String {
     if sent.0.get("newKind").is_none() {
+        let overwrites = sent.0.get("overwrite").is_some_and(|raw| raw.get() == "true");
         return match (sent.text("oldSlug"), sent.text("newSlug")) {
+            (Some(old), Some(new)) if overwrites => {
+                format!("Rename {old} \u{2192} {new}, replacing {new} if it exists")
+            }
             (Some(old), Some(new)) => format!("Rename {old} \u{2192} {new}"),
             _ => "Rename one concept".to_string(),
         };
@@ -136,19 +144,19 @@ fn rename_concept(sent: &Sent<'_>) -> String {
     if let Some(new) = sent.text("newSlug") {
         also.push(format!("rename it to {new}"));
     }
-    match sent.text("domain") {
-        Some(domain) => also.push(format!("set its domain to {domain}")),
-        None if sent
-            .0
-            .get("domain")
-            .is_some_and(|raw| Kind::of(raw) == Kind::Null) =>
-        {
-            also.push("clear its domain".to_string());
+    if let Some(new_kind) = sent.0.string("newKind") {
+        if matches!(new_kind.as_str(), "capability" | "element") {
+            if let Some(domain) = sent.named("domain") {
+                also.push(format!("set its domain to {domain}"));
+            }
+        } else {
+            also.push("remove its domain if it has one".to_string());
         }
-        None => {}
-    }
-    if sent.text("body").is_some() {
-        also.push("replace its body".to_string());
+        also.push(if sent.text("body").is_some() {
+            "replace its body".to_string()
+        } else {
+            "replace its body if it is still the generated starter".to_string()
+        });
     }
     match also.split_last() {
         None => kind,
@@ -270,12 +278,16 @@ mod tests {
             (PatchConcept, r#"{"slug":"s"}"#, "Edit concept s"),
             (RenameConcept, r#"{"oldSlug":"a","newSlug":"b"}"#, "Rename a \u{2192} b"),
             (RenameConcept, r#"{"oldSlug":"a"}"#, "Rename one concept"),
-            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain"}"#, "Change the kind of a to domain"),
+            (RenameConcept, r#"{"oldSlug":"a","newSlug":"b","overwrite":true}"#, "Rename a \u{2192} b, replacing b if it exists"),
+            (RenameConcept, r#"{"oldSlug":"a","newSlug":"b","overwrite":false}"#, "Rename a \u{2192} b"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain"}"#, "Change the kind of a to domain, remove its domain if it has one and replace its body if it is still the generated starter"),
             (RenameConcept, r#"{"newKind":"domain"}"#, "Change one concept kind"),
-            (RenameConcept, r#"{"oldSlug":"a","newKind":"element","newSlug":"b"}"#, "Change the kind of a to element and rename it to b"),
-            (RenameConcept, r#"{"oldSlug":"a","newKind":"element","body":"x"}"#, "Change the kind of a to element and replace its body"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"element","domain":"d","newSlug":"b"}"#, "Change the kind of a to element, rename it to b, set its domain to d and replace its body if it is still the generated starter"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"element","domain":"d","body":"x"}"#, "Change the kind of a to element, set its domain to d and replace its body"),
             (RenameConcept, r#"{"oldSlug":"a","newKind":"capability","newSlug":"b","domain":"d","body":""}"#, "Change the kind of a to capability, rename it to b, set its domain to d and replace its body"),
-            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain","domain":null}"#, "Change the kind of a to domain and clear its domain"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain","domain":"d"}"#, "Change the kind of a to domain, remove its domain if it has one and replace its body if it is still the generated starter"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain","domain":null,"body":"x"}"#, "Change the kind of a to domain, remove its domain if it has one and replace its body"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"capability"}"#, "Change the kind of a to capability and replace its body if it is still the generated starter"),
             (MergeConcepts, r#"{"fromSlug":"a","intoSlug":"b"}"#, "Merge a into b"),
             (DeleteConcept, r#"{}"#, "Delete one concept"),
             (AbsorbDocument, r#"{"filePath":"/tmp/a b.md"}"#, "Absorb \"/tmp/a b.md\" into typed nodes"),
