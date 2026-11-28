@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
 
@@ -166,20 +166,32 @@ describe('the website specs list holds only specs that exist', () => {
 
 describe('Playwright projects come from those two lists', () => {
   const projects = playwrightConfig.projects ?? [];
-  const named = (name: string) => projects.find((p) => p.name === name);
-  const globs = (files: readonly string[]) => files.map((file) => `**/${file}`);
   const bothLists = POST_MERGE_SPECS.filter((file) => (WEBSITE_SPECS as readonly string[]).includes(file));
 
   it('there are four projects: the gate and the measurements, each on the app folder and on the site folder', () => {
     expect(projects.map((p) => p.name).sort()).toEqual(['post-merge', 'smoke', 'website', 'website-post-merge']);
   });
 
-  it('every spec is in exactly one project: the lists cut the suite into four and leave nothing over or twice', () => {
-    expect(named('smoke')?.testIgnore).toEqual(globs([...POST_MERGE_SPECS, ...WEBSITE_SPECS]));
-    expect(named('post-merge')?.testMatch).toEqual(globs(POST_MERGE_SPECS.filter((file) => !bothLists.includes(file))));
-    expect(named('website')?.testMatch).toEqual(globs(WEBSITE_SPECS));
-    expect(named('website')?.testIgnore).toEqual(globs(POST_MERGE_SPECS));
-    expect(named('website-post-merge')?.testMatch).toEqual(globs(bothLists));
+  it('every spec file on disk is in exactly one project: nothing is left over and nothing runs twice', () => {
+    const specs = readdirSync(E2E_DIR, { recursive: true })
+      .map((entry) => String(entry).split(sep).join('/'))
+      .filter((entry) => entry.endsWith('.spec.ts'));
+    expect(specs.length).toBeGreaterThan(100);
+    // The projects name their specs by exact path (`**/<file>`); a wildcard here would need a real glob matcher.
+    const selects = (patterns: unknown, file: string) =>
+      [patterns].flat().some((pattern) => {
+        expect(pattern, 'a project names its specs by exact path').toMatch(/^\*\*\/[^*?{}[\]]+$/);
+        return (pattern as string).slice(3) === file;
+      });
+    const projectsOf = (file: string) =>
+      projects
+        .filter((p) => (p.testMatch === undefined || selects(p.testMatch, file)) && !(p.testIgnore !== undefined && selects(p.testIgnore, file)))
+        .map((p) => p.name);
+    const notOnce = specs.filter((file) => projectsOf(file).length !== 1).map((file) => `${file}: ${projectsOf(file).join(', ') || 'no project'}`);
+    expect(notOnce).toEqual([]);
+    // A list entry naming a spec that is not on disk would hide a rename.
+    expect([...POST_MERGE_SPECS, ...WEBSITE_SPECS].filter((file) => !specs.includes(file))).toEqual([]);
+    expect(bothLists.every((file) => projectsOf(file)[0] === 'website-post-merge')).toBe(true);
   });
 
   it('against the built folders the website projects read another origin than the app projects', async () => {
