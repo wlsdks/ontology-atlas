@@ -1,14 +1,16 @@
 /**
  * The pure part of the `.mcpb` build: a zip holding the compiled Rust program `ontology-atlas-mcp`
- * for each platform it is given, plus a `manifest.json`. A host picks a program by operating
- * system alone (`platform_overrides` is keyed `darwin`, `win32`, `linux`), so a bundle holds one
- * program per system: a second architecture of the same system cannot be chosen between and is
- * refused. The image carries both Linux architectures; the bundle carries the macOS arm64,
- * Windows x64 and static Linux x64 programs.
+ * for each platform it is given, plus a `manifest.json`. MCPB manifest 0.3 has no architecture:
+ * `compatibility.platforms` and `server.mcp_config.platform_overrides` are keyed by Node's
+ * `process.platform` (`darwin`, `win32`, `linux`) alone
+ * (https://github.com/anthropics/mcpb/blob/main/MANIFEST.md, "System Requirements" and
+ * "Platform-Specific Configurations"). A system with programs for two architectures therefore
+ * starts a small shell script that runs the one for `uname -m`; a system with one program starts
+ * that program directly. The image carries both Linux architectures through `docker buildx`.
  */
 
-export const BUNDLE_SERVER_DIR = 'server';
-export const MCP_PROGRAM_NAME = 'ontology-atlas-mcp';
+const BUNDLE_SERVER_DIR = 'server';
+const MCP_PROGRAM_NAME = 'ontology-atlas-mcp';
 
 const PLATFORM_OF_TRIPLE = Object.freeze({
   'aarch64-apple-darwin': 'darwin',
@@ -20,29 +22,79 @@ const PLATFORM_OF_TRIPLE = Object.freeze({
   'aarch64-unknown-linux-musl': 'linux',
 });
 
+/** What `uname -m` prints, on the systems that have it, for the architecture a triple starts with. */
+const UNAME_MACHINES_OF_ARCHITECTURE = Object.freeze({
+  x86_64: ['x86_64', 'amd64'],
+  aarch64: ['arm64', 'aarch64'],
+});
+
 /** Where the program of `triple` sits inside the bundle. */
 export function bundleProgramPath(triple) {
   return `${BUNDLE_SERVER_DIR}/${MCP_PROGRAM_NAME}-${triple}${triple.includes('-windows-') ? '.exe' : ''}`;
 }
 
 /** The operating system a host calls `triple`'s program for; null for a target the bundle does not know. */
-export const bundlePlatformOfTriple = (triple) => PLATFORM_OF_TRIPLE[triple] ?? null;
+const bundlePlatformOfTriple = (triple) => PLATFORM_OF_TRIPLE[triple] ?? null;
 
-/** What stops a set of targets from being one bundle: an unknown target, or two programs for one system. */
-export function bundleProgramProblems(triples) {
-  const problems = [];
+const architectureOfTriple = (triple) => triple.split('-')[0];
+
+/** Where the script that starts the right program of a system with several sits inside the bundle. */
+export const bundleSelectorPath = (platform) => `${BUNDLE_SERVER_DIR}/start-${MCP_PROGRAM_NAME}-${platform}`;
+
+/** `triples` grouped by the system a host calls them for, in the order the systems first appear. */
+export function bundleProgramsByPlatform(triples) {
   const byPlatform = new Map();
   for (const triple of triples) {
     const platform = bundlePlatformOfTriple(triple);
-    if (!platform) {
-      problems.push(`${triple} is not a target the bundle knows`);
-      continue;
-    }
     byPlatform.set(platform, [...(byPlatform.get(platform) ?? []), triple]);
   }
-  for (const [platform, found] of byPlatform) {
-    if (found.length > 1) {
-      problems.push(`${found.join(' and ')} are both ${platform} programs; a host picks by system alone, so the bundle holds one`);
+  return byPlatform;
+}
+
+/** The file a host starts on `platform`: the program itself when it is the only one, else the selector. */
+const bundleLaunchPath = (platform, platformTriples) =>
+  platformTriples.length === 1 ? bundleProgramPath(platformTriples[0]) : bundleSelectorPath(platform);
+
+/**
+ * The POSIX shell script that replaces itself with the program built for this machine, so the
+ * host's pipes and signals reach the program directly. A machine it has no program for gets a line
+ * on standard error and exit code 1, not a program of another architecture.
+ */
+export function bundleSelectorScript(platformTriples) {
+  const arms = platformTriples.map((triple) => {
+    const machines = UNAME_MACHINES_OF_ARCHITECTURE[architectureOfTriple(triple)];
+    return `  ${machines.join('|')}) exec "$here/${MCP_PROGRAM_NAME}-${triple}" "$@" ;;`;
+  });
+  return [
+    '#!/bin/sh',
+    '# A bundle host picks a program by operating system alone, so this picks by architecture.',
+    'here=$(cd "$(dirname "$0")" && pwd)',
+    'case "$(uname -m)" in',
+    ...arms,
+    'esac',
+    `echo "${MCP_PROGRAM_NAME}: this bundle has no program for $(uname -m)" >&2`,
+    'exit 1',
+    '',
+  ].join('\n');
+}
+
+/**
+ * What stops a set of targets from being one bundle: an unknown target, or two programs a host
+ * cannot tell apart, meaning one system with the same architecture twice.
+ */
+export function bundleProgramProblems(triples) {
+  const problems = [];
+  const known = triples.filter((triple) => {
+    if (bundlePlatformOfTriple(triple)) return true;
+    problems.push(`${triple} is not a target the bundle knows`);
+    return false;
+  });
+  for (const [platform, found] of bundleProgramsByPlatform(known)) {
+    const byArchitecture = Map.groupBy(found, architectureOfTriple);
+    for (const same of byArchitecture.values()) {
+      if (same.length > 1) {
+        problems.push(`${same.join(' and ')} are both ${platform} programs for one architecture; the bundle holds one`);
+      }
     }
   }
   if (triples.length === 0) problems.push('no program was given; build one with `pnpm mcp:build-binary`');
@@ -56,8 +108,12 @@ export function bundleProgramProblems(triples) {
  * The program is native, so the manifest states no runtime.
  */
 export function bundleManifest({ version, description, triples }) {
-  const platforms = triples.map((triple) => bundlePlatformOfTriple(triple));
-  const command = (triple) => `\${__dirname}/${bundleProgramPath(triple)}`;
+  const launchers = [...bundleProgramsByPlatform(triples)].map(([platform, platformTriples]) => [
+    platform,
+    bundleLaunchPath(platform, platformTriples),
+  ]);
+  const platforms = launchers.map(([platform]) => platform);
+  const command = (launchPath) => `\${__dirname}/${launchPath}`;
   return {
     manifest_version: '0.3',
     name: 'ontology-atlas-mcp',
@@ -80,13 +136,13 @@ export function bundleManifest({ version, description, triples }) {
     keywords: ['ontology', 'codebase', 'markdown', 'knowledge-graph', 'local-first'],
     server: {
       type: 'binary',
-      entry_point: bundleProgramPath(triples[0]),
+      entry_point: launchers[0][1],
       mcp_config: {
-        command: command(triples[0]),
+        command: command(launchers[0][1]),
         args: [],
         env: { OATLAS_VAULT: '${user_config.vault}' },
         platform_overrides: Object.fromEntries(
-          triples.map((triple, index) => [platforms[index], { command: command(triple) }]),
+          launchers.map(([platform, launchPath]) => [platform, { command: command(launchPath) }]),
         ),
       },
     },
@@ -164,7 +220,8 @@ export function bundleProvenance({ version, commit, tag, builtAt, triples, boote
     `programs         ${triples.join(', ')}`,
     `booted           ${bootedTriple} (the others cannot run on the machine that built this file)`,
     '',
-    'Each program is the compiled Rust server, not a script: there is no runtime to install.',
+    'Each program is the compiled Rust server: there is no runtime to install. Where a system has',
+    'programs for two architectures, a short shell script starts the one for this machine.',
     'The vault is an ordinary folder of Markdown on your disk. This server reads',
     'and writes only the folder you point OATLAS_VAULT at, opens no port, and',
     'sends nothing anywhere.',

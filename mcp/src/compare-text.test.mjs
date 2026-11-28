@@ -10,7 +10,7 @@ import { runJsonRpcProcess } from '../../scripts/lib/mcp-test-rpc.mjs';
 import { compareText } from './compare-text.mjs';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
-const SERVER_ENTRY = resolve(currentDir, 'index.js');
+const SERVER_ENTRY = resolve(currentDir, 'javascript-server.mjs');
 const GRAPH_HASH_MODULE = resolve(currentDir, 'project-source/project-source-graph-hash.mjs');
 const LOCALES = ['ko_KR.UTF-8', 'en_US.UTF-8'];
 const MIXED_NAMES = ['b', '가', 'a', 'Z', 'z', '_x', '-x'];

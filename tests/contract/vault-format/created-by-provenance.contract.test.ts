@@ -12,8 +12,8 @@ import { VAULT_CREATED_BY_HUMAN } from "@/entities/docs-vault";
  * and `created_by=` filter are tested in its crates.
  */
 
-const serverWriteSupport = readFileSync(
-  resolve(__dirname, "../../../src-tauri/crates/mcp-server/src/tools/writes/write_support.rs"),
+const serverNodeIdentity = readFileSync(
+  resolve(__dirname, "../../../src-tauri/crates/mcp-server/src/tools/writes/node_identity.rs"),
   "utf8",
 );
 
@@ -25,8 +25,8 @@ describe("created_by value convention: the server and the app use the same value
   it("the server stamps `agent:<name>`, and `agent:unknown` rather than `human` when the name is unknown", () => {
     // The path proves an agent wrote it but not which agent; there is no route that falls back to
     // human. The app's chat panel stamps the same two shapes (below).
-    expect(serverWriteSupport).toContain('format!("agent:{name}")');
-    expect(serverWriteSupport).toContain('"agent:unknown".to_string()');
+    expect(serverNodeIdentity).toContain('format!("agent:{name}")');
+    expect(serverNodeIdentity).toContain('"agent:unknown".to_string()');
   });
 });
 

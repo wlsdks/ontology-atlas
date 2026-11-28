@@ -23,7 +23,7 @@ const FIXTURE_PATH = resolve(
   '../../../tests/contract/fixtures/library-collections/constellations-v1.json',
 );
 const FIXTURE_RAW = readFileSync(FIXTURE_PATH, 'utf8');
-const SERVER_ENTRY = resolve(__dirname, '..', 'index.js');
+const SERVER_ENTRY = resolve(__dirname, '..', 'javascript-server.mjs');
 
 function callTool(id, name, args = {}) {
   return {

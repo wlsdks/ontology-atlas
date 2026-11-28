@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'index.js');
+const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'javascript-server.mjs');
 
 function repositoryWithProject() {
   const root = mkdtempSync(join(tmpdir(), 'atlas-connect-consent-'));

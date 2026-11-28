@@ -23,7 +23,7 @@ function staticImportGraph(entry) {
 }
 
 test('the server loads no TypeScript module at startup', () => {
-  const modules = staticImportGraph(resolve(SOURCE_ROOT, 'index.js'));
+  const modules = staticImportGraph(resolve(SOURCE_ROOT, 'javascript-server.mjs'));
   assert.ok(modules.includes('tools/graph.mjs'), 'the walk must reach the tool modules');
   assert.ok(modules.length > 100, `the walk found only ${modules.length} modules`);
   assert.deepEqual(modules.filter((file) => file.endsWith('.mts') || file.endsWith('.ts')), []);

@@ -9,7 +9,7 @@ import { after, describe, it } from 'node:test';
 import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 import { unwritableSlugIssue } from '../schema.mjs';
 
-const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
+const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'javascript-server.mjs');
 const OUTSIDE_MARKER = 'MARKER-OUTSIDE-VAULT';
 const character = (codePoint) => String.fromCharCode(codePoint);
 const scratchRoots = [];

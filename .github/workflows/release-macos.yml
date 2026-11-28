@@ -163,12 +163,27 @@ jobs:
       - name: Desktop runtime split tests
         run: pnpm test:desktop:runtime
 
-  # The `.mcpb` bundle carries one program per system. A static musl program starts on any Linux,
-  # where the program the gate job builds links the runner's glibc. No secret is read here.
+  # The `.mcpb` bundle carries a program for each system and architecture it has carried, each
+  # built on a runner of that architecture (no cross-compiling): the macOS arm64 and Windows x64
+  # programs come from the app builds. A static musl program starts on any Linux of its
+  # architecture, where one built by the gate job links the runner's glibc. No secret is read here.
   build-mcp-programs:
-    name: Build the Linux MCP program for the bundle
+    name: Build the ${{ matrix.target }} MCP program for the bundle
     needs: admit-release
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+            artifact: linux-x64
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-24.04-arm
+            artifact: linux-arm64
+          - target: x86_64-apple-darwin
+            runner: macos-15-intel
+            artifact: macos-x64
     # budget: 1200s (a cold musl build of the server crates; no run has timed it yet)
     timeout-minutes: 20
     steps:
@@ -193,7 +208,7 @@ jobs:
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
         with:
           toolchain: 1.100.0
-          targets: x86_64-unknown-linux-musl
+          targets: ${{ matrix.target }}
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
@@ -201,18 +216,20 @@ jobs:
           workspaces: src-tauri
 
       - name: Install the musl C compiler
+        if: ${{ endsWith(matrix.target, '-musl') }}
         run: sudo apt-get install --no-install-recommends -y musl-tools
 
-      - name: Build the static Linux MCP program
-        run: pnpm mcp:build-binary -- --target x86_64-unknown-linux-musl
+      - name: Build the MCP program
+        run: pnpm mcp:build-binary -- --target ${{ matrix.target }}
         env:
           CC_x86_64_unknown_linux_musl: musl-gcc
+          CC_aarch64_unknown_linux_musl: musl-gcc
 
-      - name: Upload the Linux MCP program
+      - name: Upload the MCP program
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: ontology-atlas-mcp-program-linux-x64
-          path: src-tauri/binaries/ontology-atlas-mcp-x86_64-unknown-linux-musl
+          name: ontology-atlas-mcp-program-${{ matrix.artifact }}
+          path: src-tauri/binaries/ontology-atlas-mcp-${{ matrix.target }}
           if-no-files-found: error
           retention-days: 1
 
@@ -868,21 +885,30 @@ jobs:
           name: ontology-atlas-mcp-program-windows-x64
           path: .tmp/mcp-programs/windows
 
-      - name: Download the Linux MCP program
+      - name: Download the Linux MCP programs
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: ontology-atlas-mcp-program-linux-x64
+          pattern: ontology-atlas-mcp-program-linux-*
+          merge-multiple: true
           path: .tmp/mcp-programs/linux
+
+      - name: Download the Intel macOS MCP program
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ontology-atlas-mcp-program-macos-x64
+          path: .tmp/mcp-programs/macos-x64
 
       - name: Build the MCP ecosystem bundle
         # The MCPB artifact is what makes Atlas publishable to the official MCP
         # Registry without an npm package: the registry verifies the release
-        # asset's URL and SHA-256 and hosts no files itself. The macOS program is the one
+        # asset's URL and SHA-256 and hosts no files itself. The macOS arm64 program is the one
         # inside the signed and notarized app, so the bundle carries the signature the
-        # app carries. The build boots the unpacked Linux program before it writes an
-        # artifact, so a bundle that cannot start never reaches a release. Built after the
-        # updater manifest so the manifest builder, which splits architectures by folder,
-        # never sees this one.
+        # app carries; the Intel one is built unsigned on an Intel runner. A host picks
+        # a program by operating system alone, so macOS and Linux each start a script that
+        # picks by architecture. The build boots the program the manifest names for this
+        # runner from the unpacked artifact before it writes it, so a bundle that cannot
+        # start never reaches a release. Built after the updater manifest so the manifest
+        # builder, which splits architectures by folder, never sees this one.
         run: |
           mkdir -p .tmp/mcp-programs/macos
           tar -xzf release-assets/ontology-atlas-macos-aarch64/*.app.tar.gz -C .tmp/mcp-programs/macos --wildcards '*/Contents/MacOS/ontology-atlas-mcp'
@@ -891,7 +917,9 @@ jobs:
           pnpm mcp:build-bundle -- --tag="${RELEASE_TAG}" \
             --program=aarch64-apple-darwin="$macos_program" \
             --program=x86_64-pc-windows-msvc=.tmp/mcp-programs/windows/ontology-atlas-mcp-x86_64-pc-windows-msvc.exe \
-            --program=x86_64-unknown-linux-musl=.tmp/mcp-programs/linux/ontology-atlas-mcp-x86_64-unknown-linux-musl
+            --program=x86_64-apple-darwin=.tmp/mcp-programs/macos-x64/ontology-atlas-mcp-x86_64-apple-darwin \
+            --program=x86_64-unknown-linux-musl=.tmp/mcp-programs/linux/ontology-atlas-mcp-x86_64-unknown-linux-musl \
+            --program=aarch64-unknown-linux-musl=.tmp/mcp-programs/linux/ontology-atlas-mcp-aarch64-unknown-linux-musl
           mkdir -p release-assets/mcp
           cp .tmp/mcp-bundle/*.mcpb release-assets/mcp/
           cd release-assets/mcp

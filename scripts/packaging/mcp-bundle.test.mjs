@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
@@ -14,6 +17,7 @@ import {
   bundleProgramPath,
   bundleProgramProblems,
   bundleProvenance,
+  bundleSelectorScript,
   registryInvariantProblems,
   serverJson,
   serverJsonProblems,
@@ -24,36 +28,91 @@ const MCP_PACKAGE = JSON.parse(readFileSync('mcp/package.json', 'utf8'));
 const DOCKERFILE = readFileSync('mcp/Dockerfile', 'utf8');
 const WORKFLOW = readFileSync('.github/workflows/release-macos.yml', 'utf8');
 
-const TRIPLES = ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-musl'];
+/** Every system and architecture the bundle has carried; losing one strands the people on it. */
+const SHIPPED_TRIPLES = [
+  'aarch64-apple-darwin',
+  'x86_64-apple-darwin',
+  'x86_64-unknown-linux-musl',
+  'aarch64-unknown-linux-musl',
+  'x86_64-pc-windows-msvc',
+];
 
 describe('bundle manifest', () => {
-  it('starts the compiled program the way a host does, one per system, and asks for the vault as a folder', () => {
-    const manifest = bundleManifest({ version: '9.9.9', description: 'd', triples: TRIPLES });
+  /**
+   * MCPB manifest 0.3 keys `platform_overrides` by operating system alone, so the two systems that
+   * hold two architectures start a selector and the one that holds a single program starts it.
+   */
+  it('starts the program of a system that has one, and a selector for a system that has two', () => {
+    const manifest = bundleManifest({ version: '9.9.9', description: 'd', triples: SHIPPED_TRIPLES });
 
     assert.equal(manifest.server.type, 'binary');
-    assert.equal(manifest.server.entry_point, 'server/ontology-atlas-mcp-aarch64-apple-darwin');
     assert.deepEqual(manifest.server.mcp_config.platform_overrides, {
-      darwin: { command: '${__dirname}/server/ontology-atlas-mcp-aarch64-apple-darwin' },
+      darwin: { command: '${__dirname}/server/start-ontology-atlas-mcp-darwin' },
+      linux: { command: '${__dirname}/server/start-ontology-atlas-mcp-linux' },
       win32: { command: '${__dirname}/server/ontology-atlas-mcp-x86_64-pc-windows-msvc.exe' },
-      linux: { command: '${__dirname}/server/ontology-atlas-mcp-x86_64-unknown-linux-musl' },
     });
-    assert.deepEqual(manifest.compatibility, { platforms: ['darwin', 'win32', 'linux'] });
+    assert.deepEqual(manifest.compatibility, { platforms: ['darwin', 'linux', 'win32'] });
     assert.equal(manifest.server.mcp_config.env.OATLAS_VAULT, '${user_config.vault}');
     assert.equal(manifest.user_config.vault.type, 'directory');
     assert.equal(manifest.user_config.vault.required, true);
     assert.ok(!('runtimes' in manifest.compatibility), 'a native program needs no runtime');
+
+    const single = bundleManifest({ version: '9.9.9', description: 'd', triples: ['aarch64-apple-darwin'] });
+    assert.deepEqual(single.server.mcp_config.platform_overrides, {
+      darwin: { command: '${__dirname}/server/ontology-atlas-mcp-aarch64-apple-darwin' },
+    });
   });
 
-  /**
-   * A host chooses a program by operating system alone, so a second architecture of one system
-   * would be silently ignored, or started on a machine that cannot run it.
-   */
-  it('refuses two programs for one system, an unknown target and an empty set', () => {
-    assert.deepEqual(bundleProgramProblems(TRIPLES), []);
-    assert.match(bundleProgramProblems(['aarch64-apple-darwin', 'x86_64-apple-darwin']).join(' '), /both darwin programs/);
+  it('refuses an unknown target, an empty set and two programs a host cannot tell apart', () => {
+    assert.deepEqual(bundleProgramProblems(SHIPPED_TRIPLES), []);
+    assert.match(
+      bundleProgramProblems(['x86_64-unknown-linux-gnu', 'x86_64-unknown-linux-musl']).join(' '),
+      /both linux programs for one architecture/,
+    );
     assert.match(bundleProgramProblems(['riscv64-unknown-linux-gnu']).join(' '), /not a target the bundle knows/);
     assert.match(bundleProgramProblems([]).join(' '), /no program was given/);
     assert.equal(bundleProgramPath('x86_64-pc-windows-msvc'), 'server/ontology-atlas-mcp-x86_64-pc-windows-msvc.exe');
+  });
+
+  it('starts the program built for this machine and refuses a machine it has none for', { skip: process.platform === 'win32' }, () => {
+    const triples = ['x86_64-unknown-linux-musl', 'aarch64-unknown-linux-musl'];
+    const folder = mkdtempSync(path.join(tmpdir(), 'bundle-selector-'));
+    try {
+      for (const triple of triples) {
+        writeFileSync(path.join(folder, `ontology-atlas-mcp-${triple}`), `#!/bin/sh\necho "${triple} $1"\n`, { mode: 0o755 });
+      }
+      const selector = path.join(folder, 'start');
+      writeFileSync(selector, bundleSelectorScript(triples), { mode: 0o755 });
+
+      const started = spawnSync(selector, ['argument'], { encoding: 'utf8' });
+      const expected = process.arch === 'arm64' ? triples[1] : triples[0];
+      if (process.arch === 'arm64' || process.arch === 'x64') {
+        assert.equal(started.stdout.trim(), `${expected} argument`);
+      }
+
+      writeFileSync(selector, bundleSelectorScript([triples[0]]).replace('x86_64|amd64', 'no-such-machine'), { mode: 0o755 });
+      const refused = spawnSync(selector, [], { encoding: 'utf8' });
+      assert.equal(refused.status, 1);
+      assert.match(refused.stderr, /no program for/);
+    } finally {
+      rmSync(folder, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * The release builds the programs on runners of their own architecture and names all of them in
+   * the one bundle command, so a dropped job or a dropped flag shows here before a release does.
+   */
+  it('builds and bundles a program for every system and architecture the bundle has carried', () => {
+    assert.deepEqual(bundleProgramProblems(SHIPPED_TRIPLES), []);
+    for (const triple of SHIPPED_TRIPLES) {
+      assert.match(WORKFLOW, new RegExp(`--program=${triple}=`), `the bundle command names no ${triple} program`);
+    }
+    const builtByTheRelease = SHIPPED_TRIPLES.filter((triple) => triple !== 'aarch64-apple-darwin' && !triple.includes('windows'));
+    for (const triple of builtByTheRelease) {
+      assert.match(WORKFLOW, new RegExp(`target: ${triple}\\n\\s+runner: \\S+`), `no job builds the ${triple} program`);
+    }
+    assert.match(WORKFLOW, /target: aarch64-unknown-linux-musl\n\s+runner: ubuntu-24\.04-arm/, 'arm64 Linux builds on its own runner');
   });
 });
 
@@ -118,13 +177,13 @@ describe('what the artifact must say', () => {
       commit: 'abc1234',
       tag: 'v1.1.0',
       builtAt: '2026-09-11T00:00:00.000Z',
-      triples: TRIPLES,
+      triples: SHIPPED_TRIPLES,
       bootedTriple: 'aarch64-apple-darwin',
     });
 
     assert.match(text, /built from\s+abc1234/);
     assert.match(text, /release tag\s+v1\.1\.0/);
-    assert.match(text, /programs\s+aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-musl/);
+    assert.ok(text.includes(`programs         ${SHIPPED_TRIPLES.join(', ')}`));
     assert.match(text, /booted\s+aarch64-apple-darwin/);
     assert.match(text, /opens no port/);
     assert.match(

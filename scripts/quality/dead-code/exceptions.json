@@ -366,10 +366,22 @@
       "witness": "pkill"
     },
     {
+      "key": "frontend:runtime:binaries:scripts/packaging/build-mcp-binary.mjs:rustc",
+      "reason": "The build asks the installed Rust toolchain for its version and refuses one that is not the pinned channel.",
+      "consumer": "scripts/packaging/build-mcp-binary.mjs",
+      "witness": "rustc"
+    },
+    {
       "key": "frontend:runtime:binaries:scripts/perf/perf-mcp-scale.mjs:vmmap",
       "reason": "The MCP scale benchmark reads the macOS physical footprint, which RSS overstates there.",
       "consumer": "scripts/perf/perf-mcp-scale.mjs",
       "witness": "vmmap"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/packaging/build-mcp-binary.mjs:rustc",
+      "reason": "The build asks the installed Rust toolchain for its version and refuses one that is not the pinned channel.",
+      "consumer": "scripts/packaging/build-mcp-binary.mjs",
+      "witness": "rustc"
     },
     {
       "key": "frontend:verification:binaries:scripts/perf/perf-mcp-scale.mjs:vmmap",
@@ -378,10 +390,22 @@
       "witness": "vmmap"
     },
     {
+      "key": "scripts:runtime:binaries:scripts/packaging/build-mcp-binary.mjs:rustc",
+      "reason": "The build asks the installed Rust toolchain for its version and refuses one that is not the pinned channel.",
+      "consumer": "scripts/packaging/build-mcp-binary.mjs",
+      "witness": "rustc"
+    },
+    {
       "key": "scripts:runtime:binaries:scripts/perf/perf-mcp-scale.mjs:vmmap",
       "reason": "The MCP scale benchmark reads the macOS physical footprint, which RSS overstates there.",
       "consumer": "scripts/perf/perf-mcp-scale.mjs",
       "witness": "vmmap"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/packaging/build-mcp-binary.mjs:rustc",
+      "reason": "The build asks the installed Rust toolchain for its version and refuses one that is not the pinned channel.",
+      "consumer": "scripts/packaging/build-mcp-binary.mjs",
+      "witness": "rustc"
     },
     {
       "key": "scripts:verification:binaries:scripts/perf/perf-mcp-scale.mjs:vmmap",

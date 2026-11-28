@@ -240,7 +240,7 @@ export async function runCoverage({ repoRoot, workRoot, cases, values, flags, co
   const problems = [];
   const loaded = new Set(whole.files.keys());
   for (const [file, family] of Object.entries(families.files)) {
-    if (loaded.has(file) || /\.test\.mjs$/.test(file) || file === 'mcp/src/index.js') continue;
+    if (loaded.has(file) || /\.test\.mjs$/.test(file) || file === 'mcp/src/index.js' || file === 'mcp/src/javascript-server.mjs') continue;
     const r = row(family);
     r.files += 1;
     r.functions += 1;

@@ -2,7 +2,7 @@
   "generatedBy": "node scripts/mcp/differential/write-families.mjs",
   "unmapped": 0,
   "counts": {
-    "shell": 57,
+    "shell": 59,
     "safety": 27,
     "vault-read": 28,
     "graph": 56,
@@ -12,7 +12,7 @@
     "survey": 27,
     "meaning": 39,
     "writes": 13,
-    "library": 51
+    "library": 50
   },
   "files": {
     "mcp/src/analysis-history/analysis-record.mts": "survey",
@@ -100,6 +100,7 @@
     "mcp/src/git/stale-parent.mjs": "git",
     "mcp/src/git/stale-parent.test.mjs": "git",
     "mcp/src/index.js": "shell",
+    "mcp/src/index.test.mjs": "shell",
     "mcp/src/infer-imports.mjs": "imports",
     "mcp/src/infer-imports.test.mjs": "imports",
     "mcp/src/infer-imports/confinement/confined-source-fs.mjs": "safety",
@@ -129,6 +130,7 @@
     "mcp/src/infer-imports/workspace-packages.test.mjs": "imports",
     "mcp/src/infer-imports/zero-counts.mjs": "imports",
     "mcp/src/integration.test.mjs": "shell",
+    "mcp/src/javascript-server.mjs": "shell",
     "mcp/src/json-rpc-lines.test.mjs": "shell",
     "mcp/src/library/constellation-scope.mjs": "library",
     "mcp/src/library/constellations.mjs": "library",
@@ -145,7 +147,6 @@
     "mcp/src/library/wiki-folder.mjs": "library",
     "mcp/src/library/wiki-judgement.mjs": "library",
     "mcp/src/library/wiki-judgement.test.mjs": "library",
-    "mcp/src/library/wiki-report.mjs": "library",
     "mcp/src/library/wiki-schema.mjs": "library",
     "mcp/src/meaning/meaning-assessment.mjs": "meaning",
     "mcp/src/meaning/meaning-assessment.test.mjs": "meaning",

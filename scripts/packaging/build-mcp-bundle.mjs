@@ -7,7 +7,8 @@
  *   node scripts/packaging/build-mcp-bundle.mjs [--tag=<vX.Y.Z>] [--program=<triple>=<path> ...] [--check]
  *
  * A program comes from `--program`, or else from `src-tauri/binaries/` (what `pnpm mcp:build-binary`
- * placed). A host picks by operating system only, so two programs for one system are refused.
+ * placed). A host picks by operating system only, so a system given two architectures starts a
+ * script that picks by architecture; two programs for one system and architecture are refused.
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -18,6 +19,9 @@ import path from 'node:path';
 import {
   bundleManifest,
   bundleProgramPath,
+  bundleProgramsByPlatform,
+  bundleSelectorPath,
+  bundleSelectorScript,
   bundleProgramProblems,
   bundleProvenance,
 } from '../lib/packaging/mcp-bundle.mjs';
@@ -67,6 +71,12 @@ function stage(programs, pkg) {
     const destination = path.join(stageDir, bundleProgramPath(triple));
     copyFileSync(file, destination);
     chmodSync(destination, 0o755);
+  }
+  for (const [platform, platformTriples] of bundleProgramsByPlatform(programs.map(({ triple }) => triple))) {
+    if (platformTriples.length < 2) continue;
+    const selector = path.join(stageDir, bundleSelectorPath(platform));
+    writeFileSync(selector, bundleSelectorScript(platformTriples));
+    chmodSync(selector, 0o755);
   }
   // manifest.json and the image label both say MIT; the artifact should carry the licence that claim refers to.
   copyFileSync(path.join(ROOT, 'LICENSE'), path.join(stageDir, 'server', 'LICENSE'));
@@ -123,7 +133,11 @@ function main() {
   for (const { triple } of programs) {
     if (!existsSync(path.join(unpacked, bundleProgramPath(triple)))) fail(`the artifact lacks ${bundleProgramPath(triple)}`);
   }
-  const bootedFrom = path.join(unpacked, bundleProgramPath(booted.triple));
+  // Booted the way a host starts it: the command the manifest names for this system, which for a
+  // system with two architectures is the selector, so the boot also proves it picks this machine's.
+  const hostCommand = manifest.server.mcp_config.platform_overrides[process.platform]?.command;
+  if (!hostCommand) fail(`the manifest names no command for ${process.platform}`);
+  const bootedFrom = hostCommand.replace('${__dirname}', unpacked);
   return verifyMcpBinary({ binaryPath: bootedFrom, vaultPath: VERIFY_VAULT }).then((verified) => {
     const sha256 = createHash('sha256').update(readFileSync(artifact)).digest('hex');
     const bytes = statSync(artifact).size;

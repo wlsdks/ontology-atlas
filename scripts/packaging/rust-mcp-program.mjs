@@ -10,7 +10,7 @@ import { MCP_BINARY_NAME, MCP_BINARY_OUTPUT_DIR } from '../lib/packaging/mcp-bin
 
 export const CARGO_PACKAGE = 'mcp-server';
 /** The Cargo binary is named apart from the sidecar: Tauri's build copies the sidecar to `target/<profile>/ontology-atlas-mcp`. */
-export const CARGO_BINARY = 'ontology-atlas-mcp-rust';
+const CARGO_BINARY = 'ontology-atlas-mcp-rust';
 
 /** Node's platform and architecture, as one word each, to the Rust target the program is built for. */
 const TRIPLE_BY_HOST = Object.freeze({

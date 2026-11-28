@@ -3797,7 +3797,7 @@ describe('maintenance_plan — a node outside its kind folder', () => {
  */
 describe('query_ontology maintenance_plan — the read path sees the body too', () => {
   const __enginedir = dirname(fileURLToPath(import.meta.url));
-  const SERVER_ENTRY = resolve(__enginedir, 'index.js');
+  const SERVER_ENTRY = resolve(__enginedir, 'javascript-server.mjs');
 
   function writeVaultNode(vault, slug, frontmatter, body) {
     const filePath = join(vault, `${slug}.md`);
@@ -3886,7 +3886,7 @@ describe('query_ontology maintenance_plan — the read path sees the body too', 
 // the next read.
 describe('query_ontology growth_plan — the reads a vault asks for', () => {
   const __growthdir = dirname(fileURLToPath(import.meta.url));
-  const GROWTH_SERVER_ENTRY = resolve(__growthdir, 'index.js');
+  const GROWTH_SERVER_ENTRY = resolve(__growthdir, 'javascript-server.mjs');
 
   function writeVaultNode(vault, slug, frontmatter, body) {
     const filePath = join(vault, `${slug}.md`);

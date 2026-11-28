@@ -36,13 +36,17 @@ export function resolveServer(spec, { repoRoot, workRoot, coverage = false }) {
   const preload = path.join(support, 'deterministic-preload.mjs');
   if (spec === 'node' || spec.startsWith('node:')) {
     const tree = spec === 'node' ? repoRoot : path.resolve(spec.slice('node:'.length));
+    // A checkout from before the launcher still has the server itself in `index.js`.
+    const referenceEntry = ['javascript-server.mjs', 'index.js']
+      .map((name) => path.join(tree, 'mcp', 'src', name))
+      .find((file) => existsSync(file));
     return {
       label: spec,
       command: process.execPath,
       args: [
         '--import', preload,
         ...(coverage ? ['--import', path.join(support, 'coverage-preload.mjs')] : []),
-        path.join(tree, 'mcp', 'src', 'index.js'),
+        referenceEntry ?? path.join(tree, 'mcp', 'src', 'javascript-server.mjs'),
       ],
       deterministic: true,
     };

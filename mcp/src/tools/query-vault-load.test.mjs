@@ -10,7 +10,7 @@ import test from 'node:test';
 import { RACY_WINDOW_MS } from '../vault/documents/document-cache.mjs';
 
 /** The server entry, by path: a module URL here would make the dead-code check follow it. */
-const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
+const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'javascript-server.mjs');
 
 test('graph read requests load every vault document once and observe edits on the next request', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-query-vault-load-')));

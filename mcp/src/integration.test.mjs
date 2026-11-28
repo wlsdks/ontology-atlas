@@ -42,7 +42,7 @@ import {
 import { runJsonRpcProcess } from "../../scripts/lib/mcp-test-rpc.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SERVER_ENTRY = resolve(__dirname, "index.js");
+const SERVER_ENTRY = resolve(__dirname, "javascript-server.mjs");
 const EQUALITY_FILTER_KEYS = ["kind", "domain", "slug", "title", "created_by"];
 
 let passed = 0;
