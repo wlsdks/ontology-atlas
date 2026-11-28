@@ -487,6 +487,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "build-depth"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "regex",
+ "source-scan",
+ "vault-document",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6414,6 +6425,7 @@ name = "vault-validation"
 version = "0.1.0"
 dependencies = [
  "answer-format",
+ "build-depth",
  "confined-files",
  "hardened-git",
  "meaning-findings",

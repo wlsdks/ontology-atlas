@@ -1,56 +1,21 @@
 //! Two nodes that each declare a dependency on the other. A dependency runs from consumer to
 //! provider, so one of the two directions is wrong.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use vault_document::{Issue, LoadedDocument};
 
-/// A reference as an exact slug, or the one node whose slug ends with it.
-struct SlugResolver<'a> {
-    slugs: HashSet<&'a str>,
-    by_tail: HashMap<&'a str, Option<&'a str>>,
-}
-
-impl<'a> SlugResolver<'a> {
-    fn of(documents: &'a [LoadedDocument]) -> Self {
-        let mut by_tail: HashMap<&str, Option<&str>> = HashMap::new();
-        for document in documents {
-            let slug = document.slug();
-            let tail = slug.rsplit('/').next().unwrap_or(slug);
-            by_tail
-                .entry(tail)
-                .and_modify(|held| *held = None)
-                .or_insert(Some(slug));
-        }
-        Self {
-            slugs: documents.iter().map(LoadedDocument::slug).collect(),
-            by_tail,
-        }
-    }
-
-    fn resolve(&self, reference: &str) -> Option<&'a str> {
-        if let Some(slug) = self.slugs.get(reference) {
-            return Some(slug);
-        }
-        self.by_tail.get(reference).copied().flatten()
-    }
-}
+use crate::node_fields::{refs_of, SlugResolver};
 
 /// Every `depends_on` edge as consumer and provider slugs, in the order the nodes declare them.
 fn dependency_edges(documents: &[LoadedDocument]) -> Vec<(&str, &str)> {
     let resolver = SlugResolver::of(documents);
     let mut edges = Vec::new();
     for document in documents {
-        for key in ["dependencies", "depends_on"] {
-            for reference in document.frontmatter().list(key).unwrap_or_default() {
-                let reference = answer_format::whitespace::trim(reference);
-                if reference.is_empty() {
-                    continue;
-                }
-                if let Some(provider) = resolver.resolve(reference) {
-                    if provider != document.slug() {
-                        edges.push((document.slug(), provider));
-                    }
+        for reference in refs_of(document, &["dependencies", "depends_on"]) {
+            if let Some(provider) = resolver.resolve(reference) {
+                if provider != document.slug() {
+                    edges.push((document.slug(), provider));
                 }
             }
         }

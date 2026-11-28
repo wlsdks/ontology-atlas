@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 answer-format = { path = "../answer-format" }
+build-depth = { path = "../build-depth" }
 confined-files = { path = "../confined-files" }
 hardened-git = { path = "../hardened-git" }
 meaning-findings = { path = "../meaning-findings" }

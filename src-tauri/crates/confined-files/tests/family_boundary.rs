@@ -29,7 +29,7 @@ const APP: &str = "ontology-atlas";
 
 /// The family crates and the only dependencies each may have outside tests. Anything that wraps
 /// the disk or a process is absent on purpose.
-const FAMILY: [(&str, &[&str]); 11] = [
+const FAMILY: [(&str, &[&str]); 12] = [
     ("analysis-archive-format", &[]),
     (
         "answer-format",
@@ -145,9 +145,20 @@ const FAMILY: [(&str, &[&str]); 11] = [
         ],
     ),
     (
+        "build-depth",
+        &[
+            "answer-format",
+            "confined-files",
+            "regex",
+            "source-scan",
+            "vault-document",
+        ],
+    ),
+    (
         "vault-validation",
         &[
             "answer-format",
+            "build-depth",
             "confined-files",
             "hardened-git",
             "meaning-findings",

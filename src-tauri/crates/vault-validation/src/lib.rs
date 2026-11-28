@@ -1,7 +1,6 @@
 //! What `validate_vault` reports: the findings of a whole vault, whether its summaries and the code
 //! it cites are still current, and the page an agent reads. See `README.md`.
 
-mod dependency_both_ways;
 mod evidence_drift;
 mod evidence_verdict;
 mod issue_collection;
@@ -9,7 +8,6 @@ mod node_revisions;
 mod path_drift;
 mod problem_list;
 mod raw_source_kind;
-mod rule_without_read_lines;
 mod slug_collision;
 mod summary_freshness;
 mod validation_page;

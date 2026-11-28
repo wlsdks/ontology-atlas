@@ -4,6 +4,7 @@
 
 use std::collections::HashMap;
 
+use build_depth::{rule_cite_findings, two_way_dependency_findings};
 use confined_files::SourceFiles;
 use meaning_findings::{
     dependency_witness_findings, folder_only_evidence_finding, starter_example_findings,
@@ -11,9 +12,7 @@ use meaning_findings::{
 };
 use vault_document::{Issue, LoadedDocument, ReferenceIndex, VaultIssues};
 
-use crate::dependency_both_ways::two_way_dependency_findings;
 use crate::node_revisions::contained_slugs;
-use crate::rule_without_read_lines::rule_cite_findings;
 use crate::slug_collision::slug_collision_findings;
 
 /// The findings by slug, and every slug that can be listed: the documents, then the raw sources.
