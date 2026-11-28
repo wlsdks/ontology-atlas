@@ -1,18 +1,12 @@
 /**
- * The MCP `instructions` string carried in the `initialize` response, with the
- * live tool inventory left as a placeholder `registry.mjs` fills in.
- *
- * Section order is load-bearing: a host may keep only the first 2,048 characters,
- * so the identity line and construction card come first, and everything a
- * truncating host drops stays reachable through `connection_info({guide})`.
+ * The MCP `instructions` string carried in the `initialize` response: the
+ * identity line, the construction card and one line to `connection_info({guide})`.
+ * A host may keep only the first 2,048 characters, so the whole string fits
+ * inside them; `tools/list` already carries the tool inventory and every
+ * long rule is a guide topic.
  */
 
 import { CONSTRUCTION_CARD_EN } from '../construction/construction-card.mjs';
-
-// The host decides whether this reaches model context and may cut it at 2,048
-// characters, so it carries only what a first call needs; every long rule is a
-// `connection_info({guide})` topic and every tool's contract is its description.
-const TOOL_INVENTORY_PLACEHOLDER = '__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__';
 
 // The two guide topics below live here because nothing else in the server
 // needs them; `connection_info({guide})` hands them back verbatim.
@@ -36,38 +30,14 @@ const WRITE_SAFETY_SECTION_EN = `## Write tools — safety patterns
 - **\`finalize_project_meaning\`** is the post-write boundary for project competency answers. Call it only after accepted concept/relation writes, \`validate_vault\`, and a complete compile. It derives current body/graph/source provenance itself and stores no raw answers or private source coordinates; \`ok:true\` means the receipt was written, while the returned categorical \`meaningAssessment\` remains fail-closed when source currentness cannot be checked.
 - **\`connect_project_source\`** binds the local code folder a project node describes; \`disconnect_project_source\` unbinds it. When \`agent_brief.projectSource.nextAction\` says \`connect_source\`, \`repair_source_binding\`, \`measure_source\`, or \`remeasure_source\`, this is the call that performs it — \`agent_brief.projectSourceRemedy\` hands you the exact arguments. Omit \`rootPath\` and the server infers the folder (the git repository enclosing the vault, else the nearest ancestor project manifest); the default dry-run reports the candidate and how many declared \`path:\` claims resolve inside it before you pass \`confirm:true\`. Never guess an absolute path for the user — run the dry-run and let them see the folder. The absolute root stays in the gitignored vault sidecar and never enters a receipt or handoff.`;
 
-const SERVER_INSTRUCTIONS_TEMPLATE = `ontology-atlas — markdown vault where each \`.md\` with a frontmatter \`kind:\` is one ontology node.
+const SERVER_INSTRUCTIONS = `ontology-atlas — markdown vault where each \`.md\` with a frontmatter \`kind:\` is one ontology node.
 
 ${CONSTRUCTION_CARD_EN}
 
-The graph encodes the codebase's mental model and is shared with the human via plain markdown.
-
-${TOOL_INVENTORY_PLACEHOLDER}
-
-## Which tool answers which question
-
-The vault preserves recorded meaning, rationale, boundaries, and uncertainty.
-Source can provide evidence of implemented rules and behavior; original intent
-may also require current documents or the owner's judgment. For an existing
-meaning question, read the node body first, then verify relevant source evidence
-without treating either a stored claim or a code path as complete proof.
-
-- *"What is X? Why is this boundary drawn here? What was decided, and why?"* \u2192 \`get_concepts({slugs:[X], body:'full'})\`, then read the body \u2014 its definition, \`## Includes\`, \`## Excludes\` and \`## Uncertainty\`. That is where reasons live.
-- *"What does X contain / belong to?"* \u2192 \`get_concepts\`, then \`query_ontology({operation:'neighbors', slug:X})\`.
-- *"Who references X?"* (always before a rename, merge, or delete) \u2192 \`find_backlinks({slug:X})\`.
-- *"How are A and B related?"* \u2192 \`query_ontology({operation:'path', from:A, to:B})\` \u2014 each edge's \`via\` names the frontmatter key that linked them.
-- *"What breaks if I change X?"* \u2192 \`query_ontology({operation:'impact'})\`, then \`blast_radius\` for the same answer grouped by kind and domain.
-- *"Which nodes match a condition?"* \u2192 \`list_concepts({filter})\`; *"which nodes mention a word?"* \u2192 \`list_concepts({mentions})\`.
-- *"How big is the vault, and of which kinds?"* \u2192 \`list_concepts({limit:1})\` and read \`census\`.
-- *"Where do I start? Is this vault trustworthy?"* \u2192 \`query_ontology({operation:'workspace_brief'})\`, then \`validate_vault({})\`.
-
-## Node identity
-
-Every valid node has both identities: immutable \`uid\` is the permanent machine identity, while \`slug\` is the current human-readable address. \`list_concepts\`, \`get_concepts\`, compiled/query node rows, and agent handoffs return both. Use \`get_concepts({uids:[...]})\` for exact continuity across renames; use slug for frontmatter relations, URLs, and all graph-operation inputs. Never treat a slug change as a new UID.`;
+More: \`connection_info({guide})\`; \`tools/list\` names every tool.`;
 
 export {
-  TOOL_INVENTORY_PLACEHOLDER,
-  SERVER_INSTRUCTIONS_TEMPLATE,
+  SERVER_INSTRUCTIONS,
   WORKFLOWS_SECTION_EN,
   WRITE_SAFETY_SECTION_EN,
 };

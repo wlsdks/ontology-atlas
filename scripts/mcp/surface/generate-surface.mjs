@@ -66,7 +66,7 @@ export async function buildSurfaceFiles() {
   const full = await importRegistry('full', {});
   const construction = await importRegistry('construction', { OATLAS_TOOL_PROFILE: 'construction' });
   const { SERVER_VERSION } = await import(pathToFileURL(join(SERVER_SOURCE, 'server-version.mjs')).href);
-  const { SERVER_INSTRUCTIONS_TEMPLATE, TOOL_INVENTORY_PLACEHOLDER } = await import(
+  const { SERVER_INSTRUCTIONS } = await import(
     pathToFileURL(join(SERVER_SOURCE, 'server', 'instructions.mjs')).href
   );
   const { NON_BLANK_STRING_SCHEMA } = await import(
@@ -82,7 +82,6 @@ export async function buildSurfaceFiles() {
     {
       serverName: 'ontology-atlas-mcp',
       serverVersion: SERVER_VERSION,
-      toolInventoryPlaceholder: TOOL_INVENTORY_PLACEHOLDER,
       readTools: [...full.READ_TOOL_NAMES],
       retiredTools: [...full.RETIRED_TOOL_REPLACEMENTS].map(([name, replacement]) => ({ name, replacement })),
       constructionTools: construction.TOOLS_FOR_LIST.map((tool) => tool.name),
@@ -95,7 +94,7 @@ export async function buildSurfaceFiles() {
   return {
     'tools.json': tools,
     'registry.json': registry,
-    'instructions.txt': SERVER_INSTRUCTIONS_TEMPLATE,
+    'instructions.txt': SERVER_INSTRUCTIONS,
     'guides.json': guides,
   };
 }
@@ -115,7 +114,6 @@ async function buildGuides() {
         construction: card.CONSTRUCTION_GUIDE_EN,
         write_safety: instructions.WRITE_SAFETY_SECTION_EN,
         workflows: instructions.WORKFLOWS_SECTION_EN,
-        competency: card.COMPETENCY_ANSWERS_GUIDE_EN,
       },
     },
     null,

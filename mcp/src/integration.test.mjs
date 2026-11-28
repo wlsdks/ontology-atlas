@@ -387,55 +387,6 @@ function assertDestructivePreview(
   assert.equal(result.blockedReasons.length, blocked, `${label} blocker count`);
 }
 
-function parseInstructionToolInventory(instructions) {
-  assert.equal(typeof instructions, "string", "initialize instructions are present");
-  const section = instructions.match(
-    /## Tool inventory \((\d+) tools = read (\d+) \+ write (\d+)\)\s+([\s\S]*?)(?=\n## )/,
-  );
-  assert.ok(section, "initialize instructions expose a structured tool inventory");
-
-  const namesFrom = (label) => {
-    const line = section[4].match(new RegExp(`^\\*\\*${label}\\*\\*\\s+—\\s+(.+)$`, "m"));
-    assert.ok(line, `tool inventory exposes ${label} line`);
-    return [...line[1].matchAll(/`([a-z][a-z0-9_]*)`/g)].map((match) => match[1]);
-  };
-
-  return {
-    total: Number(section[1]),
-    readCount: Number(section[2]),
-    writeCount: Number(section[3]),
-    readNames: namesFrom("read"),
-    writeNames: namesFrom("write"),
-  };
-}
-
-function assertInstructionToolInventoryMatches(initializeResponse, tools) {
-  assert.ok(initializeResponse, "initialize response is present");
-  assert.ok(Array.isArray(tools), "tools/list returns an array");
-  assert.ok(tools.length > 0, "tools/list target is non-empty");
-
-  const names = tools.map((tool) => tool.name);
-  assert.equal(new Set(names).size, names.length, "tools/list names are unique");
-  const expectedRead = tools
-    .filter((tool) => tool.annotations?.readOnlyHint === true)
-    .map((tool) => tool.name)
-    .sort();
-  const expectedWrite = tools
-    .filter((tool) => tool.annotations?.readOnlyHint !== true)
-    .map((tool) => tool.name)
-    .sort();
-  const inventory = parseInstructionToolInventory(initializeResponse.result?.instructions);
-
-  assert.equal(inventory.total, tools.length, "inventory total matches tools/list");
-  assert.equal(inventory.readCount, expectedRead.length, "inventory read count matches tools/list");
-  assert.equal(inventory.writeCount, expectedWrite.length, "inventory write count matches tools/list");
-  assert.equal(inventory.total, inventory.readCount + inventory.writeCount, "inventory header adds up");
-  assert.equal(inventory.readCount, inventory.readNames.length, "inventory read count matches its names");
-  assert.equal(inventory.writeCount, inventory.writeNames.length, "inventory write count matches its names");
-  assert.deepEqual([...inventory.readNames].sort(), expectedRead, "inventory read names match tools/list");
-  assert.deepEqual([...inventory.writeNames].sort(), expectedWrite, "inventory write names match tools/list");
-}
-
 // Single tools name their batch twins so an agent reading only the list knows
 // the one-call alternative exists.
 await test("tools/list — a retired tool stays out of the list and answers with its replacement", async () => {
@@ -490,10 +441,6 @@ await test("tools/list — each single-item tool description cross-references it
       tools.map((tool) => tool.name).sort(),
       [...EXPECTED_TOOLS].sort(),
       "tools/list registry must match verify inventory",
-    );
-    assertInstructionToolInventoryMatches(
-      responses.find((response) => response.id === 1),
-      tools,
     );
     for (const tool of tools) {
       assert.equal(
@@ -1776,18 +1723,13 @@ await test("initialize — exposes agent guidance in the instructions field", as
     const instructions = init.result?.instructions;
     assert.equal(typeof instructions, "string");
     assert.ok(
-      instructions.length > 200,
-      `instructions must have a meaningful length (got ${instructions.length})`,
+      instructions.length > 200 && instructions.length <= 2048,
+      `instructions must be meaningful and fit the 2,048 characters a host may keep (got ${instructions.length})`,
     );
-    for (const toolName of EXPECTED_TOOLS) {
-      assert.match(instructions, new RegExp(`\\b${toolName}\\b`), `instructions mention ${toolName}`);
-    }
     assert.match(instructions, /## Construction card/);
     assert.match(instructions, /add_concepts[\s\S]*add_relations[\s\S]*validate_vault[\s\S]*connect_project_source[\s\S]*finalize_project_meaning/);
-    assert.match(instructions, /connection_info\(\{guide:"construction"\}\)/);
-    assert.match(instructions, /find_backlinks/);
-    assert.match(instructions, /workspace_brief/);
-    assert.doesNotMatch(instructions, /qualification|writePlan|independent evaluator/);
+    assert.match(instructions, /connection_info\(\{guide\}\)/);
+    assert.doesNotMatch(instructions, /## Tool inventory|qualification|writePlan|independent evaluator/);
 
     const writeSafety = getCallParsed(responses, 2).guideText;
     assert.match(writeSafety, /expected_mtime/);
@@ -7930,7 +7872,7 @@ await test("connection_info — repository root auto-discovers from a nested Git
   }
 });
 
-await test("initialize — read-only inventory matches the actually advertised toolset", async () => {
+await test("connection_info — a read-only server names exactly the advertised toolset", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7939,10 +7881,6 @@ await test("initialize — read-only inventory matches the actually advertised t
       callTool(3, "connection_info"),
     ], { OATLAS_READ_ONLY: "1" });
     const listed = responses.find((row) => row.id === 2)?.result?.tools ?? [];
-    assertInstructionToolInventoryMatches(
-      responses.find((response) => response.id === 1),
-      listed,
-    );
     const connectionInfo = getCallParsed(responses, 3);
     assert.equal(connectionInfo.server.readOnly, true);
     assert.equal(connectionInfo.server.toolCount, EXPECTED_READ_TOOLS.length);
@@ -7955,7 +7893,7 @@ await test("initialize — read-only inventory matches the actually advertised t
   }
 });
 
-await test("construction profile — advertised inventories agree and retain cold-start tools", async () => {
+await test("construction profile — connection_info and tools/list agree and retain cold-start tools", async () => {
   const root = makeVault();
   try {
     const expected = ['connection_info', 'list_concepts', 'get_concepts',
@@ -7970,7 +7908,6 @@ await test("construction profile — advertised inventories agree and retain col
       const listed = responses.find((row) => row.id === 2).result.tools;
       const names = expected.filter((name) => readOnly === '0' || EXPECTED_READ_TOOLS.includes(name));
       assert.deepEqual(listed.map((tool) => tool.name).sort(), names.sort());
-      assertInstructionToolInventoryMatches(responses.find((row) => row.id === 1), listed);
       const connectionInfo = getCallParsed(responses, 3);
       assert.deepEqual(connectionInfo.server.toolNames, listed.map((tool) => tool.name));
       assert.equal(connectionInfo.server.toolCount, readOnly === '0' ? 15 : 10);

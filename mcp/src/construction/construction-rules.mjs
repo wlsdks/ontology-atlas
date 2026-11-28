@@ -50,7 +50,13 @@ then call \`validate_vault\`. Do not invent an \`add_relations\` row with
 Atlas performs no automatic inverse or transitive inference. Missing relations
 are unknown/visible gaps, not falsehoods or proof of completeness. Atlas Markdown
 is not an RDF serialization, OWL reasoner, SKOS implementation, or SHACL processor;
-the product makes no RDF, OWL, SKOS, or SHACL conformance claim.`;
+the product makes no RDF, OWL, SKOS, or SHACL conformance claim.
+
+Every valid node has two identities: the immutable \`uid\` is its permanent
+machine identity and the \`slug\` is its current address. Reads return both. Use
+\`get_concepts({uids:[...]})\` for continuity across renames and the slug for
+frontmatter relations and every graph-operation input. A slug change never makes
+a new uid.`;
 
 /**
  * The procedure a model follows before adding a child to a parent, written as

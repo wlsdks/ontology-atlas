@@ -30,7 +30,7 @@ export const CONNECTION_INFO_TOOL = {
         type: 'string',
         enum: [...CONSTRUCTION_GUIDE_TOPICS],
         description:
-          'Topic for `guideText`: `meta_model` (kinds, is_a boundary), `construction` (naming, body, depends_on and element rules), `write_safety` (dry-run/confirm, expected_mtime), `workflows` (handoff for a known coding task), `competency` (the five `answers` rows of finalize_project_meaning, with an example).',
+          'Topic for `guideText`: `meta_model` (kinds, is_a boundary), `construction` (naming, body, depends_on and element rules), `write_safety` (dry-run/confirm, expected_mtime), `workflows` (handoff for a known coding task).',
       },
     },
   },

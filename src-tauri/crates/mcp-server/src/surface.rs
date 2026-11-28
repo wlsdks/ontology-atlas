@@ -19,7 +19,7 @@ use crate::runtime::{Modes, ToolProfile};
 
 const TOOLS_JSON: &str = include_str!("../surface/tools.json");
 const REGISTRY_JSON: &str = include_str!("../surface/registry.json");
-const INSTRUCTIONS_TEMPLATE: &str = include_str!("../surface/instructions.txt");
+const INSTRUCTIONS: &str = include_str!("../surface/instructions.txt");
 
 /// One advertised tool, as `tools/list` shows it.
 #[derive(Debug)]
@@ -69,8 +69,6 @@ struct Registry {
     server_name: String,
     #[serde(rename = "serverVersion")]
     server_version: String,
-    #[serde(rename = "toolInventoryPlaceholder")]
-    placeholder: String,
     #[serde(rename = "readTools")]
     read_tools: HashSet<String>,
     #[serde(rename = "constructionTools")]
@@ -97,7 +95,6 @@ pub struct Surface {
     non_blank: HashMap<String, Vec<String>>,
     pub server_name: String,
     pub server_version: String,
-    placeholder: String,
 }
 
 /// The `tools/list` result.
@@ -139,7 +136,6 @@ impl Surface {
             non_blank: registry.non_blank,
             server_name: registry.server_name,
             server_version: registry.server_version,
-            placeholder: registry.placeholder,
         })
     }
 
@@ -225,37 +221,11 @@ impl Surface {
         }
     }
 
-    /// The `initialize` instructions: the template with the live tool inventory in its place.
-    pub fn instructions(&self, modes: &Modes) -> String {
-        let listed = self.tools_for_list(modes);
-        let section = inventory_section(&listed);
-        INSTRUCTIONS_TEMPLATE.replacen(&self.placeholder, &section, 1)
+    /// The `initialize` instructions: the identity line, the construction card and the guide
+    /// pointer. `tools/list` is the tool inventory.
+    pub fn instructions(&self) -> &'static str {
+        INSTRUCTIONS
     }
-}
-
-fn names_line(tools: &[&ToolDef]) -> String {
-    if tools.is_empty() {
-        return "none".to_string();
-    }
-    tools
-        .iter()
-        .map(|tool| format!("`{}`", tool.name))
-        .collect::<Vec<_>>()
-        .join(" · ")
-}
-
-/// How many tools, and their names by read and write.
-fn inventory_section(listed: &[&ToolDef]) -> String {
-    let (read, write): (Vec<&ToolDef>, Vec<&ToolDef>) =
-        listed.iter().copied().partition(|tool| tool.read_only);
-    format!(
-        "## Tool inventory ({} tools = read {} + write {})\n\n**read** — {}.\n**write** — {}.",
-        listed.len(),
-        read.len(),
-        write.len(),
-        names_line(&read),
-        names_line(&write)
-    )
 }
 
 #[cfg(test)]
@@ -333,17 +303,12 @@ mod tests {
     }
 
     #[test]
-    fn the_inventory_section_counts_what_is_listed() {
-        let instructions = surface().instructions(&Modes::FULL);
-        assert!(instructions.contains("## Tool inventory (24 tools = read 13 + write 11)"));
-        assert!(!instructions.contains("__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__"));
-        let read_only = surface().instructions(&Modes {
-            read_only: true,
-            ..Modes::FULL
-        });
-        assert!(
-            read_only.contains("= read 13 + write 0)") && read_only.contains("**write** — none.")
-        );
+    fn the_instructions_fit_the_window_a_host_may_keep_and_carry_no_inventory() {
+        let instructions = surface().instructions();
+        assert!(instructions.chars().count() <= 2048);
+        assert!(instructions.contains("## Construction card"));
+        assert!(instructions.contains("connection_info({guide})"));
+        assert!(!instructions.contains("## Tool inventory"));
     }
 
     #[test]

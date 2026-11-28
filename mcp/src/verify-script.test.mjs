@@ -112,7 +112,6 @@ import {
 } from './infer-imports.mjs';
 import {
   initializeInstructionsFailure,
-  initializeToolInventoryFailure,
 } from '../scripts/verify/checks/initialize.mjs';
 import {
   maintenanceFilterEnumSummary,
@@ -4365,7 +4364,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /Focused checks:/);
     assert.match(verifyUsage(), /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
     assert.match(verifyUsage(), /pnpm test:mcp:verify:first-contact/);
-    assert.match(verifyUsage(), /Narrow first-contact initialize-tool-inventory\/initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
+    assert.match(verifyUsage(), /Narrow first-contact initialize-instructions\/initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
     assert.match(verifyUsage(), /pnpm test:mcp:maintenance\s+Narrow maintenance_plan filter\/cursor\/resume\/work-queue formatter gates/);
     assert.match(verifyUsage(), /pnpm test:mcp:verify:timeout/);
     assert.match(verifyUsage(), /Narrow MCP verify timeout\/startup\/help\/empty-vault diagnostics/);
@@ -6310,14 +6309,11 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
-  it('fails initialize instructions missing the card, the write sequence or the guide pointer', () => {
+  it('fails initialize instructions missing the card, the write sequence or the guide pointer, or past the window', () => {
     const safeInstructions = [
       '## Construction card',
       'Write it all without waiting: `add_concepts` -> `add_relations` -> `validate_vault` -> `connect_project_source` -> `finalize_project_meaning`.',
-      'More: `connection_info({guide:"construction"})`, `competency`, `meta_model`, `write_safety`.',
-      `Tool inventory includes ${EXPECTED_TOOLS.join(', ')}.`,
-      '- *"Who references X?"* (always before a rename, merge, or delete) → `find_backlinks(slug)`.',
-      '- *"Where do I start?"* → `query_ontology({operation:\'workspace_brief\'})`, then `validate_vault({})`.',
+      'More: `connection_info({guide})`; `tools/list` names every tool.',
       'This filler keeps the instructions representative of a real initialize response.',
     ].join('\n');
 
@@ -6325,10 +6321,6 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: '' } }),
       'initialize instructions missing or too short',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('infer_imports', 'infer imports') } }),
-      'initialize instructions missing tool inventory entry: infer_imports',
     );
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('## Construction card', '## Notes') } }),
@@ -6339,60 +6331,16 @@ describe('verify.mjs first-contact gates', () => {
       'initialize instructions missing build write sequence',
     );
     assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('`write_safety`', '') } }),
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('`connection_info({guide})`', 'the guides') } }),
       'initialize instructions missing long-rule guide pointer',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('before a rename, merge, or delete', 'first') } }),
-      'initialize instructions missing backlinks before rename guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace(', then `validate_vault({})`', '') } }),
-      'initialize instructions missing read-only first-contact diagnosis',
     );
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: `${safeInstructions}\nPass a qualification packet to reach the writePlan.` } }),
       'initialize instructions name the bulk qualification route',
     );
-  });
-
-  it('compares initialize tool inventory with the live tools/list split', () => {
-    const tools = [
-      { name: 'list_things', annotations: { readOnlyHint: true } },
-      { name: 'get_thing', annotations: { readOnlyHint: true } },
-      { name: 'add_thing', annotations: { readOnlyHint: false } },
-    ];
-    const instructions = `Intro.
-
-## Tool inventory (3 tools = read 2 + write 1)
-
-**read** — \`list_things\` · \`get_thing\`.
-**write** — \`add_thing\`.
-
-## Next section
-
-Continue.`;
-
-    assert.equal(initializeToolInventoryFailure({ result: { instructions } }, tools), null);
-    assert.equal(
-      initializeToolInventoryFailure({ result: { instructions: instructions.replace('3 tools', '4 tools') } }, tools),
-      'initialize tool inventory header does not add up',
-    );
-    assert.equal(
-      initializeToolInventoryFailure({ result: { instructions: instructions.replace('add_thing', 'remove_thing') } }, tools),
-      'initialize tool inventory write names differ from tools/list',
-    );
-    assert.equal(
-      initializeToolInventoryFailure({ result: { instructions } }, tools.slice(0, 2)),
-      'initialize tool inventory count mismatch — initialize 3/2/1, tools/list 2/2/0',
-    );
-    assert.equal(
-      initializeToolInventoryFailure({ result: { instructions: 'No inventory here.' } }, tools),
-      'initialize tool inventory section missing or malformed',
-    );
-    assert.equal(
-      initializeToolInventoryFailure({ result: { instructions } }, []),
-      'initialize tool inventory cannot compare an empty tools/list',
+    assert.match(
+      initializeInstructionsFailure({ result: { instructions: `${safeInstructions}\n${'x'.repeat(2048)}` } }),
+      /past the 2048 a host may keep/,
     );
   });
 

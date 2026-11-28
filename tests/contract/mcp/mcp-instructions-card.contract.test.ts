@@ -4,36 +4,22 @@ import {
   CONSTRUCTION_CARD_EN,
   CONSTRUCTION_CARD_MAX_CHARS,
 } from "../../../mcp/src/construction/construction-card.mjs";
-import {
-  SERVER_INSTRUCTIONS_TEMPLATE,
-  TOOL_INVENTORY_PLACEHOLDER,
-} from "../../../mcp/src/server/instructions.mjs";
-import { TOOLS_FOR_LIST } from "../../../mcp/src/server/registry.mjs";
-import { buildToolInventorySection } from "../../../mcp/src/server/tool-inventory.mjs";
+import { SERVER_INSTRUCTIONS } from "../../../mcp/src/server/instructions.mjs";
 
 /**
  * **A host may keep only the first 2,048 characters of `instructions`.**
  *
- * Measured in a live Claude Code session: the ontology-atlas instructions were
- * 39,010 characters and arrived cut at exactly offset 2,048, mid-sentence inside
- * the tool inventory. The meta-model boundary (2,818), the construction
- * lifecycle (4,621), the starting workflows (7,029), write-tool safety (30,024)
- * and the construction rules (35,606) never reached the attached agent at all.
- *
- * The string is now about 4,700 characters: the card, the tool inventory and
- * the question-to-tool map, with every long rule moved to a `connection_info`
- * guide topic. The cut still falls inside it, so the construction card is not
- * merely first — it has to *end* before that cut, composed exactly the way `mcp/src/server/instance.mjs` composes the
- * string it hands the client. Reordering the sections later is fine; pushing the
- * card past the window is the regression this file exists to catch.
+ * Measured in a live Claude Code session: the instructions were 39,010
+ * characters and arrived cut at exactly offset 2,048, mid-sentence inside the
+ * tool inventory. The string is now the identity line, the construction card and
+ * one line to `connection_info({guide})`, and all of it fits inside the window:
+ * `tools/list` already carries the tool inventory, and every long rule is a
+ * guide topic. Growing the string past the window, or the card past its budget,
+ * is the regression this file exists to catch.
  */
 const TRUNCATION_WINDOW = 2048;
 
-/** Composed exactly as `mcp/src/server/instance.mjs` does. */
-const RENDERED_INSTRUCTIONS = SERVER_INSTRUCTIONS_TEMPLATE.replace(
-  TOOL_INVENTORY_PLACEHOLDER,
-  buildToolInventorySection(TOOLS_FOR_LIST),
-);
+const RENDERED_INSTRUCTIONS = SERVER_INSTRUCTIONS;
 
 const SURVIVING_WINDOW = RENDERED_INSTRUCTIONS.slice(0, TRUNCATION_WINDOW);
 
@@ -78,12 +64,6 @@ const REQUIRED_CLAUSES = [
 ];
 
 /**
- * Everything else lives in a guide topic or a tool description. A ceiling keeps
- * the string from growing back into the 41,000 characters no host delivered.
- */
-const INSTRUCTIONS_CEILING = 6000;
-
-/**
  * Numbering defects inside one ordered list block.
  *
  * A list block runs until an unindented line that is neither numbered nor blank —
@@ -112,13 +92,13 @@ function listNumberingDefects(text: string): string[] {
 }
 
 describe("construction card — it survives a truncating host", () => {
-  it("the renderer under test is the real one, not an empty string", () => {
-    expect(RENDERED_INSTRUCTIONS.length).toBeGreaterThan(TRUNCATION_WINDOW);
-    expect(RENDERED_INSTRUCTIONS).toContain("## Tool inventory (");
+  it("the whole string fits the window, with the guide pointer after the card", () => {
+    expect(RENDERED_INSTRUCTIONS.length).toBeLessThan(TRUNCATION_WINDOW);
+    expect(RENDERED_INSTRUCTIONS.trimEnd().split("\n").at(-1)).toContain("connection_info({guide})");
   });
 
-  it("the whole string stays under its ceiling", () => {
-    expect(RENDERED_INSTRUCTIONS.length).toBeLessThanOrEqual(INSTRUCTIONS_CEILING);
+  it("it carries no tool inventory: tools/list is the inventory", () => {
+    expect(RENDERED_INSTRUCTIONS).not.toContain("## Tool inventory");
   });
 
   it("the card fits its own budget", () => {
