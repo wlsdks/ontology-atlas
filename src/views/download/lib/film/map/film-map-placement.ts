@@ -1,10 +1,17 @@
 import { DEG, bowedPoints, circleIntoRect, dist, distanceToRect, grow, inside, normalizeAngle, overlaps, trim, type Pt, type Rect } from '../film-geometry';
 import { fontOf } from './film-map-labels';
 import type { FilmCluster, FilmLayoutInput, FilmMark } from './film-map-shapes';
-import { REST_NAMES_PX, filmSizes, litReach, type FilmSizes } from './film-map-sizes';
+import { filmSizes, litReach, type FilmSizes } from './film-map-sizes';
 import { GATE_HALF, dotOffsets, layoutLocalCluster, titleHalfAngle, upReach, type ClusterItem, type LocalCluster } from './film-local-cluster';
 import { slotOrder } from './film-slot-order';
 import { domainFlows, reachOf } from '../film-vault';
+
+/**
+ * A placement's score once it breaks no rule, fills the stage and leaves a clear way for every rest arc.
+ * The spec's ellipse stands only at this score; a stage where its ellipse leaves some arc no way
+ * around a cluster tries the adapted ellipses before it takes the arc through one.
+ */
+const CLEAR_FIT = 5999;
 
 interface FilmPlacement {
   marks: Map<string, FilmMark>;
@@ -369,15 +376,13 @@ export function placeFilmClusters(input: FilmLayoutInput): FilmClusterPlacement 
           if (S.wide) break;
         }
         /* The first clear ellipse that fills the stage cannot be beaten: every later one gives up more. */
-        if (placedUse >= 5999) break;
+        if (placedUse >= CLEAR_FIT) break;
       }
-      if (placedUse >= 5999) break;
+      if (placedUse >= CLEAR_FIT) break;
     }
     placed ??= place(base.cx, base.yTop, Math.max(base.yTop, base.yBottom), base.rx);
     return { locals, placed, value: placedUse, S };
   };
-  /* On a full stage the spec's ellipse stands once it breaks nothing and fills the stage; elsewhere it also needs a clear way for every rest arc. */
-  const enough = (a: Attempt) => (!a.adapt && w >= REST_NAMES_PX ? 3999 : 5999);
   let chosen: Placement | null = null;
   let chosenAttempt: Attempt | null = null;
   for (const attempt of attempts) {
@@ -386,7 +391,7 @@ export function placeFilmClusters(input: FilmLayoutInput): FilmClusterPlacement 
       chosen = found;
       chosenAttempt = attempt;
     }
-    if (found.value >= enough(attempt)) break;
+    if (found.value >= CLEAR_FIT) break;
   }
   if (chosenAttempt?.adapt && chosen!.S.wide) {
     const fine = tryAttempt(chosenAttempt, 1);
