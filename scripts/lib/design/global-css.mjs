@@ -1,4 +1,4 @@
-// app/globals.css is the entry Next imports; its rules live in app/styles/*.css parts. Gates that
+// app/globals.css is the entry the bundler imports; its rules live in app/styles/*.css parts. Gates that
 // read the stylesheet as text read it through here, as one body in order. A part boundary inside
 // `@layer base` closes and reopens the layer; the join drops that seam.
 import { execFileSync } from 'node:child_process';

@@ -8,7 +8,7 @@
 //  4. src/entities/docs-vault/data/gateway-content.json — the gateway's synchronous guide/* fallback
 //  5. src/entities/docs-vault/data/gateway-changelog.json — /changelog's
 //     synchronous preview (recent sections + how many were folded)
-// Runs just before `next build` during the static export. No runtime dependencies.
+// Runs as the `predev` step and at the start of `pnpm build`. No runtime dependencies.
 
 import { readFile, writeFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';

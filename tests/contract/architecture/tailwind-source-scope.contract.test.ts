@@ -14,8 +14,8 @@ describe('Tailwind source scan scope', () => {
       /@import\s+"tailwindcss"\s+source\(none\)\s*;/.test(css),
       'It must be `@import "tailwindcss" source(none);`. Without `source(none)` ' +
         'Tailwind scans the repository on its own, turns text like `text-[var(…)]` inside `.md` prose ' +
-        'into classes, Turbopack rejects that CSS and `pnpm dev` answers 500 ' +
-        '(a real incident on 2026-08-04; the production build was fine, so CI missed it).',
+        'into classes, the bundler rejects that CSS and `pnpm dev` answers 500 ' +
+        '(a real incident on 2026-08-04, under the previous bundler; the production build was fine, so CI missed it).',
     ).toBe(true);
   });
 

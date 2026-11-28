@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
-export const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+export const sharp = require('sharp');
 
 /** The repository root, and the git-ignored folder every preview step writes into. */
 export const REPO = fileURLToPath(new URL('../../../', import.meta.url));

@@ -7,16 +7,16 @@ import test from 'node:test';
 import { findJsonParseModules, firstLoadChunkPaths, main } from './first-load-report.mjs';
 
 const html = `<html><head>
-<link rel="preload" as="script" href="/_next/static/chunks/a.js?dpl=1"/>
-<link rel="stylesheet" href="/_next/static/chunks/s.css"/>
-<script src="/_next/static/chunks/a.js" async=""></script>
-<script src="/_next/static/chunks/poly.js" nomodule=""></script>
-<script src="/_next/static/chunks/b.js" async=""></script>
-<script>self.__next_f.push([1,"inline.js"])</script>
+<link rel="preload" as="script" href="/assets/chunks/a.js?v=1"/>
+<link rel="stylesheet" href="/assets/chunks/s.css"/>
+<script src="/assets/chunks/a.js" async=""></script>
+<script src="/assets/chunks/poly.js" nomodule=""></script>
+<script src="/assets/chunks/b.js" async=""></script>
+<script>window.__record=[1,"inline.js"]</script>
 </head></html>`;
 
 test('names the scripts the page loads once each, without nomodule polyfills or styles', () => {
-  assert.deepEqual(firstLoadChunkPaths(html), ['_next/static/chunks/a.js', '_next/static/chunks/b.js']);
+  assert.deepEqual(firstLoadChunkPaths(html), ['assets/chunks/a.js', 'assets/chunks/b.js']);
 });
 
 test('finds JSON.parse literals over the limit, through escapes and both quote styles', () => {
@@ -31,14 +31,14 @@ test('finds JSON.parse literals over the limit, through escapes and both quote s
 
 test('fails only the routes that load a big JSON literal and are not allowed to', () => {
   const out = mkdtempSync(join(tmpdir(), 'first-load-'));
-  mkdirSync(join(out, '_next/static/chunks'), { recursive: true });
-  writeFileSync(join(out, '_next/static/chunks/data.js'), `e.exports=JSON.parse("${'z'.repeat(2048)}")`);
-  writeFileSync(join(out, '_next/static/chunks/app.js'), 'console.log(1)');
+  mkdirSync(join(out, 'assets/chunks'), { recursive: true });
+  writeFileSync(join(out, 'assets/chunks/data.js'), `e.exports=JSON.parse("${'z'.repeat(2048)}")`);
+  writeFileSync(join(out, 'assets/chunks/app.js'), 'console.log(1)');
   for (const [route, chunk] of [['en', 'app'], ['en/data', 'data']]) {
     mkdirSync(join(out, route), { recursive: true });
     writeFileSync(
       join(out, route, 'index.html'),
-      `<script src="/_next/static/chunks/${chunk}.js" async=""></script>`,
+      `<script src="/assets/chunks/${chunk}.js" async=""></script>`,
     );
   }
   const log = () => {};
@@ -55,7 +55,7 @@ test('refuses a page that names no chunks or a chunk that is not in the export',
   const log = () => {};
   writeFileSync(join(out, 'en/index.html'), '<html><body>no scripts</body></html>');
   assert.throws(() => main([out, 'en'], { log }), /names no script chunks/);
-  writeFileSync(join(out, 'en/index.html'), '<script src="/_next/static/chunks/gone.js" async=""></script>');
+  writeFileSync(join(out, 'en/index.html'), '<script src="/assets/chunks/gone.js" async=""></script>');
   assert.throws(() => main([out, 'en'], { log }), /which is not under/);
 });
 

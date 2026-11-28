@@ -6,7 +6,6 @@ paths:
   - "src/shared/motion/**"
   - "src/widgets/ontology-map/**"
   - "app/**/*.css"
-  - "app/**/*.tsx"
   - "eslint.config.mjs"
   - "docs/DESIGN-SYSTEM.md"
 ---
@@ -172,7 +171,7 @@ names the ones a change reaches.
   non-blocking modals, or drag-only discovery. A new transient surface dismisses
   or recedes unrelated ones.
 - Dark only: no light switch, `data-theme`, light-only tokens or light contrast
-  branches; `app/layout.tsx` fixes `viewport.colorScheme` to `dark`.
+  branches; `index.html` and `SiteDocument.tsx` fix `color-scheme` to `dark`.
 
 ## Motion
 

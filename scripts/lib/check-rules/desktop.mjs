@@ -121,7 +121,7 @@ export const rules = [
       /^\.github\/workflows\/deploy-pages\.yml$/,
       /^src-tauri\//,
       /^package\.json$/,
-      /^next\.config\.ts$/,
+      /^vite\.config\.ts$/,
     ],
   },
 ];

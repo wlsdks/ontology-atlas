@@ -134,13 +134,11 @@ const PLAYWRIGHT_SPEC_PATH = /^tests\/e2e\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A
  */
 const E2E_BROAD_INPUTS = [
   /^playwright\.config\.ts$/,
-  /^next\.config\.ts$/,
-  /^postcss\.config\.mjs$/,
   // The Vite build of the app folder: its document and its config shape every screen it serves.
   /^(?:index\.html|vite\.config\.ts)$/,
   /^\.github\/actions\/setup-playwright\//,
   /^scripts\/(?:web\/serve-built-folder|ci\/run-with-retry)(?:\.test)?\.mjs$/,
-  // Path aliases and compiler options the Next build reads.
+  // Path aliases and compiler options the bundler reads.
   /^tsconfig\.json$/,
 ];
 
@@ -163,7 +161,7 @@ const KNOWN_PATHS = [
   /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
   /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README(?:\.(?:ja|ko|zh))?|SECURITY)\.md$/,
   /^LICENSE$/,
-  /^(?:eslint\.config\.mjs|index\.html|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|pnpm-workspace\.yaml|postcss\.config\.mjs|rust-toolchain\.toml|tsconfig\.json|vite\.config\.ts|vitest\.config\.ts|vitest\.setup\.ts)$/,
+  /^(?:eslint\.config\.mjs|index\.html|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|pnpm-workspace\.yaml|rust-toolchain\.toml|tsconfig\.json|vite\.config\.ts|vitest\.config\.ts|vitest\.setup\.ts)$/,
   // A third-party directory reads this at the repository root and nothing here builds from it,
   // so it is known and drives no lane. `glama.json` names who may maintain the Glama listing.
   /^glama\.json$/,
@@ -185,13 +183,12 @@ const BROWSER_INPUTS = [
   /^messages\//,
   /^public\//,
   /^assets\//,
-  /^(?:index\.html|next\.config\.ts|postcss\.config\.mjs|playwright\.config\.ts|vite\.config\.ts)$/,
+  /^(?:index\.html|playwright\.config\.ts|vite\.config\.ts)$/,
   /^tests\/e2e\//,
 ];
 
 const STATIC_EXPORT_INPUTS = [
   /^playwright\.config\.ts$/,
-  /^next\.config\.ts$/,
   /^scripts\/web\/serve-built-folder\.mjs$/,
   /^tests\/e2e\/contextual-meaning-editor\.spec\.ts$/,
   /^src\/features\/ontology-change-review\//,
@@ -199,10 +196,9 @@ const STATIC_EXPORT_INPUTS = [
 
 const WEB_SURFACE_INPUTS = [
   /^playwright\.config\.ts$/,
-  /^next\.config\.ts$/,
   /^messages\//,
   /^public\/(?!docs-vault\/)/,
-  /^app\/(?:globals\.css|styles\/[^/]+\.css|\[locale\]\/(?:page|download\/|not-found|error|global-error))/,
+  /^app\/(?:globals\.css|styles\/[^/]+\.css)/,
   /^src\/app\//,
   /^src\/views\/(?:download|first-run|root-entry)\//,
   /^src\/widgets\/gateway-chrome\//,
@@ -564,7 +560,7 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
   });
   // The browser suite runs in full before merge only when the planner or the executor that splits
   // it changed: otherwise the change's own specs and the merge smoke set, and `main` runs the rest.
-  // A dependency (a Next or three.js bump, a patch) can move any screen, so it runs everything too.
+  // A dependency (a Vite or three.js bump, a patch) can move any screen, so it runs everything too.
   const e2eFull = forceFull || plannerChanged || rootAllChanged ||
     paths.some((path) => !isSourceTest(path) && matchesAny(path, BROWSER_EXECUTION_SURFACE_PATTERNS));
   const broadPaths = full

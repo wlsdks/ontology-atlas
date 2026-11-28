@@ -28,10 +28,9 @@ function sourceFiles(dir: string): string[] {
 }
 
 function namespaceOf(init: ts.Expression | undefined): string | null {
-  let call = init;
-  if (call && ts.isAwaitExpression(call)) call = call.expression;
+  const call = init;
   if (!call || !ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return null;
-  if (call.expression.text !== 'useTranslations' && call.expression.text !== 'getTranslations') return null;
+  if (call.expression.text !== 'useTranslations') return null;
   const [arg] = call.arguments;
   if (!arg) return '';
   if (ts.isStringLiteralLike(arg)) return arg.text;
@@ -54,11 +53,11 @@ function literalKeys(node: ts.Expression, seen: Record<string, number>): string[
 
 function scan() {
   const missing: string[] = [];
-  const seen = { ternary: 0, rich: 0, server: 0 };
+  const seen = { ternary: 0, rich: 0 };
   let checked = 0;
   for (const file of sourceFiles(path.join(ROOT, 'src'))) {
     const text = readFileSync(file, 'utf8');
-    if (!/use|getTranslations/.test(text) || !text.includes('Translations(')) continue;
+    if (!text.includes('useTranslations(')) continue;
     const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
     const scopes: Map<string, string>[] = [new Map()];
     const visit = (node: ts.Node) => {
@@ -67,7 +66,6 @@ function scan() {
       if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
         const namespace = namespaceOf(node.initializer);
         if (namespace !== null) scopes[scopes.length - 1]!.set(node.name.text, namespace);
-        if (namespace !== null && node.initializer && ts.isAwaitExpression(node.initializer)) seen.server += 1;
       }
       if (ts.isCallExpression(node) && node.arguments[0]) {
         const callee = ts.isPropertyAccessExpression(node.expression) && ['rich', 'markup', 'raw'].includes(node.expression.name.text) ? node.expression.expression : node.expression;
@@ -96,7 +94,6 @@ describe('used message keys', () => {
     expect(checked).toBeGreaterThan(3000);
     expect(seen.ternary, 'ternary keys').toBeGreaterThan(0);
     expect(seen.rich, 't.rich and t.markup keys').toBeGreaterThan(0);
-    expect(seen.server, 'awaited getTranslations').toBeGreaterThan(0);
   });
 
   it('every literal key the source asks for exists in the catalog', () => {

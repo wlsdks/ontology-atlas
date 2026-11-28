@@ -22,7 +22,7 @@ import {
 } from './build-brand-raster.mjs';
 
 const require = createRequire(import.meta.url);
-const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+const sharp = require('sharp');
 
 describe('large character artwork delivery', () => {
   it('preserves detailed Moru pixels and clear margins in the Open Graph image', async () => {

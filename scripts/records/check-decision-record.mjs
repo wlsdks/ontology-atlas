@@ -38,8 +38,8 @@ ${TEMPLATE.split("\n").map((line) => `[decisions]   ${line}`).join("\n")}
   return true;
 }
 
-/** Route files whose *existence* changes the surface inventory. */
-const ROUTE_PATTERN = /^app\/\[locale\]\/.*\/page\.tsx$/;
+/** Route modules whose *existence* changes the surface inventory; the router ignores a name starting with `-`. */
+const ROUTE_PATTERN = /^src\/app\/routes\/(?:[^/-][^/]*\/)*[^/-][^/]*(?<!\.test)\.tsx$/;
 
 /**
  * Single sources of truth for the two public contracts. The MCP tool table is

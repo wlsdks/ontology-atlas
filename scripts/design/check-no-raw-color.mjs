@@ -124,10 +124,7 @@ function walk(directory, out = []) {
   return out;
 }
 
-/**
- * `app/` is scanned too: `layout.tsx`, `global-error.tsx` (which replaces the root layout),
- * `opengraph-image.tsx` and routes are likely places to hand-write a colour.
- */
+/** `app/` is scanned too: its style parts are where a colour is most likely to be hand-written. */
 export const SCAN_ROOTS = [SRC_DIR, join(ROOT, "app")];
 
 export function findRawColorLiterals(roots = SCAN_ROOTS) {

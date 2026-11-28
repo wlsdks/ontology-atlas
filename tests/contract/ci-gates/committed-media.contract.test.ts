@@ -13,8 +13,7 @@ const MEDIA = /\.(png|jpe?g|gif|webp|avif|heic|mp4|webm|mov)$/i;
 
 /** Where product media lives, and what reads it. */
 const PRODUCT_MEDIA: ReadonlyArray<readonly [RegExp, string]> = [
-  [/^app\/(apple-)?icon\.png$/, "Next app icons"],
-  [/^public\/(logo|og-image|brand-icon-512)\.png$/, "site identity"],
+  [/^public\/(logo|og-image|brand-icon-512|icon|apple-icon)\.png$/, "site identity and the pages' icons"],
   [/^public\/og\/[^/]+\.png$/, "social cards"],
   [/^public\/(brand|gateway|demo)\/[^/]+$/, "the app's mascot and the download page"],
   [/^src-tauri\/icons\//, "the desktop app's icons"],

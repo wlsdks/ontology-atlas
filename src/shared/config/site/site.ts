@@ -7,7 +7,7 @@ export const SITE_URL = "https://ontologyatlas.com";
 
 /**
  * Turns a relative path such as `/project/foo/` into an absolute canonical URL.
- * The trailing slash follows Next.js's `trailingSlash: true` policy.
+ * The trailing slash matches the prerendered pages, each a folder with an `index.html`.
  */
 export function absoluteUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;

@@ -42,6 +42,5 @@ export { SummaryFreshnessRow } from './ontology-node/summary-freshness-row';
 export { MtimeConflictBadge } from './ontology-node/mtime-conflict-badge';
 export { RouteLoadingFallback } from './fallbacks/route-loading-fallback';
 export { JsonLd } from './document/json-ld';
-export { LangBootScript } from './document/lang-boot-script';
 export { WebviewErrorReporter } from './document/webview-error-reporter';
 export { WidgetErrorFallback } from './fallbacks/widget-error-fallback';

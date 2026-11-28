@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -10,6 +10,8 @@ import {
 import { SETTINGS_CATALOG } from '@/widgets/app-settings-menu/model/catalog';
 import { SETTINGS_SECTION_SCOPE } from '@/widgets/app-settings-menu/model/catalog/settings-catalog-entry';
 import { SETTINGS_SECTIONS } from '@/widgets/app-settings-menu/model/settings-sections';
+
+import { readRouteAddresses } from '../routes/read-route-addresses';
 
 const UI = 'src/widgets/app-settings-menu/ui';
 
@@ -85,8 +87,7 @@ function knownHref(href: string): boolean {
   const named: string[] = [...Object.values(DESTINATION_HREF), AGENTS_MODELS_HREF, MCP_CONNECTORS_HREF];
   if (named.includes(href)) return true;
   const segment = href.split(/[/?#]/).find(Boolean);
-  return segment !== undefined && [join('app', '[locale]'), join('app', '(gateway)', '[locale]')]
-    .some((root) => existsSync(join(root, segment, 'page.tsx')));
+  return segment !== undefined && readRouteAddresses().some((route) => route.address.split('/')[1] === segment);
 }
 
 describe('settings catalog', () => {

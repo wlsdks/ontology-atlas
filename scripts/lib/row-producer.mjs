@@ -2,7 +2,7 @@
 // never reads rows an older build wrote. The name is a hash of every repository file
 // `buildMdEntry`'s module loads, followed through relative and `@/` imports, plus the version of
 // each package those files import. Any change to one of them changes the name; nothing is bumped
-// by hand. Read by next.config.ts and vitest.config.ts.
+// by hand. Read by vite.config.ts and vitest.config.ts.
 
 import { createHash } from 'node:crypto';
 import { readFileSync, statSync } from 'node:fs';

@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { CAST, CAST_PINK, CAST_ROWS, castFile, castPoses, castSources, drawCast, recoloured } from './build-moru-cast.mjs';
 
 const require = createRequire(import.meta.url);
-const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+const sharp = require('sharp');
 const MORU = ['171923', '17192d', '50569c', '6d73d2', '555451', '777572', '99968f', 'aaa9a5', 'b8b4aa', '9399e5'];
 const sources = castSources();
 const hexes = data => { const found = new Set(); for (let p = 0; p < data.length; p += 4) if (data[p + 3]) found.add([0, 1, 2].map(i => data[p + i].toString(16).padStart(2, '0')).join('')); return found; };

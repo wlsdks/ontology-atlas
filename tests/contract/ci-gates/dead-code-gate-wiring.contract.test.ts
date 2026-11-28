@@ -46,11 +46,9 @@ describe('dead-code gate wiring', () => {
       'cli/pnpm-lock.yaml',
       'mcp/package.json',
       'mcp/pnpm-lock.yaml',
-      'next.config.ts',
       'tsconfig.json',
       'vitest.config.ts',
       'playwright.config.ts',
-      'postcss.config.mjs',
     ];
 
     for (const path of paths) {

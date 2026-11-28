@@ -43,7 +43,7 @@ describe('the quarantine registry', () => {
 
   it('accepts a sound entry, so the refusals below are each about their one planted fault', () => {
     expect(violations([entry()])).toEqual([]);
-    expect(violations([entry({ file: 'app/[locale]/project/fallback/ProjectFallbackClient.test.tsx' })])).toEqual([]);
+    expect(violations([entry({ file: 'src/shared/ui/routing/route-focus-manager.test.tsx' })])).toEqual([]);
   });
 
   it('refuses a merge-smoke spec, a contract file, a surface-lane spec and a node:test file', () => {
@@ -102,7 +102,7 @@ describe('the quarantine commands', () => {
     let runs = 0;
     const spawn = () => ({ status: ++runs === 7 ? 1 : 0, stdout: '', stderr: 'planted failure' });
     const out = quiet();
-    const file = 'app/[locale]/project/fallback/ProjectFallbackClient.test.tsx';
+    const file = 'src/shared/ui/routing/route-focus-manager.test.tsx';
     expect(runQuarantine(['prove', file], { spawn, log: out.log, env: {} })).toBe(1);
     expect(out.lines.at(-1)).toBe(`[quarantine] prove ${file}: 6 of 65 passed; stopped at the first failure`);
     expect(runs).toBe(7);

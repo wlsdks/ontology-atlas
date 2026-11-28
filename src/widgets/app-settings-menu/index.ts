@@ -1,8 +1,5 @@
 export { AppSettingsMenu } from './ui/AppSettingsMenu';
 
-/** What `/` must carry for the hidden rail's settings search (`src/app/providers/root-entry-messages.ts`). */
-export { SETTINGS_SEARCH_MESSAGE_PATHS } from './model/catalog';
-
 /**
  * The Agents destination reuses this pane as is; its `SettingsGroup`/`SettingsRow` parts
  * fill their parent, so it must not carry the sheet's dimensions with it.

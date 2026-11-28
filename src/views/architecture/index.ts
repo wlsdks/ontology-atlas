@@ -1,2 +1,2 @@
 export { HarnessPage } from './ui/HarnessPage';
-export { rewriteRetiredView, type HarnessSearch } from './lib/harness-view-state';
+export { rewriteRetiredView } from './lib/harness-view-state';

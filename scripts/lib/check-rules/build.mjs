@@ -1,11 +1,11 @@
-/** Static export builds. */
+/** Production builds. */
 
 export const rules = [
   {
     order: 1050,
     command: 'pnpm build',
-    reason: 'static export config changed',
-    matches: [/^next\.config\.ts$/],
+    reason: 'the bundler configuration changed',
+    matches: [/^vite\.config\.ts$/],
   },
   {
     order: 1060,

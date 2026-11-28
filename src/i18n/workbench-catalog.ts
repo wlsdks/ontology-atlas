@@ -3,11 +3,9 @@ import type { AppLocale } from '@/i18n/locales';
 
 /**
  * The workbench's whole message catalog, fetched as one chunk per locale instead of riding in the
- * layout's serialised props. Those props are one segment shared by every route under
- * `app/[locale]`, `/` included, so the catalog used to sit in each page's HTML (about 420 KB of
- * inline script) even where a first-time visitor sees only the gateway. Now `/` carries the subset
- * in `src/app/providers/root-entry-messages.ts` and every other workbench route waits for this chunk, which
- * the browser caches across pages.
+ * page's HTML, where a first-time visitor who sees only the gateway would
+ * pay for about 420 KB of it. `/` starts from the subset `WorkbenchMessagesProvider` is given and every
+ * other workbench route waits for this chunk, which the browser caches across pages.
  *
  * Dynamic imports only: a static import would put all four locales into every page's JavaScript
  * (`standalone-messages-server-only.contract.test.ts`).

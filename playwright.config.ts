@@ -111,18 +111,14 @@ function webServers() {
 
 export default defineConfig({
   testDir: './tests/e2e',
-  // Relative to dev (Turbopack), the first route entry waits for on-demand compilation —
-  // global-setup pre-compiles the main routes, and we absorb remaining variance with a
-  // 15-second expect timeout (it failed sporadically at 10 seconds).
-  globalSetup: './tests/e2e/global-setup.ts',
   timeout: 60_000,
   expect: {
     timeout: 15_000,
   },
   fullyParallel: false,
   forbidOnly: isCI,
-  // The dev server stays sequential because Turbopack compiles routes on demand. The read-only
-  // static export has no such race: the two-CPU CI runner takes two workers and adds shards in
+  // The dev server stays sequential because Vite transforms a module on its first request. The read-only
+  // built folders have no such race: the two-CPU CI runner takes two workers and adds shards in
   // e2e.yml instead of more, and a local machine takes four.
   workers: resolvePlaywrightWorkers(process.env),
   // CI retries absorb runner variance but remain visible in the report; true regressions fail

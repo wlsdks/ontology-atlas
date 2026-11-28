@@ -8,13 +8,13 @@ named for what it exports.
 
 | File | Owns |
 |---|---|
-| `prerender-site.mjs` | The command: starts Vite's server-side loader, writes the files, copies the icons |
+| `prerender-site.mjs` | The command: starts Vite's server-side loader, writes the files into the site folder |
 | `write-site.tsx` | Every file as text, with no disk access, so a test can read any page |
 | `list-site-pages.ts` | The addresses, read from the router's own route tree |
 | `record-build-facts.ts` | Answers what only this machine knows (Git dates, sample size, changelog) and keeps each answer for the page |
 | `root-redirect-script.ts` | The script at `/` that sends a visitor to a language |
-| `sitemap.ts`, `robots.ts`, `llms.ts` | The crawler files; Next's routes in `app/` call the same functions |
-| `diff-site-pages.mjs` | `pnpm site:diff`: compares a Vite site folder with Next's export page by page |
+| `sitemap.ts`, `robots.ts`, `llms.ts` | The crawler files, written as plain functions of the page list |
+| `diff-site-pages.mjs` | `pnpm site:diff`: compares a built site folder with an earlier export page by page |
 
 The document around every page is `src/app/document/SiteDocument.tsx`: the browser renders it again
 around the router, from the record the page carries, so ids made by `useId` agree.

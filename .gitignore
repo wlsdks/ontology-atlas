@@ -19,12 +19,10 @@ CLAUDE.local.md
 node_modules/
 
 # Build output
-.next/
 out/
 build/
 dist/
 *.tsbuildinfo
-next-env.d.ts
 src-tauri/target/
 src-tauri/gen/
 # `pnpm mcp:build-binary` output, about 59MB
@@ -107,8 +105,8 @@ blob-report/
 !public/og-image.png
 !public/og/*.png
 !public/brand-icon-512.png
-!app/apple-icon.png
-!app/icon.png
+!public/apple-icon.png
+!public/icon.png
 !assets/brand/mascot/*.png
 !assets/brand/mascot/source/*.png
 !assets/brand/moru/**

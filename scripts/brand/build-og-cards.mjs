@@ -18,7 +18,7 @@ import { createServer } from 'vite';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const require = createRequire(import.meta.url);
-const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+const sharp = require('sharp');
 
 const LOCALES = ['en', 'ko', 'ja', 'zh'];
 const WIDTH = 1200;

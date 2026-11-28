@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const require = createRequire(import.meta.url);
-const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+const sharp = require('sharp');
 
 /** Runtime row name → catalogue clip for every native 128px row the app plays. */
 export const NATIVE_ROWS = {

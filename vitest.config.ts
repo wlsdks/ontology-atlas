@@ -17,7 +17,7 @@ const domContracts = [
 const cliExcludes = parseCLI(['vitest', ...process.argv.slice(2)], { allowUnknownOptions: true }).options.exclude ?? [];
 
 /** Measurement files, owned by the `perf` project below and kept out of every sharded sweep. */
-const PERF_FILES = ['app/**/*.perf.test.{ts,tsx}', 'src/**/*.perf.test.{ts,tsx}'];
+const PERF_FILES = ['src/**/*.perf.test.{ts,tsx}'];
 
 export default defineConfig({
   plugins: [react()],
@@ -61,8 +61,6 @@ export default defineConfig({
           environment: 'jsdom',
           setupFiles: ['./vitest.setup.ts'],
           include: [
-            'app/**/*.test.{ts,tsx}',
-            'app/**/*.spec.{ts,tsx}',
             'src/**/*.test.{ts,tsx}',
             'src/**/*.spec.{ts,tsx}',
             ...domContracts,

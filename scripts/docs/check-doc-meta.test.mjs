@@ -29,8 +29,8 @@ function keysOf(problems) {
 
 test('a well-formed living document passes; every missing or wrong key is named', () => {
   const root = fixture({
-    'app/[locale]/library/page.tsx': '',
-    'app/[locale]/project/[slug]/page.tsx': '',
+    'src/app/routes/$locale/_app/library.tsx': '',
+    'src/app/routes/$locale/_app/project/$slug.tsx': '',
     'docs/records/decisions/2026-09-17-library-rounds-0f0e0d0c-aaaa-4bbb-8ccc-123456789abc.md': '',
   });
   try {
@@ -88,10 +88,11 @@ test('frozen history is outside the scan, and the living set is not empty', () =
   assert.ok(listLivingDocs(SOURCE_ROOT).length > 40);
 });
 
-test('routes resolve against both locale roots, including dynamic segments', () => {
+test('routes resolve against the route modules, across both layouts and a dynamic segment', () => {
   assert.equal(routeExists('/topology', SOURCE_ROOT), true);
   assert.equal(routeExists('/', SOURCE_ROOT), true);
-  assert.equal(routeExists('/project/[slug]', SOURCE_ROOT), true);
+  assert.equal(routeExists('/project/new', SOURCE_ROOT), true);
+  assert.equal(routeExists('/project/[slug]', SOURCE_ROOT), false);
   assert.equal(routeExists('/download', SOURCE_ROOT), true);
   assert.equal(routeExists('/guide/[segment]', SOURCE_ROOT), true);
   assert.equal(routeExists('/admin', SOURCE_ROOT), false);
@@ -99,7 +100,7 @@ test('routes resolve against both locale roots, including dynamic segments', () 
 
 test('doc:new writes a document docs:meta accepts, for every creatable kind', () => {
   const root = fixture({
-    'app/[locale]/library/page.tsx': '',
+    'src/app/routes/$locale/_app/library.tsx': '',
     'src/views/gateway-doc/model/guide-pages.ts': "'guide/probe-guide'",
   });
   try {

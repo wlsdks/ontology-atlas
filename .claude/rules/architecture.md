@@ -2,7 +2,7 @@
 paths:
   - "src/**"
   - "app/**"
-  - "next.config.ts"
+  - "vite.config.ts"
   - "eslint.config.mjs"
   - "scripts/**"
   - "mcp/src/**"
@@ -14,8 +14,9 @@ paths:
 
 ## Layers
 
-Root `app/` is thin Next routing; `src/` imports flow
-`app → views → widgets → features → entities → shared`, and
+Root `app/` holds only the stylesheet (`globals.css`, `styles/`); `src/app/`
+is the app layer with the router's route modules and the providers. `src/`
+imports flow `app → views → widgets → features → entities → shared`, and
 `eslint-plugin-boundaries` blocks upward imports. Avoid same-layer
 cross-imports: move shared behaviour down one layer. The remaining edges only
 fall (`same-layer-cross-import-ratchet.contract.test.ts`).
@@ -41,18 +42,21 @@ fall (`same-layer-cross-import-ratchet.contract.test.ts`).
   resource (a cache, a connection, a worker); no service, manager or
   dependency-injection classes.
 
-## Static export
+## Build output
 
-Build-time fetching reads only the committed dogfood manifest under
+One Vite bundle is the installed app's folder, and the website is the same
+bundle plus pages prerendered at build time (`pnpm build`); nothing runs on a
+server. Build-time fetching reads only the committed dogfood manifest under
 `docs/ontology/`; add no external build fetch. The manifest is a fallback before
 a vault is chosen, and a selected vault always wins. Server-runtime bans:
 `forbidden.md`; one canonical store: `local-first.md`.
 
 ## URL contract
 
-- Routes live under `app/[locale]/` (the gateway pages under
-  `app/(gateway)/[locale]/`), their views under `src/views/`. The route
-  list lives only in `docs/ARCHITECTURE.md`.
+- Routes are the modules under `src/app/routes/$locale/` (`_app/` for the
+  installed app's screens, `_site/` for the website's public pages), their
+  views under `src/views/`. The route list lives only in
+  `docs/ARCHITECTURE.md`.
 - `/` shows the gateway in a plain browser and the map/first-run flow in the
   installed app, and the shell chrome and the content must always agree on
   which (`src/shared/lib/navigation/nav-destination.ts`). Never make `/` the
@@ -60,8 +64,10 @@ a vault is chosen, and a selected vault always wins. Server-runtime bans:
 - Every link that promises the map points to `/topology`
   (`map-destination-route.contract.test.ts`).
 - In-app navigation uses `Link`, `useRouter` and `usePathname` from
-  `@/i18n/navigation`. `useSearchParams` stays on `next/navigation`; the raw
-  Next router is only for an intentional cross-locale redirect.
+  `@/i18n/navigation`. A screen reads its query through `Route.useSearch()`,
+  typed by its route's `validateSearch`, never from `window.location` while it
+  renders, and a direct history write goes through `guardedHistoryWrite`
+  (`src/shared/lib/navigation/history-write-guard.ts`).
 
 ## Do not compute data for a surface that is not rendered
 

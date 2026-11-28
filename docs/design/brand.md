@@ -336,7 +336,7 @@ No mark roams over graph ink; no idle state pretends work is occurring.
 | Download hero | Playful `BrandCompanion` at twice its native cell on whole pixels: on the app window's top edge from 80rem, above the headline when narrower |
 | Character marks | `BrandMark` → `public/brand/mascot-{full,compact,micro}.png` |
 | First run / missing page, route error, startup failure, missing project and an unread harness, schedule or Git status | Playful companion / curious `BrandPortrait` → `public/brand/mascot-curious-row-128.png` |
-| Browser / Apple Touch | `app/icon.png`, `app/favicon.ico`, `app/apple-icon.png` |
+| Browser / Apple Touch | `public/icon.png`, `public/favicon.ico`, `public/apple-icon.png` |
 | PWA / platform icons | `public/brand-icon-512.png`, `src-tauri/icons/**` |
 | Open Graph | `public/og/<locale>.png` per locale and `public/og-image.png` (English, the `x-default`), 1200×630, from `pnpm og:build`; the copy comes from each locale's hero headline |
 | README en/ko/ja/zh | Compass lockup and Moru showcase; expandable motion samples |

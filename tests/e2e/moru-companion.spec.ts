@@ -16,7 +16,7 @@ test('paints the still companion at a deep-linked welcome before any interaction
   const clip = await stage.boundingBox();
   expect(clip).not.toBeNull();
   const require = createRequire(`${process.cwd()}/package.json`);
-  const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+  const sharp = require('sharp');
   const pixels: Buffer = await sharp(await page.screenshot({ clip: clip! })).removeAlpha().raw().toBuffer();
   let bodyPixels = 0;
   for (let i = 0; i < pixels.length; i += 3) {

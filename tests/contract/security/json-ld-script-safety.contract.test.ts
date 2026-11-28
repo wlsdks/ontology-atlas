@@ -4,7 +4,11 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const APP_ROOT = join(ROOT, 'app');
+/** Where a screen or the document renders JSON-LD; the shared boundary component itself is not one of them. */
+const APP_ROOTS = [join(ROOT, 'src', 'app'), join(ROOT, 'src', 'views')];
+
+/** The document writes its boot script, loading picture and page record as raw markup, and never JSON-LD that way. */
+const WRITES_OTHER_RAW_MARKUP = new Set(['src/app/document/SiteDocument.tsx']);
 
 function tsxFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -16,7 +20,7 @@ function tsxFiles(dir: string): string[] {
 
 describe('JSON-LD in HTML: data cannot close the script boundary', () => {
   it('every app JSON-LD goes through the central JsonLd boundary', () => {
-    const sources = tsxFiles(APP_ROOT).map((file) => ({
+    const sources = APP_ROOTS.flatMap(tsxFiles).map((file) => ({
       file,
       source: readFileSync(file, 'utf8'),
     }));
@@ -30,9 +34,9 @@ describe('JSON-LD in HTML: data cannot close the script boundary', () => {
     ).toEqual([]);
     for (const { file, source } of consumers) {
       const label = relative(ROOT, file);
-      expect(source, `${label}: do not rebuild raw script insertion`).not.toContain(
-        'dangerouslySetInnerHTML',
-      );
+      if (!WRITES_OTHER_RAW_MARKUP.has(label)) {
+        expect(source, `${label}: do not rebuild raw script insertion`).not.toContain('dangerouslySetInnerHTML');
+      }
       expect(source, `${label}: use JsonLd so the escape stays in one place`).toMatch(
         /<JsonLd(?:\s|>)/u,
       );

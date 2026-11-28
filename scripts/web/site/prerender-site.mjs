@@ -4,7 +4,7 @@
 // The folder defaults to the site folder (`scripts/lib/web/built-folders.mjs`), which `vite build --mode site` writes. For each address the
 // router holds it renders the page with React's own prerender (`write-site.tsx`), then adds the icons, the
 // sitemap, robots and llms files. The client build must already be there: the pages link its files.
-import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -35,8 +35,6 @@ export async function prerenderSite(siteFolder) {
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, file.text);
     }
-    // The three icons the pages name in `<head>` sit beside the routes in `app/`.
-    for (const icon of ['favicon.ico', 'icon.png', 'apple-icon.png']) copyFileSync(join(repository, 'app', icon), join(siteFolder, icon));
     rmSync(join(siteFolder, '.vite'), { recursive: true, force: true });
     return files.length;
   } finally {

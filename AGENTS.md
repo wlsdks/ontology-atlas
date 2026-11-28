@@ -12,10 +12,11 @@ meaning to source evidence. Structural health is not accepted meaning.
 - `docs/ONTOLOGY-ATLAS-SPEC.md` §2/§5 is the sole public meta-model. Surfaces must
   offer typed agent facts and evidence a human can judge and correct.
 - No backend, login, auth, seed data, API routes, or server actions.
-  `output: 'export'` is intentional. The macOS app carries MCP; `mcp/` and `cli/`
+  The UI is a Vite bundle: the app's folder, and with prerendered pages the
+  website, so no server runs. The macOS app carries MCP; `mcp/` and `cli/`
   also run from source. There is no npm package.
 - `src/` follows app → views → widgets → features → entities → shared; root
-  `app/` is thin Next routing.
+  `app/` holds only the stylesheet.
 - The renderer is custom canvas-2D `ontology-map`; one WebGL2 light layer
   draws light only; three.js paints Neural alone, canvas 2D its fallback;
   Graphology supplies ForceAtlas2 only. Another renderer needs a decision.
