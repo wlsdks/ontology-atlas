@@ -21,12 +21,6 @@ export const VALIDATE_VAULT_TOOL = {
         minimum: 0,
         description: 'Resume at `problemsPagination.nextOffset`.',
       },
-      unplacedOffset: {
-        type: 'integer',
-        minimum: 0,
-        description:
-          'Resume the unplaced abilities at `coverage.breadth.unplaced.pagination.nextOffset`; it pages on its own, apart from `offset`.',
-      },
       limit: {
         type: 'integer',
         minimum: 1,
