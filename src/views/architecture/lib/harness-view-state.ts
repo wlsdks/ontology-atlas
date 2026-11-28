@@ -21,7 +21,7 @@ function isHarnessView(value: string): value is HarnessView {
 export function parseHarnessView(raw: string | null | undefined): HarnessView {
   if (!raw) return DEFAULT_HARNESS_VIEW;
   if (isHarnessView(raw)) return raw;
-  return RETIRED_VIEWS[raw] ?? DEFAULT_HARNESS_VIEW;
+  return (Object.hasOwn(RETIRED_VIEWS, raw) ? RETIRED_VIEWS[raw] : undefined) ?? DEFAULT_HARNESS_VIEW;
 }
 
 /**
@@ -61,7 +61,7 @@ export const HARNESS_VIEW_ORDER: readonly HarnessView[] = HARNESS_VIEWS;
 export function rewriteRetiredView(search: string): string | null {
   const params = new URLSearchParams(search);
   const raw = params.get('view');
-  const next = raw ? RETIRED_VIEWS[raw] : undefined;
+  const next = raw && Object.hasOwn(RETIRED_VIEWS, raw) ? RETIRED_VIEWS[raw] : undefined;
   if (!next) return null;
   params.set('view', next);
   return `?${params.toString()}`;

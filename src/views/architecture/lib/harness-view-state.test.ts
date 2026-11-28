@@ -21,6 +21,9 @@ describe('parseHarnessView', () => {
     expect(parseHarnessView(undefined)).toBe('overview');
     expect(parseHarnessView('')).toBe('overview');
     expect(parseHarnessView('not-a-view')).toBe('overview');
+    // A name every object inherits is not a retired view.
+    expect(parseHarnessView('constructor')).toBe('overview');
+    expect(rewriteRetiredView('?view=toString')).toBeNull();
     expect(parseHarnessView(null)).toBe(DEFAULT_HARNESS_VIEW);
   });
 
