@@ -12,7 +12,12 @@ import { SiteDocument, type SiteDocumentProps } from '../../../src/app/document/
  * probe renders the real document around a page that states its head in its body and reads where each tag landed.
  */
 
-const assets = { stylesheets: ['/assets/app.css'], entryScript: '/assets/app.js', preloadedModules: ['/assets/chunk.js'] };
+const assets = {
+  stylesheets: ['/assets/app.css'],
+  entryScript: '/assets/app.js',
+  preloadedModules: ['/assets/chunk.js'],
+  oldFolderCleanupScript: '/assets/cleanup.js',
+};
 
 /** The website's document around `children`; the props are the document's, the children are passed the way createElement takes them. */
 const documentAround = (props: Omit<SiteDocumentProps, 'children'>, child: ReactNode) =>

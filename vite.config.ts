@@ -72,6 +72,10 @@ export default defineConfig(({ command, mode }) => ({
     emptyOutDir: true,
     // The prerender links the entry's files, which the manifest names.
     manifest: mode === 'site',
+    // An app address in a browser runs no screen, only the small script that forgets an earlier website's folders.
+    ...(mode === 'site'
+      ? { rolldownOptions: { input: { index: path.join(root, 'index.html'), 'old-folder-cleanup': path.join(root, 'src/app/old-folder-cleanup.ts') } } }
+      : {}),
     // Every asset is a file the WebView's `'self'` policy covers; none becomes an inline `data:` address.
     assetsInlineLimit: 0,
     target: 'es2022',

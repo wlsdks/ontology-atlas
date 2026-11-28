@@ -16,7 +16,8 @@ const DEFAULT_SITE_FOLDER = 'src-tauri/target/site-vite';
 export function readSiteAssets(siteFolder) {
   const manifest = JSON.parse(readFileSync(join(siteFolder, '.vite', 'manifest.json'), 'utf8'));
   const entry = manifest['index.html'];
-  if (!entry?.isEntry) throw new Error(`${siteFolder}/.vite/manifest.json has no index.html entry; run vite build --mode site first`);
+  const cleanup = manifest['src/app/old-folder-cleanup.ts'];
+  if (!entry?.isEntry || !cleanup?.isEntry) throw new Error(`${siteFolder}/.vite/manifest.json lacks an entry; run vite build --mode site first`);
   const stylesheets = new Set();
   const preloadedModules = new Set();
   const visit = (chunk) => {
@@ -30,7 +31,12 @@ export function readSiteAssets(siteFolder) {
     }
   };
   visit(entry);
-  return { stylesheets: [...stylesheets], entryScript: `/${entry.file}`, preloadedModules: [...preloadedModules] };
+  return {
+    stylesheets: [...stylesheets],
+    entryScript: `/${entry.file}`,
+    preloadedModules: [...preloadedModules],
+    oldFolderCleanupScript: `/${cleanup.file}`,
+  };
 }
 
 export async function prerenderSite(siteFolder) {

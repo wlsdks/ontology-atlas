@@ -54,7 +54,10 @@ test.describe("an app address in a plain browser", () => {
     // The workbench's HTML is in the document, inert: React gave none of its nodes a fiber.
     const rail = page.getByTestId("app-nav-rail");
     await expect(rail).toBeHidden();
-    expect(await rail.evaluate((node) => Object.keys(node).some((key) => key.startsWith("__reactFiber")))).toBe(false);
+    // The Vite prerender holds no workbench HTML at all, which is stricter; a document that does hold the rail must not own it.
+    if ((await rail.count()) > 0) {
+      expect(await rail.evaluate((node) => Object.keys(node).some((key) => key.startsWith("__reactFiber")))).toBe(false);
+    }
   });
 
   test("forgets the folder a browser's earlier website remembered, and only that", async ({ page }) => {

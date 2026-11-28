@@ -12,6 +12,8 @@ export interface SiteAssets {
   stylesheets: readonly string[];
   entryScript: string;
   preloadedModules: readonly string[];
+  /** The script an app address carries instead of the entry: it runs no screen. */
+  oldFolderCleanupScript: string;
 }
 
 /**
@@ -59,7 +61,6 @@ export function SiteDocument({ page, head, inlineScript, children }: SiteDocumen
   const { locale, assets, bootScript, entry } = page;
   return (
     <html lang={LOCALE_META[locale].htmlLang} className="h-full overflow-x-hidden">
-      {/* eslint-disable-next-line @next/next/no-head-element -- this document is written by React's prerender, not by Next */}
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="Content-Security-Policy" content={WEB_CONTENT_SECURITY_POLICY} />
@@ -75,7 +76,7 @@ export function SiteDocument({ page, head, inlineScript, children }: SiteDocumen
           <link key={href} rel="stylesheet" href={href} />
         ))}
         {/* eslint-disable-next-line @next/next/no-sync-scripts -- a module script is deferred by the browser */}
-        {entry ? <script type="module" src={assets.entryScript} /> : null}
+        <script type="module" src={entry ? assets.entryScript : assets.oldFolderCleanupScript} />
         {entry ? assets.preloadedModules.map((href) => <link key={href} rel="modulepreload" href={href} />) : null}
       </head>
       <body className="flex min-h-full flex-col overflow-x-hidden">
