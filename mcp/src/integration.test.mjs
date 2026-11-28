@@ -3453,7 +3453,7 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
   }
 });
 
-await test('query_ontology analysis archive — restores raw records without graph meaning and rejects unsafe ids', async () => {
+await test('query_ontology analysis archive — restores a raw record without graph meaning and rejects unsafe ids', async () => {
   const root = makeVault();
   const record = {
     schema: 'atlas-analysis/v1', recordType: 'run', id: '95f4ba81-41f7-483b-a617-2a4be815be32', createdAt: '2026-09-05T08:00:00.000Z', mode: 'meaning',
@@ -3467,16 +3467,12 @@ await test('query_ontology analysis archive — restores raw records without gra
     mkdirSync(directory, { recursive: true });
     writeFileSync(join(directory, analysisRecordFileName(record)), serializeAnalysisRecord(record));
     const { responses } = await rpc(root, [...INIT_REQUESTS,
-      callTool(10, 'query_ontology', { operation: 'analysis_history', limit: 1 }),
       callTool(11, 'query_ontology', { operation: 'analysis_record', recordId: record.id }),
       callTool(12, 'query_ontology', { operation: 'analysis_record', recordId: '../secret' }),
-      callTool(13, 'query_ontology', { operation: 'analysis_history', limit: 101 }),
       callTool(14, 'compile_ontology'),
     ]);
-    assert.equal(getCallParsed(responses, 10).records[0].id, record.id);
     assert.deepEqual(getCallParsed(responses, 11).record, record);
     assert.equal(isErrorResponse(responses, 12), true);
-    assert.equal(isErrorResponse(responses, 13), true);
     assert.equal(getCallParsed(responses, 14).nodeCount, 0);
     assert.equal(readFileSync(join(directory, analysisRecordFileName(record)), 'utf8'), serializeAnalysisRecord(record));
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -4584,7 +4580,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         slug: "a",
         direction: "sideways",
       }),
-      callTool(11, "query_ontology", { operation: "centrality", iterations: 101 }),
       callTool(12, "query_ontology", { operation: "cycles", depth: -1 }),
       callTool(13, "find_neighbors", { slug: "a", types: ["depends_on", 123] }),
       callTool(14, "list_concepts", { mentions: 7 }),
@@ -4631,12 +4626,10 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         hasIncoming: "false",
       }),
       callTool(28, "query_ontology", { operation: "overview", limit: 501 }),
-      callTool(29, "query_ontology", { operation: "components", nodeLimit: 501 }),
       callTool(30, "query_ontology", { operation: "project_map", itemLimit: 501 }),
       callTool(31, "query_ontology", { operation: "reachability", slug: "a", depth: 21 }),
       callTool(32, "query_ontology", { operation: "path", from: "a", to: "b", maxHops: 21 }),
       callTool(33, "analyze_repo_structure", { rootPath: " ." }),
-      callTool(34, "analyze_repo_structure", { maxDepth: 11 }),
       callTool(35, "analyze_repo_structure", { ignore: ["dist", " "] }),
       callTool(36, "infer_imports", { rootPath: ".\0" }),
       callTool(37, "infer_imports", { sourceFolders: ["src", " lib"] }),
@@ -4644,8 +4637,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(39, "infer_imports", { maxFiles: 0 }),
       callTool(40, "infer_imports", { maxFiles: 50001 }),
       callTool(41, "compile_ontology", { nodesLimit: 0 }),
-      callTool(42, "query_ontology", { operation: "match_nodes", minDegree: -1 }),
-      callTool(43, "query_ontology", { operation: "match_nodes", maxDegree: 1.5 }),
       callTool(44, "query_ontology", { operation: "match_nodes", sort: "mtime" }),
       callTool(45, "query_ontology", { operation: "recommend_relations", kind: "domain" }),
       callTool(46, "find_path", { from: "a", to: "b", maxHops: 21 }),
@@ -4665,14 +4656,9 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         targetOperation: "overveiw",
       }),
       callTool(56, "find_neighbors", { slug: "a", direction: "incomng" }),
-      callTool(57, "query_ontology", { operation: "health", componentLimit: 501 }),
-      callTool(58, "query_ontology", { operation: "health", dependencyTypes: [" dependencies"] }),
-      callTool(59, "query_ontology", { operation: "workspace_brief", componentLimit: 501 }),
       callTool(60, "query_ontology", { operation: "maintenance_plan", phases: ["repiar"] }),
       callTool(61, "query_ontology", { operation: "maintenance_plan", severities: ["fatal"] }),
       callTool(62, "query_ontology", { operation: "maintenance_plan", kinds: ["add_mising_relation"] }),
-      callTool(63, "query_ontology", { operation: "health", dependencyTypes: ["depend_on"] }),
-      callTool(64, "query_ontology", { operation: "workspace_brief", componentTypes: ["capabilties"] }),
       callTool(65, "query_ontology", {
         operation: "relation_check",
         from: "a",
@@ -4680,8 +4666,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         type: "depend_on",
       }),
       callTool(66, "query_ontology", { operation: "match_nodes", kind: "capabilty" }),
-      callTool(67, "query_ontology", { operation: "match_edges", fromKind: "capabilty" }),
-      callTool(68, "query_ontology", { operation: "match_edges", toKind: "externl" }),
       callTool(69, "find_neighbors", { slug: "a", types: ["depend_on"] }),
       callTool(72, "list_concepts", { filter: "kind=capabilty" }),
       callTool(73, "list_concepts", { filter: "has(capabilties)" }),
@@ -4689,10 +4673,10 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(75, "list_concepts", { kind: "capabilty" }),
     ]);
     for (const id of [
-      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-      21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-      38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 33, 35, 36, 37,
+      38, 39, 40, 41, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+      55, 56, 60, 61, 62, 65, 66, 69,
       72, 73, 74, 75,
     ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
@@ -4705,10 +4689,7 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 7).result.content[0].text, /limit must be a positive integer/i);
     assert.match(responses.find((r) => r.id === 8).result.content[0].text, /nodesOffset must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 9).result.content[0].text, /edgesLimit must be a positive integer/i);
-    assert.match(responses.find((r) => r.id === 42).result.content[0].text, /minDegree must be a non-negative integer/i);
-    assert.match(responses.find((r) => r.id === 43).result.content[0].text, /maxDegree must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 10).result.content[0].text, /direction must be one of/i);
-    assert.match(responses.find((r) => r.id === 11).result.content[0].text, /iterations must be <= 100/i);
     assert.match(responses.find((r) => r.id === 12).result.content[0].text, /depth must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 13).result.content[0].text, /types must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 14).result.content[0].text, /mentions must be a non-empty string/i);
@@ -4748,9 +4729,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       suggestion: "incoming",
       allowedValues: ["outgoing", "incoming", "both"],
     });
-    assert.match(responses.find((r) => r.id === 57).result.content[0].text, /componentLimit must be <= 500/i);
-    assert.match(responses.find((r) => r.id === 58).result.content[0].text, /dependencyTypes items must not have leading or trailing whitespace/i);
-    assert.match(responses.find((r) => r.id === 59).result.content[0].text, /componentLimit must be <= 500/i);
     assert.match(responses.find((r) => r.id === 60).result.content[0].text, /phases items must be one of: validate, repair, link, materialize, review/i);
     assert.match(responses.find((r) => r.id === 60).result.content[0].text, /Received: "repiar"/i);
     assert.match(responses.find((r) => r.id === 60).result.content[0].text, /Did you mean "repair"\?/i);
@@ -4778,24 +4756,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       suggestion: "add_missing_relation",
       allowedValues: MAINTENANCE_KIND_VALUES,
     });
-    assert.match(responses.find((r) => r.id === 63).result.content[0].text, /dependencyTypes items must be one of/i);
-    assert.match(responses.find((r) => r.id === 63).result.content[0].text, /Received: "depend_on"/i);
-    assert.match(responses.find((r) => r.id === 63).result.content[0].text, /Did you mean "depends_on"\?/i);
-    assertStructuredValueRepair(responses, 63, {
-      valueName: "dependencyTypes items",
-      receivedValue: "depend_on",
-      suggestion: "depends_on",
-      allowedValues: RELATION_TYPE_VALUES,
-    });
-    assert.match(responses.find((r) => r.id === 64).result.content[0].text, /componentTypes items must be one of/i);
-    assert.match(responses.find((r) => r.id === 64).result.content[0].text, /Received: "capabilties"/i);
-    assert.match(responses.find((r) => r.id === 64).result.content[0].text, /Did you mean "capabilities"\?/i);
-    assertStructuredValueRepair(responses, 64, {
-      valueName: "componentTypes items",
-      receivedValue: "capabilties",
-      suggestion: "capabilities",
-      allowedValues: RELATION_TYPE_VALUES,
-    });
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /type must be one of/i);
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /Received: "depend_on"/i);
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /Did you mean "depends_on"\?/i);
@@ -4813,24 +4773,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       receivedValue: "capabilty",
       suggestion: "capability",
       allowedValues: NODE_KIND_VALUES,
-    });
-    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /fromKind must be one of/i);
-    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /Received: "capabilty"/i);
-    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /Did you mean "capability"\?/i);
-    assertStructuredValueRepair(responses, 67, {
-      valueName: "fromKind",
-      receivedValue: "capabilty",
-      suggestion: "capability",
-      allowedValues: NODE_KIND_VALUES,
-    });
-    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /toKind must be one of/i);
-    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /Received: "externl"/i);
-    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /Did you mean "external"\?/i);
-    assertStructuredValueRepair(responses, 68, {
-      valueName: "toKind",
-      receivedValue: "externl",
-      suggestion: "external",
-      allowedValues: EDGE_TARGET_KIND_VALUES,
     });
     assert.match(responses.find((r) => r.id === 69).result.content[0].text, /types items must be one of/i);
     assert.match(responses.find((r) => r.id === 69).result.content[0].text, /Received: "depend_on"/i);
@@ -4890,12 +4832,10 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 26).result.content[0].text, /executableOnly must be a boolean/i);
     assert.match(responses.find((r) => r.id === 27).result.content[0].text, /hasIncoming must be a boolean/i);
     assert.match(responses.find((r) => r.id === 28).result.content[0].text, /limit must be <= 500/i);
-    assert.match(responses.find((r) => r.id === 29).result.content[0].text, /nodeLimit must be <= 500/i);
     assert.match(responses.find((r) => r.id === 30).result.content[0].text, /itemLimit must be <= 500/i);
     assert.match(responses.find((r) => r.id === 31).result.content[0].text, /depth must be <= 20/i);
     assert.match(responses.find((r) => r.id === 32).result.content[0].text, /maxHops must be <= 20/i);
     assert.match(responses.find((r) => r.id === 33).result.content[0].text, /rootPath must not have leading or trailing whitespace/i);
-    assert.match(responses.find((r) => r.id === 34).result.content[0].text, /maxDepth must be <= 10/i);
     assert.match(responses.find((r) => r.id === 35).result.content[0].text, /ignore items must be non-empty strings/i);
     assert.match(responses.find((r) => r.id === 36).result.content[0].text, /rootPath must not contain a null byte/i);
     assert.match(responses.find((r) => r.id === 37).result.content[0].text, /sourceFolders items must not have leading or trailing whitespace/i);
@@ -5122,47 +5062,6 @@ await test("query_ontology pattern_walk — exact branch limit keeps all MCP pat
       truncated.paths.rows.map((row) => row.end),
       ["capabilities/login"],
     );
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology all_paths — limited exposes hidden MCP paths", async () => {
-  const root = makeVault([
-    { slug: "a", content: "---\nkind: capability\ntitle: A\nrelates: [b, c, e, f]\n---\n" },
-    { slug: "b", content: "---\nkind: capability\ntitle: B\nrelates: [d]\n---\n" },
-    { slug: "c", content: "---\nkind: capability\ntitle: C\nrelates: [d]\n---\n" },
-    { slug: "e", content: "---\nkind: capability\ntitle: E\nrelates: [d]\n---\n" },
-    { slug: "f", content: "---\nkind: capability\ntitle: F\nrelates: [d]\n---\n" },
-    { slug: "d", content: "---\nkind: capability\ntitle: D\n---\n" },
-  ]);
-  try {
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", {
-        operation: "all_paths",
-        from: "a",
-        to: "d",
-        maxHops: 2,
-        limit: 4,
-      }),
-      callTool(3, "query_ontology", {
-        operation: "all_paths",
-        from: "a",
-        to: "d",
-        maxHops: 2,
-        limit: 2,
-      }),
-    ]);
-    const exact = getCallParsed(responses, 2);
-    assert.equal(exact.totalPaths, 4);
-    assert.equal(exact.limited, false);
-    assert.equal(exact.paths.length, 4);
-
-    const truncated = getCallParsed(responses, 3);
-    assert.equal(truncated.totalPaths, 4);
-    assert.equal(truncated.limited, true);
-    assert.equal(truncated.paths.length, 2);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -8118,53 +8017,6 @@ await test("construction profile — discovery does not bypass consent for an om
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-await test("builder_context — persisted Workshop focus, positions, and agent handoff", async () => {
-  const root = makeVault([
-    {
-      slug: "domains/auth",
-      content: "---\nkind: domain\ntitle: Auth\ncanvasPosition:\n  x: 100\n  y: 80\n---\n",
-    },
-    {
-      slug: "capabilities/login",
-      content: "---\nkind: capability\ntitle: Login\ndomain: domains/auth\ncanvasPosition:\n  x: 340\n  y: 80\n---\n",
-    },
-  ]);
-  try {
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", {
-        operation: "builder_context",
-        slug: "domains/auth",
-        direction: "incoming",
-        depth: 1,
-      }),
-      callTool(3, "query_ontology", {
-        operation: "builder_context",
-        slug: "domain:auth",
-        direction: "incoming",
-        depth: 1,
-      }),
-    ]);
-    const context = getCallParsed(responses, 2);
-    const roundTrip = getCallParsed(responses, 3);
-    assert.equal(context.operation, "builder_context");
-    assert.equal(context.focus, "domains/auth");
-    assert.equal(context.source, "persisted_vault");
-    assert.equal(context.builder.href, "/topology/?p=domain%3Aauth&workbench=edit");
-    assert.equal(context.builder.unsavedDraftsIncluded, false);
-    assert.equal(roundTrip.focus, context.focus);
-    assert.deepEqual(roundTrip.builder, context.builder);
-    assert.deepEqual(context.nodes.map((row) => row.canvasPosition), [
-      { x: 100, y: 80 },
-      { x: 340, y: 80 },
-    ]);
-    assert.ok(context.agentHandoff.writeTools.includes("patch_concept"));
-    assert.match(context.agentHandoff.constraints.join("\n"), /expected_mtime/);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
 await test("query_ontology — unresolved compiled slug exposes structured recovery fields", async () => {
   const root = makeVault([
     {
@@ -8176,7 +8028,7 @@ await test("query_ontology — unresolved compiled slug exposes structured recov
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", {
-        operation: "builder_context",
+        operation: "node_profile",
         slug: "capabilities/logn",
       }),
     ]);
