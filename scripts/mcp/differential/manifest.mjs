@@ -147,6 +147,19 @@ const differenceKey = (entry) => `${entry.case}|${entry.where}|${JSON.stringify(
  * branch this one merges into) no list may have grown: the ceiling, and the two lists of known
  * differences. A base that does not exist here (a shallow clone) is said so and not an error.
  */
+/** The numbers of the rows of the specification's table of declared changes. */
+export function specificationRows(repoRoot) {
+  const text = readFileSync(path.join(repoRoot, 'docs', 'specs', '2026-11-27-mcp-server-in-rust.md'), 'utf8');
+  const start = text.indexOf('### Declared behaviour changes');
+  const end = text.indexOf('### What equal means');
+  const rows = new Set();
+  for (const line of text.slice(start, end === -1 ? undefined : end).split('\n')) {
+    const match = /^\| (\d+) \|/.exec(line);
+    if (match) rows.add(Number(match[1]));
+  }
+  return rows;
+}
+
 export function checkManifest(repoRoot, { baseRef } = {}) {
   const problems = [];
   const manifest = loadManifest(repoRoot);
@@ -172,9 +185,12 @@ export function checkManifest(repoRoot, { baseRef } = {}) {
       if (invalid) problems.push(`ceiling: ${invalid}`);
     }
   }
+  const specRows = specificationRows(repoRoot);
   for (const entry of loadExpectedDifferences(repoRoot, 'node-vs-rust')) {
     if (!Number.isInteger(entry.change) || typeof entry.reason !== 'string' || entry.reason === '') {
       problems.push(`declared-changes.json: ${differenceKey(entry)} names no row of the specification's table (change) or no reason`);
+    } else if (!specRows.has(entry.change)) {
+      problems.push(`declared-changes.json: ${differenceKey(entry)} names row ${entry.change}, which the specification's table does not have`);
     }
   }
   const unrun = loadUnrunFunctions(repoRoot).families;

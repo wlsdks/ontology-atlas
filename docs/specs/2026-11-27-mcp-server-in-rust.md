@@ -1002,3 +1002,22 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   row 49. Row 46 narrows to the analysis view and the review of a proposal or qualification. **Not
   built:** the `Family:` line that counts a symbol's siblings by type (`type-family`), and the use
   of this session's reads by the proposal review, which waits for slice 9.
+- 2026-11-28 (slice 9c; each item questioned, approaches weighed): **The analysis view, the
+  proposal review and the qualification are retired, not ported.** An audit found no reader that
+  matters (no workflow, skill, card or app flow, and no call in 1,144 sessions), so the port of
+  about 9,000 lines (candidates, the meaning gate, the lifecycle, the digest, the Cargo feature
+  evidence, the schema checker) is cut. Two approaches were weighed: port the route and delete it
+  with the script server later (a cost with no reader), or refuse by name now (chosen). The
+  refusal is one `invalid_arguments` sentence that points to `add_concepts` and
+  `add_relations`; `proposal: null` still means "not sent", and the `sourceOnly` combination
+  check that comes first is kept. Row 46 is rewritten to declare it; rows 59 to 63 (the analysis
+  view's confinement differences) go with the code. The `repository-candidates`,
+  `construction-review` crates, `schema_check`, its generated schemas and its writer script, and
+  the packet schema (no caller) are removed; `vault-validation` and `meaning-findings` stay.
+  **The gate reads the table.** `manifest.mjs` now reads this section's row numbers and refuses a
+  declared entry that names a row the table lacks, so an entry cannot point at a row nobody wrote.
+  **A path is never a pattern.** `rule_without_read_lines` found the symbol after a cited path by
+  compiling a pattern from the path, which a 600 KB path made fail and panic; the path is now
+  found with `match_indices` and one fixed anchored pattern reads what follows it (two
+  approaches: a size cap on the path, which still leaves a pattern built from input, or no
+  pattern from input, chosen).
