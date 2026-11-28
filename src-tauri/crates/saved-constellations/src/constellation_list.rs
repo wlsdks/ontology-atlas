@@ -37,7 +37,7 @@ pub struct Constellation {
     pub reference_member_count: usize,
 }
 
-fn purpose_of(purpose: Option<&str>) -> Purpose {
+pub(crate) fn purpose_of(purpose: Option<&str>) -> Purpose {
     match purpose.map(trim).filter(|text| !text.is_empty()) {
         Some(value) => Purpose::Recorded {
             status: "recorded",
@@ -52,6 +52,17 @@ fn arranged(left: &Folder, right: &Folder) -> Ordering {
         .cmp(&right.order)
         .then_with(|| compare_text(&left.name, &right.name))
         .then_with(|| compare_text(&left.id, &right.id))
+}
+
+/// The constellation folders of `collections`: by order, then name, then id.
+pub(crate) fn constellation_folders(collections: &Collections) -> Vec<&Folder> {
+    let mut folders: Vec<&Folder> = collections
+        .folders
+        .iter()
+        .filter(|folder| folder.constellation.is_some())
+        .collect();
+    folders.sort_by(|left, right| arranged(left, right));
+    folders
 }
 
 /// Every constellation of `collections`: by order, then name, then id.

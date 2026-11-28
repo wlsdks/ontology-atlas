@@ -174,7 +174,7 @@ const REVIEW_KEYS: [&str; 5] = [
 
 /// A person reserved this node and only a person clears it.
 pub const REVIEW_STATE_HUMAN_DECIDES: &str = "human_decides";
-const REVIEW_STATE_CONFIRMED: &str = "confirmed";
+pub const REVIEW_STATE_CONFIRMED: &str = "confirmed";
 
 /// Whether an approval still describes the node.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
