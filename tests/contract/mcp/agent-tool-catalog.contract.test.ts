@@ -77,6 +77,18 @@ describe('agent tool catalog matches the MCP server definition', () => {
     },
   );
 
+  it.each(COMPARED_TOOLS.map((tool) => [tool.name, tool] as const))(
+    '%s: an argument that lists its allowed values lists the ones on the MCP side',
+    (_name, tool) => {
+      const server = SURFACE.find((candidate) => candidate.name === tool.name)!.inputSchema.properties ?? {};
+      for (const [argument, schema] of Object.entries(tool.parameters.properties ?? {})) {
+        const ours = (schema as { enum?: readonly string[] }).enum;
+        const theirs = (server[argument] as { enum?: string[] } | undefined)?.enum;
+        if (ours && theirs) expect([...ours].sort(), argument).toEqual([...theirs].sort());
+      }
+    },
+  );
+
   it.each([...ANSWERED_BY_ANOTHER_TOOL])(
     '%s: its arguments are arguments of the server tool that answers it',
     (name, { tool, arguments: names }) => {

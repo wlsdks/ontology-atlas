@@ -11,7 +11,8 @@ async function fixture(): Promise<AnalysisRun> {
   // The brief the script server built for the FSD profile, recorded 2026-11-28.
   const result = structuredClone(GOLDEN.fsdBrief) as unknown as ArchitectureRecord['brief'];
   // The persistence boundary omits machine-local roots from actual tool output.
-  if (result.conformance.source) delete result.conformance.source.rootPath;
+  const conformance = result.conformance as { source?: { rootPath?: string } };
+  if (conformance.source) delete conformance.source.rootPath;
   return {
     schema: 'atlas-analysis/v1', recordType: 'run', id: '95f4ba81-41f7-483b-a617-2a4be815be32', createdAt: '2026-09-05T08:00:00.000Z', mode: 'architecture', scope: { projectSlug: null, projectUid: FSD_PROFILE_FRONTMATTER.project_uid, targetSlugs: [], profileSlug: FSD_PROFILE_FRONTMATTER.profile_slug },
     request: { id: 'u-1', text: 'Analyze.', parentRunId: null }, origin: { surface: 'architecture', runtimeId: 'test', sessionId: null, userEventId: 'u-1', answerEventId: 'a-1', startedAt: '2026-09-05T07:59:00.000Z', stopReason: 'end_turn', outcome: 'completed' },

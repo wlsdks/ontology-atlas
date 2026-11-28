@@ -83,7 +83,7 @@ describe('the source-passage reader splits a file as read_source did', () => {
     for (const call of testCase.calls) {
       it(`${testCase.name} — ${JSON.stringify(call)}`, () => {
         const mine = readSourceUnits(testCase.bytes, testCase.path, call);
-        const recorded = (GOLDEN.calls as Record<string, RecordedCall>)[`${testCase.name} — ${JSON.stringify(call)}`];
+        const recorded = (GOLDEN.calls as unknown as Record<string, RecordedCall>)[`${testCase.name} — ${JSON.stringify(call)}`];
         expect(recorded, 'the call was not recorded').toBeDefined();
         expect(mine.format).toBe(recorded.format);
         expect(mine.unitCount).toBe(recorded.unitCount);

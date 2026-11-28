@@ -126,7 +126,7 @@ describe('code-location help: each listed path is checked against the connected 
   const receipt = (files: string[]) =>
     buildProjectSourceReceipt({
       projectSlug: 'project',
-      probe: { sourceId: 'source', kind: 'git', revision: 'r1', fingerprint: 'f1', files, truncated: false },
+      probe: { sourceId: 'source', kind: 'git', revision: 'r1', fingerprint: 'f1', dirty: false, files, truncated: false },
       witnesses,
       graphHash: 'graph',
       measuredAt: '2026-01-01T00:00:00.000Z',
