@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { VAULT_HEALTH_CASES } from '../../fixtures/vault-health-cases.mjs';
 import {
@@ -8,13 +9,14 @@ import {
   capabilitiesWithoutImplementationEvidence,
   computeVaultHealth,
 } from '@/entities/knowledge-graph/lib/vault-health';
-import { compileOntology } from '../../../mcp/src/ontology-compiler.mjs';
-import { queryCompiledOntology } from '../../../mcp/src/ontology-engine.mjs';
+import { buildMarkdown } from '@/shared/lib/vault-document/frontmatter-codec.mjs';
+import { callServerTool } from '../server-session/call-server-tool';
 
 /**
  * Vault-health contract: the app health status (`src/entities/knowledge-graph/lib/vault-health.ts`)
- * must agree with the CLI/MCP `health` on the same vault. One fixture runs through both and compares
- * status and per-check status and count.
+ * must agree with the MCP server's `health` on the same vault. Each fixture is written to a
+ * temporary folder, the server is asked over stdio, and status and per-check status and count are
+ * compared.
  */
 
 interface McpCheck {
@@ -32,20 +34,37 @@ const CHECK_IDS = [
   'components',
 ] as const;
 
-function mcpHealth(
-  docs: {
-    slug: string;
-    frontmatter: Record<string, unknown>;
-    diagnostics?: ReadonlyArray<{ code: string }>;
-  }[],
+/** Two lines no frontmatter reader can use; each one is a `malformed-frontmatter-line` diagnostic. */
+const MALFORMED_LINES = ['this line is not a key', 'neither is this one'];
+
+function writeVault(
+  vault: string,
+  docs: { slug: string; frontmatter: Record<string, unknown>; diagnostics?: ReadonlyArray<{ code: string }> }[],
 ) {
-  const withMtime = docs.map((d, i) => ({ ...d, body: '', mtime: i + 1 }));
-  const artifact = compileOntology(withMtime, { includeIndexes: true });
-  const result = queryCompiledOntology(artifact, { operation: 'health' }) as {
-    status: string;
-    checks: McpCheck[];
-  };
-  return result;
+  for (const doc of docs) {
+    const file = join(vault, `${doc.slug}.md`);
+    mkdirSync(dirname(file), { recursive: true });
+    let markdown = buildMarkdown({ frontmatter: doc.frontmatter, body: `${doc.slug}.` });
+    if (doc.diagnostics?.length) {
+      expect(doc.diagnostics.every((diagnostic) => diagnostic.code === 'malformed-frontmatter-line')).toBe(true);
+      markdown = markdown.replace('\n---\n', `\n${MALFORMED_LINES.slice(0, doc.diagnostics.length).join('\n')}\n---\n`);
+    }
+    writeFileSync(file, markdown);
+  }
+}
+
+async function serverHealth(
+  docs: Parameters<typeof writeVault>[1],
+): Promise<{ status: string; checks: McpCheck[] }> {
+  const vault = mkdtempSync(join(tmpdir(), 'atlas-vault-health-'));
+  try {
+    writeVault(vault, docs);
+    const answer = await callServerTool(vault, 'query_ontology', { operation: 'health' });
+    expect(answer.isError, String(answer.value)).toBe(false);
+    return answer.value as { status: string; checks: McpCheck[] };
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
 }
 
 function uidForSlug(slug: string): string {
@@ -72,19 +91,21 @@ function checkMap(checks: { id: string; status: string; count: number }[]) {
   return map;
 }
 
-describe('vault-health contract — src lib mirrors the MCP engine health verdict', () => {
+describe('vault-health contract — src lib mirrors the MCP server health verdict', () => {
   for (const c of VAULT_HEALTH_CASES) {
-    it(c.name, () => {
+    it(c.name, async () => {
       const docs = withUids(c.docs);
-      const mcp = mcpHealth(docs);
+      const server = await serverHealth(docs);
       const app = computeVaultHealth(docs);
 
-      expect(app.status).toBe(mcp.status);
-      expect(checkMap(app.checks)).toEqual(checkMap(mcp.checks));
-    });
+      expect(checkMap(app.checks)).toEqual(checkMap(server.checks));
+      // The server's own status also counts the tool layer's checks (below), which can only add
+      // attention: what the six shared checks flag, the server flags.
+      if (app.status === 'needs_attention') expect(server.status).toBe('needs_attention');
+    }, 30_000);
   }
 
-  it('uses the maintenance-plan evidence boundary for capability suggestions', () => {
+  it('uses the maintenance-plan evidence boundary for capability suggestions', async () => {
     const docs = withUids([
       {
         slug: 'capabilities/no-pointer',
@@ -127,15 +148,20 @@ describe('vault-health contract — src lib mirrors the MCP engine health verdic
         frontmatter: { kind: 'element', title: 'Worker', path: 'src/worker.ts' },
       },
     ]);
-    const artifact = compileOntology(
-      docs.map((doc, index) => ({ ...doc, body: '', mtime: index + 1 })),
-      { includeIndexes: true },
-    );
-    const maintenance = queryCompiledOntology(artifact, {
-      operation: 'maintenance_plan',
-      kinds: ['capability_without_evidence'],
-      limit: 20,
-    }) as { actions: Array<{ node: { slug: string } }> };
+    const vault = mkdtempSync(join(tmpdir(), 'atlas-vault-health-'));
+    let maintenance: { actions: Array<{ node: { slug: string } }> };
+    try {
+      writeVault(vault, docs);
+      const answer = await callServerTool(vault, 'query_ontology', {
+        operation: 'maintenance_plan',
+        kinds: ['capability_without_evidence'],
+        limit: 20,
+      });
+      expect(answer.isError, String(answer.value)).toBe(false);
+      maintenance = answer.value as typeof maintenance;
+    } finally {
+      rmSync(vault, { recursive: true, force: true });
+    }
 
     expect(capabilitiesWithoutImplementationEvidence(docs)).toEqual(
       maintenance.actions.map((action) => action.node.slug),
@@ -149,29 +175,21 @@ describe('vault-health contract — src lib mirrors the MCP engine health verdic
 });
 
 /**
- * The browser checks plus its declared gaps must account for every check the command reports: the MCP
- * tool layer adds frontmatter validation and a meaning assessment that can flip the status. The extra
- * ids are read from the server source, not a second list.
+ * The browser checks plus its declared gaps must account for every check the command reports: the
+ * server's tool layer adds frontmatter validation and a meaning assessment that can flip the
+ * status. The extra ids are read from the server's own answer, not a second list.
  */
 describe('vault health — checks not run are kept by name', () => {
-  it('checks the browser runs + checks declared not run = checks the command reports', () => {
-    // The tool layer is the `tools/` modules, so both files are read; this gate cannot go green on a file
-    // that no longer carries the ids.
-    const serverSource = ['result-attachments.mjs', 'agent-brief/meaning-readiness.mjs']
-      .map((file) => readFileSync(join(process.cwd(), 'mcp', 'src', 'tools', file), 'utf8'))
-      .join('\n');
-    // The two the tool layer attaches on top of the engine's six.
-    const attachedByToolLayer = ['vault_validation', 'meaning_assessment'].filter((id) =>
-      serverSource.includes(`id: '${id}'`),
-    );
-    expect(
-      attachedByToolLayer,
-      'the server must still attach both checks for this gap to be the real one',
-    ).toEqual(['vault_validation', 'meaning_assessment']);
+  it('checks the browser runs + checks declared not run = checks the command reports', async () => {
+    // A vault with a project, because the meaning assessment is asked of a project.
+    const withProject = VAULT_HEALTH_CASES.find((c) => c.docs.some((doc) => doc.frontmatter.kind === 'project'))!;
+    const server = await serverHealth(withUids(withProject.docs));
+    const reported = server.checks.map((check) => check.id);
+    const attachedByToolLayer = reported.filter((id) => !(CHECK_IDS as readonly string[]).includes(id));
 
     const declared = UNAVAILABLE_CHECKS.map((check) => check.id).sort();
     expect(declared).toEqual([...attachedByToolLayer].sort());
-  });
+  }, 30_000);
 
   it('a check declared not run also says where it runs — it does not leave only the diagnosis', () => {
     for (const check of UNAVAILABLE_CHECKS) {
