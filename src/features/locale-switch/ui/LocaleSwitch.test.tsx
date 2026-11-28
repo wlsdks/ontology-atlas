@@ -5,13 +5,18 @@ import enMessages from "../../../../messages/en.json";
 import { LocaleSwitch } from "./LocaleSwitch";
 
 const mocks = vi.hoisted(() => ({
-  pathname: "/",
+  href: "/en/",
   replace: vi.fn(),
+  buildLocation: vi.fn(),
 }));
 
 vi.mock("@/i18n/navigation", () => ({
-  usePathname: () => mocks.pathname,
   useRouter: () => ({ replace: mocks.replace }),
+}));
+
+// The router answers with the address of the screen on show in the language it is asked for.
+vi.mock("@tanstack/react-router", () => ({
+  useRouter: () => ({ buildLocation: mocks.buildLocation }),
 }));
 
 function renderSwitch(onSwitchStart?: (nextLocale: string) => void) {
@@ -24,19 +29,17 @@ function renderSwitch(onSwitchStart?: (nextLocale: string) => void) {
 
 describe("LocaleSwitch", () => {
   beforeEach(() => {
-    mocks.pathname = "/";
     mocks.replace.mockReset();
+    mocks.buildLocation.mockReset();
+    mocks.buildLocation.mockImplementation(({ params }: { params: (previous: object) => { locale: string } }) => ({
+      href: mocks.href.replace(/^\/en\//, `/${params({ locale: "en" }).locale}/`),
+    }));
     window.localStorage.clear();
-    window.history.replaceState({}, "", "/en/");
+    mocks.href = "/en/";
   });
 
   it("replaces only the locale while keeping the current review state", () => {
-    mocks.pathname = "/architecture/";
-    window.history.replaceState(
-      {},
-      "",
-      "/en/architecture/?tab=freshness&tag=a&tag=b#recent",
-    );
+    mocks.href = "/en/architecture/?tab=freshness&tag=a&tag=b#recent";
     renderSwitch();
 
     fireEvent.click(screen.getByRole("radio", { name: "KO 한국어" }));
@@ -45,6 +48,7 @@ describe("LocaleSwitch", () => {
       "/architecture/?tab=freshness&tag=a&tag=b#recent",
       { locale: "ko", scroll: false },
     );
+    expect(mocks.buildLocation).toHaveBeenCalledWith(expect.objectContaining({ to: ".", search: true, hash: true }));
     expect(window.localStorage.getItem("ontology-atlas:locale")).toBe("ko");
   });
 

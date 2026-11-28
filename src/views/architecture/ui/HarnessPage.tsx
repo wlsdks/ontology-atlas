@@ -162,6 +162,7 @@ function HarnessPageInner({ search }: { search: HarnessSearch }) {
       {view === 'architecture' ? (
         <ArchitecturePage
           embedded
+          search={search}
           draftSource={draftSource}
           harnessPanelId="harness-tabpanel-architecture"
           harnessPanelLabelledBy="harness-tab-architecture"

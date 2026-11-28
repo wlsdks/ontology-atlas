@@ -17,20 +17,19 @@ import {
   FSD_PROFILE_FRONTMATTER,
   HEXAGONAL_PROFILE_FRONTMATTER,
 } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
+import { parseSearch } from '@/shared/lib/navigation/atlas-search';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
 
 vi.mock('@/entities/vault-session', () => ({ useVaultSessionIdentityScope: () => 'sample:test' }));
-// No router mounts around the screen here; the address on show is whatever the test wrote to the window.
-vi.mock('@/shared/lib/navigation/use-committed-address', async () => {
-  const { parseSearch } = await import('@/shared/lib/navigation/atlas-search');
-  return { useCommittedSearch: () => parseSearch(window.location.search) };
-});
+// No router mounts around the screen here; the query handed down is whatever the test wrote to the window.
+const addressSearch = () => parseSearch(window.location.search);
 
 function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
   const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
   return render(
     <IntlProvider locale="en" messages={en}>
       <ArchitectureWorkbench
+        search={addressSearch()}
         profiles={[profile]}
         handoffContexts={handoffContext ? { [profile.slug]: handoffContext } : undefined}
         copyFeedbackMs={300}
@@ -87,7 +86,7 @@ function renderWithRecord(record: ReturnType<typeof buildRecord>, frontmatter: u
   const profile = parseArchitectureProfile(frontmatter as never);
   return render(
     <IntlProvider locale="en" messages={en}>
-      <ArchitectureWorkbench profiles={[profile]} recordsByProfile={{ [profile.slug]: record }} />
+      <ArchitectureWorkbench search={addressSearch()} profiles={[profile]} recordsByProfile={{ [profile.slug]: record }} />
     </IntlProvider>,
   );
 }
@@ -116,7 +115,7 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
   ) {
     return render(
       <IntlProvider locale="en" messages={en}>
-        <ArchitectureWorkbench profiles={[]} {...agent} />
+        <ArchitectureWorkbench search={addressSearch()} profiles={[]} {...agent} />
       </IntlProvider>,
     );
   }
@@ -190,6 +189,7 @@ describe('ArchitectureWorkbench', () => {
     render(
       <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
+        search={addressSearch()}
           profiles={[profile]}
           agentActivity={{
             state: 'verifying',
@@ -209,6 +209,7 @@ describe('ArchitectureWorkbench', () => {
     render(
       <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
+        search={addressSearch()}
           profiles={[profile]}
           agentRoute="agent"
           agentLabel="Claude Code"
@@ -255,7 +256,7 @@ describe('ArchitectureWorkbench', () => {
     const hexagonal = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
     render(
       <IntlProvider locale="en" messages={en}>
-        <ArchitectureWorkbench profiles={[fsd, hexagonal]} />
+        <ArchitectureWorkbench search={addressSearch()} profiles={[fsd, hexagonal]} />
       </IntlProvider>,
     );
 
@@ -363,6 +364,7 @@ describe('ArchitectureWorkbench', () => {
     render(
       <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
+        search={addressSearch()}
           profiles={[profile]}
           sourceListingCapable
           sourceModulesByProfile={{
@@ -400,6 +402,7 @@ describe('ArchitectureWorkbench', () => {
     render(
       <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
+        search={addressSearch()}
           profiles={[profile]}
           conceptsByProfile={{
             [profile.slug]: {
@@ -554,7 +557,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <IntlProvider locale="en" messages={en}>
-        <ArchitectureWorkbench profiles={[profile]} recordsLoaded={false} />
+        <ArchitectureWorkbench search={addressSearch()} profiles={[profile]} recordsLoaded={false} />
       </IntlProvider>,
     );
     expect(screen.getByTestId('architecture-record-loading')).toBeInTheDocument();
@@ -573,7 +576,7 @@ describe("the role sentence in the reader's language", () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     return render(
       <IntlProvider locale={locale} messages={locale === 'ko' ? ko : en}>
-        <ArchitectureWorkbench profiles={[profile]} />
+        <ArchitectureWorkbench search={addressSearch()} profiles={[profile]} />
       </IntlProvider>,
     );
   }
@@ -608,6 +611,7 @@ describe('an unreadable architecture document', () => {
     render(
       <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
+        search={addressSearch()}
           profiles={[profile]}
           profileProblems={[
             {

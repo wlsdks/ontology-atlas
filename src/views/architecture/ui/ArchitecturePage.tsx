@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'use-intl';
 import { useRouter } from '@/i18n/navigation';
 import { buildDocsVaultHref } from '@/entities/docs-vault';
+import type { HarnessSearch } from '@/shared/lib/navigation/screen-searches';
 import { Chip, RouteLoadingFallback } from '@/shared/ui';
 import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import { useOntologyInsight } from '@/features/vault-ontology';
@@ -67,12 +68,14 @@ export function ArchitecturePage({
   draftSource = null,
   harnessPanelId,
   harnessPanelLabelledBy,
+  search,
 }: {
+  search: HarnessSearch;
   embedded?: boolean;
   draftSource?: DraftPreviewSource | null;
   harnessPanelId?: string;
   harnessPanelLabelledBy?: string;
-} = {}) {
+}) {
   const tReview = useTranslations('analysisWorkbench');
   const locale = useLocale();
   const router = useRouter();
@@ -303,6 +306,7 @@ export function ArchitecturePage({
     >
       <ArchitectureWorkbench
         embedded={embedded}
+        search={search}
         profiles={profiles}
         profileProblems={profileProblems}
         handoffContexts={handoffContexts}

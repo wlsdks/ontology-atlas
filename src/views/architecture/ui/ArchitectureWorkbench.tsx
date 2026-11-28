@@ -33,8 +33,8 @@ import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 import { ArchitectureVerdict } from './ArchitectureVerdict';
 import { HARNESS_GUTTER_LEFT } from './harness-frame';
 import { currentAddress, guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import type { HarnessSearch } from '@/shared/lib/navigation/screen-searches';
 import { firstSearchText } from '@/shared/lib/navigation/search-text';
-import { useCommittedSearch } from '@/shared/lib/navigation/use-committed-address';
 
 const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
 const EMPTY_EDGES: ArchitectureRecord['brief']['conformance']['violations'] = [];
@@ -79,8 +79,11 @@ export function ArchitectureWorkbench({
   agentActivity = null,
   copyFeedbackMs = COPY_FEEDBACK_MS,
   embedded = false,
+  search,
 }: {
   profiles: ArchitectureProfile[];
+  /** The Harness route's query, where `?role=` names the chosen role. */
+  search: HarnessSearch;
   /** Embedded in the Harness destination: the identity below replaces this view's own header. */
   embedded?: boolean;
   profileProblems?: ReadonlyArray<ArchitectureProfileProblem>;
@@ -114,7 +117,7 @@ export function ArchitectureWorkbench({
   );
 
   /* The chosen role is in the address: a selected role is shareable state, and a deep link is how an agent is handed a state. */
-  const addressRole = firstSearchText(useCommittedSearch().role) ?? null;
+  const addressRole = firstSearchText(search.role) ?? null;
   const [chosenRole, setChosenRole] = useState<string | null>(addressRole);
   /* The other end of the cell last chosen; it marks a column and a row of the pane. */
   const [markedRole, setMarkedRole] = useState<string | null>(null);

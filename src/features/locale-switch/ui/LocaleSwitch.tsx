@@ -1,11 +1,23 @@
 import { useLocale, useTranslations } from 'use-intl';
 import { useTransition } from 'react';
 import { LOCALE_NAME_KEY } from '@/i18n/locales';
-import { usePathname, useRouter } from '@/i18n/navigation';
+import { useRouter as useTanStackRouter } from '@tanstack/react-router';
+import { useRouter } from '@/i18n/navigation';
+import { withoutLocale } from '@/i18n/locale-address';
 import { routing } from '@/i18n/routing';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
 const STORAGE_KEY = 'ontology-atlas:locale';
+
+/** The one router call this switch makes. The router's types cannot name "the screen this switch sits in", which `to: '.'` means. */
+interface ScreenAddresses {
+  buildLocation(options: {
+    to: '.';
+    params: (previous: Record<string, unknown>) => Record<string, unknown>;
+    search: true;
+    hash: true;
+  }): { href: string };
+}
 
 export interface LocaleSwitchProps {
   locales?: readonly string[];
@@ -16,8 +28,8 @@ export interface LocaleSwitchProps {
 export function LocaleSwitch({ onSwitchStart, locales = routing.locales }: LocaleSwitchProps = {}) {
   const t = useTranslations('locale');
   const locale = useLocale();
-  const pathname = usePathname();
   const router = useRouter();
+  const addresses = useTanStackRouter() as unknown as ScreenAddresses;
   const [isPending, startTransition] = useTransition();
 
   function switchTo(next: string) {
@@ -28,8 +40,14 @@ export function LocaleSwitch({ onSwitchStart, locales = routing.locales }: Local
     } catch {
       // localStorage unavailable — proceed without persistence
     }
-    /* Raw from `window.location`, so duplicate keys, order and encoding survive a language-only switch byte for byte. */
-    const target = `${pathname}${window.location.search}${window.location.hash}`;
+    // The router's own address for the same screen in the other language: `search` and `hash` carry over as written.
+    const { href } = addresses.buildLocation({
+      to: '.',
+      params: (previous: Record<string, unknown>) => ({ ...previous, locale: next }),
+      search: true,
+      hash: true,
+    });
+    const target = withoutLocale(href);
     startTransition(() => {
       router.replace(target, { locale: next, scroll: false });
     });
