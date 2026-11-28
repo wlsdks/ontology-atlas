@@ -1787,7 +1787,7 @@ add('survey', 'analyze-repo-structure-jvm-abilities', { vault: 'miniature-repo' 
 // Hangul inside annotation arguments and signature windows: the script server counts UTF-16
 // units of the original, so the text before `value`, a comment between an annotation and its
 // parenthesis, and a comment inside a `main` signature all weigh one unit per letter.
-const hangulOrder = '주문 조회';
+const hangulOrder = '\uC8FC\uBB38 \uC870\uD68C';
 add('survey', 'analyze-repo-structure-jvm-hangul-annotations', { vault: 'miniature-repo' }, [
   { $: 'write-file', path: '../service/src/main/java/shop/api/HangulController.java', text: operatorSource(
     'package shop.api;',
@@ -1797,14 +1797,14 @@ add('survey', 'analyze-repo-structure-jvm-hangul-annotations', { vault: 'miniatu
     `  @GetMapping(name = "${hangulOrder}", // ${hangulOrder}`,
     '      value = "/orders/{id}")',
     '  public void read() {}',
-    `  @PutMapping /* ${'가'.repeat(30)} */ ("/long")`,
+    `  @PutMapping /* ${'\uAC00'.repeat(30)} */ ("/long")`,
     '  public void change() {}',
     '}',
   ) },
   { $: 'write-file', path: '../service/src/main/java/shop/HangulBoot.java', text: operatorSource(
     'package shop;',
     'public class HangulBoot {',
-    `  public static void /* ${'가'.repeat(100)} */ main(String[] args) {}`,
+    `  public static void /* ${'\uAC00'.repeat(100)} */ main(String[] args) {}`,
     '}',
   ) },
   call('analyze_repo_structure', { rootPath: '$PARENT' }),
