@@ -9,7 +9,7 @@
 //! - Architecture: those edges against a profile's layers and rules ([`architecture_profile`],
 //!   [`architecture_conformance`]).
 //!
-//! Outlines, declarations and evidence search join as their tools are ported.
+//! Declarations ([`source_outline`]) are read from the same trees. Evidence search joins as its tool is ported.
 //!
 //! The crate runs `git` only through `hardened-git` and reads files only through
 //! `confined-files`, so the app and the MCP server share one implementation of each rule.
@@ -47,6 +47,7 @@ mod rust_resolution;
 mod script_imports;
 mod script_resolution;
 mod source_language;
+mod source_outline;
 mod source_scan_error;
 mod source_stamp;
 mod source_walk;
@@ -91,6 +92,11 @@ pub use import_scan::{
     scan_imports, ImportScan, ImportScanOptions, ModuleEdge, DEFAULT_MAX_FILES, MAX_MAX_FILES,
     SOURCE_FILE_MAX_BYTES,
 };
-pub use source_language::{extension_of, SourceLanguage};
+pub use source_language::{extension_of, extension_of_file, SourceLanguage};
+pub use source_outline::{
+    outline_parsed, outline_text, Declaration, DeclarationKind, Outline, OUTLINE_DECLARATION_LIMIT,
+};
 pub use source_scan_error::{ScanErrorCode, SourceScanError};
 pub use source_stamp::{read_git_source_state, GitSourceState};
+pub use source_walk::{walk_sorted, Entry, Flow, WalkLimits, WalkReport};
+pub use workspace_packages::{declared_workspace_members, DeclaredMember};

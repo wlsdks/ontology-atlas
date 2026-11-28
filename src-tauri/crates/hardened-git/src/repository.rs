@@ -442,6 +442,28 @@ impl Repository {
             .collect())
     }
 
+    /// The untracked paths git ignores below this folder, relative to it with `/` separators; a
+    /// folder ignored whole is one entry, with its trailing `/` kept so a caller can tell it from
+    /// a file (`ls-files --others --ignored --exclude-standard --directory -z`). A tracked file is
+    /// not listed even where a pattern would ignore it.
+    pub fn ignored_paths(&self) -> Result<Vec<String>, GitReadError> {
+        let args = [
+            "ls-files".to_string(),
+            "--others".to_string(),
+            "--ignored".to_string(),
+            "--exclude-standard".to_string(),
+            "--directory".to_string(),
+            "-z".to_string(),
+        ];
+        let output = self.succeeded(&args)?;
+        Ok(output
+            .stdout_text()
+            .split('\0')
+            .filter(|name| !name.is_empty())
+            .map(str::to_string)
+            .collect())
+    }
+
     /// The size of each blob (`cat-file --batch-check`), in the order asked. `None` for an object
     /// that is missing or is not a blob.
     pub fn blob_sizes(&self, blobs: &[BlobAt]) -> Result<Vec<Option<u64>>, GitReadError> {

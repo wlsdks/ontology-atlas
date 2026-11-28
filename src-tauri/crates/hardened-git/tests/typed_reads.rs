@@ -313,6 +313,23 @@ fn a_rename_is_two_rows_and_odd_names_are_read_whole() {
 }
 
 #[test]
+fn ignored_paths_name_a_folder_ignored_whole_once_and_never_a_tracked_file() {
+    let base = TempDir::new("typed-ignored");
+    let repo = new_repository(&base, "repo");
+    std::fs::write(repo.join(".gitignore"), "out/\n*.log\n").expect("ignore file");
+    std::fs::create_dir_all(repo.join("out/deep")).expect("out");
+    std::fs::write(repo.join("out/deep/a.js"), "a\n").expect("built file");
+    std::fs::write(repo.join("debug.log"), "x\n").expect("log");
+    std::fs::write(repo.join("kept.log"), "k\n").expect("tracked log");
+    std::fs::write(repo.join("src.ts"), "s\n").expect("source");
+    plain_git(&repo, &["add", "-f", ".gitignore", "kept.log", "src.ts"]);
+    plain_git(&repo, &["commit", "-qm", "seed"]);
+    let mut listed = repository(&repo).ignored_paths().expect("ignored paths");
+    listed.sort();
+    assert_eq!(listed, ["debug.log", "out/"]);
+}
+
+#[test]
 fn a_status_read_leaves_the_index_alone_so_it_cannot_make_the_persons_commit_fail() {
     let base = TempDir::new("typed-index");
     clear_filter_cache();
