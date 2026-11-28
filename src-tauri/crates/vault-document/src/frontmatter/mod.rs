@@ -141,3 +141,26 @@ impl<'a> IntoIterator for &'a Frontmatter {
         self.iter()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::Document;
+
+    /// Past `KEYS_FOUND_BY_LOOKING` keys a key written twice is found through a table instead of
+    /// by looking along the list; both must leave the last value at the first position.
+    #[test]
+    fn a_key_written_twice_keeps_its_first_place_and_last_value_however_many_keys() {
+        for key_count in [3, super::KEYS_FOUND_BY_LOOKING + 8] {
+            let mut text = String::from("---\nkind: capability\n");
+            for number in 1..key_count {
+                text.push_str(&format!("own_key_{number}: {number}\n"));
+            }
+            text.push_str("kind: element\n---\n");
+            let document = Document::from_text(&text);
+            let frontmatter = document.frontmatter();
+            assert_eq!(frontmatter.len(), key_count, "{key_count} keys");
+            assert_eq!(frontmatter.keys().next(), Some("kind"));
+            assert_eq!(frontmatter.text("kind"), Some("element"));
+        }
+    }
+}
