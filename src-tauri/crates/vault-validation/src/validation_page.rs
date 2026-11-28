@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use answer_format::pagination::Pagination;
 use answer_format::whitespace::trim;
-use build_depth::{Coverage, CoverageCounts, CoveragePage};
+use build_depth::{Coverage, CoverageCounts, CoveragePage, FinalizeBlock};
 use serde::Serialize;
 use vault_document::Issue;
 
@@ -38,6 +38,9 @@ pub struct ValidationFrame {
     /// `repoRoot`, where a row for each cited path would ask for each to be patched away.
     pub repo_root_missing: bool,
     pub coverage: Option<Coverage>,
+    /// What `finalize_project_meaning` would hold an answered row to; `None` when no repository is
+    /// known to hold the map against.
+    pub finalize_gate: Option<Vec<FinalizeBlock>>,
     pub summary_freshness: SummaryFreshness,
     pub evidence_drift: EvidenceDrift,
     pub path_drift: PathDrift,
@@ -111,6 +114,8 @@ struct Frame<'a> {
     repo_root: Option<RepoRoot>,
     #[serde(skip_serializing_if = "Option::is_none")]
     coverage: Option<CoveragePage<'a>>,
+    #[serde(rename = "finalizeGate", skip_serializing_if = "Option::is_none")]
+    finalize_gate: &'a Option<Vec<FinalizeBlock>>,
     problems: &'a [Problem],
     summary: &'a ProblemSummary,
     #[serde(rename = "summaryFreshness")]
@@ -133,6 +138,8 @@ pub struct ValidationPage<'a> {
     repo_root: Option<RepoRoot>,
     #[serde(skip_serializing_if = "Option::is_none")]
     coverage: Option<CoveragePage<'a>>,
+    #[serde(rename = "finalizeGate", skip_serializing_if = "Option::is_none")]
+    finalize_gate: &'a Option<Vec<FinalizeBlock>>,
     problems: Vec<Problem>,
     summary: ProblemSummary,
     #[serde(rename = "summaryFreshness")]
@@ -224,6 +231,8 @@ pub struct BriefValidation<'a> {
     problems: Vec<Problem>,
     #[serde(skip_serializing_if = "Option::is_none")]
     coverage: Option<CoverageCounts<'a>>,
+    #[serde(rename = "finalizeGate", skip_serializing_if = "Option::is_none")]
+    finalize_gate: &'a Option<Vec<FinalizeBlock>>,
     #[serde(rename = "evidenceDrift")]
     evidence_drift: EvidenceCountsOnly<'a>,
     #[serde(rename = "summaryFreshness")]
@@ -422,6 +431,7 @@ pub fn page_validation<'a>(
             scanned: frame.scanned,
             repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
             coverage,
+            finalize_gate: &frame.finalize_gate,
             problems: &[],
             summary: &summary,
             summary_freshness: &frame.summary_freshness,
@@ -482,6 +492,7 @@ pub fn page_validation<'a>(
         scanned: frame.scanned,
         repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
         coverage,
+        finalize_gate: &frame.finalize_gate,
         problems: rows,
         summary,
         summary_freshness: &frame.summary_freshness,
@@ -536,6 +547,7 @@ pub fn brief_validation<'a>(
         },
         problems: rows,
         coverage: frame.coverage.as_ref().map(Coverage::counts),
+        finalize_gate: &frame.finalize_gate,
         evidence_drift: EvidenceCountsOnly {
             checked: frame.evidence_drift.checked,
             counts: &frame.evidence_drift.counts,
@@ -622,6 +634,7 @@ mod tests {
                 areas: None,
                 reads: None,
             }),
+            finalize_gate: None,
             summary_freshness: SummaryFreshness {
                 checked: true,
                 summary_nodes: 0,

@@ -5,10 +5,13 @@
 //! started for when it was found, or the `repoRoot` the call names. Without one the report says
 //! what was not measured instead of measuring the working directory.
 
-use build_depth::measure_against_survey;
+use build_depth::{
+    finalize_gate, measure_against_survey, measure_build_depth, BuildDepthInput, FinalizeBlock,
+};
 use confined_files::{SourceFiles, VaultRoot};
 use hardened_git::RepoPath;
 use meaning_findings::WITNESS_TEXT_MAX_BYTES;
+use repository_survey::Survey;
 use source_reads::ReadsUnder;
 use source_scan::place_folder;
 use vault_document::{LoadedDocument, ReferenceIndex};
@@ -22,6 +25,24 @@ use super::kept_survey::{kept_survey, survey_from_disk};
 use super::vault_repository::{locate, locate_from, Located};
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
+
+/// What `finalize_project_meaning` would hold an answered row to, measured against `survey` when
+/// the repository has product units, else against the reads alone.
+fn gate_of(
+    documents: &[LoadedDocument],
+    survey: Option<&Survey>,
+    reads: &ReadsUnder,
+    source: Option<&dyn SourceFiles>,
+) -> Vec<FinalizeBlock> {
+    let surveyed = survey.filter(|survey| !survey.collection.units.is_empty());
+    let depth = measure_build_depth(&BuildDepthInput {
+        documents,
+        survey: surveyed,
+        reads: Some(reads),
+        source: surveyed.and(source),
+    });
+    finalize_gate(documents, &depth)
+}
 
 /// Every row of the validation and what surrounds the rows.
 pub struct VaultReport {
@@ -59,25 +80,33 @@ pub fn build_report(
         (None, None) => None,
     };
 
+    let empty_reads = || ReadsUnder {
+        reads: std::collections::HashMap::new(),
+        cited: std::collections::HashMap::new(),
+    };
     let measured = source.map(|source| {
         if target.reads_census() {
             kept_survey(context, &target, &[]).map(|survey| {
-                let no_reads = ReadsUnder {
-                    reads: std::collections::HashMap::new(),
-                    cited: std::collections::HashMap::new(),
-                };
-                measure_against_survey(documents, &survey, &no_reads, source)
+                let no_reads = empty_reads();
+                let measured = measure_against_survey(documents, &survey, &no_reads, source);
+                let gate = gate_of(documents, Some(&survey), &no_reads, Some(source));
+                (measured, gate)
             })
         } else {
             let survey = survey_from_disk(context, &target, &[]);
             let reads = context.source_reads().reads_under(target.source_root());
-            Ok(measure_against_survey(documents, &survey, &reads, source))
+            let measured = measure_against_survey(documents, &survey, &reads, source);
+            let gate = gate_of(documents, Some(&survey), &reads, Some(source));
+            Ok((measured, gate))
         }
     });
     let measured = measured.transpose()?;
-    let (coverage, survey_findings) = match measured {
-        Some(measured) => (measured.coverage, measured.findings),
-        None => (None, Vec::new()),
+    // The gate is read against a repository the call or the server names, even one that is gone:
+    // with nothing read, a capability's rule has no read lines to cite.
+    let (coverage, survey_findings, finalize_gate) = match measured {
+        Some((measured, gate)) => (measured.coverage, measured.findings, Some(gate)),
+        None if named => (None, Vec::new(), Some(gate_of(documents, None, &empty_reads(), None))),
+        None => (None, Vec::new(), None),
     };
     let issues = collect_issues(
         documents,
@@ -143,6 +172,7 @@ pub fn build_report(
             scanned: documents.len(),
             repo_root_missing,
             coverage,
+            finalize_gate,
             summary_freshness: freshness,
             evidence_drift: evidence,
             path_drift: drift,
