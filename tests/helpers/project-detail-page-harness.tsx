@@ -45,9 +45,6 @@ vi.mock("@/features/taxonomy", () => ({
 vi.mock("@/widgets/search-palette", () => ({
   SearchPalette: () => null,
 }));
-vi.mock("@/features/construction-review-local", () => ({
-  useConstructionReviewSession: () => hoistedMocks.constructionReview,
-}));
 // The real hook reaches the desktop bridge.
 vi.mock("@/views/project-detail/lib/use-project-agent", () => ({
   useProjectAgent: () => hoistedMocks.agent,
@@ -101,51 +98,6 @@ export function containsEdge(from: string, to: string) {
 }
 
 export const SLUG = "ontology-atlas";
-const PLAN_DIGEST = `sha256:${"a".repeat(64)}`;
-const SOURCE_DIGEST = `sha256:${"b".repeat(64)}`;
-
-export function constructionEnvelope(overrides: {
-  projectSlug?: string;
-  sourceDigest?: string;
-  writePlan?: unknown;
-} = {}) {
-  const plan = {
-    concepts: [{ slug: SLUG }],
-    relations: [{ from: SLUG, type: "domains", to: "shared-meaning" }],
-    competencyAnswers: { scope: "answered" },
-  };
-  const projectSlug = overrides.projectSlug ?? SLUG;
-  const sourceDigest = overrides.sourceDigest ?? SOURCE_DIGEST;
-  return {
-    qualification: {
-      contract: "constructionQualification:v1",
-      subject: { projectSlug, graphDigest: PLAN_DIGEST, sourceDigest: SOURCE_DIGEST },
-      purposeAuthority: { outcome: "People and agents judge the same local meaning." },
-      competencyQuestions: [], witnesses: [], cqResults: [], claims: [], citationChecks: [],
-      axisResults: [], diagnostics: [],
-      acceptance: { decision: "accepted", decidedBy: "jinan", authority: "human", planDigest: PLAN_DIGEST },
-    },
-    analysis: {
-      project: { slug: projectSlug },
-      proposalValidation: {
-        reviewPlan: plan,
-        writePlan: overrides.writePlan === undefined ? structuredClone(plan) : overrides.writePlan,
-        findings: [],
-        constructionLifecycle: {
-          contract: "ontologyConstructionLifecycle:v1",
-          qualificationStatus: "qualified",
-          writeEligibility: "executable",
-          planDigest: PLAN_DIGEST,
-          sourceDigest,
-          firstBlockingPhase: null,
-          diagnostics: [],
-          nextAction: "Write the exact approved rows.",
-        },
-      },
-    },
-  };
-}
-
 export const BASE_NODES = [
   ontologyNode(`project:${SLUG}`, "project", [], "ontology-atlas"),
   ontologyNode("domain:views", "domain", [SLUG], "Views"),
@@ -193,14 +145,6 @@ const hoistedMocks = vi.hoisted(() => ({
     setOpen: vi.fn(),
     openingRequest: null,
     start: vi.fn(),
-  } as Record<string, unknown>,
-  constructionReview: {
-    status: "idle",
-    review: null,
-    errorState: null,
-    openPicker: vi.fn(),
-    readFile: vi.fn(),
-    inputProps: {},
   } as Record<string, unknown>,
 }));
 
@@ -338,14 +282,6 @@ export function resetProjectDetailMocks() {
     setOpen: vi.fn(),
     openingRequest: null,
     start: vi.fn(),
-  };
-  hoistedMocks.constructionReview = {
-    status: "idle",
-    review: null,
-    errorState: null,
-    openPicker: vi.fn(),
-    readFile: vi.fn(),
-    inputProps: {},
   };
 }
 

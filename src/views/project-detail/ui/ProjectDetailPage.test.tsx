@@ -3,7 +3,6 @@ import {
   BASE_NODES,
   SLUG,
   baseProject,
-  constructionEnvelope,
   containsEdge,
   mocks,
   ontologyNode,
@@ -101,7 +100,6 @@ describe("ProjectDetailPage", () => {
       "project-detail-copy-link",
       "project-detail-docs-vault-link",
       "project-detail-quick-edit",
-      "construction-review-open",
       "project-detail-brief-ask",
       "project-detail-new-project",
     ]);
@@ -152,54 +150,6 @@ describe("ProjectDetailPage", () => {
     expect(within(dialog).getByTestId("project-detail-brief-ask-copy")).toBeInTheDocument();
     expect(within(dialog).queryByTestId("project-detail-brief-ask-open")).not.toBeInTheDocument();
     expect(screen.queryByTestId("project-agent-dock-frame")).not.toBeInTheDocument();
-  });
-
-  it("opens one local review result between the identity and the composition without persisting it", async () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    const parsed = await import("@/entities/construction-review").then(({ parseConstructionReviewEnvelope }) =>
-      parseConstructionReviewEnvelope(constructionEnvelope(), SLUG),
-    );
-    if (!parsed.ok) throw new Error(parsed.issues.join(","));
-    mocks.constructionReview = {
-      status: "ready",
-      review: parsed.value,
-      errorState: null,
-      openPicker: vi.fn(),
-      readFile: vi.fn(),
-      inputProps: {},
-    };
-    renderPage();
-
-    expect(screen.getByTestId("construction-review-ingress")).toBeInTheDocument();
-    const summary = screen.getByTestId("construction-review-summary");
-    expect(summary).toHaveAttribute("data-qualification-status", "qualified");
-    expect(screen.getByTestId("project-detail-identity").compareDocumentPosition(summary)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(summary.compareDocumentPosition(screen.getByTestId("project-detail-composition"))).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(localStorage).toHaveLength(0);
-  });
-
-  it.each(["malformed", "project_mismatch", "digest_mismatch", "plan_mismatch"])(
-  "fails closed for %s review input", async (state) => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.constructionReview = {
-      status: "blocked",
-      review: null,
-      errorState: state,
-      openPicker: vi.fn(),
-      readFile: vi.fn(),
-      inputProps: {},
-    };
-    renderPage();
-
-    const error = screen.getByTestId("construction-review-error");
-    expect(error).toHaveAttribute("data-envelope-state", state);
-    expect(screen.queryByTestId("construction-review-summary")).not.toBeInTheDocument();
   });
 
   it("says this project's own counts in words on the composition heading line", () => {

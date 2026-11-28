@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { BookOpen, FileText, FilePlus2, Link2, NotebookPen, PencilLine } from "lucide-react";
+import { BookOpen, FilePlus2, Link2, NotebookPen, PencilLine } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildProjectRuntimeDetailUrl, buildTopologyProjectNodeHref, type Project } from "@/entities/project";
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
@@ -12,8 +12,6 @@ import { Button, Dialog, DialogBody, DialogFooter, buttonVariants, controlClass,
 import { cn } from "@/shared/lib/cn";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { ProjectMoreMenu, type ProjectMenuItem } from "./ProjectMoreMenu";
-
-const FILE_HINT_ID = "construction-review-file-hint";
 
 interface Props {
   project: Project;
@@ -28,11 +26,6 @@ interface Props {
     explanation: string;
     startAgent: ((prompt: string) => void) | null;
   };
-  review: {
-    inputProps: InputHTMLAttributes<HTMLInputElement>;
-    openPicker: () => void;
-    reading: boolean;
-  };
 }
 
 export function ProjectActions({
@@ -44,7 +37,6 @@ export function ProjectActions({
   documentHref,
   handoffSnippet,
   brief,
-  review,
 }: Props) {
   const t = useTranslations("projectPages.detail");
   const tLink = useTranslations("copyProjectLink");
@@ -94,14 +86,6 @@ export function ProjectActions({
         }]
       : []),
     {
-      label: review.reading ? t("constructionReview.readingResult") : t("constructionReview.openResult"),
-      icon: <FileText size={ICON_SIZE.md} aria-hidden />,
-      testId: "construction-review-open",
-      disabled: review.reading,
-      describedBy: FILE_HINT_ID,
-      onSelect: review.openPicker,
-    },
-    {
       label: brief.startAgent ? t("briefAskOpen") : t("briefAskCopy"),
       icon: <NotebookPen size={ICON_SIZE.md} aria-hidden />,
       testId: "project-detail-brief-ask",
@@ -150,10 +134,6 @@ export function ProjectActions({
         {t("handoffHumanCaption")}
       </button>
 
-      <input {...review.inputProps} data-testid="construction-review-ingress" aria-label={t("constructionReview.openResult")} hidden />
-      <p id={FILE_HINT_ID} className="sr-only">
-        {t("constructionReview.fileHint")}
-      </p>
       {canManage ? (
         <div ref={quickEditRef} className="[&>button]:hidden">
           <ProjectQuickEditPanel
