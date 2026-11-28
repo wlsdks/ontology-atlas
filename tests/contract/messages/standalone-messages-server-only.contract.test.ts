@@ -3,15 +3,20 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The message files never enter client JavaScript through a static import: only
- * `standalone-messages.ts` may import them, and it and its importers must be server code.
+ * Everything under `src/` is browser code, so a whole-language message file imported there ships all
+ * of that language's catalogue in the page. The screens outside the workbench's providers (the 404
+ * and the error boundary) take only the namespace files they read, through the two modules named below.
  */
 const ROOT = process.cwd();
 const SCAN_DIRS = ["src", "app"];
-const ALLOWED_IMPORTER = "src/i18n/standalone-messages.ts";
-const MESSAGE_IMPORT = /^\s*import\s+(?!type\b)[^;]*?from\s+['"][^'"]*messages\/[a-z]{2}\.json['"]/mu;
-const PICKER_IMPORT =
-  /^\s*import\s+(?!type\b)[^;]*?from\s+['"][^'"]*(?:i18n\/standalone-messages)['"]/mu;
+const WHOLE_CATALOGUE_IMPORT = /^\s*import\s+(?!type\b)[^;]*?from\s+['"][^'"]*messages\/[a-z]{2}\.json['"]/mu;
+const NAMESPACE_IMPORT = /from\s+['"][^'"]*messages\/([a-z]{2})\/([A-Za-z]+)\.json['"]/gu;
+
+/** What each standalone screen may import, so a large namespace cannot ride along unseen. */
+const STANDALONE_NAMESPACES: Record<string, readonly string[]> = {
+  "src/i18n/route-error-messages.ts": ["routeError"],
+  "src/i18n/not-found-messages.ts": ["notFound", "gatewayNav", "locale", "download"],
+};
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -27,24 +32,23 @@ const FILES = SCAN_DIRS.flatMap((dir) => walk(join(ROOT, dir))).map((path) => ({
   rel: relative(ROOT, path),
   text: readFileSync(path, "utf8"),
 }));
-const isClient = (text: string) => /^\s*['"]use client['"]/u.test(text);
 
-describe("message files stay out of client bundles", () => {
+describe("message files stay out of the browser's first pages", () => {
   it("scans real source", () => {
     expect(FILES.length, "no source scanned; the checks below would idle").toBeGreaterThan(200);
   });
 
-  it("only the server-side picker imports the message files statically", () => {
-    const importers = FILES.filter((f) => MESSAGE_IMPORT.test(f.text)).map((f) => f.rel);
-    expect(importers).toEqual([ALLOWED_IMPORTER]);
+  it("no module imports a whole-language message file", () => {
+    const importers = FILES.filter((f) => WHOLE_CATALOGUE_IMPORT.test(f.text)).map((f) => f.rel);
+    expect(importers).toEqual([]);
   });
 
-  it("the picker and every module that imports it are server code", () => {
-    const picker = FILES.find((f) => f.rel === ALLOWED_IMPORTER);
-    expect(picker && isClient(picker.text)).toBe(false);
-    const users = FILES.filter((f) => f.rel !== ALLOWED_IMPORTER && PICKER_IMPORT.test(f.text));
-    expect(users.length, "no user of the picker found; the check would idle").toBeGreaterThan(0);
-    const clientUsers = users.filter((f) => isClient(f.text)).map((f) => f.rel);
-    expect(clientUsers).toEqual([]);
+  it("the standalone screens import only the namespaces listed for them", () => {
+    for (const [rel, allowed] of Object.entries(STANDALONE_NAMESPACES)) {
+      const file = FILES.find((f) => f.rel === rel);
+      expect(file, `${rel} is missing`).toBeDefined();
+      const namespaces = [...new Set([...file!.text.matchAll(NAMESPACE_IMPORT)].map((m) => m[2]!))].sort();
+      expect(namespaces, `${rel} imports a namespace that is not listed`).toEqual([...allowed].sort());
+    }
   });
 });

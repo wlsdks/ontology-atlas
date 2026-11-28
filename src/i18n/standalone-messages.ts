@@ -1,52 +1,11 @@
-import koMessages from '@/messages/ko.json';
-import enMessages from '@/messages/en.json';
-import jaMessages from '@/messages/ja.json';
-import zhMessages from '@/messages/zh.json';
 import type { AppLocale } from '@/i18n/locales';
 
 /**
- * Server-side only: the message subset for screens outside `app/[locale]/layout.tsx` (the root
- * 404 and error boundary). Never import it from a `'use client'` module, or about 836 KB of JSON
- * ships in every page; a server component passes the picked namespaces as props. The
- * contract `tests/contract/messages/standalone-messages-server-only.contract.test.ts` enforces this.
+ * The shape of the words a screen outside the workbench's providers carries (the 404 and the error
+ * boundary): a few namespaces per language, imported from the namespace files by
+ * `route-error-messages.ts` and `not-found-messages.ts`. A whole-language file would put every
+ * catalogue into those pages; `tests/contract/messages/standalone-messages-server-only.contract.test.ts`
+ * refuses it.
  */
-const ALL = { ko: koMessages, en: enMessages, ja: jaMessages, zh: zhMessages } as const satisfies Record<AppLocale, unknown>;
-
 export type StandaloneLocale = AppLocale;
 export type StandaloneMessages = Record<StandaloneLocale, Record<string, unknown>>;
-
-/**
- * Which namespaces to carry: `true` takes the whole namespace, a key list takes only those
- * keys (for a large namespace where the screen reads one or two labels).
- */
-export type StandaloneMessagePick = Record<string, true | readonly string[]>;
-
-export function pickStandaloneMessages(pick: StandaloneMessagePick): StandaloneMessages {
-  const out = Object.fromEntries(
-    (Object.keys(ALL) as StandaloneLocale[]).map((locale) => [locale, {}]),
-  ) as StandaloneMessages;
-  for (const locale of Object.keys(ALL) as StandaloneLocale[]) {
-    const source = ALL[locale] as Record<string, Record<string, unknown>>;
-    for (const [namespace, keys] of Object.entries(pick)) {
-      const ns = source[namespace];
-      if (!ns) continue;
-      out[locale][namespace] =
-        keys === true ? ns : Object.fromEntries(keys.filter((k) => k in ns).map((k) => [k, ns[k]]));
-    }
-  }
-  return out;
-}
-
-/** The root error boundary's copy. Small enough to ride on every page (about 0.6 KB). */
-export const ROUTE_ERROR_PICK: StandaloneMessagePick = { routeError: true };
-
-/**
- * The root 404's copy plus what the gateway chrome on it reads; `download` is large, so only
- * the crumb's key rides along. `TerminalState.test.tsx` fails on any missing message.
- */
-export const NOT_FOUND_PICK: StandaloneMessagePick = {
-  notFound: true,
-  gatewayNav: true,
-  locale: true,
-  download: ['downloadSectionLabel'],
-};

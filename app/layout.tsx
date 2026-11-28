@@ -8,7 +8,7 @@ import { jetbrainsMono, pretendard, pretendardLatinStack } from '@/shared/config
 import { LOCALE_META } from '@/i18n/locales';
 import { siteMetadata } from '@/shared/lib/public-pages/site-metadata';
 import { StandaloneMessagesProvider } from '@/views/terminal-state';
-import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
+import { ROUTE_ERROR_MESSAGES } from '@/i18n/route-error-messages';
 // Pretendard's 92 dynamic subsets as one family, `Pretendard Variable`, for Korean pages
 // (`app/styles/lang-cjk.css`); a face is fetched only when a page renders one of its characters.
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
@@ -53,7 +53,7 @@ export default function RootLayout({
         <WebviewErrorReporter />
         <JsonLd data={siteEntityGraph(Object.values(LOCALE_META).map((meta) => meta.htmlLang))} />
         {/* The root error boundary replaces the locale layout, so its copy is handed down as props; a client import of the message files would ship them all in every page. */}
-        <StandaloneMessagesProvider messages={pickStandaloneMessages(ROUTE_ERROR_PICK)}>
+        <StandaloneMessagesProvider messages={ROUTE_ERROR_MESSAGES}>
           {children}
         </StandaloneMessagesProvider>
       </body>

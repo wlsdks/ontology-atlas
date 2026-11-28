@@ -1,12 +1,10 @@
 import { useEffect } from 'react';
 
 import { reportWebviewError } from '@/shared/lib/failures/report-webview-error';
-import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
+import { ROUTE_ERROR_MESSAGES } from '@/i18n/route-error-messages';
 import { RouteErrorScreen, StandaloneMessagesProvider } from '@/views/terminal-state';
 
 import { BootPictureRemover } from './BootPictureRemover';
-
-const messages = pickStandaloneMessages(ROUTE_ERROR_PICK);
 
 /** A screen that threw, or a tab that asked for a file a deploy removed; reloading recovers. */
 export default function StandaloneRouteError({ error, reset }: { error: Error; reset: () => void }) {
@@ -16,7 +14,7 @@ export default function StandaloneRouteError({ error, reset }: { error: Error; r
     reportWebviewError('render', error);
   }, [error]);
   return (
-    <StandaloneMessagesProvider messages={messages}>
+    <StandaloneMessagesProvider messages={ROUTE_ERROR_MESSAGES}>
       <BootPictureRemover />
       <RouteErrorScreen onRetry={reset} />
     </StandaloneMessagesProvider>

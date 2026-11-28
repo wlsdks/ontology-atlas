@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { NotFoundScreen } from "@/views/terminal-state";
-import { NOT_FOUND_PICK, pickStandaloneMessages } from "@/i18n/standalone-messages";
+import { NOT_FOUND_MESSAGES } from "@/i18n/not-found-messages";
 
 /**
  * Under `output: 'export'` the static host serves this root file even for `/ko/…`, and the root
@@ -11,5 +11,5 @@ import { NOT_FOUND_PICK, pickStandaloneMessages } from "@/i18n/standalone-messag
 export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function NotFound() {
-  return <NotFoundScreen standaloneMessages={pickStandaloneMessages(NOT_FOUND_PICK)} />;
+  return <NotFoundScreen standaloneMessages={NOT_FOUND_MESSAGES} />;
 }

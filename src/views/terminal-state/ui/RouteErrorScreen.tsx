@@ -10,7 +10,7 @@ import { StandaloneLocaleProvider, useStandaloneLocale } from './standalone-loca
 
 /**
  * The root error boundary, which replaces the locale layout, so it mounts its own locale
- * provider fed by the root layout (`ROUTE_ERROR_PICK`), never a JSON import that would ship the
+ * provider fed by the root layout (`ROUTE_ERROR_MESSAGES`), never a JSON import that would ship the
  * message files to every page. No gateway chrome: it may be what threw.
  */
 export function RouteErrorScreen({ digest, onRetry }: { digest?: string; onRetry: () => void }) {
