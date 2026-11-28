@@ -78,4 +78,22 @@ mod tests {
             .unwrap_or("")
             .contains("move it into the vault root,"));
     }
+
+    /// A file saved on Windows ends its lines with CR LF (Git's `autocrlf` does it on checkout), and
+    /// its frontmatter is read all the same: the kind under `sources/` is found.
+    #[test]
+    fn a_raw_source_saved_with_windows_line_endings_still_reports_its_kind() {
+        let folder = tempfile::tempdir().expect("folder");
+        let sources = folder.path().join("sources");
+        std::fs::create_dir_all(&sources).expect("sources");
+        std::fs::write(
+            sources.join("a.md"),
+            "---\r\nkind: capability\r\ntitle: A\r\n---\r\nBody\r\n",
+        )
+        .expect("a");
+        let root = VaultRoot::open(folder.path()).expect("root");
+        let found = raw_source_kind_issues(&root);
+        let slugs: Vec<&str> = found.iter().map(|(slug, _)| slug.as_str()).collect();
+        assert_eq!(slugs, ["sources/a"]);
+    }
 }
