@@ -88,10 +88,9 @@ describe("what the app folder leaves out has no way in from the app", () => {
     for (const href of [buildProjectRuntimeDetailHref("a b/c"), buildProjectEditHref("a b/c", { returnTo: "/topology" })]) {
       expect(new URL(href, "https://atlas.invalid").pathname).not.toMatch(/\/project\/a/);
     }
-    // Only the address helpers and a text search spell the path form.
+    // Only a text search spells the path form.
     const pathForm = /\/project\/\$\{/;
     const allowed = new Set([
-      "src/entities/project/lib/detail-href.ts",
       // Scores documents whose text mentions the address; it renders no link.
       "src/entities/docs-vault/lib/doc-navigation/related-docs.ts",
     ]);

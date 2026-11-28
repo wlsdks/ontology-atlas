@@ -1,12 +1,3 @@
-/** `/project/{slug}/`, with the slug encoded so unsafe characters do not 404. */
-export function buildProjectDetailHref(slug: string): string {
-  return `/project/${encodeURIComponent(slug)}/`;
-}
-
-export function buildProjectDetailUrl(origin: string, slug: string): string {
-  return new URL(buildProjectDetailHref(slug), origin).toString();
-}
-
 const PROJECT_FALLBACK_HREF = "/project/fallback/";
 
 export interface ProjectFallbackRoute {
@@ -69,35 +60,18 @@ export function buildProjectEditHref(
   });
 }
 
-/** Resolves the query path and the older rewritten pathname to one state; unresolved returns to the list. */
+/** Reads the fallback address's query into one state; a query that names no project returns to the list. */
 export function resolveProjectFallbackRoute(
-  pathname: string,
   search: string,
 ): ProjectFallbackRoute | null {
   const params = new URLSearchParams(
     search.startsWith("?") ? search.slice(1) : search,
   );
-  const querySlug = params.get("slug");
-  let slug = querySlug || null;
-  let pathnameMode: ProjectFallbackRoute["mode"] = "detail";
-
-  if (!slug) {
-    const match = pathname.match(
-      /^(?:\/[^/]+)?\/project\/([^/]+)(?:\/(edit))?\/?$/,
-    );
-    if (!match) return null;
-    try {
-      slug = decodeURIComponent(match[1]);
-    } catch {
-      return null;
-    }
-    pathnameMode = match[2] === "edit" ? "edit" : "detail";
-  }
-
+  const slug = params.get("slug");
   if (!slug || slug === "fallback") return null;
 
   return {
-    mode: params.get("mode") === "edit" ? "edit" : pathnameMode,
+    mode: params.get("mode") === "edit" ? "edit" : "detail",
     slug,
     returnTo: params.get("returnTo") ?? undefined,
     savedNotice: params.get("saved") === "1",

@@ -4,7 +4,6 @@ import { parseSearch } from "@/shared/lib/navigation/atlas-search";
 import { ProjectFallbackScreen } from "./ProjectFallbackScreen";
 
 const mocks = vi.hoisted(() => ({
-  pathname: "/ko/project/fallback/",
   search: "slug=project",
   replace: vi.fn(),
 }));
@@ -41,13 +40,12 @@ vi.mock("@/views/project-editor", () => ({
 
 describe("ProjectFallbackScreen", () => {
   beforeEach(() => {
-    mocks.pathname = "/ko/project/fallback/";
     mocks.search = "slug=project";
     mocks.replace.mockReset();
   });
 
   it("passes the query slug to the project detail screen", () => {
-    render(<ProjectFallbackScreen pathname={mocks.pathname} search={parseSearch(mocks.search)} />);
+    render(<ProjectFallbackScreen search={parseSearch(mocks.search)} />);
 
     expect(screen.getByTestId("detail-page")).toHaveTextContent("project");
     expect(screen.queryByTestId("editor-page")).not.toBeInTheDocument();
@@ -57,7 +55,7 @@ describe("ProjectFallbackScreen", () => {
     mocks.search =
       "slug=project&mode=edit&returnTo=%2Fproject%2Ffallback%2F%3Fslug%3Dproject&saved=1";
 
-    render(<ProjectFallbackScreen pathname={mocks.pathname} search={parseSearch(mocks.search)} />);
+    render(<ProjectFallbackScreen search={parseSearch(mocks.search)} />);
 
     expect(screen.getByTestId("editor-page")).toHaveTextContent("project");
     expect(screen.getByTestId("editor-page")).toHaveAttribute(
@@ -74,7 +72,7 @@ describe("ProjectFallbackScreen", () => {
   it("returns a direct fallback without a slug to the project list", () => {
     mocks.search = "";
 
-    render(<ProjectFallbackScreen pathname={mocks.pathname} search={parseSearch(mocks.search)} />);
+    render(<ProjectFallbackScreen search={parseSearch(mocks.search)} />);
 
     expect(mocks.replace).toHaveBeenCalledWith("/projects");
     expect(screen.queryByTestId("detail-page")).not.toBeInTheDocument();
