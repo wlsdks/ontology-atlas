@@ -136,22 +136,20 @@ impl DocumentCache {
         };
         // One look at every name, on this thread, a folder's files together (`serial_reads` says
         // why not on every core); a settled file whose stamp holds is kept, the rest are read.
-        let stamps = ConfinedPath::stamps(files);
-        let mut outcomes: Vec<Option<Outcome>> = Vec::with_capacity(files.len());
-        let mut unsettled: Vec<(usize, &ConfinedPath, Option<&Entry>)> = Vec::new();
-        for (position, (file, stamp)) in files.iter().zip(stamps).enumerate() {
+        // A kept document is one word per file; only the files read hold a whole outcome.
+        let mut kept_documents: Vec<Option<LoadedDocument>> = Vec::with_capacity(files.len());
+        let mut unsettled: Vec<(&ConfinedPath, Option<&Entry>)> = Vec::new();
+        for (position, (file, stamp)) in files.iter().zip(ConfinedPath::stamps(files)).enumerate() {
             let cached = cached_for(position, file);
-            match kept(cached, &stamp) {
-                Some(document) => outcomes.push(Some(Outcome::Kept(document))),
-                None => {
-                    outcomes.push(None);
-                    unsettled.push((position, file, cached));
-                }
+            let document = kept(cached, &stamp);
+            if document.is_none() {
+                unsettled.push((file, cached));
             }
+            kept_documents.push(document);
         }
-        let read = read_serially(
+        let mut read = read_serially(
             &unsettled,
-            |(_, file, _)| {
+            |(file, _)| {
                 self.reads.fetch_add(1, Ordering::Relaxed);
                 let snapshot = file.read_snapshot();
                 let bytes = snapshot
@@ -164,13 +162,9 @@ impl DocumentCache {
                     bytes,
                 }
             },
-            |(_, file, cached), snapshot| self.outcome_of(root, file, *cached, snapshot),
-        );
-        for ((position, ..), outcome) in unsettled.iter().zip(read) {
-            if let Some(slot) = outcomes.get_mut(*position) {
-                *slot = Some(outcome);
-            }
-        }
+            |(file, cached), snapshot| self.outcome_of(root, file, *cached, snapshot),
+        )
+        .into_iter();
         // At the first change, the files before it, which were all kept, start the new entries.
         let keep_before = |position: usize, next: &mut Vec<Entry>| {
             next.reserve(files.len());
@@ -181,8 +175,14 @@ impl DocumentCache {
         let mut documents = Vec::with_capacity(files.len());
         let mut changed = !same_listing;
         let mut next: Vec<Entry> = Vec::new();
-        for (position, (file, outcome)) in files.iter().zip(outcomes).enumerate() {
-            match outcome.unwrap_or(Outcome::Gone) {
+        for (position, (file, kept_document)) in files.iter().zip(kept_documents).enumerate() {
+            // The files read come back in the order they were listed, so each file not kept takes
+            // the next outcome.
+            let outcome = match kept_document {
+                Some(document) => Outcome::Kept(document),
+                None => read.next().unwrap_or(Outcome::Gone),
+            };
+            match outcome {
                 Outcome::Kept(document) => {
                     if changed {
                         next.extend(cached_for(position, file).map(Entry::copy));
