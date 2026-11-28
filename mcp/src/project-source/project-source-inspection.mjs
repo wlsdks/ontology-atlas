@@ -1,42 +1,10 @@
-import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { gitEnv, hardenedGitArgv } from '../git/hardened-git.mjs';
-import {
-  closeSync,
-  lstatSync,
-  openSync,
-  readSync,
-  readdirSync,
-  readlinkSync,
-  realpathSync,
-  statSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { realpathSync, statSync } from 'node:fs';
+import { findGitRoot, inspectGitState } from './project-source-git-state.mjs';
+import { inspectFolderState } from './project-source-folder-state.mjs';
+import { excludedVaultFolder } from './project-source-vault-exclusion.mjs';
 
-// Byte-for-byte aligned with project_source, or a fresh MCP process
-// cannot reproduce the app's probe and call its receipt current
-// (tests/contract/vault-format/source-inventory-bound.contract.test.ts).
-const SOURCE_INVENTORY_VERSION = 'inventory-v2';
-const SOURCE_INVENTORY_MAX_DEPTH = 20;
-const SOURCE_INVENTORY_MAX_FILES = 16000;
-const SOURCE_INVENTORY_MAX_HASH_BYTES = 32 * 1024 * 1024;
-const SOURCE_PRUNE_DIR_NAMES = new Set([
-  '.git',
-  '.next',
-  '.turbo',
-  '.cache',
-  'node_modules',
-  'target',
-  'dist',
-  'build',
-  'coverage',
-]);
 const ZERO = Buffer.from([0]);
-const GIT_MAX_BUFFER = 64 * 1024 * 1024;
-
-function compareUtf8(left, right) {
-  return Buffer.compare(Buffer.from(left), Buffer.from(right));
-}
 
 function sourceDigest(parts) {
   const hash = createHash('sha256');
@@ -47,240 +15,28 @@ function sourceDigest(parts) {
   return `sha256:${hash.digest('hex')}`;
 }
 
-function sizeBytes(size) {
-  const bytes = Buffer.alloc(8);
-  bytes.writeBigUInt64LE(BigInt(size));
-  return bytes;
-}
-
-function inventory() {
-  const hash = createHash('sha256');
-  hash.update(SOURCE_INVENTORY_VERSION);
-  hash.update(ZERO);
-  return { hash, files: [], hashedBytes: 0, truncated: false };
-}
-
-function hashRegularFile(path, state, size) {
-  let remaining = SOURCE_INVENTORY_MAX_HASH_BYTES - state.hashedBytes;
-  if (remaining === 0) {
-    state.truncated = true;
-    return;
-  }
-  const descriptor = openSync(path, 'r');
-  let copied = 0;
-  try {
-    const chunk = Buffer.alloc(Math.min(64 * 1024, remaining));
-    while (remaining > 0) {
-      const read = readSync(descriptor, chunk, 0, Math.min(chunk.length, remaining), null);
-      if (read === 0) break;
-      state.hash.update(chunk.subarray(0, read));
-      state.hashedBytes += read;
-      copied += read;
-      remaining -= read;
-    }
-  } finally {
-    closeSync(descriptor);
-  }
-  if (copied < size) state.truncated = true;
-}
-
-function hashSourceFile(path, relative, state, hashContent) {
-  let metadata;
-  try {
-    metadata = lstatSync(path);
-  } catch (error) {
-    if (error?.code === 'ENOENT') return;
-    throw error;
-  }
-  if (!metadata.isFile() && !metadata.isSymbolicLink()) return;
-
-  state.files.push(relative);
-  state.hash.update(relative);
-  state.hash.update(ZERO);
-  state.hash.update(sizeBytes(metadata.size));
-  if (!hashContent) return;
-
-  if (metadata.isSymbolicLink()) {
-    const target = Buffer.from(readlinkSync(path));
-    const remaining = SOURCE_INVENTORY_MAX_HASH_BYTES - state.hashedBytes;
-    const copied = Math.min(remaining, target.length);
-    state.hash.update(target.subarray(0, copied));
-    state.hashedBytes += copied;
-    if (copied < target.length) state.truncated = true;
-    return;
-  }
-  hashRegularFile(path, state, metadata.size);
-}
-
-function walkFolder(root, prefix, depth, state, excluded = null) {
-  if (state.files.length >= SOURCE_INVENTORY_MAX_FILES) {
-    state.truncated = true;
-    return;
-  }
-  if (depth > SOURCE_INVENTORY_MAX_DEPTH) {
-    state.truncated = true;
-    return;
-  }
-
-  const children = readdirSync(join(root, prefix), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() || entry.isFile())
-    .sort((left, right) => compareUtf8(left.name, right.name));
-  for (const child of children) {
-    if (state.files.length >= SOURCE_INVENTORY_MAX_FILES) {
-      state.truncated = true;
-      break;
-    }
-    const relativePath = prefix ? `${prefix}/${child.name}` : child.name;
-    if (isExcluded(relativePath, excluded)) continue;
-    if (child.isDirectory()) {
-      if (!SOURCE_PRUNE_DIR_NAMES.has(child.name)) walkFolder(root, relativePath, depth + 1, state, excluded);
-      continue;
-    }
-    hashSourceFile(join(root, relativePath), relativePath, state, true);
-  }
-}
-
-function runGit(root, args) {
-  return execFileSync('git', hardenedGitArgv(root, args), {
-    encoding: null,
-    env: gitEnv(),
-    maxBuffer: GIT_MAX_BUFFER,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-}
-
-function splitNul(buffer) {
-  return buffer
-    .toString('utf8')
-    .split('\0')
-    .filter(Boolean)
-    .map((path) => path.replaceAll('\\', '/'));
-}
-
-function findGitRoot(root) {
-  try {
-    const found = runGit(root, ['rev-parse', '--show-toplevel']).toString('utf8').trim();
-    return found ? realpathSync(found) : null;
-  } catch {
-    return null;
-  }
-}
-
-function isExcluded(relativePath, excluded) {
-  return excluded !== null && (relativePath === excluded || relativePath.startsWith(`${excluded}/`));
-}
-
-/**
- * One absolute path as forward-slash text: the `\\?\` verbatim prefix dropped, the
- * drive letter lower-cased, no trailing separator, so a Windows path and its
- * canonical form compare equal.
- */
-function comparablePath(path) {
-  let unified = path.replaceAll('\\', '/');
-  if (unified.startsWith('//?/UNC/')) unified = `//${unified.slice('//?/UNC/'.length)}`;
-  else if (unified.startsWith('//?/')) unified = unified.slice('//?/'.length);
-  if (/^[A-Za-z]:/.test(unified)) unified = unified[0].toLowerCase() + unified.slice(1);
-  while (unified.length > 1 && unified.endsWith('/') && !unified.endsWith(':/')) unified = unified.slice(0, -1);
-  return unified;
-}
-
-/**
- * The vault's folder relative to the source root when it lies strictly inside it,
- * else null. Its files are the ontology, not the code it describes, so writing the
- * vault must not make its own source binding stale. The app probe applies the same
- * rule (`src-tauri/src/project_source/mod.rs`); both sides run
- * `vault-exclusion-cases.json`.
- */
-export function vaultFolderInside(sourceRoot, vaultRoot) {
-  const base = comparablePath(sourceRoot);
-  const vault = comparablePath(vaultRoot);
-  if (!vault.startsWith(base)) return null;
-  let inside = vault.slice(base.length);
-  if (!base.endsWith('/')) {
-    if (!inside.startsWith('/')) return null;
-    inside = inside.slice(1);
-  }
-  if (inside === '' || inside.split('/').some((part) => part === '' || part === '.' || part === '..')) return null;
-  return inside;
-}
-
-// `realpathSync.native` returns the case stored on disk, as Rust `canonicalize` does; the
-// JS `realpathSync` keeps the typed case, so `/Repo` and `/repo/atlas` would not compare.
-function excludedVaultFolder(root, excludePath) {
-  if (typeof excludePath !== 'string' || excludePath.length === 0) return null;
-  try {
-    return vaultFolderInside(realpathSync.native(root), realpathSync.native(excludePath));
-  } catch {
-    return null;
-  }
-}
-
-/** Drops porcelain v1 `-z` entries under the excluded folder; a rename entry carries a second path. */
-export function filterStatus(status, excluded) {
-  if (excluded === null || status.length === 0) return status;
-  const tokens = status.toString('utf8').split('\0');
-  if (tokens.at(-1) === '') tokens.pop();
-  const kept = [];
-  for (let index = 0; index < tokens.length; index += 1) {
-    const entry = tokens[index];
-    const renamed = entry[0] === 'R' || entry[0] === 'C';
-    const source = renamed ? tokens[index + 1] ?? null : null;
-    if (renamed) index += 1;
-    if (isExcluded(entry.slice(3), excluded) && (source === null || isExcluded(source, excluded))) continue;
-    kept.push(entry);
-    if (source !== null) kept.push(source);
-  }
-  return Buffer.from(kept.length > 0 ? `${kept.join('\0')}\0` : '', 'utf8');
-}
-
-function inspectGit(root, excluded = null) {
-  const keep = (path) => !isExcluded(path, excluded);
-  const visiblePaths = [...new Set(splitNul(runGit(root, [
-    'ls-files', '--cached', '--others', '--exclude-standard', '-z',
-  ])).filter(keep))].sort(compareUtf8);
-  const dirtyPaths = new Set(splitNul(runGit(root, [
-    'diff', '--name-only', '--no-renames', '-z', 'HEAD', '--',
-  ])).filter(keep));
-  for (const path of splitNul(runGit(root, ['ls-files', '--others', '--exclude-standard', '-z'])).filter(keep)) {
-    dirtyPaths.add(path);
-  }
-
-  const state = inventory();
-  state.truncated = visiblePaths.length > SOURCE_INVENTORY_MAX_FILES;
-  for (const path of visiblePaths.slice(0, SOURCE_INVENTORY_MAX_FILES)) {
-    hashSourceFile(join(root, path), path, state, dirtyPaths.delete(path));
-  }
-  for (const path of [...dirtyPaths].sort(compareUtf8)) {
-    state.hash.update('deleted');
-    state.hash.update(ZERO);
-    state.hash.update(path);
-    state.hash.update(ZERO);
-  }
-  const inventoryFingerprint = `sha256:${state.hash.digest('hex')}`;
-  const revision = runGit(root, ['rev-parse', 'HEAD']).toString('utf8').trim();
-  const status = filterStatus(runGit(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all']), excluded);
+function inspectRepository(gitRoot, excluded) {
+  const state = inspectGitState(gitRoot, excluded);
   return {
-    rootPath: root,
-    sourceId: sourceDigest(['git', root]),
+    rootPath: gitRoot,
+    sourceId: sourceDigest(['git', gitRoot]),
     kind: 'git',
-    revision,
-    fingerprint: sourceDigest(['git-state-v1', revision, inventoryFingerprint, status]),
-    dirty: status.length > 0,
+    revision: state.revision,
+    fingerprint: state.fingerprint,
+    dirty: state.dirty,
     truncated: state.truncated,
     files: state.files,
   };
 }
 
-function inspectFolder(root, excluded = null) {
-  const state = inventory();
-  walkFolder(root, '', 0, state, excluded);
-  const fingerprint = `sha256:${state.hash.digest('hex')}`;
+function inspectFolder(root, excluded) {
+  const state = inspectFolderState(root, excluded);
   return {
     rootPath: root,
     sourceId: sourceDigest(['folder', root]),
     kind: 'folder',
-    revision: fingerprint,
-    fingerprint,
+    revision: state.fingerprint,
+    fingerprint: state.fingerprint,
     dirty: null,
     truncated: state.truncated,
     files: state.files,
@@ -288,16 +44,16 @@ function inspectFolder(root, excluded = null) {
 }
 
 /**
- * Reproduce the installed app's bounded local source probe in a fresh MCP process.
- * With `excludePath` naming a vault inside the source, the probe leaves that folder
- * out and reports `vaultExcluded`; without it the probe is the app's byte for byte.
+ * The source a project's code lives in, as one fingerprint a later call can compare: a
+ * repository answers from its index and its changes, any other folder from one walk of sizes
+ * and times. With `excludePath` naming a vault inside the source, the probe leaves that
+ * folder out and reports `vaultExcluded`. No file count bounds it.
  */
 export function inspectProjectSource(rootPath, { excludePath } = {}) {
   const root = realpathSync(rootPath);
   if (!statSync(root).isDirectory()) throw new Error('project source root must be a directory');
   const gitRoot = findGitRoot(root);
-  const base = gitRoot ?? root;
-  const excluded = excludedVaultFolder(base, excludePath);
-  const probe = gitRoot ? inspectGit(gitRoot, excluded) : inspectFolder(root, excluded);
+  const excluded = excludedVaultFolder(gitRoot ?? root, excludePath);
+  const probe = gitRoot ? inspectRepository(gitRoot, excluded) : inspectFolder(root, excluded);
   return excluded === null ? probe : { ...probe, vaultExcluded: excluded };
 }

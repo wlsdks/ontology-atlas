@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Changed — a write names one next step (2026-11-28)
+
+- `rename_concept`, `merge_concepts`, `delete_concept` and `absorb_document` answer
+  `postWriteMaintenance` as `{ nextAction, stepsAboutTouched }`: the first step the
+  maintenance plan has about the nodes the write touched that a call settles, else
+  the first judgement left, and how many steps there are about those nodes. It was
+  the head of the whole vault's plan (`summary`, `filters`, `cursor`, three bucket
+  maps and up to five full actions). `query_ontology({operation:'maintenance_plan'})`
+  still answers the whole queue.
+
+### Changed — a project source is fingerprinted from its index (2026-11-28)
+
+- `connect_project_source`, `validate_vault` and `finalize_project_meaning` compare a
+  source as `inventory-v3`: for a repository, the blob ids of `git ls-files --stage`
+  plus the bytes of only the files `git status` reports changed; for a folder with no
+  repository, one walk of sizes and modification times. File names are NFC and sorted
+  by code point. No file count bounds the probe, so a source of more than 16,000 files
+  is no longer reported truncated. A second `connect_project_source` on 50,000 tracked
+  files takes 329 ms, not 727. A binding minted by an earlier server, or by the app,
+  reads as changed once: connect again to rebind.
+
 ### Changed — 33 tools become 23 (2026-11-28)
 
 - `tools/list` advertises 23 tools (13 read, 10 write), and its answer shrank from

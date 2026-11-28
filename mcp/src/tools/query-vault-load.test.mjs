@@ -195,7 +195,7 @@ test('write-side maintenance and project-source tools read each vault document o
       };
       const projectMtime = fs.statSync(root + '/project.md').mtimeMs;
       console.log(JSON.stringify({
-        maintenance: observe(() => compactPostWriteMaintenance()),
+        maintenance: observe(() => compactPostWriteMaintenance(['project'])),
         connect: observe(() => connectProjectSourceTool({ projectSlug: 'project', rootPath: process.env.SOURCE_ROOT })),
         finalize: observe(() => finalizeProjectMeaningTool({ projectSlug: 'project', expected_mtime: projectMtime })),
       }));

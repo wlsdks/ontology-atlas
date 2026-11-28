@@ -260,7 +260,7 @@ function removeRelation({ from, to, type: requestedType, replaceWith, confirm = 
   for (const noteKey of matchingNoteKeys) delete notes[noteKey];
   patch.relation_notes = Object.keys(notes).length > 0 ? notes : null;
   patchFrontmatter(VAULT_ROOT, canonicalFrom, patch, { expectedMtime: expected_mtime });
-  return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance() };
+  return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance([canonicalFrom]) };
 }
 
 function replaceRelation({ from, oldTo, oldType: requestedOldType, newTo, newType: requestedNewType, why, confirm = false, expected_mtime }) {
@@ -339,7 +339,7 @@ function replaceRelation({ from, oldTo, oldType: requestedOldType, newTo, newTyp
   if (nextWhy) notes[canonicalNewTo] = nextWhy;
   patch.relation_notes = Object.keys(notes).length > 0 ? notes : null;
   patchFrontmatter(VAULT_ROOT, canonicalFrom, patch, { expectedMtime: expected_mtime });
-  return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance() };
+  return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance([canonicalFrom]) };
 }
 
 // Batch add_relation for already-approved relations. Rows run serially, so one

@@ -1,7 +1,7 @@
 /**
  * What gets attached to a result rather than asked for: the vault validation
  * every read carries, the findings a build write returns on the nodes it touched,
- * the compact post-write maintenance queue the other writes return, and the
+ * the one next step the other writes return, and the
  * summary freshness a maintenance plan is judged against.
  */
 
@@ -105,7 +105,7 @@ function attachVaultValidation(result, args = {}, loadedDocs = null, report = va
   return result;
 }
 
-function maintenancePlanAfterWrite(limit) {
+function maintenancePlanAfterWrite(limit, touching) {
   COMPILED_ONTOLOGY_CACHE.clear();
   const { artifact, docs: maintenanceDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = readOntologyAtlasIgnore(VAULT_ROOT);
@@ -120,6 +120,7 @@ function maintenancePlanAfterWrite(limit) {
   return queryCompiledOntology(artifact, {
     operation: 'maintenance_plan',
     limit,
+    touching,
   }, {
     ontologyAtlasIgnorePatterns,
     nodeEligibilityFindings,
@@ -130,8 +131,8 @@ function maintenancePlanAfterWrite(limit) {
   });
 }
 
-/** Candidates each maintenance check scans before the plan is narrowed to the written nodes. */
-const FINDING_SCAN_LIMIT = 100;
+/** Steps about the written nodes that a build write turns into finding lines. */
+const FINDING_STEPS_MAX = 100;
 /** Further subjects a grouped finding line names before it counts the rest. */
 const FINDING_SUBJECTS_MAX = 8;
 
@@ -147,11 +148,6 @@ const SETTLED_MAP_REVIEW_KINDS = new Set([
   'retire_unearned_node',
   'unassigned_node',
 ]);
-
-function actionSlugs(action) {
-  const nodes = Array.isArray(action.nodes) ? action.nodes : Object.values(action.nodes ?? {});
-  return [action.node?.slug, ...nodes.map((node) => node?.slug), ...(action.cycle?.nodes ?? [])];
-}
 
 function actionSubject(action) {
   const args = action.proposedAction?.args ?? {};
@@ -180,32 +176,27 @@ function groupedFindingLine([first, ...rest]) {
  * with `validate_vault` and `query_ontology({operation:"maintenance_plan"})`.
  */
 function findingsOnWrittenNodes(writtenSlugs) {
-  const written = new Set(writtenSlugs);
   const byKind = new Map();
-  for (const action of maintenancePlanAfterWrite(FINDING_SCAN_LIMIT).actions) {
+  for (const action of maintenancePlanAfterWrite(FINDING_STEPS_MAX, writtenSlugs).actions) {
     if (SETTLED_MAP_REVIEW_KINDS.has(action.kind)) continue;
-    if (!actionSlugs(action).some((slug) => written.has(slug))) continue;
     byKind.set(action.kind, [...(byKind.get(action.kind) ?? []), action]);
   }
   return [...byKind.values()].map(groupedFindingLine);
 }
 
-function compactPostWriteMaintenance(limit = 5) {
-  const result = maintenancePlanAfterWrite(limit);
+/** Steps about the touched nodes that a write looks through for the one to name next. */
+const NEXT_ACTION_WINDOW = 5;
+
+/**
+ * The one step that comes next for the nodes a write touched: a call that settles one,
+ * else the first judgement that is left, and how many steps there are about them. The
+ * vault's whole queue stays with `validate_vault` and `query_ontology`.
+ */
+function compactPostWriteMaintenance(touchedSlugs) {
+  const plan = maintenancePlanAfterWrite(NEXT_ACTION_WINDOW, touchedSlugs);
   return {
-    operation: result.operation,
-    sideEffect: result.sideEffect,
-    graphHash: result.graphHash,
-    summary: result.summary,
-    filters: result.filters,
-    cursor: result.cursor,
-    byPhase: result.byPhase,
-    bySeverity: result.bySeverity,
-    byKind: result.byKind,
-    limited: result.limited,
-    nextExecutableAction: compactMaintenanceAction(result.nextExecutableAction),
-    nextReviewAction: compactMaintenanceAction(result.nextReviewAction),
-    actions: result.actions.map(compactMaintenanceAction),
+    nextAction: compactMaintenanceAction(plan.nextExecutableAction ?? plan.actions[0]),
+    stepsAboutTouched: plan.summary.filteredActions,
   };
 }
 

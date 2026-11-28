@@ -468,27 +468,10 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails tools/list schema drift for strict arguments, graph-query enums, batch caps, and write safety', () => {
     const postWriteDescription =
-      'postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers';
+      'postWriteMaintenance with nextAction and stepsAboutTouched';
     const buildWriteDescription = '`findings`: one line per finding on the nodes this call wrote';
     const findingsSchema = { type: 'array', items: { type: 'string' } };
     const compactProposedActionTools = ['add_concepts', 'add_relations', 'patch_concept'];
-    const maintenanceSummaryRequired = [
-      'totalActions',
-      'filteredActions',
-      'remainingActions',
-      'executableActions',
-      'reviewActions',
-      'compileIssues',
-      'dependencyCycles',
-      'canonicalizationActions',
-      'danglingReferences',
-      'relationRecommendations',
-      'externalElementRefs',
-      'externalElementRefsIgnored',
-      'unassignedNodes',
-      'emptyDomains',
-      'capabilitiesWithoutEvidence',
-    ];
     const compactNodeSchema = {
       type: 'object',
       required: ['slug', 'kind', 'title'],
@@ -738,64 +721,10 @@ describe('verify.mjs first-contact gates', () => {
     };
     const postWriteMaintenanceSchema = {
       type: 'object',
-      required: [
-        'operation',
-        'sideEffect',
-        'graphHash',
-        'summary',
-        'filters',
-        'cursor',
-        'byPhase',
-        'bySeverity',
-        'byKind',
-        'limited',
-        'nextExecutableAction',
-        'nextReviewAction',
-        'actions',
-      ],
+      required: ['nextAction', 'stepsAboutTouched'],
       properties: {
-        operation: { type: 'string', enum: ['maintenance_plan'] },
-        sideEffect: { type: 'boolean' },
-        graphHash: { type: 'string' },
-        summary: {
-          type: 'object',
-          required: maintenanceSummaryRequired,
-          properties: Object.fromEntries(
-            maintenanceSummaryRequired.map((key) => [key, { type: 'integer', minimum: 0 }]),
-          ),
-          additionalProperties: false,
-        },
-        filters: {
-          type: 'object',
-          required: ['executableOnly', 'phases', 'severities', 'kinds'],
-          properties: {
-            executableOnly: { type: 'boolean' },
-            phases: { type: 'array', items: { type: 'string', enum: MAINTENANCE_PHASE_VALUES } },
-            severities: { type: 'array', items: { type: 'string', enum: MAINTENANCE_SEVERITY_VALUES } },
-            kinds: { type: 'array', items: { type: 'string', enum: MAINTENANCE_KIND_VALUES } },
-          },
-          additionalProperties: false,
-        },
-        cursor: {
-          type: 'object',
-          required: ['afterActionId', 'found', 'reason', 'startIndex', 'nextAfterActionId', 'hasMore'],
-          properties: {
-            afterActionId: { type: ['string', 'null'] },
-            found: { type: 'boolean' },
-            reason: { type: ['string', 'null'] },
-            startIndex: { type: ['integer', 'null'], minimum: 0 },
-            nextAfterActionId: { type: ['string', 'null'] },
-            hasMore: { type: 'boolean' },
-          },
-          additionalProperties: false,
-        },
-        byPhase: { type: 'object', additionalProperties: { type: 'integer', minimum: 0 } },
-        bySeverity: { type: 'object', additionalProperties: { type: 'integer', minimum: 0 } },
-        byKind: { type: 'object', additionalProperties: { type: 'integer', minimum: 0 } },
-        limited: { type: 'boolean' },
-        nextExecutableAction: { ...compactActionSchema, type: ['object', 'null'] },
-        nextReviewAction: { ...compactActionSchema, type: ['object', 'null'] },
-        actions: { type: 'array', items: compactActionSchema },
+        nextAction: { ...compactActionSchema, type: ['object', 'null'] },
+        stepsAboutTouched: { type: 'integer', minimum: 0 },
       },
       additionalProperties: false,
     };
@@ -3554,7 +3483,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_concepts'),
         {
           ...tools.find((tool) => tool.name === 'add_concepts'),
-          description: 'Batch writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes return postWriteMaintenance with nextAction and stepsAboutTouched.',
         },
       ]),
       'add_concepts description missing row isolation guidance',
@@ -3564,7 +3493,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_concepts'),
         {
           ...tools.find((tool) => tool.name === 'add_concepts'),
-          description: 'Batch writes isolate a row with an unknown field or a duplicate input slug and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes isolate a row with an unknown field or a duplicate input slug and return postWriteMaintenance with nextAction and stepsAboutTouched.',
         },
       ]),
       'add_concepts description missing row label guidance',
@@ -3574,7 +3503,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_concepts'),
         {
           ...tools.find((tool) => tool.name === 'add_concepts'),
-          description: 'Batch writes isolate a row with an unknown field or a duplicate input slug as a concepts[n] row with repair fields and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes isolate a row with an unknown field or a duplicate input slug as a concepts[n] row with repair fields and return postWriteMaintenance with nextAction and stepsAboutTouched.',
         },
       ]),
       'add_concepts description missing invalid-only no-write metadata guidance',
@@ -3704,7 +3633,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_relations'),
         {
           ...tools.find((tool) => tool.name === 'add_relations'),
-          description: 'Batch writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes return postWriteMaintenance with nextAction and stepsAboutTouched.',
         },
       ]),
       'add_relations description missing row isolation guidance',
@@ -3714,7 +3643,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_relations'),
         {
           ...tools.find((tool) => tool.name === 'add_relations'),
-          description: 'Batch writes isolate a row with an unknown field or unknown type and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes isolate a row with an unknown field or unknown type and return postWriteMaintenance with nextAction and stepsAboutTouched.',
         },
       ]),
       'add_relations description missing row label guidance',
@@ -3724,7 +3653,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_relations'),
         {
           ...tools.find((tool) => tool.name === 'add_relations'),
-          description: 'Batch writes isolate a row with an unknown field or unknown type as a relations[n] row with repair fields and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes isolate a row with an unknown field or unknown type as a relations[n] row with repair fields and return postWriteMaintenance with nextAction and stepsAboutTouched.',
         },
       ]),
       'add_relations description missing closest-value type guidance',
@@ -3734,7 +3663,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_relations'),
         {
           ...tools.find((tool) => tool.name === 'add_relations'),
-          description: 'Batch writes isolate a row with an unknown field or unknown type as a relations[n] row with a closest-value hint and repair fields and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes isolate a row with an unknown field or unknown type as a relations[n] row with a closest-value hint and repair fields and return postWriteMaintenance with nextAction and stepsAboutTouched.',
         },
       ]),
       'add_relations description missing invalid-only no-write metadata guidance',

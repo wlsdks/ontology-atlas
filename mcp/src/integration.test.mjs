@@ -276,75 +276,14 @@ function isErrorResponse(responses, id) {
 }
 
 function assertPostWriteMaintenanceShape(value, label = "postWriteMaintenance") {
-  assert.ok(value, `${label} exists`);
-  assert.equal(value.operation, "maintenance_plan", `${label} preserves operation`);
-  assert.equal(value.sideEffect, false, `${label} stays side-effect free`);
-  assert.equal(typeof value.graphHash, "string", `${label} exposes graphHash`);
-  assertPostWriteMaintenanceSummaryShape(value.summary, label);
-  assert.ok(value.filters, `${label} exposes maintenance filters`);
-  assert.equal(value.filters.executableOnly, false, `${label} exposes default executableOnly filter`);
-  assert.deepEqual(value.filters.phases, [], `${label} exposes phase filters`);
-  assert.deepEqual(value.filters.severities, [], `${label} exposes severity filters`);
-  assert.deepEqual(value.filters.kinds, [], `${label} exposes kind filters`);
-  assert.ok(value.cursor, `${label} exposes cursor metadata`);
-  assert.equal(typeof value.cursor.found, "boolean", `${label} cursor exposes found flag`);
-  assert.ok(Object.hasOwn(value.cursor, "reason"), `${label} cursor exposes miss reason metadata`);
-  assert.ok(Object.hasOwn(value.cursor, "startIndex"), `${label} cursor exposes start index`);
-  assert.equal(typeof value.cursor.hasMore, "boolean", `${label} cursor exposes hasMore flag`);
-  assert.ok(value.byPhase && typeof value.byPhase === "object", `${label} exposes phase counts`);
-  assert.ok(value.bySeverity && typeof value.bySeverity === "object", `${label} exposes severity counts`);
-  assert.ok(value.byKind && typeof value.byKind === "object", `${label} exposes kind counts`);
-  assert.equal(typeof value.limited, "boolean", `${label} exposes limited flag`);
-  assert.ok(Array.isArray(value.actions), `${label} exposes compact actions`);
-  assert.ok(Object.hasOwn(value, "nextExecutableAction"), `${label} exposes next executable action pointer`);
-  assert.ok(Object.hasOwn(value, "nextReviewAction"), `${label} exposes next review action pointer`);
-  if (value.nextExecutableAction) {
-    assertCompactMaintenanceActionShape(value.nextExecutableAction, `${label} nextExecutableAction`);
+  assert.deepEqual(Object.keys(value ?? {}), ["nextAction", "stepsAboutTouched"], `${label} is the next step and a count`);
+  assert.ok(Number.isInteger(value.stepsAboutTouched) && value.stepsAboutTouched >= 0, `${label} counts the steps about the touched nodes`);
+  if (value.nextAction === null) {
+    assert.equal(value.stepsAboutTouched, 0, `${label} has no next step only when no step is left`);
+  } else {
+    assertCompactMaintenanceActionShape(value.nextAction, `${label} nextAction`);
+    assert.ok(value.stepsAboutTouched >= 1, `${label} counts the step it names`);
   }
-  if (value.nextReviewAction) {
-    assertCompactMaintenanceActionShape(value.nextReviewAction, `${label} nextReviewAction`);
-  }
-  if (value.actions.length > 0) {
-    assertCompactMaintenanceActionShape(value.actions[0], label);
-  }
-}
-
-function assertPostWriteMaintenanceSummaryShape(summary, label) {
-  assert.ok(summary && typeof summary === "object", `${label} exposes summary`);
-  for (const key of [
-    "totalActions",
-    "filteredActions",
-    "remainingActions",
-    "executableActions",
-    "reviewActions",
-    "compileIssues",
-    "dependencyCycles",
-    "canonicalizationActions",
-    "danglingReferences",
-    "relationRecommendations",
-    "externalElementRefs",
-    "externalElementRefsIgnored",
-    "unassignedNodes",
-    "emptyDomains",
-    "capabilitiesWithoutEvidence",
-  ]) {
-    assert.equal(typeof summary[key], "number", `${label} summary exposes ${key}`);
-    assert.ok(Number.isFinite(summary[key]), `${label} summary ${key} is finite`);
-    assert.ok(summary[key] >= 0, `${label} summary ${key} is non-negative`);
-  }
-  assert.equal(
-    summary.executableActions + summary.reviewActions,
-    summary.totalActions,
-    `${label} summary executable/review counts add up`,
-  );
-  assert.ok(
-    summary.filteredActions <= summary.totalActions,
-    `${label} summary filteredActions does not exceed totalActions`,
-  );
-  assert.ok(
-    summary.remainingActions <= summary.filteredActions,
-    `${label} summary remainingActions does not exceed filteredActions`,
-  );
 }
 
 function assertCompactMaintenanceActionShape(action, label) {
@@ -1094,197 +1033,27 @@ await test("tools/list — each single-item tool description cross-references it
       "delete_concept",
     ]) {
       const description = findTool(toolName)?.description ?? "";
-      assert.match(description, /postWriteMaintenance/, `${toolName} describes post-write maintenance`);
-      assert.match(description, /score/, `${toolName} describes maintenance action score`);
-      assert.match(description, /proposedAction/, `${toolName} describes executable proposedAction`);
-      assert.match(description, /nextExecutableAction/, `${toolName} describes next executable action pointer`);
-      assert.match(description, /nextReviewAction/, `${toolName} describes next review action pointer`);
-      assert.match(description, /byPhase/, `${toolName} describes maintenance phase buckets`);
-      assert.match(description, /bySeverity/, `${toolName} describes maintenance severity buckets`);
-      assert.match(description, /byKind/, `${toolName} describes maintenance kind buckets`);
+      assert.match(description, /`postWriteMaintenance` \(nextAction, stepsAboutTouched\)/, `${toolName} describes the one next step`);
       const postWriteSchema = findTool(toolName)?.outputSchema?.properties?.postWriteMaintenance;
-      assert.equal(postWriteSchema?.properties?.byPhase?.additionalProperties?.type, "integer", `${toolName} exposes byPhase bucket schema`);
-      assert.equal(postWriteSchema?.properties?.bySeverity?.additionalProperties?.type, "integer", `${toolName} exposes bySeverity bucket schema`);
-      assert.equal(postWriteSchema?.properties?.byKind?.additionalProperties?.type, "integer", `${toolName} exposes byKind bucket schema`);
-      assert.deepEqual(
-        postWriteSchema?.required,
-        [
-          "operation",
-          "sideEffect",
-          "graphHash",
-          "summary",
-          "filters",
-          "cursor",
-          "byPhase",
-          "bySeverity",
-          "byKind",
-          "limited",
-          "nextExecutableAction",
-          "nextReviewAction",
-          "actions",
-        ],
-        `${toolName} exposes complete post-write maintenance required fields`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.summary?.required,
-        [
-          "totalActions",
-          "filteredActions",
-          "remainingActions",
-          "executableActions",
-          "reviewActions",
-          "compileIssues",
-          "dependencyCycles",
-          "canonicalizationActions",
-          "danglingReferences",
-          "relationRecommendations",
-          "externalElementRefs",
-          "externalElementRefsIgnored",
-          "unassignedNodes",
-          "emptyDomains",
-          "capabilitiesWithoutEvidence",
-        ],
-        `${toolName} exposes full compact summary schema`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.filters?.required,
-        ["executableOnly", "phases", "severities", "kinds"],
-        `${toolName} exposes maintenance filter schema`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.filters?.properties?.phases?.items?.enum,
-        ["validate", "repair", "link", "materialize", "review"],
-        `${toolName} exposes maintenance phase filter enum`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.cursor?.required,
-        ["afterActionId", "found", "reason", "startIndex", "nextAfterActionId", "hasMore"],
-        `${toolName} exposes maintenance cursor schema`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.required,
-        ["id", "phase", "kind", "severity", "score", "executable", "reason"],
-        `${toolName} exposes compact action row schema`,
-      );
+      assert.deepEqual(postWriteSchema?.required, ["nextAction", "stepsAboutTouched"], `${toolName} answers the next step and a count`);
       assert.equal(postWriteSchema?.additionalProperties, false, `${toolName} closes postWriteMaintenance schema`);
-      assert.equal(postWriteSchema?.properties?.summary?.additionalProperties, false, `${toolName} closes summary schema`);
-      assert.equal(postWriteSchema?.properties?.filters?.additionalProperties, false, `${toolName} closes filters schema`);
-      assert.equal(postWriteSchema?.properties?.cursor?.additionalProperties, false, `${toolName} closes cursor schema`);
-      assert.equal(postWriteSchema?.properties?.actions?.items?.additionalProperties, false, `${toolName} closes action row schema`);
+      assert.equal(postWriteSchema?.properties?.stepsAboutTouched?.type, "integer", `${toolName} counts steps in whole numbers`);
+      const nextAction = postWriteSchema?.properties?.nextAction;
+      assert.deepEqual(nextAction?.type, ["object", "null"], `${toolName} has no next step when nothing is left`);
       assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.required,
-        ["tool", "args"],
-        `${toolName} exposes executable proposedAction call schema`,
-      );
-      assert.equal(
-        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.additionalProperties,
-        false,
-        `${toolName} closes executable proposedAction schema`,
+        nextAction?.required,
+        ["id", "phase", "kind", "severity", "score", "executable", "reason"],
+        `${toolName} exposes the compact action schema`,
       );
       assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.tool?.enum,
+        nextAction?.properties?.proposedAction?.properties?.tool?.enum,
         ["add_concepts", "add_relations", "patch_concept"],
-        `${toolName} exposes proposedAction tool enum`,
+        `${toolName} names the call that settles the step`,
       );
       assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf?.map((schema) => schema.required),
-        [
-          ["concepts"],
-          ["relations"],
-          ["slug", "frontmatter", "expected_mtime"],
-        ],
+        nextAction?.properties?.proposedAction?.properties?.args?.oneOf?.map((schema) => schema.required),
+        [["concepts"], ["relations"], ["slug", "frontmatter", "expected_mtime"]],
         `${toolName} exposes proposedAction args variants`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf?.[1]?.properties?.relations?.items?.properties?.type?.enum,
-        ["depends_on", "relates", "contains", "describes", "domains", "capabilities", "elements", "domain"],
-        `${toolName} exposes add_relations proposedAction relation enum`,
-      );
-      assert.equal(postWriteSchema?.properties?.actions?.items?.type, "object", `${toolName} exposes non-null action rows`);
-      assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.node?.required,
-        ["slug", "kind", "title"],
-        `${toolName} exposes compact action node schema`,
-      );
-      assert.equal(
-        postWriteSchema?.properties?.actions?.items?.properties?.node?.additionalProperties,
-        false,
-        `${toolName} closes compact action node schema`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.nodes?.type,
-        ["array", "object"],
-        `${toolName} exposes array or keyed compact action nodes`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.nodes?.items?.required,
-        ["slug", "kind", "title"],
-        `${toolName} exposes array compact action node rows`,
-      );
-      assert.equal(
-        postWriteSchema?.properties?.actions?.items?.properties?.nodes?.items?.additionalProperties,
-        false,
-        `${toolName} closes array compact action node rows`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.nodes?.additionalProperties?.required,
-        ["slug", "kind", "title"],
-        `${toolName} exposes keyed compact action node rows`,
-      );
-      assert.equal(
-        postWriteSchema?.properties?.actions?.items?.properties?.nodes?.additionalProperties?.additionalProperties,
-        false,
-        `${toolName} closes keyed compact action node rows`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.nextExecutableAction?.type,
-        ["object", "null"],
-        `${toolName} exposes nullable next executable action`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.nextExecutableAction?.required,
-        ["id", "phase", "kind", "severity", "score", "executable", "reason"],
-        `${toolName} exposes compact next executable action schema`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.nextExecutableAction?.properties?.proposedAction?.required,
-        ["tool", "args"],
-        `${toolName} exposes next executable proposedAction call schema`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.nextExecutableAction?.properties?.proposedAction?.properties?.tool?.enum,
-        ["add_concepts", "add_relations", "patch_concept"],
-        `${toolName} exposes next executable proposedAction tool enum`,
-      );
-      assert.equal(
-        postWriteSchema?.properties?.nextExecutableAction?.properties?.proposedAction?.properties?.args?.oneOf?.length,
-        3,
-        `${toolName} exposes next executable proposedAction args variants`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.nextReviewAction?.type,
-        ["object", "null"],
-        `${toolName} exposes nullable next review action`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.nextReviewAction?.required,
-        ["id", "phase", "kind", "severity", "score", "executable", "reason"],
-        `${toolName} exposes compact next review action schema`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.nextReviewAction?.properties?.proposedAction?.required,
-        ["tool", "args"],
-        `${toolName} exposes next review proposedAction call schema`,
-      );
-      assert.deepEqual(
-        postWriteSchema?.properties?.nextReviewAction?.properties?.proposedAction?.properties?.tool?.enum,
-        ["add_concepts", "add_relations", "patch_concept"],
-        `${toolName} exposes next review proposedAction tool enum`,
-      );
-      assert.equal(
-        postWriteSchema?.properties?.nextReviewAction?.properties?.proposedAction?.properties?.args?.oneOf?.length,
-        3,
-        `${toolName} exposes next review proposedAction args variants`,
       );
     }
     const expectedMtimeTools = [

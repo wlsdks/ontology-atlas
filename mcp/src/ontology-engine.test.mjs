@@ -988,6 +988,46 @@ describe('queryCompiledOntology', () => {
     });
   });
 
+  it('plans only the steps about the touched nodes, however many other nodes need work first', () => {
+    const slugs = Array.from({ length: 8 }, (_, index) => `capabilities/n${index}`);
+    const vault = compileOntology(
+      slugs.map((slug) => doc(slug, { kind: 'capability', title: slug })),
+      { includeIndexes: true },
+    );
+    const whole = queryCompiledOntology(vault, { operation: 'maintenance_plan', limit: 500 });
+    const touched = queryCompiledOntology(vault, {
+      operation: 'maintenance_plan',
+      limit: 2,
+      touching: ['capabilities/n7'],
+    });
+
+    assert.ok(whole.actions.length > 8, 'the vault needs work on every node');
+    assert.ok(touched.summary.filteredActions >= 1, 'the last node has a step behind the others');
+    for (const action of touched.actions) {
+      assert.ok(JSON.stringify(action).includes('capabilities/n7'), `a step about another node: ${action.reason}`);
+    }
+    assert.deepEqual(
+      queryCompiledOntology(vault, { operation: 'maintenance_plan', touching: [] }).actions,
+      [],
+      'a write that touched no node has no step',
+    );
+  });
+
+  it('plans a dependency cycle for each node on it', () => {
+    const cycle = compileOntology([
+      doc('capabilities/a', { kind: 'capability', title: 'A', depends_on: ['capabilities/b'] }),
+      doc('capabilities/b', { kind: 'capability', title: 'B', depends_on: ['capabilities/a'] }),
+      doc('capabilities/c', { kind: 'capability', title: 'C' }),
+    ], { includeIndexes: true });
+    const kindsAbout = (slug) => queryCompiledOntology(cycle, {
+      operation: 'maintenance_plan',
+      touching: [slug],
+    }).actions.map((action) => action.kind);
+
+    assert.ok(kindsAbout('capabilities/b').includes('break_dependency_cycle'));
+    assert.ok(!kindsAbout('capabilities/c').includes('break_dependency_cycle'));
+  });
+
   it('resumes maintenance actions after a stable action id', () => {
     const first = queryCompiledOntology(artifact(), {
       operation: 'maintenance_plan',

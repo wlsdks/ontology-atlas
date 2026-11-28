@@ -217,7 +217,7 @@ function renameConcept({ oldSlug, newSlug, newKind, domain, body, confirm = fals
     backlinkUpdates: publicBacklinkUpdates(result),
     ...warningsOf(unwritableReferrerWarnings(result, diskOldSlug)),
     changed: true,
-    postWriteMaintenance: compactPostWriteMaintenance(),
+    postWriteMaintenance: compactPostWriteMaintenance([newSlug]),
   };
 }
 
@@ -343,7 +343,7 @@ function changeConceptKind({ slug, newKind, newSlug, domain, body, confirm = fal
     changed: true,
     backlinkUpdates: publicBacklinkUpdates(appliedBacklinks),
     ...(appliedWarnings.length > 0 ? { warnings: appliedWarnings } : {}),
-    postWriteMaintenance: compactPostWriteMaintenance(),
+    postWriteMaintenance: compactPostWriteMaintenance([canonicalNew]),
   };
 }
 
@@ -487,7 +487,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
       body: fromDoc.body,
       bodyExcerpt: extractSummaryExcerpt(fromDoc.body, 200),
     },
-    postWriteMaintenance: compactPostWriteMaintenance(),
+    postWriteMaintenance: compactPostWriteMaintenance([intoSlug]),
   };
 }
 
@@ -565,7 +565,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
       body: deleted.body,
       bodyExcerpt: extractSummaryExcerpt(deleted.body, 200),
     },
-    postWriteMaintenance: compactPostWriteMaintenance(),
+    postWriteMaintenance: compactPostWriteMaintenance([]),
   };
 }
 

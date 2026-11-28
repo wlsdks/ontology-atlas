@@ -12,7 +12,7 @@ import { repositorySurvey } from '../construction/build-depth.mjs';
 import { areaCoverage } from '../construction/build-depth/unmapped-areas.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
 import { gitEnv, hardenedGitArgv } from '../git/hardened-git.mjs';
-import { filterStatus, vaultFolderInside } from '../project-source/project-source-inspection.mjs';
+import { filterStatus, vaultFolderInside } from '../project-source/project-source-vault-exclusion.mjs';
 import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import { REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from './runtime.mjs';
 

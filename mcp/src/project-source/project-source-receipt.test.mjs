@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
-import { filterStatus, inspectProjectSource, vaultFolderInside } from './project-source-inspection.mjs';
+import { inspectProjectSource } from './project-source-inspection.mjs';
+import { filterStatus, vaultFolderInside } from './project-source-vault-exclusion.mjs';
 import {
   PROJECT_SOURCE_RECEIPT_VERSION,
   readProjectSourceView,
