@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WEBSITE_ONLY_ENTRIES } from "../../../scripts/lib/web/website-only-files.mjs";
+import { routeTreeAddresses } from "../route-tree-addresses";
 import { buildProjectEditHref, buildProjectRuntimeDetailHref } from "@/entities/project";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { SETTINGS_CATALOG } from "@/widgets/app-settings-menu/model/catalog";
@@ -15,12 +16,7 @@ import { SETTINGS_CATALOG } from "@/widgets/app-settings-menu/model/catalog";
 
 const ROOT = process.cwd();
 
-/** The addresses the router knows, from the committed route tree: `/$locale/topology`, with the trailing slash dropped. */
-function routeAddresses(): Set<string> {
-  const tree = readFileSync(join(ROOT, "src/app/route-tree.gen.ts"), "utf8");
-  const interfaceBody = tree.split("export interface FileRoutesByFullPath {")[1]?.split("}")[0] ?? "";
-  return new Set([...interfaceBody.matchAll(/'(\/[^']*)'/g)].map((match) => match[1].replace(/(.)\/$/, "$1")));
-}
+const routeAddresses = () => routeTreeAddresses(ROOT);
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
