@@ -780,7 +780,7 @@ if (
 if (
   // The map and first-run views arrive as one fetched chunk (`views`) once a folder is on its way.
   rootEntryPage.includes("const vaultOpen = Boolean(vault.manifest || vault.partialTotal)") &&
-  rootEntryPage.includes("if (views) return <views.HomePage />") &&
+  rootEntryPage.includes("if (views) return <views.HomePage search={search} />") &&
   rootEntryPage.includes("isDesktopShell()") &&
   rootEntryPage.includes("return vault.restoreAttempted && views ? <views.FirstRunPage /> : <DesktopVaultRedirect />") &&
   // The first-run branch is also reached when the launch stops for the person to choose between known
