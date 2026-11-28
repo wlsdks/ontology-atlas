@@ -1274,15 +1274,22 @@ describe('focused check suggestions', () => {
     assert.ok(commandNames(result).includes('pnpm test:contracts'));
     assert.equal(result.commands.filter((item) => item.importGraph).length, 1);
 
-    // MCP code joins the Vitest rows when a suite or contract reaches it.
+    // Code outside src joins the Vitest rows when a suite or contract reaches it.
+    const script = suggestFocusedChecks(['scripts/lib/desktop-release/release-secret-env.mjs']).commands.filter((item) => item.importGraph);
+    assert.match(script[0].command, /^pnpm exec vitest related .* scripts\/lib\/desktop-release\/release-secret-env\.mjs$/);
+    assert.ok(script[1].command.split(' ').includes('tests/contract/release/release-preflight.contract.test.ts'));
+    assert.deepEqual(script[1].paths, ['scripts/lib/desktop-release/release-secret-env.mjs']);
+
+    // No src suite imports the script server now; only contracts that start it reach it, so no related row is named.
     const mcp = suggestFocusedChecks(['mcp/src/architecture/architecture-profile.mjs']).commands.filter((item) => item.importGraph);
-    assert.match(mcp[0].command, /^pnpm exec vitest related .* mcp\/src\/architecture\/architecture-profile\.mjs$/);
-    assert.ok(mcp[1].command.split(' ').includes('tests/contract/harness/architecture-profile.contract.test.ts'));
-    assert.deepEqual(mcp[1].paths, ['mcp/src/architecture/architecture-profile.mjs']);
+    assert.equal(mcp.length, 1);
+    assert.ok(!mcp[0].command.startsWith('pnpm exec vitest related '));
+    assert.ok(mcp[0].command.split(' ').includes('tests/contract/security/mcp-vault-safety.contract.test.ts'));
+    assert.deepEqual(mcp[0].paths, ['mcp/src/architecture/architecture-profile.mjs']);
 
     // A deleted file is gone from Vitest's graph; the suites still importing it run by name.
-    const deleted = suggestFocusedChecks([], { deletedPaths: ['mcp/src/architecture/architecture-profile.mjs'] }).commands;
-    const stale = 'src/views/architecture/model/analysis-architecture-record.test.ts';
+    const deleted = suggestFocusedChecks([], { deletedPaths: ['scripts/lib/desktop-release/release-secret-env.mjs'] }).commands;
+    const stale = 'src/views/download/lib/release/release-facts.test.ts';
     assert.ok(deleted.some((item) => item.importGraph && item.command.split(' ').includes(stale)));
   });
 
