@@ -27,9 +27,6 @@ pub enum QueryError {
         "The query_ontology operation \"{0}\" reads the vault's files, not the compiled graph."
     )]
     NotAGraphOperation(&'static str),
-    /// An operation no module answers yet.
-    #[error("The query_ontology operation \"{0}\" is not answered by this server yet.")]
-    NotAnsweredYet(&'static str),
     /// A graph that could not answer, with the reason.
     #[error("{0}")]
     Failed(String),

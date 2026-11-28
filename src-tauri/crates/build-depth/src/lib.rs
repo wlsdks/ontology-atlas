@@ -18,8 +18,8 @@ mod session_cites;
 mod survey_findings;
 
 pub use coverage::{
-    measure_against_survey, AreaSummary, Breadth, Coverage, CoverageCounts, CoveragePage, MapNext,
-    Measured, ReadSummary, UnplacedRow, UNPLACED_PAGE_ROWS,
+    measure_against_survey, AbilityEdgeSummary, AreaSummary, Breadth, Coverage, CoverageCounts,
+    CoveragePage, MapNext, Measured, ReadSummary, UnplacedRow, UNPLACED_PAGE_ROWS,
 };
 pub use dependency_both_ways::two_way_dependency_findings;
 pub use finalize_depth::{

@@ -15,8 +15,7 @@ It reads documents that `vault-document` already read; it never opens a file.
 
 `src/query/` holds the operations of `query_ontology` that read the graph alone, one function per
 operation from the graph and a `QueryRequest` to a typed answer. `Operation` names every operation
-the tool offers; the one no module answers yet is `Operation::Pending` (`agent_brief`), which `run`
-refuses by name. `analysis_record` is `Operation::AnalysisRecord`: it reads one of the vault's record
+the tool offers. `analysis_record` is `Operation::AnalysisRecord`: it reads one of the vault's record
 files, not the graph, so `mcp-server` answers it and `run` refuses it by name. `match_nodes` with
 `hasIncoming: false` is answered from the files, not the compiled graph (`match_nodes_from_files`), so a vault
 that does not compile still lists its orphans. A family of operations is a folder with
@@ -29,7 +28,7 @@ from the whole graph.
 | `operation.rs` | `Operation`: every operation, its name, and whether a plan may target it |
 | `operation_defaults.rs` | `Expansion` and every default an operation applies to an argument a call leaves out (limit, depth, direction); `default_limit` names each operation, which the plan states and the operation applies, so the two cannot disagree |
 | `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer, and the defaults and caps a walk applies to `depth` and `direction` |
-| `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node, an operation not answered yet |
+| `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node |
 | `relation_set.rs` | `RelationSet`: the relation names a call may select, with their aliases |
 | `node_resolution.rs` | `resolve`: a slug or alias to a node, or the slugs near a name that is none |
 | `node_summary.rs` | `NodeIdentity`, `NodeSummary`: the node row every answer writes |
@@ -59,6 +58,7 @@ from the whole graph.
 | `selection/node_profile.rs`, `selection/domain_matrix.rs` | one node or one domain, and the domain-to-domain edge table |
 | `selection/similar_nodes.rs`, `selection/relation_recommendations.rs` | `similar_nodes` and `recommend_relations` (the domain links a capability or element lacks) |
 | `selection/health.rs`, `selection/workspace_brief.rs` | `health`: the verdict and its checks; `workspace_brief`: the first page of a vault |
+| `selection/agent_brief.rs` | `agent_brief`: the readiness of one project, the nodes to start from and the calls to make first, from `workspace_brief`'s counts; `project_holdings`: what a project holds, which the tool layer compiles alone before asking |
 | `selection/growth_plan.rs`, `selection/growth_candidates.rs` | `growth_plan` and the groups it lists: external files, dangling references, unassigned nodes, empty domains |
 | `selection/maintenance_plan.rs`, `selection/maintenance_action.rs` | `maintenance_plan`: every action in order, with its address (`maint_` and an FNV-1a hash) |
 | `selection/outside_checks.rs` | the validation check `health` and `workspace_brief` carry when the tool layer hands them over |

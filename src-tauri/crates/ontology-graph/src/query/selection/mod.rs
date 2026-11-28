@@ -1,10 +1,11 @@
 //! The operations that pick nodes out of the graph or summarize it: `overview`, `schema`,
 //! `facets`, `components`, `communities`, `similar_nodes`, `recommend_relations`,
-//! `node_profile`, `domain_matrix`, `growth_plan`, `maintenance_plan`, `health` and
-//! `workspace_brief`. What they read about the
+//! `node_profile`, `domain_matrix`, `growth_plan`, `maintenance_plan`, `health`,
+//! `workspace_brief` and `agent_brief`. What they read about the
 //! world beside the graph (the vault's validation, its ignore file, the reads its bodies ask for)
 //! reaches them in `QueryRequest::selection`, handed over by the tool layer.
 
+mod agent_brief;
 mod clusters;
 mod dependency_view;
 mod domain_matrix;
@@ -31,6 +32,7 @@ mod workspace_brief;
 
 pub(in crate::query) use match_nodes::count_matching_nodes;
 
+pub use agent_brief::{project_holdings, ProjectHoldings};
 pub use ignored_references::parse_patterns as parse_ignore_patterns;
 pub use match_nodes_from_files::{is_match_nodes, match_nodes};
 pub use selection_request::{
@@ -60,6 +62,7 @@ pub enum SelectionOperation {
     MaintenancePlan,
     Health,
     WorkspaceBrief,
+    AgentBrief,
 }
 
 impl SelectionOperation {
@@ -79,6 +82,7 @@ impl SelectionOperation {
             Self::MaintenancePlan => "maintenance_plan",
             Self::Health => "health",
             Self::WorkspaceBrief => "workspace_brief",
+            Self::AgentBrief => "agent_brief",
         }
     }
 }
@@ -103,6 +107,7 @@ pub enum SelectionAnswer<'a> {
     MaintenancePlan(maintenance_plan::MaintenancePlanAnswer<'a>),
     Health(health::HealthAnswer<'a>),
     WorkspaceBrief(workspace_brief::WorkspaceBriefAnswer<'a>),
+    AgentBrief(agent_brief::AgentBriefAnswer<'a>),
 }
 
 pub fn run<'a>(
@@ -156,6 +161,9 @@ pub fn run<'a>(
         ),
         SelectionOperation::WorkspaceBrief => {
             SelectionAnswer::WorkspaceBrief(workspace_brief::workspace_brief(graph, request)?)
+        }
+        SelectionOperation::AgentBrief => {
+            SelectionAnswer::AgentBrief(agent_brief::agent_brief(graph, request)?)
         }
     })
 }

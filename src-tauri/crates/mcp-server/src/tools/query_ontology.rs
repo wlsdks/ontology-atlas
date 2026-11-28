@@ -20,6 +20,7 @@ use crate::dispatch::CallContext;
 use crate::retired_arguments::refuse_retired_query_operation;
 use vault_document::slug_not_found_hint;
 
+use super::project_graph::project_graph;
 use super::read_vault::{open_root, read_vault};
 use super::vault_validation_facts::{stale_summaries, validation_facts};
 use crate::error::{ErrorCode, MissingNodeDetails, ReceivedValue, ToolError};
@@ -250,9 +251,9 @@ fn check_kind(texts: &[(&str, Option<String>)], allowed: &[&str]) -> Result<(), 
 fn refusal(error: QueryError, operation: &str) -> ToolError {
     match error {
         QueryError::Invalid(message) => ToolError::invalid(message),
-        QueryError::NotAnsweredYet(_)
-        | QueryError::NotAGraphOperation(_)
-        | QueryError::Failed(_) => ToolError::failed(error.to_string()),
+        QueryError::NotAGraphOperation(_) | QueryError::Failed(_) => {
+            ToolError::failed(error.to_string())
+        }
         QueryError::UnknownNode {
             field,
             name,
@@ -339,7 +340,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         request.selection.outside.ignore_patterns = read_ignore_patterns(context)?;
     }
     match request.operation.name() {
-        "health" | "workspace_brief" => {
+        "health" | "workspace_brief" | "agent_brief" => {
             request.selection.outside.validation = Some(validation_facts(context)?);
         }
         "maintenance_plan" => {
@@ -347,7 +348,16 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         }
         _ => {}
     }
-    let graph = context.compiled_graph().read(context)?;
+    let mut graph = context.compiled_graph().read(context)?;
+    if request.operation.name() == "agent_brief" {
+        let operation = request.operation.name();
+        let (project_graph, project) =
+            project_graph(context, graph, request.project.as_deref(), |error| {
+                refusal(error, operation)
+            })?;
+        graph = project_graph;
+        request.project = project;
+    }
     let answer = ontology_graph::run_query(&graph, &request)
         .map_err(|error| refusal(error, request.operation.name()))?;
     ToolOutput::json(&answer)

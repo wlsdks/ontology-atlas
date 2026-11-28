@@ -5151,6 +5151,24 @@ await test("add_concepts — batch write keeps order and returns partial results
   }
 });
 
+await test("add_concepts — a dangling reference is one findings line, the call that resolves it", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [{ slug: "domains/ghost", kind: "domain", title: "Ghost", capabilities: ["capabilities/missing"] }],
+      }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    const dangling = result.findings.filter((line) => line.includes("capabilities/missing"));
+    assert.equal(dangling.length, 1, "the compile issue and the resolving call say the same thing once");
+    assert.match(dangling[0], / Next: add_concepts\(/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 // Builders list a project's domains on its row (7 of 9 field-trial builds did),
 // so the row takes them; only a project keeps that list.
 await test("add_concepts — a project row lists its domains; another kind is told to use domain", async () => {
