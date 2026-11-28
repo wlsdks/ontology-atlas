@@ -121,7 +121,7 @@ version, each listed exactly. A framework package that pins its own `@scope/env`
 and eight platform binaries published together fails on the first sibling
 when only the framework is listed, and a pattern such as `@scope/*@1.2.3` is
 rejected because a name pattern cannot carry a version. Each sibling is a line
-of its own, `name@version`, scoped names in quotes (checked with pnpm 10.34.9).
+of its own, `name@version`, scoped names in quotes.
 
 `npm view <package>@<version> dependencies optionalDependencies` lists the
 siblings to name; pnpm names the next missing one if any is left out.
