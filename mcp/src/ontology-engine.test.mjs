@@ -1013,6 +1013,21 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('plans a dependency cycle for each node on it', () => {
+    const cycle = compileOntology([
+      doc('capabilities/a', { kind: 'capability', title: 'A', depends_on: ['capabilities/b'] }),
+      doc('capabilities/b', { kind: 'capability', title: 'B', depends_on: ['capabilities/a'] }),
+      doc('capabilities/c', { kind: 'capability', title: 'C' }),
+    ], { includeIndexes: true });
+    const kindsAbout = (slug) => queryCompiledOntology(cycle, {
+      operation: 'maintenance_plan',
+      touching: [slug],
+    }).actions.map((action) => action.kind);
+
+    assert.ok(kindsAbout('capabilities/b').includes('break_dependency_cycle'));
+    assert.ok(!kindsAbout('capabilities/c').includes('break_dependency_cycle'));
+  });
+
   it('resumes maintenance actions after a stable action id', () => {
     const first = queryCompiledOntology(artifact(), {
       operation: 'maintenance_plan',
