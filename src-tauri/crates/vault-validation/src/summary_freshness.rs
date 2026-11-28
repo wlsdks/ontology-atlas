@@ -258,14 +258,28 @@ pub fn summary_freshness(
         }
     };
     let revisions = kept.node_revisions(repository, scope, &summaries);
-    let stale = find_stale(documents, &revisions);
-    let hint = if stale.is_empty() {
+    let stale = find_stale(documents, &revisions.by_slug);
+    let unread = if revisions.is_complete() {
+        String::new()
+    } else {
+        format!(
+            " Git could not be asked about the history of {} summary node(s), so those were not judged.",
+            revisions.unread
+        )
+    };
+    let hint = if stale.is_empty() && revisions.is_complete() {
         format!(
             "all {} summary node(s) were described after their membership last changed.",
             summaries.len()
         )
+    } else if stale.is_empty() {
+        format!(
+            "{} of {} summary node(s) were described after their membership last changed.{unread}",
+            summaries.len() - revisions.unread,
+            summaries.len()
+        )
     } else {
-        format!("{} summary node(s) declare a membership that changed after their description was last written. Nothing is blocked; read each against the nodes it contains and re-judge the body.", stale.len())
+        format!("{} summary node(s) declare a membership that changed after their description was last written. Nothing is blocked; read each against the nodes it contains and re-judge the body.{unread}", stale.len())
     };
     SummaryFreshness {
         checked: true,

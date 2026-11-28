@@ -20,7 +20,7 @@ use confined_files::FileStamp;
 use hardened_git::{GitReadError, HistoryState, RepoPath, Repository};
 use source_scan::{date_paths, DatingCommit, WantedPath};
 
-use crate::node_revisions::{node_revisions, Revision};
+use crate::node_revisions::{node_revisions, NodeRevisions};
 
 /// Answers kept per kind, the last few asked: a session asks about one or two repositories.
 const SLOTS: usize = 4;
@@ -30,7 +30,7 @@ const MAX_KEPT_REVISIONS: usize = 100_000;
 /// Verdicts kept on whether a moved file changed only cosmetically.
 const MAX_KEPT_VERDICTS: usize = 8192;
 
-type Revisions = Arc<HashMap<String, Vec<Revision>>>;
+type Revisions = Arc<NodeRevisions>;
 
 struct DatingSlot {
     folder: PathBuf,
@@ -89,7 +89,7 @@ impl KeptHistory {
         repository: &Repository,
         wanted: &[WantedPath],
         max_commits: usize,
-    ) -> Result<Vec<Option<DatingCommit>>, GitReadError> {
+    ) -> Result<Arc<Vec<Option<DatingCommit>>>, GitReadError> {
         let asked: Vec<(RepoPath, source_scan::Dating)> = wanted
             .iter()
             .map(|path| (path.resolved.clone(), path.dating))
@@ -103,10 +103,10 @@ impl KeptHistory {
                     && slot.max_commits == max_commits
                     && slot.wanted == asked
             }) {
-                return Ok(slot.dated.as_ref().clone());
+                return Ok(Arc::clone(&slot.dated));
             }
         }
-        let dated = date_paths(repository, wanted, max_commits)?;
+        let dated = Arc::new(date_paths(repository, wanted, max_commits)?);
         // History that moved while it was read is not what the state names: keep nothing.
         if let Some(state) =
             state.filter(|state| repository.history_state().ok().as_ref() == Some(state))
@@ -119,14 +119,15 @@ impl KeptHistory {
                     state,
                     max_commits,
                     wanted: asked,
-                    dated: Arc::new(dated.clone()),
+                    dated: Arc::clone(&dated),
                 },
             );
         }
         Ok(dated)
     }
 
-    /// [`node_revisions`], kept under the history state.
+    /// [`node_revisions`], kept under the history state when every node was read: a run that
+    /// failed once may succeed the next time, so an answer with a gap is never the one kept.
     pub fn node_revisions(
         &self,
         repository: &Repository,
@@ -150,9 +151,11 @@ impl KeptHistory {
             }
         }
         let revisions = Arc::new(node_revisions(repository, scope, slugs));
-        let held: usize = revisions.values().map(Vec::len).sum();
+        let held: usize = revisions.by_slug.values().map(Vec::len).sum();
         if let Some(state) = state.filter(|state| {
-            held <= MAX_KEPT_REVISIONS && repository.history_state().ok().as_ref() == Some(state)
+            revisions.is_complete()
+                && held <= MAX_KEPT_REVISIONS
+                && repository.history_state().ok().as_ref() == Some(state)
         }) {
             let mut kept = locked(&self.kept);
             push_slot(

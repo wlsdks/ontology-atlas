@@ -21,7 +21,9 @@ pub use evidence_drift::{
 pub use evidence_verdict::{judge_evidence, CitedEntry, Judgement, PathChange, Verdict};
 pub use issue_collection::{collect_issues, IssueCollection};
 pub use kept_history::KeptHistory;
-pub use node_revisions::{contained_slugs, node_revisions, Revision, CONTAINMENT_KEYS};
+pub use node_revisions::{
+    contained_slugs, node_revisions, NodeRevisions, Revision, CONTAINMENT_KEYS,
+};
 pub use path_drift::{path_drift, path_drift_unchecked, Drift, PathDrift};
 pub use problem_list::{list_problems, CodeTally, Problem, ProblemList, ProblemSummary};
 pub use raw_source_kind::raw_source_kind_issues;
