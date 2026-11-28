@@ -3,16 +3,14 @@
 //! the script server keeps its declaration index by size and time. A call asks one `stat` per file
 //! it needs; only a file whose stamp moved is read and scanned again.
 //!
-//! A file written within [`RACY_WINDOW_NANOSECONDS`] of being read is not kept: a second write in
-//! the clock's grain would change no stamp. Texts are held within [`TEXT_CHARACTERS`] and the
+//! A file that had not settled (`confined_files::SETTLE_NANOSECONDS`) when it was read is not kept:
+//! a second write in the clock's grain would change no stamp. Texts are held within [`TEXT_CHARACTERS`] and the
 //! least recently used leaves first. No lock is held while a file is read or scanned.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use confined_files::{DiskSource, FileStamp, SourceFiles, SourceRoot};
+use confined_files::{now_nanoseconds, DiskSource, FileStamp, SourceFiles, SourceRoot};
 
 use crate::file_outline::{outline_file, OutlineDeclaration};
 use crate::opened_file::MAX_FILE_BYTES;
@@ -21,8 +19,6 @@ use crate::opened_file::MAX_FILE_BYTES;
 const TEXT_CHARACTERS: usize = 4 * 1024 * 1024;
 /// Files whose declarations are kept; past it the oldest entry is dropped.
 const SCANNED_FILES: usize = 20_000;
-/// A file this recently written when read is not trusted yet.
-const RACY_WINDOW_NANOSECONDS: i128 = 2_000_000_000;
 
 struct KeptText {
     stamp: FileStamp,
@@ -46,16 +42,9 @@ struct Kept {
 
 static KEPT: LazyLock<Mutex<Kept>> = LazyLock::new(|| Mutex::new(Kept::default()));
 
-fn now_nanoseconds() -> i128 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| i128::try_from(elapsed.as_nanos()).unwrap_or(0))
-}
-
-/// Whether a file with this stamp was already older than the racy window when the stamp was
-/// taken, so a stamp that still matches proves the file was not written since.
+/// Whether a file with this stamp has settled, judged now: the moment a stamp is served.
 pub fn is_settled(stamp: FileStamp) -> bool {
-    !stamp.is_recent(now_nanoseconds(), RACY_WINDOW_NANOSECONDS)
+    stamp.is_settled_at(now_nanoseconds())
 }
 
 fn locked() -> std::sync::MutexGuard<'static, Kept> {
@@ -72,6 +61,7 @@ pub fn kept_text(root: &SourceRoot, path: &str) -> Arc<str> {
         .fold(root.as_path().to_path_buf(), |joined, part| {
             joined.join(part)
         });
+    let read_at = now_nanoseconds();
     let Some(stamp) = root.repository_file_stamp(&parts) else {
         forget(&absolute);
         return Arc::from("");
@@ -90,7 +80,7 @@ pub fn kept_text(root: &SourceRoot, path: &str) -> Arc<str> {
     let text: Arc<str> = DiskSource::new(root, MAX_FILE_BYTES as usize)
         .read_text(&absolute)
         .map_or_else(|_| Arc::from(""), |text| Arc::from(&*text));
-    if !stamp.is_recent(now_nanoseconds(), RACY_WINDOW_NANOSECONDS) {
+    if stamp.is_settled_at(read_at) {
         keep(absolute, stamp, text.clone());
     }
     text
@@ -147,6 +137,7 @@ pub fn kept_line_scanned_declarations(
         .fold(root.as_path().to_path_buf(), |joined, part| {
             joined.join(part)
         });
+    let read_at = now_nanoseconds();
     let stamp = root.repository_file_stamp(&parts);
     {
         let mut kept = locked();
@@ -170,9 +161,7 @@ pub fn kept_line_scanned_declarations(
             .filter(|declaration| declaration.kind.is_code())
             .collect::<Vec<_>>(),
     );
-    if let Some(stamp) =
-        stamp.filter(|stamp| !stamp.is_recent(now_nanoseconds(), RACY_WINDOW_NANOSECONDS))
-    {
+    if let Some(stamp) = stamp.filter(|stamp| stamp.is_settled_at(read_at)) {
         let mut kept = locked();
         kept.clock += 1;
         let last_used = kept.clock;

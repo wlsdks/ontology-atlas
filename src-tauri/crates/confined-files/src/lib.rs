@@ -22,6 +22,7 @@ mod raw_source_read;
 mod real_paths;
 mod repository_file_read;
 mod scan_root;
+mod settle_rule;
 mod slug_rules;
 mod source_access;
 mod source_disk;
@@ -63,6 +64,7 @@ pub use source_snapshot::{
     SnapshotError, SnapshotSource, SourceSnapshot, MAX_ENTRIES, MAX_FILE_TEXT_BYTES,
     MAX_TEXT_BYTES, MAX_TRANSPORT_BYTES, SNAPSHOT_CONTRACT, SNAPSHOT_DESCRIPTOR,
 };
+pub use settle_rule::{is_settled_at, now_nanoseconds, SETTLE_NANOSECONDS};
 pub use stable_read::{FileSnapshot, FileStamp, StableReadError, MAX_ATTEMPTS};
 pub use vault_root::{ConfinedPath, SlugError, VaultRoot, WritablePath, TOP_FILE_MAX_BYTES};
 pub use vault_sidecar::{

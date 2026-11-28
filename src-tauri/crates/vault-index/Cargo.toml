@@ -7,6 +7,8 @@ license = "MIT"
 publish = false
 
 [dependencies]
+# The one rule for when a file's stamp can be trusted (`is_settled_at`).
+confined-files = { path = "../confined-files" }
 # SQLite is compiled from the bundled amalgamation (public domain) so FTS5 and WAL do not depend on
 # the operating system's SQLite build.
 rusqlite = { version = "=0.43.0", default-features = false, features = ["bundled", "cache"] }

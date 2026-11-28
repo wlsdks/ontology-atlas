@@ -8,7 +8,8 @@
 //!
 //! The one thing that does read the working tree is whether a moved file differs only in comments,
 //! imports or layout. That verdict is kept under the file's stamp, and a file written within two
-//! seconds is not kept (see [`confined_files::FileStamp::is_settled`]), so an edit is never missed.
+//! seconds is not kept (see [`confined_files::FileStamp::is_settled_at`]), so an edit is never
+//! missed.
 //! A verdict that was not reached (a side unreadable or over budget) is never kept: another call
 //! may read it.
 
@@ -192,7 +193,8 @@ impl KeptHistory {
             .map(|(_, unchanged)| *unchanged)
     }
 
-    /// Keeps a verdict reached from both sides, when the file had settled before it was stamped.
+    /// Keeps a verdict reached from both sides, under a stamp the caller took after the file had
+    /// settled.
     pub fn keep_cosmetic_verdict(
         &self,
         root: &Path,
@@ -201,9 +203,6 @@ impl KeptHistory {
         stamp: FileStamp,
         unchanged: bool,
     ) {
-        if !stamp.is_settled() {
-            return;
-        }
         let key = VerdictKey {
             root: root.to_path_buf(),
             commit: commit.to_string(),

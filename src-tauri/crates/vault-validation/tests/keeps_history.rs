@@ -11,6 +11,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 
+use confined_files::ScanRoots;
+
 use hardened_git::{RepoPath, Repository};
 use source_scan::{Dating, WantedPath, DATING_WINDOW_COMMITS};
 use vault_validation::KeptHistory;
@@ -170,5 +172,40 @@ fn an_answer_with_a_node_git_could_not_be_asked_about_is_never_kept() {
     assert!(
         !Arc::ptr_eq(&broken, &revisions(&fresh)),
         "an answer with a gap is read again, not kept"
+    );
+}
+
+#[test]
+fn a_cosmetic_verdict_is_kept_under_the_stamp_it_was_judged_at_and_not_for_a_rewritten_file() {
+    let (_scratch, folder) = repository();
+    commit(&folder, "a.ts", "export const a = 1;\n", "2026-01-10");
+    let root = ScanRoots::new(folder.clone(), folder.clone())
+        .expect("roots")
+        .allow(&folder, "rootPath")
+        .expect("allowed");
+    let stamp = |root: &confined_files::SourceRoot| {
+        root.repository_file_stamp(&["a.ts"])
+            .expect("a file is there")
+    };
+    let kept = KeptHistory::default();
+    let judged_at = stamp(&root);
+    assert_eq!(kept.cosmetic_verdict(&folder, "abc", "a.ts", judged_at), None);
+
+    kept.keep_cosmetic_verdict(&folder, "abc", "a.ts", judged_at, true);
+    assert_eq!(
+        kept.cosmetic_verdict(&folder, "abc", "a.ts", judged_at),
+        Some(true)
+    );
+    assert_eq!(
+        kept.cosmetic_verdict(&folder, "def", "a.ts", judged_at),
+        None,
+        "another commit is another question"
+    );
+
+    std::fs::write(folder.join("a.ts"), "export const a = 1; // changed\n").expect("rewrite");
+    assert_eq!(
+        kept.cosmetic_verdict(&folder, "abc", "a.ts", stamp(&root)),
+        None,
+        "the file no longer has the stamp the verdict was reached at"
     );
 }

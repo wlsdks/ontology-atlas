@@ -365,12 +365,17 @@ fn cosmetic_pairs(
     Some(unchanged)
 }
 
-/// The stamp of the working file a cited name points at, `None` when no regular file is there or
-/// the name is not a plain one.
+/// The stamp of the working file a cited name points at, `None` when no regular file is there, the
+/// name is not a plain one, or the file had not settled when the stamp was taken: a verdict is kept under the stamp it was judged at, and an equal stamp proves
+/// the file unchanged only if the file was already old when that stamp was taken.
 fn working_stamp(history: &EvidenceHistory<'_>, path: &str) -> Option<FileStamp> {
     let clean = RepoPath::new(path)?;
     let parts: Vec<&str> = clean.as_str().split('/').collect();
-    history.repo_root.repository_file_stamp(&parts)
+    let taken_at = confined_files::now_nanoseconds();
+    history
+        .repo_root
+        .repository_file_stamp(&parts)
+        .filter(|stamp| stamp.is_settled_at(taken_at))
 }
 
 /// Why evidence was not dated, or the dating itself. `place` is where the history is read from,
@@ -495,5 +500,49 @@ pub fn evidence_drift(
         missing,
         folder_only,
         hint,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(
+        clippy::disallowed_methods,
+        reason = "a test plants the file whose stamp is asked"
+    )]
+
+    use std::time::Duration;
+
+    use confined_files::{DiskSource, ScanRoots};
+
+    use super::*;
+
+    #[test]
+    fn a_working_file_written_a_moment_ago_has_no_stamp_to_judge_by_until_it_settles() {
+        let base = tempfile::tempdir().expect("temp dir");
+        let folder = std::fs::canonicalize(base.path()).expect("real");
+        std::fs::write(folder.join("a.ts"), "export const a = 1;\n").expect("file");
+        let root = ScanRoots::new(folder.clone(), folder.clone())
+            .expect("roots")
+            .allow(&folder, "rootPath")
+            .expect("allowed");
+        let files = DiskSource::new(&root, 1024);
+        let repository = Repository::at(&folder);
+        let kept = KeptHistory::default();
+        let scope = RepoPath::root();
+        let history = EvidenceHistory {
+            repository: &repository,
+            vault_scope: &scope,
+            repo_scope: &scope,
+            repo_files: &files,
+            repo_root: &root,
+            kept: &kept,
+        };
+
+        assert!(
+            working_stamp(&history, "a.ts").is_none(),
+            "an equal stamp later would prove nothing about a file this new"
+        );
+        std::thread::sleep(Duration::from_millis(2_100));
+        assert!(working_stamp(&history, "a.ts").is_some());
     }
 }
