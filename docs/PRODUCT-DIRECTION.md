@@ -696,7 +696,7 @@ superseded; the current static website host is GitHub Pages.
 ### ✅ Phase 3 — AI agent partner — merged
 
 1. ✅ `mcp/` package — MCP server (`ontology-atlas-mcp`)
-2. ✅ Runtime-advertised MCP inventory: connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, dry-run-first rename/merge/delete/absorb writes, project-source connect/disconnect, and project-meaning finalization. `tools/list` is the exact current set; `mcp-verify` checks it.
+2. ✅ Runtime-advertised MCP inventory: connection/root/toolset proof, vault-scoped Git status/history and local snapshots, list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, dry-run-first rename/merge/delete/absorb writes, project-source connect/disconnect, and project-meaning finalization. `tools/list` is the exact current set; `mcp-verify` checks it.
 3. ✅ Vault scaffold — the installed app `/docs` "Create starter seed" button creates the starter vault. (npm publishing retired 2026-07-27; there is no `npx` channel.)
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — describes our own mental model, including agent-practice notes as document nodes (census: `query_ontology` with `overview`)

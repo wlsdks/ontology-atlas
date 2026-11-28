@@ -73,7 +73,7 @@ The MCP server answers graph questions from the same frontmatter, so your agent 
 - `query_ontology` with `path` returns the shortest path between two concepts. Each hop names the key that links it (`via`) and, when one is recorded, the reason (`rationale`).
 - `query_ontology` with `neighbors` returns one hop around a concept, filtered by direction and type.
 - `query_ontology` with `impact` or `blast_radius` answers "what is affected if this changes?" It follows declared `depends_on` relations only; structure is not impact.
-- `query_ontology` with `domain_matrix` counts the relations between domains. Limited to `depends_on`, it gives the same numbers as the map's arcs.
+- `query_ontology` with `project_map` lists the domains of a project and the relations between them.
 
 To write, `add_relations` takes a list of relations, each with `from`, `to`, a `type` (`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements` or `domain`) and a `why`. `remove_relation` previews by default and writes only with `confirm: true`; with `replaceWith` it swaps a relation for another in one write. `broader` is not one of the `add_relations` types yet. To change it, an agent calls `patch_concept` with the full new list and the file's `mtime`, then runs `validate_vault`.
 

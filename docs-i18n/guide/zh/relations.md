@@ -66,7 +66,7 @@ MCP 服务器根据同一批 frontmatter 回答关于图的问题，所以你的
 - `query_ontology` 配合 `path`，返回两个概念之间的最短路径。每一跳都会注明连接它的键（`via`），如果记录了理由，还会给出理由（`rationale`）。
 - `query_ontology` 配合 `neighbors`，返回一个概念周围一跳范围内的概念，可按方向和类型过滤。
 - `query_ontology` 配合 `impact` 或 `blast_radius`，回答“如果这里变了，会影响什么？”。它只沿着声明过的 `depends_on` 关系查找；结构关系不算影响。
-- `query_ontology` 配合 `domain_matrix`，统计领域之间的关系数量。限定为 `depends_on` 时，得出的数字与地图上弧线所画的相同。
+- `query_ontology` 配合 `project_map`，列出项目的领域以及领域之间的关系。
 
 写入时，`add_relations` 接收一组关系，每条关系包含 `from`、`to`、一个 `type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements` 或 `domain`）以及一个 `why`。`remove_relation` 默认只做预览，只有带上 `confirm: true` 时才会写入；同时传入 `replaceWith` 时，会一次写入就把一条关系换成另一条。`broader` 目前还不是 `add_relations` 支持的类型：智能体需要用 `patch_concept` 修改它，传入完整的新列表和文件的 `mtime`，然后运行 `validate_vault`。
 

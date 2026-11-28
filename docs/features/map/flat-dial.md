@@ -144,7 +144,7 @@ are not authored ontology data. The frame meter remains opt-in.
 
 ## What a line counts
 
-A line between two domains counts the `depends_on` relations (a concept's `dependencies` or `depends_on`) whose ends resolve to those two domains: a domain is itself, a capability its domain, an element its capability's domain or the domain that holds it. The count is per direction and equals what `query_ontology({operation:"domain_matrix", types:["depends_on"]})` reports for that pair (`tests/contract/analysis/domain-flow-parity.contract.test.ts`). Lines are counted aggregates, never bundles of individual relations.
+A line between two domains counts the `depends_on` relations (a concept's `dependencies` or `depends_on`) whose ends resolve to those two domains: a domain is itself, a capability its domain, an element its capability's domain or the domain that holds it. The count is per direction and is the roll-up `tests/contract/analysis/domain-flow-parity.contract.test.ts` checks against fixture cases. Lines are counted aggregates, never bundles of individual relations.
 
 At rest the strongest 40 directed domain pairs draw as thin, faint bowed arcs
 whose width and ink rise slightly with the count, ending in a small open head.
@@ -357,7 +357,7 @@ folder. Mark objects are reused across frames. Level of detail for 2,000- and
 
 What the graph draws, an agent can ask for:
 
-- `query_ontology({operation:"domain_matrix", types:["depends_on"]})`: the counted lines.
+- `query_ontology({operation:"project_map", project})`: the domains the lines join.
 - `query_ontology({operation:"blast_radius", slug, direction:"incoming"})`: what a focused capability is used by, the warm tapers.
 
 The overview fits the graph into the free map, whose top sits below the tool

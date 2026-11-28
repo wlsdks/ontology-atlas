@@ -337,11 +337,9 @@ Aim: when the vault grows another ~25 nodes (≈50 total), re-measure to test wh
 without Codex/Claude startup time, MCP JSON-RPC transport, or file-system walk
 noise. It reports `compile_ontology` full/indexed/summary timings plus
 `agent_brief`, `workspace_brief`, `health`, `query_plan`, `node_profile`, `path`,
-`all_paths`, `pattern_walk`, `schema`, `relation_check`, `blast_radius`,
-`domain_matrix`, `centrality`, `match_nodes`, `match_edges`, and `project_map`
-timings against generated vaults. It also measures the full 10-call
-`graph_db_pack` sequence: node scan plan/run, edge
-scan plan/run, domain coupling, centrality plan/run, path plan/run, and
+`pattern_walk`, `schema`, `relation_check`, `blast_radius`, `match_nodes`, and
+`project_map` timings against generated vaults. It also measures the 3-call
+`graph_db_pack` sequence: a `match_nodes` plan, the `match_nodes` run, and
 `explain_relation`.
 `pnpm perf:graph:check` runs each hot path three times on a 1k-node synthetic
 graph, reports the median, and fails if compile or query latency exceeds the

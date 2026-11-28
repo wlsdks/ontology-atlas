@@ -15,7 +15,7 @@ relation_notes: { elements/vault-kind-schema: "You asked me to turn imports I ac
 Runs every traversal, ranking and grouping operation over a compiled artifact, and turns an empty or unresolved answer into a named next step rather than silence.
 
 ## Includes
-- Neighbourhoods, paths, reachability, impact, clustering and centrality over the compiled graph.
+- Neighbourhoods, paths, reachability, impact and clustering over the compiled graph.
 - Bounded search with an explicit budget, so a large graph returns a partial answer that says it is partial.
 - The health and maintenance views that name each finding's repair, and the growth plan that now carries a group of next reads beside the writes it recommends.
 
