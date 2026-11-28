@@ -44,6 +44,7 @@ mod vault_validation_report;
 mod writes;
 
 pub use compiled_graph::KeptGraph;
+pub use writes::connect_consent_root;
 
 /// A write tool's handler. It receives the proof that the checkpoint passed, and answers with what
 /// the audit lines record, so it cannot finish without saying.
@@ -90,9 +91,9 @@ pub fn write_handler(tool: WriteTool) -> Option<WriteHandler> {
         WriteTool::MergeConcepts => Some(writes::merge_concepts),
         WriteTool::DeleteConcept => Some(writes::delete_concept),
         WriteTool::AbsorbDocument => Some(writes::absorb_document),
-        WriteTool::ConnectProjectSource
-        | WriteTool::DisconnectProjectSource
-        | WriteTool::FinalizeProjectMeaning => None,
+        WriteTool::ConnectProjectSource => Some(writes::connect_project_source),
+        WriteTool::DisconnectProjectSource => Some(writes::disconnect_project_source),
+        WriteTool::FinalizeProjectMeaning => None,
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => Some(test_hooks::write_through_checkpoint),
     }

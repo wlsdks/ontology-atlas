@@ -1,10 +1,13 @@
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const repoRoot = resolve(__dirname, '../../..');
-const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/project_source/mod.rs'), 'utf8');
+const sharedProbe = readFileSync(
+  resolve(repoRoot, 'src-tauri/crates/project-source/src/source_inventory_limits.rs'),
+  'utf8',
+);
+const appProbe = readFileSync(resolve(repoRoot, 'src-tauri/src/project_source/mod.rs'), 'utf8');
 const mcpSource = readFileSync(
   resolve(repoRoot, 'mcp/src/project-source/project-source-inventory-limits.mjs'),
   'utf8',
@@ -16,35 +19,40 @@ function mcpConstant(name: string): string {
   return match![1]!.trim();
 }
 
-function rustConstant(name: string): string {
-  const match = new RegExp(`^const ${name}: [^=]+= (.+);$`, 'm').exec(rustSource);
-  expect(match, `${name} is not declared in src-tauri/src/project_source/mod.rs`).toBeTruthy();
+function sharedConstant(name: string): string {
+  const match = new RegExp(`^pub const ${name}: [^=]+= (.+);$`, 'm').exec(sharedProbe);
+  expect(match, `${name} is not declared in src-tauri/crates/project-source/src/source_inventory_limits.rs`).toBeTruthy();
   return match![1]!.trim();
 }
 
 /**
- * The Rust and JavaScript source inventory probes are separate implementations. The MCP
- * probe left the file cap and the `inventory-v2` fingerprint behind (no file count bounds it,
- * a repository is read from its index): until the one port of the probe moves the app to the
- * same fingerprint, a receipt one side minted reads as changed on the other. What both still
- * walk with must be the same number.
+ * The app and the Rust MCP server measure a source folder with one crate
+ * (`src-tauri/crates/project-source`), so one folder has one `inventory-v3` fingerprint whoever
+ * asks. The JavaScript probe is the second implementation until it is removed, and what it
+ * hashes must be the same: a receipt one side minted reads as changed on the other when any of
+ * this differs.
  */
-describe('source inventory bounds — the app and the MCP probe must agree where they still share one', () => {
+describe('source inventory rule: the app, the Rust MCP server and the JavaScript probe agree on one', () => {
+  it('the fingerprint version is one word on both sides', () => {
+    expect(mcpConstant('SOURCE_INVENTORY_VERSION')).toBe("'inventory-v3'");
+    expect(sharedConstant('SOURCE_INVENTORY_VERSION')).toBe('"inventory-v3"');
+  });
+
   it('the depth cap is one number on both sides', () => {
     expect(mcpConstant('SOURCE_INVENTORY_MAX_DEPTH')).toBe('20');
-    expect(rustConstant('SOURCE_INVENTORY_MAX_DEPTH')).toBe('20');
+    expect(sharedConstant('SOURCE_INVENTORY_MAX_DEPTH')).toBe('20');
   });
 
   it('the hashed-bytes cap is one number on both sides', () => {
     expect(mcpConstant('SOURCE_INVENTORY_MAX_HASH_BYTES')).toBe('32 * 1024 * 1024');
-    expect(rustConstant('SOURCE_INVENTORY_MAX_HASH_BYTES')).toBe('32 * 1024 * 1024');
+    expect(sharedConstant('SOURCE_INVENTORY_MAX_HASH_BYTES')).toBe('32 * 1024 * 1024');
   });
 
   it('the pruned directory names are the same set on both sides', () => {
     const mcpMatch = /export const SOURCE_PRUNE_DIR_NAMES = new Set\(\[([\s\S]*?)\]\)/.exec(mcpSource);
     expect(mcpMatch, 'SOURCE_PRUNE_DIR_NAMES is not a Set literal any more').toBeTruthy();
-    const rustMatch = /const SOURCE_PRUNE_DIR_NAMES: &\[&str\] = &\[([\s\S]*?)\];/.exec(rustSource);
-    expect(rustMatch, 'SOURCE_PRUNE_DIR_NAMES is not a slice literal any more').toBeTruthy();
+    const sharedMatch = /pub const SOURCE_PRUNE_DIR_NAMES: \[&str; \d+\] = \[([\s\S]*?)\];/.exec(sharedProbe);
+    expect(sharedMatch, 'SOURCE_PRUNE_DIR_NAMES is not an array literal any more').toBeTruthy();
 
     const names = (block: string) =>
       block
@@ -53,32 +61,19 @@ describe('source inventory bounds — the app and the MCP probe must agree where
         .filter(Boolean)
         .sort();
 
-    expect(names(mcpMatch![1]!)).toEqual(names(rustMatch![1]!));
+    expect(names(mcpMatch![1]!)).toEqual(names(sharedMatch![1]!));
     expect(names(mcpMatch![1]!)).toContain('node_modules');
   });
 
   /**
-   * The app's own probe still truncates past its file cap, and this repository is its own
-   * dogfood source root, so the repository outgrowing that cap is a real defect in the app
-   * until the port removes it.
+   * The app used to walk with its own file cap and `inventory-v2`, so a repository past 16,000
+   * files read as truncated in the app and whole in the MCP server. The app now calls the shared
+   * probe and declares no bound of its own.
    */
-  it('the dogfood repository still fits inside the app probe cap', () => {
-    const cap = Number(rustConstant('SOURCE_INVENTORY_MAX_FILES'));
-    const visible = new Set(
-      execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
-        cwd: repoRoot,
-        encoding: 'utf8',
-        maxBuffer: 64 * 1024 * 1024,
-      })
-        .split('\0')
-        .filter(Boolean),
-    );
-
-    expect(
-      visible.size,
-      `this repository has ${visible.size} visible files against the app probe's cap of ${cap}; ` +
-        'the bounded probe truncates past it — raise the cap in src-tauri/src/project_source/mod.rs ' +
-        'with a docs/DECISIONS.md record',
-    ).toBeLessThanOrEqual(cap);
+  it('the app probe calls the shared crate and keeps no file cap or version of its own', () => {
+    expect(appProbe).toMatch(/project_source::inspect_project_source/);
+    expect(appProbe).not.toMatch(/SOURCE_INVENTORY_MAX_FILES/);
+    expect(appProbe).not.toMatch(/inventory-v2/);
+    expect(appProbe).not.toMatch(/const SOURCE_INVENTORY_/);
   });
 });

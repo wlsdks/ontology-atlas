@@ -40,6 +40,7 @@ saved-constellations = { path = "../saved-constellations" }
 document-absorption = { path = "../document-absorption" }
 # The wiki page contract `validate_wiki` judges pages against.
 wiki-pages = { path = "../wiki-pages" }
+project-source = { path = "../project-source" }
 meaning-findings = { path = "../meaning-findings" }
 raw-source-text = { path = "../raw-source-text" }
 # Answers are typed structs written as JSON. `raw_value` sends the tool list as the text the

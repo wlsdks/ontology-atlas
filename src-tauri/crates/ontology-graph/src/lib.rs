@@ -19,7 +19,7 @@ pub use compiled_graph::{
 pub use graph_compiler::compile;
 pub use identity_error::{IdentityError, IdentityFault};
 pub use query::{
-    is_match_nodes, match_nodes, parse_ignore_patterns, run as run_query, Direction, LineSpan,
+    is_match_nodes, match_nodes, parse_ignore_patterns, project_scope_slugs, run as run_query, Direction, LineSpan,
     NodeSort, Operation, OutsideFacts, PendingOperation, QueryAnswer, QueryError, QueryRequest,
     SelectionArguments, SelectionOperation, SelectionRequest, StaleSummary, UncertaintyRead,
     VaultValidationFacts, WalkOperation, RELATION_TYPE_VALUES, SEARCH_BUDGET_MAX,

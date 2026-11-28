@@ -309,6 +309,7 @@ merge.
 | 96 | `validate_vault`, `health` and `workspace_brief` `coverage`, and the `coverage` of a write | the script server counts `abilities` (surveyed, onNode, named, excluded, unplaced), `areas`, `reads`, `rules`, `roles` and `abilityEdges`, lists the first ten unplaced abilities under `unplaced` with the cursor `unplacedOffset`, and gives one `nextAction`; a write reports `changed` as `{ "section.field": [before, after] }` and the same `nextAction` | `breadth` for the abilities, with the unplaced rows and their `pagination` inside it; `areas` also carries `keepLines` and `mapNext`; `reads` carries `served`; there are no `rules`, `roles` or `abilityEdges` counts and no `nextAction`; a write reports `changed` in the script server's form without `nextAction`; the embedded brief of `health` and `workspace_brief` keeps the counts only | the build-depth measure of Rust is the lean one of 2026-11-27 (row 65) and has no role placement or rule judgement, which the script server's `rules`, `roles` and `nextAction` read; the page, the three-row brief and the `changed` form are the script server's. Falsifier: porting `rules`, `roles` and `nextAction` turns this row into equal. Corpus: `validate-vault-miniature-repo`, `validate-vault-storefront`, `writes-on-miniature-repo-evidence-nodes` |
 | 97 | `validate_vault` `finalizeGate` | a list of what `finalize_project_meaning` would refuse for a row answered `answered` (abilities, evidence, impact, not-mapped-lines), one entry per block with its count, when the repository is grounded | the field is absent | the gate reads the rule and role measures of row 96 and the refusal of `finalize_project_meaning`, which slice 11 ports; a partial gate would say "nothing to refuse" where the script server refuses. Falsifier: the slice that ports `finalize_project_meaning` writes the field. Corpus: `validate-vault-miniature-repo`, `repo-root-missing` |
 | 98 | `query_ontology` `growth_plan`, `workspace_brief` `nextReadsReason` | `no_bodies` whenever no node of the vault has a body | present only when the vault holds no document; a vault whose documents have no body gets none | the reads the uncertainty sections ask for come from outside the graph (row 37); the graph alone cannot tell an empty body from an unread one. Falsifier: the slice that supplies `nextReads` gives the same reason. Corpus: `graph-selection-rich`, the `query-ontology-*` cases |
+| 110 | `connect_project_source` for a folder the operating system will not let it measure (not there, or a folder below it that may not be read) | the sentence `connect_project_source could not measure "<root>": <text>` ends in the script server's library text: `ENOENT: no such file or directory, lstat '<path>'` or `EACCES: permission denied, scandir '<path>'` | the same sentence ends in the operating system's text as Rust prints it: `No such file or directory (os error 2)` or `Permission denied (os error 13)`; both refuse the same calls and the code is `tool_error` | the words of an operating-system error belong to the library that reports it, and the script server also names the syscall and a path inside the tree it was walking; copying that shape would invent a syscall Rust did not make. Falsifier: a corpus case whose refusal text is the same on both. Corpus: `project-source-connect-and-disconnect`, `project-source-connect-hostile-roots` |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -1252,3 +1253,23 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   write's `coverage` reports `changed` as `section.field` pairs. The endpoint step of `infer_imports`
   names `add_concepts`. Rows 79 and 80 are dropped: both servers now agree. Rows 95 to 98 are new:
   `agent_brief`, the shape of `coverage`, `finalizeGate`, `nextReadsReason`; row 65 points to row 96.
+- 2026-11-28 (slice `feat/mcp-rust-11b-project-source`, half done; each step questioned, choice and why):
+  `connect_project_source` and `disconnect_project_source` run in Rust over a new `project-source`
+  crate (the folder probe, `inventory-v3`, the receipt, the witnesses, the project graph hash, the
+  sidecar). The app's `inspect_project_source` now calls that crate, so the app and the server
+  fingerprint one folder the same way and the app no longer caps at 16,000 files; the
+  meaning-transition continuity observation hashes whole files, a different question, so it kept its
+  fingerprint and moved to `src-tauri/src/project_source/continuity.rs`.
+  `source-inventory-bound.contract.test.ts` pins the shared rule. `confirm: false` still refuses after
+  an accepted card (the permit records `consented`). Row 110 is new: an operating-system error is
+  printed in each runtime's words. The hostile-roots corpus case probes the vault before any call
+  writes the sidecar, because two runs of the script server differed otherwise. 142 declared entries
+  that no longer differed were removed. Not done: `finalize_project_meaning` (Rust answers unknown
+  tool, so `library/finalize-project-meaning` differs), the `finalizeGate` port (needs `build-depth`
+  roles and ability-to-ability edges, so rows 96 and 97 stay and now also cover the connect case's
+  `validate_vault` call), and `get_constellation` with an `id` (still "not ported" for an existing
+  id). Measured (`connect_project_source` of this repository into a copy of its vault, three runs,
+  whole round trip after initialize): the script server 306 to 334 ms, 111 MB peak resident; Rust
+  296 to 317 ms, 14 MB peak resident. Both are bound by the git probe. `finalize_project_meaning`
+  was not measured. Tests: 24 unit and 3 integration tests in `project-source`, 1 in
+  `plain_refusal.rs`, app probe tests 15 (two moved to the shared crate).

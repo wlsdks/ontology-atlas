@@ -51,6 +51,7 @@ from the whole graph.
 | `walks/impact.rs`, `walks/blast_radius.rs`, `walks/dependency_qualification.rs` | `impact` and `blast_radius` over declared `depends_on` edges, and whether each edge carries a reason |
 | `walks/subgraph.rs` | `subgraph`: the nodes around one node and the edges between them |
 | `walks/explain_relation.rs`, `walks/relation_check.rs` | `explain_relation` and `relation_check`: how two nodes relate, and whether a proposed edge fits the graph's patterns |
+| `project_scope_slugs.rs` | The slugs of every node a project holds, or nothing when the scope passes a limit: what a receipt's graph hash may be made of |
 | `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs` | `containment_tree`, `project_scope` and `project_map`: what holds what, and what each project holds; `fitted_map` is the map cut to a character bound, which `workspace_brief` carries once per project |
 | `selection/clusters.rs` | `components` and `communities` (label propagation) |
 | `selection/graph_summary.rs` | `overview`, `schema`, `facets` |

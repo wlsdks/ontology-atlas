@@ -64,13 +64,14 @@ struct Question<'a> {
     requested_schema: MessageOnly,
 }
 
-/// Asks a person, if this vault asks, whether `tool` may do what `arguments` say. `Ok` is a yes or
-/// a vault that does not ask; every other end is a refusal that wrote nothing.
+/// Asks a person, if this vault asks, whether `tool` may do what `arguments` say. `Ok(true)` is a
+/// person's yes, `Ok(false)` a vault or a call that does not ask; every other end is a refusal that
+/// wrote nothing.
 pub fn ask_before_writing(
     context: &CallContext<'_>,
     tool: WriteTool,
     arguments: &Arguments,
-) -> Result<(), ToolError> {
+) -> Result<bool, ToolError> {
     ask_within(context, tool, arguments, ANSWER_WINDOW)
 }
 
@@ -79,17 +80,30 @@ fn ask_within(
     tool: WriteTool,
     arguments: &Arguments,
     window: Duration,
-) -> Result<(), ToolError> {
+) -> Result<bool, ToolError> {
     if !context.config().modes.write_consent {
-        return Ok(());
+        return Ok(false);
     }
     if arguments.asks_for_preview() {
-        return Ok(());
+        return Ok(false);
     }
     if !context.can_ask_client() {
         return Err(ConsentRefusal::NoWayToAsk.into());
     }
-    let summary = write_question::summary(tool, arguments);
+    // The card names the folder a connect would bind, not "inferred from this vault's location".
+    let named;
+    let shown_arguments = if tool == WriteTool::ConnectProjectSource {
+        match crate::tools::connect_consent_root(context, arguments) {
+            Some(root) => {
+                named = arguments.with_text("rootPath", &root);
+                &named
+            }
+            None => arguments,
+        }
+    } else {
+        arguments
+    };
+    let summary = write_question::summary(tool, shown_arguments);
     let message = format!("{summary}. Apply this change to the vault?");
     let question = Question {
         mode: "form",
@@ -105,7 +119,7 @@ fn ask_within(
     let failed = |problem| ConsentRefusal::QuestionFailed(problem).into();
     match context.ask_client("elicitation/create", &question, window) {
         ClientAnswer::Replied(ClientReply::Result(result)) => match PersonAnswer::read(&result) {
-            Some(answer) if answer.approves() => Ok(()),
+            Some(answer) if answer.approves() => Ok(true),
             Some(answer) => Err(ConsentRefusal::NotApproved {
                 action: answer.action,
                 summary,

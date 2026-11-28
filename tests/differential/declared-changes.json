@@ -11317,14 +11317,6 @@
       "case": "safety/handler-fails-on-a-folder-named-like-a-node",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/problems/18/issues/3/message",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/problems/4/issues/3/message",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
@@ -11365,30 +11357,6 @@
       "case": "safety/handler-fails-on-a-folder-named-like-a-node",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/problemsHint",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/problemsPagination/nextOffset",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/problemsPagination/returned",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
@@ -11398,30 +11366,6 @@
       "where": "answer",
       "id": 5,
       "path": "result.structuredContent.problems",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsHint",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsPagination.nextOffset",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsPagination.returned",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
     },
@@ -11478,14 +11422,6 @@
       "where": "answer",
       "id": 5,
       "path": "result.structuredContent.problems[17].issues[3].message",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problems[18].issues[3].message",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
     },
@@ -11821,14 +11757,6 @@
       "case": "safety/handler-fails-on-a-link-to-itself",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/problems/18/issues/3/message",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/problems/4/issues/3/message",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
@@ -11869,30 +11797,6 @@
       "case": "safety/handler-fails-on-a-link-to-itself",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/problemsHint",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/problemsPagination/nextOffset",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/problemsPagination/returned",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
@@ -11902,30 +11806,6 @@
       "where": "answer",
       "id": 5,
       "path": "result.structuredContent.problems",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsHint",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsPagination.nextOffset",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsPagination.returned",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
     },
@@ -11982,14 +11862,6 @@
       "where": "answer",
       "id": 5,
       "path": "result.structuredContent.problems[17].issues[3].message",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problems[18].issues[3].message",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
     },
@@ -14258,30 +14130,6 @@
     {
       "case": "shell/every-tool-in-read-only-mode",
       "where": "answer",
-      "id": 15,
-      "path": "result.content[0].text",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-in-read-only-mode",
-      "where": "answer",
-      "id": 15,
-      "path": "result.structuredContent.error",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-in-read-only-mode",
-      "where": "answer",
-      "id": 15,
-      "path": "result.structuredContent.errorCode",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-in-read-only-mode",
-      "where": "answer",
       "id": 16,
       "path": "result.content[0].text",
       "change": 39,
@@ -14299,30 +14147,6 @@
       "case": "shell/every-tool-in-read-only-mode",
       "where": "answer",
       "id": 16,
-      "path": "result.structuredContent.errorCode",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-with-empty-arguments-profile-construction",
-      "where": "answer",
-      "id": 15,
-      "path": "result.content[0].text",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-with-empty-arguments-profile-construction",
-      "where": "answer",
-      "id": 15,
-      "path": "result.structuredContent.error",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-with-empty-arguments-profile-construction",
-      "where": "answer",
-      "id": 15,
       "path": "result.structuredContent.errorCode",
       "change": 39,
       "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
@@ -18968,486 +18792,6 @@
     {
       "case": "library/absorb-document",
       "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
       "id": 8,
       "path": "result.content[0].text",
       "change": 86,
@@ -20085,246 +19429,6 @@
     {
       "case": "library/absorb-document-hostile-paths",
       "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
       "id": 6,
       "path": "result.content[0].text",
       "change": 86,
@@ -20484,246 +19588,6 @@
       "path": "vault/.ontology-atlas/activity.jsonl",
       "change": 86,
       "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
     },
     {
       "case": "git/staleness-through-validate-vault",
@@ -28612,6 +27476,70 @@
       "path": "result.structuredContent.dependencyOrder.blocked",
       "change": 24,
       "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/coverage",
+      "change": 96,
+      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.coverage",
+      "change": 96,
+      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 110,
+      "reason": "Row 110: the sentence of a connect that cannot measure its folder ends in the operating system's own words; the script server prints its library's text (`ENOENT: no such file or directory, lstat '<path>'`, `EACCES: permission denied, scandir '<path>'`), Rust prints `No such file or directory (os error 2)` or `Permission denied (os error 13)`. Both refuse the same calls with the same code."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 13,
+      "path": "result.structuredContent.error",
+      "change": 110,
+      "reason": "Row 110: the sentence of a connect that cannot measure its folder ends in the operating system's own words; the script server prints its library's text (`ENOENT: no such file or directory, lstat '<path>'`, `EACCES: permission denied, scandir '<path>'`), Rust prints `No such file or directory (os error 2)` or `Permission denied (os error 13)`. Both refuse the same calls with the same code."
+    },
+    {
+      "case": "library/project-source-connect-hostile-roots",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 110,
+      "reason": "Row 110: the sentence of a connect that cannot measure its folder ends in the operating system's own words; the script server prints its library's text (`ENOENT: no such file or directory, lstat '<path>'`, `EACCES: permission denied, scandir '<path>'`), Rust prints `No such file or directory (os error 2)` or `Permission denied (os error 13)`. Both refuse the same calls with the same code."
+    },
+    {
+      "case": "library/project-source-connect-hostile-roots",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 110,
+      "reason": "Row 110: the sentence of a connect that cannot measure its folder ends in the operating system's own words; the script server prints its library's text (`ENOENT: no such file or directory, lstat '<path>'`, `EACCES: permission denied, scandir '<path>'`), Rust prints `No such file or directory (os error 2)` or `Permission denied (os error 13)`. Both refuse the same calls with the same code."
     }
   ]
 }

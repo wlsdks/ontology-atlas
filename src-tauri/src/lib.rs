@@ -302,7 +302,7 @@ pub fn run() {
             harness_scopes::read_harness_scopes,
             harness_scopes::pick_harness_scope_file,
             project_source::inspect_project_source,
-            project_source::inspect_project_source_continuity,
+            project_source::continuity::inspect_project_source_continuity,
             vault::walk::list_vault_directory,
             vault::walk::vault_fingerprint,
             vault::index::vault_index_status,
