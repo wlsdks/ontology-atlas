@@ -46,13 +46,12 @@ function LocalizedToastProvider({ children }: { children: ReactNode }) {
 
 /**
  * Every app address: the workbench's providers around the screen, and beside it the page a plain
- * browser reads instead (`AppAddressFaces`). The locale root's subset of messages belongs to the
- * website's entry and arrives with the public pages.
+ * browser reads instead (`AppAddressFaces`).
  */
 export function AppLocaleLayout({ locale }: { locale: AppLocale }) {
   return (
     <AppAddressFaces appOnly={<AppOnlyFace locale={locale} />}>
-      <WorkbenchMessagesProvider locale={locale} timeZone={browserTimeZone()} rootMessages={{}}>
+      <WorkbenchMessagesProvider locale={locale} timeZone={browserTimeZone()}>
         <BootPictureRemover />
         <LocaleDocumentChrome locale={locale} />
         <MotionProvider>

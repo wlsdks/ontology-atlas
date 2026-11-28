@@ -972,10 +972,9 @@ A screen declares the query it reads as the route's `validateSearch`
 (`src/shared/lib/navigation/screen-searches.ts`, or a `*-search.ts` file beside a
 screen under `src/app`) and receives the typed value as its `search` prop; the
 router parses and writes it as text (`src/shared/lib/navigation/atlas-search.ts`).
-`/` starts from the subset `WorkbenchMessagesProvider` is given; the whole
-catalog arrives as one chunk per locale (`src/i18n/workbench-catalog.ts`)
-through that provider: every other workbench route, and `/` in the installed
-app, waits for it. The retired addresses answer from `beforeLoad`
+The whole message catalog arrives as one chunk per locale
+(`src/i18n/workbench-catalog.ts`) through `WorkbenchMessagesProvider`: every
+workbench route waits for it. The retired addresses answer from `beforeLoad`
 (`src/app/routes/-redirects/`).
 
 > Removed in earlier rounds: `/admin/*`, `/review/*`, `/diagnostics/*`,
