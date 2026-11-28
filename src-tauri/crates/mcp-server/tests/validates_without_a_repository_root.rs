@@ -3,8 +3,9 @@
 
 #![allow(
     clippy::disallowed_methods,
+    clippy::disallowed_types,
     clippy::indexing_slicing,
-    reason = "these tests plant a vault and read answers by key"
+    reason = "these tests start the program, plant a vault and read answers by key"
 )]
 
 mod support;

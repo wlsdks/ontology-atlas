@@ -54,7 +54,9 @@ fn plant(folder: &Path, name: &str, text: &str) {
 
 fn repository() -> (tempfile::TempDir, PathBuf) {
     let base = tempfile::tempdir().expect("temp dir");
-    let top = std::fs::canonicalize(base.path()).expect("real").join("top");
+    let top = std::fs::canonicalize(base.path())
+        .expect("real")
+        .join("top");
     std::fs::create_dir_all(&top).expect("top");
     git(&top, &["init", "-q", "-b", "main"]);
     (base, top)
@@ -240,7 +242,11 @@ fn a_write_inside_the_vault_folder_does_not_replace_the_survey() {
     };
 
     let first = survey_asked(&cache, &top, &asked);
-    plant(&top, "docs/ontology/domains/billing.md", "# Billing, rewritten\n");
+    plant(
+        &top,
+        "docs/ontology/domains/billing.md",
+        "# Billing, rewritten\n",
+    );
     plant(&top, "docs/ontology/capabilities/refund.md", "# Refund\n");
     assert!(
         Arc::ptr_eq(&first, &survey_asked(&cache, &top, &asked)),
@@ -254,7 +260,9 @@ fn a_write_inside_the_vault_folder_does_not_replace_the_survey() {
 #[test]
 fn a_folder_that_becomes_a_repository_stops_counting_what_its_ignore_file_hides() {
     let base = tempfile::tempdir().expect("temp dir");
-    let folder = std::fs::canonicalize(base.path()).expect("real").join("project");
+    let folder = std::fs::canonicalize(base.path())
+        .expect("real")
+        .join("project");
     plant(&folder, "src/a.ts", ONE_LINE);
     plant(&folder, "gen/generated.ts", ONE_LINE);
     let cache = SurveyCache::default();
