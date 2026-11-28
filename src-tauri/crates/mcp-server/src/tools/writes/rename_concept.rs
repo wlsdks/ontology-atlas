@@ -182,7 +182,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
             .map_err(|refusal| ToolError::failed(refusal.to_string()))?;
     }
     let mut entries: Vec<PlanEntry> = Vec::new();
-    let target_entry = PlanEntry::write(target_path.clone(), next_text);
+    let target_entry = PlanEntry::write(target_path.clone(), next_text).as_open_as(source_path.as_path());
     entries.push(match &target {
         Some(target) => entered(target_entry, &target.raw, target.modified),
         None => target_entry.expecting_absent(),
@@ -395,7 +395,7 @@ fn change_kind(
             .map_err(|refusal| ToolError::failed(refusal.to_string()))?;
     }
     let mut entries: Vec<PlanEntry> = Vec::new();
-    let write_entry = PlanEntry::write(target_path.clone(), next_text);
+    let write_entry = PlanEntry::write(target_path.clone(), next_text).as_open_as(source_path.as_path());
     entries.push(if source_path == target_path {
         entered(write_entry, &source.raw, source.modified)
     } else {

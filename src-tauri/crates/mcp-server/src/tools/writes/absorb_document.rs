@@ -279,7 +279,11 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         written.push((slug.to_string(), target.as_path().to_string_lossy().into_owned()));
         entries.push(PlanEntry::write(target, text).expecting_absent());
     }
-    entries.push(PlanEntry::write(write.absorbed_backup(&source), source.text().to_string()).expecting_absent());
+    entries.push(
+        PlanEntry::write(write.absorbed_backup(&source), source.text().to_string())
+            .expecting_absent()
+            .as_open_as(source.path()),
+    );
     entries.push(
         PlanEntry::write(write.absorbed_source(&source), slim_pointer(&plan))
             .expecting_text(source.text().to_string())

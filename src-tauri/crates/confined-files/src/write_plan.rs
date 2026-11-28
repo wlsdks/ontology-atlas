@@ -13,7 +13,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use crate::atomic_write::{
-    file_holds_text, modified_time_of, write_atomically, AtomicWrite, Expectation, WriteError,
+    file_holds_text, modified_time_of, permission_bits_of, write_atomically, AtomicWrite, Expectation, WriteError,
 };
 use crate::modified_time::ModifiedTime;
 use crate::os_error::{IoFailure, OsErrorCode};
@@ -41,6 +41,9 @@ pub struct PlanEntry {
     /// The file the plan was made from, by identity: the name must still lead to that file, which
     /// must still be a plain file. Text and time cannot say a file was swapped for a copy.
     pub expected_identity: Option<FileIdentity>,
+    /// The permission bits a file this entry creates gets: those of a named file, so a copy is
+    /// never more open than its original.
+    pub new_file_bits: Option<u32>,
 }
 
 impl PlanEntry {
@@ -52,6 +55,7 @@ impl PlanEntry {
             expected_absent: false,
             expected_modified: None,
             expected_identity: None,
+            new_file_bits: None,
         }
     }
 
@@ -63,6 +67,7 @@ impl PlanEntry {
             expected_absent: false,
             expected_modified: None,
             expected_identity: None,
+            new_file_bits: None,
         }
     }
 
@@ -78,6 +83,13 @@ impl PlanEntry {
 
     pub fn expecting_modified(mut self, modified: Option<ModifiedTime>) -> Self {
         self.expected_modified = modified;
+        self
+    }
+
+    /// A file this entry creates gets the permission bits `original` has now (a private file's copy
+    /// stays private). Without bits to read, the new file gets the system's default.
+    pub fn as_open_as(mut self, original: &Path) -> Self {
+        self.new_file_bits = permission_bits_of(original);
         self
     }
 
@@ -179,6 +191,9 @@ struct Step {
     operation: StepKind,
     existed: bool,
     before: Option<String>,
+    /// The permission bits the file had before the step, so a deleted file comes back as open as
+    /// it was and no more.
+    bits_before: Option<u32>,
 }
 
 enum StepKind {
@@ -379,6 +394,7 @@ fn apply_with_rollback(
             } else {
                 None
             };
+            let bits_before = permission_bits_of(entry.path());
             match entry.operation {
                 PlannedOperation::Write { content } => {
                     create_missing_parents(entry.path.as_path(), &mut created_folders)?;
@@ -391,6 +407,7 @@ fn apply_with_rollback(
                         &content,
                         &AtomicWrite {
                             expectation,
+                            new_file_bits: entry.new_file_bits,
                             ..AtomicWrite::default()
                         },
                     )?;
@@ -399,6 +416,7 @@ fn apply_with_rollback(
                         operation: StepKind::Write { after: content },
                         existed,
                         before,
+                        bits_before,
                     });
                 }
                 PlannedOperation::Delete => {
@@ -417,6 +435,7 @@ fn apply_with_rollback(
                         operation: StepKind::Delete,
                         existed,
                         before,
+                        bits_before,
                     });
                 }
             }
@@ -461,7 +480,7 @@ fn restore_step(step: &Step) -> Result<(), WriteError> {
                 return refuse();
             }
             if let (true, Some(before)) = (step.existed, &step.before) {
-                put_back(&step.path, before, Expectation::Text(after))
+                put_back(&step.path, before, Expectation::Text(after), step.bits_before)
             } else if path.exists() {
                 std::fs::remove_file(path)
                     .map_err(|source| WriteError::Io(IoFailure::new("unlink", path, source)))
@@ -477,7 +496,7 @@ fn restore_step(step: &Step) -> Result<(), WriteError> {
                 return refuse();
             }
             match &step.before {
-                Some(before) => put_back(&step.path, before, Expectation::Absent),
+                Some(before) => put_back(&step.path, before, Expectation::Absent, step.bits_before),
                 None => Ok(()),
             }
         }
@@ -488,12 +507,14 @@ fn put_back(
     target: &WritablePath,
     text: &str,
     expectation: Expectation<'_>,
+    bits: Option<u32>,
 ) -> Result<(), WriteError> {
     write_atomically(
         target,
         text,
         &AtomicWrite {
             expectation,
+            new_file_bits: bits,
             ..AtomicWrite::default()
         },
     )

@@ -109,6 +109,23 @@ fn a_rename_moves_the_file_and_every_reference_to_it_and_answers_with_the_keys_t
     assert!(other.contains("[[minutes]]"), "{other}");
 }
 
+/// A node kept private on disk (`chmod 600`) is still private after a rename moves it.
+#[cfg(unix)]
+#[test]
+fn a_renamed_private_file_is_as_private_as_it_was() {
+    use std::os::unix::fs::PermissionsExt;
+    let mut vault = Vault::start();
+    let path = vault.folder.path().join("notes.md");
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).expect("chmod");
+    let answer = vault.call(
+        "rename_concept",
+        r#"{"oldSlug":"notes","newSlug":"minutes","confirm":true}"#,
+    );
+    assert_eq!(answer["ok"], true);
+    let moved = std::fs::metadata(vault.folder.path().join("minutes.md")).expect("the new file");
+    assert_eq!(moved.permissions().mode() & 0o777, 0o600);
+}
+
 #[test]
 fn a_stale_expected_mtime_refuses_the_write_and_says_how_to_recover() {
     let mut vault = Vault::start();

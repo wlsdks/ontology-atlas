@@ -82,6 +82,7 @@ fn an_edit_made_right_before_the_rename_is_kept_and_the_write_stops_with_a_confl
                 expected_modified: Some(ModifiedTime::from_milliseconds(1000.0)),
             }),
             before_commit: Some(&human),
+            ..AtomicWrite::default()
         },
     )
     .expect_err("conflict");
@@ -172,6 +173,63 @@ fn a_private_originals_mode_is_kept_by_the_rewrite() {
         .mode()
         & 0o777;
     assert_eq!(mode, 0o600);
+}
+
+#[cfg(unix)]
+fn mode_of(path: &Path) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    fs::metadata(path).expect("stat").permissions().mode() & 0o777
+}
+
+#[cfg(unix)]
+fn made_private(path: &Path, text: &str) {
+    use std::os::unix::fs::PermissionsExt;
+    fs::write(path, text).expect("seed");
+    fs::set_permissions(path, fs::Permissions::from_mode(0o600)).expect("chmod");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_copy_made_by_a_plan_is_no_more_open_than_the_file_it_copies() {
+    let (_directory, root) = vault();
+    made_private(&root.path().join("private.md"), "secret");
+    let original = root.path().join("private.md");
+    apply_all_or_nothing(
+        vec![
+            PlanEntry::write(target(&root, "backup"), "secret".to_string())
+                .expecting_absent()
+                .as_open_as(&original),
+            PlanEntry::write(target(&root, "plain"), "x".to_string()).expecting_absent(),
+        ],
+        &options(),
+    )
+    .expect("applied");
+    assert_eq!(mode_of(&root.path().join("backup.md")), 0o600);
+    assert_ne!(
+        mode_of(&root.path().join("plain.md")),
+        0o600,
+        "an entry that names no original gets the system's default, so the test above can tell"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn a_private_file_deleted_and_put_back_by_a_rollback_is_private_again() {
+    let (_directory, root) = vault();
+    made_private(&root.path().join("second.md"), "ORIGINAL-2");
+    fs::create_dir(root.path().join("trap.md")).expect("trap");
+    let error = apply_all_or_nothing(
+        vec![
+            PlanEntry::delete(target(&root, "second")),
+            PlanEntry::write(target(&root, "trap"), "x".to_string()),
+        ],
+        &options(),
+    )
+    .expect_err("the trap fails the second step");
+    assert!(matches!(error, WriteError::RolledBack { .. }), "{error}");
+    let back = root.path().join("second.md");
+    assert_eq!(fs::read_to_string(&back).expect("read"), "ORIGINAL-2");
+    assert_eq!(mode_of(&back), 0o600);
 }
 
 #[test]

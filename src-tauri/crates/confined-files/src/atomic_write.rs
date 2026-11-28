@@ -180,6 +180,9 @@ pub struct ConflictReport<'a> {
 #[derive(Default)]
 pub struct AtomicWrite<'a> {
     pub expectation: Expectation<'a>,
+    /// The permission bits of a file this write creates (see `permission_bits_of`). A file that
+    /// is already there keeps its own, so a write never widens either.
+    pub new_file_bits: Option<u32>,
     /// With a report, a changed file is a [`WriteError::Conflict`]; without one it is
     /// [`WriteError::ChangedOnDisk`].
     pub conflict: Option<ConflictReport<'a>>,
@@ -209,6 +212,21 @@ pub(crate) fn modified_time_of(path: &Path) -> Option<ModifiedTime> {
     std::fs::metadata(path)
         .ok()
         .and_then(|metadata| ModifiedTime::of(&metadata))
+}
+
+/// The permission bits of the regular file at `path`, for a file made to be no more open than it:
+/// a copy, a backup, a file put back. `None` where the system has no such bits (Windows keeps access
+/// lists, which a new file in a folder inherits) or when no regular file is there.
+pub(crate) fn permission_bits_of(path: &Path) -> Option<u32> {
+    #[cfg(unix)]
+    {
+        existing_regular_file_mode(path).ok().flatten()
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+        None
+    }
 }
 
 /// The permission bits of an existing regular file, or `None` when there is none. Other errors
@@ -253,7 +271,7 @@ pub fn write_atomically(
     let path = target.as_path();
     let temporary = temporary_beside(path);
     #[cfg(unix)]
-    let existing_mode = existing_regular_file_mode(path)?;
+    let existing_mode = existing_regular_file_mode(path)?.or(options.new_file_bits);
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -263,7 +281,8 @@ pub fn write_atomically(
         path: &temporary,
         renamed: false,
     };
-    // Before the contents, so the new file never widens a private original's mode.
+    // Before the contents, so the new file never widens a private original's mode, nor the mode of
+    // the file it is a copy of.
     #[cfg(unix)]
     if let Some(mode) = existing_mode {
         use std::os::unix::fs::PermissionsExt;
