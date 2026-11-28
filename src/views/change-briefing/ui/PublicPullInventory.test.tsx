@@ -5,7 +5,7 @@ import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 import type { PublicPullInventory as Inventory, PublicPullVersion } from '@/shared/lib/git/tauri-pr-inventory';
 
 const bridge = vi.hoisted(() => ({ repositories: vi.fn(), read: vi.fn() }));
-vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string) => key }));
+vi.mock('use-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string) => key }));
 vi.mock('@/shared/lib/git/tauri-pr-inventory', () => ({ publicPullRepositories: bridge.repositories, readPublicPulls: bridge.read, invalidateNativePublicPullOriginals: vi.fn(), isNativePublicPullOriginal: () => true }));
 vi.mock('./sources/OriginalSourceBody', () => ({ OriginalSourceBody: ({ source }: { source: { text: string } }) => <div>{source.text}</div> }));
 import { PublicPullInventory } from './PublicPullInventory';

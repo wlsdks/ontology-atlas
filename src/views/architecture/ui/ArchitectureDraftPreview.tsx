@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Pause, Play, RotateCcw } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';

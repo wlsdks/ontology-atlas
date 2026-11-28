@@ -1,7 +1,5 @@
-'use client';
-
 import { useId } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Button, Dialog } from '@/shared/ui';
 
 export function PlanningDiscardDialog({ open, onKeep, onDiscard }: { open: boolean; onKeep: () => void; onDiscard: () => void }) {

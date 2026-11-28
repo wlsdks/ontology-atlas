@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -96,7 +96,7 @@ function Harness(props: Props) {
 }
 
 function mount(node: React.ReactNode) {
-  return render(<NextIntlClientProvider locale="en" messages={enMessages}>{node}</NextIntlClientProvider>);
+  return render(<IntlProvider locale="en" messages={enMessages}>{node}</IntlProvider>);
 }
 
 function group(code: string) {
@@ -446,9 +446,9 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     // The chip reports; it does not decide. The caller does, because the rail shares it.
     expect(onAdvisoryOpenChange).toHaveBeenCalledWith(true);
     rerender(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <Harness structural={STRUCTURAL} advisoryOpen onAdvisoryOpenChange={onAdvisoryOpenChange} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(document.getElementById("report-code-orphan-page")!.tagName).toBe("H4");
   });
@@ -535,9 +535,9 @@ describe("a long kind shows its first rows and the rest one press at a time", ()
 describe("a press elsewhere on the Library leaves the computed ledger alone", () => {
   it("draws no structural row again when the page re-renders it with new handlers", () => {
     const report = (props: Props) => (
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <Harness structural={STRUCTURAL} advisoryOpen onOpenSource={() => {}} onJumpToSection={() => {}} {...props} />
-      </NextIntlClientProvider>
+      </IntlProvider>
     );
     const { rerender } = render(report({ conversationOpen: false }));
     const drawn = pageDoorRenders.count;

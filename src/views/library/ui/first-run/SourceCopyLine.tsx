@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { SourceCopyJob, SourceCopySkipReason } from "@/features/library";
 import { controlClass } from "@/shared/ui/control-class";

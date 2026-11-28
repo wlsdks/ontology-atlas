@@ -1,7 +1,5 @@
-"use client";
-
 import { Pencil } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";

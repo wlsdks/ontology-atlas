@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useMemo, useState } from 'react';
 import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';

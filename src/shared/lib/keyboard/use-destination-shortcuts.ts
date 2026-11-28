@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useEffectEvent, useRef } from 'react';
 import {
   DESTINATION_BY_KEY,

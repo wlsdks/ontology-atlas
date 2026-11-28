@@ -1,5 +1,3 @@
-'use client';
-
 import type { CSSProperties } from 'react';
 import { cn } from '@/shared/lib/cn';
 import type { SessionLineCopy } from './use-room-copy';

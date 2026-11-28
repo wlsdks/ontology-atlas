@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 
 import { createSummaryStalenessScan, SUMMARY_KINDS, type SummaryStaleness } from "@/entities/docs-vault";

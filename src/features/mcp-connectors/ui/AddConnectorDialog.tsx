@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ChevronRight } from 'lucide-react';
 
 import { CloseButton, Dialog } from '@/shared/ui';

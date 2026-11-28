@@ -1,5 +1,3 @@
-'use client';
-
 import { Pause, Play } from 'lucide-react';
 
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';

@@ -1,5 +1,3 @@
-'use client';
-
 import { controlClass } from '@/shared/ui/control-class';
 
 /** The one-row control that opens a side branch: unbordered, or the floor reads as several strips. */

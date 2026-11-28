@@ -1,5 +1,3 @@
-'use client';
-
 import type { ToolCallRecord } from '@/features/vault-agent';
 
 /**

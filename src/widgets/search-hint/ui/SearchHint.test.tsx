@@ -1,14 +1,14 @@
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { SearchHint } from "./SearchHint";
 
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       {ui}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -129,14 +129,14 @@ describe("SearchHint", () => {
     expect(onToggleExpandAll).toHaveBeenCalledTimes(1);
 
     rerender(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <SearchHint
           onOpenSearch={vi.fn()}
           onRelayout={vi.fn()}
           onToggleExpandAll={onToggleExpandAll}
           allExpanded
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId("topology-expand-all")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("topology-expand-all")).toHaveAccessibleName(/Collapse all/);

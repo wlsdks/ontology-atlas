@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 
 import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent/agent-panel';

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
@@ -45,21 +45,21 @@ vi.mock('../model/acp-doctor', async () => {
 function Harness({ runtimeId = 'claude-acp' }: { runtimeId?: string }) {
   const doctor = useAgentDoctor(runtimeId);
   return (
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <div>
         {doctor.scanButton}
         {doctor.result}
       </div>
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 
 function renderHarness(runtimeId = 'claude-acp') {
   // `useTranslations` needs a provider around the component that calls it.
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <Harness runtimeId={runtimeId} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

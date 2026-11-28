@@ -1,7 +1,5 @@
-"use client";
-
 import type { CSSProperties, ReactNode } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { sourceFolderOf, type LibrarySourceRow } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";

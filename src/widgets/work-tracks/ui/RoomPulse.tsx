@@ -1,5 +1,3 @@
-'use client';
-
 import { useLayoutEffect, useRef, useState } from 'react';
 import { MOTION_EASE } from '@/shared/motion';
 import { SPARK_ROUND_MS, sparkRuns, type SparkEdge } from '../model/room-spark';

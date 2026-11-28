@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import { LibraryCollectionsConflictError, type LibraryCollectionItem } from '@/entities/library-collection';
@@ -78,7 +78,7 @@ function saved(name: string, purpose: string, items: LibraryCollectionItem[]): S
 
 function renderControl(concepts: readonly ConstellationCandidate[] = candidates, selectedSlug: string | null = null) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <SavedConstellationsControl
         handle={{ kind: 'directory', name: 'vault' } as FileSystemDirectoryHandle}
         candidates={concepts}
@@ -87,7 +87,7 @@ function renderControl(concepts: readonly ConstellationCandidate[] = candidates,
         onClear={vi.fn()}
         onPrepare={vi.fn()}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

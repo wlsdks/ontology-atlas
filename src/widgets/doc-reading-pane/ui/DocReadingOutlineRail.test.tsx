@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import { DocReadingOutlineRail } from "./DocReadingOutlineRail";
@@ -16,13 +16,13 @@ function renderRail(activeSlug: string | null, onHeadingClick = vi.fn()) {
   return {
     onHeadingClick,
     ...render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocReadingOutlineRail
           headings={headings}
           activeHeadingSlug={activeSlug}
           onHeadingClick={onHeadingClick}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     ),
   };
 }

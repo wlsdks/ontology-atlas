@@ -25,7 +25,7 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   },
 }));
 
-vi.mock('next-intl', () => {
+vi.mock('use-intl', () => {
   const t = (key: string, values?: Record<string, unknown>) => (values ? `${key}:${JSON.stringify(values)}` : key);
   return { useLocale: () => 'en', useTranslations: () => Object.assign(t, { rich: t }) };
 });

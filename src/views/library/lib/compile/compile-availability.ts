@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 import { PARSER_SOURCE_FORMATS, selectLocalCompileTargets } from "@/features/vault-agent";

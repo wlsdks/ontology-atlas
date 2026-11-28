@@ -1,7 +1,5 @@
-'use client';
-
 import { useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import type { AnalysisRun } from '@/entities/analysis-record';
 import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import { Button, Disclosure } from '@/shared/ui';

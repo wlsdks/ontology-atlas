@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { X } from 'lucide-react';
 import { translateOntologyDeeplinkToTopologyParam } from '@/entities/knowledge-graph';
 import { Link } from '@/i18n/navigation';

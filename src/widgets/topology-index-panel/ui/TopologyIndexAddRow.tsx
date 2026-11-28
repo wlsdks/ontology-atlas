@@ -1,5 +1,3 @@
-"use client";
-
 import { type KeyboardEvent, useState } from "react";
 import { Plus } from "lucide-react";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";

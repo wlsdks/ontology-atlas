@@ -1,9 +1,7 @@
-'use client';
-
 import { useCallback, useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ArrowLeft, CloudDownload, FilePlus, FileText, FileUp, FolderOpen, FolderPen, LockKeyhole, PenLine, RefreshCw } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { choosePlanningFolder, planningAvailable, type PlanningInventory } from '@/shared/lib/planning/bridge';

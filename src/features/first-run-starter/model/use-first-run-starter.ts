@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { useLocalVault } from '@/entities/vault-session';
 import { useVaultCreateFlow } from '@/features/docs-vault-local';
 import {

@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef } from "react";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { type CameraTween, type ZoomEase } from "../../model/camera/camera-easing";

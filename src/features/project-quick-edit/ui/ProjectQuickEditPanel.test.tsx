@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Project } from '@/entities/project';
@@ -38,9 +38,9 @@ function makeProject(overrides: Partial<Project> = {}): Project {
 
 function renderPanel() {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <ProjectQuickEditPanel project={makeProject()} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

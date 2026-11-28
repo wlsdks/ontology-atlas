@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -29,9 +29,9 @@ function plantRunning() {
 
 function renderList(locale: keyof typeof CATALOGUES = 'en') {
   render(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]}>
+    <IntlProvider locale={locale} messages={CATALOGUES[locale]}>
       <WorkRunsDialog open runs={seatRuns(workRuns.read())} onClose={() => {}} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

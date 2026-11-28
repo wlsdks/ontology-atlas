@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import messages from '../../../../messages/ko.json';
 import { createConnectorSetup } from '@/shared/lib/connectors/connector-setup';
@@ -31,7 +31,7 @@ function draw(options: Partial<Parameters<typeof LibraryImportDialog>[0]> = {}, 
   const setup = createConnectorSetup(store, { current: () => true, approved: () => false, approve });
   const callbacks = { onSetupSaved: vi.fn(), onAddFiles: vi.fn(), onClose: vi.fn(), onBrief: vi.fn<(brief: string) => void>(), onOpenAdvanced: vi.fn() };
   const props = { open: true, setup, ...callbacks, canRunAgent: true, ...options };
-  const tree = (next: Parameters<typeof LibraryImportDialog>[0]) => <NextIntlClientProvider locale="ko" messages={messages}><LibraryImportDialog {...next} /></NextIntlClientProvider>;
+  const tree = (next: Parameters<typeof LibraryImportDialog>[0]) => <IntlProvider locale="ko" messages={messages}><LibraryImportDialog {...next} /></IntlProvider>;
   const view = render(tree(props));
   const replace = (next: Partial<Parameters<typeof LibraryImportDialog>[0]>) => view.rerender(tree({ ...props, ...next }));
   return { ...props, ...callbacks, writes, approve, store, view, replace };

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
@@ -23,9 +23,9 @@ vi.mock('@/widgets/app-settings-menu', () => ({
 
 function renderPage(children?: React.ReactNode, mcpCount?: number) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <AgentsPage mcpCount={mcpCount}>{children}</AgentsPage>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
@@ -29,9 +29,9 @@ const handlers = {
 
 function renderPhase(phase: UpdatePhase) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <UpdateToast phase={phase} {...handlers} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -98,9 +98,9 @@ describe('UpdateToast', () => {
     const view = renderPhase({ kind: 'downloading', version: '2.1.0', received: 0, total: null });
     const sweep = within(screen.getByRole('progressbar')).getByText('', { selector: 'span' });
     view.rerender(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <UpdateToast phase={{ kind: 'downloading', version: '2.1.0', received: 1, total: 36 }} {...handlers} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId('app-update-fill'), 'the sweep element was reused and transitions from no offset').not.toBe(sweep);
   });
@@ -109,9 +109,9 @@ describe('UpdateToast', () => {
     const view = renderPhase({ kind: 'available', version: '2.1.0', notes: null });
     const card = screen.getByTestId('app-update-toast');
     view.rerender(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <UpdateToast phase={{ kind: 'downloading', version: '2.1.0', received: 0, total: 10 }} {...handlers} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId('app-update-toast'), 'the card was replaced, so its box jumps').toBe(card);
     expect(card).toHaveAttribute('data-phase', 'downloading');
@@ -126,9 +126,9 @@ describe('UpdateToast', () => {
   it('fades the card out with its last state before it leaves', () => {
     const view = renderPhase({ kind: 'ready', version: '2.1.0' });
     view.rerender(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <UpdateToast phase={{ kind: 'idle' }} {...handlers} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const card = screen.getByTestId('app-update-toast');
     expect(card).toHaveAttribute('data-state', 'closed');
@@ -154,9 +154,9 @@ describe('UpdateToast', () => {
   it('fades a hidden card out and leaves the live region in place', () => {
     const view = renderPhase({ kind: 'downloading', version: '2.1.0', received: 1, total: 2 });
     view.rerender(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <UpdateToast phase={{ kind: 'downloading', version: '2.1.0', received: 1, total: 2 }} hidden {...handlers} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId('app-update-toast')).toHaveAttribute('data-state', 'closed');
     act(() => vi.advanceTimersByTime(1_000));
@@ -171,9 +171,9 @@ describe('UpdateToast', () => {
   ] as const)('hands focus on after %s is pressed from inside the card', (_, phase, label) => {
     const onReturnFocus = vi.fn();
     render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <UpdateToast phase={phase} {...handlers} onReturnFocus={onReturnFocus} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const button = screen.getByRole('button', { name: label });
     button.focus();
@@ -231,11 +231,11 @@ describe('UpdateToast through the updater session', () => {
   async function mountWithOffer(version: string, downloadAndInstall = vi.fn()) {
     check.mockResolvedValue({ version, body: null, downloadAndInstall });
     render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <context.AppUpdateProvider>
           <Surface />
         </context.AppUpdateProvider>
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     await act(async () => {
       await vi.advanceTimersByTimeAsync(4_000);

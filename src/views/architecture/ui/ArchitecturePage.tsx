@@ -1,7 +1,5 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { useRouter } from '@/i18n/navigation';
 import { buildDocsVaultHref } from '@/entities/docs-vault';
 import { Chip, RouteLoadingFallback } from '@/shared/ui';

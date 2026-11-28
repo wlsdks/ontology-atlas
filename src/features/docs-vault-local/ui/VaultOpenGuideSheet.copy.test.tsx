@@ -1,6 +1,6 @@
 import type React from 'react';
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
@@ -24,9 +24,9 @@ vi.mock('@/i18n/navigation', () => ({
 
 function renderSheet(locale: 'ko' | 'en') {
   return render(
-    <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
+    <IntlProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
       <VaultOpenGuideSheet open onClose={vi.fn()} onPickExisting={vi.fn()} onCreateNew={vi.fn()} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

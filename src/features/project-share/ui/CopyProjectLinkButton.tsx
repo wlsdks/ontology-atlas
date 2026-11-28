@@ -1,6 +1,4 @@
-"use client";
-
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { Check, Link2 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { buildProjectRuntimeDetailUrl } from "@/entities/project";

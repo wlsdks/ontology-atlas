@@ -1,5 +1,3 @@
-"use client";
-
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import type {
   FullDetailConnectionRow,

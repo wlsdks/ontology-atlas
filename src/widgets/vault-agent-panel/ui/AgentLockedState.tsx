@@ -1,5 +1,3 @@
-'use client';
-
 import type { FirstWordsChip } from '@/features/vault-agent';
 import { controlClass } from '@/shared/ui';
 

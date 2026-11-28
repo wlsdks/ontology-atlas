@@ -1,7 +1,5 @@
-'use client';
-
 import { AlertTriangle, Folder, HardDrive, Search } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';

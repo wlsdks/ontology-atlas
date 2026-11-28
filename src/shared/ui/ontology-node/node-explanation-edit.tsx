@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { Check, PencilLine, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";

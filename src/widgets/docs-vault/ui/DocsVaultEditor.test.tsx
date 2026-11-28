@@ -1,17 +1,17 @@
 import { act, cleanup, fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { DocsVaultEditor } from './DocsVaultEditor';
 
-// Wrapped in the next-intl provider so useTranslations does not throw; Korean copy assertions use
+// Wrapped in the use-intl provider so useTranslations does not throw; Korean copy assertions use
 // the ko messages.
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       {ui}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -168,9 +168,9 @@ describe('DocsVaultEditor', () => {
 
     // Simulate a poll: a NEW getDocContent identity returning DIFFERENT disk content.
     rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'EXTERNAL CHANGE'} onSave={vi.fn()} onClose={vi.fn()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     // The user's unsaved edits must survive — no silent overwrite from the re-fetch.
@@ -228,14 +228,14 @@ describe('DocsVaultEditor', () => {
     await screen.findByDisplayValue('initial'); // mounted, clean
     // a poll starts a NEW (clean) re-fetch that hasn't resolved yet
     rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsVaultEditor vaultScope={VAULT_SCOPE}
           doc={doc}
           getDocContent={() => new Promise<string>((r) => { resolveFetch = r; })}
           onSave={vi.fn()}
           onClose={vi.fn()}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     // user types WHILE that fetch is in flight
     fireEvent.change(screen.getByDisplayValue('initial'), { target: { value: 'typed mid-fetch' } });
@@ -254,9 +254,9 @@ describe('DocsVaultEditor', () => {
     await screen.findByDisplayValue('initial');
     // clean editor (no edits) — a poll bringing new content SHOULD reflect it.
     rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'fresh from disk'} onSave={vi.fn()} onClose={vi.fn()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     await waitFor(() =>
       expect(screen.getByDisplayValue('fresh from disk')).toBeInTheDocument(),
@@ -288,9 +288,9 @@ describe('DocsVaultEditor', () => {
 
     // buffer must still be dirty → a subsequent poll re-fetch must not clobber it
     rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'DISK VERSION'} onSave={onSave} onClose={vi.fn()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     await waitFor(() =>
       expect(screen.getByDisplayValue('my unsaved edits')).toBeInTheDocument(),
@@ -450,7 +450,7 @@ describe('DocsVaultEditor', () => {
     fireEvent.change(area, { target: { value: '# 고친 것' } });
 
     view.rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsVaultEditor
           vaultScope={OTHER}
           doc={doc}
@@ -458,7 +458,7 @@ describe('DocsVaultEditor', () => {
           onSave={vi.fn()}
           onClose={vi.fn()}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     await waitFor(() => {

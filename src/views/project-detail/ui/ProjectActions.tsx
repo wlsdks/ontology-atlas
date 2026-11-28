@@ -1,7 +1,5 @@
-"use client";
-
 import { useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { BookOpen, FileText, FilePlus2, Link2, NotebookPen, PencilLine } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildProjectRuntimeDetailUrl, buildTopologyProjectNodeHref, type Project } from "@/entities/project";

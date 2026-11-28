@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../../messages/en.json';
@@ -65,9 +65,9 @@ const copy = en.settingsAbout;
 
 function renderPane() {
   return render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <AboutPane onLeave={onLeave} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

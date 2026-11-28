@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useSyncExternalStore } from 'react';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import {

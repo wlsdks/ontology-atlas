@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -43,9 +43,9 @@ function setup(options: { recorded?: string | null; bytes?: number; citation?: R
   const popover = createRef<WikiCitationPopoverHandle>();
   const handles = new Map([["sources/a.txt", file.handle]]);
   render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <Harness popover={popover} handles={handles} recorded={options.recorded ?? null} bytes={options.bytes} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   const button = screen.getByTestId("cite") as HTMLButtonElement;
   const citation = options.citation ?? { path: "sources/a.txt", rawPath: "sources/a.txt", anchor: "l2" };

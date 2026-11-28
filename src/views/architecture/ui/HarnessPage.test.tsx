@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
@@ -75,9 +75,9 @@ function waitPastProgressThreshold() {
 
 function mount() {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <HarnessPage />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -283,9 +283,9 @@ describe('the segmented control', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     act(() => {
       view.rerender(
-        <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <IntlProvider locale="ko" messages={koMessages}>
           <HarnessPage />
-        </NextIntlClientProvider>,
+        </IntlProvider>,
       );
     });
     expect(screen.queryByTestId('harness-scan-progress')).toBeNull();

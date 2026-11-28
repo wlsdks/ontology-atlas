@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -25,7 +25,7 @@ const nodes = [mapNode("project:p", "project"), mapNode("domain:d", "domain"), m
 
 function renderSurface() {
   render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <TopologyTreeSurface
         nodes={nodes}
         edges={[]}
@@ -40,7 +40,7 @@ function renderSurface() {
         fitToken={0}
         growthReplayToken={0}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

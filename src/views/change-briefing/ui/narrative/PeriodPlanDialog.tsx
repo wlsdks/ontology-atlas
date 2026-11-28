@@ -1,7 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { Button, Dialog, DialogBody, DialogFooter, Disclosure, RowDisclosure, Select } from '@/shared/ui';
 import { prCopyDetails } from '../../model/pr-copy';
 import type { usePeriodNarrative } from '../../model/use-period-narrative';

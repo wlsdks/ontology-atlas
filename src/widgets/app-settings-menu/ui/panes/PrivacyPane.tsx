@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { FileText } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { forgetRememberedChoices, standingChoiceKept } from '@/features/acp-session';

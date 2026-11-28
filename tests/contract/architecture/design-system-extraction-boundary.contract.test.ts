@@ -41,7 +41,7 @@ const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
 
 /** What a core part must not have — this app's routing, translations, or upper layers. */
 const APP_COUPLING = [
-  { pattern: "next-intl", why: "reading translations itself ties it to this app's message namespaces" },
+  { pattern: "use-intl", why: "reading translations itself ties it to this app's message namespaces" },
   { pattern: "@/i18n", why: "ties it to this app's locale routing" },
   { pattern: "next/navigation", why: "ties it to the Next.js router" },
   { pattern: "@/entities", why: "upper FSD layer — domain knowledge leaks into the part" },
@@ -111,13 +111,13 @@ describe("design system extraction boundary", () => {
   /* ── Standing probes (/gate-probe) ── */
   it("probe: extracts the import source exactly", () => {
     const sample = [
-      "import { useTranslations } from 'next-intl';",
+      "import { useTranslations } from 'use-intl';",
       "import { Link } from \"@/i18n/navigation\";",
       "const m = await import('@/features/x');",
       "import { cn } from '@/shared/lib/cn';",
     ].join("\n");
     expect(importSources(sample)).toEqual([
-      "next-intl",
+      "use-intl",
       "@/i18n/navigation",
       "@/shared/lib/cn",
       "@/features/x",

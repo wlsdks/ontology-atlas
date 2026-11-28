@@ -68,8 +68,8 @@ jobs:
           # in Variables, not Secrets. However, since this is also not true for this repository,
           # it is not hardcoded — if our code were embedded in a fork's site, it would block
           # that side's console registration. If unset, the pages emit no tag.
-          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
-          NEXT_PUBLIC_BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
+          ATLAS_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          ATLAS_PUBLIC_BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
       - name: Check sitemap, canonicals and titles in the site folder
         run: pnpm seo:check
       # The first deploy of the Vite-built site must change no page the live Next-built site shows; it stops here

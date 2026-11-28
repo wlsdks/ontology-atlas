@@ -1,5 +1,3 @@
-"use client";
-
 import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import {

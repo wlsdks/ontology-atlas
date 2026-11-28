@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { Input } from '@/shared/ui/fields/input';
 import { badgeClass } from '@/shared/ui/badge-class';

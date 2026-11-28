@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { ChevronDown } from "lucide-react";
 import type { Project, ProjectImpactMode } from "@/entities/project";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";

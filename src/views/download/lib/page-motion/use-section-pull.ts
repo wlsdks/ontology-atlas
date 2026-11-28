@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect } from 'react';
 
 import { isMotionPaused } from '@/shared/motion/motion-pause';

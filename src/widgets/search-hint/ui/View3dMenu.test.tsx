@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import ko from "../../../../messages/ko.json";
@@ -11,17 +11,17 @@ import { View3dMenu } from "./View3dMenu";
  */
 function mount() {
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <View3dMenu open onClose={() => {}} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
 function mountClosed(onClose: () => void) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <View3dMenu open={false} onClose={onClose} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

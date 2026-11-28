@@ -1,6 +1,4 @@
-'use client';
-
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { FileText } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { VaultDoc } from '@/entities/docs-vault';

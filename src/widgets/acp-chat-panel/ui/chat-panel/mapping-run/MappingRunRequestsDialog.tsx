@@ -1,7 +1,5 @@
-'use client';
-
 import { useId } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { CloseButton, Dialog, DialogBody, RowButton } from '@/shared/ui';
 

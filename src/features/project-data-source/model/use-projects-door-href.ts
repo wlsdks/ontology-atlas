@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 
 import { buildProjectRuntimeDetailHref } from "@/entities/project";

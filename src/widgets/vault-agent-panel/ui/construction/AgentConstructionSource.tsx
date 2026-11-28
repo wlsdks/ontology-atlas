@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { useRouter } from '@/i18n/navigation';
 import { AGENTS_MODELS_HREF } from '@/shared/config/destinations';

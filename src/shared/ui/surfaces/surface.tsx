@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, type CSSProperties, type MouseEventHandler, type ReactNode, type Ref } from 'react';
 
 import { cn } from '@/shared/lib/cn';

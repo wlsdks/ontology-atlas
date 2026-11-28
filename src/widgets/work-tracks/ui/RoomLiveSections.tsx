@@ -1,6 +1,4 @@
-'use client';
-
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { outsideGroupsOf, roomLoadOf } from '@/shared/lib/work-status/signals/load';
 import { SESSION_LINES_LISTED } from '@/shared/lib/work-status/signals/session-lines';
 import type { RoomEntry, WorkTracks } from '@/shared/lib/work-status/work-tracks';

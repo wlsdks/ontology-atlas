@@ -1,9 +1,7 @@
-'use client';
-
 import { useAgentDoctor } from '@/features/acp-doctor';
 import { MessageSquare, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';

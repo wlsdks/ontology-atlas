@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 import { Link } from "@/i18n/navigation";

@@ -1,5 +1,3 @@
-"use client";
-
 import { ScrollText, Stethoscope, TextSearch } from "lucide-react";
 import type { ReactNode } from "react";
 

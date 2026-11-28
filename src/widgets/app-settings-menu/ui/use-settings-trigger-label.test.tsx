@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -17,9 +17,9 @@ vi.mock('@/features/app-update', () => ({
 
 function wrapper({ children }: { children: ReactNode }) {
   return (
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       {children}
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 

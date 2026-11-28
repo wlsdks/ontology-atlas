@@ -1,5 +1,3 @@
-"use client";
-
 import {
   useCallback,
   useEffect,
@@ -10,7 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { cn } from "@/shared/lib/cn";
 import { CloseButton, Surface } from "@/shared/ui";

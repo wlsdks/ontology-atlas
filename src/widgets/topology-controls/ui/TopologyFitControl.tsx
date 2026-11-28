@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Maximize2 } from 'lucide-react';
 import { ChromeTile, Tooltip } from '@/shared/ui';
 

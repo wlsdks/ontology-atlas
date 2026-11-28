@@ -1,7 +1,5 @@
-'use client';
-
 import { useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { ArrowLeft, ChevronRight, GitCommitHorizontal } from 'lucide-react';
 import { Button, RowButton } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';

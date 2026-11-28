@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect, useRef } from "react";
 
 import { easeMotion } from "@/shared/motion/ease";

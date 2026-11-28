@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 import en from '../../../../../../messages/en.json';
 import type { DeskLead } from '@/features/library';
@@ -16,10 +16,10 @@ describe('Question desk lead row', () => {
     const text = `${before}the refund is queued for approval, ${after}`;
     expect(text.length).toBeGreaterThan(3_000_000);
     const lead: DeskLead = { kind: 'source', key: 'source:sources/ledger.md#l1', hit: { path: 'sources/ledger.md', anchor: 'l1', text, score: 1 }, reason: 'words' };
-    render(<NextIntlClientProvider locale="en" messages={en}>
+    render(<IntlProvider locale="en" messages={en}>
       <ul><DeskLeadRow lead={lead} terms={['refund', 'approval', 'stock']} reason={null} citationState={() => 'observed'} jev={null} jevResult={null}
         rise={false} riseDelay={0} onOpenWiki={vi.fn()} onOpenSource={vi.fn()} /></ul>
-    </NextIntlClientProvider>);
+    </IntlProvider>);
     const open = screen.getByRole('button', { name: /the refund is queued/u });
     const shown = open.querySelector('[data-lead-sentence]')!;
     expect(shown.textContent!.length).toBeLessThanOrEqual(SHOWN_MAX);

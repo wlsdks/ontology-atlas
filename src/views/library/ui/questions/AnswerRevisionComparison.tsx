@@ -1,7 +1,5 @@
-"use client";
-
-import type { useTranslations } from 'next-intl';
-import { useTranslations as useViewerTranslations } from 'next-intl';
+import type { useTranslations } from 'use-intl';
+import { useTranslations as useViewerTranslations } from 'use-intl';
 import { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';

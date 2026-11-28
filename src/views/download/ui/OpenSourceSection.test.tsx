@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
@@ -14,9 +14,9 @@ const ROOT = path.resolve(__dirname, '../../../..');
 
 function renderSection() {
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
+    <IntlProvider locale="en" messages={enMessages} timeZone="UTC">
       <OpenSourceSection />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return screen.getByTestId('gateway-source-section');
 }

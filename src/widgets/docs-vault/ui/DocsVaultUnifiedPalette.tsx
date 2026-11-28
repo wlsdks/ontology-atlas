@@ -1,10 +1,8 @@
-'use client';
-
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { fieldClass } from '@/shared/ui/control-class';
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { Link } from '@/i18n/navigation';
-import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'use-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Clock,

@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { deskSentence, useVectorRun, useVectorRunStageShown, type VectorRun } from "@/features/vault-vectors";

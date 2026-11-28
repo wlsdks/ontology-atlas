@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
 import type { useDocsVaultAddress } from './use-docs-vault-url';
 import type { useDocsVaultFolder } from './use-docs-vault-folder';

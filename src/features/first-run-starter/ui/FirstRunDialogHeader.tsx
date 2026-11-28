@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { CloseButton } from "@/shared/ui/controls/close-button";
 
 const TITLE_CLASS = "text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]";

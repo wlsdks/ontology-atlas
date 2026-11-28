@@ -1,9 +1,7 @@
-'use client';
-
 import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarClock } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { EXIT_TRANSITION, MOTION, STAGGER } from '@/shared/motion';

@@ -1,8 +1,6 @@
-"use client";
-
 import { useId } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { Link } from "@/i18n/navigation";
 import { buildTopologyFocusHref } from "@/entities/project";
 import { OntologyMapKindGlyph } from "@/shared/ui";

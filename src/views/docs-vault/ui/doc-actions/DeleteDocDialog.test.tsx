@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import koMessages from "../../../../../messages/ko.json";
@@ -8,9 +8,9 @@ import type { DeleteDocTarget } from "../../model/use-doc-write-actions";
 
 function renderDialog(target: DeleteDocTarget, onConfirm = vi.fn().mockResolvedValue(undefined)) {
   render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <DeleteDocDialog target={target} onCancel={vi.fn()} onConfirm={onConfirm} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { onConfirm };
 }

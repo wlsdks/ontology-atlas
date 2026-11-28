@@ -1,8 +1,6 @@
-"use client";
-
 import { useCallback } from "react";
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { BookOpen } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";

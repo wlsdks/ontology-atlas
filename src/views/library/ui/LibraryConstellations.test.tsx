@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VaultDoc } from '@/entities/docs-vault';
@@ -36,9 +36,9 @@ const DOCUMENT: VaultDoc = {
 
 function renderView(documents: readonly VaultDoc[] = [DOCUMENT]) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <LibraryConstellations handle={HANDLE} documents={documents} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

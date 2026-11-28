@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import {
   deleteVectorModel,

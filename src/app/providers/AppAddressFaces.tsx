@@ -1,5 +1,3 @@
-"use client";
-
 import { Suspense, use, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { stripLocalePrefix } from "@/shared/lib/navigation/nav-destination";

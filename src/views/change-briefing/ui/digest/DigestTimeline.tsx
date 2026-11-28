@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import type { BriefingRange } from '../../model/briefing-model';
 import { changeTitle, type DigestChange } from '../../model/change-digest';

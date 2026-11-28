@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useMemo } from "react";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";

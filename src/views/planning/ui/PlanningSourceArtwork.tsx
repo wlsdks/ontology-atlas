@@ -1,8 +1,6 @@
-'use client';
-
 import { useCallback, useEffect, useRef, useState, type AnimationEvent, type ReactNode, type RefObject } from 'react';
 import { motion, type TargetAndTransition } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';

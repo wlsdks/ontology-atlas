@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { createAnalysisTurnObserver, requestsAnalysisFindings, type AnalysisCaptureContext, type AnalysisSaveState } from './analysis-capture';
 import type { AcpTurnStart } from '../use-acp-session';

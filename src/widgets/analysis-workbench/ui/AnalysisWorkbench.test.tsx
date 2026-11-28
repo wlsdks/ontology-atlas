@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), message: vi.fn(), info: vi.fn(), warning: vi.fn() }, Toaster: () => null }));
@@ -39,7 +39,7 @@ beforeEach(async () => {
 function withFindings(run: AnalysisRun, count: number): AnalysisRun {
   return { ...run, findings: Array.from({ length: count }, (_, index) => ({ ...run.findings[0], id: `f-${index + 1}`, title: `Question ${index + 1}`, detail: `Why question ${index + 1} matters.` })) };
 }
-function wrapper(children: React.ReactNode) { return <NextIntlClientProvider locale="en" messages={messages}>{children}</NextIntlClientProvider>; }
+function wrapper(children: React.ReactNode) { return <IntlProvider locale="en" messages={messages}>{children}</IntlProvider>; }
 describe('analysis context workbench', () => {
   it('returns to the named door instead of a route container on unmount', async () => {
     const route = document.createElement('main'); route.tabIndex = -1;
@@ -54,7 +54,7 @@ describe('analysis context workbench', () => {
   });
   it('requests localized analysis prose while preserving the structured finding contract', async () => {
     const onRequest = vi.fn();
-    render(<NextIntlClientProvider locale="ko" messages={ko}><AnalysisWorkbench context={context} contextLabel="Project" open onClose={() => {}} onRequest={onRequest} /></NextIntlClientProvider>);
+    render(<IntlProvider locale="ko" messages={ko}><AnalysisWorkbench context={context} contextLabel="Project" open onClose={() => {}} onRequest={onRequest} /></IntlProvider>);
     fireEvent.click(await screen.findByRole('button', { name: ko.analysisWorkbench.reanalyze }));
     const text = onRequest.mock.calls[0]![0];
     expect(text).toContain('Korean (ko)');

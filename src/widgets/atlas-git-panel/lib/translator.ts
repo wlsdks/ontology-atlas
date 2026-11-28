@@ -1,4 +1,4 @@
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 export type Translator = ReturnType<typeof useTranslations<"atlasGit">>;
 

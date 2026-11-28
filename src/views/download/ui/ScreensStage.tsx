@@ -1,7 +1,5 @@
-'use client';
-
 import { type ReactNode, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_IDS } from '@/shared/config/destinations';

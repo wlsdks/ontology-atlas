@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 
 import { MOTION } from "@/shared/motion/tokens";

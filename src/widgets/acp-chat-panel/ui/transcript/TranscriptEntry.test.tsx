@@ -1,5 +1,5 @@
 import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 
 import en from '../../../../../messages/en.json';
@@ -12,9 +12,9 @@ const CATALOGUES = { en, ko } as const;
 
 function renderRequest(text: string, locale: keyof typeof CATALOGUES = 'en', shown?: string) {
   render(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]}>
+    <IntlProvider locale={locale} messages={CATALOGUES[locale]}>
       <TranscriptEntry event={{ kind: 'user', id: 'u-1', text, ...(shown ? { shown } : {}) }} markdownComponents={{}} live={false} awaiting={false} declined={false} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

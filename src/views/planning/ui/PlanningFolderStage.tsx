@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { CircleHelp, CloudDownload, FilePlus, FileUp, FolderOpen, FolderPlus, LockKeyhole } from 'lucide-react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { Button, FeatureStage, IconButton } from '@/shared/ui';

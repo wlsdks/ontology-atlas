@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 /**
  * One line per answer the card offers, saying what it does. The buttons point here through

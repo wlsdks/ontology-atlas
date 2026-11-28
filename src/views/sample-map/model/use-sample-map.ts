@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale } from 'use-intl';
 import { bundledSamples, deriveOntologyFromVault } from '@/entities/docs-vault';
 import { buildSampleMapGraph, type SampleMapGraph } from '../lib/sample-map-graph';
 

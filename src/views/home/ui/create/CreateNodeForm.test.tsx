@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type { ComponentProps } from "react";
 import { CreateNodeForm } from "./CreateNodeForm";
 import koMessages from "../../../../../messages/ko.json";
@@ -24,9 +24,9 @@ function renderCard(overrides: Partial<ComponentProps<typeof CreateNodeForm>> = 
     ...overrides,
   };
   render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <CreateNodeForm {...props} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return props;
 }

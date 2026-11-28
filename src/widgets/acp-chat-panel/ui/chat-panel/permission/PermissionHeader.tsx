@@ -1,8 +1,6 @@
-'use client';
-
 import type { Ref } from 'react';
 import { Eye, GitCompareArrows, ShieldAlert } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { permissionLocality } from '@/features/acp-session';
 import type { OntologyChangeSet } from '@/entities/knowledge-graph';

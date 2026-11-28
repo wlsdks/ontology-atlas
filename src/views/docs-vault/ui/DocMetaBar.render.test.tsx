@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import type { ReviewQueueRow, VaultDoc } from "@/entities/docs-vault";
@@ -39,9 +39,9 @@ const doc: VaultDoc = {
 
 function renderMetaBar(targetDoc: VaultDoc = doc) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <DocMetaBar doc={targetDoc} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -69,13 +69,13 @@ describe("DocMetaBar", () => {
   // A state is read, an action is pressed: the review state must not be drawn as a control.
   it("draws the review state as a sentence above the actions, not as a chip among them", () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocMetaBar
           doc={doc}
           reviewRow={{ reason: "raised" } as ReviewQueueRow}
           review={{ reserved: true, busy: false, onConfirm: () => {}, onRelease: () => {} }}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     const state = screen.getByTestId("doc-review-chip");

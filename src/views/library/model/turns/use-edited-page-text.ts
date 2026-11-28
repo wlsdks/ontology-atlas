@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useRef, useState } from "react";
 import type { VaultDoc } from "@/entities/docs-vault";
 import { readTauriVaultTextFile } from "@/shared/lib/vault-folder/native-vault/tauri-vault-files";

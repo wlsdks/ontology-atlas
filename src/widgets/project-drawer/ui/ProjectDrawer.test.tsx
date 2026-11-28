@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
@@ -95,7 +95,7 @@ function renderDrawer(
   const project = props.project ?? makeProject();
   const result = render(
     <LocalVaultContext.Provider value={folder ?? ({ status: "idle", manifest: null } as unknown as LocalVaultValue)}>
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TaxonomyProvider>
           <ProjectDrawer
             project={project}
@@ -106,7 +106,7 @@ function renderDrawer(
             onSelectProject={props.onSelectProject ?? vi.fn()}
           />
         </TaxonomyProvider>
-      </NextIntlClientProvider>
+      </IntlProvider>
     </LocalVaultContext.Provider>,
   );
   // The pills sit in a closed <details>, hidden from the accessibility tree, so it is opened before

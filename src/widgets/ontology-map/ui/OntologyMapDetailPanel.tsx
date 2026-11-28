@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Fragment,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -20,7 +18,7 @@ import {
   ScanSearch,
   Trash2,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";

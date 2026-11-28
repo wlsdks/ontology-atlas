@@ -1,8 +1,6 @@
-'use client';
-
 import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { roundPlaces, type RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { Button } from '@/shared/ui';

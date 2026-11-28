@@ -1,5 +1,3 @@
-'use client';
-
 import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -8,7 +6,7 @@ import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { checkGrayAreaEvidence, grayAreaSourceAccessRequired, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/project-source/tauri-gray-area';
 import { Button, Chip, CloseButton, Disclosure, RowButton, Surface, controlClass } from '@/shared/ui';
 import { ArrowRight, Check, ChevronDown, Copy, FileSearch, RefreshCw } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { grayAreaCandidatePage, formatRecordedPath, type GrayAreaCandidate } from '../model/candidates';
 import { buildGrayAreaInvestigation } from '../model/investigation';

@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { GitChangeEntry, GitCommitInfo } from "@/shared/lib/git/tauri-git";
 import {

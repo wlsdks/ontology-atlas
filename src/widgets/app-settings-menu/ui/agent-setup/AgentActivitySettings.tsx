@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { AGENT_NOTIFICATION_KINDS } from '@/shared/lib/agent-activity/agent-notifications';
 import {

@@ -1,5 +1,3 @@
-'use client';
-
 import { Check } from 'lucide-react';
 
 import { controlClass } from '@/shared/ui/control-class';

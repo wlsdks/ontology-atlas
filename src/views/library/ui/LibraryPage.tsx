@@ -1,7 +1,5 @@
-"use client";
-
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { isWikiPage } from "@/entities/docs-vault";
 import { opensLocally } from "@/features/vault-agent";

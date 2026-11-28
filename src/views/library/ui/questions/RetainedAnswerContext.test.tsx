@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider, useTranslations } from 'next-intl';
+import { IntlProvider, useTranslations } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../../messages/ko.json';
@@ -80,9 +80,9 @@ function Harness({ error, historyBlocked, onRefresh, observation = QUIET }: {
 /** Renders the block with the real Korean catalogue behind it. */
 function draw(props: Parameters<typeof Harness>[0]) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <Harness {...props} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -100,9 +100,9 @@ function copyFor(thrown: unknown, fallback: string): FailureCopy {
     return <i data-testid="failure-probe" data-sentence={copy.sentence} data-detail={copy.detail ?? ''} />;
   }
   const view = render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <Probe />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   const node = view.getByTestId('failure-probe');
   const copy: FailureCopy = {

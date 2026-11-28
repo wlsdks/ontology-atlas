@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { FolderOpen, Download } from "lucide-react";
 
 import type { LibrarySourceRow, LibraryWriteUpLink } from "@/entities/docs-vault";

@@ -1,5 +1,3 @@
-'use client';
-
 /** Asks once whether an agent can be attached from here: the installed app knows the MCP server's path inside its bundle, a browser does not. The native side is not re-asked on every render. */
 import { useEffect, useState } from 'react';
 

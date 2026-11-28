@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import {
   LLM_AUDIT_LOG_RELATIVE_PATH,
   type LlmAuditEntry,

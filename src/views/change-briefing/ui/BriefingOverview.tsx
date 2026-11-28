@@ -1,7 +1,5 @@
-'use client';
-
 import { ArrowRight, Circle, FolderCode } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import type { RefObject } from 'react';
 import { RowButton } from '@/shared/ui';
 import { groupSourceAreas, type CapabilityGroup } from '../model/briefing-model';

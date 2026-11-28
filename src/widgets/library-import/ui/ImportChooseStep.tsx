@@ -1,7 +1,5 @@
-'use client';
-
 import type { RefObject } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Check, ExternalLink } from 'lucide-react';
 
 import { Button, Chip } from '@/shared/ui';

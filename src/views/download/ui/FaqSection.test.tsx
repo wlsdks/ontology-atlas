@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
@@ -10,9 +10,9 @@ const FAQ = enMessages.download.faq;
 
 function renderFaq() {
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <FaqSection />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return screen.getByTestId('gateway-faq-section');
 }

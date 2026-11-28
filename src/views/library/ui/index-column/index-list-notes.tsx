@@ -1,7 +1,5 @@
-"use client";
-
 import type { ReactNode } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { controlClass } from "@/shared/ui/control-class";
 import { writeLibraryIndexSegment, type LibraryIndexSegment } from "@/shared/lib/preferences/library-preferences";

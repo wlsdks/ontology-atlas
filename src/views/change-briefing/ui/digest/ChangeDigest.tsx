@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, useMemo, useRef, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import type { BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
 import { FeatureStage } from '@/shared/ui';

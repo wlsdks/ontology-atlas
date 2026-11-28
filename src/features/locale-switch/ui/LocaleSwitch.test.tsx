@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { LocaleSwitch } from "./LocaleSwitch";
@@ -16,9 +16,9 @@ vi.mock("@/i18n/navigation", () => ({
 
 function renderSwitch(onSwitchStart?: (nextLocale: string) => void) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <LocaleSwitch onSwitchStart={onSwitchStart} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -62,9 +62,9 @@ describe("LocaleSwitch", () => {
 
   it("skips locales that have no registered name", () => {
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <LocaleSwitch locales={["en", "ko", "fr"]} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getAllByRole("radio").map((node) => node.textContent)).toEqual(["EN", "KO"]);
   });

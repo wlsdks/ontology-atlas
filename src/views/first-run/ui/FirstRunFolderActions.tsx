@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, type RefObject } from 'react';
 import { FolderOpen, FolderPlus } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';
 import { Button, RowButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';

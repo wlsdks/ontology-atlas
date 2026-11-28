@@ -38,7 +38,7 @@ describe('build stamp', () => {
       const first = buildInputsDigest({ cwd: root, env: {} });
       put('tests/e2e/a.spec.ts', 'test 2\n');
       assert.equal(buildInputsDigest({ cwd: root, env: {} }), first);
-      assert.notEqual(buildInputsDigest({ cwd: root, env: { NEXT_PUBLIC_X: '1' } }), first);
+      assert.notEqual(buildInputsDigest({ cwd: root, env: { ATLAS_PUBLIC_X: '1' } }), first);
       put('src/a.ts', 'export const a = 2;\n');
       const edited = buildInputsDigest({ cwd: root, env: {} });
       assert.notEqual(edited, first);

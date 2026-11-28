@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useState, useSyncExternalStore } from 'react';
 
 import {

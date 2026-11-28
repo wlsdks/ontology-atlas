@@ -1,6 +1,6 @@
 import { ArrowUp } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 /**
  * Floating back-to-top pill at the bottom left of the article scroller, opposite the outline rail.

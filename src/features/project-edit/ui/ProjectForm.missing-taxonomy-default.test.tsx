@@ -6,7 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
@@ -30,7 +30,7 @@ describe("ProjectForm missing taxonomy preservation", () => {
     const onSubmit = vi.fn(async () => {});
     await act(async () => {
       render(
-        <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <IntlProvider locale="ko" messages={koMessages}>
           <TaxonomyProvider>
             <ProjectForm
               mode="edit"
@@ -40,7 +40,7 @@ describe("ProjectForm missing taxonomy preservation", () => {
               onCancel={() => {}}
             />
           </TaxonomyProvider>
-        </NextIntlClientProvider>,
+        </IntlProvider>,
       );
       await Promise.resolve();
     });

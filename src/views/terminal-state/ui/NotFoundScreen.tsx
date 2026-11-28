@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ArrowLeft, Search } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { GatewayNav } from '@/widgets/gateway-chrome';

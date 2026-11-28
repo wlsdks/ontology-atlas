@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useMemo } from 'react';
 import { useDataSourceMode } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';

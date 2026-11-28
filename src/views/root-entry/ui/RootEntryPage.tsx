@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useSyncExternalStore } from "react";
 import { Bot, HardDrive, Network } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import type { AppLocale } from "@/i18n/locales";
 import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";

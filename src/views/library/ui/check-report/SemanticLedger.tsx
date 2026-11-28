@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { isMapKind, type LintFinding, type LintNodeCandidate } from "@/features/library";
 import type { WorkRun } from "@/features/work-run";

@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { MAKER_LINKEDIN_URL } from '@/shared/config/site/social-links';
 import { cn } from '@/shared/lib/cn';

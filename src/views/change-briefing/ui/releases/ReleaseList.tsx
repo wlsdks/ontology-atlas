@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import type { WorkKinds } from '../../model/change-digest';
 import type { ReleaseRow, UnreleasedSpan } from '../../model/release-list';

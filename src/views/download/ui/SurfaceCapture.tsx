@@ -1,6 +1,3 @@
-'use client';
-
-import Image from 'next/image';
 
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { cn } from '@/shared/lib/cn';
@@ -37,14 +34,14 @@ export function SurfaceCapture({
   return (
     <figure data-testid={testId} className={cn('min-w-0', className)}>
       <div className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
-        {/* Unoptimized static images carry their intrinsic size, so layout does not shift on load. */}
-        <Image
+        {/* The image carries its intrinsic size, so layout does not shift on load. */}
+        <img
           src={withBasePath(src)}
           width={width}
           height={height}
           alt={alt}
           loading="lazy"
-          unoptimized
+          decoding="async"
           className="block h-auto w-full"
         />
       </div>

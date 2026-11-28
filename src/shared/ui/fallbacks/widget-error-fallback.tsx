@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect } from 'react';
 
 import { reportWebviewError } from '@/shared/lib/failures/report-webview-error';

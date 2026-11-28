@@ -1,5 +1,3 @@
-"use client";
-
 import { memo, useEffect, useMemo, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/keyboard/use-destination-shortcuts";
@@ -11,7 +9,7 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, useToast } from "@/shared/ui";
 import { WaitStage } from "@/shared/ui/status/wait-stage";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import {
   AppNavRail,
   NavRailShellProvider,

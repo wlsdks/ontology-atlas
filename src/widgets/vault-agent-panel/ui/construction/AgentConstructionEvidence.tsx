@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Chip } from '@/shared/ui';
 

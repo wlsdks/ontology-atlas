@@ -1,7 +1,5 @@
-'use client';
-
 import { useRef } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Search } from 'lucide-react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';

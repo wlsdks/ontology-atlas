@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { copyNeedsConfirm, dismissSourceCopy, stopSourceCopy } from "@/features/library";
 

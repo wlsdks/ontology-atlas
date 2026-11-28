@@ -24,7 +24,7 @@ describe("release-facts", () => {
       join(process.cwd(), "src/views/download/lib/release/release-facts.ts"),
       "utf8",
     );
-    expect(source).toMatch(/RELEASE_VERSION\s*=\s*process\.env\.NEXT_PUBLIC_RELEASE_VERSION/);
+    expect(source).toMatch(/RELEASE_VERSION\s*=\s*process\.env\.ATLAS_PUBLIC_RELEASE_VERSION/);
   });
 
   it("matches the version declared in src-tauri/tauri.conf.json", () => {

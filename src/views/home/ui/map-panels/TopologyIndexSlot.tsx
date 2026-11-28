@@ -13,7 +13,7 @@ import type { useTopologySourceReadiness } from "../../model/project-source/use-
 import type { useTopologyVaultReadModel } from "../../model/use-topology-vault-read-model";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { filterTreeExcludeKind } from "@/entities/knowledge-graph";
 import { useVaultLoadProgress } from "@/entities/vault-session";
 import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";

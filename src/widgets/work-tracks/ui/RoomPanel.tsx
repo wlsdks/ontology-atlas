@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { X } from 'lucide-react';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { cn } from '@/shared/lib/cn';

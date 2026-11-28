@@ -1,5 +1,5 @@
 import { render } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -69,9 +69,9 @@ describe("the index list and the open row", () => {
     // the selection effect.
     writeLibraryIndexQuery("stability", "sources/b");
     const { rerender } = render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <Harness busy={false} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     // The search settling is a real change of input and may move the list; what must not move
     // it again is a render that changed nothing the list is made of.
@@ -79,9 +79,9 @@ describe("the index list and the open row", () => {
     const settled = onRowFocus.mock.calls.length;
 
     rerender(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <Harness busy />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(onRowFocus).toHaveBeenCalledTimes(settled);
   });

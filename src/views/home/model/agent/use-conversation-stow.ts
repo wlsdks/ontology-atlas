@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 
 import { useLatestRef } from "@/shared/lib/use-latest-ref";

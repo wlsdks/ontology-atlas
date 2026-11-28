@@ -1,7 +1,5 @@
-"use client";
-
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { MOTION } from "@/shared/motion";
 import { FeatureStage } from "@/shared/ui";

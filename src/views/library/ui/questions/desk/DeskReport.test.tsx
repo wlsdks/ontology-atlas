@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 import en from '../../../../../../messages/en.json';
 import type { LibrarySourceRow } from '@/entities/docs-vault';
@@ -12,12 +12,12 @@ function row(path: string): LibrarySourceRow {
 
 function renderReport(text: string, paths: readonly string[]) {
   const onOpenSource = vi.fn();
-  render(<NextIntlClientProvider locale="en" messages={en}>
+  render(<IntlProvider locale="en" messages={en}>
     <DeskReport report={{ question: 'Where is it written?', searchId: 1, listingVersion: 'v', vaultScope: 'folder', text,
       coverage: 'Wiki 1/1', limits: '', generatedAt: '2026-11-20T09:00:00Z' }}
     coverageCompact="" coverageInfo={null} sources={paths.map(row)} dockOpen={false} reducedMotion
     onOpenSource={onOpenSource} onFileReport={null} filingReport={false} fileReportNote={null} />
-  </NextIntlClientProvider>);
+  </IntlProvider>);
   return { report: screen.getByTestId('question-desk-report-markdown'), onOpenSource };
 }
 

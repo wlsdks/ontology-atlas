@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { dismissSourceCopy, stopSourceCopy } from "@/features/library";
 import { CloseButton } from "@/shared/ui";

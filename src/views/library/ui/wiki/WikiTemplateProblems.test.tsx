@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import ko from "../../../../../messages/ko.json";
@@ -42,9 +42,9 @@ function renderPanel(
   extra: { doors?: WikiProblemDoors; fix?: WikiProblemFix | null; file?: string } = {},
 ) {
   return render(
-    <NextIntlClientProvider locale={locale} messages={locale === "ko" ? ko : en}>
+    <IntlProvider locale={locale} messages={locale === "ko" ? ko : en}>
       <Harness problems={problems} doors={extra.doors} fix={extra.fix} file={extra.file} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

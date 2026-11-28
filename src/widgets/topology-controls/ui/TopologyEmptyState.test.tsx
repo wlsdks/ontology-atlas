@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
@@ -29,9 +29,9 @@ const EMPTY = koMessages.topology.empty;
 
 function renderEmpty(conceptCount: number, reason?: "no-projects" | "no-relations") {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <TopologyEmptyState conceptCount={conceptCount} reason={reason} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -128,9 +128,9 @@ describe("TopologyEmptyState", () => {
   it('gives every recovery action the same width', () => {
     /* Actions are one equal-width vertical set, not width-by-copy wrapping. */
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TopologyEmptyState conceptCount={0} canCreateNode onCreateNode={vi.fn()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const actions = [...screen.queryAllByRole("link"), ...screen.queryAllByRole("button")];
     expect(actions.length).toBeGreaterThan(1);
@@ -156,9 +156,9 @@ describe("TopologyEmptyState", () => {
   it('offers one create door, the create card, when a folder is open', () => {
     const onCreateNode = vi.fn();
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TopologyEmptyState conceptCount={0} canCreateNode onCreateNode={onCreateNode} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const button = screen.getByTestId("empty-create-node");
     expect(button).toHaveTextContent(EMPTY.ctaCreateNode);
@@ -170,9 +170,9 @@ describe("TopologyEmptyState", () => {
   it('makes start-from-docs the primary CTA and demotes the macOS notice when docs exist', () => {
     const onStartFromDocs = vi.fn();
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TopologyEmptyState conceptCount={0} docsFoundCount={4} onStartFromDocs={onStartFromDocs} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const button = screen.getByTestId("empty-start-from-docs");
     expect(button).toHaveTextContent("내 문서로 지도 만들기");
@@ -186,9 +186,9 @@ describe("TopologyEmptyState", () => {
 
   it('shows no bootstrap CTA when docsFoundCount is 0', () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TopologyEmptyState conceptCount={0} docsFoundCount={0} onStartFromDocs={vi.fn()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("empty-start-from-docs")).not.toBeInTheDocument();
   });

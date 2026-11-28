@@ -1,4 +1,4 @@
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 /**
  * One finding retold for a person, in pieces a surface can place: its `sentence`,

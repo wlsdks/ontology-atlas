@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { PendingPermission } from '@/features/acp-session';
 import type { OntologyChangeSet } from '@/entities/knowledge-graph';

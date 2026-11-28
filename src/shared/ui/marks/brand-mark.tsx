@@ -31,7 +31,6 @@ export interface BrandMarkProps
 
 export function AtlasSymbol({ size = 32, ...props }: Omit<BrandMarkProps, 'detail'>) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img src={withBasePath('/brand/atlas-symbol.png')} width={size} height={size}
       alt="Ontology Atlas" draggable={false} decoding="async" {...props} />
   );
@@ -56,7 +55,6 @@ export function BrandMark({
   return (
     // Native pixel grids must skip Next image optimization, whose resampling would make equal
     // pixels unequal.
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={withBasePath(BRAND_MARK_ASSET[detail])}
       width={renderedSize}

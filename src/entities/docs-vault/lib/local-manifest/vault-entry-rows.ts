@@ -13,7 +13,7 @@ import type { WalkEntry } from './walk-vault';
  * it loads, made at build time (scripts/lib/row-producer.mjs), so a build whose derive code changed
  * never reads an older build's rows. A build without one (the dev server) keeps no rows.
  */
-const ROW_PRODUCER = process.env.NEXT_PUBLIC_ROW_PRODUCER;
+const ROW_PRODUCER = process.env.ATLAS_PUBLIC_ROW_PRODUCER;
 export const APP_ENTRY_ROWS = ROW_PRODUCER ? `app-entry/${ROW_PRODUCER}` : null;
 /** Paths per lookup: the node folders come back first, so the first partial paint stays early. */
 const ROWS_LOOKUP_CHUNK = 2048;

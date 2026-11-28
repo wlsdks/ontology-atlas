@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -7,9 +7,9 @@ import { NewOntologyRoundSheet } from './NewOntologyRoundSheet';
 
 function open(onSave: Parameters<typeof NewOntologyRoundSheet>[0]['onSave'], onClose = vi.fn(), inRepository: boolean | null = true) {
   const view = render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <NewOntologyRoundSheet open onClose={onClose} onSave={onSave} inRepository={inRepository} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { ...view, onClose, onSave };
 }

@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { FirstWordsChip } from '@/features/vault-agent';
 import { josa } from '@/shared/lib/locale-text/ko-josa';

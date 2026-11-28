@@ -1,7 +1,5 @@
-"use client";
-
 import { useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { AnimatePresence, motion } from "framer-motion";
 import { AGENT_DOCK_INSET_SURFACE_CLASS } from "@/shared/ui/surfaces/agent-dock-surface";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";

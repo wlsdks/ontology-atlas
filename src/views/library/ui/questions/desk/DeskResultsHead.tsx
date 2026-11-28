@@ -1,7 +1,5 @@
-'use client';
-
 import type { ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 /**
  * One row over the leads: how many passages were found, the scope glyph and the report action.

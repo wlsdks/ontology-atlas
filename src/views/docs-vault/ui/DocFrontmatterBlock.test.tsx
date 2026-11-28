@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import koMessages from "../../../../messages/ko.json";
@@ -29,9 +29,9 @@ const doc: VaultDoc = {
 function renderBlock(locale: "en" | "ko" = "ko", override: Partial<VaultDoc> = {}) {
   const messages = locale === "ko" ? koMessages : enMessages;
   return render(
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <IntlProvider locale={locale} messages={messages}>
       <DocFrontmatterBlock doc={{ ...doc, ...override }} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -111,9 +111,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { ...doc.frontmatter, depends_on: ["mcp-server", "ghost-ref"] },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={docWithGhost} onNavigate={onNavigate} resolveRef={resolveRef} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
 
@@ -145,7 +145,7 @@ describe("DocFrontmatterBlock", () => {
   it("shows a quick-patch action for a writable local vault and saves kind/domain/title edits", async () => {
     const onPatch = vi.fn().mockResolvedValue(undefined);
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock
           doc={doc}
           canEdit
@@ -155,7 +155,7 @@ describe("DocFrontmatterBlock", () => {
           ]}
           onPatch={onPatch}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
@@ -176,9 +176,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { ...doc.frontmatter, display_ko: "CLI 개발자 입구", display_en: "CLI developer entry" },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={named} canEdit onPatch={onPatch} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     expect(screen.getByText("display_ko:")).toBeInTheDocument();
@@ -207,9 +207,9 @@ describe("DocFrontmatterBlock", () => {
       .mockRejectedValueOnce(new VaultConflictError(doc.slug, 1000, 2000))
       .mockRejectedValueOnce(new Error("EIO: i/o error, write"));
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={doc} canEdit onPatch={onPatch} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
@@ -245,9 +245,9 @@ describe("DocFrontmatterBlock", () => {
         ? token
         : null;
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={referrer} onNavigate={vi.fn()} resolveRef={resolveRef} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const row = screen
       .getAllByTestId("doc-frontmatter-issue")
@@ -266,9 +266,9 @@ describe("DocFrontmatterBlock", () => {
   it("says before Save that a kind change files the document under its new kind", async () => {
     const onPatch = vi.fn().mockResolvedValue(undefined);
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={doc} canEdit onPatch={onPatch} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
@@ -302,14 +302,14 @@ describe("DocFrontmatterBlock", () => {
       "elements/map-camera": "element",
     };
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <DocFrontmatterBlock
           doc={domain}
           onNavigate={vi.fn()}
           resolveRef={(token) => (token in kinds ? token : null)}
           kindOf={(slug) => kinds[slug] ?? null}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const rows = screen.getAllByTestId("doc-frontmatter-issue");
     const row = rows.find((element) => element.getAttribute("data-issue-code") === "kind-list-mismatch");
@@ -342,9 +342,9 @@ describe("DocFrontmatterBlock", () => {
         : [],
     );
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={doc} canEdit onPatch={vi.fn()} kindChangeReferrers={kindChangeReferrers} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
@@ -372,9 +372,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { ...doc.frontmatter, kind: "element" },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={misfiled} canEdit onPatch={vi.fn()} onMoveToKindFolder={onMoveToKindFolder} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const move = screen.getByTestId("doc-frontmatter-move-to-kind-folder");
     expect(move).toHaveTextContent("elements/");
@@ -388,9 +388,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { ...doc.frontmatter, kind: "vault-readme" },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={readmeDoc} canEdit onPatch={vi.fn()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     expect(screen.queryByText("kind / domain / title / 이름 수정")).not.toBeInTheDocument();
@@ -408,9 +408,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { kind: "capability", slug: doc.slug, title: doc.title, domain: "x" },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={noUidDoc} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const rows = screen.getAllByTestId("doc-frontmatter-issue");
     expect(rows.map((row) => row.getAttribute("data-severity"))).toContain("error");
@@ -424,9 +424,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { slug: doc.slug, title: doc.title, domain: "developer-experience" },
     };
     const { unmount } = render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={kindless} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId("doc-frontmatter-block")).toHaveAttribute(
       "data-variant",
@@ -437,9 +437,9 @@ describe("DocFrontmatterBlock", () => {
 
     const plainDoc: VaultDoc = { ...doc, frontmatter: { title: doc.title } };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={plainDoc} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("doc-frontmatter-block")).toBeNull();
   });
@@ -450,9 +450,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { kind: "capability", slug: doc.slug, title: doc.title },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={noDomainDoc} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const warnings = screen.getByTestId("doc-frontmatter-validator-warnings");
     expect(within(warnings).getByText(/domain/)).toBeInTheDocument();
@@ -480,9 +480,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { ...doc.frontmatter, definition: "문의를 접수하고 답변하는 역량." },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={docWithDefinition} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const lede = screen.getByTestId("doc-frontmatter-definition");
     expect(lede).toBeInTheDocument();
@@ -502,9 +502,9 @@ describe("DocFrontmatterBlock", () => {
       frontmatter: { status: "draft", slug: doc.slug, title: doc.title },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={noKindDoc} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("doc-frontmatter-example-toggle")).not.toBeInTheDocument();
     expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
@@ -522,9 +522,9 @@ describe("DocFrontmatterBlock code location section", () => {
 
   it("expanding the block reveals a code-location row for each frontmatter `elements` path", () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={docWithElements} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     const section = screen.getByTestId("doc-frontmatter-code-locations");
@@ -548,9 +548,9 @@ describe("DocFrontmatterBlock code location section", () => {
       },
     };
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={mixedDoc} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     const section = screen.getByTestId("doc-frontmatter-code-locations");
@@ -562,9 +562,9 @@ describe("DocFrontmatterBlock code location section", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={docWithElements} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     const copyButtons = screen.getAllByTestId("doc-frontmatter-code-location-copy");
@@ -624,18 +624,18 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
 
   it("renders no subject row when neither a heartbeat nor a self-edit record exists (no fabrication)", () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={doc} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("last-edit-subject-row")).not.toBeInTheDocument();
   });
 
   it("renders the AI agent subject when a fresh heartbeat names this doc", () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={doc} agentActivityStatus={freshHeartbeatStatus()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const row = screen.getByTestId("last-edit-subject-row");
     expect(row).toHaveAttribute("data-edit-subject-kind", "agent");
@@ -645,13 +645,13 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
   it("renders the human subject when this session self-wrote this exact doc", () => {
     const selfEditTimestamps = new Map([[doc.slug, Date.now() - 60_000]]);
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock
           doc={doc}
           agentActivityStatus={emptyAgentActivityStatus()}
           selfEditTimestamps={selfEditTimestamps}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const row = screen.getByTestId("last-edit-subject-row");
     expect(row).toHaveAttribute("data-edit-subject-kind", "human");
@@ -660,9 +660,9 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
 
   it("renders no conflict badge when the doc's mtime has not changed since it was opened", () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={{ ...doc, mtime: 1000 }} agentActivityStatus={emptyAgentActivityStatus()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
   });
@@ -670,17 +670,17 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
   it("renders the conflict badge when the doc's mtime changes externally after it was opened", () => {
     const changingDoc = { ...doc, mtime: 1000 };
     const { rerender } = render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={changingDoc} agentActivityStatus={emptyAgentActivityStatus()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
 
     // Simulates the poller picking up an external edit while the panel stays mounted.
     rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock doc={{ ...changingDoc, mtime: 2000 }} agentActivityStatus={emptyAgentActivityStatus()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId("mtime-conflict-badge")).toBeInTheDocument();
   });
@@ -689,22 +689,22 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
     const changingDoc = { ...doc, mtime: 1000 };
     const selfEditTimestamps = new Map([[doc.slug, Date.now() + 10_000]]);
     const { rerender } = render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock
           doc={changingDoc}
           agentActivityStatus={emptyAgentActivityStatus()}
           selfEditTimestamps={new Map()}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocFrontmatterBlock
           doc={{ ...changingDoc, mtime: 2000 }}
           agentActivityStatus={emptyAgentActivityStatus()}
           selfEditTimestamps={selfEditTimestamps}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
   });
@@ -748,7 +748,7 @@ describe('recorded canonical graph declarations', () => {
   it('uses the existing resolver for canonical dependencies and keeps unresolved targets plain', () => {
     const onNavigate = vi.fn();
     const resolveRef = (ref: string) => ref === 'capabilities/stock-tracking' ? ref : null;
-    render(<NextIntlClientProvider locale="en" messages={enMessages}><DocFrontmatterBlock doc={{ ...doc, frontmatter: { kind: 'capability', dependencies: ['capabilities/payment-cancel', 'capabilities/stock-tracking'] } }} resolveRef={resolveRef} onNavigate={onNavigate} /></NextIntlClientProvider>);
+    render(<IntlProvider locale="en" messages={enMessages}><DocFrontmatterBlock doc={{ ...doc, frontmatter: { kind: 'capability', dependencies: ['capabilities/payment-cancel', 'capabilities/stock-tracking'] } }} resolveRef={resolveRef} onNavigate={onNavigate} /></IntlProvider>);
     fireEvent.click(screen.getByTestId('doc-frontmatter-summary'));
     const field = screen.getByTestId('doc-frontmatter-field-dependencies');
     expect(field).toHaveTextContent('capabilities/payment-cancel');
@@ -759,7 +759,7 @@ describe('recorded canonical graph declarations', () => {
 
   it('keeps mixed element code paths out of node navigation and exposes stored relation notes', () => {
     const onNavigate = vi.fn();
-    render(<NextIntlClientProvider locale="en" messages={enMessages}><DocFrontmatterBlock doc={{ ...doc, frontmatter: { kind: 'capability', elements: ['elements/reservation', 'src/reservation.ts'], relation_notes: { 'elements/reservation': 'Preserves held stock until the order commits.' } } }} resolveRef={ref => ref} onNavigate={onNavigate} /></NextIntlClientProvider>);
+    render(<IntlProvider locale="en" messages={enMessages}><DocFrontmatterBlock doc={{ ...doc, frontmatter: { kind: 'capability', elements: ['elements/reservation', 'src/reservation.ts'], relation_notes: { 'elements/reservation': 'Preserves held stock until the order commits.' } } }} resolveRef={ref => ref} onNavigate={onNavigate} /></IntlProvider>);
     fireEvent.click(screen.getByTestId('doc-frontmatter-summary'));
     const field = screen.getByTestId('doc-frontmatter-field-elements');
     expect(field).toHaveTextContent('src/reservation.ts');

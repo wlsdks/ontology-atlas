@@ -162,9 +162,9 @@ describe('queued permission identity', () => {
 /*
  * The hook reads the interface language so a button-started turn has one to answer in.
  * These tests render it bare, with no provider, which is the repository's usual shape for a
- * model hook — so the locale is mocked here the same way 27 other suites mock next-intl.
+ * model hook — so the locale is mocked here the same way 27 other suites mock use-intl.
  */
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'ko',
   useTranslations: () => (key: string) => key,
 }));

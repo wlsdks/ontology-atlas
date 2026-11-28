@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
@@ -61,7 +61,7 @@ function renderSidebar(
   const onSortChange = vi.fn();
   const onGroupChange = vi.fn();
   const view = render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <DocsSidebarBody
         reviewQueue={[]}
         pinnedSlugs={[]}
@@ -93,7 +93,7 @@ function renderSidebar(
         onGroupChange={onGroupChange}
         agentFiles={overrides.agentFiles ?? null}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { ...view, onSelect, onCreateNewDoc, onSortChange, onGroupChange };
 }
@@ -210,7 +210,7 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
   it("shows the three collection icons and switches on click", () => {
     const onCollectionChange = vi.fn();
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsSidebarBody
           reviewQueue={[]}
         pinnedSlugs={[]}
@@ -234,7 +234,7 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
           onGroupChange={() => {}}
           agentFiles={null}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId("docs-sidebar-collection-all")).toBeInTheDocument();
     expect(screen.getByTestId("docs-sidebar-collection-guides")).toBeInTheDocument();

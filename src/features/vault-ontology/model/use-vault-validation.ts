@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo } from 'react';
 import { useLocalVault } from '@/entities/vault-session';
 import type { VaultManifest } from '@/entities/docs-vault';

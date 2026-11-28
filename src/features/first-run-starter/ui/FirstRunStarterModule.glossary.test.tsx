@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import enMessages from "../../../../messages/en.json";
@@ -53,9 +53,9 @@ function makeVault(): MockVault {
 function renderWithLocale(locale: "ko" | "en") {
   const messages = locale === "ko" ? koMessages : enMessages;
   return render(
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <IntlProvider locale={locale} messages={messages}>
       <FirstRunStarterModule />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

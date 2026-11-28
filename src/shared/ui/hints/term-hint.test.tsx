@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 
 import { TERM_GLOSSARY } from '@/shared/config/term-glossary';
@@ -9,9 +9,9 @@ import ko from '../../../../messages/ko.json';
 
 function renderHint(locale: 'en' | 'ko' = 'en') {
   return render(
-    <NextIntlClientProvider locale={locale} messages={locale === 'en' ? en : ko}>
+    <IntlProvider locale={locale} messages={locale === 'en' ? en : ko}>
       <TermHint term="mcp">MCP connections</TermHint>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

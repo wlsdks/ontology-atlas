@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import { dropCandidatesWithNodes, type LibraryUiModel } from "@/features/library";

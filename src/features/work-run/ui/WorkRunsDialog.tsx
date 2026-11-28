@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, useState, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { WorkProgress } from '@/shared/motion/status-glyphs/WorkProgress';

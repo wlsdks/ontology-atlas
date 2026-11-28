@@ -19,29 +19,17 @@ import { cn } from "@/shared/lib/cn";
 import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { FrameMeter } from "@/shared/ui/status/frame-meter";
 import { HelpCircle, Play } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, lazy } from "react";
+import { SilentSuspense } from "@/shared/ui/fallbacks/silent-suspense";
 import { TopologyChangeAnnouncement } from "../map-readouts/TopologyChangeAnnouncement";
 import { TopologyScopeReadout } from "../map-readouts/TopologyScopeReadout";
 import { resolveMapScopeCount } from "../../lib/map-scope/resolve-count";
 import { TopologyMapRenderer, type TopologyMapRendererProps } from "./TopologyMapRenderer";
 import { TopologyNoMatchesState } from "../map-overlays/TopologyNoMatchesState";
-const VaultStartSteps = dynamic(
-  () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
-  { ssr: false },
-);
-const TopologyEmptyState = dynamic(
-  () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
-  { ssr: false },
-);
-const TopologyFitControl = dynamic(
-  () => import("@/widgets/topology-controls").then((m) => m.TopologyFitControl),
-  { ssr: false },
-);
-const HubRail = dynamic(
-  () => import("@/widgets/topology-controls").then((m) => m.HubRail),
-  { ssr: false },
-);
+const VaultStartSteps = lazy(() => import("@/widgets/topology-controls").then((m) => ({ default: m.VaultStartSteps })));
+const TopologyEmptyState = lazy(() => import("@/widgets/topology-controls").then((m) => ({ default: m.TopologyEmptyState })));
+const TopologyFitControl = lazy(() => import("@/widgets/topology-controls").then((m) => ({ default: m.TopologyFitControl })));
+const HubRail = lazy(() => import("@/widgets/topology-controls").then((m) => ({ default: m.HubRail })));
 
 type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   acpRuntimeLabel: string | null;
@@ -182,56 +170,60 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
             {/* A writable vault gets the progressive start checklist, its first step bootstrap when
                documents exist. Hidden while a conversation is open; closing the panel brings it back. */}
             {startStepsVisible ? (
-              <VaultStartSteps
-                agentConnected={agentConnect.status.kind === "connected"}
-                acpRuntimeLabel={acpRuntimeLabel}
-                acpRuntimeIcon={acpRuntime?.icon ?? null}
-                acpRuntimeInk={acpRuntime?.brandInk ?? null}
-                onCreateNode={openCreateNodeWithKind}
-                // The same starter as "start fresh in an empty folder"; not passed when documents
-                // exist.
-                onScaffoldStarter={
-                  (starterRecoveryActive || (vault.manifest?.docs.length ?? 0) === 0)
-                    ? handleScaffoldStarter
-                    : null
-                }
-                scaffolding={starterScaffolding}
-                scaffoldFailed={starterScaffoldFailed}
-                docsFoundCount={bootstrapPlan?.elements.length ?? 0}
-                sourceFileCount={vault.manifest?.sourceFileCount ?? 0}
-                onStartFromDocs={
-                  bootstrapPlan && bootstrapPlan.elements.length > 0
-                    ? () => setBootstrapOpen(true)
-                    : undefined
-                }
-                analyzePrompt={analyzePrompt}
-                // Seats the instruction in the chat composer instead of making the user copy; a
-                // person still sends it.
-                onSendAnalyzeToAgent={
-                  agentChatUsesRuntime ? sendAnalyzeToAgent : null
-                }
-                // INDEX floats over the map column instead of narrowing it, so the card needs its
-                // width to centre.
-                indexExpanded={renderedIndexState === "expanded"}
-                onFinish={() => { dismissStarterRecovery(); dismissStartSteps(); }}
-                // "Connect" lives at the agents destination, so it navigates there
-                // (`docs/DECISIONS.md`, entry 90);
-                // chat has its own doors.
-                onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
-              />
+              <SilentSuspense>
+                <VaultStartSteps
+                  agentConnected={agentConnect.status.kind === "connected"}
+                  acpRuntimeLabel={acpRuntimeLabel}
+                  acpRuntimeIcon={acpRuntime?.icon ?? null}
+                  acpRuntimeInk={acpRuntime?.brandInk ?? null}
+                  onCreateNode={openCreateNodeWithKind}
+                  // The same starter as "start fresh in an empty folder"; not passed when documents
+                  // exist.
+                  onScaffoldStarter={
+                    (starterRecoveryActive || (vault.manifest?.docs.length ?? 0) === 0)
+                      ? handleScaffoldStarter
+                      : null
+                  }
+                  scaffolding={starterScaffolding}
+                  scaffoldFailed={starterScaffoldFailed}
+                  docsFoundCount={bootstrapPlan?.elements.length ?? 0}
+                  sourceFileCount={vault.manifest?.sourceFileCount ?? 0}
+                  onStartFromDocs={
+                    bootstrapPlan && bootstrapPlan.elements.length > 0
+                      ? () => setBootstrapOpen(true)
+                      : undefined
+                  }
+                  analyzePrompt={analyzePrompt}
+                  // Seats the instruction in the chat composer instead of making the user copy; a
+                  // person still sends it.
+                  onSendAnalyzeToAgent={
+                    agentChatUsesRuntime ? sendAnalyzeToAgent : null
+                  }
+                  // INDEX floats over the map column instead of narrowing it, so the card needs its
+                  // width to centre.
+                  indexExpanded={renderedIndexState === "expanded"}
+                  onFinish={() => { dismissStarterRecovery(); dismissStartSteps(); }}
+                  // "Connect" lives at the agents destination, so it navigates there
+                  // (`docs/DECISIONS.md`, entry 90);
+                  // chat has its own doors.
+                  onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
+                />
+              </SilentSuspense>
             ) : topologyOverlayState.kind === "structural-empty" ? (
-              <TopologyEmptyState
-                conceptCount={emptyTopologyNodeCount}
-                reason={topologyOverlayState.emptyReason}
-                canCreateNode={canCreateNode}
-                onCreateNode={openCreateNode}
-                docsFoundCount={bootstrapPlan?.elements.length ?? 0}
-                onStartFromDocs={
-                  bootstrapPlan && bootstrapPlan.elements.length > 0
-                    ? () => setBootstrapOpen(true)
-                    : undefined
-                }
-              />
+              <SilentSuspense>
+                <TopologyEmptyState
+                  conceptCount={emptyTopologyNodeCount}
+                  reason={topologyOverlayState.emptyReason}
+                  canCreateNode={canCreateNode}
+                  onCreateNode={openCreateNode}
+                  docsFoundCount={bootstrapPlan?.elements.length ?? 0}
+                  onStartFromDocs={
+                    bootstrapPlan && bootstrapPlan.elements.length > 0
+                      ? () => setBootstrapOpen(true)
+                      : undefined
+                  }
+                />
+              </SilentSuspense>
             ) : null}
             </StartStackClearOfWorkCard>
           ) : topologyOverlayState.kind === "filter-sparse" ? (
@@ -263,16 +255,18 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
             topologyBlockingOverlayActive ||
             selectedEdgeOwnsRightRail ||
             (neural && selectedNodeFocusActive && !nodePopoverDismissed) ? null : (
-            <TopologyFitControl
-              className={railMotion}
-              inert={railRecedes}
-              mobileObscured={renderedIndexState === "expanded"}
-              density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
-              onFitView={() => {
-                if (neural) handleClose();
-                setFitViewToken((t) => t + 1);
-              }}
-            />
+            <SilentSuspense>
+              <TopologyFitControl
+                className={railMotion}
+                inert={railRecedes}
+                mobileObscured={renderedIndexState === "expanded"}
+                density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
+                onFitView={() => {
+                  if (neural) handleClose();
+                  setFitViewToken((t) => t + 1);
+                }}
+              />
+            </SilentSuspense>
           )}
           {/* One slot below the fit tile; on phones only in overview and focus, clear of the
              path/health rail. */}
@@ -357,12 +351,14 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
             </div>
           )}
         </div>
-        <HubRail
-          projects={renderProjects}
-          selectedSlug={canvasSelectedSlug}
-          onSelect={(slug) => handleSelect(slug)}
-          suppressed={!leftPanelCollapsed && !drawerOpen}
-        />
+        <SilentSuspense>
+          <HubRail
+            projects={renderProjects}
+            selectedSlug={canvasSelectedSlug}
+            onSelect={(slug) => handleSelect(slug)}
+            suppressed={!leftPanelCollapsed && !drawerOpen}
+          />
+        </SilentSuspense>
         <Surface
           open={localGraphStack.length > 0}
           origin="top center"

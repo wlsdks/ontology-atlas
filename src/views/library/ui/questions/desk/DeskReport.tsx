@@ -1,7 +1,5 @@
-'use client';
-
 import { Children, isValidElement, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';

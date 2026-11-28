@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { RowButton } from "@/shared/ui";
 import type { ConceptReach, ReachRow } from "../../model/concept-reach";
 import { OntologyMapEdgeHoverCard } from "../OntologyMapEdgeHoverCard";

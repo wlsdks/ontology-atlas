@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, type RefObject, type Dispatch, type SetStateAction } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 import {
   buildAskBrief,

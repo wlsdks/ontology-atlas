@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { OntologyChangeItem, OntologyChangeSet } from '@/entities/knowledge-graph';
 import { OntologyChangeReview } from './OntologyChangeReview';
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'en',
   useTranslations: () => (key: string) => key,
 }));

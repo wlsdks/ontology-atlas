@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MAP_CATALOG } from '../../model/catalog/map';
 import { MapPane } from './MapPane';
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('use-intl')>()),
   useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
 }));
 vi.mock('../pane-settings/appearance-pickers', () => ({

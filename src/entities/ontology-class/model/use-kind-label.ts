@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 // `vault-readme` is the scaffolded root README's kind; without it the raw id would show.
 const KNOWN_KINDS = ['project', 'domain', 'capability', 'element', 'document', 'vault-readme', 'unknown'] as const;

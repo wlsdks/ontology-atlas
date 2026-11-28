@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 
 import { PROSE_COMPONENTS, proseComponentsWithAnchors } from './GatewayDocPage';
@@ -21,11 +21,11 @@ const EVERY_ELEMENT = [
 
 function render(components: typeof PROSE_COMPONENTS): string {
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale="en" messages={{}}>
+    <IntlProvider locale="en" messages={{}}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {EVERY_ELEMENT}
       </ReactMarkdown>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

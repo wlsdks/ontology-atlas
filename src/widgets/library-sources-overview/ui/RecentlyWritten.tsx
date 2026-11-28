@@ -1,7 +1,5 @@
-"use client";
-
 import { BookOpen, FileText, Sparkles } from "lucide-react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { cn } from "@/shared/lib/cn";
 import { Sheet } from "@/shared/ui/marks/sheet";

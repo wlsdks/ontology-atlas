@@ -1,7 +1,5 @@
-"use client";
-
 import { useId, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { useOntologyReset, type ClearedConcepts } from '@/features/ontology-reset';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';

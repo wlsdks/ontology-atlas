@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useState } from 'react';
 
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';

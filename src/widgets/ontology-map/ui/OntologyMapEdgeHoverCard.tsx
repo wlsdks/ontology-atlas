@@ -1,4 +1,3 @@
-"use client";
 import { useLayoutEffect, useRef, useState } from "react";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { currentFloatingRightBound } from "@/shared/lib/overlays/right-dock-reserve";

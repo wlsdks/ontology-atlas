@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { useLocale } from "next-intl";
+import { useLocale } from "use-intl";
 import {
   findRelatedDocs,
   pinnedDocsStorageKey,

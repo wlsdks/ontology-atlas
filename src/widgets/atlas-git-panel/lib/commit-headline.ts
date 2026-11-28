@@ -1,4 +1,4 @@
-import type { DateTimeFormatOptions } from "next-intl";
+import type { DateTimeFormatOptions } from "use-intl";
 import { stripConventionalPrefix } from "./step-title";
 import type { CommitConcept } from "./commit-documents";
 import type { CopyTranslate } from "./translator";

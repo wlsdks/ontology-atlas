@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { disarmMapLayoutMorph, isMapLayoutMorphArmed, type MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { chooseLayoutSwitch, installMapLayoutMorphProbe, type MapLayoutMorphJob } from "@/widgets/ontology-map";

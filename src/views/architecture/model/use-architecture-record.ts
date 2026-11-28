@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from 'react';
 
 import { parseArchitectureRecord, type ArchitectureRecord } from '@/entities/architecture-record';

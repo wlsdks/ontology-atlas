@@ -1,8 +1,6 @@
-'use client';
-
 import type { ReactNode } from 'react';
 import { Info } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { TERM_GLOSSARY, type GlossaryTerm } from '@/shared/config/term-glossary';
 import { cn } from '@/shared/lib/cn';

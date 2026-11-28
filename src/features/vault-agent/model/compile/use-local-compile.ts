@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { buildWikiRetrievalIndex, isWikiPage, sourceNeedsCompile, type LibrarySourceRow, type WikiRetrievalPage } from "@/entities/docs-vault";

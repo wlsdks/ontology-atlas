@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 

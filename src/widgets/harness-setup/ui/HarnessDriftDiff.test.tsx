@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { NextIntlClientProvider, useTranslations } from 'next-intl';
+import { IntlProvider, useTranslations } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
@@ -21,9 +21,9 @@ function Diff({ showVendorMarks }: { showVendorMarks?: boolean }) {
 
 function renderDiff(showVendorMarks?: boolean) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <Diff showVendorMarks={showVendorMarks} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

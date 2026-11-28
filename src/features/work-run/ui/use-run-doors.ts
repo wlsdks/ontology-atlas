@@ -1,5 +1,3 @@
-'use client';
-
 import { usePathname, useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF, withQuery } from '@/shared/config/destinations';
 import { requestAgentChat } from '@/shared/lib/agent-chat/agent-chat-intent';

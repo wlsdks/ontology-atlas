@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, type ReactNode, type RefObject } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { FileImage, FileText } from 'lucide-react';
 import { RowButton } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';

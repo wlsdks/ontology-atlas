@@ -1,7 +1,5 @@
-'use client';
-
 import { Star } from 'lucide-react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'use-intl';
 
 import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
 import { cn } from '@/shared/lib/cn';

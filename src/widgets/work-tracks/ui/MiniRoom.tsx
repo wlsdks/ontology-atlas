@@ -1,5 +1,3 @@
-'use client';
-
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { STAGE_AT, roomLook } from '../model/room-look';

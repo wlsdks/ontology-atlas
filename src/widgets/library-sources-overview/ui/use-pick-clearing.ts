@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 
 import { pickWithNoFolderLeft, type SourcePick } from "../model/source-pick";

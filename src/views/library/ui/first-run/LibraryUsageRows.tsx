@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { FolderOpen, Copy, ShieldCheck } from "lucide-react";
 
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";

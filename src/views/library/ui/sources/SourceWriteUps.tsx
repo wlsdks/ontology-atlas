@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { BookText, Sparkles } from "lucide-react";
 
 import type { LibraryWriteUpLink } from "@/entities/docs-vault";

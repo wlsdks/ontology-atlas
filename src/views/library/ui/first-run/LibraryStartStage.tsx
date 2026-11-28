@@ -1,7 +1,5 @@
-"use client";
-
 import type { ReactNode } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { CloudDownload, FolderOpen, Search } from "lucide-react";
 
 import { controlClass } from "@/shared/ui/control-class";

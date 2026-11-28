@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 import { useDataSourceMode, useVaultIdentityScope } from "@/entities/vault-session";
 import {

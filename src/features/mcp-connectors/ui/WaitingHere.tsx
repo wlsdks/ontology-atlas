@@ -1,7 +1,5 @@
-'use client';
-
 import { ShieldCheck } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';

@@ -5,7 +5,7 @@ import type { VaultDoc } from '@/entities/docs-vault';
 
 import { reviewQueueKey, useReviewQueue } from './use-review-queue';
 
-vi.mock('next-intl', () => ({ useLocale: () => 'en' }));
+vi.mock('use-intl', () => ({ useLocale: () => 'en' }));
 
 function raisedDoc(slug: string, note: string): VaultDoc {
   return {

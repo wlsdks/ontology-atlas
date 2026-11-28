@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { useFrameMeter } from '@/shared/lib/preferences/canvas-appearance-preferences';
 

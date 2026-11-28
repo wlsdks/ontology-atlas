@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it } from "vitest";
 
 import type { ConstructionReviewProjection } from "@/entities/construction-review";
@@ -45,9 +45,9 @@ function review(): ConstructionReviewProjection {
 
 function renderPanel(value: ConstructionReviewProjection = review()) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <ConstructionReviewPanel review={value} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

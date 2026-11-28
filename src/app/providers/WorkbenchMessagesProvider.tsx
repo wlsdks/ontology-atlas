@@ -1,7 +1,5 @@
-'use client';
-
 import { use, type ReactNode } from 'react';
-import { NextIntlClientProvider, type IntlError } from 'next-intl';
+import { IntlProvider, type IntlError } from 'use-intl';
 import { usePathname } from 'next/navigation';
 import type { AppLocale } from '@/i18n/locales';
 import { loadWorkbenchCatalog, useWorkbenchCatalog, type MessageCatalog } from '@/i18n/workbench-catalog';
@@ -39,14 +37,14 @@ export function WorkbenchMessagesProvider({
     atRoot && !loaded && !isDesktopShell() ? rootMessages : use(loadWorkbenchCatalog(locale));
 
   return (
-    <NextIntlClientProvider
+    <IntlProvider
       locale={locale}
       timeZone={timeZone}
       messages={messages}
       onError={messages === rootMessages ? reportRootSubsetGap : undefined}
     >
       {children}
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 

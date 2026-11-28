@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { VaultManifest } from '@/entities/docs-vault';

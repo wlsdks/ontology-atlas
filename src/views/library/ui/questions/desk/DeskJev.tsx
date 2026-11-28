@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { LibrarySourceRow } from '@/entities/docs-vault';
 import { jevClaimEligibility, jevPayloadEligibility, type DeskCitation, type DeskClaim, type LibraryPageFacts } from '@/features/library';

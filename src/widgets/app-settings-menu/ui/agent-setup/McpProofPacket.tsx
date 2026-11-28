@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Check, Copy } from 'lucide-react';
 
 import { Chip } from '@/shared/ui';

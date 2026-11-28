@@ -1,7 +1,5 @@
-'use client';
-
 import { useMemo, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { translateOntologyDeeplinkToTopologyParam } from '@/entities/knowledge-graph';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';

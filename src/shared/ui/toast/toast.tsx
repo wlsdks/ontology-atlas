@@ -1,5 +1,3 @@
-'use client';
-
 import {
   type CSSProperties,
   type ReactNode,
@@ -140,7 +138,7 @@ const TOAST_FLOOR = `calc(max(var(--app-toast-bottom-reserve, 0px), var(${TOAST_
 export function ToastProvider({
   children,
   /**
-   * Injected rather than read so the provider runs without this app's next-intl setup; the
+   * Injected rather than read so the provider runs without this app's use-intl setup; the
    * English default still leaves no unnamed region.
    */
   notificationsLabel = 'Notifications',

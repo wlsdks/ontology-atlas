@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { useEffect, useRef } from "react";
 
 import { passageLabelText } from "@/features/library";

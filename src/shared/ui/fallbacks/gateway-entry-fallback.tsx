@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { controlClass } from '@/shared/ui/control-class';
 

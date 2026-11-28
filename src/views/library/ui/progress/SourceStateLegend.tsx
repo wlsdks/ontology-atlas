@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { X } from "lucide-react";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";

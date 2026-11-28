@@ -1,5 +1,5 @@
 import { Check, Eye, EyeOff, Save, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { BrandMark } from '@/shared/ui/marks/brand-mark';
 import { Chip } from '@/shared/ui';

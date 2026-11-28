@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 async function loadWith(paths: string | undefined) {
   vi.resetModules();
-  vi.stubEnv("NEXT_PUBLIC_DOGFOOD_VAULT_PATHS", paths ?? "");
+  vi.stubEnv("ATLAS_PUBLIC_DOGFOOD_VAULT_PATHS", paths ?? "");
   return import("./dogfood-vault-path");
 }
 

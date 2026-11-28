@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
@@ -26,7 +26,7 @@ function renderZone(props: Partial<React.ComponentProps<typeof RelationsZone>> &
   const onSelectConnection = props.onSelectConnection ?? vi.fn();
   const onHoverConnection = props.onHoverConnection ?? vi.fn();
   const view = render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <div data-testid="map-detail-panel" onKeyDown={props.onPanelKeyDown}>
         <RelationsZone
           kind={props.kind ?? "capability"}
@@ -38,7 +38,7 @@ function renderZone(props: Partial<React.ComponentProps<typeof RelationsZone>> &
           onOpenFullDetail={props.onOpenFullDetail}
         />
       </div>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { ...view, onSelectConnection, onHoverConnection };
 }

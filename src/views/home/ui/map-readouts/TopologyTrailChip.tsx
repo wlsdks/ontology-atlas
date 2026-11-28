@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Trash2, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";

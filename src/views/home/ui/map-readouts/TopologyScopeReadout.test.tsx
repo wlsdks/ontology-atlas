@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it } from "vitest";
 import en from "../../../../../messages/en.json";
 import ko from "../../../../../messages/ko.json";
@@ -7,9 +7,9 @@ import { TopologyScopeReadout } from "./TopologyScopeReadout";
 
 describe("map scope readout", () => {
   const view = (total: number | null, members: number | null, synthetic = false, locale = "en") => (
-    <NextIntlClientProvider locale={locale} messages={locale === "ko" ? ko : en}>
+    <IntlProvider locale={locale} messages={locale === "ko" ? ko : en}>
       <TopologyScopeReadout total={total} members={members} synthetic={synthetic} />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 
   it("reports model membership and updates when the scope changes", () => {

@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import messages from '../../../../messages/en/grayArea.json';
 import korean from '../../../../messages/ko/grayArea.json';
@@ -17,9 +17,9 @@ const selection = {projectSlug:'project',uids:['node'],label:'Node',key:'node'};
 const access = {code:'source-root-not-granted',sourcePath:'/fixture/source',bindingDigest:`sha256:${'a'.repeat(64)}`};
 const preview = {projectSlug:'project',sourcePath:access.sourcePath,sourceId:'source',bindingDigest:access.bindingDigest,maxFiles:2000};
 function inspector(locale = 'en', key = 'node') {
-  return <NextIntlClientProvider locale={locale} messages={{grayArea:locale === 'ko' ? korean : messages}}>
+  return <IntlProvider locale={locale} messages={{grayArea:locale === 'ko' ? korean : messages}}>
     <GrayAreaInspector open vaultPath="/fixture/vault" selection={{...selection,key}} onClose={()=>{}} onFocus={()=>{}} onPrepare={()=>{}}/>
-  </NextIntlClientProvider>;
+  </IntlProvider>;
 }
 it.each(['en','ko'])('offers the actual bound path and native recovery in %s', async locale => {
   runtime.invoke.mockRejectedValue(access);
@@ -89,9 +89,9 @@ it.each(['binding_changed','binding_identity_changed','source_unavailable','unsa
 });
 
 it('without a local folder it says so and makes no source read', async () => {
-  render(<NextIntlClientProvider locale="en" messages={{grayArea:messages}}>
+  render(<IntlProvider locale="en" messages={{grayArea:messages}}>
     <GrayAreaInspector open vaultPath={null} selection={{projectSlug:'sample',uids:['sample'],label:'Sample',key:'sample'}} onClose={()=>{}} onFocus={()=>{}} onPrepare={()=>{}}/>
-  </NextIntlClientProvider>);
+  </IntlProvider>);
   await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
   expect(screen.getByTestId('gray-area-local-folder-required')).toBeVisible();
   expect(runtime.invoke).not.toHaveBeenCalled();
@@ -108,7 +108,7 @@ it('keeps opening and local inspection separate from one deliberate analysis wit
  let release!: (value:boolean)=>void;
  runtime.invoke.mockImplementation((command:string)=>command==='preview_gray_area_scope'?Promise.resolve(preview):command==='read_gray_area_evidence'?Promise.resolve(snapshot):new Promise<boolean>(resolve=>{release=resolve;}));
  const analyze=vi.fn();
- render(<NextIntlClientProvider locale="en" messages={{grayArea:messages}}><GrayAreaInspector open vaultPath="/fixture/vault" selection={{projectSlug:'project',projectUid,uids:[nodeUid],label:'A',key:'A'}} onClose={()=>{}} onFocus={()=>{}} onPrepare={()=>{}} canAnalyze runtimeLabel="Measured agent" onAnalyze={analyze}/></NextIntlClientProvider>);
+ render(<IntlProvider locale="en" messages={{grayArea:messages}}><GrayAreaInspector open vaultPath="/fixture/vault" selection={{projectSlug:'project',projectUid,uids:[nodeUid],label:'A',key:'A'}} onClose={()=>{}} onFocus={()=>{}} onPrepare={()=>{}} canAnalyze runtimeLabel="Measured agent" onAnalyze={analyze}/></IntlProvider>);
  fireEvent.click(await screen.findByRole('button',{name:messages.inspectFolder}));
  const action=await screen.findByRole('button',{name:messages.continuation.analyze});
  expect(screen.getByText(access.sourcePath)).toBeVisible();
@@ -127,7 +127,7 @@ it('keeps opening and local inspection separate from one deliberate analysis wit
 it.each(['scope_limit','scope_invalid'])('offers a narrower scope after %s without retrying or model work',async error=>{
  runtime.invoke.mockImplementation((command:string)=>command==='preview_gray_area_scope'?Promise.resolve(preview):Promise.reject(error));
  const narrow=vi.fn();const analyze=vi.fn();
- render(<NextIntlClientProvider locale="en" messages={{grayArea:messages}}><GrayAreaInspector open vaultPath="/fixture/vault" selection={selection} onClose={()=>{}} onFocus={()=>{}} onPrepare={()=>{}} onNarrowScope={narrow} onAnalyze={analyze}/></NextIntlClientProvider>);
+ render(<IntlProvider locale="en" messages={{grayArea:messages}}><GrayAreaInspector open vaultPath="/fixture/vault" selection={selection} onClose={()=>{}} onFocus={()=>{}} onPrepare={()=>{}} onNarrowScope={narrow} onAnalyze={analyze}/></IntlProvider>);
  fireEvent.click(await screen.findByRole('button',{name:messages.inspectFolder}));
  await screen.findByTestId('gray-area-unavailable');
  fireEvent.click(screen.getByRole('button',{name:messages.continuation.chooseScopeAction}));

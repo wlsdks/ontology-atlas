@@ -1,7 +1,5 @@
-"use client";
-
 import { type KeyboardEvent, type Ref, useId, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { findSimilarNodeByTitle, type SimilarNodeCandidate } from "@/shared/lib/search-match/similar-node-title";
 import { Button, CloseButton, RowButton, SimilarNodeWarning } from "@/shared/ui";

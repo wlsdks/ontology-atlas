@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import { useSwapHeight } from "@/shared/lib/render-timing/use-presence";

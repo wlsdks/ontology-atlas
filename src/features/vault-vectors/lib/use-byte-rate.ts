@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
 
 /** A rate from fewer seconds than this swings with each chunk; none is shown before it. */

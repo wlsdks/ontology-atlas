@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { decideChangeAnnouncement } from "../../lib/map-canvas/change-announcement";
 

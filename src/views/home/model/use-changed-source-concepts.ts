@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo } from 'react';
 
 import { resolveNodeAgentTarget, type KnowledgeGraphNode } from '@/entities/knowledge-graph';

@@ -1,5 +1,3 @@
-"use client";
-
 import { controlClass } from "@/shared/ui";
 import type { GitChangeEntry } from "@/shared/lib/git/tauri-git";
 import { statusMark } from "../../lib/commit-documents";

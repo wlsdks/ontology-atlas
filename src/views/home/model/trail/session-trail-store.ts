@@ -1,5 +1,3 @@
-"use client";
-
 import { useSyncExternalStore } from "react";
 
 import { appendFootprintVisit } from "../../lib/trail/footprint-trail";

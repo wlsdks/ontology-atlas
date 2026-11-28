@@ -26,7 +26,7 @@ vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', asyn
 
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => tauriMocks);
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'en',
   useTranslations: () => {
     const t = (key: string) => key;

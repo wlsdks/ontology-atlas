@@ -1,5 +1,3 @@
-"use client";
-
 interface Props {
   message: string;
   politeness?: "polite" | "assertive";

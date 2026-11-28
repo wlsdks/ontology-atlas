@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 /** The table body takes whole rows of what the column leaves after the toolbar and the Recently written tail. */

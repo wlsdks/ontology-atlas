@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Check, ChevronDown } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import {
   buildArchitectureAgentPrompt,

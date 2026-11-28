@@ -1,7 +1,5 @@
-'use client';
-
 import { Fragment, useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { AlertTriangle, FileText } from 'lucide-react';
 
 import { AGENT_TOOL_LABELS, type HarnessReport } from '@/entities/agent-files';

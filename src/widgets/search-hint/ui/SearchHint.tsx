@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/controls/chrome-chip';

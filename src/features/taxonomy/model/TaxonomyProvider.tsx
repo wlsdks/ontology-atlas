@@ -1,6 +1,4 @@
-'use client';
-
-import { useLocale } from 'next-intl';
+import { useLocale } from 'use-intl';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { DEFAULT_CATEGORIES, type Category } from '@/entities/category';
 import { DEFAULT_STATUSES, type Status } from '@/entities/status';

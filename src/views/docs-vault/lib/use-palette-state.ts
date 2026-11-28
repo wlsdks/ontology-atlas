@@ -1,5 +1,3 @@
-'use client';
-
 import { type Dispatch, type SetStateAction, useCallback, useState } from 'react';
 
 export function usePaletteState() {

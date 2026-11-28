@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useMemo, useState } from 'react';
 import { useLocalVault } from '@/entities/vault-session';
 import { vaultImageUrl } from '@/shared/lib/library/vault-image-url';

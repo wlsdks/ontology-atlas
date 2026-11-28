@@ -1,7 +1,5 @@
-'use client';
-
 import { useMemo } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { folderName, type RoomEntry, type SessionTool, type Track, type TrackSession } from '@/shared/lib/work-status/work-tracks';
 import { formatSize } from '@/shared/lib/format-size';
 import { showsLoadFact, type SessionLoadFacts } from '@/shared/lib/work-status/signals/load';

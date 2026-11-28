@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useSyncExternalStore } from 'react';
 import { subscribeVectorStatus, type VectorFailure, type VectorFound, type VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 

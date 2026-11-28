@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
@@ -32,9 +32,9 @@ function buildWith(errorText: string | null): ReturnType<typeof useBuildFromCode
 
 function renderDoor(errorText: string | null, locale: 'ko' | 'en') {
   return render(
-    <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
+    <IntlProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
       <BuildFromCodeDoor build={buildWith(errorText)} variant="card" />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

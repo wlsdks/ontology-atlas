@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 import { badgeClass } from "@/shared/ui/badge-class";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";

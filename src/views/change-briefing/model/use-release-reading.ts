@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { gitReleaseSpan, gitReleaseWalk, gitReleases, type ChangeBriefing, type ReleaseList } from '@/shared/lib/git/tauri-change-briefing';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';

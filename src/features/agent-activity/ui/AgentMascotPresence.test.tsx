@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
@@ -46,9 +46,9 @@ const feed = (overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed => 
 });
 
 const ui = () => (
-  <NextIntlClientProvider locale="en" messages={enMessages}>
+  <IntlProvider locale="en" messages={enMessages}>
     <AgentMascotPresence feed={mocks.feed} />
-  </NextIntlClientProvider>
+  </IntlProvider>
 );
 
 describe('AgentMascotPresence', () => {

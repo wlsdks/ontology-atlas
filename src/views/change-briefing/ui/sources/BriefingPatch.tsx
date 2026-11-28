@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, IconButton } from '@/shared/ui';
 import { gitChangeBriefingPatch, gitSourceBriefingPatch, type ChangeBriefing, type ChangeBriefingPatch } from '@/shared/lib/git/tauri-change-briefing';

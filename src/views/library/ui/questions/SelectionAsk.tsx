@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { MessageCircleQuestion } from "lucide-react";
 
@@ -10,7 +8,7 @@ import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Input } from "@/shared/ui/fields/input";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 type Translator = ReturnType<typeof useTranslations<"library">>;
 

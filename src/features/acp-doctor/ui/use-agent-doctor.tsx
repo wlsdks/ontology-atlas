@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { CheckCircle2, ChevronDown, RotateCcw, Stethoscope } from 'lucide-react';
 

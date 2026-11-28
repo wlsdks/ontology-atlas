@@ -1,9 +1,7 @@
-"use client";
-
 import { useState } from "react";
 import { PackagePlus } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
 import { isPickerAbort } from "@/shared/lib/failures/picker-abort";

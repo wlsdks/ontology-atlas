@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * One-way signal from the settings sheet to the map's conversation panel, joined by a window event
  * because the shell owns one and the map the other.

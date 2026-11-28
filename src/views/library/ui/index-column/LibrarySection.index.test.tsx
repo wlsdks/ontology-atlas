@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -54,7 +54,7 @@ function Harness({ onNewPage = null, report = null, model = MODEL }: { onNewPage
 }
 
 function mount(node: React.ReactNode) {
-  return render(<NextIntlClientProvider locale="en" messages={enMessages}>{node}</NextIntlClientProvider>);
+  return render(<IntlProvider locale="en" messages={enMessages}>{node}</IntlProvider>);
 }
 
 /*
@@ -217,9 +217,9 @@ describe("a search whose matches sit on the other half of the switch", () => {
       wikiPages: [{ slug: "wiki/sash", title: "Sash frames", sourcePaths: [], createdBy: "agent:claude", compiledAt: null }],
     } as unknown as LibraryUiModel;
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <SourcesHarness model={model} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.change(screen.getByTestId("library-search"), { target: { value: "sash" } });
     expect(screen.getByTestId("library-search-matches")).toHaveTextContent("0 sources");

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -24,13 +24,13 @@ vi.mock('@/entities/vault-session', () => ({ useVaultSessionIdentityScope: () =>
 function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
   const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
   return render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <ArchitectureWorkbench
         profiles={[profile]}
         handoffContexts={handoffContext ? { [profile.slug]: handoffContext } : undefined}
         copyFeedbackMs={300}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -81,9 +81,9 @@ function buildRecord({
 function renderWithRecord(record: ReturnType<typeof buildRecord>, frontmatter: unknown = FSD_PROFILE_FRONTMATTER) {
   const profile = parseArchitectureProfile(frontmatter as never);
   return render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <ArchitectureWorkbench profiles={[profile]} recordsByProfile={{ [profile.slug]: record }} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -110,9 +110,9 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
     > = {},
   ) {
     return render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench profiles={[]} {...agent} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
   }
 
@@ -183,7 +183,7 @@ describe('ArchitectureWorkbench', () => {
   it('names a live agent turn in the header', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
           profiles={[profile]}
           agentActivity={{
@@ -193,7 +193,7 @@ describe('ArchitectureWorkbench', () => {
             toolName: 'inspect_architecture',
           }}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId('architecture-agent-activity')).toHaveTextContent('Agent is inspecting source');
   });
@@ -202,14 +202,14 @@ describe('ArchitectureWorkbench', () => {
     const onAgentRequest = vi.fn();
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
           profiles={[profile]}
           agentRoute="agent"
           agentLabel="Claude Code"
           onAgentRequest={onAgentRequest}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     fireEvent.click(screen.getByTestId('architecture-agent-action'));
@@ -249,9 +249,9 @@ describe('ArchitectureWorkbench', () => {
     const fsd = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     const hexagonal = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench profiles={[fsd, hexagonal]} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     expect(screen.getAllByTestId('architecture-profile-current')).toHaveLength(1);
@@ -356,7 +356,7 @@ describe('ArchitectureWorkbench', () => {
   it("lists every source module a role's globs contain, with the concepts recorded in each", () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
           profiles={[profile]}
           sourceListingCapable
@@ -377,7 +377,7 @@ describe('ArchitectureWorkbench', () => {
             },
           }}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId('architecture-role-views')).toHaveTextContent('2 modules');
     expect(screen.getByTestId('architecture-figure-modules')).toHaveTextContent('3');
@@ -393,7 +393,7 @@ describe('ArchitectureWorkbench', () => {
   it('falls back to the modules recorded concepts sit in where source cannot be listed', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
           profiles={[profile]}
           conceptsByProfile={{
@@ -404,7 +404,7 @@ describe('ArchitectureWorkbench', () => {
             },
           }}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId('architecture-role-views'));
     expect(screen.getByTestId('architecture-modules-views')).toHaveTextContent('home');
@@ -548,9 +548,9 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
   it('says the record is still loading instead of drawing an empty table', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench profiles={[profile]} recordsLoaded={false} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId('architecture-record-loading')).toBeInTheDocument();
     expect(screen.queryByTestId('architecture-matrix')).toBeNull();
@@ -567,9 +567,9 @@ describe("the role sentence in the reader's language", () => {
   function renderIn(locale: 'en' | 'ko') {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     return render(
-      <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
+      <IntlProvider locale={locale} messages={locale === 'ko' ? ko : en}>
         <ArchitectureWorkbench profiles={[profile]} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
   }
 
@@ -601,7 +601,7 @@ describe('an unreadable architecture document', () => {
   it('names the document and the parser sentence beside the profiles that did load', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <ArchitectureWorkbench
           profiles={[profile]}
           profileProblems={[
@@ -611,7 +611,7 @@ describe('an unreadable architecture document', () => {
             },
           ]}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const notice = screen.getByTestId('architecture-profile-problem');
     expect(notice).toHaveAttribute('role', 'status');

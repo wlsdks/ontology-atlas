@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { cn } from "@/shared/lib/cn";

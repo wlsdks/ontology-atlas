@@ -1,9 +1,7 @@
-"use client";
-
 import { Link, usePathname } from "@/i18n/navigation";
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { CopyPlus, PencilLine } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, InfoHint } from "@/shared/ui";

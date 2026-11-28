@@ -593,7 +593,7 @@ if (
   /push:\s*\n\s+branches:\s*\[main\]/.test(pagesDeployWorkflow) &&
   /workflow_dispatch:/.test(pagesDeployWorkflow) &&
   /PAGES_BASE_URL:\s*https:\/\/ontologyatlas\.com/.test(pagesDeployWorkflow) &&
-  !/NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
+  !/ATLAS_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
   /uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\b/.test(pagesDeployWorkflow) &&
   /node-version:\s*24/.test(pagesDeployWorkflow) &&
   /corepack enable/.test(pagesDeployWorkflow) &&
@@ -824,7 +824,6 @@ const internalPipelineLeaks = [
   "releaseStatusPr",
   "releaseStatusSecrets",
   "desktop:release-status",
-  "NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING",
 ];
 
 if (

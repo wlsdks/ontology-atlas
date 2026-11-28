@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@/shared/lib/cn";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";

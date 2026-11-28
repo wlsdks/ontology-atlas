@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Plus } from 'lucide-react';
 
 import { Chip, ServiceMark, resolveServiceMark } from '@/shared/ui';

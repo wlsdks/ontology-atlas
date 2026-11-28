@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../../messages/ko.json';
@@ -18,9 +18,9 @@ vi.mock('@/shared/ui/toast/toast', () => ({ useToast: () => ({ show: vi.fn() }) 
 
 function mount() {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <VaultShapeSettings />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { NextIntlClientProvider, useTranslations } from 'next-intl';
+import { IntlProvider, useTranslations } from 'use-intl';
 
 import messages from '../../../../../messages/en.json';
 import type { LocalCompileSession } from '@/features/vault-agent';
@@ -27,7 +27,7 @@ function Harness({ existing = true }: { existing?: boolean }) {
 
 describe('local Compile review text', () => {
   it('lets the person inspect the exact replacement and the complete prior page before Allow', () => {
-    render(<NextIntlClientProvider locale="en" messages={messages}><Harness /></NextIntlClientProvider>);
+    render(<IntlProvider locale="en" messages={messages}><Harness /></IntlProvider>);
     expect(screen.getByTestId('library-local-compile-preview').textContent).toBe(AFTER);
     fireEvent.click(screen.getByRole('radio', { name: 'Previous page' }));
     expect(screen.getByTestId('library-local-compile-preview').textContent).toBe(BEFORE);
@@ -37,7 +37,7 @@ describe('local Compile review text', () => {
   });
 
   it('offers a new page preview without inventing a previous version', () => {
-    render(<NextIntlClientProvider locale="en" messages={messages}><Harness existing={false} /></NextIntlClientProvider>);
+    render(<IntlProvider locale="en" messages={messages}><Harness existing={false} /></IntlProvider>);
     fireEvent.click(screen.getByTestId('library-local-compile-review-toggle'));
     expect(screen.getByTestId('library-local-compile-preview').textContent).toBe(AFTER);
     expect(screen.queryByRole('radio', { name: 'Previous page' })).not.toBeInTheDocument();

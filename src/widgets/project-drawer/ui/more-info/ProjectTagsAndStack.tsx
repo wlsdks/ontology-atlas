@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import type { Project } from "@/entities/project";
 import { cn } from "@/shared/lib/cn";
 

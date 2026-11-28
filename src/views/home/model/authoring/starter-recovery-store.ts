@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo, useSyncExternalStore } from 'react';
 
 type Phase = 'idle' | 'creating' | 'failed';

@@ -17,7 +17,7 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (k: string) => k }));
+vi.mock('use-intl', () => ({ useLocale: () => 'en', useTranslations: () => (k: string) => k }));
 
 import { useToast } from './toast';
 

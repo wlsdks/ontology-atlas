@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { useRouter } from "@/i18n/navigation";

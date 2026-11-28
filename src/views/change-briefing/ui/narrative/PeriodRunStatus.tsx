@@ -1,7 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Button, RowButton, Select } from '@/shared/ui';
 import type { usePeriodNarrative } from '../../model/use-period-narrative';
 import type { NarrativeSource } from '../../model/narrative';

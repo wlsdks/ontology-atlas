@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const route = vi.hoisted(() => ({ pathname: "/topology" }));
@@ -75,9 +75,9 @@ describe("ShortcutSheet — the rows every screen shows", () => {
 /** The topology section lists only interactions the canvas actually implements. */
 function renderSheet() {
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <ShortcutSheet open onClose={() => {}} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

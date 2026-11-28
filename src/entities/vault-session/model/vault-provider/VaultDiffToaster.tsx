@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { useToast } from '@/shared/ui/toast/toast';
 import {

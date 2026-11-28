@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -32,9 +32,9 @@ describe('planning stage scene', () => {
 
   it('draws a settled scene with a held pose and no loop under reduced motion', () => {
     const { container } = render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <PlanningSourceArtwork arriving={false} engaged={false} reduced />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const scene = container.querySelector('[data-planning-folder-scene]')!;
     expect(scene).toHaveAttribute('data-scene-motion', 'paused');

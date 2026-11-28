@@ -589,6 +589,10 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    // `<img>` is the element Atlas renders: `next/image` is gone, and the rule's advice is to use it.
+    rules: { '@next/next/no-img-element': 'off' },
+  },
+  {
     // Since eslint-config-next 16.2.4, new React Compiler-based rules have been promoted to error,
     // but patterns we intentionally use like setState-in-effect / refs-during-render / manual
     // memoization are valid and overly restrictive as errors. Downgraded to warning level to pass lint and allow gradual improvement.

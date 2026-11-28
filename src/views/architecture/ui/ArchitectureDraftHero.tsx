@@ -1,8 +1,6 @@
-'use client';
-
 import { useState, type ReactNode } from 'react';
 import { Bot } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { buildArchitectureDraftPrompt, type ArchitectureHandoffContext } from '@/entities/architecture-profile';
 import { cn } from '@/shared/lib/cn';

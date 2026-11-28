@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { isMissingFolderError } from '@/entities/vault-session';

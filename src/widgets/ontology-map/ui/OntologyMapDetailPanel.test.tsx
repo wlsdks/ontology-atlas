@@ -1,5 +1,5 @@
 import { fireEvent, render as renderUi, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
@@ -11,9 +11,9 @@ import enMessages from "../../../../messages/en.json";
 function render(ui: React.ReactElement) {
   return renderUi(ui, {
     wrapper: ({ children }) => (
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         {children}
-      </NextIntlClientProvider>
+      </IntlProvider>
     ),
   });
 }

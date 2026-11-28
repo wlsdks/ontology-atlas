@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AnalysisRun } from '@/entities/analysis-record';
 import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
@@ -28,7 +28,7 @@ function run(s:GrayAreaSnapshot):AnalysisRun {
     basis:{graphHash:hash,sourceFingerprint:hash,profileHash:null,documents:[]},evidence:[],observations:[],profileSnapshot:null,toolReads:[],sourceAccess:'unproven',findings:[],qualification:{status:'unverified',reasons:[]},answer:'A plausible answer with a wrong semantic claim.'};
 }
 function card(s:GrayAreaSnapshot,runs:AnalysisRun[],prepare=vi.fn()) {
-  return <NextIntlClientProvider locale="en" messages={{grayArea:messages}}><InvestigationResult runs={runs} snapshot={s} candidate={buildGrayAreaCandidates(s)[0]} projectUid={projectUid} disabled={false} onPrepare={prepare}/></NextIntlClientProvider>;
+  return <IntlProvider locale="en" messages={{grayArea:messages}}><InvestigationResult runs={runs} snapshot={s} candidate={buildGrayAreaCandidates(s)[0]} projectUid={projectUid} disabled={false} onPrepare={prepare}/></IntlProvider>;
 }
 it('restores A after B without crediting B or promoting a plausible answer into accepted meaning',()=>{
   const a=snapshot(),b=snapshot('b'),record=run(a);const prepare=vi.fn();

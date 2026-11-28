@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { LocalEndpointSettings } from '@/shared/lib/llm-connection/local-endpoint';
 import { previewConstructionSource } from '@/shared/lib/llm-connection/tauri-local-construction';

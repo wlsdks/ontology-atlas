@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { EXIT_TRANSITION, MOTION, STAGGER } from "@/shared/motion";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useLayoutEffect, useMemo, useRef, type FocusEvent, type ReactNode, type RefObject } from "react";
 
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";

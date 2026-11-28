@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { describe, expect, it } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -15,9 +15,9 @@ import { AgentDoor } from "./AgentDoor";
 
 function renderIn(locale: "en" | "ko", node: React.ReactNode) {
   return render(
-    <NextIntlClientProvider locale={locale} messages={locale === "ko" ? koMessages : enMessages} timeZone="UTC">
+    <IntlProvider locale={locale} messages={locale === "ko" ? koMessages : enMessages} timeZone="UTC">
       {node}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

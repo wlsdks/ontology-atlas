@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { cancelMapNavigation, useMapNavigationPending } from '@/shared/lib/navigation/map-navigation-pending';
 import { resolveActiveNavDestination } from '@/shared/lib/navigation/nav-destination';

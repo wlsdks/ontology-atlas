@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { Button, Checkbox, Select } from "@/shared/ui";
 import type { Project } from "@/entities/project";

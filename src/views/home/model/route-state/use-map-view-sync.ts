@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 import { useMapView, writeMapView } from '@/shared/lib/preferences/map-view-preferences';
 import type { HomeMapView, HomeRouteState } from './url-state';

@@ -1,10 +1,5 @@
-import { defineRouting } from 'next-intl/routing';
-
-export const routing = defineRouting({
-  locales: ['en', 'ko', 'ja', 'zh'] as const,
+/** The URL prefix decides the language; there is no server-side negotiation, and `/` picks one in the browser. */
+export const routing = {
+  locales: ['en', 'ko', 'ja', 'zh'],
   defaultLocale: 'en',
-  // Static export has no server-side negotiation: the URL prefix decides, and root `/`
-  // detects on the client in app/page.tsx.
-  localePrefix: 'always',
-  localeDetection: false,
-});
+} as const;

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
@@ -23,7 +23,7 @@ const project: Project = {
 
 function renderForm(props: Partial<Parameters<typeof ProjectForm>[0]> = {}) {
   return rtlRender(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <TaxonomyProvider>
         <ProjectForm
           mode="edit"
@@ -35,7 +35,7 @@ function renderForm(props: Partial<Parameters<typeof ProjectForm>[0]> = {}) {
           {...props}
         />
       </TaxonomyProvider>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -57,7 +57,7 @@ describe("ProjectForm danger row", () => {
 
   it("omits the danger row in create mode", () => {
     rtlRender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TaxonomyProvider>
           <ProjectForm
             mode="create"
@@ -66,7 +66,7 @@ describe("ProjectForm danger row", () => {
             onCancel={() => {}}
           />
         </TaxonomyProvider>
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("project-danger-row")).not.toBeInTheDocument();
   });

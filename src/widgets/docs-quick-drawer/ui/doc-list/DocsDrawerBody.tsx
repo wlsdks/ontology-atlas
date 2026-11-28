@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { BookOpen, Clock, FileText, Link2, Star } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useLatinEyebrow } from "@/shared/lib/locale-text/latin-eyebrow";

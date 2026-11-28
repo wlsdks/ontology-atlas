@@ -1,5 +1,3 @@
-'use client';
-
 import { useId, useState, type ReactNode } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';

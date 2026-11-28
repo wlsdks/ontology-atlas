@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 
 import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';

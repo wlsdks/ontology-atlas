@@ -1,4 +1,4 @@
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';

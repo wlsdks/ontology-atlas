@@ -1,5 +1,3 @@
-"use client";
-
 import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 /**

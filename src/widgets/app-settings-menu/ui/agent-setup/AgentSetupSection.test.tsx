@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AgentSetupSection } from './AgentSetupSection';
@@ -26,14 +26,14 @@ vi.mock('./VaultAgentSetupPanel', () => ({
 
 function renderSection() {
   return render(
-    <NextIntlClientProvider
+    <IntlProvider
       locale="ko"
       messages={{}}
       onError={() => undefined}
       getMessageFallback={({ key }) => key}
     >
       <AgentSetupSection />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

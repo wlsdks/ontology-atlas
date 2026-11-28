@@ -1,5 +1,3 @@
-"use client";
-
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
 
 import { DrawnCheck } from "@/shared/motion/status-glyphs/DrawnCheck";

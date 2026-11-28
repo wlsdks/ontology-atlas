@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
@@ -7,9 +7,9 @@ import { WikiWriteModeSettings } from './WikiWriteModeSettings';
 
 function mount() {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <WikiWriteModeSettings />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

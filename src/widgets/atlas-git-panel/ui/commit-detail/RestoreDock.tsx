@@ -1,5 +1,3 @@
-"use client";
-
 import type { CopyTranslate } from "../../lib/translator";
 import { DocumentConfirmStep } from "../DocumentConfirmStep";
 

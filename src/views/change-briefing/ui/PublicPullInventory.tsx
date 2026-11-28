@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { ArrowLeft, CircleHelp, CircleX, ExternalLink, GitMerge, GitPullRequest, GitPullRequestDraft, RefreshCw } from 'lucide-react';
 import { Button, Disclosure, IconButton, RowButton, Select } from '@/shared/ui';
 import { Tooltip } from '@/shared/ui/hints/tooltip';

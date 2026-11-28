@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo, useSyncExternalStore } from 'react';
 
 const EMPTY_CONTEXT = { selectedId: null as string | null, query: '' };

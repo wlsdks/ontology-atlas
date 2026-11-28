@@ -1,6 +1,4 @@
-'use client';
-
-import { useLocale } from 'next-intl';
+import { useLocale } from 'use-intl';
 
 /**
  * Latin-only eyebrow treatment (mono, uppercase, wide tracking) for Latin-script locales only:

@@ -1,10 +1,8 @@
-"use client";
-
 import { useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import {
   EXIT_TRANSITION,
   MOTION,

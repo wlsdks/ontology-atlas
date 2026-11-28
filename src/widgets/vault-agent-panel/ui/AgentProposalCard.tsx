@@ -1,5 +1,3 @@
-'use client';
-
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';

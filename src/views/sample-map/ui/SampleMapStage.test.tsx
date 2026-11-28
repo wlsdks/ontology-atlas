@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import type { SampleMap } from '../model/use-sample-map';
@@ -11,9 +11,9 @@ vi.mock('../model/use-sample-map', () => ({ useSampleMap: () => mocks.sample }))
 
 function renderStage() {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <SampleMapStage />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

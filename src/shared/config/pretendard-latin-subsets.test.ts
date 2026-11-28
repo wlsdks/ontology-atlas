@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * `pretendard-latin-subsets.ts` must carry, for every upstream dynamic subset that holds a
+ * `src/app/fonts.css` must carry, for every upstream dynamic subset that holds a
  * character of the Latin range, one face limited to exactly that intersection; together they
  * must cover every Latin-range character Pretendard has, or a Latin page would reach for the
  * whole font, and no face may reach outside the range, or it would draw a Hangul or kana glyph
@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 const LATIN = 'U+0000-024F, U+2010-2017, U+2019, U+2020-2025, U+2027-206F, U+2070-2BFF';
 const UPSTREAM = path.join(ROOT, 'node_modules/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
-const MODULE = path.join(ROOT, 'src/shared/config/pretendard-latin-subsets.ts');
+const FONT_RULES = path.join(ROOT, 'src/app/fonts.css');
 
 type Range = [number, number];
 
@@ -42,14 +42,14 @@ const upstream = [...readFileSync(UPSTREAM, 'utf8').matchAll(
   /src: url\(\.\/woff2-dynamic-subset\/(PretendardVariable\.subset\.\d+\.woff2)\)[^;]*;\s*unicode-range: ([^;]+);/g,
 )].map(([, file, range]) => ({ file: file!, ranges: parseRanges(range!) }));
 
-const declared = [...readFileSync(MODULE, 'utf8').matchAll(
-  /woff2-dynamic-subset\/(PretendardVariable\.subset\.\d+\.woff2)'[\s\S]*?prop: 'unicode-range', value: '([^']+)'/g,
+const declared = [...readFileSync(FONT_RULES, 'utf8').matchAll(
+  /font-family: 'Pretendard Latin';[^}]*?woff2-dynamic-subset\/(PretendardVariable\.subset\.\d+\.woff2)\)[^}]*?unicode-range: ([^;]+);/g,
 )].map(([, file, range]) => ({ file: file!, ranges: parseRanges(range!) }));
 
 describe('Pretendard Latin subsets', () => {
   const latin = parseRanges(LATIN);
 
-  it('probe: the upstream stylesheet and the module both parse', () => {
+  it('probe: the upstream stylesheet and the font rules both parse', () => {
     expect(upstream.length).toBeGreaterThan(80);
     expect(declared.length).toBeGreaterThan(10);
   });
@@ -80,8 +80,8 @@ describe('Pretendard on Korean pages', () => {
   const families = new Set([...stylesheet.matchAll(/font-family: '([^']+)'/g)].map(([, family]) => family));
   const korean = /:root:lang\(ko\) \{\s*--font-sans: ([^;]+);/.exec(readFileSync(path.join(ROOT, 'app/styles/lang-cjk.css'), 'utf8'));
 
-  it('loads every upstream subset as one family, from the stylesheet the layout imports', () => {
-    expect(readFileSync(path.join(ROOT, 'app/layout.tsx'), 'utf8')).toContain(
+  it('loads every upstream subset as one family, from the stylesheet the entry imports', () => {
+    expect(readFileSync(path.join(ROOT, 'src/app/main.tsx'), 'utf8')).toContain(
       "import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';",
     );
     expect([...families]).toHaveLength(1);

@@ -1,6 +1,6 @@
 // What the panel holds: closing = stopping · the scope sheet comes first · the reflow contract.
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import messages from '../../../../messages/ko.json';
@@ -90,7 +90,7 @@ function renderPanel(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> =
 
 function panelElement(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> = {}) {
   return (
-    <NextIntlClientProvider locale="ko" messages={messages}>
+    <IntlProvider locale="ko" messages={messages}>
       <VaultAgentPanel
         open
         onClose={vi.fn()}
@@ -110,7 +110,7 @@ function panelElement(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> 
         onFocusNode={vi.fn()}
         {...overrides}
       />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 
@@ -191,7 +191,7 @@ describe('VaultAgentPanel', () => {
     expect(panel.style.transitionDuration).toBe('var(--agent-panel-reflow-duration)');
 
     rerender(
-      <NextIntlClientProvider locale="ko" messages={messages}>
+      <IntlProvider locale="ko" messages={messages}>
         <VaultAgentPanel
           open={false}
           onClose={vi.fn()}
@@ -210,7 +210,7 @@ describe('VaultAgentPanel', () => {
           canWrite
           onFocusNode={vi.fn()}
           />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId('vault-agent-panel').style.width).toBe('0px');
   });

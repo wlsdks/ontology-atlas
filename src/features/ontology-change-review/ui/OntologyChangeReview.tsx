@@ -1,8 +1,6 @@
-'use client';
-
 import { Fragment, useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { OntologyChangeItem, OntologyChangeSet } from '@/entities/knowledge-graph';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';

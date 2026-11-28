@@ -30,8 +30,8 @@ const APPROVED_FALLBACKS = [
  */
 const HYDRATION_HOLDS = [
   join("src", "app", "providers", "AppAddressFaces.tsx"),
-  // `next/dynamic` has no default fallback; this stands in for it, and a call that wants one passes `loading`.
-  join("src", "app", "next-shims", "next-dynamic.tsx"),
+  // A lazily loaded overlay or control, closed until a person opens it, has nothing to show while its chunk arrives.
+  join("src", "shared", "ui", "fallbacks", "silent-suspense.tsx"),
   // The not-found and error screens load as one chunk with their own words, and stand where the loading
   // picture of `index.html` or the screen they replace already is; they cannot read the workbench's messages.
   join("src", "app", "routes", "__root.tsx"),

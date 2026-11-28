@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { KNOWLEDGE_EDGE_TYPES, type KnowledgeEdgeType } from './knowledge-graph';
 
 /**

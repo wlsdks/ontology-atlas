@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { findProjectDocInList } from "@/entities/docs-vault";
 import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED } from "@/shared/motion";
 import { framerSpring, SPRING } from "@/shared/motion/spring";

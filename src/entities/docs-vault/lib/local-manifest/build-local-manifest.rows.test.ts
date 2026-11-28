@@ -157,7 +157,7 @@ describe('a full build with the derived index rows', () => {
     const last = tauri.puts.at(-1)!.split('\n');
     expect(last.slice(2, 6)).toEqual(['3', 'a.md', 'b.md', 'c.md']);
     // Rows are kept under the name of the code that made them, which the build derives itself.
-    expect(process.env.NEXT_PUBLIC_ROW_PRODUCER).toMatch(/^[0-9a-f]{16}$/);
-    expect(last[1]).toBe(`app-entry/${process.env.NEXT_PUBLIC_ROW_PRODUCER}`);
+    expect(process.env.ATLAS_PUBLIC_ROW_PRODUCER).toMatch(/^[0-9a-f]{16}$/);
+    expect(last[1]).toBe(`app-entry/${process.env.ATLAS_PUBLIC_ROW_PRODUCER}`);
   });
 });

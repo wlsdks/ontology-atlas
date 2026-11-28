@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { useGuideAutoStart, writeGuideAutoStart } from '@/shared/lib/preferences/guide-auto-start';
 import { useAudiencePlain } from '@/shared/lib/preferences/audience-preference';

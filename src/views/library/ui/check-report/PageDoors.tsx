@@ -1,5 +1,3 @@
-"use client";
-
 import { controlClass } from "@/shared/ui/control-class";
 
 import { pageName } from "../../model/check-report/structural-rows";

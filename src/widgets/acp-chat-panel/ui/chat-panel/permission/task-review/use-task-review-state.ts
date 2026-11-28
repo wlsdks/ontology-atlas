@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useState } from 'react';
 
 export type ReviewDepth = 'summary' | 'compare' | 'details';

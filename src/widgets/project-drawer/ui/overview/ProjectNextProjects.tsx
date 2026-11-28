@@ -1,7 +1,5 @@
-"use client";
-
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from "@/shared/motion";
 import { Chip } from "@/shared/ui";
 import type { ProjectDrawerModel } from "../../model/use-project-drawer-model";

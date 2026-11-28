@@ -11,7 +11,7 @@ import { useProjects } from "@/features/project-data-source";
 import { completeMapNavigation } from "@/shared/lib/navigation/map-navigation-pending";
 import { useToast } from "@/shared/ui";
 import type { DialLabels } from "@/widgets/ontology-map";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { countProjectRelationsWithinGraph, resolveTopologyOverlayState, resolveTopologyRenderState } from "../../lib/map-canvas/topology-render-state";
 import { selectTopologyNodeRouteState } from "../route-state/url-state";
@@ -164,7 +164,7 @@ export function useTopologySceneControls({
   });
   /**
    * The canvas composes no strings. `{count}` passes through verbatim because only the renderer
-   * knows the number per frame; a contract test enforces the placeholder since next-intl cannot
+   * knows the number per frame; a contract test enforces the placeholder since use-intl cannot
    * interpolate it.
    */
   const clusterBarLabels = useMemo(

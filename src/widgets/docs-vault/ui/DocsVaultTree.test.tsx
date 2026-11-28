@@ -1,5 +1,5 @@
 import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';
@@ -49,7 +49,7 @@ function renderTree({
 } = {}) {
   const onSelect = vi.fn();
   const view = rtlRender(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <DocsVaultTree
         tree={tree}
         selectedSlug={selectedSlug}
@@ -60,7 +60,7 @@ function renderTree({
         visibleDocSlugs={visibleDocSlugs}
         docsBySlug={docsBySlug}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { ...view, onSelect };
 }
@@ -127,7 +127,7 @@ describe('DocsVaultTree', () => {
     expect(screen.getByRole('button', { name: '로컬 볼트 및 데이터소스 관리' })).toBeVisible();
 
     rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsVaultTree
           tree={tree}
           selectedSlug="README"
@@ -135,7 +135,7 @@ describe('DocsVaultTree', () => {
           query="archive/old-note"
           docsBySlug={docsBySlug}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByRole('button', { name: '로컬 볼트 및 데이터소스 관리' })).toBeVisible();
   });
@@ -179,14 +179,14 @@ describe('DocsVaultTree', () => {
       ],
     };
     rtlRender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsVaultTree
           tree={scopedTree}
           selectedSlug="archive/kept"
           onSelect={vi.fn()}
           visibleDocSlugs={new Set(['archive/kept'])}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     expect(screen.getByRole('button', { name: /archive/i })).toHaveTextContent('1');
@@ -209,14 +209,14 @@ describe('DocsVaultTree', () => {
       ],
     ]);
     rtlRender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <DocsVaultTree
           tree={tree}
           selectedSlug="README"
           onSelect={vi.fn()}
           docsBySlug={docsBySlug as never}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     const readmeButton = screen.getByRole('button', { name: 'README' });

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import type { MouseEventHandler, ReactNode } from "react";
 import koMessages from "../../../../messages/ko.json";
@@ -61,9 +61,9 @@ vi.mock("@/entities/vault-session/model/vault-provider/LocalVaultProvider", asyn
 
 function renderRail(ui = <AppNavRail />) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       {ui}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

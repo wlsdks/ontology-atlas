@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { CloseButton, Dialog } from '@/shared/ui';
 import { connectorSecretRef } from '@/shared/lib/connectors/tauri-connector-secrets';

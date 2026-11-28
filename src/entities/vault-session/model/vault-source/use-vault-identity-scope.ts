@@ -1,5 +1,3 @@
-'use client';
-
 import { vaultIdentityScope, type VaultIdentityScope } from '@/entities/docs-vault';
 import { useDataSourceMode } from './use-data-source-mode';
 import { useLocalVault } from '../vault-provider/LocalVaultProvider';

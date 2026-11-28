@@ -12,8 +12,8 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('next-intl', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('next-intl')>()),
+vi.mock('use-intl', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('use-intl')>()),
   useLocale: () => mocks.locale,
 }));
 vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({

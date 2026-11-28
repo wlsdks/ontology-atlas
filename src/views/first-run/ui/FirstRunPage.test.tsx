@@ -67,7 +67,7 @@ vi.mock('@/shared/ui/toast/toast', () => ({
   useToast: () => ({ show: toastMocks.show }),
 }));
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useTranslations: () =>
     Object.assign(
       (key: string, vars?: Record<string, unknown>) => (vars ? `${key}:${JSON.stringify(vars)}` : key),

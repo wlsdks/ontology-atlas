@@ -2,10 +2,9 @@ import { createTranslator } from 'use-intl';
 
 import type { AppLocale } from '@/i18n/locales';
 import { documentTitle } from '@/shared/lib/public-pages/document-title';
-import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
+import { buildPageMetadata, type PageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { localeWords, siteMetadata } from '@/shared/lib/public-pages/site-metadata';
 
-import type { PageMetadata } from './metadata-tags';
 
 export interface MessageRef {
   namespace: string;

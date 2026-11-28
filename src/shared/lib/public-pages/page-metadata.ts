@@ -1,7 +1,46 @@
-import type { Metadata } from 'next';
 import { SITE_URL } from '@/shared/config';
 import { LOCALE_META, type LocaleMeta } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
+
+interface MetadataImage {
+  url: string;
+  width?: number;
+  height?: number;
+  alt?: string;
+}
+
+/** What a page says about itself in `<head>`: one field per tag the site writes, nothing the site never reads. */
+export interface PageMetadata {
+  title?: string | { absolute: string } | { default: string; template: string };
+  description?: string;
+  keywords?: string[];
+  authors?: { name: string; url?: string }[];
+  manifest?: string;
+  robots?: { index: boolean; follow: boolean };
+  alternates?: { canonical: string; languages?: Record<string, string> };
+  verification?: { google?: string; other?: Record<string, string> };
+  openGraph?: {
+    type: 'website' | 'article';
+    siteName: string;
+    url: string;
+    title: string;
+    description: string;
+    locale: string;
+    alternateLocale?: string[];
+    images?: MetadataImage[];
+    publishedTime?: string;
+    modifiedTime?: string;
+  };
+  twitter?: {
+    card: 'summary_large_image';
+    title: string;
+    description: string;
+    images?: string[];
+  };
+}
+
+/** What `buildPageMetadata` returns: a page always carries its social card. */
+export type BuiltPageMetadata = PageMetadata & Required<Pick<PageMetadata, 'openGraph' | 'twitter'>>;
 
 /**
  * Each page states its own description, canonical and hreflang: a canvas body leaves nothing to
@@ -93,7 +132,7 @@ export function buildPageMetadata(
     contentLocales,
   }: PageMetadataInput,
   registry: PageMetadataLocales = ROUTED_LOCALES,
-): Metadata {
+): BuiltPageMetadata {
   const summary = fitMetaDescription(description);
   const ownLocales = contentLocales ?? registry.locales;
   const hasOwnContent = ownLocales.includes(locale);

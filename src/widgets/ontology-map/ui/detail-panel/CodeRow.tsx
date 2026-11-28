@@ -1,5 +1,5 @@
 import { FileCode2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
 import { controlClass } from "@/shared/ui";

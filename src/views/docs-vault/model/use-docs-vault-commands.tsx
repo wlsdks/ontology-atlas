@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useRouter } from '@/i18n/navigation';
 import {
   Bot,

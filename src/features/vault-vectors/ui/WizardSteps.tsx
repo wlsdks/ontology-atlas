@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Check } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 

@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useId, useRef } from 'react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 

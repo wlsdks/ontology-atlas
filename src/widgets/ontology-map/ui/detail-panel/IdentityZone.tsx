@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import { CloseButton } from "@/shared/ui";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";

@@ -1,7 +1,5 @@
-'use client';
-
 import type { ReactNode } from 'react';
-import type { useTranslations } from 'next-intl';
+import type { useTranslations } from 'use-intl';
 
 import { AGENT_TOOL_LABELS, guideCitation, type AgentTool, type HarnessReport } from '@/entities/agent-files';
 

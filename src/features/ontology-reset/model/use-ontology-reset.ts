@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo } from 'react';
 
 import { verifyHandlePermission } from '@/entities/local-fs-handle';

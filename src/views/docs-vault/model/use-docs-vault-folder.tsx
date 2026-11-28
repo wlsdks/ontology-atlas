@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLocalVault } from '@/entities/vault-session';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';

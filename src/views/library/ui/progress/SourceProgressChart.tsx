@@ -1,7 +1,5 @@
-"use client";
-
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { SourceProgress, SourceProgressPoint } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";

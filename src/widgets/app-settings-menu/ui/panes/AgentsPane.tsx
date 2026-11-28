@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Bot, KeyRound, Plug } from 'lucide-react';
 import { AGENTS_MODELS_HREF, DESTINATION_HREF } from '@/shared/config/destinations';
 import { useAiConnection } from '../../model/use-ai-connection';

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   reducedMotion: false,
 }));
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
   useLocale: () => 'en',
 }));

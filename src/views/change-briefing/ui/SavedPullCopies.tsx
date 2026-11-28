@@ -1,7 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { gitBriefingClearSavedPulls } from '@/shared/lib/git/tauri-change-briefing';
 import { Button } from '@/shared/ui';
 

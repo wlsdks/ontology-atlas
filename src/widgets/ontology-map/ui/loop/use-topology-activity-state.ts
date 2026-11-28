@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef, useState } from "react";
 import type { Pulse } from "../../render/edge-fireflies";
 

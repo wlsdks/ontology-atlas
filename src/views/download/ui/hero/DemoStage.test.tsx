@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import messages from '../../../../../messages/en.json';
 import { DemoStage } from './DemoStage';
@@ -12,9 +12,9 @@ import {
 
 /** Playback properties only; length and framing are checked against footage by `/motion-verify`. */
 const wrap = (ui: React.ReactNode, locale = 'en') => (
-  <NextIntlClientProvider locale={locale} messages={messages}>
+  <IntlProvider locale={locale} messages={messages}>
     {ui}
-  </NextIntlClientProvider>
+  </IntlProvider>
 );
 
 beforeEach(() => {

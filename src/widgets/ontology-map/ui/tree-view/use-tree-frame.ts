@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
 import { aimTreeProjector, createTreeProjector } from "../../model/tree-view/tree-camera";
 import { cutTreeDetail, TREE_MARK_BUDGET } from "../../model/tree-view/tree-detail";

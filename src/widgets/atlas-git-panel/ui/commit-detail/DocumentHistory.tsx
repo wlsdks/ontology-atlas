@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { controlClass } from "@/shared/ui";
 import type { GitCommitInfo } from "@/shared/lib/git/tauri-git";

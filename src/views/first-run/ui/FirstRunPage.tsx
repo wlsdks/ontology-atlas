@@ -1,11 +1,9 @@
-"use client";
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleHelp, Code2, FolderOpen, Layers, Library, Map as MapIcon, Sparkles, Zap } from "lucide-react";
 import type { VaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { useJustStartVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { RecentVaultList, recentVaultRowKey } from "@/features/vault-switch";

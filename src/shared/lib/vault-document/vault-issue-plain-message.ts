@@ -2,7 +2,7 @@ import type { VaultIssueCode } from "./validate-vault-document";
 
 /**
  * Validator warning code → an already-localised plain sentence. The caller builds
- * this from `t()`; keeping next-intl out of this module makes it a pure function
+ * this from `t()`; keeping use-intl out of this module makes it a pure function
  * a test can drive with a stub dictionary.
  */
 export type VaultIssuePlainMessageDict = Partial<Record<VaultIssueCode, string>>;

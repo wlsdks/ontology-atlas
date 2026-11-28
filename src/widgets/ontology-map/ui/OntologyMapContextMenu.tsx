@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { Copy, FileText, GitBranch, Maximize2, Route } from "lucide-react";

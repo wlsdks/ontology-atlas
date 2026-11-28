@@ -1,5 +1,3 @@
-"use client";
-
 import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
 import {
   useEffect,

@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import { remainingMinutes } from '@/shared/lib/vault-document/mapping-estimate';
 

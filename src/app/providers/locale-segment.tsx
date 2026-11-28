@@ -1,4 +1,4 @@
-import { hasLocale } from 'next-intl';
+import { hasLocale } from 'use-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';

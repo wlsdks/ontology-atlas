@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import {
   CHAT_WIDTH_MIN,

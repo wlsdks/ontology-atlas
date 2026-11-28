@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import { VaultStartSteps, type VaultStartStepsProps } from "./VaultStartSteps";
@@ -11,9 +11,9 @@ function renderSteps(props: Partial<VaultStartStepsProps> = {}) {
     onCreateNode: vi.fn(),
   };
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <VaultStartSteps {...base} {...props} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

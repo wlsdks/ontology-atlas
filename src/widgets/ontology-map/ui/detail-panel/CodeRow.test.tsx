@@ -1,14 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
 import { CodeRow } from "./CodeRow";
 
 function renderRow(changedEvidence: { path: string; gone: boolean } | null) {
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <CodeRow row={{ path: "src/a.ts", citeCount: 1, readerOpen: false, onToggle: vi.fn(), changedEvidence }} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

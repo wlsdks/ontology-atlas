@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useMemo, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { useRouter } from '@/i18n/navigation';
 import {
   useLocalVault,

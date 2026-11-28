@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 
 import { scanHarness, type HarnessReport, type HarnessScanProgress } from '@/entities/agent-files';

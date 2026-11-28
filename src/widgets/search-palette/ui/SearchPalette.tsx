@@ -1,9 +1,7 @@
-'use client';
-
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { badgeClass } from "@/shared/ui/badge-class";
 import { Link, useRouter } from '@/i18n/navigation';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Search } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';

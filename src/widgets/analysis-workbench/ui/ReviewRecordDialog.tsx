@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { AnalysisCompatibility, AnalysisRun } from '@/entities/analysis-record';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';

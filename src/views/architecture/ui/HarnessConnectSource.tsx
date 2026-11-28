@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useProjectSourceModel, type ProjectSourceRuntime } from '@/features/project-source-binding';

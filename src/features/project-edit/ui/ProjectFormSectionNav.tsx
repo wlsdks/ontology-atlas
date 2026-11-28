@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { controlClass } from "@/shared/ui";
 

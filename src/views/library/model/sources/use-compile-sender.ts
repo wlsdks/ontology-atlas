@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 import { buildCompileBrief, type LibraryUiModel } from "@/features/library";

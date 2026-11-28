@@ -1,4 +1,3 @@
-"use client";
 import type { VaultAgentPrefill } from "../model/agent/agent-chat-door";
 import { useTopologyGrayArea } from "../model/gray-area/use-topology-gray-area";
 import { useTopologyAgentActivity } from "../model/agent/use-topology-agent-activity";
@@ -47,7 +46,7 @@ import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallba
 import { OPEN_SHORTCUTS_EVENT, useSurfaceRequest } from "@/shared/lib/keyboard/surface-requests";
 import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { GestureHint } from "@/widgets/gesture-hint";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useAcpRuntimeController } from "../model/agent/use-acp-runtime-controller";
 import { useHomeRouteState } from "../model/route-state/use-home-route-state";

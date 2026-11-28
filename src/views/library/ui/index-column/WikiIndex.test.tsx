@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -48,9 +48,9 @@ function renderIndex(over: Partial<WikiIndexProps> = {}) {
     ...over,
   };
   const view = (next: WikiIndexProps) => (
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <WikiIndex {...next} />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
   const { rerender } = render(view(props));
   return { props, update: (next: Partial<WikiIndexProps>) => rerender(view({ ...props, ...next })) };

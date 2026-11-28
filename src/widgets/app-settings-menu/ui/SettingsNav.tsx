@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo, type ReactNode, type Ref } from 'react';
 import {
   Bell,
@@ -13,7 +11,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { controlClass } from '@/shared/ui/control-class';
 

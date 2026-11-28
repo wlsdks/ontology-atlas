@@ -1,6 +1,4 @@
-"use client";
-
-import { useFormatter, type useTranslations } from "next-intl";
+import { useFormatter, type useTranslations } from "use-intl";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import { StateBadge } from "../index-column/StateBadge";

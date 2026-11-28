@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { secretErrorMessage } from '@/shared/lib/llm-connection/tauri-secrets';
 import { useNativeErrorLookup } from '@/shared/lib/desktop-shell/use-native-error-lookup';
 import { fieldClass } from '@/shared/ui/control-class';

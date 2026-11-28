@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
 import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";

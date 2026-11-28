@@ -1,7 +1,5 @@
-'use client';
-
 import { FolderOpen, HardDrive } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';

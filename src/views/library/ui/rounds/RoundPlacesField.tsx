@@ -1,7 +1,5 @@
-"use client";
-
 import { Cable, Check, Folder, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useId, type ChangeEvent } from "react";
 
 import { controlClass, fieldLabel } from "@/shared/ui/control-class";

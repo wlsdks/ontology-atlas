@@ -1,9 +1,7 @@
-'use client';
-
 import { useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import {
   DEFAULT_EXPAND,

@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import type { Components } from 'react-markdown';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ChevronRight } from 'lucide-react';
 
 import type { AcpEvent } from '@/features/acp-session';

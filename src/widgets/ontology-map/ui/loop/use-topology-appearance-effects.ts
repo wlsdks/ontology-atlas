@@ -1,5 +1,3 @@
-"use client";
-
 import type { CanvasBackground } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
 import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";

@@ -1,5 +1,5 @@
 import { render, screen, act } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FrameMeter } from './frame-meter';
@@ -9,9 +9,9 @@ import ko from '../../../../messages/ko.json';
 
 function renderMeter(locale: 'en' | 'ko' = 'en') {
   return render(
-    <NextIntlClientProvider locale={locale} messages={locale === 'en' ? en : ko}>
+    <IntlProvider locale={locale} messages={locale === 'en' ? en : ko}>
       <FrameMeter />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -66,9 +66,9 @@ describe('FrameMeter', () => {
     });
     const { rerender } = renderMeter();
     rerender(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <FrameMeter />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     act(() => {
       writeFrameMeter(false);

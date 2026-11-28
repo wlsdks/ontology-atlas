@@ -1,5 +1,3 @@
-"use client";
-
 import { useId, useState, type KeyboardEvent } from "react";
 import { CircleHelp } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";

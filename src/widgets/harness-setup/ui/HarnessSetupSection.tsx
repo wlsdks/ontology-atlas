@@ -1,5 +1,3 @@
-'use client';
-
 import type { KeyboardEvent } from 'react';
 
 import { AGENT_TOOL_LABELS, type AgentTool } from '@/entities/agent-files';

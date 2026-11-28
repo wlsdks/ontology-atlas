@@ -9,7 +9,7 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   detectAcpRuntimes: bridge.detect,
 }));
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'en',
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key}:${JSON.stringify(values)}` : key,
@@ -150,7 +150,7 @@ describe('runtime list: what works now comes first', () => {
     render(<AcpRuntimeSettings embedded />);
     await screen.findByTestId('app-settings-runtime-claude-acp');
     const chip = screen.getByTestId('app-settings-runtimes-recheck');
-    // Every string here is its own key (see the `next-intl` mock at the top of this file).
+    // Every string here is its own key (see the `use-intl` mock at the top of this file).
     const heading = screen.getByRole('heading', { name: 'pageReadyHeading:{"count":1}' });
     expect(heading.parentElement?.contains(chip)).toBe(true);
   });
@@ -183,7 +183,7 @@ describe('runtime list: what works now comes first', () => {
     ]);
     render(<AcpRuntimeSettings embedded />);
     await screen.findByTestId('app-settings-runtime-claude-acp');
-    // Every string here is its own key (see the `next-intl` mock at the top of this file).
+    // Every string here is its own key (see the `use-intl` mock at the top of this file).
     const heading = screen.getByRole('heading', { name: 'pageReadyHeading:{"count":1}' });
     const hint = screen.getByRole('button', { name: 'hintLabel' });
     expect(heading.parentElement?.contains(hint)).toBe(true);

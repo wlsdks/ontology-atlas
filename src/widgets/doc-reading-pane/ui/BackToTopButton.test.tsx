@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import { BackToTopButton } from "./BackToTopButton";
@@ -8,9 +8,9 @@ function renderButton(visible: boolean, onClick = vi.fn()) {
   return {
     onClick,
     ...render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <BackToTopButton visible={visible} onClick={onClick} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     ),
   };
 }

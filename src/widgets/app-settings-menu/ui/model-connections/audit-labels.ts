@@ -1,4 +1,4 @@
-import type { useTranslations } from 'next-intl';
+import type { useTranslations } from 'use-intl';
 import type { LlmAuditEntry } from '@/shared/lib/llm-connection/llm-audit-log';
 
 type AuditTranslate = ReturnType<typeof useTranslations<'agents.models'>>;

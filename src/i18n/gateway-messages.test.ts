@@ -74,7 +74,9 @@ function factsOf(file: string): ModuleFacts {
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, /x$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const facts: ModuleFacts = { client: false, imports: [], reexports: [], starExports: [], ownCode: false, namespaces: [], unreadable: [] };
   const first = source.statements[0];
-  facts.client = Boolean(first && ts.isExpressionStatement(first) && ts.isStringLiteral(first.expression) && first.expression.text === 'use client');
+  // Everything under `src/` ships to the browser; the Next routes under `app/` still mark their client modules.
+  const declaredClient = Boolean(first && ts.isExpressionStatement(first) && ts.isStringLiteral(first.expression) && first.expression.text === 'use client');
+  facts.client = declaredClient || path.relative(ROOT, file).startsWith(`src${path.sep}`);
   const translators = new Set<string>();
   const messageReaders = new Set<string>();
 
@@ -83,7 +85,7 @@ function factsOf(file: string): ModuleFacts {
       const clause = statement.importClause;
       if (clause?.isTypeOnly) continue;
       const specifier = statement.moduleSpecifier.text;
-      if (specifier === 'next-intl' && clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      if ((specifier === 'use-intl' || specifier === 'next-intl') && clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
         for (const element of clause.namedBindings.elements) {
           const imported = (element.propertyName ?? element.name).text;
           if (imported === 'useTranslations') translators.add(element.name.text);

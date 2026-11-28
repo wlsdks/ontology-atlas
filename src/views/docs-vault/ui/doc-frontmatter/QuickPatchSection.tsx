@@ -1,5 +1,5 @@
 import { Pencil } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import type { Dispatch, SetStateAction } from "react";
 import { containmentKeyForKind } from "@/shared/lib/vault-document/containment-keys";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";

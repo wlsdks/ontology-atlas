@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { usePathname } from '@/i18n/navigation';
 import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';

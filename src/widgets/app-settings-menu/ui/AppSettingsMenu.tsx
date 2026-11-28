@@ -1,9 +1,7 @@
-'use client';
-
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Settings } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { OPEN_SETTINGS_EVENT, useSurfaceRequest } from '@/shared/lib/keyboard/surface-requests';

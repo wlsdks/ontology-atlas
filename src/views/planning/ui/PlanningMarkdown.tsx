@@ -1,5 +1,3 @@
-'use client';
-
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -139,7 +137,6 @@ function imageResources(read: ReadImage) {
 }
 type Resources = ReturnType<typeof imageResources>;
 function ImageElement({ url, alt, onError }: { url: string; alt: string; onError: () => void }) {
-  // eslint-disable-next-line @next/next/no-img-element -- local Blob URLs cannot use Next optimization.
   return <img src={url} alt={alt} className="h-auto max-w-full rounded-card" onError={onError} />;
 }
 function imageDisplayName(src: string, alt: string, fallback: string): string {

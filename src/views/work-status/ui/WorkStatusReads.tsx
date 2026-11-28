@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';

@@ -1,7 +1,5 @@
-'use client';
-
 import { Fragment, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import type { BellFact, ResultFactLineModel } from '../../model/inbox-row-copy';

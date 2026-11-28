@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
@@ -45,7 +43,6 @@ const GOLD_FILL = { f: 'fill-[color:var(--color-amber-docs-a100)]', h: 'fill-[co
 const BUG_FILL = { r: 'fill-[color:var(--color-danger-text-strong)]', k: 'fill-[color:var(--color-canvas)]', g: 'fill-[color:var(--color-text-tertiary)]', l: 'fill-[color:var(--color-text-tertiary)]' };
 
 function EmoteIcon({ glyph, size = 24 }: { glyph: 'note' | 'heart' | 'spark'; size?: number }) {
-  // eslint-disable-next-line @next/next/no-img-element
   return <img aria-hidden src={emoteSrc(glyph)} width={size} height={size} alt="" draggable={false} className="block shrink-0" style={{ imageRendering: 'pixelated' }} />;
 }
 
@@ -371,7 +368,6 @@ function PausedScene() {
       <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,var(--color-indigo-accent-a12),transparent_75%)]" />
       <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 bg-[color:var(--color-overlay-2)]" style={{ height: FLOOR_BAND }} />
       <span aria-hidden className="pointer-events-none absolute left-[calc(50%-4rem)] block overflow-hidden" style={{ width: CELL, height: CELL, bottom: FLOOR_BAND - (CELL - FEET) }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           data-moru-sheet="companion"
           src={sheet.src}

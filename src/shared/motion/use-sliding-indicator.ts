@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useId, useLayoutEffect, useState, type CSSProperties } from "react";
 
 import { SPRING, springEasing, springSettleMs } from "./spring";

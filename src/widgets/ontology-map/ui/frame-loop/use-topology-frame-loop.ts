@@ -1,4 +1,3 @@
-"use client";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
 import { clearDialFrame, lastDialFrame } from "../../dial/frame/frame";
 import type { CameraAxes } from "../../engine/camera";

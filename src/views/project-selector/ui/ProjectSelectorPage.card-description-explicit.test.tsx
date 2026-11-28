@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
@@ -74,9 +74,9 @@ vi.mock("@/widgets/app-nav-rail", () => ({
 
 function renderPage() {
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <ProjectSelectorPage />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useState, type RefObject } from 'react';
 
 import { snapScrollTop } from '@/shared/lib/agent-chat/composer-growth';

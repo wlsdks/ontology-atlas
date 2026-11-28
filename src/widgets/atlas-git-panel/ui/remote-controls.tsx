@@ -1,5 +1,3 @@
-"use client";
-
 import { Fragment, useEffect, useRef } from "react";
 import type { GitRemoteState, RemoteAction } from "../lib/remote-state";
 import { fieldClass } from "@/shared/ui/control-class";

@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { useLocalVault } from '@/entities/vault-session';
 import { extractProjectBody, findProjectVaultDoc } from '@/entities/docs-vault';

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { VaultDocumentIssue, VaultIssueCode } from "@/shared/lib/vault-document/validate-vault-document";
 import { mapVaultIssueCodeToPlainMessage } from "@/shared/lib/vault-document/vault-issue-plain-message";

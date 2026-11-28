@@ -1,7 +1,5 @@
-"use client";
-
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import dynamic from "next/dynamic";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode, lazy } from "react";
+import { SilentSuspense } from "@/shared/ui/fallbacks/silent-suspense";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -11,7 +9,7 @@ import remarkGfm from "remark-gfm";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { PAGE_STAGE_FILL, PAGE_TITLE, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { BrandPortrait } from "@/shared/ui/marks/moru/brand-portrait";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
 import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
@@ -82,10 +80,7 @@ const TO_CHECK_ROWS_BEFORE_CHANGED = 3;
 /* A lead paragraph needs no picture, and a remote one would be a request the reader did not ask for. */
 const LEAD_MARKDOWN_COMPONENTS: Components = { img: ({ alt }) => <span>{alt}</span> };
 
-const SearchPalette = dynamic(
-  () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
-  { ssr: false },
-);
+const SearchPalette = lazy(() => import("@/widgets/search-palette").then((m) => ({ default: m.SearchPalette })));
 
 interface Props {
   slug: string;
@@ -726,13 +721,15 @@ export function ProjectDetailPage({
           </p>
         </footer>
 
-        <SearchPalette
-          open={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          projects={related}
-          onSelect={handleSearchSelect}
-          containerLabel={null}
-        />
+        <SilentSuspense>
+          <SearchPalette
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            projects={related}
+            onSelect={handleSearchSelect}
+            containerLabel={null}
+          />
+        </SilentSuspense>
       </ProjectDetailShell>
     );
   }

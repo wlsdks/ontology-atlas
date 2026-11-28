@@ -40,7 +40,7 @@ const KNOWN_KIND_LABEL_KEYS = new Set([
   "vault-readme",
 ]);
 
-/** Unknown kinds fall back to `unknown`, so the UI never asks next-intl for a missing key. */
+/** Unknown kinds fall back to `unknown`, so the UI never asks use-intl for a missing key. */
 export function normalizeKindLabelKey(kind: string): string {
   return KNOWN_KIND_LABEL_KEYS.has(kind) ? kind : "unknown";
 }

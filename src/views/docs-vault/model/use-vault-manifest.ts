@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo } from 'react';
 import { useOpenFolderManifest } from '@/entities/vault-session';
 import { deriveOntologyFromVault } from '@/entities/docs-vault';

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RoundPlaceService, RoundRecord } from '@/entities/library-round';
@@ -16,7 +16,7 @@ const CONNECTORS = [
 
 function open(props: Partial<Parameters<typeof NewRoundSheet>[0]> = {}, locale: 'en' | 'ko' = 'en') {
   const view = render(
-    <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
+    <IntlProvider locale={locale} messages={locale === 'ko' ? ko : en}>
       <NewRoundSheet
         open
         onClose={() => {}}
@@ -28,7 +28,7 @@ function open(props: Partial<Parameters<typeof NewRoundSheet>[0]> = {}, locale: 
         passRunning={false}
         {...props}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return {
     name: () => screen.getByTestId('library-rounds-rename').textContent ?? '',

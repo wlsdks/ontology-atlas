@@ -1,7 +1,5 @@
-"use client";
-
 import { type ReactNode, type RefObject } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { BookOpen, HelpCircle, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/shared/lib/cn";

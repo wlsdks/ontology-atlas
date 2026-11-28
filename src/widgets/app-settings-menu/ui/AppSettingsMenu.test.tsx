@@ -156,7 +156,7 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useTranslations: (namespace: string) =>
     Object.assign((key: string) => `${namespace}.${key}`, { rich: (key: string) => `${namespace}.${key}` }),
   useLocale: () => mocks.locale,

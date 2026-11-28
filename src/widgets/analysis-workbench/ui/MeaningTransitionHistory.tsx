@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import { readMeaningTransitionHistory } from '@/entities/meaning-transition';
 import type { MeaningTransitionCandidate } from '@/shared/lib/meaning-transition/meaning-transition';

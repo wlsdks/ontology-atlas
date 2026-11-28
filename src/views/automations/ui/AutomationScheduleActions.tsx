@@ -1,8 +1,6 @@
-'use client';
-
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import { Pause, Pencil, Play, Trash2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import type { RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { Button } from '@/shared/ui';

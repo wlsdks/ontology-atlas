@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
@@ -34,7 +34,7 @@ const project: Project = {
 
 function renderEdit(onSubmit: () => Promise<void>) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <TaxonomyProvider>
         <ProjectForm
           mode="edit"
@@ -44,7 +44,7 @@ function renderEdit(onSubmit: () => Promise<void>) {
           onCancel={() => {}}
         />
       </TaxonomyProvider>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -57,11 +57,11 @@ describe("ProjectForm save rejection focus", () => {
     Element.prototype.scrollIntoView = vi.fn();
     const onSubmit = vi.fn();
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TaxonomyProvider>
           <ProjectForm mode="create" allProjects={[]} onSubmit={onSubmit} onCancel={() => {}} />
         </TaxonomyProvider>
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getAllByTestId("project-save-return")[0]);
     const name = screen.getByLabelText(koMessages.settings.projectForm.fields.name);

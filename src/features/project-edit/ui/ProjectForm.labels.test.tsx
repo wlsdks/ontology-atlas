@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
 import { ProjectForm } from "./ProjectForm";
@@ -11,7 +11,7 @@ const fields = koMessages.settings.projectForm.fields;
 
 function renderForm() {
   return rtlRender(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <TaxonomyProvider>
         <ProjectForm
           mode="create"
@@ -20,7 +20,7 @@ function renderForm() {
           onCancel={() => {}}
         />
       </TaxonomyProvider>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
