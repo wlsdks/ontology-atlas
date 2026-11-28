@@ -10,9 +10,10 @@
 //! form with fields would be cancelled before a card appeared. Allow, decline or cancel is the
 //! whole answer. The `_meta` hint carries no authority; it lets the app bind the card to the call.
 //!
-//! A dry run changes nothing, so it asks nothing: pausing it would train people to click through the
-//! card that matters. That is decided before this module is reached: a dry run gets a
-//! [`crate::write_checkpoint::PreviewPermit`], which never asks.
+//! A preview changes nothing, so it asks nothing: pausing it would train people to click through the
+//! card that matters. A call that says `confirm: false` is that preview, and [`ask_before_writing`]
+//! returns for it without a question. A call that leaves `confirm` out asks, because a tool
+//! decides for itself what no `confirm` means.
 
 mod consent_refusal;
 mod person_answer;
@@ -21,6 +22,7 @@ mod write_question;
 
 use std::time::Duration;
 
+use confined_files::AbsorbedPlace;
 use serde::Serialize;
 
 use crate::arguments::Arguments;
@@ -90,6 +92,7 @@ fn ask_within(
     if !context.can_ask_client() {
         return Err(ConsentRefusal::NoWayToAsk.into());
     }
+    let repository = &context.config().repo_root;
     // The card names the folder a connect would bind, not "inferred from this vault's location".
     let named;
     let shown_arguments = if tool == WriteTool::ConnectProjectSource {
@@ -103,7 +106,9 @@ fn ask_within(
     } else {
         arguments
     };
-    let summary = write_question::summary(tool, shown_arguments);
+    let summary = write_question::summary(tool, shown_arguments, &|requested| {
+        AbsorbedPlace::locate(requested, repository).ok()
+    });
     let message = format!("{summary}. Apply this change to the vault?");
     let question = Question {
         mode: "form",

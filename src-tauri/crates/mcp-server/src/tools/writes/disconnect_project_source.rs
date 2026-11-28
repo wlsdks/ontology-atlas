@@ -12,7 +12,6 @@ use super::connect_project_source::sent_flag;
 use super::project_source_selection::existing_slug;
 use super::plain_refusal::plain_refusal;
 use super::vault_view::VaultView;
-use super::write_support::write_permit;
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ConceptEffect, ShareMeasure, WriteDone, WriteRecord};
@@ -92,7 +91,6 @@ fn removal_failure(failure: BindingWriteFailure) -> ToolError {
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let Some(name) = optional_non_blank_text(arguments, "projectSlug")? else {
         return Err(plain_refusal("projectSlug is required."));
     };

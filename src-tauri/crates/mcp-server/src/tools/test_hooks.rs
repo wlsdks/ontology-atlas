@@ -112,7 +112,7 @@ fn measure_that_panics() -> ShareCounts {
 
 /// Writes `text` (or, with `append`, adds it to what the file holds after a pause, as a tool that
 /// reads before it writes does) to the file named by `slug`, the way a real write tool does: its
-/// path and its plan come from the permit, and a dry run gets no way to write. It says it changed a
+/// path and its plan come from the permit, and `confirm: false` stops before the plan is applied. It says it changed a
 /// concept, so the audit lines have something to record; `measurePanics` makes the measuring of the
 /// share, which runs while the audit line is written, panic.
 pub fn write_through_checkpoint(
@@ -132,14 +132,14 @@ pub fn write_through_checkpoint(
                 note: None,
             })
     };
-    let Permit::Apply(write) = permit else {
+    if arguments.asks_for_preview() {
         let output = ToolOutput::json(&Written { written: false })?;
         return Ok(WriteDone {
             output,
             record: WriteRecord::Nothing,
         });
-    };
-    let path = write
+    }
+    let path = permit
         .write_path(&slug)
         .map_err(|error| ToolError::invalid(error.to_string()))?;
     let entry = match appended {
@@ -160,7 +160,7 @@ pub fn write_through_checkpoint(
         }
         None => PlanEntry::write(path, text),
     };
-    write.apply(vec![entry], Reservations::Refuse(&reserved))?;
+    permit.apply(vec![entry], Reservations::Refuse(&reserved))?;
     let output = ToolOutput::json(&Written { written: true })?;
     let share = if measure_panics {
         ShareMeasure::Measure(Box::new(measure_that_panics))

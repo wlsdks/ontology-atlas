@@ -9954,6 +9954,451 @@
       "reason": "Unfinished, not decided: a scan root that is not inside a git repository gets no `measured` stamp from the Rust server until slice 11 ports the app's folder probe once for both tools; the JavaScript server stamps it (row 35). The harness names only the text of the answer, so a second difference in this one answer would not show: the brief's judgement is proven by the `architecture_conformance` unit tests and a repository's stamp by `mcp-server/tests/inspects_architecture.rs`."
     },
     {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.canConfirm",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.dryRun",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.error",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.filePath",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.message",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.previewReady",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.sections",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.summary",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.title",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.wouldChange",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.canConfirm",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.dryRun",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.error",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.filePath",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.message",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.previewReady",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.sections",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.summary",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.title",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.wouldChange",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.backupPath",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.canConfirm",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.changed",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.dryRun",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.filePath",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.message",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.ok",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.postWriteMaintenance",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.previewReady",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.sections",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.summary",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.title",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.wouldChange",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.written",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "folder",
+      "path": "outside/.ssh/notes.md",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "folder",
+      "path": "outside/.ssh/notes.md.pre-absorb.bak",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "library/absorb-document-folders",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/activity.jsonl",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
       "case": "meaning/validate-vault-after-write",
       "where": "answer",
       "id": 1,
@@ -10512,6 +10957,13 @@
       "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/activity.jsonl",
+      "change": 132,
+      "reason": "Row 132: an activity line names the node a loose name means (`domains/a` for `a`, `domains/c` for `Domains/C`); the script server logged the name as typed."
     },
     {
       "case": "safety/confined-reads-descriptor-at-the-transport-limit",
@@ -11136,6 +11588,14 @@
       "path": "result.structuredContent.evidenceDrift",
       "change": 69,
       "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
     },
     {
       "case": "safety/confined-source-reads-on",
@@ -13490,6 +13950,22 @@
     {
       "case": "safety/repository-whose-config-would-run-code",
       "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/repository-whose-config-would-run-code",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/repository-whose-config-would-run-code",
+      "where": "answer",
       "id": 2,
       "path": "result.content[0].text#/checks",
       "change": 37,
@@ -13499,9 +13975,41 @@
       "case": "safety/repository-whose-config-would-run-code",
       "where": "answer",
       "id": 2,
+      "path": "result.content[0].text#/validation/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/repository-whose-config-would-run-code",
+      "where": "answer",
+      "id": 2,
       "path": "result.structuredContent.checks",
       "change": 37,
       "reason": "The meaning_assessment check needs the project-source tool layer (row 37)."
+    },
+    {
+      "case": "safety/repository-whose-config-would-run-code",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.validation.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/scan-roots-outside-the-vault-and-repository",
+      "where": "answer",
+      "id": 44,
+      "path": "result.content[0].text#/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/scan-roots-outside-the-vault-and-repository",
+      "where": "answer",
+      "id": 44,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
     },
     {
       "case": "safety/scan-roots-with-a-separate-repository",
@@ -14118,6 +14626,727 @@
       "path": "result.structuredContent.backlinkUpdates.updates[1].title",
       "change": 72,
       "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/concepts/0",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/concepts/0/changed",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/concepts/0/error",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/concepts/0/errorCode",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/concepts/0/mtime",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/concepts/0/ok",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/concepts/0/warnings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/findings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.concepts[0]",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.concepts[0].changed",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.concepts[0].error",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.concepts[0].errorCode",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.concepts[0].mtime",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.concepts[0].ok",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.concepts[0].warnings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.findings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/concepts/0",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/concepts/0/changed",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/concepts/0/error",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/concepts/0/errorCode",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/concepts/0/mtime",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/concepts/0/ok",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/concepts/0/warnings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.concepts[0]",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.concepts[0].changed",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.concepts[0].error",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.concepts[0].errorCode",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.concepts[0].mtime",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.concepts[0].ok",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.concepts[0].warnings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/concepts/0",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/concepts/0/changed",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/concepts/0/error",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/concepts/0/errorCode",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/concepts/0/mtime",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/concepts/0/ok",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/concepts/0/warnings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/findings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.concepts[0]",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.concepts[0].changed",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.concepts[0].error",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.concepts[0].errorCode",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.concepts[0].mtime",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.concepts[0].ok",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.concepts[0].warnings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.findings",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/census/byKind/document",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/census/byKind/element",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/census/total",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/pagination/total",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/total",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/vaultWarnings/warningCount",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.census.byKind.document",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.census.byKind.element",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.census.total",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.pagination.total",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.total",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.vaultWarnings.warningCount",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/activity.jsonl",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/map-analysis.jsonl",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "folder",
+      "path": "vault/elements/aux.v2.md",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "folder",
+      "path": "vault/elements/con.md",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-names-a-windows-device",
+      "where": "folder",
+      "path": "vault/nul.md",
+      "change": 133,
+      "reason": "Row 133: a slug segment Windows opens as a device (`nul`, `con`, `aux.v2`) is refused on every system; the script server created the file."
+    },
+    {
+      "case": "safety/write-with-consent-absorb-outside-the-repository",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "safety/write-with-consent-absorb-outside-the-repository",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.error",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "safety/write-with-consent-absorb-outside-the-repository",
+      "where": "server-message",
+      "path": "message 0",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-kind-change",
+      "where": "server-message",
+      "path": "message 0",
+      "change": 130,
+      "reason": "Row 130: the consent card of a `rename_concept` that changes a kind names every change the write makes (the new kind, a move, a domain, a replaced body); the script server named only the kind change."
     },
     {
       "case": "shell/arguments-nested-thousands-deep",
@@ -16916,6 +18145,38 @@
       "path": "result.structuredContent.capturedFrom.body",
       "change": 72,
       "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "writes/patch-concept-batch-names-one-node-twice-late-clock",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 134,
+      "reason": "Row 134: a `patch_concept` batch that names one node twice, in two spellings, is refused as a repeat before anything is planned; the script server planned both and failed on the identity of the second."
+    },
+    {
+      "case": "writes/patch-concept-batch-names-one-node-twice-late-clock",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.error",
+      "change": 134,
+      "reason": "Row 134: a `patch_concept` batch that names one node twice, in two spellings, is refused as a repeat before anything is planned; the script server planned both and failed on the identity of the second."
+    },
+    {
+      "case": "writes/patch-concept-batch-names-one-node-twice",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 134,
+      "reason": "Row 134: a `patch_concept` batch that names one node twice, in two spellings, is refused as a repeat before anything is planned; the script server planned both and failed on the identity of the second."
+    },
+    {
+      "case": "writes/patch-concept-batch-names-one-node-twice",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.error",
+      "change": 134,
+      "reason": "Row 134: a `patch_concept` batch that names one node twice, in two spellings, is refused as a repeat before anything is planned; the script server planned both and failed on the identity of the second."
     },
     {
       "case": "writes/patch-concept-frontmatter-and-body-late-clock",
@@ -26826,16 +28087,16 @@
       "where": "answer",
       "id": 7,
       "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
+      "change": 121,
+      "reason": "Row 121: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
     },
     {
       "case": "library/project-source-connect-and-disconnect",
       "where": "answer",
       "id": 7,
       "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
+      "change": 121,
+      "reason": "Row 121: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
     },
     {
       "case": "library/project-source-connect-and-disconnect",

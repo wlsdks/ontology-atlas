@@ -7,7 +7,7 @@ use vault_edit::{KeptEntry, RedirectPlan, Setting};
 use super::answer_fields::Fields;
 use super::vault_view::VaultView;
 use crate::error::ToolError;
-use crate::write_checkpoint::WritePermit;
+use crate::write_checkpoint::Permit;
 use super::slug_refusal::slug_refusal;
 
 /// The referrers a move touches, as `{ updates, totalUpdated }`: which file, which keys, and whether
@@ -65,7 +65,7 @@ pub fn warnings(plan: &RedirectPlan, new_kind: Option<&str>, old_slug: &str) -> 
 
 /// The entries that rewrite each referrer, from the text each was planned from.
 pub fn rewrite_entries(
-    write: &WritePermit<'_>,
+    permit: &Permit<'_>,
     view: &VaultView<'_>,
     plan: &RedirectPlan,
     skipping: &[&str],
@@ -78,7 +78,7 @@ pub fn rewrite_entries(
         let Some(document) = view.document(&rewrite.source.slug) else {
             continue;
         };
-        let writable = write
+        let writable = permit
             .writable(document.file())
             .map_err(|error| slug_refusal(&error))?;
         entries.push(entered(

@@ -20,7 +20,7 @@ request, then `src/dispatch.rs` for the checks every call passes.
 | `src/error.rs` | `ToolError` and `ErrorCode`: the code is chosen where the failure is made, never read from its message |
 | `src/surface.rs` + `surface/` | The generated tool list the program embeds and sends as written |
 | `src/suggestions.rs` | The nearest allowed name for "did you mean" |
-| `src/tools/writes/` | The vault writers (and `absorb_document`, which also rewrites the document it absorbs through `confined-files::AbsorbedFile`) and the two retired singular names (`add_concept`, `add_relation`): one file per tool, and beside them what they share: the vault as a write reads it (`vault_view`), the refusals every writer makes (`write_gates`, `slug_refusal`, `object_checks`), the one patch path (`patch_document`), the lean answer parts (`write_aftermath`, `answer_fields`, `redirect_support`) |
+| `src/tools/writes/` | The vault writers (and `absorb_document`, which also rewrites the document it absorbs through `confined-files::AbsorbedFile`) and the two retired singular names (`add_concept`, `add_relation`): one file per tool, and beside them what they share: the vault as a write reads it (`vault_view`), the refusals every writer makes (`write_gates`, `slug_refusal`, `object_checks`), the one patch path (`patch_document`), the lean answer parts (`write_aftermath`, `answer_fields`, `referrer_rewrites`) |
 | `src/tools.rs` | The handlers. A read tool joins `call`; a write tool joins `write_handler`, which names every `WriteTool` with no catch-all; `validate_wiki` is a read tool of its own file (`src/tools/validate_wiki.rs`, over `wiki-pages`); `connect_project_source` and `disconnect_project_source` are ported (`src/tools/writes/connect_project_source.rs`, `disconnect_project_source.rs`, over `project-source`; `project_source_selection.rs` chooses the project and folder for the call and for its consent card, `project_source_scope.rs` holds the project's documents and graph hash, `plain_refusal.rs` codes a plain sentence as the script server did); `finalize_project_meaning` and the members of one saved constellation are not ported yet |
 | `tests/` | `protocol_table.rs` runs the program as an agent does; `oracle.rs` compares it with the JavaScript server on the rows that are not declared changes; `plan_answers.rs` states in full the `query_plan` answers the declared rows excuse whole (`plan_answers/`: one `<case>.tsv` of answers per case, `vaults/` the planted vaults) |
 
@@ -32,14 +32,15 @@ Rules this crate keeps:
 - A tool's arguments are never read until its handler asks, so any nesting depth reaches the shell.
 - Half of a surrogate pair is not text: a name is read with U+FFFD, an argument that holds one is
   refused by name, and a request id is written back exactly as sent.
-- A write tool takes a `Permit` and returns a `WriteDone` (its answer and what to audit). A dry run
-  gets a `PreviewPermit` that can read the vault and cannot write; anything else gets a
-  `WritePermit` that asked first and holds the session's write lock until `dispatch` has recorded
-  the write, so two approved writes to one concept run one after the other. `permit.apply` needs a
-  `Reservations` value, so a tool states how files reserved for a person are read.
+- A write tool takes a `Permit` and returns a `WriteDone` (its answer and what to audit). The
+  permit asked first (a call that says `confirm: false` is a preview and asks nobody) and holds
+  the session's write lock until `dispatch` has recorded the write, so two approved writes to one
+  concept run one after the other. `permit.apply` needs a `Reservations` value, so a tool states
+  how files reserved for a person are read. No write tool takes `dryRun`: a preview is a handler
+  that stops before it applies its plan.
 - Consent fails closed: no capability to ask, no answer within 60 seconds, a cancelled call, a
   closed connection or anything but `accept` writes nothing, and a cancelled call withdraws its
-  question. A dry run asks nothing and records nothing.
+  question. A preview (`confirm: false`) asks nothing and records nothing.
 - An audit line that cannot be written, or a panic while writing it, goes to standard error and
   never changes a write's answer. The sidecar files are appended with one `write` on an
   append-mode handle; the write lock, not a file lock, keeps this server's own writes apart.

@@ -8,16 +8,15 @@
 //! parser knows. The caller forgets any cached parse of a file when
 //! [`WriteError::ChangedOnDisk`] or [`WriteError::Conflict`] names it.
 
-use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
 
 use crate::atomic_write::{
-    file_holds_text, modified_time_of, write_atomically, AtomicWrite, Expectation, WriteError,
+    file_holds_text, modified_time_of, permission_bits_of, write_atomically, AtomicWrite, Expectation, WriteError,
 };
 use crate::modified_time::ModifiedTime;
 use crate::os_error::{IoFailure, OsErrorCode};
-use crate::real_paths::real_path;
+use crate::plain_file::{self, FileIdentity};
 use crate::vault_root::WritablePath;
 
 /// What one entry of a plan does.
@@ -37,6 +36,12 @@ pub struct PlanEntry {
     /// The file did not exist when the plan was made.
     pub expected_absent: bool,
     pub expected_modified: Option<ModifiedTime>,
+    /// The file the plan was made from, by identity: the name must still lead to that file, which
+    /// must still be a plain file. Text and time cannot say a file was swapped for a copy.
+    pub expected_identity: Option<FileIdentity>,
+    /// The permission bits a file this entry creates gets: those of a named file, so a copy is
+    /// never more open than its original.
+    pub new_file_bits: Option<u32>,
 }
 
 impl PlanEntry {
@@ -47,6 +52,8 @@ impl PlanEntry {
             expected_text: None,
             expected_absent: false,
             expected_modified: None,
+            expected_identity: None,
+            new_file_bits: None,
         }
     }
 
@@ -57,6 +64,8 @@ impl PlanEntry {
             expected_text: None,
             expected_absent: false,
             expected_modified: None,
+            expected_identity: None,
+            new_file_bits: None,
         }
     }
 
@@ -72,6 +81,18 @@ impl PlanEntry {
 
     pub fn expecting_modified(mut self, modified: Option<ModifiedTime>) -> Self {
         self.expected_modified = modified;
+        self
+    }
+
+    /// A file this entry creates gets the permission bits `original` has now (a private file's copy
+    /// stays private). Without bits to read, the new file gets the system's default.
+    pub fn as_open_as(mut self, original: &Path) -> Self {
+        self.new_file_bits = permission_bits_of(original);
+        self
+    }
+
+    pub fn expecting_identity(mut self, identity: FileIdentity) -> Self {
+        self.expected_identity = Some(identity);
         self
     }
 
@@ -92,6 +113,11 @@ impl PlanEntry {
                 return true;
             }
         }
+        if let Some(identity) = self.expected_identity {
+            if !identity.is_still_at(self.path()) {
+                return true;
+            }
+        }
         match self.expected_modified {
             None => false,
             Some(expected) => {
@@ -105,7 +131,8 @@ impl PlanEntry {
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error(
     "Refused: {slug} carries review_state: human_decides, so it is reserved for a person \
-and this change would rewrite it.{}",
+and this change would rewrite it.{} Report it and let the person decide; only they release the \
+reservation.",
     note.as_ref().map(|text| format!(" What they have to decide: {text}")).unwrap_or_default()
 )]
 pub struct ReservedForPerson {
@@ -163,6 +190,9 @@ struct Step {
     operation: StepKind,
     existed: bool,
     before: Option<String>,
+    /// The permission bits the file had before the step, so a deleted file comes back as open as
+    /// it was and no more.
+    bits_before: Option<u32>,
 }
 
 enum StepKind {
@@ -216,26 +246,33 @@ pub fn apply_all_or_nothing(
 /// `auth.md`, delete `Auth.md`) names one file on macOS and Windows, so the delete would erase
 /// what was just written.
 fn without_deletes_of_written_files(plan: Vec<PlanEntry>) -> Vec<PlanEntry> {
-    let written: HashSet<String> = plan
+    let writes: Vec<PathBuf> = plan
         .iter()
         .filter(|entry| entry.is_write())
-        .map(|entry| same_file_key(entry.path()))
+        .map(|entry| entry.path().to_path_buf())
         .collect();
     plan.into_iter()
-        .filter(|entry| entry.is_write() || !written.contains(&same_file_key(entry.path())))
+        .filter(|entry| {
+            entry.is_write() || !writes.iter().any(|written| names_one_file(written, entry.path()))
+        })
         .collect()
 }
 
-/// A key for "do these paths name the same file": the real path when it exists, else the path as
-/// written, lower-cased for case-insensitive file systems. On a case-sensitive one a false match
-/// costs one skipped delete, never data.
-fn same_file_key(path: &Path) -> String {
-    let named = if path.exists() {
-        real_path(path).unwrap_or_else(|_| path.to_path_buf())
-    } else {
-        path.to_path_buf()
-    };
-    named.to_string_lossy().to_lowercase()
+/// Whether two paths of one plan name the same file. The same path always does. Another spelling
+/// does only when it differs by letter case and both paths exist as one file (device and inode on
+/// Unix, volume and file index on Windows): a case-insensitive disk opens `auth.md` as `Auth.md`,
+/// and a case-sensitive one holds two files, which stay two.
+fn names_one_file(first: &Path, second: &Path) -> bool {
+    if first == second {
+        return true;
+    }
+    if first.to_string_lossy().to_lowercase() != second.to_string_lossy().to_lowercase() {
+        return false;
+    }
+    match (plain_file::facts_at(first), plain_file::facts_at(second)) {
+        (Ok(first), Ok(second)) => first.identity == second.identity,
+        _ => false,
+    }
 }
 
 fn lacks_revision(entry: &PlanEntry) -> bool {
@@ -363,6 +400,7 @@ fn apply_with_rollback(
             } else {
                 None
             };
+            let bits_before = permission_bits_of(entry.path());
             match entry.operation {
                 PlannedOperation::Write { content } => {
                     create_missing_parents(entry.path.as_path(), &mut created_folders)?;
@@ -375,6 +413,7 @@ fn apply_with_rollback(
                         &content,
                         &AtomicWrite {
                             expectation,
+                            new_file_bits: entry.new_file_bits,
                             ..AtomicWrite::default()
                         },
                     )?;
@@ -383,6 +422,7 @@ fn apply_with_rollback(
                         operation: StepKind::Write { after: content },
                         existed,
                         before,
+                        bits_before,
                     });
                 }
                 PlannedOperation::Delete => {
@@ -401,6 +441,7 @@ fn apply_with_rollback(
                         operation: StepKind::Delete,
                         existed,
                         before,
+                        bits_before,
                     });
                 }
             }
@@ -445,7 +486,7 @@ fn restore_step(step: &Step) -> Result<(), WriteError> {
                 return refuse();
             }
             if let (true, Some(before)) = (step.existed, &step.before) {
-                put_back(&step.path, before, Expectation::Text(after))
+                put_back(&step.path, before, Expectation::Text(after), step.bits_before)
             } else if path.exists() {
                 std::fs::remove_file(path)
                     .map_err(|source| WriteError::Io(IoFailure::new("unlink", path, source)))
@@ -461,7 +502,7 @@ fn restore_step(step: &Step) -> Result<(), WriteError> {
                 return refuse();
             }
             match &step.before {
-                Some(before) => put_back(&step.path, before, Expectation::Absent),
+                Some(before) => put_back(&step.path, before, Expectation::Absent, step.bits_before),
                 None => Ok(()),
             }
         }
@@ -472,12 +513,14 @@ fn put_back(
     target: &WritablePath,
     text: &str,
     expectation: Expectation<'_>,
+    bits: Option<u32>,
 ) -> Result<(), WriteError> {
     write_atomically(
         target,
         text,
         &AtomicWrite {
             expectation,
+            new_file_bits: bits,
             ..AtomicWrite::default()
         },
     )

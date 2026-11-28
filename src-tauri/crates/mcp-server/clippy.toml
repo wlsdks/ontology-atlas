@@ -67,10 +67,10 @@ disallowed-methods = [
   { path = "std::os::windows::fs::symlink_dir", reason = "write files through confined-files", allow-invalid = true },
   # The server writes a vault only through the permit of `write_checkpoint.rs`, which carries the
   # read-only, consent and write-lock checks; that one file allows these calls.
-  { path = "confined_files::VaultRoot::write_path", reason = "a write handler gets its path from its WritePermit" },
-  { path = "confined_files::VaultRoot::writable", reason = "a write handler gets its path from its WritePermit" },
-  { path = "confined_files::apply_all_or_nothing", reason = "a write handler applies a plan through its WritePermit" },
-  { path = "confined_files::AbsorbedFile::writable_source", reason = "a write handler gets its path from its WritePermit" },
-  { path = "confined_files::AbsorbedFile::writable_backup", reason = "a write handler gets its path from its WritePermit" },
-  { path = "confined_files::write_atomically", reason = "a write handler writes through its WritePermit" },
+  { path = "confined_files::VaultRoot::write_path", reason = "a write handler gets its path from its Permit" },
+  { path = "confined_files::VaultRoot::writable", reason = "a write handler gets its path from its Permit" },
+  { path = "confined_files::apply_all_or_nothing", reason = "a write handler applies a plan through its Permit" },
+  { path = "confined_files::AbsorbedFile::writable_source", reason = "a write handler gets its path from its Permit" },
+  { path = "confined_files::AbsorbedFile::writable_backup", reason = "a write handler gets its path from its Permit" },
+  { path = "confined_files::write_atomically", reason = "a write handler writes through its Permit" },
 ]

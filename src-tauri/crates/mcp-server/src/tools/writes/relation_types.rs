@@ -1,5 +1,5 @@
-//! What the relation tools share: the relation types a write may name, where `contains` lands
-//! between kinds that have a typed list, and the note kept beside an edge.
+//! The relation types a write may name, the key each is stored under, and where `contains` lands
+//! between kinds that have a typed list.
 
 use vault_edit::{
     exists, relation_key, typed_containment, NameResolver, NodeFields, Setting,
@@ -7,8 +7,8 @@ use vault_edit::{
 };
 
 use super::object_checks::one_of;
-use crate::error::ToolError;
 use super::vault_view::VaultView;
+use crate::error::ToolError;
 
 /// A relation type a write may name, as the vault's key and the word the caller used.
 pub fn relation_type<'a>(value: Option<&Setting>, name: &str) -> Result<&'a str, ToolError> {
@@ -57,28 +57,4 @@ pub fn containment_notice(
             to_kind.unwrap_or("undefined"),
         )
     })
-}
-
-/// The `relation_notes` map of a node, as written.
-pub fn notes_of(fields: &NodeFields) -> Vec<(String, Setting)> {
-    match fields.get("relation_notes") {
-        Some(Setting::Map(members)) => members.clone(),
-        _ => Vec::new(),
-    }
-}
-
-/// `notes` as a patch value: no notes is no key.
-pub fn notes_value(notes: Vec<(String, Setting)>) -> Setting {
-    if notes.is_empty() {
-        Setting::Null
-    } else {
-        Setting::Map(notes)
-    }
-}
-
-pub fn set_note(notes: &mut Vec<(String, Setting)>, target: &str, why: &str) {
-    match notes.iter_mut().find(|(held, _)| held == target) {
-        Some((_, held)) => *held = Setting::text(why),
-        None => notes.push((target.to_string(), Setting::text(why))),
-    }
 }

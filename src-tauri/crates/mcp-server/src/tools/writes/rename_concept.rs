@@ -11,12 +11,13 @@ use vault_edit::{
 
 use super::answer_fields::{output, Fields};
 use super::object_checks::one_of;
-use super::redirect_support::{backlink_updates, entered, rewrite_entries, warnings};
+use super::referrer_rewrites::{backlink_updates, entered, rewrite_entries, warnings};
 use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_aftermath::{counts_after, post_write_maintenance};
 use super::write_gates::{require_not_reserved, PreviewState};
-use super::write_support::{effect, require_current, write_permit};
+use super::concept_effect::effect;
+use super::expected_mtime::require_current;
 use super::patch_document::source_refusal;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
@@ -40,7 +41,6 @@ fn preview_fields(state: &PreviewState) -> Fields {
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let old_slug = required_non_blank_text(arguments, "oldSlug")?;
     if arguments.get("newKind").is_some() {
         let overwrite = optional_boolean(arguments, "overwrite")?.unwrap_or(false);
@@ -104,9 +104,8 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
     if target_exists {
         require_not_reserved(view.document(&new_slug), "rename_concept")?;
     }
-    let write = write_permit(permit)?;
-    let source_path = write.write_path(&disk_old).map_err(|error| slug_refusal(&error))?;
-    let target_path = write.write_path(&new_slug).map_err(|error| slug_refusal(&error))?;
+    let source_path = permit.write_path(&disk_old).map_err(|error| slug_refusal(&error))?;
+    let target_path = permit.write_path(&new_slug).map_err(|error| slug_refusal(&error))?;
     let source = SourceDocument::read(source_path.as_confined(), &disk_old)
         .map_err(|refusal| source_refusal(&view, &disk_old, refusal))?;
     let target = if overwrite && target_exists {
@@ -182,18 +181,18 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
             .map_err(|refusal| ToolError::failed(refusal.to_string()))?;
     }
     let mut entries: Vec<PlanEntry> = Vec::new();
-    let target_entry = PlanEntry::write(target_path.clone(), next_text);
+    let target_entry = PlanEntry::write(target_path.clone(), next_text).as_open_as(source_path.as_path());
     entries.push(match &target {
         Some(target) => entered(target_entry, &target.raw, target.modified),
         None => target_entry.expecting_absent(),
     });
-    entries.extend(rewrite_entries(write, &view, &plan, &[])?);
+    entries.extend(rewrite_entries(permit, &view, &plan, &[])?);
     entries.push(entered(
         PlanEntry::delete(source_path.clone()),
         &source.raw,
         source.modified,
     ));
-    write.apply_requiring_revisions(
+    permit.apply_requiring_revisions(
         entries,
         confined_files::Reservations::Refuse(&|path, text| vault_edit::reservation_in(path, text)),
     )?;
@@ -297,9 +296,8 @@ fn change_kind(
             format!("Target slug already exists: \"{canonical_new}\"."),
         ));
     }
-    let write = write_permit(permit)?;
-    let source_path = write.write_path(&canonical_old).map_err(|error| slug_refusal(&error))?;
-    let target_path = write.write_path(&canonical_new).map_err(|error| slug_refusal(&error))?;
+    let source_path = permit.write_path(&canonical_old).map_err(|error| slug_refusal(&error))?;
+    let target_path = permit.write_path(&canonical_new).map_err(|error| slug_refusal(&error))?;
     let source = SourceDocument::read(source_path.as_confined(), &canonical_old)
         .map_err(|refusal| source_refusal(&view, &canonical_old, refusal))?;
     require_current(&canonical_old, expected, source.modified)?;
@@ -395,17 +393,17 @@ fn change_kind(
             .map_err(|refusal| ToolError::failed(refusal.to_string()))?;
     }
     let mut entries: Vec<PlanEntry> = Vec::new();
-    let write_entry = PlanEntry::write(target_path.clone(), next_text);
+    let write_entry = PlanEntry::write(target_path.clone(), next_text).as_open_as(source_path.as_path());
     entries.push(if source_path == target_path {
         entered(write_entry, &source.raw, source.modified)
     } else {
         write_entry.expecting_absent()
     });
-    entries.extend(rewrite_entries(write, &view, &plan, &[])?);
+    entries.extend(rewrite_entries(permit, &view, &plan, &[])?);
     if source_path != target_path {
         entries.push(entered(PlanEntry::delete(source_path.clone()), &source.raw, source.modified));
     }
-    write.apply_requiring_revisions(
+    permit.apply_requiring_revisions(
         entries,
         confined_files::Reservations::Refuse(&|path, text| vault_edit::reservation_in(path, text)),
     )?;

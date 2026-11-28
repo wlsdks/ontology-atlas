@@ -89,14 +89,6 @@ impl Arguments {
         elements(self.get(key)?)
     }
 
-    /// Whether the call asks for no change: `dryRun` or `dry_run` is the boolean `true`. Any other
-    /// value, `"true"` or `1`, is not a dry run, as a write tool reads it.
-    pub fn is_dry_run(&self) -> bool {
-        ["dryRun", "dry_run"]
-            .iter()
-            .any(|key| self.get(key).is_some_and(|raw| raw.get() == "true"))
-    }
-
     /// Whether the call is a preview its own words ask for, `confirm: false`, which changes
     /// nothing and so asks no one.
     pub fn asks_for_preview(&self) -> bool {

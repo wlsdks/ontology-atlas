@@ -13,19 +13,17 @@ use vault_edit::{
 };
 
 use super::answer_fields::{failed_row, output, Answer, Fields};
-use super::object_checks::{
-    allowed_keys, non_blank, one_of, optional_non_blank, optional_text_list, plain_object,
-};
+use super::object_checks::{allowed_keys, member, non_blank, one_of, optional_non_blank, optional_text_list, plain_object};
 use super::sent_setting::setting_of;
 use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_aftermath::{
     coverage_change, findings_on_written, measure_coverage, share_counts, source_state,
 };
-use super::write_gates::{member, refuse_recheck_mark};
-use super::write_support::{
-    created_by, effect, identity_refusal, modified_ms, write_permit, SessionUids,
-};
+use super::write_gates::refuse_recheck_mark;
+use super::concept_effect::effect;
+use super::expected_mtime::modified_ms;
+use super::node_identity::{created_by, identity_refusal, SessionUids};
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::{ConflictDetails, ToolError};
@@ -227,7 +225,6 @@ fn add_one(
     vault_locales: &BTreeSet<String>,
     pool: &TitlePool<'_>,
 ) -> Result<Landed, ToolError> {
-    let write = write_permit(permit)?;
     let context = permit.context();
     let node = new_node_of(row, created_by(context))?;
     let body = row.get("body").and_then(Setting::as_text);
@@ -239,7 +236,7 @@ fn add_one(
         TitlePool::Vault => duplicate_title_warning(&known_titles(&view), &node.title, &node.slug),
         TitlePool::Batch(_) => None,
     };
-    let writable = write
+    let writable = permit
         .write_path(&node.slug)
         .map_err(|error| slug_refusal(&error))?;
     if writable.as_confined().exists() {
@@ -265,7 +262,7 @@ fn add_one(
     let default_body = vault_document::starter_body::starter_body(&node.kind, &node.title).unwrap_or_default();
     let text = new_file(fields.entries(), body.unwrap_or(&default_body));
     let file = writable.as_confined().clone();
-    write.apply(
+    permit.apply(
         vec![PlanEntry::write(writable, text).expecting_absent()],
         confined_files::Reservations::Refuse(&|path, text| vault_edit::reservation_in(path, text)),
     )?;
@@ -342,7 +339,6 @@ fn batch_row(
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let Some(raw_rows) = arguments.elements("concepts").filter(|_| arguments.get("concepts").is_some()) else {
         return Err(ToolError::invalid(
             "concepts must be an array of concept specs",
@@ -444,7 +440,6 @@ fn nothing_written(output: crate::answer::ToolOutput) -> Result<WriteDone, ToolE
 
 /// The retired `add_concept`: one row, answered as the row.
 pub fn call_one(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let mut members: Vec<(String, Setting)> = Vec::new();
     for key in arguments.keys() {
         if let Some(raw) = arguments.get(key) {

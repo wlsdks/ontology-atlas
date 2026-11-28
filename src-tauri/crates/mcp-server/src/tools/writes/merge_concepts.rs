@@ -11,12 +11,14 @@ use vault_edit::{
 
 use super::answer_fields::{output, Fields};
 use super::patch_document::source_refusal;
-use super::redirect_support::{backlink_updates, entered, rewrite_entries, warnings};
+use super::referrer_rewrites::{backlink_updates, entered, rewrite_entries, warnings};
 use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_aftermath::{counts_after, post_write_maintenance};
 use super::write_gates::{require_not_reserved, PreviewState};
-use super::write_support::{effect, identity_refusal, require_current, write_permit};
+use super::concept_effect::effect;
+use super::expected_mtime::require_current;
+use super::node_identity::identity_refusal;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::{ErrorCode, ToolError};
@@ -35,7 +37,6 @@ fn kind_text(fields: &NodeFields) -> String {
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let from_name = required_non_blank_text(arguments, "fromSlug")?;
     let into_name = required_non_blank_text(arguments, "intoSlug")?;
     let confirm = optional_boolean(arguments, "confirm")?.unwrap_or(false);
@@ -62,9 +63,8 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
             "fromSlug and intoSlug name the same document on disk (\"{from_slug}\") — the spellings differ only in letter case."
         )));
     }
-    let write = write_permit(permit)?;
-    let from_path = write.write_path(&from_slug).map_err(|error| slug_refusal(&error))?;
-    let into_path = write.write_path(&into_slug).map_err(|error| slug_refusal(&error))?;
+    let from_path = permit.write_path(&from_slug).map_err(|error| slug_refusal(&error))?;
+    let into_path = permit.write_path(&into_slug).map_err(|error| slug_refusal(&error))?;
     let from = SourceDocument::read(from_path.as_confined(), &from_slug)
         .map_err(|refusal| source_refusal(&view, &from_slug, refusal))?;
     let into = SourceDocument::read(into_path.as_confined(), &into_slug)
@@ -134,7 +134,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         KeyChange::set("merged_uids", merged_uids),
     ];
     let mut entries: Vec<PlanEntry> = Vec::new();
-    entries.extend(rewrite_entries(write, &view, &plan, &[into_slug.as_str()])?);
+    entries.extend(rewrite_entries(permit, &view, &plan, &[into_slug.as_str()])?);
     let surviving = plan
         .rewrites
         .iter()
@@ -148,7 +148,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         into.modified,
     ));
     entries.push(entered(PlanEntry::delete(from_path.clone()), &from.raw, from.modified));
-    write.apply_requiring_revisions(
+    permit.apply_requiring_revisions(
         entries,
         confined_files::Reservations::Refuse(&|path, text| vault_edit::reservation_in(path, text)),
     )?;
