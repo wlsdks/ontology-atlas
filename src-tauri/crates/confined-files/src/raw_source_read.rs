@@ -21,10 +21,11 @@ use std::io::Read;
 use icu_normalizer::ComposingNormalizerBorrowed;
 
 use crate::os_error::OsErrorCode;
-use crate::plain_file::{self, FileFacts};
+use crate::plain_file;
 use crate::private_names::{is_credential_name, is_hidden_name};
 use crate::real_paths::real_path;
 use crate::slug_rules::VAULT_SOURCES_DIR;
+use crate::stable_read::FileStamp;
 use crate::vault_root::VaultRoot;
 
 /// The longest path an agent may name, in bytes. Every operating system refuses a longer one
@@ -213,7 +214,7 @@ impl VaultRoot {
             .read_to_end(&mut bytes)
             .map_err(|_| RawSourceReadRefusal::Unreadable)?;
         let after = plain_file::facts_of(&file).map_err(|_| RawSourceReadRefusal::Unreadable)?;
-        if bytes.len() as u64 != before.size || !same_version(before, after) {
+        if bytes.len() as u64 != before.size || FileStamp::of(before) != FileStamp::of(after) {
             return Err(RawSourceReadRefusal::Changed);
         }
         if !spells_the_real_path() {
@@ -253,13 +254,6 @@ fn same_part(real: &str, named: &str) -> bool {
     }
     let nfc = ComposingNormalizerBorrowed::new_nfc();
     nfc.normalize(real).to_lowercase() == nfc.normalize(named).to_lowercase()
-}
-
-fn same_version(before: FileFacts, after: FileFacts) -> bool {
-    before.size == after.size
-        && before.identity == after.identity
-        && before.modified_ns == after.modified_ns
-        && before.changed_ns == after.changed_ns
 }
 
 #[cfg(test)]
