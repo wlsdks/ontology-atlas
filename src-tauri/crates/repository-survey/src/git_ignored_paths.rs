@@ -9,31 +9,39 @@ use confined_files::real_path;
 use hardened_git::Repository;
 use icu_normalizer::ComposingNormalizerBorrowed;
 
+/// [`ignored_paths_listing`] where a walk can do without the answer: when Git could not give it,
+/// the walk counts every file.
+pub fn git_ignored_paths(root: &Path) -> HashSet<String> {
+    ignored_paths_listing(root).unwrap_or_default()
+}
+
 /// The untracked paths under `root` that Git ignores, relative to it with `/` separators and in
 /// NFC (macOS Git prints names precomposed while the disk may keep them decomposed); a folder
-/// ignored whole is one entry, without its trailing `/`. Empty outside a repository, when the
+/// ignored whole is one entry, without its trailing `/`. Empty outside a repository, and when the
 /// work tree Git uses does not hold the folder (a `core.worktree` naming another folder would list
-/// that folder's ignored files), or when Git cannot answer, so the walk then counts every file.
-pub fn git_ignored_paths(root: &Path) -> HashSet<String> {
+/// that folder's ignored files): nothing there is ignored by Git. `None` when the folder is in a
+/// repository and Git could not answer, which is an unknown and not an empty list: a survey built
+/// without it counts files the repository ignores and is not worth keeping.
+pub fn ignored_paths_listing(root: &Path) -> Option<HashSet<String>> {
     let repository = Repository::at(root);
-    let Ok(Some(top_level)) = repository.top_level() else {
-        return HashSet::new();
+    let Some(top_level) = repository.top_level().ok()? else {
+        return Some(HashSet::new());
     };
     let holds_root = match (real_path(&top_level), real_path(root)) {
         (Ok(top), Ok(real_root)) => real_root.starts_with(top),
         _ => false,
     };
     if !holds_root {
-        return HashSet::new();
+        return Some(HashSet::new());
     }
-    let Ok(listed) = repository.ignored_paths() else {
-        return HashSet::new();
-    };
-    listed
-        .iter()
-        .map(|path| nfc(path.strip_suffix('/').unwrap_or(path)))
-        .filter(|path| !path.is_empty() && path != ".")
-        .collect()
+    let listed = repository.ignored_paths().ok()?;
+    Some(
+        listed
+            .iter()
+            .map(|path| nfc(path.strip_suffix('/').unwrap_or(path)))
+            .filter(|path| !path.is_empty() && path != ".")
+            .collect(),
+    )
 }
 
 /// `text` in NFC, borrowed when it already is or is plain ASCII.
