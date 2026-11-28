@@ -1253,3 +1253,23 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   write's `coverage` reports `changed` as `section.field` pairs. The endpoint step of `infer_imports`
   names `add_concepts`. Rows 79 and 80 are dropped: both servers now agree. Rows 95 to 98 are new:
   `agent_brief`, the shape of `coverage`, `finalizeGate`, `nextReadsReason`; row 65 points to row 96.
+- 2026-11-28 (slice `feat/mcp-rust-11b-project-source`, half done; each step questioned, choice and why):
+  `connect_project_source` and `disconnect_project_source` run in Rust over a new `project-source`
+  crate (the folder probe, `inventory-v3`, the receipt, the witnesses, the project graph hash, the
+  sidecar). The app's `inspect_project_source` now calls that crate, so the app and the server
+  fingerprint one folder the same way and the app no longer caps at 16,000 files; the
+  meaning-transition continuity observation hashes whole files, a different question, so it kept its
+  fingerprint and moved to `src-tauri/src/project_source/continuity.rs`.
+  `source-inventory-bound.contract.test.ts` pins the shared rule. `confirm: false` still refuses after
+  an accepted card (the permit records `consented`). Row 110 is new: an operating-system error is
+  printed in each runtime's words. The hostile-roots corpus case probes the vault before any call
+  writes the sidecar, because two runs of the script server differed otherwise. 142 declared entries
+  that no longer differed were removed. Not done: `finalize_project_meaning` (Rust answers unknown
+  tool, so `library/finalize-project-meaning` differs), the `finalizeGate` port (needs `build-depth`
+  roles and ability-to-ability edges, so rows 96 and 97 stay and now also cover the connect case's
+  `validate_vault` call), and `get_constellation` with an `id` (still "not ported" for an existing
+  id). Measured (`connect_project_source` of this repository into a copy of its vault, three runs,
+  whole round trip after initialize): the script server 306 to 334 ms, 111 MB peak resident; Rust
+  296 to 317 ms, 14 MB peak resident. Both are bound by the git probe. `finalize_project_meaning`
+  was not measured. Tests: 24 unit and 3 integration tests in `project-source`, 1 in
+  `plain_refusal.rs`, app probe tests 15 (two moved to the shared crate).
