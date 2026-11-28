@@ -63,7 +63,7 @@ mod tests {
         "get_concepts",
         "find_backlinks",
         "validate_vault",
-        "git_status",
+        "read_source",
     ];
 
     #[test]
@@ -73,8 +73,8 @@ mod tests {
             Some("list_concepts".to_string())
         );
         assert_eq!(
-            closest_allowed_value("git_statuss", &TOOLS),
-            Some("git_status".to_string())
+            closest_allowed_value("read_sourc", &TOOLS),
+            Some("read_source".to_string())
         );
         assert_eq!(
             closest_allowed_value("validate_vaul", &TOOLS),

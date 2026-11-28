@@ -477,7 +477,7 @@ fn refusal(error: QueryError, operation: &str) -> ToolError {
                 MissingNodeDetails {
                     subject: field,
                     slug: Some(name),
-                    recovery_tools: vec!["list_concepts", "find_evidence"],
+                    recovery_tools: vec!["list_concepts"],
                     create_tool: Some("add_concepts"),
                     similar_slugs: Some(similar),
                     growth_hint,

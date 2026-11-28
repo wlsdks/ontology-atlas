@@ -189,7 +189,7 @@ fn doc_not_found(root: &VaultRoot, documents: &[LoadedDocument], slug: &str) -> 
         MissingNodeDetails {
             subject: "Doc not found",
             slug: Some(slug.to_string()),
-            recovery_tools: vec!["list_concepts", "find_evidence"],
+            recovery_tools: vec!["list_concepts"],
             create_tool: Some("add_concepts"),
             similar_slugs: Some(candidates),
             referenced_by: (!referenced_by.is_empty()).then_some(referenced_by),
@@ -205,7 +205,7 @@ fn uid_not_found(uid: &str) -> ToolError {
         MissingNodeDetails {
             subject: "Doc not found for uid",
             uid: Some(uid.to_string()),
-            recovery_tools: vec!["list_concepts", "find_evidence"],
+            recovery_tools: vec!["list_concepts"],
             ..MissingNodeDetails::default()
         },
     )

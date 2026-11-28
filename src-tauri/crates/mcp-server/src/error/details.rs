@@ -103,6 +103,30 @@ impl ToolError {
     }
 }
 
+/// A tool name the server answered before and no longer runs: the call that does its job now.
+#[derive(Debug, Serialize)]
+pub struct RetiredToolDetails {
+    #[serde(rename = "retiredTool")]
+    pub retired: String,
+    pub replacement: String,
+}
+
+impl ToolError {
+    /// `name` was a tool and now runs nothing; `replacement` says what to call or run instead.
+    pub fn tool_retired(name: &str, replacement: &str) -> Self {
+        Self {
+            details: Some(Box::new(Details::RetiredTool(RetiredToolDetails {
+                retired: name.to_string(),
+                replacement: replacement.to_string(),
+            }))),
+            ..Self::new(
+                ErrorCode::ToolRetired,
+                format!("{name} is retired and no longer runs; use {replacement}."),
+            )
+        }
+    }
+}
+
 /// Arguments a tool does not take. One unknown argument is written with the fields of a single
 /// mistake, several with the shorter list form.
 #[derive(Debug)]
@@ -432,6 +456,18 @@ mod tests {
     }
 
     #[test]
+    fn a_retired_tool_names_itself_and_the_call_that_replaces_it() {
+        let error = ToolError::tool_retired("git_status", "your own git: `git status`");
+        assert_eq!(
+            structured(&error),
+            concat!(
+                r#"{"ok":false,"errorCode":"tool_retired","error":"git_status is retired and no longer runs; use your own git: `git status`.","#,
+                r#""retiredTool":"git_status","replacement":"your own git: `git status`"}"#
+            )
+        );
+    }
+
+    #[test]
     fn an_empty_name_or_one_with_a_full_stop_carries_its_fields_too() {
         assert_eq!(
             structured(&ToolError::unknown_tool("", None, &["a"])),
@@ -490,20 +526,20 @@ mod tests {
             )
         );
         let none = ToolError::unknown_arguments(
-            "git_status",
+            "list_kinds",
             vec![field("zz", None)],
             Vec::new(),
             names(&["zz"]),
         );
         assert_eq!(
             none.message(),
-            r#"Unknown argument "zz" for git_status. Allowed arguments: no arguments. Received arguments: zz."#
+            r#"Unknown argument "zz" for list_kinds. Allowed arguments: no arguments. Received arguments: zz."#
         );
         assert_eq!(
             structured(&none),
             concat!(
-                r#"{"ok":false,"errorCode":"unknown_argument","error":"Unknown argument \"zz\" for git_status. Allowed arguments: no arguments. Received arguments: zz.","#,
-                r#""toolName":"git_status","receivedArgument":"zz","unknownArguments":[{"name":"zz"}],"#,
+                r#"{"ok":false,"errorCode":"unknown_argument","error":"Unknown argument \"zz\" for list_kinds. Allowed arguments: no arguments. Received arguments: zz.","#,
+                r#""toolName":"list_kinds","receivedArgument":"zz","unknownArguments":[{"name":"zz"}],"#,
                 r#""allowedArguments":[],"receivedArguments":["zz"]}"#
             )
         );

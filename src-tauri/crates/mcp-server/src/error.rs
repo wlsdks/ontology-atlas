@@ -15,7 +15,7 @@ use thiserror::Error;
 pub use details::{
     AllowedValueDetails, CompactUnavailableDetails, LargeResponseDetails, MissingNodeDetails,
     ProfileMissingDetails, ProfileNotFoundDetails, ProfileRequiredDetails, ReceivedValue,
-    UnknownArgumentDetails, UnknownField, UnknownToolDetails,
+    RetiredToolDetails, UnknownArgumentDetails, UnknownField, UnknownToolDetails,
 };
 
 /// The `errorCode` values an agent branches on. The set is shared with the JavaScript server and
@@ -26,6 +26,8 @@ pub enum ErrorCode {
     InvalidArguments,
     UnknownArgument,
     UnknownTool,
+    /// A name the server used to run and now answers with the call that replaces it.
+    ToolRetired,
     NotFound,
     Conflict,
     VaultConflict,
@@ -43,6 +45,7 @@ pub enum ErrorCode {
 #[serde(untagged)]
 enum Details {
     UnknownTool(UnknownToolDetails),
+    RetiredTool(RetiredToolDetails),
     UnknownArgument(UnknownArgumentDetails),
     AllowedValue(AllowedValueDetails),
     MissingNode(MissingNodeDetails),
@@ -181,6 +184,7 @@ mod tests {
             ErrorCode::InvalidArguments,
             ErrorCode::UnknownArgument,
             ErrorCode::UnknownTool,
+            ErrorCode::ToolRetired,
             ErrorCode::NotFound,
             ErrorCode::Conflict,
             ErrorCode::VaultConflict,
@@ -198,6 +202,7 @@ mod tests {
                 "\"invalid_arguments\"",
                 "\"unknown_argument\"",
                 "\"unknown_tool\"",
+                "\"tool_retired\"",
                 "\"not_found\"",
                 "\"conflict\"",
                 "\"vault_conflict\"",

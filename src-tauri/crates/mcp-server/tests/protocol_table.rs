@@ -399,7 +399,7 @@ fn a_request_nested_a_hundred_and_fifty_thousand_deep_is_answered_and_the_sessio
             request(
                 2,
                 "tools/call",
-                &format!("{{\"name\":\"git_status\",\"arguments\":{{\"a\":{nested}}}}}")
+                &format!("{{\"name\":\"list_kinds\",\"arguments\":{{\"a\":{nested}}}}}")
             ),
             then_ping()
         ),
@@ -410,7 +410,7 @@ fn a_request_nested_a_hundred_and_fifty_thousand_deep_is_answered_and_the_sessio
         by_id
             .iter()
             .any(|(id, line)| id == "2"
-                && line.contains("Unknown argument \\\"a\\\" for git_status."))
+                && line.contains("Unknown argument \\\"a\\\" for list_kinds."))
     );
     assert!(by_id.iter().any(|(id, line)| id == "9" && line == PING_9));
     assert_eq!(run.code, Some(0));
@@ -435,25 +435,25 @@ fn an_unknown_argument_is_refused_by_name_before_the_handler_runs() {
     assert_eq!(
         run.lines,
         [concat!(
-            r#"{"result":{"content":[{"type":"text","text":"Error: Unknown argument \"limt\" for list_concepts. Did you mean \"limit\"? Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: limt."}],"#,
+            r#"{"result":{"content":[{"type":"text","text":"Error: Unknown argument \"limt\" for list_concepts. Did you mean \"limit\"? Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: limt."}],"#,
             r#""structuredContent":{"ok":false,"errorCode":"unknown_argument","#,
-            r#""error":"Unknown argument \"limt\" for list_concepts. Did you mean \"limit\"? Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: limt.","#,
+            r#""error":"Unknown argument \"limt\" for list_concepts. Did you mean \"limit\"? Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: limt.","#,
             r#""toolName":"list_concepts","receivedArgument":"limt","suggestion":"limit","#,
             r#""unknownArguments":[{"name":"limt","suggestion":"limit"}],"#,
-            r#""allowedArguments":["domain","kind","limit","offset","since","summary"],"receivedArguments":["limt"]},"isError":true},"jsonrpc":"2.0","id":2}"#
+            r#""allowedArguments":["domain","filter","kind","limit","mentions","offset","since","summary"],"receivedArguments":["limt"]},"isError":true},"jsonrpc":"2.0","id":2}"#
         )]
     );
 }
 
 #[test]
 fn a_known_tool_this_build_has_not_ported_answers_not_ported_only_in_a_test_build() {
-    let run = rust(&[], &call(2, "git_snapshot", "{}"));
+    let run = rust(&[], &call(2, "get_constellation", "{}"));
     assert_eq!(
         run.lines,
         [concat!(
-            r#"{"result":{"content":[{"type":"text","text":"Error: Tool \"git_snapshot\" is not ported to the Rust server yet."}],"#,
+            r#"{"result":{"content":[{"type":"text","text":"Error: Tool \"get_constellation\" is not ported to the Rust server yet."}],"#,
             r#""structuredContent":{"ok":false,"errorCode":"not_ported","#,
-            r#""error":"Tool \"git_snapshot\" is not ported to the Rust server yet."},"isError":true},"jsonrpc":"2.0","id":2}"#
+            r#""error":"Tool \"get_constellation\" is not ported to the Rust server yet."},"isError":true},"jsonrpc":"2.0","id":2}"#
         )]
     );
 }

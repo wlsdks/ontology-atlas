@@ -176,6 +176,13 @@ impl Surface {
         self.retired.get(name).map(String::as_str)
     }
 
+    /// The replacement of a retired name that has no tool behind it any more: a call to it runs
+    /// nothing and is answered with this.
+    pub fn retired_and_gone(&self, name: &str) -> Option<&str> {
+        self.retired_replacement(name)
+            .filter(|_| self.tool(name).is_none())
+    }
+
     /// The arguments of `name` whose non-blank rule the server enforces before the handler runs.
     pub fn top_level_non_blank_arguments(&self, name: &str) -> &[String] {
         self.non_blank.get(name).map_or(&[], Vec::as_slice)
@@ -284,6 +291,28 @@ mod tests {
                 "{retired} is not listed"
             );
             assert!(surface().retired_replacement(retired).is_some());
+            assert_eq!(
+                surface().retired_and_gone(retired),
+                None,
+                "{retired} still runs"
+            );
+        }
+        for gone in [
+            "git_status",
+            "git_history",
+            "git_snapshot",
+            "list_constellations",
+            "find_evidence",
+            "find_orphans",
+            "query_concepts",
+            "replace_relation",
+            "reclassify_concept",
+        ] {
+            assert!(surface().tool(gone).is_none(), "{gone} has no tool");
+            assert!(
+                surface().retired_and_gone(gone).is_some(),
+                "{gone} answers tool_retired"
+            );
         }
     }
 
