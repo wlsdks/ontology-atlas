@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use confined_files::{sha256_hex, FileStamp, SourceRoot};
+use confined_files::{sha256_hex, FileStamp, PlainParts, SourceRoot};
 
 use crate::opened_file::MAX_FILE_BYTES;
 use crate::source_lines::{complete_lines, decode_source};
@@ -103,7 +103,9 @@ struct CurrentFile {
 
 fn read_current(root: &SourceRoot, relative: &str) -> Option<CurrentFile> {
     let parts: Vec<&str> = relative.split('/').collect();
-    let file = root.read_repository_file(&parts, MAX_FILE_BYTES).ok()?;
+    let file = root
+        .read_repository_file(&PlainParts::new(&parts).ok()?, MAX_FILE_BYTES)
+        .ok()?;
     let text = decode_source(&file.bytes)?;
     Some(CurrentFile {
         stamp: file.stamp,

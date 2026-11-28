@@ -227,3 +227,30 @@ fn a_rewrite_that_leaves_the_served_lines_alone_keeps_the_range() {
         "the stamp moved, the served line did not"
     );
 }
+
+/// Microsoft, "Naming Files, Paths, and Namespaces": `NUL.txt` is equivalent to `NUL` and `COM1.ts`
+/// opens the port. The name is refused before the disk is asked, on every system, so no file need
+/// exist and the answer does not depend on where the repository lies.
+#[test]
+fn a_windows_device_name_is_refused_before_the_disk_is_asked() {
+    let (_base, root) = repository(&[("src/a.ts", "export const a = 1;\n")]);
+    let read = evidence(
+        &root,
+        serde_json::json!([
+            { "path": "src/CON.ts", "mode": "outline" },
+            { "path": "src/dir/nul.tar.ts", "mode": "outline" },
+            { "path": "COM1/a.ts", "startLine": 1, "maxLines": 1 },
+            { "path": "src/console.ts", "mode": "outline" },
+        ]),
+    );
+    let reasons: Vec<_> = read.rows.iter().map(refusal_of).collect();
+    assert_eq!(
+        reasons,
+        [
+            Some(RefusalReason::NotAFileName),
+            Some(RefusalReason::NotAFileName),
+            Some(RefusalReason::NotAFileName),
+            Some(RefusalReason::NotFound),
+        ]
+    );
+}

@@ -1,19 +1,11 @@
 //! One file of a repository, named by an agent part by part and read whole as one version.
 //!
-//! The caller has already refused the names a policy refuses (hidden, credential, ignored,
-//! absolute, `..`); this read refuses what the disk can plant at an allowed name, the same way
-//! [`crate::VaultRoot::read_raw_source`] does for a vault source: a link anywhere on the path, a
-//! pipe, a folder, a file over the size the caller allows, a file that changes while it is read,
-//! a path that resolves somewhere other than where it is spelled (on Windows a junction looks like
-//! a folder), and a path whose real spelling is hidden or a credential name (a Kelvin sign opens
-//! `private_key.txt` on a case-insensitive disk).
+//! The caller has already refused the names a policy refuses (hidden, credential, ignored); the
+//! parts arrive as [`PlainParts`], so none is empty, `.`, `..`, absolute or a Windows device name.
+//! The read itself is [`crate::confined_file_read`], shared with the vault's raw sources.
 
-use std::fs;
-use std::io::Read;
-
-use crate::os_error::OsErrorCode;
-use crate::plain_file;
-use crate::raw_source_read::{real_spelling, RealSpelling};
+use crate::confined_file_read::{read_confined_file, ConfinedRefusal};
+use crate::plain_parts::PlainParts;
 use crate::scan_root::SourceRoot;
 use crate::stable_read::FileStamp;
 
@@ -48,6 +40,20 @@ pub enum RepositoryFileRefusal {
     Unreadable,
 }
 
+impl From<ConfinedRefusal> for RepositoryFileRefusal {
+    fn from(refusal: ConfinedRefusal) -> Self {
+        match refusal {
+            ConfinedRefusal::NotFound => Self::NotFound,
+            ConfinedRefusal::ThroughLink => Self::ThroughLink,
+            ConfinedRefusal::NotRegular => Self::NotRegular,
+            ConfinedRefusal::HiddenOrCredential => Self::HiddenOrCredential,
+            ConfinedRefusal::TooLarge => Self::TooLarge,
+            ConfinedRefusal::Changed => Self::Changed,
+            ConfinedRefusal::Unreadable => Self::Unreadable,
+        }
+    }
+}
+
 impl SourceRoot {
     /// The stamp of the regular file at `parts` below this root, or `None` when nothing regular is
     /// there. One `stat` and no open: the cheap question a cache asks before it trusts the text it
@@ -65,69 +71,13 @@ impl SourceRoot {
     /// link leads to, read as one version.
     pub fn read_repository_file(
         &self,
-        parts: &[&str],
+        parts: &PlainParts,
         max_bytes: u64,
     ) -> Result<RepositoryFile, RepositoryFileRefusal> {
-        let mut file_path = self.as_path().to_path_buf();
-        for part in parts {
-            file_path.push(part);
-            match fs::symlink_metadata(&file_path) {
-                Ok(metadata) if metadata.file_type().is_symlink() => {
-                    return Err(RepositoryFileRefusal::ThroughLink)
-                }
-                Ok(_) => {}
-                Err(error)
-                    if matches!(
-                        OsErrorCode::of(&error),
-                        OsErrorCode::NotFound
-                            | OsErrorCode::NotADirectory
-                            | OsErrorCode::NameTooLong
-                    ) =>
-                {
-                    return Err(RepositoryFileRefusal::NotFound)
-                }
-                Err(_) => return Err(RepositoryFileRefusal::Unreadable),
-            }
-        }
-        let owned: Vec<String> = parts.iter().map(|part| (*part).to_string()).collect();
-        let spelling = || real_spelling(self.as_path(), &file_path, &owned);
-        let mut file = match plain_file::open_read(&file_path) {
-            Ok(file) => file,
-            Err(error) if plain_file::is_link_refusal(&error) => {
-                return Err(RepositoryFileRefusal::ThroughLink)
-            }
-            Err(error) if OsErrorCode::of(&error) == OsErrorCode::NotFound => {
-                return Err(RepositoryFileRefusal::NotFound)
-            }
-            Err(_) => return Err(RepositoryFileRefusal::Unreadable),
-        };
-        let before = plain_file::facts_of(&file).map_err(|_| RepositoryFileRefusal::Unreadable)?;
-        if !before.regular {
-            return Err(RepositoryFileRefusal::NotRegular);
-        }
-        if before.size > max_bytes {
-            return Err(RepositoryFileRefusal::TooLarge);
-        }
-        match spelling() {
-            RealSpelling::AsNamed => {}
-            RealSpelling::Elsewhere => return Err(RepositoryFileRefusal::ThroughLink),
-            RealSpelling::Private => return Err(RepositoryFileRefusal::HiddenOrCredential),
-        }
-        let mut bytes = Vec::with_capacity(usize::try_from(before.size).unwrap_or(0));
-        file.by_ref()
-            .take(max_bytes.saturating_add(1))
-            .read_to_end(&mut bytes)
-            .map_err(|_| RepositoryFileRefusal::Unreadable)?;
-        let after = plain_file::facts_of(&file).map_err(|_| RepositoryFileRefusal::Unreadable)?;
-        if bytes.len() as u64 != before.size || FileStamp::of(before) != FileStamp::of(after) {
-            return Err(RepositoryFileRefusal::Changed);
-        }
-        if spelling() != RealSpelling::AsNamed {
-            return Err(RepositoryFileRefusal::Changed);
-        }
+        let read = read_confined_file(self.as_path(), parts, max_bytes)?;
         Ok(RepositoryFile {
-            bytes,
-            stamp: FileStamp::of(after),
+            bytes: read.bytes,
+            stamp: read.stamp,
         })
     }
 }
@@ -142,6 +92,14 @@ mod tests {
             .expect("roots")
             .allow(folder, "rootPath")
             .expect("allowed")
+    }
+
+    fn read(
+        root: &SourceRoot,
+        parts: &[&str],
+        max_bytes: u64,
+    ) -> Result<RepositoryFile, RepositoryFileRefusal> {
+        root.read_repository_file(&PlainParts::new(parts).expect("plain parts"), max_bytes)
     }
 
     /// A repository with `src/a.ts`, and the links this platform can make to it without a
@@ -176,33 +134,35 @@ mod tests {
         repository_with_links(&real);
         let root = root_of(&real);
         assert_eq!(
-            root.read_repository_file(&["src", "a.ts"], 1024)
-                .map(|file| file.bytes),
+            read(&root, &["src", "a.ts"], 1024).map(|file| file.bytes),
             Ok(b"export const a = 1;\n".to_vec())
         );
         assert_eq!(
-            root.read_repository_file(&["linked", "a.ts"], 1024),
+            read(&root, &["linked", "a.ts"], 1024),
             Err(RepositoryFileRefusal::ThroughLink)
         );
         #[cfg(unix)]
         assert_eq!(
-            root.read_repository_file(&["src", "b.ts"], 1024),
+            read(&root, &["src", "b.ts"], 1024),
             Err(RepositoryFileRefusal::ThroughLink)
         );
-        // Windows cannot open a folder as a file, so there the refusal is the open's, not the kind's.
+        // A folder is refused by its kind where the open lets a handle be made on it.
         #[cfg(unix)]
         assert_eq!(
-            root.read_repository_file(&["src"], 1024),
+            read(&root, &["src"], 1024),
             Err(RepositoryFileRefusal::NotRegular)
         );
+        // Microsoft, "CreateFileW": "To open a directory using CreateFile, specify the
+        // FILE_FLAG_BACKUP_SEMANTICS flag as part of dwFlagsAndAttributes." The read does not, so
+        // on Windows the open of a folder fails and the refusal is the open's, not the kind's.
         #[cfg(windows)]
-        assert!(root.read_repository_file(&["src"], 1024).is_err());
+        assert!(read(&root, &["src"], 1024).is_err());
         assert_eq!(
-            root.read_repository_file(&["src", "a.ts"], 4),
+            read(&root, &["src", "a.ts"], 4),
             Err(RepositoryFileRefusal::TooLarge)
         );
         assert_eq!(
-            root.read_repository_file(&["src", "none.ts"], 1024),
+            read(&root, &["src", "none.ts"], 1024),
             Err(RepositoryFileRefusal::NotFound)
         );
     }
@@ -220,12 +180,12 @@ mod tests {
         std::fs::write(folder.join("src").join(real), "KEY = 1\n").expect("credential");
         // The real name itself is refused on every disk: the file is a credential as spelled.
         assert_eq!(
-            root_of(&folder).read_repository_file(&["src", real], 1024),
+            read(&root_of(&folder), &["src", real], 1024),
             Err(RepositoryFileRefusal::HiddenOrCredential),
             "{real}"
         );
         let disk_folds = folder.join("src").join(lookalike).exists();
-        let answer = root_of(&folder).read_repository_file(&["src", lookalike], 1024);
+        let answer = read(&root_of(&folder), &["src", lookalike], 1024);
         let expected = if disk_folds {
             RepositoryFileRefusal::HiddenOrCredential
         } else {

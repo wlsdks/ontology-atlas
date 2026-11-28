@@ -5,7 +5,7 @@ use std::cell::{OnceCell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use confined_files::{sha256_hex, FileStamp, SourceRoot};
+use confined_files::{sha256_hex, FileStamp, PlainParts, SourceRoot};
 
 use crate::file_outline::{outline_file, FileOutline, OutlineDeclaration};
 use crate::import_bindings::{read_imports, Imports};
@@ -49,8 +49,9 @@ pub fn open_source_file(
         return Err(reason);
     }
     let parts: Vec<&str> = path.split('/').collect();
+    let plain = PlainParts::new(&parts).map_err(RefusalReason::from)?;
     let file = root
-        .read_repository_file(&parts, MAX_FILE_BYTES)
+        .read_repository_file(&plain, MAX_FILE_BYTES)
         .map_err(RefusalReason::from)?;
     let bytes = file.bytes;
     if bytes.contains(&0) {

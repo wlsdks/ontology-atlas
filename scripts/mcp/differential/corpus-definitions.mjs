@@ -1892,6 +1892,7 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   planted('src/secrets.ts', 'export const SECRET_SENTINEL_no = 1;\n'),
   planted('src/id_rsa.py', 'KEY = 1\n'),
   planted('src/private_key.py', 'KEY = 2\n'),
+  planted('src/con.ts', 'export function device() {}\n'),
   planted('src/payment/caf\u00e9.ts', 'export function cafe() {}\n'),
   planted('src/order/weird\nname.ts', 'export function weird() {}\n'),
   planted('notes.txt', 'plain text\n'),
@@ -1978,6 +1979,8 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [
     { path: 'src/private_\u212aey.py', mode: 'outline' },
   ] }),
+  // Windows opens `con.ts` as the console, so the name is refused on every system (row 51).
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/con.ts', mode: 'outline' }] }),
 ]);
 add('survey', 'index-project-retired', { vault: 'miniature-repo' }, [call('index_project', { rootPath: '$PARENT' })]);
 
