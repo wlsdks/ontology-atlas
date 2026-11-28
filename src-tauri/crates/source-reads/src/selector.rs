@@ -190,7 +190,7 @@ fn selector_at(index: usize, object: &Map<String, Value>) -> Result<SourceReadSe
         }
         ReadTarget::Outline
     } else {
-        let mut read = |key: &str, value: Option<&Value>| {
+        let read = |key: &str, value: Option<&Value>| {
             value.and_then(positive).ok_or_else(|| {
                 must_be(format!(
                     "sourceReads[{index}].{key} must be a positive safe integer."

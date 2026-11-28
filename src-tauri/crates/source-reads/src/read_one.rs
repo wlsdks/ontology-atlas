@@ -6,12 +6,12 @@ use repository_survey::repo_text;
 
 use crate::declaration_span::{declaration_end, find_declaration, Ends};
 use crate::file_outline::OutlineDeclaration;
-use crate::opened_file::{open_source_file, OpenedFile};
+use crate::opened_file::OpenedFile;
 use crate::read_environment::ReadEnvironment;
 use crate::refusal_reason::RefusalReason;
 use crate::selector::{ReadTarget, SourceReadSelector, MAX_LINES};
 use crate::source_row::{AskedFor, NextRead, OutlineRow, ReadRow, SourceRow};
-use crate::surroundings::surroundings_of;
+use crate::symbol_context::{symbol_context, CONTEXT_BYTES};
 
 pub const RANGE_BYTES: usize = 8 * 1024;
 pub const OUTLINE_BYTES: usize = 16 * 1024;
@@ -22,6 +22,17 @@ pub const OUTLINE_BYTES: usize = 16 * 1024;
 pub struct CallBudget {
     pub remaining_bytes: usize,
     pub reads_left: usize,
+}
+
+/// The context bytes one symbol read may add: an even share of what the call has left (so the last
+/// of eight reads is not starved), at least 1.5 KiB for the best part when the call can afford it,
+/// at most [`CONTEXT_BYTES`].
+fn context_budget(budget: CallBudget, body_bytes: usize) -> i64 {
+    let left = i64::try_from(budget.remaining_bytes).unwrap_or(i64::MAX);
+    let body = i64::try_from(body_bytes).unwrap_or(i64::MAX);
+    let reads = i64::try_from(budget.reads_left.max(1)).unwrap_or(1);
+    let share = left / reads - body;
+    CONTEXT_BYTES.min(left - body).min(1536.max(share)).max(0)
 }
 
 fn refuse(selector: &SourceReadSelector, reason: RefusalReason) -> SourceRow {
@@ -83,7 +94,7 @@ pub fn read_one(
     selector: &SourceReadSelector,
     budget: CallBudget,
 ) -> SourceRow {
-    let file = match open_source_file(environment.root, &selector.path, environment.ignore) {
+    let file = match environment.opener.open_or_refuse(&selector.path) {
         Ok(file) => file,
         Err(reason) => return refuse(selector, reason),
     };
@@ -136,18 +147,17 @@ pub fn read_one(
     let text: String = delivered.iter().map(|line| line.as_str()).collect();
     let symbol_end = declaration
         .map(|found| declaration_end(lines, file.declarations(), found, Ends::AtAnyDeclaration));
-    let surroundings = declaration.map(|found| {
-        surroundings_of(
+    let context = declaration.map(|found| {
+        symbol_context(
             environment,
             &file,
             found,
             end_line,
             &text,
-            budget,
-            returned_bytes,
+            context_budget(budget, returned_bytes),
         )
     });
-    let context_bytes = surroundings.as_ref().map_or(0, |found| found.context_bytes);
+    let context_bytes = context.as_ref().map_or(0, |found| found.bytes);
     let cite = declaration.map(|_| format!("{}:L{start_line}-L{end_line}", selector.path));
     let next = match (declaration, symbol_end) {
         (Some(_), Some(symbol_end)) => (end_line < symbol_end).then(|| NextRead {
@@ -167,7 +177,16 @@ pub fn read_one(
         ReadTarget::Symbol { symbol, .. } if declaration.is_some() => Some(symbol.clone()),
         _ => None,
     };
-    let surroundings = surroundings.unwrap_or_default();
+    let (callees, parts, omitted, callers, deciding) = match context {
+        Some(found) => (
+            Some(found.callees),
+            found.parts,
+            found.omitted,
+            found.callers,
+            found.deciding,
+        ),
+        None => (None, Vec::new(), Vec::new(), Vec::new(), None),
+    };
     SourceRow::Read(Box::new(ReadRow {
         path: selector.path.clone(),
         symbol,
@@ -188,11 +207,11 @@ pub fn read_one(
             "source:{}#L{start_line}-L{end_line}@sha256:{}",
             selector.path, file.sha256
         ),
-        callees: declaration.map(|_| surroundings.callees),
-        context: surroundings.context,
-        context_omitted: surroundings.omitted,
-        callers: surroundings.callers,
-        deciding: surroundings.deciding,
+        callees,
+        context: parts,
+        context_omitted: omitted,
+        callers,
+        deciding,
         family: None,
         next,
     }))

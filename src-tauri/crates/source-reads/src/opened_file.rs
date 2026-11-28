@@ -1,12 +1,14 @@
 //! A source file opened for a read: its bytes decoded, split into lines and outlined, under the
 //! same path policy and stable-read checks whichever read asks for it.
 
+use std::cell::{OnceCell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use confined_files::{sha256_hex, SourceRoot};
 
 use crate::file_outline::{outline_file, FileOutline, OutlineDeclaration};
+use crate::import_bindings::{read_imports, Imports};
 use crate::path_policy::path_refusal;
 use crate::refusal_reason::RefusalReason;
 use crate::source_lines::{complete_lines, decode_source};
@@ -18,14 +20,20 @@ pub struct OpenedFile {
     pub path: String,
     pub bytes: usize,
     pub sha256: String,
-    pub text: String,
     pub lines: Vec<String>,
     pub outline: FileOutline,
+    imports: OnceCell<Imports>,
 }
 
 impl OpenedFile {
     pub fn declarations(&self) -> &[OutlineDeclaration] {
         &self.outline.declarations
+    }
+
+    /// What the file imports, read on first use.
+    pub fn imports(&self) -> &Imports {
+        self.imports
+            .get_or_init(|| read_imports(&self.path, &self.lines))
     }
 }
 
@@ -52,16 +60,16 @@ pub fn open_source_file(
         sha256: sha256_hex(&bytes),
         lines: complete_lines(text),
         outline: outline_file(text, path),
-        text: text.to_string(),
+        imports: OnceCell::new(),
     })
 }
 
-/// Other files a symbol read draws context from, each opened once per call; `None` where the
-/// policy or the disk refuses it.
+/// The files one call opens, each read once: a selector and the context of another read see the
+/// same bytes, and a refusal is remembered with its reason.
 pub struct FileOpener<'a> {
     root: &'a SourceRoot,
     ignore: &'a HashSet<String>,
-    held: std::cell::RefCell<HashMap<String, Option<Rc<OpenedFile>>>>,
+    held: RefCell<HashMap<String, Result<Rc<OpenedFile>, RefusalReason>>>,
 }
 
 impl<'a> FileOpener<'a> {
@@ -69,20 +77,22 @@ impl<'a> FileOpener<'a> {
         Self {
             root,
             ignore,
-            held: std::cell::RefCell::new(HashMap::new()),
+            held: RefCell::new(HashMap::new()),
         }
     }
 
-    pub fn open(&self, path: &str) -> Option<Rc<OpenedFile>> {
+    pub fn open_or_refuse(&self, path: &str) -> Result<Rc<OpenedFile>, RefusalReason> {
         if let Some(held) = self.held.borrow().get(path) {
             return held.clone();
         }
-        let opened = open_source_file(self.root, path, self.ignore)
-            .ok()
-            .map(Rc::new);
+        let opened = open_source_file(self.root, path, self.ignore).map(Rc::new);
         self.held
             .borrow_mut()
             .insert(path.to_string(), opened.clone());
         opened
+    }
+
+    pub fn open(&self, path: &str) -> Option<Rc<OpenedFile>> {
+        self.open_or_refuse(path).ok()
     }
 }
