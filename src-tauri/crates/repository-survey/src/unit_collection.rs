@@ -499,4 +499,18 @@ mod tests {
         assert_eq!(count_lines("a\nb"), 2);
         assert_eq!(count_lines("\n"), 1);
     }
+
+    /// Microsoft, "Naming Files, Paths, and Namespaces": both `\` and `/` separate the parts of a
+    /// path, and `std::path::Path::components` reads either. The map writes a path found on a
+    /// Windows disk with `/`, so the same repository gives the same rows on every system.
+    #[cfg(windows)]
+    #[test]
+    fn a_windows_path_is_written_with_slashes_below_the_root() {
+        let root = Path::new(r"C:\repo");
+        assert_eq!(
+            relative_below(root, Path::new(r"C:\repo\src\order\a.ts")).as_deref(),
+            Some("src/order/a.ts")
+        );
+        assert_eq!(relative_below(root, Path::new(r"D:\other\a.ts")), None);
+    }
 }
