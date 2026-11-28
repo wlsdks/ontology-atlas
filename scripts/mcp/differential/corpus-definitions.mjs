@@ -2184,6 +2184,42 @@ add('library', 'finalize-project-meaning', { vault: 'miniature-repo' }, [
   call('finalize_project_meaning', { projectSlug: 'nonexistent', expected_mtime: 5 }),
   call('get_concepts', { slugs: ['miniature-shop'], body: 'excerpt' }),
 ]);
+// With a connected source folder the answers are judged against measured evidence: the gate that
+// `validate_vault` reports, the witnesses each row may cite, and the receipt a finalize writes.
+const SHOP_ANSWERS = [
+  { id: 'scope', status: 'answered', answer: 'A small shop that places, cancels and charges orders.', concepts: ['miniature-shop'] },
+  { id: 'domains', status: 'answered', answer: 'Order and payment.', concepts: ['domains/order', 'domains/payment'] },
+  { id: 'abilities', status: 'answered', answer: 'Placing, cancelling and charging.', concepts: ['capabilities/place-order', 'capabilities/cancel-order', 'capabilities/charge-card'] },
+  { id: 'evidence', status: 'partial', answer: 'Placing an order is cited.', concepts: ['capabilities/place-order'], gap: 'cancelling and charging are not cited' },
+  { id: 'impact', status: 'visible-gap', gap: 'no impact read' },
+];
+add('library', 'finalize-project-meaning-with-source', { vault: 'miniature-repo' }, [
+  call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', confirm: true }),
+  call('get_concepts', { slugs: ['miniature-shop'], body: 'excerpt' }, { as: 'shop' }),
+  call('finalize_project_meaning', { projectSlug: 'miniature-shop', expected_mtime: answerOf('shop', 'result.structuredContent.concepts[0].mtime') }),
+  call('finalize_project_meaning', {
+    projectSlug: 'miniature-shop',
+    expected_mtime: answerOf('shop', 'result.structuredContent.concepts[0].mtime'),
+    answers: SHOP_ANSWERS,
+  }),
+  call('get_concepts', { slugs: ['miniature-shop'], body: 'full' }, { as: 'shop-after' }),
+  call('finalize_project_meaning', {
+    projectSlug: 'miniature-shop',
+    expected_mtime: answerOf('shop-after', 'result.structuredContent.concepts[0].mtime'),
+    answers: SHOP_ANSWERS.map((row) => ({ id: row.id, status: 'visible-gap', gap: `still open: ${row.id}` })),
+  }),
+]);
+add('library', 'finalize-project-meaning-after-reads', { vault: 'miniature-repo' }, [
+  call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', confirm: true }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceOnly: true, sourceReads: [{ path: 'src/order/placement.ts', symbol: 'placeOrder' }, { path: 'src/payment/charge.ts', startLine: 1, maxLines: 4 }] }),
+  call('validate_vault', {}),
+  call('get_concepts', { slugs: ['miniature-shop'], body: 'excerpt' }, { as: 'shop' }),
+  call('finalize_project_meaning', {
+    projectSlug: 'miniature-shop',
+    expected_mtime: answerOf('shop', 'result.structuredContent.concepts[0].mtime'),
+    answers: SHOP_ANSWERS,
+  }),
+]);
 
 // ---------------------------------------------------------------------------------------------
 // safety: hostile inputs, refused exactly as today, with nothing read or written outside the vault
