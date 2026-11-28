@@ -1,6 +1,6 @@
 //! Two files of the vault whose names are one slug. A slug is its path in NFC, and some file
 //! systems keep two spellings of one name (a Linux checkout of a vault made on macOS can hold
-//! `결제.md` composed and decomposed), so the second file would be read as the first and its node
+//! `caf\u{e9}.md` composed and decomposed), so the second file would be read as the first and its node
 //! lost without a word. Each such name is reported once, on the slug both files share.
 
 use std::collections::HashMap;
