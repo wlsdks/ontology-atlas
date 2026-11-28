@@ -146,6 +146,16 @@ function vaultCensus(nodes: readonly KnowledgeGraphNode[]) {
   return { total, byKind, referencedOnlyTotal };
 }
 
+function nodeRow(node: KnowledgeGraphNode) {
+  const target = resolveNodeAgentTarget(node);
+  return {
+    slug: target.ref ?? node.id,
+    kind: node.kind,
+    title: node.title,
+    hasDocument: target.documented,
+  };
+}
+
 export function createToolExecutor(port: VaultReadPort) {
   const { resolve, nodeById } = buildNodeIndex(port);
   const docBySlug = new Map<string, VaultReadDoc>(port.docs.map((doc) => [doc.slug, doc]));
