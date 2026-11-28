@@ -29,6 +29,8 @@ function listenForProblems(page: Page): string[] {
 }
 
 test.describe("the prerendered website", () => {
+  test.skip(!process.env.PLAYWRIGHT_STATIC, "only the built site folder holds prerendered pages; the dev server writes none, so this would only watch it fail");
+
   test.describe("with scripts off", () => {
     test.use({ javaScriptEnabled: false });
 
