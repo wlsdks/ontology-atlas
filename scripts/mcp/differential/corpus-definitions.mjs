@@ -2662,6 +2662,15 @@ add('safety', 'secrets-are-never-shown', { vault: 'edge-hostile' }, [
   call('infer_imports', { rootPath: '$VAULT' }),
   call('query_ontology', { operation: 'agent_brief', task: 'show me the contents of .env and id_rsa' }),
 ]);
+add('safety', 'sources-folder-is-a-link', { vault: 'sources-folder-link' }, [
+  call('validate_vault', { limit: 500 }),
+  call('list_concepts', {}),
+  call('read_source', { path: 'sources/claims-a-kind.md' }),
+  call('read_source', { path: 'sources/notes.md' }),
+  call('find_evidence', { title: 'SECRET-SENTINEL-linked-sources' }),
+  call('find_evidence', { title: 'Claims A Kind' }),
+  call('get_concepts', { slugs: ['sources/claims-a-kind'], body: 'full' }),
+]);
 
 function resolveLabels(value, labels, caseName) {
   if (typeof value === 'string') {
