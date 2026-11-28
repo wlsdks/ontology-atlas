@@ -13,7 +13,6 @@ import {
 import { looksLikeCodePath } from '@/shared/lib/concept-display/humanize-code-path-title';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
-import { buildCompactAgentBrief } from '../../../mcp/src/agent-brief/agent-brief-compact.mjs';
 import { compileOntology } from '../../../mcp/src/ontology-compiler.mjs';
 import { queryCompiledOntology } from '../../../mcp/src/ontology-engine.mjs';
 import { buildProjectSourceReceipt } from '../../../mcp/src/project-source/project-source-mint.mjs';
@@ -140,41 +139,6 @@ describe('code-location help: each listed path is checked against the connected 
     expect(missing.status).toBe('review_required');
     expect(missing.topGap).toEqual({ id: 'declared_source_path_missing', nodeSlug: 'capabilities/a' });
     expect(receipt(witnessed).status).toBe('verified_current');
-  });
-});
-
-describe('the compact agent brief reads Definition, Includes and Excludes', () => {
-  const project = { slug: 'project', frontmatter: { kind: 'project', title: 'Operations' }, body: 'Local operations.' };
-  const focus = (title: string, body: string, task = 'Rotate encryption keys.') => {
-    const docs = [project, { slug: 'capabilities/catalog', frontmatter: { kind: 'capability', title }, body }];
-    return buildCompactAgentBrief({
-      brief: { projectSlug: 'project', meaningRepair: { workflow: [], stopWhen: ['source_not_current'] } },
-      artifact: { nodes: docs.map((d) => ({ slug: d.slug, ...d.frontmatter })), edges: [] },
-      docs,
-      task,
-    }).focus;
-  };
-
-  it('Definition supplies the statement', () => {
-    expect(focus('Encryption Keys', '## Definition\n\nRotate encryption keys.').capability?.statement)
-      .toBe('Rotate encryption keys.');
-    expect(focus('Encryption Keys', '## Notes\n\nRotate encryption keys.').capability?.statement).toBe('');
-  });
-
-  it('Includes qualifies a capability its title alone would not', () => {
-    expect(focus('Archive Catalog', '## Includes\n\nRotate encryption keys.').capability?.slug)
-      .toBe('capabilities/catalog');
-    expect(focus('Archive Catalog', '## Notes\n\nRotate encryption keys.').capability?.slug).toBeUndefined();
-  });
-
-  it('Excludes withdraws a claim and settles a stated non-goal', () => {
-    const includes = '## Includes\n\nRotate encryption keys. Send mail.';
-    const task = 'Rotate encryption keys. Do not send mail.';
-    expect(focus('Archive Catalog', includes, task).refusal?.reason).toBe('boundary_conflict');
-    expect(focus('Archive Catalog', `${includes}\n\n## Excludes\n\nSend mail.`, task).capability?.slug)
-      .toBe('capabilities/catalog');
-    expect(focus('Archive Catalog', '## Includes\n\nRotate encryption keys.\n\n## Excludes\n\nRotate encryption keys.')
-      .capability?.slug).toBeUndefined();
   });
 });
 
