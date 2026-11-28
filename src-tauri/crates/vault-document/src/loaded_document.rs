@@ -140,6 +140,30 @@ impl LoadedDocument {
         }
     }
 
+    /// This document with `body` as its body, everything else as read. For a judgement made before
+    /// the body is written; the file is not touched, and the result keeps no claim to be its bytes.
+    #[must_use]
+    pub fn with_body(&self, body: &str) -> Self {
+        let record = &self.record;
+        Self {
+            record: Arc::new(Record {
+                slug: record.slug.clone(),
+                file: record.file.clone(),
+                modified_ms: record.modified_ms,
+                shape: record.shape,
+                frontmatter: record.frontmatter.clone(),
+                diagnostics: record.diagnostics.clone(),
+                issues: record.issues.clone(),
+                issues_at_slug: record.issues_at_slug.clone(),
+                links: BodyLinks::of(body),
+                digest: record.digest,
+                body: Some(body.to_string()),
+                signature: OnceLock::new(),
+                last_answer: AtomicU64::new(0),
+            }),
+        }
+    }
+
     /// What the file says wrong of itself, judged with the slug it sits at: a finding's sentence
     /// names the node by that slug, and a node outside its kind folder is only known by it. It is
     /// judged when the file is read.
