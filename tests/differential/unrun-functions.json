@@ -13,13 +13,6 @@
       {"key":"mcp/src/server/validate.mjs#closestAllowedObjectField#0","reason":"unreviewed"}
     ],
     "safety": [
-      {"key":"mcp/src/infer-imports/confinement/confined-source-fs.mjs#address#0","reason":"unreviewed"},
-      {"key":"mcp/src/infer-imports/confinement/confined-source-fs.mjs#get#0","reason":"unreviewed"},
-      {"key":"mcp/src/infer-imports/confinement/confined-source-fs.mjs#methods#0","reason":"unreviewed"},
-      {"key":"mcp/src/infer-imports/confinement/confined-source-fs.mjs#order#0","reason":"unreviewed"},
-      {"key":"mcp/src/infer-imports/confinement/confined-source-fs.mjs#refuse#0","reason":"unreviewed"},
-      {"key":"mcp/src/infer-imports/confinement/confined-source-fs.mjs#stat#0","reason":"unreviewed"},
-      {"key":"mcp/src/infer-imports/confinement/confined-source-fs.mjs#withSourceSnapshot#0","reason":"unreviewed"},
       {"key":"mcp/src/vault/sidecar/activity-log.mjs#readActivityEntries#0","reason":"unreviewed"},
       {"key":"mcp/src/vault/sidecar/map-analysis-log.mjs#isCount#0","reason":"unreviewed"},
       {"key":"mcp/src/vault/sidecar/map-analysis-log.mjs#pressOf#0","reason":"unreviewed"},
@@ -44,15 +37,12 @@
       {"key":"mcp/src/vault/documents/document-cache.mjs#vaultDocCacheStats#0","reason":"unreviewed"},
       {"key":"mcp/src/vault/documents/document-cache.mjs#VaultDocChangedError#0","reason":"unreviewed"},
       {"key":"mcp/src/vault/graph/backlink-key-shape.mjs#isBacklinkKeyValue#0","reason":"unreviewed"},
-      {"key":"mcp/src/vault/graph/backlink-key-shape.mjs#isCleanNonBlankString#0","reason":"unreviewed"},
-      {"key":"mcp/src/vault/graph/graph-queries.mjs#inDegree#0","reason":"unreviewed"},
-      {"key":"mcp/src/vault/graph/graph-queries.mjs#outDegree#0","reason":"unreviewed"},
-      {"key":"mcp/src/vault/graph/graph-queries.mjs#slug#0","reason":"unreviewed"}
+      {"key":"mcp/src/vault/graph/backlink-key-shape.mjs#isCleanNonBlankString#0","reason":"unreviewed"}
     ],
     "graph": [
-      {"key":"mcp/src/ontology-engine.mjs#refreshAgentBriefHandoffPrompt#0","reason":"unreviewed"},
       {"key":"mcp/src/ontology-engine/growth-hint.mjs#buildFindPathGrowthHint#0","reason":"unreviewed"},
-      {"key":"mcp/src/ontology-engine/query-operation/query-primitives.mjs#publicRelationTypes#0","reason":"unreviewed"},
+      {"key":"mcp/src/ontology-engine/selection/match-rules.mjs#nodeDegree#0","reason":"unreviewed"},
+      {"key":"mcp/src/ontology-engine/selection/match-rules.mjs#nodeMatchesFilters#0","reason":"unreviewed"},
       {"key":"mcp/src/ontology-engine/selection/node-ranking.mjs#compareCentralityRows#0","reason":"unreviewed"},
       {"key":"mcp/src/ontology-engine/traversal/graph-measures.mjs#pageRankScores#0","reason":"unreviewed"}
     ],
@@ -124,20 +114,14 @@
     "evidence": [
       {"key":"mcp/src/evidence-search/callees.mjs#basesOf#0","reason":"unreviewed"},
       {"key":"mcp/src/evidence-search/source-outline.mjs#outlineRuby#0","reason":"unreviewed"},
-      {"key":"mcp/src/evidence-search/symbol-context.mjs#runs#0","reason":"unreviewed"},
-      {"key":"mcp/src/tools/agent-brief/agent-brief-scope.mjs#completeAgentBriefProjectScope#0","reason":"unreviewed"},
-      {"key":"mcp/src/tools/agent-brief/agent-brief-scope.mjs#resolveAgentBriefProject#0","reason":"unreviewed"},
-      {"key":"mcp/src/tools/agent-brief/agent-brief-scope.mjs#scopedAgentBriefInput#0","reason":"unreviewed"},
-      {"key":"mcp/src/tools/agent-brief/meaning-readiness.mjs#attachProjectMeaning#0","reason":"unreviewed"}
+      {"key":"mcp/src/evidence-search/symbol-context.mjs#runs#0","reason":"unreviewed"}
     ],
     "survey": [
       {"key":"mcp/src/analysis-history/analysis-record.mts#analysisScopeKey#0","reason":"unreviewed"},
       {"key":"mcp/src/analysis-history/analysis-record.mts#compareAnalysisBasis#0","reason":"unreviewed"},
       {"key":"mcp/src/analysis-history/analysis-record.mts#latestFindingReview#0","reason":"unreviewed"},
       {"key":"mcp/src/analysis-history/analysis-record.mts#serializeAnalysisRecord#0","reason":"unreviewed"},
-      {"key":"mcp/src/analysis-history/analysis-records.mjs#listAnalysisRecords#0","reason":"unreviewed"},
-      {"key":"mcp/src/analysis-history/analysis-records.mjs#summary#0","reason":"unreviewed"},
-      {"key":"mcp/src/analysis-history/name-page.mts#createNamePage#0","reason":"unreviewed"},
+      {"key":"mcp/src/analysis-history/name-page.mts#(whole file, never loaded)#0","reason":"unreviewed"},
       {"key":"mcp/src/analyze/abilities/operator-abilities.mjs#declaredNumbers#0","reason":"unreviewed"},
       {"key":"mcp/src/analyze/survey/breadth-map.mjs#keepFairShares#0","reason":"unreviewed"},
       {"key":"mcp/src/analyze/survey/breadth-map.mjs#keepFirst#0","reason":"unreviewed"},
@@ -146,11 +130,12 @@
       {"key":"mcp/src/analyze/survey/survey-areas.mjs#ownArea#0","reason":"unreviewed"}
     ],
     "meaning": [
-      {"key":"mcp/src/construction/build-depth.mjs#areasSentence#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth.mjs#competencyDepthRefusals#0","reason":"unreviewed"},
+      {"key":"mcp/src/construction/build-depth.mjs#listed#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth.mjs#listedAll#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth.mjs#notMappedLinesRefusal#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/ability-placement.mjs#abilityLabel#0","reason":"unreviewed"},
+      {"key":"mcp/src/construction/build-depth/coverage-report.mjs#unplacedRow#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/line-cites.mjs#citedLinesDecide#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/line-cites.mjs#linesDecide#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/name-matching.mjs#exactlyNamed#0","reason":"unreviewed"},
@@ -167,12 +152,10 @@
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#areaFolder#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#areaLabel#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#areaNamedBy#0","reason":"unreviewed"},
-      {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#batchAbilityRows#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#batchFilesLabel#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#exclusionText#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#isPointedAt#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#keepsLinesIn#0","reason":"unreviewed"},
-      {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#keepsNotMappedLines#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#leavesOutPath#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#mappedPercent#0","reason":"unreviewed"},
       {"key":"mcp/src/construction/build-depth/unmapped-areas.mjs#namesPath#0","reason":"unreviewed"},
@@ -213,6 +196,7 @@
       {"key":"mcp/src/validate.mjs#unclosedFrontmatterReport#0","reason":"unreviewed"}
     ],
     "writes": [
+      {"key":"mcp/src/tools/writes/write-concepts.mjs#patchConcepts#0","reason":"unreviewed"},
       {"key":"mcp/src/tools/writes/write-relations.mjs#typedContainmentType#0","reason":"unreviewed"},
       {"key":"mcp/src/vault/writes/document-patch.mjs#normalizeDocumentRelationRefs#0","reason":"unreviewed"},
       {"key":"mcp/src/vault/writes/eligibility-gate.mjs#gateTargetPath#0","reason":"unreviewed"},
@@ -270,6 +254,7 @@
       {"key":"mcp/src/project-source/project-source-witnesses.mjs#graphNodeId#0","reason":"unreviewed"},
       {"key":"mcp/src/project-source/vault-exclusion-cases.json#(whole file, never loaded)#0","reason":"unreviewed"},
       {"key":"mcp/src/tools/project-source.mjs#competencyRefusal#0","reason":"unreviewed"},
+      {"key":"mcp/src/tools/project-source.mjs#connectConsentArguments#0","reason":"unreviewed"},
       {"key":"mcp/src/tools/project-source.mjs#depthRefusal#0","reason":"unreviewed"},
       {"key":"mcp/src/tools/project-source.mjs#parsedCompetency#0","reason":"unreviewed"},
       {"key":"mcp/src/tools/project-source.mjs#receiptMeasuresEveryClaim#0","reason":"unreviewed"},
