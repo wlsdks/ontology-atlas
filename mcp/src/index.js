@@ -48,6 +48,7 @@ import {
   renameConcept,
 } from './tools/lifecycle.mjs';
 import {
+  connectConsentArguments,
   connectProjectSourceTool,
   disconnectProjectSourceTool,
   finalizeProjectMeaningTool,
@@ -125,11 +126,13 @@ async function callTool(request) {
 
     // The write checkpoint sits before the switch, so a tool added later is covered
     // by not being in the read set, not by someone remembering to guard it.
+    let consented = false;
     if (WRITE_CONSENT_MODE && TOOL_BY_NAME.has(name) && !READ_TOOL_NAMES.has(name)) {
       const consent = await requestWriteConsent({
         server,
         toolName: name,
-        args,
+        // The card names the folder a connect would bind, not "inferred from this vault".
+        args: name === 'connect_project_source' ? connectConsentArguments(args) : args,
         enabled: true,
       });
       if (!consent.allowed) {
@@ -140,6 +143,7 @@ async function callTool(request) {
         error.declinedByHuman = consent.reason === CONSENT_DECLINED;
         throw error;
       }
+      consented = consent.asked;
     }
 
     switch (name) {
@@ -157,7 +161,7 @@ async function callTool(request) {
         // The handler logs the body it writes; the receipt itself gets no activity line.
         return ok(finalizeProjectMeaningTool(args));
       case 'connect_project_source':
-        return ok(logWrite(name, args, connectProjectSourceTool(args)));
+        return ok(logWrite(name, args, connectProjectSourceTool(args, { consented })));
       case 'disconnect_project_source':
         return ok(logWrite(name, args, disconnectProjectSourceTool(args)));
       case 'add_concept':

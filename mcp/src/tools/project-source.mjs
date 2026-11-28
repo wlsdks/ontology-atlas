@@ -37,10 +37,6 @@ import {
   removeProjectSourceBindings,
   writeProjectSourceBinding,
 } from '../project-source/project-source-receipt.mjs';
-import {
-  projectSourceRemedy,
-  undoPlan,
-} from '../project-source/project-source-remedy.mjs';
 import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-source-witnesses.mjs';
 import {
   COMPILED_ONTOLOGY_CACHE,
@@ -123,7 +119,8 @@ function resolveProjectNodeSlug(projectSlug, allDocs) {
   return canonicalSlug;
 }
 
-function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {}) {
+/** What the call needs to name a folder: the project, its graph, its bindings and the folder chosen. */
+function selectSourceFolder({ projectSlug, rootPath }) {
   requireOptionalNonBlankString(projectSlug, 'projectSlug');
   requireOptionalNonBlankString(rootPath, 'rootPath');
   if (typeof projectSlug !== 'string') throw new Error('projectSlug is required.');
@@ -140,35 +137,67 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
       `connect_project_source blocked: the project scope for "${canonicalSlug}" is incomplete, so no receipt could detect later ontology drift. Repair the project containment first (query_ontology({operation:"project_scope", project:"${canonicalSlug}"})).`,
     );
   }
+  return { canonicalSlug, docs, graphHash, ...selectRoot(canonicalSlug, rootPath) };
+}
+
+function selectRoot(canonicalSlug, rootPath) {
   const sidecar = readProjectSourceBindings(VAULT_ROOT);
-  if (sidecar.status === 'malformed' && repair !== true) {
-    throw new Error(
-      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it, then re-run with repair: true to discard and rewrite it.`,
-    );
-  }
   const bound = sidecar.status === 'ok'
     ? sidecar.bindings.filter((binding) => binding.projectSlug === canonicalSlug)
     : [];
-
-  let inference = null;
-  let selectedRoot = null;
-  let mode = bound.length > 0 ? 'replace' : 'connect';
+  const sidecarStatus = sidecar.status;
   if (typeof rootPath === 'string') {
-    selectedRoot = rootPath;
-  } else if (bound.length === 1) {
-    selectedRoot = bound[0].rootPath;
-    mode = 'remeasure';
-  } else {
-    const { vaultRootPath, candidates } = collectProjectSourceCandidates(VAULT_ROOT);
-    inference = inferProjectSourceProposal({ vaultRootPath, candidates });
-    if (inference.status !== 'proposed') {
-      throw new Error(
-        'connect_project_source found no enclosing code folder for this vault (no git repository and no project manifest above it). '
-        + 'Pass rootPath with the absolute folder that holds the code this ontology describes.',
-      );
-    }
-    selectedRoot = inference.candidate.rootPath;
-    inference = { ...inference, candidates };
+    return { bound, sidecarStatus, selectedRoot: rootPath, mode: bound.length > 0 ? 'replace' : 'connect', inferredFrom: null };
+  }
+  if (bound.length === 1) {
+    return { bound, sidecarStatus, selectedRoot: bound[0].rootPath, mode: 'remeasure', inferredFrom: null };
+  }
+  const { vaultRootPath, candidates } = collectProjectSourceCandidates(VAULT_ROOT);
+  const inference = inferProjectSourceProposal({ vaultRootPath, candidates });
+  if (inference.status !== 'proposed') {
+    throw new Error(
+      'connect_project_source found no enclosing code folder for this vault (no git repository and no project manifest above it). '
+      + 'Pass rootPath with the absolute folder that holds the code this ontology describes.',
+    );
+  }
+  return {
+    bound,
+    sidecarStatus,
+    selectedRoot: inference.candidate.rootPath,
+    mode: bound.length > 0 ? 'replace' : 'connect',
+    inferredFrom: inference.candidate.marker,
+  };
+}
+
+/**
+ * The folder a call without `rootPath` would bind, so the consent card names it
+ * instead of "inferred from this vault's location". Null when nothing names one;
+ * the call itself then reports why.
+ */
+function connectConsentArguments(args) {
+  try {
+    const { selectedRoot } = selectSourceFolder(args ?? {});
+    return { ...args, rootPath: selectedRoot };
+  } catch {
+    return args;
+  }
+}
+
+/** What a caller needs from a source view: its state, the one next action and the top gap. */
+function sourceState(view) {
+  return { status: view.status, nextAction: view.nextAction, topGap: view.topGap };
+}
+
+/**
+ * `consented`: the write-consent card the person accepted named this exact folder, so the
+ * call is the confirmation and a second `confirm: true` call would only ask again.
+ */
+function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {}, { consented = false } = {}) {
+  const { canonicalSlug, docs, graphHash, bound, sidecarStatus, selectedRoot, mode, inferredFrom } = selectSourceFolder({ projectSlug, rootPath });
+  if (sidecarStatus === 'malformed' && repair !== true) {
+    throw new Error(
+      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it, then re-run with repair: true to discard and rewrite it.`,
+    );
   }
 
   let measured;
@@ -180,13 +209,6 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
     );
   }
   const { probe, receipt, binding } = measured;
-  if (inference) {
-    inference = inferProjectSourceProposal({
-      vaultRootPath: VAULT_ROOT,
-      candidates: inference.candidates,
-      witnessSummary: receipt.witnessSummary,
-    });
-  }
 
   const bindingView = {
     rootPath: probe.rootPath,
@@ -196,24 +218,26 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
     truncated: probe.truncated,
     inventoryFiles: probe.files.length,
   };
+  const answerBase = {
+    ok: true,
+    contract: PROJECT_SOURCE_CONNECT_CONTRACT,
+    projectSlug: canonicalSlug,
+    mode,
+    ...(inferredFrom ? { inferredFrom } : {}),
+    binding: bindingView,
+  };
 
-  if (confirm !== true) {
+  if (confirm !== true && !(consented && confirm !== false)) {
     return {
-      ok: true,
+      ...answerBase,
       changed: false,
       confirmed: false,
-      contract: PROJECT_SOURCE_CONNECT_CONTRACT,
-      projectSlug: canonicalSlug,
-      mode,
-      binding: bindingView,
-      inference,
-      previewReceipt: receipt,
-      previousBindingCount: bound.length,
+      ...sourceState(receipt),
+      witnessSummary: receipt.witnessSummary,
       nextCall: {
         tool: 'connect_project_source',
         arguments: { projectSlug: canonicalSlug, rootPath: probe.rootPath, confirm: true },
       },
-      undo: undoPlan(canonicalSlug),
     };
   }
 
@@ -221,20 +245,13 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
     writeProjectSourceBinding(VAULT_ROOT, { ...binding, receipt }, { repair: repair === true }),
     'connect_project_source',
   );
-  const projectSource = readProjectSourceView(VAULT_ROOT, canonicalSlug, graphHash);
+  const written = readProjectSourceView(VAULT_ROOT, canonicalSlug, graphHash);
   return {
-    ok: true,
+    ...answerBase,
     changed: true,
     confirmed: true,
-    contract: PROJECT_SOURCE_CONNECT_CONTRACT,
-    projectSlug: canonicalSlug,
-    mode,
-    binding: bindingView,
-    inference,
-    projectSource,
-    remedy: projectSourceRemedy(projectSource),
-    previousBindingCount: bound.length,
-    undo: undoPlan(canonicalSlug),
+    ...sourceState(written),
+    witnessSummary: receipt.witnessSummary,
   };
 }
 
@@ -302,8 +319,7 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
     projectSlug: canonicalSlug,
     removed: result.removed,
     bindings: removable,
-    projectSource,
-    remedy: projectSourceRemedy(projectSource),
+    ...sourceState(projectSource),
   };
 }
 
@@ -561,6 +577,7 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {
 }
 
 export {
+  connectConsentArguments,
   connectProjectSourceTool,
   disconnectProjectSourceTool,
   finalizeProjectMeaningTool,

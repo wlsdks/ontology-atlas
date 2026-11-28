@@ -202,7 +202,7 @@ test('fresh MCP readers keep edited answers unconfirmed until explicit finalizat
     const projectPath = join(vaultRoot, 'demo.md');
     const receiptPath = join(vaultRoot, '.ontology-atlas/project-meaning.json');
     const [bound] = await call([['connect_project_source', { projectSlug: 'demo', rootPath: sourceRoot, confirm: true }]]);
-    assert.equal(bound.projectSource.currentness, 'current');
+    assert.equal(bound.status, 'verified_current');
     const [initial] = await call([['finalize_project_meaning', { projectSlug: 'demo', expected_mtime: statSync(projectPath).mtimeMs }]]);
     assert.equal(initial.meaningAssessment.status, 'needs_evidence');
     const receiptBefore = readFileSync(receiptPath, 'utf8');

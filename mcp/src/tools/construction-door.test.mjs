@@ -120,7 +120,8 @@ test('a build on an empty vault inside its repository reaches finalize without e
   assert.equal(typeof related.mtimes['domains/payments'], 'number');
 
   const bound = await call('connect_project_source', { projectSlug: 'ledger', rootPath: root, confirm: true });
-  assert.equal(bound.projectSource.currentness, 'current', 'the vault folder is not the code it describes');
+  assert.equal(bound.status, 'verified_current', 'the vault folder is not the code it describes');
+  assert.equal(bound.nextAction.id, 'use_current_evidence');
   assert.equal(bound.binding.dirty, false);
 
   const staleHash = `source:src/charge.mjs#L1-L3@sha256:${'0'.repeat(64)}`;

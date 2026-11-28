@@ -92,11 +92,12 @@ export function describeWrite(toolName, args) {
 
 /**
  * A dry run changes nothing, so it asks nothing: pausing it would train people
- * to click through the card that matters. Both flag spellings are honoured.
+ * to click through the card that matters. Both flag spellings are honoured, and
+ * so is `confirm: false`, which every confirm-gated tool reads as "preview only".
  */
 export function isDryRun(args) {
   if (!args || typeof args !== 'object') return false;
-  return args.dryRun === true || args.dry_run === true;
+  return args.dryRun === true || args.dry_run === true || args.confirm === false;
 }
 
 export const CONSENT_DECLINED = 'consent-declined';
