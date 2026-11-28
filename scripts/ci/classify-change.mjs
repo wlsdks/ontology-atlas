@@ -46,7 +46,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:decisions',
     'pnpm test:records',
     'pnpm test:harness:tokens',
-    'pnpm test:build:static',
+    'pnpm test:web-scripts',
     'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
     'pnpm test:changelog',
     'pnpm changelog:check',
@@ -148,7 +148,7 @@ const E2E_BROAD_INPUTS = [
  * to any of them can change the folders every browser job tests, so each is a broad browser input.
  */
 export function browserBuildFiles(root = '.') {
-  const started = packageScriptFiles(['build', 'build:static', 'prepare'], root);
+  const started = packageScriptFiles(['build', 'build:unless-built', 'prepare'], root);
   return [...importClosure([...started, ...filesNamedBy(started, root), 'vite.config.ts', 'playwright.config.ts'], root)].sort();
 }
 

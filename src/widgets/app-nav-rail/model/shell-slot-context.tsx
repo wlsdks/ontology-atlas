@@ -52,7 +52,7 @@ function useNavRailShellContext(): NavRailShellContextValue {
   const ctx = useContext(NavRailShellContext);
   if (!ctx) {
     throw new Error(
-      "NavRailShellContext is missing — this hook must render under <NavRailShellProvider> (mounted once in app/[locale]/layout.tsx).",
+      "NavRailShellContext is missing — this hook must render under <NavRailShellProvider> (mounted once in src/app/providers/AppShell.tsx).",
     );
   }
   return ctx;

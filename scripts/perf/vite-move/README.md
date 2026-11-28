@@ -3,7 +3,7 @@
 The measuring tool for criterion 1 of `docs/specs/2026-11-27-ui-on-vite.md`: how long one build
 tool takes to build, and to bring the map up under `pnpm dev`, cold and warm. Run it with
 `pnpm perf:ui-move` (arguments in `docs/DEVELOPMENT-CHECKS.md`); the build and dev commands are
-arguments, so the same probe measures Next and Vite.
+arguments, so the same probe measures any build tool (the Next baseline in the spec was taken with it).
 
 Start at `measure-ui-move.mjs`, the command line. Everything else is named for what it exports.
 

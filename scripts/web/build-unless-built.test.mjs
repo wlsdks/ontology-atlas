@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { buildInputsDigest, builtFrom, isBuildInput, runStaticBuild } from './build-static-export.mjs';
+import { buildInputsDigest, builtFrom, isBuildInput, runBuildUnlessBuilt } from './build-unless-built.mjs';
 
 describe('which files the app and site folders are built from', () => {
   const CASES = [
@@ -15,7 +15,7 @@ describe('which files the app and site folders are built from', () => {
     ['messages/en/Map.json', true],
     ['tests/e2e/map.spec.ts', false],
     ['src/shared/lib/slug.test.ts', false],
-    ['scripts/web/build-static-export.test.mjs', false],
+    ['scripts/web/build-unless-built.test.mjs', false],
     ['.claude/rules/testing.md', false],
     ['.github/workflows/e2e.yml', false],
   ];
@@ -72,7 +72,7 @@ describe('build input stability', () => {
           writeFileSync(join(root, folder, 'index.html'), text);
         }
       };
-      const result = runStaticBuild({ cwd: root, env, log, build: () => {
+      const result = runBuildUnlessBuilt({ cwd: root, env, log, build: () => {
         writeFolders('built before');
         writeFileSync(join(root, 'src/a.ts'), 'after');
         return 0;
@@ -81,11 +81,11 @@ describe('build input stability', () => {
       assert.equal(builtFrom(buildInputsDigest({ cwd: root, env }), { cwd: root }), false);
       let builds = 0;
       const build = () => { builds++; writeFolders('built after'); return 0; };
-      assert.equal(runStaticBuild({ cwd: root, env, log, build }), 0);
-      assert.equal(runStaticBuild({ cwd: root, env, log, build }), 0);
+      assert.equal(runBuildUnlessBuilt({ cwd: root, env, log, build }), 0);
+      assert.equal(runBuildUnlessBuilt({ cwd: root, env, log, build }), 0);
       assert.equal(builds, 1);
       writeFileSync(join(root, 'src/a.ts'), 'failed edit');
-      assert.equal(runStaticBuild({ cwd: root, env, log, build: () => 1 }), 1);
+      assert.equal(runBuildUnlessBuilt({ cwd: root, env, log, build: () => 1 }), 1);
       writeFileSync(join(root, 'src/a.ts'), 'after');
       assert.equal(builtFrom(buildInputsDigest({ cwd: root, env }), { cwd: root }), false);
     } finally { rmSync(root, { recursive: true, force: true }); }

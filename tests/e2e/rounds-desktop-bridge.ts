@@ -227,7 +227,7 @@ export async function installDesktopBridge(
           case "connector_secret_status":
             return { present: false };
           /*
-           * The app asks this on arrival. Without it the bridge rejected and the Next dev
+           * The app asks this on arrival. Without it the bridge rejected and the dev
            * overlay carried "1 Issue" in every screenshot of this screen — a fault of the
            * fixture that read, in a capture, as a fault of the page.
            */

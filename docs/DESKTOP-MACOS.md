@@ -52,8 +52,8 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
     tag, and the MCP Registry entry agree.
   - No Firebase SDK, Admin, or CLI dependency in the root package.
   - The WebView CSP is enabled; `connect-src` is exactly
-    `'self' ipc: http://ipc.localhost` (`'self'` is load-bearing for App Router
-    payloads). `scripts/lib/desktop/desktop-csp.mjs` holds the measurement and gates.
+    `'self' ipc: http://ipc.localhost` (`'self'` lets the app fetch its own
+    bundled files). `scripts/lib/desktop/desktop-csp.mjs` holds the measurement and gates.
   - `src-tauri/capabilities/default.json` is scoped to the `main` window and
     enumerates permissions by name instead of `core:default`; broad Tauri
     filesystem, shell, HTTP, and opener plugin families are blocked by prefix.

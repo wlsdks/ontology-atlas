@@ -55,7 +55,7 @@ describe("buildOutputs", () => {
   });
 
   it("renders the same files whatever platform-specific build tools the machine installed", () => {
-    const darwin = pkg("@next/swc-darwin-arm64", "MIT", { platformSpecific: true });
+    const darwin = pkg("@tauri-apps/cli-darwin-arm64", "MIT", { platformSpecific: true });
     const linux = pkg("@img/sharp-libvips-linux-x64", "LGPL-3.0-or-later", { platformSpecific: true });
     assert.deepEqual(buildOutputs({ ...trees, web: [...trees.web, darwin] }), buildOutputs({ ...trees, web: [...trees.web, linux] }));
   });

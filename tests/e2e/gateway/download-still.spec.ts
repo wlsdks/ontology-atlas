@@ -19,8 +19,6 @@ test.describe("download — still", () => {
         (event) => {
           if (/color/i.test(event.propertyName)) return;
           const target = event.target as Element;
-          // The dev server's own overlay is not the page.
-          if (target.tagName === "NEXTJS-PORTAL") return;
           runs.push(`${event.propertyName} on ${target.closest("[data-testid]")?.getAttribute("data-testid") ?? target.tagName}`);
         },
         true,

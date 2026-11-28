@@ -109,7 +109,7 @@ describe('the post-merge sweep list holds only specs that exist', () => {
   });
 
   it('specs that workflows or scripts call directly by file name cannot enter the list', () => {
-    // The `web-surface-smoke` job and `test:e2e:static` name files directly. Putting
+    // The `web-surface-smoke` job and `test:e2e:meaning-editor-built` name files directly. Putting
     // such a file in the post-merge list still runs it (a file argument beats a
     // project filter), but the job's reason for existing ("runs on every PR") and the
     // list's claim ("post-merge") would then contradict each other silently.

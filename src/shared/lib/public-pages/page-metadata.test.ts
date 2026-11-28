@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { routing } from '@/i18n/routing';
 import { buildPageMetadata, fitMetaDescription, META_DESCRIPTION_MAX, type PageMetadataLocales } from './page-metadata';
 
-// Next replaces the whole top-level openGraph/twitter key when merging metadata, so every card
+// The page merge replaces the whole top-level openGraph/twitter key, so every card
 // fact must be explicit in what the builder returns.
 describe('buildPageMetadata', () => {
   const base = {
@@ -66,26 +66,6 @@ describe('buildPageMetadata', () => {
       'x-default',
       'zh-Hans',
     ]);
-  });
-});
-
-describe('buildPageMetadata — file-convention images', () => {
-  it('omits the images key entirely so a directory opengraph-image can win', () => {
-    /*
-     * Next treats an own `images` property on leaf metadata as authoritative over the file-convention
-     * image, so the flag must remove the key, not blank it.
-     */
-    const meta = buildPageMetadata({
-      locale: 'en',
-      path: 'project/reactor',
-      title: 'Reactor',
-      description: 'A project page with its own generated card.',
-      hasFileConventionImage: true,
-    });
-    expect(Object.hasOwn(meta.openGraph as object, 'images')).toBe(false);
-    expect(Object.hasOwn(meta.twitter as object, 'images')).toBe(false);
-    // The spreads on the project page must not resurrect the key either.
-    expect(Object.hasOwn({ ...(meta.openGraph as object) }, 'images')).toBe(false);
   });
 });
 

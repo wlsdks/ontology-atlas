@@ -28,7 +28,7 @@ complete its recommendations. This file owns escalation and test shape.
 pnpm checks:changed -- <path...>     # focused checks for a planned file set
 pnpm test src/path/to/file.test.ts   # one file
 pnpm test:run -t "specific case"     # one test block
-pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test <spec>   # e2e as CI runs it
+pnpm build:unless-built && PLAYWRIGHT_STATIC=1 pnpm exec playwright test <spec>   # e2e as CI runs it
 ```
 
 No browser spec runs before merge; the suite runs nightly on macOS. A rendered
@@ -38,7 +38,7 @@ Without `PLAYWRIGHT_STATIC=1` the config starts `pnpm dev`, which renders
 differently from the built folders. They serve on 3110 (the app) and 3111 (the
 website) and never reuse a running server; `checks:changed` runs three or more
 specs that way, since one build is paid once for all of them.
-`build:static` skips the build when `out/` was built from the same inputs, so
+`build:unless-built` skips the build when `out/` was built from the same inputs, so
 editing only a spec reruns it without rebuilding. Reproduce
 a red e2e in the CI mode before calling CI wrong or flaky; then check for a
 stale server with `lsof -iTCP:<port>`. Run Playwright in the foreground, let it start its own

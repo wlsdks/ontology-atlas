@@ -113,7 +113,7 @@ release artifacts still need pnpm desktop:verify-release-dmg.
     popstate (to preserve the IndexedDB state holding the planted vault fixture — see the
     build_webview_verify_route_script comment in webview_verify).
     So only the **surfaces that listen for a soft navigation themselves** (map, studio)
-    actually change what is drawn; every other ordinary Next route only changes the
+    actually change what is drawn; every other ordinary route only changes the
     address while the root (the map) stays on screen.
     Measured 2026-07-29: requiring /ko/download/ passed on the address while the screen
     still showed the map — that was misdiagnosed as an app defect twice.

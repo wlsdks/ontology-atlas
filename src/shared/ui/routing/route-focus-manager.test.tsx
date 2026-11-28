@@ -472,7 +472,7 @@ describe('RouteFocusManager', () => {
   });
 
   /*
-   * A client navigation renders before Next writes the new address, so the first render of the
+   * A client navigation renders before the router writes the new address, so the first render of the
    * map can still read the marker of the page being left, then lose it on the next render.
    */
   it('still lands on the heading when the first render reads the marker of the page being left', async () => {

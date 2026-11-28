@@ -128,7 +128,7 @@ describe('architecture-profile/v1 cross-surface contract', () => {
     const profile = parse(FSD_PROFILE_FRONTMATTER);
     const byId = new Map(profile.roles.map((role) => [role.id, role.summary]));
     expect(byId.get('routing')).toBe(
-      'Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.',
+      'Locale-prefixed route entry wrappers. Metadata and routing only, never logic.',
     );
     expect(byId.get('views')).toBe(
       'One module per route-level screen, assembled from the layers beneath it.',

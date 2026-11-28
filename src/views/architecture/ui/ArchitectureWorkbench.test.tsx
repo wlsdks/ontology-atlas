@@ -599,7 +599,7 @@ describe("the role sentence in the reader's language", () => {
   it('falls back to the canonical sentence for a role nobody translated', () => {
     renderIn('ko');
     expect(screen.getByTestId('architecture-role-summary-routing')).toHaveTextContent(
-      'Locale-prefixed Next entry wrappers.',
+      'Locale-prefixed route entry wrappers.',
     );
   });
 });

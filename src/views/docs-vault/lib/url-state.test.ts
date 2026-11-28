@@ -70,7 +70,7 @@ describe('replaceDocsVaultUrlState', () => {
 
 describe('settleDocsVaultAddress', () => {
   it('names the settled document in the address and keeps the entry the router owns', () => {
-    const routerEntry = { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: ['docs'] } };
+    const routerEntry = { __TSR_index: 1, __TSR_key: 'docs' };
     window.history.replaceState(routerEntry, '', `${ORIGINAL_HREF}?tab=ontology`);
     settleDocsVaultAddress('/docs/', 'README');
     expect(currentSearch()).toBe('?tab=ontology&slug=README');

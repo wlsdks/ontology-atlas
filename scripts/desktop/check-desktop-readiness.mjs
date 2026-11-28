@@ -1438,14 +1438,13 @@ if (
   !JSON.stringify(tauriCsp).includes("https://")
 ) {
   pass(
-    "Tauri CSP is enabled for local app assets, images, styles, own-origin route payloads, and IPC only",
+    "Tauri CSP is enabled for local app assets, images, styles, own-origin files, and IPC only",
   );
 } else {
   fail(
     "src-tauri/tauri.conf.json must enable a scoped CSP for local app assets, data/blob images, " +
       `styles, and Tauri IPC, with connect-src exactly ${DESKTOP_CONNECT_SRC_TOKENS.join(" ")} — ` +
-      "without 'self' the App Router cannot fetch the arriving route and every rail press " +
-      "becomes a full document load (inspection 122, B1/R1)",
+      "without 'self' the app cannot fetch its own bundled files",
   );
 }
 

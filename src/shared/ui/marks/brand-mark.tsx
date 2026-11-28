@@ -53,8 +53,8 @@ export function BrandMark({
   };
 
   return (
-    // Native pixel grids must skip Next image optimization, whose resampling would make equal
-    // pixels unequal.
+    // Native pixel grids are drawn as a plain `<img>` with no resampling step that would make
+    // equal pixels unequal.
     <img
       src={withBasePath(BRAND_MARK_ASSET[detail])}
       width={renderedSize}
