@@ -16206,6 +16206,14 @@
       "path": "result.structuredContent.errorCode",
       "change": 38,
       "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/snapshot-descriptor-not-a-number",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
     }
   ]
 }
