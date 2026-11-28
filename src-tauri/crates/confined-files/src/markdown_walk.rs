@@ -53,7 +53,9 @@ pub(crate) fn list_raw_source_markdown(root: &Path) -> Vec<ConfinedPath> {
     let mut found: Vec<PathBuf> = WalkDir::new(root.join(VAULT_SOURCES_DIR))
         .follow_links(false)
         .into_iter()
-        .filter_entry(|entry| entry.depth() == 0 || !entry.file_name().to_string_lossy().starts_with('.'))
+        .filter_entry(|entry| {
+            entry.depth() == 0 || !entry.file_name().to_string_lossy().starts_with('.')
+        })
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_file())
         .filter(|entry| entry.file_name().to_string_lossy().ends_with(".md"))

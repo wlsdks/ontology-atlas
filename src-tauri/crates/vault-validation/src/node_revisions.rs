@@ -193,6 +193,9 @@ mod tests {
         let block = revision_of("t".into(), "---\ncapabilities:\n  - a\n---\nBody\n");
         assert!(block.membership.is_empty());
         let plain = revision_of("t".into(), "Just text\n");
-        assert_eq!(plain.body.as_slice(), Sha256::digest(b"Just text\n").as_slice());
+        assert_eq!(
+            plain.body.as_slice(),
+            Sha256::digest(b"Just text\n").as_slice()
+        );
     }
 }

@@ -150,10 +150,18 @@ mod tests {
         let gone = change(false, false, None);
         let folder = change(true, true, Some("2026-02-01T00:00:00+00:00"));
         let entry = |path, change| CitedEntry { path, change };
-        let both = judge_evidence(doc, None, None, &[entry("a", Some(&moved)), entry("b", Some(&gone))]);
+        let both = judge_evidence(
+            doc,
+            None,
+            None,
+            &[entry("a", Some(&moved)), entry("b", Some(&gone))],
+        );
         assert_eq!(both.verdict, Verdict::Missing);
         let only_folder = judge_evidence(doc, None, None, &[entry("dir", Some(&folder))]);
-        assert_eq!((only_folder.verdict, only_folder.reason), (Verdict::Unknown, Some("folder-only")));
+        assert_eq!(
+            (only_folder.verdict, only_folder.reason),
+            (Verdict::Unknown, Some("folder-only"))
+        );
         let unseen = judge_evidence(doc, None, None, &[entry("a", None)]);
         assert_eq!(unseen.reason, Some("path-not-walked"));
     }
@@ -161,10 +169,19 @@ mod tests {
     #[test]
     fn a_moved_file_with_only_cosmetic_changes_stays_current() {
         let moved = change(true, false, Some("2026-02-01T00:00:00+00:00"));
-        let entries = [CitedEntry { path: "a.ts", change: Some(&moved) }];
+        let entries = [CitedEntry {
+            path: "a.ts",
+            change: Some(&moved),
+        }];
         let doc = Some("2026-01-10T00:00:00+00:00");
         let cosmetic: HashSet<EvidencePair> = [("c1".to_string(), "a.ts".to_string())].into();
-        assert_eq!(judge_evidence(doc, Some("c1"), Some(&cosmetic), &entries).verdict, Verdict::Current);
-        assert_eq!(judge_evidence(doc, Some("c1"), None, &entries).verdict, Verdict::Stale);
+        assert_eq!(
+            judge_evidence(doc, Some("c1"), Some(&cosmetic), &entries).verdict,
+            Verdict::Current
+        );
+        assert_eq!(
+            judge_evidence(doc, Some("c1"), None, &entries).verdict,
+            Verdict::Stale
+        );
     }
 }

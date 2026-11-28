@@ -15,9 +15,7 @@ use source_scan::{
 };
 use vault_document::LoadedDocument;
 
-use crate::evidence_verdict::{
-    judge_evidence, CitedEntry, EvidencePair, PathChange, Verdict,
-};
+use crate::evidence_verdict::{judge_evidence, CitedEntry, EvidencePair, PathChange, Verdict};
 
 const CONCEPT_KINDS: [&str; 3] = ["domain", "capability", "element"];
 const ONTOLOGY_SLUG_PREFIXES: [&str; 4] = ["capabilities/", "domains/", "elements/", "documents/"];
@@ -42,7 +40,8 @@ fn named(value: Option<&str>) -> Option<&str> {
 /// itself when it names a path).
 pub fn evidence_concepts(documents: &[LoadedDocument]) -> Vec<EvidenceConcept> {
     let slug_of = |document: &LoadedDocument| -> String {
-        named(document.frontmatter().text("slug")).map_or_else(|| document.slug().to_string(), ToString::to_string)
+        named(document.frontmatter().text("slug"))
+            .map_or_else(|| document.slug().to_string(), ToString::to_string)
     };
     let mut path_by_slug: HashMap<String, String> = HashMap::new();
     for document in documents {
@@ -74,7 +73,9 @@ pub fn evidence_concepts(documents: &[LoadedDocument]) -> Vec<EvidenceConcept> {
             };
             if let Some(element_path) = path_by_slug.get(reference) {
                 add(element_path);
-            } else if !ONTOLOGY_SLUG_PREFIXES.iter().any(|prefix| reference.starts_with(prefix))
+            } else if !ONTOLOGY_SLUG_PREFIXES
+                .iter()
+                .any(|prefix| reference.starts_with(prefix))
                 && reference.contains('/')
             {
                 add(reference);
@@ -228,7 +229,12 @@ fn walk_changes(
     };
     for concept in concepts {
         let resolved = RepoPath::new(&concept.doc_path).map(|path| history.vault_scope.join(&path));
-        push(&concept.doc_path, resolved, Dating::FirstCommitWithPresentBytes, true);
+        push(
+            &concept.doc_path,
+            resolved,
+            Dating::FirstCommitWithPresentBytes,
+            true,
+        );
     }
     for path in repo_paths {
         let resolved = RepoPath::new(path).map(|clean| history.repo_scope.join(&clean));

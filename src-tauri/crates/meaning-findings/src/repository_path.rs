@@ -57,6 +57,9 @@ mod tests {
         }
         let inside = inside_repository("src/./a/../b.ts").expect("inside");
         assert_eq!(inside.below_root, PathBuf::from("src/b.ts"));
-        assert_eq!(inside_repository("a/..").map(|place| place.below_root), Some(PathBuf::new()));
+        assert_eq!(
+            inside_repository("a/..").map(|place| place.below_root),
+            Some(PathBuf::new())
+        );
     }
 }

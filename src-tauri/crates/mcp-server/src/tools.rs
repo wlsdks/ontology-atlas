@@ -39,10 +39,10 @@ mod reply_bytes;
 #[cfg(feature = "test-hooks")]
 mod test_hooks;
 mod validate_vault;
-mod vault_validation_facts;
-mod vault_validation_report;
 mod vault_facts;
 mod vault_repository;
+mod vault_validation_facts;
+mod vault_validation_report;
 
 pub use compiled_graph::KeptGraph;
 

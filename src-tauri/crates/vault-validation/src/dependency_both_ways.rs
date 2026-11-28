@@ -65,7 +65,10 @@ pub fn two_way_dependency_findings(documents: &[LoadedDocument]) -> Vec<(String,
     let mut seen: HashSet<(&str, &str)> = HashSet::new();
     let mut findings = Vec::new();
     for (from, to) in edges {
-        if !seen.insert((from, to)) || encode_utf16_greater(from, to) || !known.contains(&(to, from)) {
+        if !seen.insert((from, to))
+            || encode_utf16_greater(from, to)
+            || !known.contains(&(to, from))
+        {
             continue;
         }
         findings.push((

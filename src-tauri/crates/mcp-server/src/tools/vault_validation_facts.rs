@@ -16,8 +16,8 @@ pub fn validation_facts(context: &CallContext<'_>) -> Result<VaultValidationFact
     let read = read_vault(context)?;
     let report = build_report(context, &read.root, read.vault.documents(), None)?;
     let page = page_validation(&report.frame, &report.list, &PageRequest::brief());
-    let brief = answer_format::json::to_raw(&page)
-        .map_err(|error| ToolError::failed(error.to_string()))?;
+    let brief =
+        answer_format::json::to_raw(&page).map_err(|error| ToolError::failed(error.to_string()))?;
     Ok(VaultValidationFacts {
         brief,
         error_files: report.list.summary.error_files,
@@ -34,7 +34,9 @@ pub fn stale_summaries(context: &CallContext<'_>) -> Result<Vec<StaleSummary>, T
     let read = read_vault(context)?;
     let documents = read.vault.documents();
     let freshness = match locate(context, "node_revisions")? {
-        Located::Found(found) => summary_freshness(documents, Ok((&found.repository, &found.scope))),
+        Located::Found(found) => {
+            summary_freshness(documents, Ok((&found.repository, &found.scope)))
+        }
         Located::Missing(missing) => summary_freshness(documents, Err(missing.reason())),
     };
     if !freshness.checked {

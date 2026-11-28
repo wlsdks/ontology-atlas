@@ -35,7 +35,7 @@ pub fn build_report(
     let index = ReferenceIndex::new(documents);
     let config = context.config();
     let grounded = repo_root.is_some() || config.repo_resolution != "process.cwd";
-    let target = ScanTarget::allow(context, repo_root)?;
+    let target = ScanTarget::allow_named(context, repo_root, "repoRoot")?;
     let source = target.source_with_limit(WITNESS_TEXT_MAX_BYTES);
 
     let issues = collect_issues(

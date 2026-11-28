@@ -129,7 +129,10 @@ fn score_of(behind_ms: i64) -> f64 {
     if behind_ms <= 0 {
         return 0.0;
     }
-    #[allow(clippy::cast_precision_loss, reason = "a lag in milliseconds is far below 2^53")]
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "a lag in milliseconds is far below 2^53"
+    )]
     let lag = behind_ms as f64;
     (lag / (30.0 * DAY_MS)).min(1.0)
 }
@@ -272,7 +275,8 @@ mod tests {
     }
 
     #[test]
-    fn a_description_older_than_its_membership_is_behind_by_the_gap_and_one_older_than_nothing_is_short() {
+    fn a_description_older_than_its_membership_is_behind_by_the_gap_and_one_older_than_nothing_is_short(
+    ) {
         let history = [
             revision("2026-02-10T00:00:00+00:00", 1, &["a", "b"]),
             revision("2026-02-01T00:00:00+00:00", 1, &["a"]),

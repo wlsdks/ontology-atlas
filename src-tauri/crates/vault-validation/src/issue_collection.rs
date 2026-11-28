@@ -23,10 +23,7 @@ pub struct IssueCollection {
 }
 
 fn advisory(finding: Finding) -> (String, Issue) {
-    (
-        finding.slug,
-        Issue::warning(finding.code, finding.message),
-    )
+    (finding.slug, Issue::warning(finding.code, finding.message))
 }
 
 fn has_kind(document: &LoadedDocument) -> bool {
@@ -49,8 +46,10 @@ pub fn collect_issues(
         by_slug.insert(document.slug().to_string(), document.issues_at_slug());
     }
     let mut add = |slug: String, issue: Issue| by_slug.entry(slug).or_default().push(issue);
-    let mut whole_vault: Vec<(String, Vec<Issue>)> =
-        VaultIssues::find(documents, index, true).into_by_slug().into_iter().collect();
+    let mut whole_vault: Vec<(String, Vec<Issue>)> = VaultIssues::find(documents, index, true)
+        .into_by_slug()
+        .into_iter()
+        .collect();
     // A map has no order; the order within one file's findings is the order they were found in.
     whole_vault.sort_by(|left, right| left.0.cmp(&right.0));
     for (slug, issues) in whole_vault {
@@ -86,7 +85,10 @@ pub fn collect_issues(
     }
     let mut collection = IssueCollection {
         by_slug,
-        files: documents.iter().map(|document| document.slug().to_string()).collect(),
+        files: documents
+            .iter()
+            .map(|document| document.slug().to_string())
+            .collect(),
     };
     collection.drop_what_the_vault_answers(documents);
     for (slug, issue) in raw_sources {

@@ -31,7 +31,12 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let repo_root = optional_non_blank_text(arguments, "repoRoot")?;
 
     let read = read_vault(context)?;
-    let report = build_report(context, &read.root, read.vault.documents(), repo_root.as_deref())?;
+    let report = build_report(
+        context,
+        &read.root,
+        read.vault.documents(),
+        repo_root.as_deref(),
+    )?;
     let page = page_validation(
         &report.frame,
         &report.list,

@@ -142,9 +142,25 @@ mod tests {
 
     #[test]
     fn the_template_address_is_a_starter_and_a_real_node_that_is_named_like_one_needs_both_signs() {
-        assert!(is_starter_example("domains/example-domain", "domain", "Anything"));
-        assert!(is_starter_example("capabilities/example-billing", "capability", "Example billing"));
-        assert!(!is_starter_example("capabilities/example-billing", "capability", "Billing"));
-        assert!(!is_starter_example("capabilities/billing", "capability", "Example billing"));
+        assert!(is_starter_example(
+            "domains/example-domain",
+            "domain",
+            "Anything"
+        ));
+        assert!(is_starter_example(
+            "capabilities/example-billing",
+            "capability",
+            "Example billing"
+        ));
+        assert!(!is_starter_example(
+            "capabilities/example-billing",
+            "capability",
+            "Billing"
+        ));
+        assert!(!is_starter_example(
+            "capabilities/billing",
+            "capability",
+            "Example billing"
+        ));
     }
 }

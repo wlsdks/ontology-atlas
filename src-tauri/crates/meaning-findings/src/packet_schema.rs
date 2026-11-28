@@ -109,7 +109,15 @@ fn is_canonical_iso_time(text: &str) -> bool {
         }
         std::str::from_utf8(part).ok()?.parse().ok()
     };
-    let punctuation = [(4, b'-'), (7, b'-'), (10, b'T'), (13, b':'), (16, b':'), (19, b'.'), (23, b'Z')];
+    let punctuation = [
+        (4, b'-'),
+        (7, b'-'),
+        (10, b'T'),
+        (13, b':'),
+        (16, b':'),
+        (19, b'.'),
+        (23, b'Z'),
+    ];
     if !punctuation
         .iter()
         .all(|(at, expected)| bytes.get(*at) == Some(expected))
@@ -175,7 +183,10 @@ fn starts_with_drive(text: &str) -> bool {
 pub fn is_digest(value: &Value) -> bool {
     value.as_str().is_some_and(|text| {
         text.strip_prefix("sha256:").is_some_and(|hex| {
-            hex.len() == 64 && hex.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+            hex.len() == 64
+                && hex
+                    .bytes()
+                    .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
         })
     })
 }
@@ -261,7 +272,9 @@ pub fn is_persistable_relative_path(value: &str, allow_root: bool) -> bool {
         && !value.contains('\\')
         && !value.contains('`')
         && !value.contains(", ")
-        && !value.chars().any(|character| character <= '\u{1f}' || character == '\u{7f}')
+        && !value
+            .chars()
+            .any(|character| character <= '\u{1f}' || character == '\u{7f}')
         && value
             .split('/')
             .all(|part| !part.is_empty() && part != "." && part != "..")
@@ -343,7 +356,10 @@ mod tests {
         let digest = "a".repeat(64);
         let good = format!("source:src/a.ts#L3-L9@sha256:{digest}");
         let parsed = parse_source_range_citation(&good).expect("well formed");
-        assert_eq!((parsed.path.as_str(), parsed.start_line, parsed.end_line), ("src/a.ts", 3, 9));
+        assert_eq!(
+            (parsed.path.as_str(), parsed.start_line, parsed.end_line),
+            ("src/a.ts", 3, 9)
+        );
         for wrong in [
             format!("source:src/a.ts#L9-L3@sha256:{digest}"),
             format!("source:src/a.ts#L0-L3@sha256:{digest}"),
@@ -369,8 +385,14 @@ mod tests {
         let rows = json!([{"id": "a"}, {"id": "a"}, {}, {"id": "b"}]);
         let mut findings = Vec::new();
         let kept = map_unique(&rows, "id", &mut findings, "scenarios");
-        assert_eq!(kept.iter().map(|(name, _)| *name).collect::<Vec<_>>(), ["a", "b"]);
-        let paths: Vec<_> = findings.iter().map(|finding| finding.path.as_str()).collect();
+        assert_eq!(
+            kept.iter().map(|(name, _)| *name).collect::<Vec<_>>(),
+            ["a", "b"]
+        );
+        let paths: Vec<_> = findings
+            .iter()
+            .map(|finding| finding.path.as_str())
+            .collect();
         assert_eq!(paths, ["scenarios[1].id", "scenarios[2].id"]);
     }
 }

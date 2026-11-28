@@ -214,7 +214,12 @@ fn sampled(by_code: &TalliesByCode) -> TalliesByCode {
                     CodeTally {
                         severity: tally.severity,
                         count: tally.count,
-                        files: tally.files.iter().take(FILES_SAMPLED_PER_CODE).cloned().collect(),
+                        files: tally
+                            .files
+                            .iter()
+                            .take(FILES_SAMPLED_PER_CODE)
+                            .cloned()
+                            .collect(),
                         files_omitted: (omitted > 0).then_some(omitted),
                     },
                 )
@@ -238,7 +243,13 @@ pub fn page_validation<'a>(
         warning_files: list.summary.warning_files,
         by_code: sampled(&list.summary.by_code),
     };
-    let wanted: Vec<Problem> = list.problems.iter().skip(start).take(limit).cloned().collect();
+    let wanted: Vec<Problem> = list
+        .problems
+        .iter()
+        .skip(start)
+        .take(limit)
+        .cloned()
+        .collect();
     let mut rows = fold_repeated_guidance(wanted);
     let mut stopped_for_size = false;
     if request.limit.is_none() && !request.brief {
@@ -285,7 +296,10 @@ pub fn page_validation<'a>(
             Some(offset) => {
                 let mut arguments = format!("{{\"offset\":{offset}");
                 if let Some(root) = request.repo_root {
-                    arguments.push_str(&format!(",\"repoRoot\":{}", answer_format::json::quote(root)));
+                    arguments.push_str(&format!(
+                        ",\"repoRoot\":{}",
+                        answer_format::json::quote(root)
+                    ));
                 }
                 if let Some(named) = request.limit.filter(|_| !request.brief) {
                     arguments.push_str(&format!(",\"limit\":{named}"));
@@ -337,10 +351,18 @@ mod tests {
     #[test]
     fn a_later_finding_of_a_code_keeps_its_own_sentence_and_points_back_at_the_first() {
         let guidance = " Fix the path in the frontmatter or remove the entry from the node.";
-        let first = format!("\"node-one\" cites a file that is no longer in the repository at all.{guidance}");
-        let second = format!("\"node-two\" cites a file that is no longer in the repository at all.{guidance}");
+        let first = format!(
+            "\"node-one\" cites a file that is no longer in the repository at all.{guidance}"
+        );
+        let second = format!(
+            "\"node-two\" cites a file that is no longer in the repository at all.{guidance}"
+        );
         let other = "\"node-three\" cites a moved file; read it at src/x.ts before you decide anything here.";
-        let folded = fold_repeated_guidance(vec![row("node-one", &first), row("node-two", &second), row("node-three", other)]);
+        let folded = fold_repeated_guidance(vec![
+            row("node-one", &first),
+            row("node-two", &second),
+            row("node-three", other),
+        ]);
         assert_eq!(folded[0].issues[0].message.as_deref(), Some(first.as_str()));
         assert_eq!(
             folded[1].issues[0].message.as_deref(),

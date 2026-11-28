@@ -75,13 +75,7 @@ pub fn locate_from(
         };
     let facts = match Repository::at(repo_root).facts() {
         Ok(Some(facts)) => facts,
-        Ok(None) => {
-            return missing(
-                "not-a-git-repository",
-                repo_root,
-                &config.vault_root,
-            )
-        }
+        Ok(None) => return missing("not-a-git-repository", repo_root, &config.vault_root),
         Err(GitReadError::Run(GitRunError::Spawn(cause)))
             if cause.kind() == std::io::ErrorKind::NotFound =>
         {

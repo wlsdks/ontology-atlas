@@ -41,7 +41,10 @@ pub struct PathDrift {
 }
 
 fn looks_like_path(entry: &str) -> bool {
-    entry.contains('/') || CODE_EXTENSIONS.iter().any(|extension| entry.ends_with(extension))
+    entry.contains('/')
+        || CODE_EXTENSIONS
+            .iter()
+            .any(|extension| entry.ends_with(extension))
 }
 
 fn base_name(path: &str) -> &str {
@@ -63,7 +66,9 @@ pub fn path_drift_unchecked(repo_root: String) -> PathDrift {
 /// Whether something is at `path`. A name the reader refuses to look at (a hidden file, a
 /// credential name) is taken as present: it was not looked at, so it is not called missing.
 fn is_present(source: &dyn SourceFiles, path: &str) -> bool {
-    source.kind(Path::new(path)).map_or(true, |kind| kind.is_some())
+    source
+        .kind(Path::new(path))
+        .map_or(true, |kind| kind.is_some())
 }
 
 /// The drift of `documents` against the repository `source` reads, which the answer names
@@ -144,7 +149,9 @@ pub fn path_drift(
         };
         format!("{found} frontmatter path(s) point at files missing under repoRoot \u{2014} fix the .md (patch_concept) or remove the stale entry.{moved} If repoRoot is wrong, re-run validate_vault with the correct repoRoot.")
     } else if paths_checked > 0 {
-        format!("all {paths_checked} frontmatter source path(s) exist under repoRoot (no code drift).")
+        format!(
+            "all {paths_checked} frontmatter source path(s) exist under repoRoot (no code drift)."
+        )
     } else {
         "no frontmatter path:/elements: source paths to check.".to_string()
     };

@@ -307,10 +307,7 @@ pub fn dependency_witness_findings(
     }
     let mut findings = Vec::new();
     for target in targets {
-        let Some(target_path) = cited
-            .of_reference(target)
-            .and_then(inside_repository)
-        else {
+        let Some(target_path) = cited.of_reference(target).and_then(inside_repository) else {
             continue;
         };
         let names = witness_names_for(&target_path.written);
@@ -394,7 +391,10 @@ mod tests {
     fn a_module_root_is_witnessed_by_its_folder_and_an_import_word_by_its_stem() {
         assert_eq!(witness_names_for("src/export/mod.rs"), ["mod", "export"]);
         assert_eq!(witness_names_for("src/shared/nav.ts"), ["nav"]);
-        assert_eq!(words_of_specifier("./order/placement.ts"), ["", "", "order", "placement"]);
+        assert_eq!(
+            words_of_specifier("./order/placement.ts"),
+            ["", "", "order", "placement"]
+        );
         assert!(words_of_specifier("crate::order::{place, cancel}").contains(&"cancel".to_string()));
         assert_eq!(words_of_specifier("a.b.c"), ["a", "b"]);
     }

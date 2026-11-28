@@ -65,7 +65,17 @@ mod tests {
         let found = raw_source_kind_issues(&root);
         let slugs: Vec<&str> = found.iter().map(|(slug, _)| slug.as_str()).collect();
         assert_eq!(slugs, ["sources/a", "sources/c"]);
-        assert!(found[0].1.message.as_deref().unwrap_or("").contains("move it into capabilities/,"));
-        assert!(found[1].1.message.as_deref().unwrap_or("").contains("move it into the vault root,"));
+        assert!(found[0]
+            .1
+            .message
+            .as_deref()
+            .unwrap_or("")
+            .contains("move it into capabilities/,"));
+        assert!(found[1]
+            .1
+            .message
+            .as_deref()
+            .unwrap_or("")
+            .contains("move it into the vault root,"));
     }
 }

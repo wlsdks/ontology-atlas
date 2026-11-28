@@ -64,7 +64,9 @@ mod tests {
 
     #[test]
     fn a_path_in_a_sentence_loses_its_punctuation_and_its_line_suffix() {
-        let found = path_tokens_in("Wired by `src/bridge.ts`:12, see (docs/a.md#L3-L9) and https://x.dev/a.js, not nav.");
+        let found = path_tokens_in(
+            "Wired by `src/bridge.ts`:12, see (docs/a.md#L3-L9) and https://x.dev/a.js, not nav.",
+        );
         let names: Vec<&str> = found.iter().map(String::as_str).collect();
         assert_eq!(names, ["docs/a.md", "src/bridge.ts"]);
     }

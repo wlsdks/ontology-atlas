@@ -25,21 +25,30 @@ const UNIT_SOURCE_EXTENSIONS: [&str; 31] = [
 
 fn pattern(source: &str) -> Regex {
     // Every pattern in this file is a constant that the tests below exercise.
-    Regex::new(source).unwrap_or_else(|error| unreachable!("a built-in pattern is invalid: {error}"))
+    Regex::new(source)
+        .unwrap_or_else(|error| unreachable!("a built-in pattern is invalid: {error}"))
 }
 
 static RULE_WORDS: LazyLock<Regex> = LazyLock::new(|| {
-    pattern(r"(?i-u:\b(?:if|unless|only|when|whenever|before|after|until|otherwise|default|defaults|first|must|requires?|refuses?|rejects?|never|skips?|falls? back|instead)\b)")
+    pattern(
+        r"(?i-u:\b(?:if|unless|only|when|whenever|before|after|until|otherwise|default|defaults|first|must|requires?|refuses?|rejects?|never|skips?|falls? back|instead)\b)",
+    )
 });
 static CODE_SPAN: LazyLock<Regex> = LazyLock::new(|| pattern(r"`[^`\n]*`"));
 static LINE_CITE: LazyLock<Regex> = LazyLock::new(|| {
-    pattern(r#"([^\s`'"<>|,;]{1,300}?\.[A-Za-z]{1,5})(?::|#|\s+)L?([0-9]+)(?:\s*[-\u{2013}]\s*L?([0-9]+))?"#)
+    pattern(
+        r#"([^\s`'"<>|,;]{1,300}?\.[A-Za-z]{1,5})(?::|#|\s+)L?([0-9]+)(?:\s*[-\u{2013}]\s*L?([0-9]+))?"#,
+    )
 });
 static CONDITION: LazyLock<Regex> = LazyLock::new(|| {
-    pattern(r"(?-u:\b)(?:if|elif|else|unless|switch|case|when|match|guard|while|raise|throw|except|catch|default)(?-u:\b)|(?-u:\b)(?:errors\.New|fmt\.Errorf)\(|\?\?|\|\||&&")
+    pattern(
+        r"(?-u:\b)(?:if|elif|else|unless|switch|case|when|match|guard|while|raise|throw|except|catch|default)(?-u:\b)|(?-u:\b)(?:errors\.New|fmt\.Errorf)\(|\?\?|\|\||&&",
+    )
 });
 static DEFAULT_VALUE: LazyLock<Regex> = LazyLock::new(|| {
-    pattern(r#"(?:^|[\s(,{])[A-Za-z_$][A-Za-z0-9_$]*\s*(?::=|=|:)\s*(?:true|false|True|False|None|null|nil|-?[0-9][0-9_.]*|"[^"\n]*"|'[^'\n]*')\s*(?:[,)}]|$)"#)
+    pattern(
+        r#"(?:^|[\s(,{])[A-Za-z_$][A-Za-z0-9_$]*\s*(?::=|=|:)\s*(?:true|false|True|False|None|null|nil|-?[0-9][0-9_.]*|"[^"\n]*"|'[^'\n]*')\s*(?:[,)}]|$)"#,
+    )
 });
 static COMMENT: LazyLock<Regex> = LazyLock::new(|| pattern(r"^\s*(?://|#|\*|/\*)"));
 static SYMBOL_STOP: LazyLock<Regex> =
@@ -132,7 +141,10 @@ fn line_cites(body: &str, source: Option<&dyn SourceFiles>) -> Vec<Cite> {
 
 /// `a ? b : c` with spaces around both marks and no colon between them, in one right-to-left pass.
 fn has_ternary(line: &[char]) -> bool {
-    let space = |at: usize| line.get(at).is_some_and(|character| character.is_whitespace());
+    let space = |at: usize| {
+        line.get(at)
+            .is_some_and(|character| character.is_whitespace())
+    };
     let mut colon: Option<usize> = None;
     for index in (1..line.len()).rev() {
         match line.get(index) {
@@ -278,7 +290,9 @@ mod tests {
     #[test]
     fn a_paragraph_states_a_rule_by_its_prose_and_not_by_a_code_span() {
         assert!(states_rule("It refuses an order when the cart is empty."));
-        assert!(!states_rule("It lists the `default` values and `must_pay` codes."));
+        assert!(!states_rule(
+            "It lists the `default` values and `must_pay` codes."
+        ));
     }
 
     #[test]
@@ -292,12 +306,18 @@ mod tests {
 
     #[test]
     fn cites_read_each_spelling_and_the_symbol_after_a_path() {
-        let cites = line_cites("see `src/a.ts:L12-L30`, (src/b.py#5) and src/c.rs L7\u{2013}9", None);
+        let cites = line_cites(
+            "see `src/a.ts:L12-L30`, (src/b.py#5) and src/c.rs L7\u{2013}9",
+            None,
+        );
         let shown: Vec<(&str, usize, usize)> = cites
             .iter()
             .map(|cite| (cite.path.as_str(), cite.start_line, cite.end_line))
             .collect();
-        assert_eq!(shown, [("src/a.ts", 12, 30), ("src/b.py", 5, 5), ("src/c.rs", 7, 9)]);
+        assert_eq!(
+            shown,
+            [("src/a.ts", 12, 30), ("src/b.py", 5, 5), ("src/c.rs", 7, 9)]
+        );
         assert_eq!(
             cited_symbol("`src/x.ts` `issueInvoice` does it", "src/x.ts").as_deref(),
             Some("issueInvoice")

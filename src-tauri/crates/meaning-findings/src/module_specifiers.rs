@@ -43,13 +43,20 @@ pub fn module_specifiers(text: &str) -> Vec<String> {
     let mut found = Vec::new();
     for pattern in QUOTED_PATTERNS.iter() {
         for captures in pattern.captures_iter(text) {
-            found.extend(captures.get(1).map(|specifier| specifier.as_str().to_string()));
+            found.extend(
+                captures
+                    .get(1)
+                    .map(|specifier| specifier.as_str().to_string()),
+            );
         }
     }
     for captures in RUST_DECLARATION.captures_iter(text) {
         // The captured run may not cross another `use` or `mod`: a statement that opens a second
         // one before its `;` is no declaration.
-        if let Some(named) = captures.get(1).filter(|named| !RUST_KEYWORD.is_match(named.as_str())) {
+        if let Some(named) = captures
+            .get(1)
+            .filter(|named| !RUST_KEYWORD.is_match(named.as_str()))
+        {
             found.push(named.as_str().to_string());
         }
     }
@@ -92,8 +99,14 @@ mod tests {
             "fmt",
             "net/http",
         ] {
-            assert!(found.iter().any(|name| name == expected), "{expected} in {found:?}");
+            assert!(
+                found.iter().any(|name| name == expected),
+                "{expected} in {found:?}"
+            );
         }
-        assert!(!found.iter().any(|name| name.contains("other")), "{found:?}");
+        assert!(
+            !found.iter().any(|name| name.contains("other")),
+            "{found:?}"
+        );
     }
 }

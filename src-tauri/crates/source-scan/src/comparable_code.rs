@@ -64,7 +64,8 @@ where
         if self.in_import.is_none() && is_import(self.parsed.language(), kind) {
             // `export const a = 1` is an export statement that holds code: only a re-export,
             // which names a source, reads as an import.
-            let reexport = kind == "export_statement" && node.child_by_field_name("source").is_some();
+            let reexport =
+                kind == "export_statement" && node.child_by_field_name("source").is_some();
             if kind != "export_statement" || reexport {
                 self.in_import = Some(Vec::new());
                 self.import_depth = 1;
@@ -127,8 +128,11 @@ pub fn comparable_code(text: &str, file_name: &str) -> String {
     let Some(language) = language else {
         return exact_lines(&source);
     };
-    let Ok(parsed) = parse_bounded(language, &source, ParseLimits::for_imports(MAX_COMPARED_BYTES))
-    else {
+    let Ok(parsed) = parse_bounded(
+        language,
+        &source,
+        ParseLimits::for_imports(MAX_COMPARED_BYTES),
+    ) else {
         return exact_lines(&source);
     };
     let mut flattener = Flattener {
@@ -159,12 +163,21 @@ mod tests {
     fn a_comment_or_the_layout_does_not_change_a_script_but_a_literal_does() {
         let before = "// header\nexport function a(x) {\n  return x + 1; /* inc */\n}\n";
         let after = "export function a( x ) { return x +\n 1; }\n";
-        assert_eq!(comparable_code(before, "a.ts"), comparable_code(after, "a.ts"));
+        assert_eq!(
+            comparable_code(before, "a.ts"),
+            comparable_code(after, "a.ts")
+        );
         let changed = "export function a(x) { return x + 2; }\n";
-        assert_ne!(comparable_code(before, "a.ts"), comparable_code(changed, "a.ts"));
+        assert_ne!(
+            comparable_code(before, "a.ts"),
+            comparable_code(changed, "a.ts")
+        );
         let string_before = "const s = 'a  b';\n";
         let string_after = "const s = 'a b';\n";
-        assert_ne!(comparable_code(string_before, "a.ts"), comparable_code(string_after, "a.ts"));
+        assert_ne!(
+            comparable_code(string_before, "a.ts"),
+            comparable_code(string_after, "a.ts")
+        );
     }
 
     #[test]
@@ -172,13 +185,25 @@ mod tests {
         let before = "import { a, b } from './old/place';\nexport const c = a;\n";
         let moved = "import { b, a } from './new/place';\nexport const c = a;\n";
         let renamed = "import { a, z } from './old/place';\nexport const c = a;\n";
-        assert_eq!(comparable_code(before, "x.ts"), comparable_code(moved, "x.ts"));
-        assert_ne!(comparable_code(before, "x.ts"), comparable_code(renamed, "x.ts"));
+        assert_eq!(
+            comparable_code(before, "x.ts"),
+            comparable_code(moved, "x.ts")
+        );
+        assert_ne!(
+            comparable_code(before, "x.ts"),
+            comparable_code(renamed, "x.ts")
+        );
     }
 
     #[test]
     fn a_file_without_a_grammar_is_compared_by_its_lines() {
-        assert_eq!(comparable_code("a  \n\n b\r\n", "notes.txt"), comparable_code("a\n b\n", "notes.txt"));
-        assert_ne!(comparable_code("a\n", "notes.txt"), comparable_code("a\n# c\n", "notes.txt"));
+        assert_eq!(
+            comparable_code("a  \n\n b\r\n", "notes.txt"),
+            comparable_code("a\n b\n", "notes.txt")
+        );
+        assert_ne!(
+            comparable_code("a\n", "notes.txt"),
+            comparable_code("a\n# c\n", "notes.txt")
+        );
     }
 }
