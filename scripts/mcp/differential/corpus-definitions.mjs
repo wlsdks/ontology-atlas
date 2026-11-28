@@ -2000,6 +2000,12 @@ add('writes', 'patch-concept-batch', { vault: 'storefront' }, [
   call('patch_concept', { patches: [{ slug: 'capabilities/cart', frontmatter: { uid: 'x' } }] }),
   call('get_concepts', { slugs: ['capabilities/cart', 'capabilities/checkout'], body: 'full' }),
 ]);
+add('safety', 'write-refused-by-a-reserved-referrer', { vault: 'reserved-referrer' }, [
+  call('rename_concept', { oldSlug: 'capabilities/target', newSlug: 'capabilities/goal', confirm: true }),
+  call('merge_concepts', { fromSlug: 'capabilities/target', intoSlug: 'capabilities/other', confirm: true }),
+  call('delete_concept', { slug: 'capabilities/target', force: true, confirm: true }),
+  call('get_concepts', { slugs: ['capabilities/target'] }),
+]);
 add('writes', 'patch-concept-preserves-bytes-of-odd-files', { vault: 'edge-bytes' }, [
   call('patch_concept', { slug: 'capabilities/crlf', frontmatter: { note: 'edited' }, expected_mtime: mtimeOf('capabilities/crlf.md') }),
   call('patch_concept', { slug: 'capabilities/bom', frontmatter: { note: 'edited' }, expected_mtime: mtimeOf('capabilities/bom.md') }),

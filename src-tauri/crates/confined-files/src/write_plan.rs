@@ -133,7 +133,8 @@ impl PlanEntry {
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error(
     "Refused: {slug} carries review_state: human_decides, so it is reserved for a person \
-and this change would rewrite it.{}",
+and this change would rewrite it.{} Report it and let the person decide; only they release the \
+reservation.",
     note.as_ref().map(|text| format!(" What they have to decide: {text}")).unwrap_or_default()
 )]
 pub struct ReservedForPerson {

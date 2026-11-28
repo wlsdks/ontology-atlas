@@ -592,6 +592,12 @@ fn a_plan_that_would_rewrite_a_file_reserved_for_a_person_writes_nothing() {
     let error = apply_all_or_nothing(plan(), &options()).expect_err("reserved");
     assert!(matches!(error, WriteError::Reserved(_)), "{error}");
     assert!(error.to_string().contains("reserved for a person"));
+    assert!(
+        error
+            .to_string()
+            .ends_with("Report it and let the person decide; only they release the reservation."),
+        "an agent that meets a reserved file is told whom to hand it to: {error}"
+    );
     assert_eq!(error.class(), WriteErrorClass::ToolError);
     assert_eq!(
         fs::read_to_string(root.path().join("plain.md")).expect("plain"),

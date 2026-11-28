@@ -437,6 +437,23 @@ const FIXTURE_BUILDERS = {
     },
   },
 
+  // A node whose referrer is reserved for a person: a change that would rewrite the referrer is refused.
+  'reserved-referrer': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      write(dir, v('reserved.md'), projectNode('reserved', 'Reserved', ['domains/held']));
+      write(dir, v('domains/held.md'), domainNode('domains/held', 'Held', ['capabilities/target', 'capabilities/decision', 'capabilities/other']));
+      write(dir, v('capabilities/target.md'), capabilityNode('capabilities/target', 'Target', 'domains/held'));
+      write(dir, v('capabilities/other.md'), capabilityNode('capabilities/other', 'Other', 'domains/held'));
+      write(dir, v('capabilities/decision.md'), capabilityNode('capabilities/decision', 'Decision', 'domains/held', {
+        dependencies: '[capabilities/target]',
+        review_state: 'human_decides',
+        review_note: '"Whether the target stays a capability."',
+      }));
+    },
+  },
+
   'edge-bytes': {
     vaultRel: 'vault',
     build(dir) {
