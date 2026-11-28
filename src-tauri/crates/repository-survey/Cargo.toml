@@ -1,0 +1,30 @@
+[package]
+name = "repository-survey"
+version = "0.1.0"
+description = "The breadth map of a repository: its size, product units, entry points and abilities to place"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+confined-files = { path = "../confined-files" }
+hardened-git = { path = "../hardened-git" }
+source-scan = { path = "../source-scan" }
+# The files of a survey are read and measured on the global pool, only through `par_iter`.
+rayon = "1"
+# Text patterns the survey reads repositories with; the engine matches in linear time, so a
+# hostile line cannot make a pattern run long.
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-gencat", "unicode-perl"] }
+# A repository's configuration files keep their keys in the order written.
+indexmap = { version = "2", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Git lists ignored paths precomposed (NFC) while a disk may keep them decomposed.
+icu_normalizer = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
