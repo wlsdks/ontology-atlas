@@ -4038,6 +4038,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "project-meaning"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "indexmap 2.14.0",
+ "ontology-graph",
+ "project-source",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "vault-document",
+]
+
+[[package]]
 name = "project-source"
 version = "0.1.0"
 dependencies = [

@@ -5,6 +5,7 @@ mod composed_name;
 mod folder_state;
 mod git_state;
 mod ordered_json;
+mod pinned_citation;
 mod probe_error;
 mod project_graph_hash;
 mod source_bindings;
@@ -20,9 +21,12 @@ mod source_witnesses;
 mod vault_exclusion;
 
 pub use competency_evidence::{
-    competency_evidence_citations, competency_evidence_paths, COMPETENCY_HEADING,
+    competency_evidence_citations, competency_evidence_paths, competency_heading_starts,
+    competency_section_end, COMPETENCY_HEADING,
 };
 pub use git_state::find_git_root;
+pub use ordered_json::OrderedJson;
+pub use pinned_citation::pinned_citation_verifier;
 pub use probe_error::ProbeError;
 pub use project_graph_hash::project_graph_hash;
 pub use source_bindings::{
@@ -48,5 +52,7 @@ pub use source_receipt_view::{
     read_source_view, sanitize_receipt, LiveWitnessCheck, SourceView,
 };
 pub use source_vocabulary::{is_action_id, is_gap_id, SOURCE_ACTION_IDS, SOURCE_GAP_IDS};
-pub use source_witnesses::{derive_witness_claims, normalized_witness_path, WitnessClaim};
+pub use source_witnesses::{
+    derive_witness_claims, derive_witness_claims_with_body, normalized_witness_path, WitnessClaim,
+};
 pub use vault_exclusion::{excluded_vault_folder, filter_status, vault_folder_inside};

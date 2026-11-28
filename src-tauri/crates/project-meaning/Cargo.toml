@@ -1,0 +1,24 @@
+[package]
+name = "project-meaning"
+version = "0.1.0"
+description = "What a project's five competency answers claim, whether its measured source and ontology back them, and the receipt that records the check"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+confined-files = { path = "../confined-files" }
+ontology-graph = { path = "../ontology-graph" }
+project-source = { path = "../project-source" }
+vault-document = { path = "../vault-document" }
+indexmap = { version = "2", features = ["serde"] }
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

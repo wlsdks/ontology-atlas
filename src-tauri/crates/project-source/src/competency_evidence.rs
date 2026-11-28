@@ -3,6 +3,7 @@
 //! not claims. A malformed row makes the whole set empty; the strict parser reports it at finalize.
 
 use answer_format::collation::compare_text;
+use answer_format::whitespace::is_line_terminator;
 
 use crate::source_range_citation::{is_persistable_relative_path, parse_source_range_citation};
 
@@ -13,28 +14,46 @@ struct EvidenceValue {
     citation: Option<String>,
 }
 
-/// The text of the one section: after its heading, up to the next `## ` heading (a `###` is not one).
-fn section_of_one_heading(body: &str) -> Option<&str> {
-    let mut headings = body
-        .match_indices(COMPETENCY_HEADING)
+/// Where each `## Competency answers` heading starts. A heading is the whole of its line, and a
+/// line ends at any JavaScript line terminator (`\n`, `\r`, U+2028, U+2029), so a file written with
+/// Windows line ends has its headings too.
+pub fn competency_heading_starts(body: &str) -> Vec<usize> {
+    let line_start = |at: usize| {
+        body.get(..at)
+            .and_then(|before| before.chars().next_back())
+            .is_none_or(is_line_terminator)
+    };
+    body.match_indices(COMPETENCY_HEADING)
         .filter(|(at, heading)| {
-            let line_start = *at == 0 || body.as_bytes().get(at - 1) == Some(&b'\n');
-            let line_end = at + heading.len() == body.len()
-                || body.as_bytes().get(at + heading.len()) == Some(&b'\n');
-            line_start && line_end
-        });
-    let (at, _) = headings.next()?;
-    if headings.next().is_some() {
-        return None;
-    }
-    let remainder = body.get(at + COMPETENCY_HEADING.len()..)?;
-    let end = remainder
-        .match_indices("\n## ")
-        .find(|(position, marker)| {
-            remainder.as_bytes().get(position + marker.len()) != Some(&b'#')
+            line_start(*at)
+                && body
+                    .get(at + heading.len()..)
+                    .and_then(|after| after.chars().next())
+                    .is_none_or(is_line_terminator)
         })
-        .map_or(remainder.len(), |(position, _)| position);
-    remainder.get(..end)
+        .map(|(at, _)| at)
+        .collect()
+}
+
+/// Where the section that begins after its heading at `after_heading` ends: at the `\n` before the
+/// next `## ` heading (a `###` is not one), else the end of the body.
+pub fn competency_section_end(body: &str, after_heading: usize) -> usize {
+    let remainder = body.get(after_heading..).unwrap_or("");
+    after_heading
+        + remainder
+            .match_indices("\n## ")
+            .find(|(position, marker)| remainder.as_bytes().get(position + marker.len()) != Some(&b'#'))
+            .map_or(remainder.len(), |(position, _)| position)
+}
+
+/// The text of the one section: after its heading, up to the next `## ` heading.
+fn section_of_one_heading(body: &str) -> Option<&str> {
+    let starts = competency_heading_starts(body);
+    let [at] = starts.as_slice() else {
+        return None;
+    };
+    let after_heading = at + COMPETENCY_HEADING.len();
+    body.get(after_heading..competency_section_end(body, after_heading))
 }
 
 fn evidence_values(body: &str) -> Vec<EvidenceValue> {
@@ -42,7 +61,7 @@ fn evidence_values(body: &str) -> Vec<EvidenceValue> {
         return Vec::new();
     };
     let mut values = Vec::new();
-    for line in section.split('\n') {
+    for line in section.split(is_line_terminator) {
         let (is_evidence, cells) = if let Some(cells) = line.strip_prefix("- Evidence: ") {
             (true, cells)
         } else if let Some(cells) = line.strip_prefix("- Paths: ") {
@@ -129,5 +148,11 @@ mod tests {
         assert!(competency_evidence_paths(bare).is_empty());
         let pinned_path = "## Competency answers\n- Paths: `source:a.ts#L1-L2@sha256:x`\n";
         assert!(competency_evidence_paths(pinned_path).is_empty());
+    }
+
+    #[test]
+    fn a_windows_line_ending_does_not_hide_the_section_or_its_rows() {
+        let body = "# P\r\n\r\n## Competency answers\r\n\r\n- Evidence: `src/a.ts`\r\n- Paths: `src/c`\r\n\r\n## Uncertainty\r\n";
+        assert_eq!(competency_evidence_paths(body), ["src/a.ts", "src/c"]);
     }
 }
