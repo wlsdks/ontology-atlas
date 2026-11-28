@@ -384,7 +384,8 @@ pub fn scan_go_packages(
         facts,
         nested_module: RefCell::default(),
     };
-    let (files, limited, credential_named_files) = list_go_files(&layout, ignore, max_files, scoped_folders);
+    let (files, limited, credential_named_files) =
+        list_go_files(&layout, ignore, max_files, scoped_folders);
     evidence.files_scanned = files.len();
     evidence.file_scan_limited = limited;
     let mut targets: HashMap<String, Option<String>> = HashMap::new();

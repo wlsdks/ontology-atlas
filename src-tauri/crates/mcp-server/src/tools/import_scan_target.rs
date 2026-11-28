@@ -4,8 +4,8 @@
 use std::path::Path;
 
 use confined_files::{
-    confined_source_reads_enabled, DiskSource, EntryKind, ScanRoots, SnapshotError,
-    SnapshotSource, SourceFiles, SourceRoot, SourceSnapshot,
+    confined_source_reads_enabled, DiskSource, EntryKind, ScanRoots, SnapshotError, SnapshotSource,
+    SourceFiles, SourceRoot, SourceSnapshot,
 };
 use source_scan::{scan_imports, ImportScan, ImportScanOptions, SOURCE_FILE_MAX_BYTES};
 
@@ -44,22 +44,21 @@ impl ScanTarget {
     /// yet to be a folder: a tool that must name another problem first calls
     /// [`Self::require_folder`] when it reaches the scan.
     pub fn allow(context: &CallContext<'_>, root_path: Option<&str>) -> Result<Self, ToolError> {
-        Self::allowed_for(
-            context,
-            root_path,
-            "rootPath",
-            confined_source_reads_enabled(),
-        )
+        Self::allow_named(context, root_path, "rootPath")
     }
 
-    /// [`Self::allow`] for a tool whose argument has another name, which the refusal repeats,
-    /// and which reads the disk even when the app asked the scanning tools to read a census.
+    /// [`Self::allow`] for a tool whose argument has another name, which the refusal repeats.
     pub fn allow_named(
         context: &CallContext<'_>,
         root_path: Option<&str>,
         argument: &str,
     ) -> Result<Self, ToolError> {
-        Self::allowed_for(context, root_path, argument, false)
+        Self::allowed_for(
+            context,
+            root_path,
+            argument,
+            confined_source_reads_enabled(),
+        )
     }
 
     fn allowed_for(

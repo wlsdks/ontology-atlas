@@ -150,8 +150,14 @@ fn a_file_on_the_disk_that_the_census_does_not_list_is_never_read() {
 #[test]
 fn a_tree_replaced_by_a_link_after_the_census_was_taken_changes_nothing() {
     let scene = scene();
-    write(&scene.outside.join("a.ts"), &format!("import './secret'; // {SENTINEL}\n"));
-    write(&scene.outside.join("secret.ts"), &format!("export const s = '{SENTINEL}';\n"));
+    write(
+        &scene.outside.join("a.ts"),
+        &format!("import './secret'; // {SENTINEL}\n"),
+    );
+    write(
+        &scene.outside.join("secret.ts"),
+        &format!("export const s = '{SENTINEL}';\n"),
+    );
     std::os::unix::fs::symlink(&scene.outside, scene.repository.join("src")).expect("link");
     let (refused, text) = ask(
         &scene,
@@ -160,7 +166,10 @@ fn a_tree_replaced_by_a_link_after_the_census_was_taken_changes_nothing() {
         "{\"reconcile\":false}",
     );
     assert!(!refused, "{text}");
-    assert!(!text.contains(SENTINEL), "nothing came from behind the link");
+    assert!(
+        !text.contains(SENTINEL),
+        "nothing came from behind the link"
+    );
     let answer: Value = serde_json::from_str(&text).expect("json");
     assert_eq!(answer["edges"][0]["to"], "src/b.ts");
 }
@@ -168,7 +177,10 @@ fn a_tree_replaced_by_a_link_after_the_census_was_taken_changes_nothing() {
 #[test]
 fn a_link_the_census_lists_is_refused_and_never_followed() {
     let scene = scene();
-    write(&scene.outside.join("a.ts"), &format!("export const a = '{SENTINEL}';\n"));
+    write(
+        &scene.outside.join("a.ts"),
+        &format!("export const a = '{SENTINEL}';\n"),
+    );
     std::os::unix::fs::symlink(&scene.outside, scene.repository.join("linked")).expect("link");
     let linked = census(
         &scene,
@@ -190,8 +202,14 @@ fn a_link_the_census_lists_is_refused_and_never_followed() {
 #[test]
 fn a_breadth_map_lists_what_the_census_lists_and_not_what_lies_on_the_disk() {
     let scene = scene();
-    write(&scene.repository.join("src/a.ts"), "export function onDisk(): void {}\n");
-    write(&scene.repository.join("src/planted.ts"), &format!("// {SENTINEL}\n"));
+    write(
+        &scene.repository.join("src/a.ts"),
+        "export function onDisk(): void {}\n",
+    );
+    write(
+        &scene.repository.join("src/planted.ts"),
+        &format!("// {SENTINEL}\n"),
+    );
     let listed = census(
         &scene,
         &[
@@ -210,7 +228,10 @@ fn a_breadth_map_lists_what_the_census_lists_and_not_what_lies_on_the_disk() {
 #[test]
 fn without_a_usable_census_every_scanning_tool_refuses_and_reads_nothing() {
     let scene = scene();
-    write(&scene.repository.join("src/a.ts"), &format!("export const a = '{SENTINEL}';\n"));
+    write(
+        &scene.repository.join("src/a.ts"),
+        &format!("export const a = '{SENTINEL}';\n"),
+    );
     let mut truncated = captured_pair(&scene);
     truncated["truncated"] = json!(true);
     let mut contract = captured_pair(&scene);
@@ -235,7 +256,10 @@ fn without_a_usable_census_every_scanning_tool_refuses_and_reads_nothing() {
 #[test]
 fn selected_reads_are_refused_while_the_app_supplies_a_census() {
     let scene = scene();
-    write(&scene.repository.join("src/a.ts"), &format!("export const a = '{SENTINEL}';\n"));
+    write(
+        &scene.repository.join("src/a.ts"),
+        &format!("export const a = '{SENTINEL}';\n"),
+    );
     let (refused, text) = ask(
         &scene,
         Some(&captured_pair(&scene)),
@@ -245,4 +269,50 @@ fn selected_reads_are_refused_while_the_app_supplies_a_census() {
     assert!(refused, "{text}");
     assert!(text.contains("sourceReads is not available"), "{text}");
     assert!(!text.contains(SENTINEL));
+}
+
+fn vault_citing(scene: &Scene, path: &str) {
+    write(
+        &scene.vault.join("capabilities/place-order.md"),
+        &format!(
+            "---\nkind: capability\ntitle: Place Order\npath: {path}\n---\n\n# Place Order\n\nPlaces an order.\n"
+        ),
+    );
+}
+
+#[test]
+fn validating_a_vault_measures_its_paths_against_the_census_and_not_the_disk() {
+    let scene = scene();
+    vault_citing(&scene, "src/planted.ts");
+    write(&scene.repository.join("src/planted.ts"), &format!("// {SENTINEL}\n"));
+    let listed = census(
+        &scene,
+        &[
+            directory(".", &["src"]),
+            directory("src", &["a.ts"]),
+            file("src/a.ts", "export const a = 1;\n"),
+        ],
+    );
+    let (refused, text) = ask(&scene, Some(&listed), "validate_vault", "{}");
+    assert!(!refused, "{text}");
+    let answer: Value = serde_json::from_str(&text).expect("json");
+    assert_eq!(answer["pathDrift"]["checked"], true, "{text}");
+    assert!(
+        answer["pathDrift"]["drifts"].to_string().contains("src/planted.ts"),
+        "the file lies on the disk but the census does not list it, so it is missing: {text}"
+    );
+    assert_eq!(
+        answer["evidenceDrift"]["reason"], "census-has-no-git-history",
+        "a census holds no Git history, so nothing is dated: {text}"
+    );
+}
+
+#[test]
+fn validating_a_vault_without_a_usable_census_refuses_instead_of_reading_the_disk() {
+    let scene = scene();
+    vault_citing(&scene, "src/planted.ts");
+    write(&scene.repository.join("src/planted.ts"), &format!("// {SENTINEL}\n"));
+    let (refused, text) = ask(&scene, None, "validate_vault", "{}");
+    assert!(refused, "{text}");
+    assert_eq!(text, "Error: Confined source snapshot descriptor is unavailable");
 }

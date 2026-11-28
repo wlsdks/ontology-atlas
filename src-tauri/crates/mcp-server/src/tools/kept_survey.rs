@@ -60,7 +60,9 @@ pub fn survey_from_disk(
 ) -> Arc<Survey> {
     let source = target.source_with_limit(SURVEY_FILE_BYTES);
     let files = SurveyFiles::new(&source);
-    context
-        .survey_cache()
-        .survey(target.source_root(), &files, &asked_of(context, target, ignore))
+    context.survey_cache().survey(
+        target.source_root(),
+        &files,
+        &asked_of(context, target, ignore),
+    )
 }
