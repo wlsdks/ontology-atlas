@@ -12,8 +12,8 @@ use meaning_findings::WITNESS_TEXT_MAX_BYTES;
 use source_scan::place_folder;
 use vault_document::{LoadedDocument, ReferenceIndex};
 use vault_validation::{
-    collect_issues, evidence_drift, list_problems, path_drift, path_drift_unchecked,
-    raw_source_kind_issues, summary_freshness, EvidenceHistory, ProblemList, ValidationFrame,
+    collect_issues, evidence_drift, evidence_drift_root_missing, list_problems, path_drift,
+    path_drift_root_missing, path_drift_unchecked, raw_source_kind_issues, summary_freshness, EvidenceHistory, ProblemList, ValidationFrame,
 };
 
 use super::import_scan_target::ScanTarget;
@@ -36,9 +36,12 @@ pub fn build_report(
 ) -> Result<VaultReport, ToolError> {
     let index = ReferenceIndex::new(documents);
     let config = context.config();
-    let grounded = repo_root.is_some() || config.repo_resolution != "process.cwd";
+    let named = repo_root.is_some() || config.repo_resolution != "process.cwd";
     let target = ScanTarget::allow_named(context, repo_root, "repoRoot")?;
     let source = target.source_with_limit(WITNESS_TEXT_MAX_BYTES);
+    // A root that is not there is one finding, not one for each path that cites a file under it.
+    let repo_root_missing = named && source.kind(target.root()) == Ok(None);
+    let grounded = named && !repo_root_missing;
 
     let measured = grounded.then(|| {
         let survey = kept_survey(context, &target, &[]);
@@ -69,7 +72,12 @@ pub fn build_report(
         }
     };
 
-    let (evidence, drift) = if grounded {
+    let (evidence, drift) = if repo_root_missing {
+        (
+            evidence_drift_root_missing(),
+            path_drift_root_missing(target.label.clone()),
+        )
+    } else if grounded {
         let evidence = match locate_from(context, "path_last_changes", target.root())? {
             Located::Found(found) => {
                 let repo_scope = place_folder(&found.top_level, target.root())
@@ -100,6 +108,7 @@ pub fn build_report(
     Ok(VaultReport {
         frame: ValidationFrame {
             scanned: documents.len(),
+            repo_root_missing,
             coverage,
             summary_freshness: freshness,
             evidence_drift: evidence,

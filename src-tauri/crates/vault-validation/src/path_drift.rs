@@ -63,6 +63,20 @@ pub fn path_drift_unchecked(repo_root: String) -> PathDrift {
     }
 }
 
+/// The answer when the repository root is not there: no path was checked, and none is drift. One
+/// row for each path of the vault would read as a request to patch every path away, when the
+/// one thing wrong is the root.
+pub fn path_drift_root_missing(repo_root: String) -> PathDrift {
+    PathDrift {
+        repo_root,
+        checked: false,
+        nodes_scanned: 0,
+        paths_checked: 0,
+        drifts: Vec::new(),
+        hint: "Source paths were NOT checked: the repository root does not exist. The paths in the vault are not drift; start the server in the repository or pass the folder that holds the code as repoRoot.".to_string(),
+    }
+}
+
 /// Whether something is at `path`. A name the reader refuses to look at (a hidden file, a
 /// credential name) is taken as present: it was not looked at, so it is not called missing.
 fn is_present(source: &dyn SourceFiles, path: &str) -> bool {

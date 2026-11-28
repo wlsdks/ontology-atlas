@@ -12,6 +12,7 @@
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use crate::os_error::OsErrorCode;
 use crate::private_names::{is_credential_name, is_hidden_name};
 use crate::real_paths::{is_within, real_path, segments_below};
 use crate::scan_root::SourceRoot;
@@ -58,9 +59,25 @@ pub fn evidence_text(bytes: &[u8]) -> Option<String> {
 /// The disk below one [`SourceRoot`].
 pub struct DiskSource {
     root: PathBuf,
-    real_root: Option<PathBuf>,
+    real_root: RealRoot,
     excluded: Vec<String>,
     max_file_bytes: usize,
+}
+
+/// Whether the root folder is there, is not, or could not be told: a root that is not there
+/// holds nothing, and one the system would not answer for is refused, never read as empty.
+enum RealRoot {
+    Folder(PathBuf),
+    NotThere,
+    Unreadable,
+}
+
+/// Whether a failure to resolve a path says nothing is there, which is not a failure to look.
+fn says_nothing_is_there(error: &std::io::Error) -> bool {
+    matches!(
+        OsErrorCode::of(error),
+        OsErrorCode::NotFound | OsErrorCode::NotADirectory | OsErrorCode::TooManyLinks
+    )
 }
 
 fn kind_of(file_type: std::fs::FileType) -> EntryKind {
@@ -81,7 +98,11 @@ impl DiskSource {
     pub fn new(root: &SourceRoot, max_file_bytes: usize) -> Self {
         Self {
             root: root.as_path().to_path_buf(),
-            real_root: real_path(root.as_path()).ok(),
+            real_root: match real_path(root.as_path()) {
+                Ok(real) => RealRoot::Folder(real),
+                Err(error) if says_nothing_is_there(&error) => RealRoot::NotThere,
+                Err(_) => RealRoot::Unreadable,
+            },
             excluded: Vec::new(),
             max_file_bytes,
         }
@@ -119,8 +140,10 @@ impl DiskSource {
     ) -> Result<Option<PathBuf>, Refusal> {
         // A folder that is not there holds nothing, and nothing outside it is reachable through it:
         // the answer is "nothing is there", never a refusal that a caller reads as "not looked at".
-        let Some(real_root) = self.real_root.as_ref() else {
-            return Ok(None);
+        let real_root = match &self.real_root {
+            RealRoot::Folder(real) => real,
+            RealRoot::NotThere => return Ok(None),
+            RealRoot::Unreadable => return Err(Refusal::Unreadable),
         };
         let judged = if follow {
             checked
@@ -129,8 +152,10 @@ impl DiskSource {
         };
         let mut probe = judged;
         let real = loop {
-            if let Ok(real) = real_path(probe) {
-                break real;
+            match real_path(probe) {
+                Ok(real) => break real,
+                Err(error) if !says_nothing_is_there(&error) => return Err(Refusal::Unreadable),
+                Err(_) => {}
             }
             match probe.parent() {
                 Some(parent) if parent != probe => probe = parent,
@@ -172,7 +197,9 @@ impl DiskSource {
     pub fn read_evidence_text(&self, path: &Path, budget: &mut ReadBudget) -> Option<String> {
         let checked = self.address(path).ok()?;
         let real = self.confine(&checked, true).ok()??;
-        let real_root = self.real_root.as_ref()?;
+        let RealRoot::Folder(real_root) = &self.real_root else {
+            return None;
+        };
         if real == *real_root {
             return None;
         }
@@ -369,6 +396,45 @@ mod tests {
             tree.source.kind(&tree.root.join("src")),
             Ok(Some(EntryKind::Directory))
         );
+    }
+
+    /// A folder whose parent grants no search permission cannot be resolved: `realpath` fails with
+    /// EACCES, which says nothing about whether the folder is there (POSIX `realpath`: "Search
+    /// permission was denied for a component of the path prefix").
+    #[test]
+    fn a_root_the_system_will_not_resolve_is_refused_not_read_as_empty() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = tempfile::tempdir().expect("temp dir");
+        let base = real_path(directory.path()).expect("real");
+        let parent = base.join("closed");
+        let root = parent.join("repo");
+        std::fs::create_dir_all(root.join("src")).expect("root");
+        std::fs::write(root.join("src/a.ts"), "x").expect("file");
+        let scan = ScanRoots::new(root.clone(), root.clone()).expect("roots");
+        let allowed = scan.allow(&root, "rootPath").expect("allowed");
+        std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o000)).expect("close");
+        let denied = std::fs::read_dir(&parent).is_err();
+        let source = DiskSource::new(&allowed, LIMIT);
+        let answer = source.kind(Path::new("src/a.ts"));
+        std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o755)).expect("open");
+        if denied {
+            assert_eq!(refusal(answer), Refusal::Unreadable);
+        }
+    }
+
+    #[test]
+    fn a_folder_inside_the_root_the_system_will_not_resolve_is_refused_not_absent() {
+        use std::os::unix::fs::PermissionsExt;
+        let tree = tree();
+        let closed = tree.root.join("closed");
+        std::fs::create_dir_all(closed.join("deeper")).expect("folder");
+        std::fs::set_permissions(&closed, std::fs::Permissions::from_mode(0o000)).expect("close");
+        let denied = std::fs::read_dir(&closed).is_err();
+        let answer = tree.source.kind(&closed.join("deeper/a.ts"));
+        std::fs::set_permissions(&closed, std::fs::Permissions::from_mode(0o755)).expect("open");
+        if denied {
+            assert_eq!(refusal(answer), Refusal::Unreadable);
+        }
     }
 
     #[test]

@@ -15,7 +15,7 @@ mod summary_freshness;
 mod validation_page;
 
 pub use evidence_drift::{
-    evidence_concepts, evidence_drift, EvidenceConcept, EvidenceCounts, EvidenceDrift,
+    evidence_concepts, evidence_drift, evidence_drift_root_missing, EvidenceConcept, EvidenceCounts, EvidenceDrift,
     EvidenceHistory,
 };
 pub use evidence_verdict::{judge_evidence, CitedEntry, Judgement, PathChange, Verdict};
@@ -24,7 +24,9 @@ pub use kept_history::KeptHistory;
 pub use node_revisions::{
     contained_slugs, node_revisions, NodeRevisions, Revision, CONTAINMENT_KEYS,
 };
-pub use path_drift::{path_drift, path_drift_unchecked, Drift, PathDrift};
+pub use path_drift::{
+    path_drift, path_drift_root_missing, path_drift_unchecked, Drift, PathDrift,
+};
 pub use problem_list::{list_problems, CodeTally, Problem, ProblemList, ProblemSummary};
 pub use raw_source_kind::raw_source_kind_issues;
 pub use summary_freshness::{summary_freshness, StaleSummary, SummaryFreshness};

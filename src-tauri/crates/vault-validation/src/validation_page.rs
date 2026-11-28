@@ -25,15 +25,26 @@ const SENTENCE_MIN_CHARS: usize = 40;
 /// Everything the answer says besides which problem rows it shows.
 pub struct ValidationFrame {
     pub scanned: usize,
+    /// The repository root the call named, or the server's own, is not on disk: said once, in
+    /// `repoRoot`, where a row for each cited path would ask for each to be patched away.
+    pub repo_root_missing: bool,
     pub coverage: Option<Coverage>,
     pub summary_freshness: SummaryFreshness,
     pub evidence_drift: EvidenceDrift,
     pub path_drift: PathDrift,
 }
 
+/// What is said of the repository root when it is not there.
+#[derive(Serialize)]
+struct RepoRoot {
+    missing: bool,
+}
+
 #[derive(Serialize)]
 struct Frame<'a> {
     scanned: usize,
+    #[serde(rename = "repoRoot", skip_serializing_if = "Option::is_none")]
+    repo_root: Option<RepoRoot>,
     #[serde(skip_serializing_if = "Option::is_none")]
     coverage: Option<CoveragePage<'a>>,
     problems: &'a [Problem],
@@ -56,6 +67,8 @@ pub struct ValidationPage<'a> {
     #[serde(rename = "problemsHint", skip_serializing_if = "Option::is_none")]
     hint: Option<String>,
     scanned: usize,
+    #[serde(rename = "repoRoot", skip_serializing_if = "Option::is_none")]
+    repo_root: Option<RepoRoot>,
     #[serde(skip_serializing_if = "Option::is_none")]
     coverage: Option<CoveragePage<'a>>,
     problems: Vec<Problem>,
@@ -260,6 +273,7 @@ pub fn page_validation<'a>(
     if request.limit.is_none() && !request.brief {
         let empty = Frame {
             scanned: frame.scanned,
+            repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
             coverage,
             problems: &[],
             summary: &summary,
@@ -326,6 +340,7 @@ pub fn page_validation<'a>(
         pagination: Pagination::of(start, limit, total, rows.len()),
         hint,
         scanned: frame.scanned,
+        repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
         coverage,
         problems: rows,
         summary,
@@ -378,6 +393,7 @@ mod tests {
     fn frame_with_unplaced(unplaced: usize) -> ValidationFrame {
         ValidationFrame {
             scanned: 0,
+            repo_root_missing: false,
             coverage: Some(Coverage {
                 breadth: Breadth {
                     abilities: unplaced,

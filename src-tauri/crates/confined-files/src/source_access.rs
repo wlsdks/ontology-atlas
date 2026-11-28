@@ -88,6 +88,10 @@ pub enum Refusal {
     SnapshotByteLimit,
     #[error("file over the size limit")]
     FileOverSizeLimit,
+    /// The operating system would not say whether anything is there (no permission, a stale
+    /// network handle): not looked at, which is not the same as nothing there.
+    #[error("cannot be read")]
+    Unreadable,
 }
 
 /// Why a read was not answered.

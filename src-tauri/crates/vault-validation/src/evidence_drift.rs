@@ -378,6 +378,15 @@ fn working_stamp(history: &EvidenceHistory<'_>, path: &str) -> Option<FileStamp>
         .filter(|stamp| stamp.is_settled_at(taken_at))
 }
 
+/// The answer when the repository root is not there: nothing was dated, and no concept is called
+/// missing for a file under a folder that is gone.
+pub fn evidence_drift_root_missing() -> EvidenceDrift {
+    unmeasured(
+        "repo-root-missing",
+        "Evidence was NOT dated: the repository root does not exist. Start the server in the repository or pass the folder that holds the code as repoRoot.",
+    )
+}
+
 /// Why evidence was not dated, or the dating itself. `place` is where the history is read from,
 /// `Err(None)` when no repository root is known, or `Err(Some(reason))` for the reason Git cannot
 /// be read.
