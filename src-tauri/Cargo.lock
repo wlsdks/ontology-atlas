@@ -3045,6 +3045,7 @@ dependencies = [
  "raw-source-text",
  "regex",
  "repository-survey",
+ "saved-constellations",
  "serde",
  "serde_json",
  "sha2 0.11.1",
@@ -4600,6 +4601,18 @@ checksum = "8af5472a0fd13242ab1e30a2ae6290d5b875a095dd17b21c26d01d556cf766bd"
 dependencies = [
  "arraydeque",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "saved-constellations"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "vault-document",
 ]
 
 [[package]]

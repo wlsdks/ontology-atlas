@@ -22,6 +22,7 @@ mod concept_row;
 mod connection_info;
 mod find_backlinks;
 mod get_concepts;
+mod get_constellation;
 mod import_answers;
 mod import_scan_target;
 mod infer_imports;
@@ -46,6 +47,16 @@ pub use compiled_graph::KeptGraph;
 /// the audit lines record, so it cannot finish without saying.
 pub type WriteHandler = fn(&Permit<'_>, &Arguments) -> Result<WriteDone, ToolError>;
 
+/// The tools that read repository files. When the app asks for every such read to come from its
+/// census (`OATLAS_CONFINED_SOURCE_READS=1`) they answer from nothing else, and until the census
+/// path is ported they refuse, so the disk is never read behind the app's back.
+const READS_REPOSITORY_FILES: [&str; 4] = [
+    "read_source",
+    "infer_imports",
+    "inspect_architecture",
+    "analyze_repo_structure",
+];
+
 /// The result of read tool `name`, or `None` when this build does not handle it.
 pub fn call(
     context: &CallContext<'_>,
@@ -56,9 +67,17 @@ pub fn call(
     if let Some(result) = test_hooks::call(context, name, arguments) {
         return Some(result);
     }
+    if READS_REPOSITORY_FILES.contains(&name) && confined_files::confined_source_reads_enabled() {
+        return Some(Err(ToolError::failed(
+            "Reading from the census the app passed is not ported to the Rust server yet: with \
+             OATLAS_CONFINED_SOURCE_READS=1 this tool refuses rather than read the disk the app \
+             did not offer.",
+        )));
+    }
     match name {
         "connection_info" => Some(connection_info::call(context, arguments)),
         "list_concepts" => Some(list_concepts::call(context, arguments)),
+        "get_constellation" => Some(get_constellation::call(context, arguments)),
         "get_concepts" => Some(get_concepts::call(context, arguments)),
         "find_backlinks" => Some(find_backlinks::call(context, arguments)),
         "read_source" => Some(read_source::call(context, arguments)),

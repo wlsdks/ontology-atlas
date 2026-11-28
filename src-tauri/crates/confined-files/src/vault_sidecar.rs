@@ -33,6 +33,7 @@ use std::path::{Path, PathBuf};
 
 use thiserror::Error;
 
+use crate::modified_time::ModifiedTime;
 use crate::plain_file::{self, FileFacts};
 use crate::real_paths::real_path;
 use crate::temporary_name::next_atomic_temporary_name;
@@ -75,6 +76,13 @@ pub enum SidecarError {
 /// What a file looked like when it was read, so a replace can tell that someone wrote in between.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Revision(FileFacts);
+
+impl Revision {
+    /// The modification time of this version, as Node reports `mtimeMs`.
+    pub fn modified_time(self) -> ModifiedTime {
+        ModifiedTime::from_nanoseconds(self.0.modified_ns)
+    }
+}
 
 /// The text of a file and the revision it was read at.
 #[derive(Debug)]

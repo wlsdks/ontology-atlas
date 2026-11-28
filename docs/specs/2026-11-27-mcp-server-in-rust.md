@@ -1074,3 +1074,35 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   row 42 names, and the declarations are back. Row 46 stands. Not built: a write that reports only
   what changed (the write tools are slice 10), the Roles sentence, and a cache of the Git history
   dating that makes up most of a second `validate_vault` call.
+- 2026-11-28: slice 9e. A second `validate_vault` call on this repository takes 0.22 to 0.26 s
+  where it took 2.2 s (the script server: 0.53 s), with the same 46,400 bytes; the first call is
+  unchanged at about 4.1 s and the physical footprint peak went from 69 MB to 54 to 64 MB.
+  `vault-validation::KeptHistory` keeps the dating of cited code and the revisions of summary
+  nodes under `hardened-git::HistoryState` (the commit `HEAD` names, the shallow file, the grafts
+  and the replacement refs). The brief asked for the key to be `HEAD` plus the dirty set, and the
+  dirty set is left out on purpose: `git log` reads committed history only, so the working tree
+  cannot change a dating. The one verdict that reads the working tree (a moved file differs only
+  in comments, imports or layout) is kept under the file's stamp and only once the file has been
+  still for two seconds (`FileStamp::is_settled`), so an edit inside the window is read again.
+  A history that moved while it was read, and a verdict one side of which could not be read, are
+  never kept. Two older defects surfaced on the way: a repository root that does not exist now
+  holds nothing (it was a refusal that the drift checks read as "present", so `repo-root-missing`
+  reported no drift where the script server reported three), and the working side of an evidence
+  pair was asked for under the package folder inside a root that already is the package folder, so
+  a repository root below the top of Git called every moved file stale. The `summaryFreshness`
+  hint names a machine without `git` as `not-a-git-repository` again, as the script server does,
+  so the two row 17 entries for `no-git-executable` are gone; the same answer's
+  `evidenceDrift.reason` still says `git-not-available`, which is the row 17 behaviour, and the
+  answer now says both (dissent: the hint should follow the reason). `get_constellation` without
+  an `id` lists the collections (the new `saved-constellations` crate reads
+  `.ontology-atlas/library-collections.json` through `VaultSidecar` and validates it as the script
+  server does; `Revision::modified_time` gives the sidecar's `mtime`), and the `library`
+  constellation cases agree. With an `id` that exists it still answers that reading the members is
+  not ported. With `OATLAS_CONFINED_SOURCE_READS=1` the four tools that read repository files
+  (`read_source`, `infer_imports`, `inspect_architecture`, `analyze_repo_structure`) refuse
+  instead of reading the disk: the census path (`confined-files::SourceSnapshot`) exists but is not
+  wired into them, so every `safety/confined-*` case still differs (a real gap, not an unported
+  tool; the refusal keeps the safety floor). Declared: `shell/repo-root-missing` coverage (row 65,
+  the "Depth ... an earlier session recorded" sentence is not ported) and the empty-argument
+  `read_source` call inside the two `every-tool` cases (row 39). Not built: the census path, the
+  members of one saved constellation, and the Depth sentence.

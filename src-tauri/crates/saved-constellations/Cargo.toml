@@ -1,0 +1,22 @@
+[package]
+name = "saved-constellations"
+version = "0.1.0"
+description = "The constellations a person saved in a vault's collection file: read the file safely, judge it as the script server did, and list them"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+confined-files = { path = "../confined-files" }
+# The one test of what a node's `uid` looks like.
+vault-document = { path = "../vault-document" }
+# Typed answers: the field order of a struct is the key order the agent reads.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
