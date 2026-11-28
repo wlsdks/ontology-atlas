@@ -24,7 +24,7 @@ import {
   webviewWorkbenchMarkersForPath,
 } from "../lib/verify-macos/webview-env.mjs";
 
-export const DEFAULT_ROUTE = "/en/topology/";
+const DEFAULT_ROUTE = "/en/topology/";
 const DEFAULT_TIMEOUT_MS = 60_000;
 const POLL_MS = 250;
 /** WebView2 serves the app from `http://tauri.localhost`; macOS and Linux use `tauri://localhost`. */

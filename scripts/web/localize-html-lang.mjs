@@ -18,7 +18,7 @@ export function readHtmlLangs(source) {
   return langs;
 }
 
-export function localizeHtml(html, htmlLang) {
+function localizeHtml(html, htmlLang) {
   return html.replace(ROOT_TAG, `<html lang="${htmlLang}"`);
 }
 
