@@ -20,6 +20,7 @@ use crate::dispatch::CallContext;
 use crate::retired_arguments::refuse_retired_query_operation;
 use vault_document::slug_not_found_hint;
 
+use super::meaning_readiness_facts::meaning_readiness_facts;
 use super::project_graph::project_graph;
 use super::read_vault::{open_root, read_vault};
 use super::vault_validation_facts::{stale_summaries, validation_facts};
@@ -349,6 +350,9 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         _ => {}
     }
     let mut graph = context.compiled_graph().read(context)?;
+    if matches!(request.operation.name(), "health" | "workspace_brief") {
+        request.selection.outside.meaning = meaning_readiness_facts(context, &graph)?;
+    }
     if request.operation.name() == "agent_brief" {
         let operation = request.operation.name();
         let (project_graph, project) =

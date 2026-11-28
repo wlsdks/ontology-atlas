@@ -20,8 +20,8 @@ pub use graph_compiler::compile;
 pub use identity_error::{IdentityError, IdentityFault};
 pub use query::{
     is_match_nodes, match_nodes, parse_ignore_patterns, project_holdings, project_scope_slugs, run as run_query,
-    Direction, LineSpan, NodeSort, Operation, OutsideFacts, ProjectHoldings, QueryAnswer,
-    QueryError, QueryRequest, SelectionArguments, SelectionOperation, SelectionRequest,
-    StaleSummary, UncertaintyRead, VaultValidationFacts, WalkOperation, RELATION_TYPE_VALUES,
-    SEARCH_BUDGET_MAX,
+    Direction, LineSpan, NodeSort, Operation, OutsideFacts, ProjectHoldings, ProjectMeaningFacts,
+    QueryAnswer, QueryError, QueryRequest, SelectionArguments, SelectionOperation,
+    SelectionRequest, SourceNow, StaleSummary, UncertaintyRead, VaultValidationFacts,
+    WalkOperation, WitnessesNow, RELATION_TYPE_VALUES, SEARCH_BUDGET_MAX,
 };

@@ -19,6 +19,7 @@ mod maintenance_action;
 mod maintenance_plan;
 mod match_nodes;
 mod match_nodes_from_files;
+mod meaning_readiness;
 mod node_profile;
 mod outside_checks;
 mod proposed_action;
@@ -36,8 +37,8 @@ pub use agent_brief::{project_holdings, ProjectHoldings};
 pub use ignored_references::parse_patterns as parse_ignore_patterns;
 pub use match_nodes_from_files::{is_match_nodes, match_nodes};
 pub use selection_request::{
-    LineSpan, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest, StaleSummary,
-    UncertaintyRead, VaultValidationFacts,
+    LineSpan, NodeSort, OutsideFacts, ProjectMeaningFacts, SelectionArguments, SelectionRequest,
+    SourceNow, StaleSummary, UncertaintyRead, VaultValidationFacts, WitnessesNow,
 };
 
 use serde::Serialize;

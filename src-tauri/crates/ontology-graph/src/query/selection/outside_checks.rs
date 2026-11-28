@@ -1,12 +1,14 @@
-//! The check `health` and `workspace_brief` carry that no graph can make: whether the vault's files
-//! validate. The tool layer hands over what that found (`OutsideFacts`); this file turns it into the
-//! check, the action that asks for it and the verdict it changes. With nothing handed over there is no check, so an answer never claims a
-//! validation that did not run.
+//! The checks `health` and `workspace_brief` carry that no graph can make: whether the vault's files
+//! validate, and whether each project's meaning is current (`meaning_readiness`). The tool layer
+//! hands over what it found (`OutsideFacts`); this file turns it into the checks, the actions that
+//! ask for them and the verdict they change. With nothing handed over there is no check, so an
+//! answer never claims a judgement that did not run.
 
 use answer_format::json::RawJson;
 use serde::Serialize;
 
 use super::health::HealthCheck;
+use super::meaning_readiness::MeaningReadiness;
 use super::selection_request::OutsideFacts;
 
 #[derive(Serialize)]
@@ -18,10 +20,34 @@ pub struct AttentionAction {
     message: String,
 }
 
+impl AttentionAction {
+    pub(super) fn new(
+        id: &'static str,
+        kind: &'static str,
+        severity: &'static str,
+        count: usize,
+        message: String,
+    ) -> Self {
+        Self {
+            id,
+            kind,
+            severity,
+            count,
+            message,
+        }
+    }
+
+    #[cfg(test)]
+    pub(super) fn message(&self) -> &str {
+        &self.message
+    }
+}
+
 pub struct OutsideChecks {
     checks: Vec<HealthCheck>,
     validation: Option<Box<RawJson>>,
     validation_action: Option<AttentionAction>,
+    meaning_action: Option<AttentionAction>,
     needs_attention: bool,
 }
 
@@ -30,6 +56,7 @@ impl OutsideChecks {
         let mut checks = Vec::new();
         let mut validation = None;
         let mut validation_action = None;
+        let mut meaning_action = None;
         let mut needs_attention = false;
         if let Some(found) = &facts.validation {
             let warnings = found.warning_files + found.path_drifts;
@@ -82,10 +109,16 @@ impl OutsideChecks {
             ));
             validation = Some(found.brief.clone());
         }
+        if let Some(meaning) = MeaningReadiness::of(&facts.meaning) {
+            needs_attention = true;
+            checks.push(meaning.check);
+            meaning_action = Some(meaning.action);
+        }
         Self {
             checks,
             validation,
             validation_action,
+            meaning_action,
             needs_attention,
         }
     }
@@ -103,12 +136,17 @@ impl OutsideChecks {
         OutsideParts {
             checks: self.checks,
             validation: self.validation,
-            actions: self.validation_action.into_iter().collect(),
+            actions: self
+                .meaning_action
+                .into_iter()
+                .chain(self.validation_action)
+                .collect(),
         }
     }
 }
 
-/// The checks, the validation object and the actions that come first in a brief's next actions.
+/// The checks, the validation object and the actions that come first in a brief's next actions,
+/// the meaning action before the validation one.
 pub struct OutsideParts {
     pub checks: Vec<HealthCheck>,
     pub validation: Option<Box<RawJson>>,

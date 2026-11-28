@@ -38,8 +38,9 @@ pub use relation_set::RELATION_TYPE_VALUES;
 pub use request::{Direction, QueryRequest, SEARCH_BUDGET_MAX};
 pub use selection::{
     is_match_nodes, match_nodes, parse_ignore_patterns, project_holdings, LineSpan, NodeSort,
-    OutsideFacts, ProjectHoldings, SelectionArguments, SelectionOperation, SelectionRequest,
-    StaleSummary, UncertaintyRead, VaultValidationFacts,
+    OutsideFacts, ProjectHoldings, ProjectMeaningFacts, SelectionArguments, SelectionOperation,
+    SelectionRequest, SourceNow, StaleSummary, UncertaintyRead, VaultValidationFacts,
+    WitnessesNow,
 };
 pub use walks::WalkOperation;
 
