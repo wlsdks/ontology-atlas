@@ -28745,6 +28745,815 @@
       "path": "result.structuredContent.coverage.nextAction",
       "change": 121,
       "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/activity.jsonl",
+      "change": 131,
+      "reason": "Row 131: `absorb_document` shows the file its path resolves to and says when that is outside the repository, refuses a credential-named folder anywhere above the file and a hidden folder outside the repository, and opens the file once without following a link; the script server judged only the final name and read the path it was given."
+    },
+    {
+      "case": "safety/audit-lines-for-a-loose-name-in-every-writer",
+      "where": "folder",
+      "path": "vault/loose.md",
+      "change": 73,
+      "reason": "Row 73: a write replaces only the lines it changes and keeps every other byte of the file (comments, quoting, byte order mark, carriage returns, number text, duplicate keys), and refuses a file that is not UTF-8 instead of rewriting it with replacement characters."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/1/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/2/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/2/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/2/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/2/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[1].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[2].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[2].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[2].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[2].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/captured/body",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-edits-a-windows-device-named-file",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.captured.body",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.error",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.error",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.error",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/write-with-consent-card-names-what-the-handler-writes",
+      "where": "server-message",
+      "path": "message 0",
+      "change": 136,
+      "reason": "Row 136: the card of a kind change names what the handler writes (a capability or an element takes the domain sent, any other kind loses its domain, a body left out is regenerated when it is still the generated starter), and a rename with `overwrite` says it replaces the concept at the new name; the script server's card said less."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/backlinkUpdates/updates/0/keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].title",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].beforeKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].afterKeys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backlinkUpdates.updates[0].keys",
+      "change": 72,
+      "reason": "Row 72: a write answers with what moved and the next step for the nodes it touched (coverage difference, one next action, referrer keys, a 200-character excerpt) instead of the whole-vault measures the script server attached."
+    },
+    {
+      "case": "safety/rename-over-an-existing-file-keeps-the-more-private-mode",
+      "where": "folder",
+      "path": "vault/capabilities/checkout.md",
+      "change": 137,
+      "reason": "Row 137: a rename that overwrites a concept writes the bits both files have, so a private node renamed over an open one is not left open; the script server kept the target's bits."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.dryRun",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.previewReady",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.canConfirm",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.wouldChange",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.filePath",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.title",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.summary",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.sections",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.message",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.error",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.dryRun",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.previewReady",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.canConfirm",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.wouldChange",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.filePath",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.title",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.summary",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.sections",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.written",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.backupPath",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.changed",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.message",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.error",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.ok",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "folder",
+      "path": ".claude/CLAUDE.md",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "folder",
+      "path": ".claude/CLAUDE.md.pre-absorb.bak",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "library/absorb-document-below-a-guessed-root",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/activity.jsonl",
+      "change": 135,
+      "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
     }
   ]
 }

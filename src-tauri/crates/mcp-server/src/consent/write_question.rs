@@ -1,7 +1,7 @@
 //! The one line a person reads to decide: what a write will do to the vault.
 //!
 //! The words are the JavaScript server's, which clients and the app's permission card already show,
-//! except where that card said less than the write does (spec rows 130, 131 and 137).
+//! except where that card said less than the write does (spec rows 130, 131 and 136).
 //! Every value an agent sent is spelled through [`shown`], so a control character in a slug cannot
 //! reshape the card; the JavaScript server forgot that for the slug of a one-row batch.
 

@@ -2004,6 +2004,37 @@ add('safety', 'audit-lines-for-a-loose-name', { vault: 'loose-names' }, [
   call('remove_relation', { from: 'a', to: 'b', type: 'depends_on', confirm: true }),
   call('delete_concept', { slug: 'Domains/C', confirm: true }),
 ]);
+add('safety', 'audit-lines-for-a-loose-name-in-every-writer', { vault: 'loose-names' }, [
+  call('remove_relation', { from: 'a', to: 'b', type: 'depends_on', replaceWith: { to: 'c', type: 'depends_on', why: 'swapped' }, confirm: true }),
+  call('rename_concept', { oldSlug: 'Domains/C', newSlug: 'domains/e', confirm: true }),
+  call('rename_concept', { oldSlug: 'B', newKind: 'capability', domain: 'domains/a', newSlug: 'capabilities/b', confirm: true }),
+  call('add_relation', { from: 'A', to: 'DOMAINS/E', type: 'relates' }),
+]);
+add('safety', 'write-edits-a-windows-device-named-file', { vault: 'storefront' }, [
+  { $: 'write-file', path: 'elements/aux.md', text: '---\nuid: 5c0a0000-0000-4000-8000-000000000001\nslug: elements/aux\nkind: element\ntitle: Aux\ndomain: domains/order\ndepends_on: [capabilities/cart]\nrelation_notes:\n  capabilities/cart: reads the cart\n---\n\nAn element that was named for a device before the rule.\n' },
+  { $: 'write-file', path: 'elements/con.md', text: '---\nuid: 5c0a0000-0000-4000-8000-000000000002\nslug: elements/con\nkind: element\ntitle: Con\ndomain: domains/order\n---\n\nAnother one.\n' },
+  call('rename_concept', { oldSlug: 'capabilities/cart', newSlug: 'capabilities/basket', confirm: true }),
+  call('rename_concept', { oldSlug: 'elements/aux', newSlug: 'elements/port', confirm: true }),
+  call('delete_concept', { slug: 'elements/con', confirm: true }),
+  call('get_concepts', { slugs: ['elements/port'], body: 'full' }),
+]);
+add('safety', 'write-with-consent-card-names-what-the-handler-writes', { vault: 'storefront', env: { OATLAS_WRITE_CONSENT: 'true' }, capabilities: { elicitation: { form: {} } }, elicit: 'decline' }, [
+  call('rename_concept', { oldSlug: 'capabilities/faq', newKind: 'domain', domain: 'domains/order', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/faq', newKind: 'domain', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/faq', newKind: 'element', domain: 'domains/order', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/faq', newSlug: 'capabilities/cart', overwrite: true, confirm: true }),
+]);
+add('safety', 'rename-over-an-existing-file-keeps-the-more-private-mode', { vault: 'storefront' }, [
+  { $: 'write-file', path: 'capabilities/checkout.md', text: '---\nuid: 5c0a0000-0000-4000-8000-000000000003\nslug: capabilities/checkout\nkind: capability\ntitle: Checkout\ndomain: domains/order\n---\n\nOpen.\n' },
+  { $: 'chmod', path: 'capabilities/checkout.md', mode: 0o644 },
+  { $: 'chmod', path: 'capabilities/cart.md', mode: 0o600 },
+  call('rename_concept', { oldSlug: 'capabilities/cart', newSlug: 'capabilities/checkout', confirm: true, overwrite: true }),
+]);
+add('library', 'absorb-document-below-a-guessed-root', { vault: 'library' }, [
+  { $: 'write-file', path: '../.claude/CLAUDE.md', text: '# Rules\n\nSome prose about annotating.\n' },
+  call('absorb_document', { filePath: '$PARENT/.claude/CLAUDE.md' }),
+  call('absorb_document', { filePath: '$PARENT/.claude/CLAUDE.md', confirm: true }),
+]);
 add('safety', 'write-refused-by-a-reserved-referrer', { vault: 'reserved-referrer' }, [
   call('rename_concept', { oldSlug: 'capabilities/target', newSlug: 'capabilities/goal', confirm: true }),
   call('merge_concepts', { fromSlug: 'capabilities/target', intoSlug: 'capabilities/other', confirm: true }),
