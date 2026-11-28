@@ -72,6 +72,7 @@ impl<'files> SurveyFiles<'files> {
     fn absolute(&self, normal: &str) -> PathBuf {
         normal
             .split('/')
+            .filter(|part| !part.is_empty())
             .fold(self.root().to_path_buf(), |path, part| path.join(part))
     }
 
@@ -113,15 +114,44 @@ impl<'files> SurveyFiles<'files> {
         }
     }
 
+    /// `found`, a path this survey reached with [`Self::file`] or [`Self::folder`], spelled as the
+    /// disk spells each part. A disk that ignores letter case (macOS, Windows) opens `README.md`
+    /// for a file named `readme.md`, and a row names the file by its own name. A part the disk
+    /// lists once as written, or that no single listed name matches by letter case, stays as
+    /// written.
+    pub fn spelled_on_disk(&self, found: &str) -> String {
+        let mut spelled: Vec<String> = Vec::new();
+        for part in found.split('/') {
+            let listed = self.names_below(&spelled.join("/"));
+            let same_letters: Vec<&String> = listed
+                .iter()
+                .filter(|name| name.eq_ignore_ascii_case(part))
+                .collect();
+            let on_disk = match same_letters.as_slice() {
+                [only] => (*only).clone(),
+                _ => part.to_string(),
+            };
+            spelled.push(on_disk);
+        }
+        spelled.join("/")
+    }
+
     /// The names in a confined folder, in UTF-16 order; hidden and credential names are not
     /// listed.
     pub fn names_in(&self, folder: &str) -> Vec<String> {
         let Some(normal) = self.folder(folder) else {
             return Vec::new();
         };
+        self.names_below(&normal)
+    }
+
+    /// The names in `folder`, a repository-relative path that is already confined, or the root
+    /// itself when it is empty.
+    fn names_below(&self, folder: &str) -> Vec<String> {
+        let normal = folder;
         let mut names: Vec<String> = self
             .source
-            .list_directory(&self.absolute(&normal))
+            .list_directory(&self.absolute(normal))
             .map(|listing| {
                 listing
                     .entries

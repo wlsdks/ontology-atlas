@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 use crate::os_error::OsErrorCode;
 use crate::private_names::{is_credential_name, is_hidden_name};
 use crate::real_paths::{is_within, real_path, segments_below};
+use crate::resolved_places::{NearestPlace, Resolution, ResolvedPlaces};
 use crate::scan_root::SourceRoot;
 use crate::source_access::{
     absolute, address, address_seeing_hidden, is_never_shown, DirectoryEntry, DirectoryListing,
@@ -62,6 +63,7 @@ pub struct DiskSource {
     real_root: RealRoot,
     excluded: Vec<String>,
     max_file_bytes: usize,
+    places: ResolvedPlaces,
 }
 
 /// Whether the root folder is there, is not, or could not be told: a root that is not there
@@ -105,6 +107,7 @@ impl DiskSource {
             },
             excluded: Vec::new(),
             max_file_bytes,
+            places: ResolvedPlaces::default(),
         }
     }
 
@@ -150,18 +153,8 @@ impl DiskSource {
         } else {
             checked.parent().unwrap_or(checked)
         };
-        let mut probe = judged;
-        let real = loop {
-            match real_path(probe) {
-                Ok(real) => break real,
-                Err(error) if !says_nothing_is_there(&error) => return Err(Refusal::Unreadable),
-                Err(_) => {}
-            }
-            match probe.parent() {
-                Some(parent) if parent != probe => probe = parent,
-                _ => return Err(Refusal::OutsideApprovedRoot),
-            }
-        };
+        let nearest = self.nearest_place(judged)?;
+        let real = nearest.real;
         let below = if is_within(real_root, &real) {
             segments_below(real_root, &real)
         } else {
@@ -177,12 +170,38 @@ impl DiskSource {
         };
         // Seeing through hidden folders stops at a hidden file: the last part is the file only
         // when the whole path is there.
-        let hidden_file =
-            sees_hidden && probe == judged && below.last().is_some_and(|last| is_hidden_name(last));
+        let hidden_file = sees_hidden
+            && nearest.is_the_path
+            && below.last().is_some_and(|last| is_hidden_name(last));
         if hidden_file || below.iter().any(refused) {
             return Err(Refusal::PrivateOrHiddenPath);
         }
-        Ok((probe == judged && follow).then_some(real))
+        Ok((nearest.is_the_path && follow).then_some(real))
+    }
+
+    /// `judged` with its links resolved, or the nearest folder above it that is there.
+    fn nearest_place(&self, judged: &Path) -> Resolution {
+        if let Some(kept) = self.places.recall(judged) {
+            return kept;
+        }
+        let resolution = match real_path(judged) {
+            Ok(real) => Ok(NearestPlace {
+                real,
+                is_the_path: true,
+            }),
+            Err(error) if !says_nothing_is_there(&error) => Err(Refusal::Unreadable),
+            Err(_) => match judged.parent() {
+                Some(parent) if parent != judged => {
+                    self.nearest_place(parent).map(|above| NearestPlace {
+                        real: above.real,
+                        is_the_path: false,
+                    })
+                }
+                _ => Err(Refusal::OutsideApprovedRoot),
+            },
+        };
+        self.places.remember(judged, &resolution);
+        resolution
     }
 
     /// A regular file, not a link, in a folder that really is inside the root.

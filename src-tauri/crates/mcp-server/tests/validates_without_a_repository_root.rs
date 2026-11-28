@@ -115,3 +115,22 @@ fn a_root_that_exists_lists_a_gone_path_as_drift_and_says_nothing_of_the_root() 
         .collect();
     assert_eq!(gone, ["src/ledger.ts", "src/refund.ts"]);
 }
+
+/// `sources/` holds raw sources, which are never nodes, so a capability filed there is not a node
+/// whose `path:` is audited (the script server skips the folder the same way).
+#[test]
+fn a_capability_filed_under_sources_is_a_raw_source_and_its_path_is_not_audited() {
+    let scene = tempfile::tempdir().expect("temp dir");
+    let root = scene.path().canonicalize().expect("real");
+    write(
+        &root,
+        "sources/capability.md",
+        "---\nkind: capability\ntitle: Filed as a source\npath: src/missing.ts\n---\n",
+    );
+    let answer = validate(&root, &root);
+
+    assert_eq!(answer["pathDrift"]["checked"], true);
+    assert_eq!(answer["pathDrift"]["nodesScanned"], 0);
+    assert_eq!(answer["pathDrift"]["pathsChecked"], 0);
+    assert_eq!(answer["pathDrift"]["drifts"], serde_json::json!([]));
+}

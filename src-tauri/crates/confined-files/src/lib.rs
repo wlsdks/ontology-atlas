@@ -23,6 +23,7 @@ mod private_names;
 mod raw_source_read;
 mod real_paths;
 mod repository_file_read;
+mod resolved_places;
 mod scan_root;
 mod settle_rule;
 mod slug_rules;

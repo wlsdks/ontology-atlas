@@ -101,13 +101,19 @@ pub fn readme_purpose(files: &SurveyFiles<'_>) -> Option<ReadmePurpose> {
     let purpose =
         answer_format::whitespace::trim(answer_format::utf16::prefix(&joined, PURPOSE_UNITS));
     Some(ReadmePurpose {
-        path: (*name).to_string(),
+        path: files.spelled_on_disk(name),
         purpose: purpose.to_string(),
     })
 }
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
+    use confined_files::{
+        DirectoryEntry, DirectoryListing, EntryKind, SourceFiles, SourceReadError,
+    };
+
     use super::*;
 
     #[test]
@@ -123,5 +129,71 @@ mod tests {
             paragraph_text("# Title\nA [small](http://x) shop <b>for</b>\nthe test.\n---"),
             "A small shop for the test."
         );
+    }
+
+    /// A disk that ignores letter case: it opens any spelling of a root file's name, and lists
+    /// the name the file has.
+    struct LetterCaseBlindDisk {
+        root: std::path::PathBuf,
+        file_name: &'static str,
+    }
+
+    impl LetterCaseBlindDisk {
+        fn is_the_file(&self, path: &std::path::Path) -> bool {
+            path.strip_prefix(&self.root)
+                .is_ok_and(|below| below.to_string_lossy().eq_ignore_ascii_case(self.file_name))
+        }
+    }
+
+    impl SourceFiles for LetterCaseBlindDisk {
+        fn root(&self) -> &Path {
+            &self.root
+        }
+
+        fn kind(&self, path: &Path) -> Result<Option<EntryKind>, SourceReadError> {
+            Ok(if path == self.root {
+                Some(EntryKind::Directory)
+            } else {
+                self.is_the_file(path).then_some(EntryKind::File)
+            })
+        }
+
+        fn link_kind(&self, path: &Path) -> Result<Option<EntryKind>, SourceReadError> {
+            self.kind(path)
+        }
+
+        fn regular_file_exists(&self, path: &Path) -> Result<bool, SourceReadError> {
+            Ok(self.is_the_file(path))
+        }
+
+        fn read_text(&self, path: &Path) -> Result<std::borrow::Cow<'_, str>, SourceReadError> {
+            if self.is_the_file(path) {
+                Ok("The shop sells small things to people who live nearby.\n".into())
+            } else {
+                Err(SourceReadError::Absent)
+            }
+        }
+
+        fn list_directory(&self, _path: &Path) -> Result<DirectoryListing, SourceReadError> {
+            Ok(DirectoryListing {
+                entries: vec![DirectoryEntry {
+                    name: self.file_name.to_string(),
+                    kind: EntryKind::File,
+                }],
+                credential_named_files: Vec::new(),
+            })
+        }
+    }
+
+    #[test]
+    fn the_readme_is_named_as_the_file_is_named_on_a_disk_that_ignores_letter_case() {
+        for file_name in ["readme.md", "README.md", "Readme.md"] {
+            let disk = LetterCaseBlindDisk {
+                root: std::path::PathBuf::from("/repository"),
+                file_name,
+            };
+            let purpose = readme_purpose(&SurveyFiles::new(&disk)).expect("a README");
+            assert_eq!(purpose.path, file_name);
+        }
     }
 }
