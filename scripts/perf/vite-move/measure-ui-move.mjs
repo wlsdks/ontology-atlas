@@ -2,12 +2,12 @@
 // Criterion 1 of docs/specs/2026-11-27-ui-on-vite.md for one build tool: N cold and N warm builds
 // (type check skipped, peak memory over the whole process tree), then N cold and N warm dev
 // starts timed to a settled map on /en/topology/ under the faked app runtime.
-// Usage: pnpm perf:ui-move -- --out=<result.json> [--label=next] [--runs=3]
-//          [--build-command="pnpm build"] [--dev-command="pnpm dev -p {port}"] [--port=3261]
-//          [--cache-dir=.next ...] [--only=builds|dev-starts] [--work-dir=<folder>]
+// Usage: pnpm perf:ui-move -- --out=<result.json> [--label=vite] [--runs=3]
+//          [--build-command="pnpm build"] [--dev-command="pnpm dev --port {port}"] [--port=3261]
+//          [--cache-dir=node_modules/.vite ...] [--only=builds|dev-starts] [--work-dir=<folder>]
 // `{port}` in the dev command is replaced by the port; the port otherwise comes from
 // PLAYWRIGHT_BASE_URL. `--cache-dir` (repeatable) names what a cold run deletes; it defaults to
-// Next's. Run alone: another build or a busy machine shows in the load average of each sample.
+// Vite's. Run alone: another build or a busy machine shows in the load average of each sample.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { cpus, loadavg, tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
@@ -22,12 +22,12 @@ const { values: options } = parseArgs({
   args,
   options: {
     out: { type: 'string' },
-    label: { type: 'string', default: 'next' },
+    label: { type: 'string', default: 'vite' },
     runs: { type: 'string', default: '3' },
     'build-command': { type: 'string', default: 'pnpm build' },
-    'dev-command': { type: 'string', default: 'pnpm dev -p {port}' },
+    'dev-command': { type: 'string', default: 'pnpm dev --port {port}' },
     port: { type: 'string' },
-    'cache-dir': { type: 'string', multiple: true, default: ['.next'] },
+    'cache-dir': { type: 'string', multiple: true, default: ['node_modules/.vite'] },
     only: { type: 'string' },
     'work-dir': { type: 'string', default: tmpdir() },
   },
