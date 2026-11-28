@@ -31,7 +31,10 @@ pub fn inside_repository(value: &str) -> Option<RepositoryPath> {
         return None;
     }
     let mut parts: Vec<&str> = Vec::new();
-    for part in written.split('/') {
+    // Windows takes `\` as a path separator as it takes `/`
+    // (https://learn.microsoft.com/windows/win32/fileio/naming-a-file, "Fully qualified vs.
+    // relative paths"), so `src\..\..\x` climbs out there as `src/../../x` does everywhere.
+    for part in written.split(['/', '\\']) {
         match part {
             "" | "." => {}
             ".." => {
@@ -61,5 +64,23 @@ mod tests {
             inside_repository("a/..").map(|place| place.below_root),
             Some(PathBuf::new())
         );
+    }
+
+    #[test]
+    fn a_backslash_separates_parts_as_a_slash_does() {
+        assert_eq!(inside_repository("src\\..\\..\\x"), None);
+        let inside = inside_repository("src\\a\\b.ts").expect("inside");
+        assert_eq!(inside.below_root, PathBuf::from("src/a/b.ts"));
+    }
+
+    /// A drive-relative path (`C:x`), a drive path and a UNC or device path name places outside the
+    /// repository on Windows (https://learn.microsoft.com/windows/win32/fileio/naming-a-file,
+    /// "Fully qualified vs. relative paths" and "Win32 device namespaces").
+    #[cfg(windows)]
+    #[test]
+    fn a_drive_relative_a_unc_and_a_device_path_are_no_place_inside_the_repository() {
+        for outside in ["C:x", "C:\\x", "\\\\server\\share\\x", "\\\\?\\C:\\x"] {
+            assert_eq!(inside_repository(outside), None, "{outside}");
+        }
     }
 }

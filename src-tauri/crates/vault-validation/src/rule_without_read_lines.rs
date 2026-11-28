@@ -6,6 +6,7 @@
 //! ledger is consulted: a cite is judged by the lines it names, not by whether this session served
 //! them.
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::LazyLock;
 
@@ -15,6 +16,9 @@ use source_scan::extension_of;
 use vault_document::{Issue, LoadedDocument};
 
 const SMALL_SOURCE_BYTES: usize = 256 * 1024;
+/// The text of cited files one call keeps, so a file many capabilities cite is read once. Past it a
+/// file is read again for each cite, never refused: the bound is on memory, not on the answer.
+const CITED_TEXT_CACHE_BYTES: usize = 16 * 1024 * 1024;
 const MAX_CITED_LINES: usize = 400;
 const DECIDE_CHARS: usize = 2000;
 const UNIT_SOURCE_EXTENSIONS: [&str; 31] = [
@@ -188,17 +192,51 @@ fn read_small_source(source: &dyn SourceFiles, path: &str) -> Option<String> {
     (text.len() <= SMALL_SOURCE_BYTES).then(|| text.into_owned())
 }
 
-fn cited_lines_decide(source: Option<&dyn SourceFiles>, cite: &Cite) -> bool {
+/// The small files a call has read for its cites, by path; a file that could not be read is
+/// remembered too.
+#[derive(Default)]
+struct CitedText {
+    files: HashMap<String, Option<String>>,
+    kept_bytes: usize,
+}
+
+impl CitedText {
+    /// Runs `decide` over the text of `path`, reading the file only the first time.
+    fn with_text<T>(
+        &mut self,
+        source: &dyn SourceFiles,
+        path: &str,
+        decide: impl FnOnce(Option<&str>) -> T,
+    ) -> T {
+        if let Some(known) = self.files.get(path) {
+            return decide(known.as_deref());
+        }
+        let text = read_small_source(source, path);
+        let size = text.as_ref().map_or(0, String::len);
+        if self.kept_bytes + size > CITED_TEXT_CACHE_BYTES {
+            return decide(text.as_deref());
+        }
+        self.kept_bytes += size;
+        decide(self.files.entry(path.to_string()).or_insert(text).as_deref())
+    }
+}
+
+fn cited_lines_decide(
+    source: Option<&dyn SourceFiles>,
+    texts: &mut CitedText,
+    cite: &Cite,
+) -> bool {
     let Some(source) = source else {
         return true;
     };
-    let Some(text) = read_small_source(source, &cite.path) else {
-        return false;
-    };
-    text.split('\n')
-        .skip(cite.start_line - 1)
-        .take(cite.end_line - cite.start_line + 1)
-        .any(|line| decides_line(line.trim_end_matches('\r')))
+    texts.with_text(source, &cite.path, |text| {
+        text.is_some_and(|text| {
+            text.split('\n')
+                .skip(cite.start_line - 1)
+                .take(cite.end_line - cite.start_line + 1)
+                .any(|line| decides_line(line.trim_end_matches('\r')))
+        })
+    })
 }
 
 static SYMBOL_AFTER_PATH: LazyLock<Regex> = LazyLock::new(|| {
@@ -244,6 +282,7 @@ pub fn rule_cite_findings(
     source: Option<&dyn SourceFiles>,
 ) -> Vec<(String, Issue)> {
     let mut findings = Vec::new();
+    let mut texts = CitedText::default();
     for document in documents {
         let is_capability = document
             .frontmatter()
@@ -263,7 +302,7 @@ pub fn rule_cite_findings(
             continue;
         }
         let cites = line_cites(&body, source);
-        if cites.iter().any(|cite| cited_lines_decide(source, cite)) {
+        if cites.iter().any(|cite| cited_lines_decide(source, &mut texts, cite)) {
             continue;
         }
         let slug = document.slug();
@@ -335,5 +374,66 @@ mod tests {
             cited_symbol("`src/x.ts` `issueInvoice` does it", "src/x.ts").as_deref(),
             Some("issueInvoice")
         );
+    }
+
+    /// One file held in memory, counting how often it is opened.
+    struct CountingSource {
+        root: std::path::PathBuf,
+        opened: std::cell::Cell<usize>,
+    }
+
+    impl SourceFiles for CountingSource {
+        fn root(&self) -> &Path {
+            &self.root
+        }
+        fn kind(
+            &self,
+            _path: &Path,
+        ) -> Result<Option<confined_files::EntryKind>, confined_files::SourceReadError> {
+            Ok(Some(confined_files::EntryKind::File))
+        }
+        fn link_kind(
+            &self,
+            _path: &Path,
+        ) -> Result<Option<confined_files::EntryKind>, confined_files::SourceReadError> {
+            Ok(Some(confined_files::EntryKind::File))
+        }
+        fn regular_file_exists(
+            &self,
+            _path: &Path,
+        ) -> Result<bool, confined_files::SourceReadError> {
+            Ok(true)
+        }
+        fn read_text(
+            &self,
+            _path: &Path,
+        ) -> Result<std::borrow::Cow<'_, str>, confined_files::SourceReadError> {
+            self.opened.set(self.opened.get() + 1);
+            Ok(std::borrow::Cow::Borrowed("if (x) throw new Error();\n"))
+        }
+        fn list_directory(
+            &self,
+            _path: &Path,
+        ) -> Result<confined_files::DirectoryListing, confined_files::SourceReadError> {
+            Err(confined_files::SourceReadError::Absent)
+        }
+    }
+
+    #[test]
+    fn a_file_many_capabilities_cite_is_opened_once_for_the_whole_call() {
+        let source = CountingSource {
+            root: std::path::PathBuf::from("/repository"),
+            opened: std::cell::Cell::new(0),
+        };
+        let cite = Cite {
+            path: "a.ts".to_string(),
+            start_line: 1,
+            end_line: 1,
+        };
+        let mut texts = CitedText::default();
+        for _ in 0..5 {
+            assert!(cited_lines_decide(Some(&source), &mut texts, &cite));
+        }
+        assert_eq!(source.opened.get(), 1);
     }
 }

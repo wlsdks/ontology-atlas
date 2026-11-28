@@ -14,6 +14,7 @@ use vault_document::{Issue, LoadedDocument, ReferenceIndex, VaultIssues};
 use crate::dependency_both_ways::two_way_dependency_findings;
 use crate::node_revisions::contained_slugs;
 use crate::rule_without_read_lines::rule_cite_findings;
+use crate::slug_collision::slug_collision_findings;
 
 /// The findings by slug, and every slug that can be listed: the documents, then the raw sources.
 #[derive(Debug, Default)]
@@ -79,17 +80,22 @@ pub fn collect_issues(
     }
     let depth_findings = rule_cite_findings(documents, source)
         .into_iter()
-        .chain(two_way_dependency_findings(documents));
+        .chain(two_way_dependency_findings(documents))
+        .chain(slug_collision_findings(documents));
     for (slug, issue) in depth_findings {
         add(slug, issue);
     }
     let mut collection = IssueCollection {
         by_slug,
-        files: documents
-            .iter()
-            .map(|document| document.slug().to_string())
-            .collect(),
+        files: Vec::new(),
     };
+    // A name two files fold to is one row, with the collision among its findings.
+    let mut listed = std::collections::HashSet::new();
+    for document in documents {
+        if listed.insert(document.slug()) {
+            collection.files.push(document.slug().to_string());
+        }
+    }
     collection.drop_what_the_vault_answers(documents);
     for (slug, issue) in raw_sources {
         collection.by_slug.insert(slug.clone(), vec![issue]);

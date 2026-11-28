@@ -10,6 +10,7 @@ mod path_drift;
 mod problem_list;
 mod raw_source_kind;
 mod rule_without_read_lines;
+mod slug_collision;
 mod summary_freshness;
 mod validation_page;
 
