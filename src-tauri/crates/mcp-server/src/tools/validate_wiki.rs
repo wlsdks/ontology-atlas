@@ -317,20 +317,22 @@ fn judge_pages(
             links: &check.links,
         })
         .collect();
-    let mut folder_problems = judge_folder(&folder_pages);
-
-    let mut verdict_of_folder = |index: usize| -> Verdict {
-        let (path, check) = &folder[index];
-        let mut problems = check.problems.clone();
-        problems.append(&mut std::mem::take(&mut folder_problems[index]));
-        Verdict {
-            path: path.clone(),
-            problems,
-        }
-    };
+    let folder_problems = judge_folder(&folder_pages);
+    let folder_verdicts: Vec<Verdict> = folder
+        .iter()
+        .zip(folder_problems)
+        .map(|((path, check), found)| {
+            let mut problems = check.problems.clone();
+            problems.extend(found);
+            Verdict {
+                path: path.clone(),
+                problems,
+            }
+        })
+        .collect();
 
     let Some(paths) = paths else {
-        return Ok((0..folder.len()).map(verdict_of_folder).collect());
+        return Ok(folder_verdicts);
     };
     let mut verdicts = Vec::with_capacity(paths.len());
     for path in paths {
@@ -355,8 +357,11 @@ fn judge_pages(
             });
             continue;
         };
-        match folder.iter().position(|(held, _)| held == path) {
-            Some(index) => verdicts.push(verdict_of_folder(index)),
+        match folder_verdicts.iter().find(|held| held.path == *path) {
+            Some(held) => verdicts.push(Verdict {
+                path: held.path.clone(),
+                problems: held.problems.clone(),
+            }),
             None => verdicts.push(Verdict {
                 path: path.clone(),
                 problems: read_page(slug, document.file())?.problems,

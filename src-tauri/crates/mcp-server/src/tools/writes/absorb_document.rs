@@ -201,7 +201,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
 
     let plan = plan_absorption(
         source.text(),
-        &trim(&file_stem(&source)),
+        trim(&file_stem(&source)),
         &|slug| view.root().read_path(slug).is_ok_and(|path| path.exists()),
     );
 
