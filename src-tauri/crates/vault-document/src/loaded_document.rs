@@ -77,6 +77,8 @@ struct Record {
     diagnostics: Vec<Diagnostic>,
     /// What the file says wrong of itself, with the sentences.
     issues: Vec<Issue>,
+    /// The same, judged with the slug the file sits at.
+    issues_at_slug: Vec<Issue>,
     links: BodyLinks,
     /// Of the bytes everything above was read from; a body read again must match it.
     digest: Digest256,
@@ -105,10 +107,15 @@ impl LoadedDocument {
         let modified_ms = snapshot.stamp.modified_time().milliseconds();
         let document = Document::from_bytes(snapshot.bytes);
         let shape = document.shape();
-        let issues = if shape == RawShape::Empty {
-            Vec::new()
+        // Both judgements are made from these bytes, so a file changed after the read cannot make
+        // the two disagree, and `validate_vault` reads no file again for them.
+        let (issues, issues_at_slug) = if shape == RawShape::Empty {
+            (Vec::new(), Vec::new())
         } else {
-            validate_document(&document, None)
+            (
+                validate_document(&document, None),
+                validate_document(&document, Some(&slug)),
+            )
         };
         let diagnostics = document.diagnostics().to_vec();
         let body = document.body();
@@ -123,6 +130,7 @@ impl LoadedDocument {
                 frontmatter: document.into_frontmatter(),
                 diagnostics,
                 issues,
+                issues_at_slug,
                 links,
                 digest,
                 body: kept,
@@ -130,6 +138,13 @@ impl LoadedDocument {
                 last_answer: AtomicU64::new(0),
             }),
         }
+    }
+
+    /// What the file says wrong of itself, judged with the slug it sits at: a finding's sentence
+    /// names the node by that slug, and a node outside its kind folder is only known by it. It is
+    /// judged when the file is read.
+    pub fn issues_at_slug(&self) -> Vec<Issue> {
+        self.record.issues_at_slug.clone()
     }
 
     /// Whether `bytes` are the ones this document was read from.

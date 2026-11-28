@@ -1,8 +1,8 @@
 //! `analyze_repo_structure`: the breadth map of the repository, the first call of every
-//! construction. The map is read once on the shared pool by `repository-survey`; this file checks
-//! the arguments the way the JavaScript server does and refuses, by name, the parts of the tool
-//! this build does not answer yet (the structural analysis view, and a proposal or qualification
-//! to review). `sourceReads` answer from `source-reads`: the reads alone, as text.
+//! construction. The map is read once on the shared pool by `repository-survey`; `sourceReads`
+//! answer from `source-reads`, the reads alone, as text. The structural analysis
+//! (`view: "analysis"`) and the review of a `proposal` or `qualification` are retired: the call is
+//! refused by name and points to the tools that write a vault.
 
 use repository_survey::{build_breadth_map, git_ignored_paths, SurveyFiles, SurveyRequest};
 use source_reads::{
@@ -35,11 +35,8 @@ fn is_set(arguments: &Arguments, name: &str) -> bool {
         .is_some_and(|raw| raw.get().trim() != "null")
 }
 
-fn not_answered(what: &str) -> ToolError {
-    ToolError::failed(format!(
-        "{what} is not answered by this build of the server yet; the JavaScript server answers it. Call analyze_repo_structure without it for the breadth map."
-    ))
-}
+/// What a call for a retired part is told.
+const RETIRED: &str = "view \"analysis\", proposal and qualification are retired: the structural analysis and the review of a proposal no longer exist. Call analyze_repo_structure for the breadth map, read the code with sourceReads, then write what you found with add_concepts and add_relations.";
 
 /// The folder the vault lies in below `root`, `/`-separated; `None` when the vault is the root or
 /// outside it.
@@ -65,7 +62,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let ignore = optional_text_list(arguments, "ignore", IGNORE_MAX_ITEMS)?.unwrap_or_default();
     let source_only = optional_boolean(arguments, "sourceOnly")?.unwrap_or(false);
     if source_only && (is_sent(arguments, "proposal") || is_sent(arguments, "qualification")) {
-        return Err(ToolError::failed(
+        return Err(ToolError::invalid(
             "sourceOnly cannot be combined with proposal or qualification; omit sourceOnly for full analysis and lifecycle replay.",
         ));
     }
@@ -74,8 +71,11 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             "sourceOnly requires sourceReads with 1\u{2013}16 exact selectors.",
         ));
     }
-    if is_set(arguments, "proposal") || is_set(arguments, "qualification") {
-        return Err(not_answered("Reviewing a proposal or a qualification"));
+    let wants_analysis = arguments
+        .read::<serde_json::Value>("view")?
+        .is_some_and(|view| view.as_str() == Some("analysis"));
+    if wants_analysis || is_set(arguments, "proposal") || is_set(arguments, "qualification") {
+        return Err(ToolError::invalid(RETIRED));
     }
     let target = ScanTarget::allow(context, root_path.as_deref())?;
     if let Some(selectors) = arguments.read::<serde_json::Value>("sourceReads")? {
@@ -95,12 +95,6 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             &target.label,
             &evidence,
         )));
-    }
-    let wants_analysis = arguments
-        .read::<serde_json::Value>("view")?
-        .is_some_and(|view| view.as_str() == Some("analysis"));
-    if wants_analysis {
-        return Err(not_answered("The structural analysis view"));
     }
     let source = target.source_with_limit(SURVEY_FILE_BYTES);
     let files = SurveyFiles::new(&source);

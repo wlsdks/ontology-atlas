@@ -5,4 +5,3 @@
 {"id":3,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/src"}}}
 {"id":4,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/cmd"}}}
 {"id":5,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/docs"}}}
-{"id":6,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","view":"analysis"}}}

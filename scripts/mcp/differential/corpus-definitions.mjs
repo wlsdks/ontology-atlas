@@ -1449,8 +1449,6 @@ add('survey', 'analyze-repo-structure-miniature', { vault: 'miniature-repo' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', symbol: 'placeOrder' }] }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', mode: 'outline' }, { path: 'src/payment/charge.ts', startLine: 1, maxLines: 4 }], view: 'reads' }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: '../outside.ts', mode: 'outline' }, { path: '/etc/hosts', mode: 'outline' }, { path: '.env', mode: 'outline' }] }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', proposal: { concepts: [] } }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', qualification: { scenario: 'x' } }),
   call('analyze_repo_structure', {}),
   call('analyze_repo_structure', { rootPath: '$PARENT/src' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/does-not-exist' }),
@@ -1477,7 +1475,6 @@ add('survey', 'analyze-repo-structure-polyglot', { vault: 'survey-polyglot' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT/src' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/cmd' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/docs' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
 ]);
 add('survey', 'analyze-repo-structure-large', { vault: 'survey-large' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT' }),
@@ -1972,6 +1969,22 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/cancel.ts', symbol: 'a'.repeat(3000) }] }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceOnly: true }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/cancel.ts', mode: 'outline' }], maxDepth: 99 }),
+  ]);
+// The parts of `analyze_repo_structure` that are retired. The script server still answers each;
+// the Rust server refuses by name, in one sentence, and `null` still means "not sent".
+const retired = (args) => call('analyze_repo_structure', { rootPath: '$PARENT', ...args });
+add('survey', 'analyze-repo-structure-retired-parts', { vault: 'miniature-repo' }, [
+  retired({ view: 'analysis' }),
+  retired({ view: 'analysis', ignore: ['src/billing'] }),
+  retired({ proposal: {} }),
+  retired({ proposal: { concepts: [] } }),
+  retired({ qualification: { scenario: 'x' } }),
+  retired({ proposal: {}, qualification: {} }),
+  retired({ proposal: null }),
+  retired({ qualification: null }),
+  retired({ view: 'nonsense', proposal: {} }),
+  retired({ maxDepth: 99, view: 'analysis' }),
+  retired({ sourceOnly: true, proposal: {} }),
 ]);
 add('survey', 'index-project-retired', { vault: 'miniature-repo' }, [call('index_project', { rootPath: '$PARENT' })]);
 

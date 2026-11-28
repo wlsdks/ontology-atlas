@@ -1,0 +1,18 @@
+[package]
+name = "build-depth"
+version = "0.1.0"
+description = "What a first map still lacks against the code it describes: rules without read lines, dependencies both ways, and the cites a node makes"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+confined-files = { path = "../confined-files" }
+source-scan = { path = "../source-scan" }
+vault-document = { path = "../vault-document" }
+# Cites are found with patterns written in this crate; a path from a vault never becomes one.
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl"] }
+
+[lints]
+workspace = true

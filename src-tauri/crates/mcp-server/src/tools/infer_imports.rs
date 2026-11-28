@@ -104,6 +104,7 @@ impl Request {
             source_folders: self.source_folders.clone(),
             ignore: self.ignore.clone().unwrap_or_default(),
             max_files: self.max_files,
+            workspace_packages: None,
         }
     }
 }

@@ -38,8 +38,11 @@ mod read_vault;
 mod reply_bytes;
 #[cfg(feature = "test-hooks")]
 mod test_hooks;
+mod validate_vault;
 mod vault_facts;
 mod vault_repository;
+mod vault_validation_facts;
+mod vault_validation_report;
 
 pub use compiled_graph::KeptGraph;
 
@@ -68,6 +71,7 @@ pub fn call(
         "query_concepts" => Some(query_concepts::call(context, arguments)),
         "compile_ontology" => Some(compile_ontology::call(context, arguments)),
         "query_ontology" => Some(query_ontology::call(context, arguments)),
+        "validate_vault" => Some(validate_vault::call(context, arguments)),
         "git_status" => Some(git_status::call(context)),
         "git_history" => Some(git_history::call(context, arguments)),
         "infer_imports" => Some(infer_imports::call(context, arguments)),

@@ -28,12 +28,21 @@ impl ScanTarget {
     /// yet to be a folder: a tool that must name another problem first calls
     /// [`Self::require_folder`] when it reaches the scan.
     pub fn allow(context: &CallContext<'_>, root_path: Option<&str>) -> Result<Self, ToolError> {
+        Self::allow_named(context, root_path, "rootPath")
+    }
+
+    /// [`Self::allow`] for a tool whose argument has another name, which the refusal repeats.
+    pub fn allow_named(
+        context: &CallContext<'_>,
+        root_path: Option<&str>,
+        argument: &str,
+    ) -> Result<Self, ToolError> {
         let config = context.config();
         let roots = ScanRoots::new(config.vault_root.clone(), config.repo_root.clone())
             .map_err(|error| ToolError::failed(error.to_string()))?;
         let wanted = root_path.map_or(config.repo_root.as_path(), Path::new);
         let allowed = roots
-            .allow(wanted, "rootPath")
+            .allow(wanted, argument)
             .map_err(|refused| ToolError::invalid(refused.to_string()))?;
         let label = allowed.as_path().to_string_lossy().into_owned();
         let source = DiskSource::new(&allowed, SOURCE_FILE_MAX_BYTES);
