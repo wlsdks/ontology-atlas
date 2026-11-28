@@ -278,6 +278,53 @@ fn a_file_reserved_for_a_person_is_not_rewritten_and_leaves_no_audit_line() {
     assert_eq!(client.file(".ontology-atlas/activity.jsonl"), None);
 }
 
+/// The card named the repository's file; the link was pointed at a file outside the repository
+/// while the person decided, and the yes must not carry over to it.
+#[cfg(unix)]
+#[test]
+fn a_link_retargeted_while_the_question_is_open_leaves_the_file_it_now_leads_to_unchanged() {
+    // Not a default temporary folder, whose name starts with a dot: outside the repository a
+    // hidden folder is refused before the question.
+    let base = tempfile::Builder::new().prefix("absorb-").tempdir().expect("base");
+    let repository = base.path().join("repo");
+    let outside = base.path().join("outside");
+    std::fs::create_dir_all(repository.join("docs")).expect("repository");
+    std::fs::create_dir_all(&outside).expect("outside");
+    let rules = repository.join("docs/AGENTS.md");
+    let journal = outside.join("journal.md");
+    std::fs::write(&rules, "# Rules\n\n## Style\n\nUse tabs.\n").expect("rules");
+    std::fs::write(&journal, "# Journal\n\n## Monday\n\nA private entry.\n").expect("journal");
+    let link = repository.join("link.md");
+    std::os::unix::fs::symlink(&rules, &link).expect("link");
+    let vault = tempfile::tempdir().expect("vault");
+    let mut client = Client::start_in(
+        vault,
+        &[
+            ("OATLAS_WRITE_CONSENT", "1"),
+            ("OATLAS_REPO_ROOT", &repository.to_string_lossy()),
+        ],
+        r#"{"elicitation":{}}"#,
+    );
+    let arguments = format!(
+        r#"{{"filePath":{},"allowOutsideRepo":true,"confirm":true}}"#,
+        Value::String(link.to_string_lossy().into_owned())
+    );
+    client.live.send(&call(2, "absorb_document", &arguments));
+    let question = client.next();
+    let card = question["params"]["message"].as_str().unwrap_or_default();
+    assert!(card.contains("docs/AGENTS.md") && !card.contains("outside"), "{card}");
+    std::fs::remove_file(&link).expect("unlink");
+    std::os::unix::fs::symlink(&journal, &link).expect("retarget");
+    client.answer(0, r#"{"action":"accept"}"#);
+    let answer = client.next();
+    assert!(failed(&answer), "{}", text_of(&answer));
+    assert!(text_of(&answer).contains("not the one the question named"), "{}", text_of(&answer));
+    let journal_now = std::fs::read_to_string(&journal).expect("journal");
+    assert!(journal_now.contains("A private entry."), "{journal_now}");
+    assert!(!outside.join("journal.md.pre-absorb.bak").exists());
+    assert!(std::fs::read_to_string(&rules).expect("rules").contains("Use tabs."));
+}
+
 #[test]
 fn two_approved_writes_to_one_concept_run_one_after_the_other_and_lose_nothing() {
     let mut client = Client::with_consent(r#"{"elicitation":{}}"#);
