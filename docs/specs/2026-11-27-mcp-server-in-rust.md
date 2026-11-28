@@ -1011,6 +1011,24 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   (resolved through imports, inheritance and Go packages) and serves the code that decides what it
   does, ranked and held to the same byte budget. Run against every outline and symbol of five
   fixtures and a planted five-language repository, the text equals the script server's except
-  row 49. Row 46 narrows to the analysis view and the review of a proposal or qualification. **Not
+  rows 49 to 52 (a one-line method body, a lookalike name that opens a credential, a Windows device
+  name, a signature cut inside an emoji). Row 46 narrows to the analysis view and the review of a proposal or qualification. **Not
   built:** the `Family:` line that counts a symbol's siblings by type (`type-family`), and the use
   of this session's reads by the proposal review, which waits for slice 9.
+- 2026-11-28: review of slice 8b, fixed on `fix/mcp-rust-source-reads-review`. A name that a
+  case-insensitive disk folds into a credential (a Kelvin sign, a long s) is refused: the credential
+  test folds a name as the disk does and both reads ask it again of the path as the disk spells the
+  opened file (row 50). A symbol read takes the declarations the survey already produced instead of
+  parsing every file again, and keeps Ruby and C# declarations and call-site texts between calls by
+  the file's stamp: one symbol read on this repository took 3.1 to 6.5 s before and 0.7 to 1.1 s
+  after, against the script server's 1.9 s cold and 0.55 s warm, so the survey walk that each call
+  repeats is the floor and a warm call is slower than the script server's. The session record
+  hashes the lines that were served and keeps the file's stamp, so it reads a file again only when
+  the stamp moves and never under the lock. The vault's raw source read and the repository read are
+  one confined read over checked parts, which refuses a Windows device name on every system (row
+  51) and compares the name with the opened handle after the read. A signature is trimmed and cut
+  as JavaScript does (row 52). Runtime patterns built from names became substring scans. Two
+  decisions for the reader of this log: the Ruby and C# scanners keep reading the `fun` keyword the
+  script server's scanner reads, and `JS` white space is defined twice (`repository-survey` and
+  `source-scan`), since `source-scan` cannot depend on the crate that depends on it; one definition
+  in `answer-format` ends that.
