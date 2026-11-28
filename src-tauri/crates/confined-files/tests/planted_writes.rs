@@ -423,6 +423,52 @@ fn each_entry_is_rechecked_right_before_it_applies_and_earlier_writes_roll_back(
     );
 }
 
+/// There is no journal: a process killed in the middle of a batch leaves the files written so far.
+/// While the process lives, an I/O error at step 10 is undone, and when one of the undone files was
+/// edited by someone since, the answer says the vault is inconsistent and names that file, not
+/// "rolled back".
+#[test]
+fn an_io_error_at_step_ten_is_undone_and_a_file_that_cannot_be_put_back_is_named() {
+    let (_directory, root) = vault();
+    let name = |index: usize| format!("n{index}");
+    for index in 0..12 {
+        fs::write(root.path().join(format!("{}.md", name(index))), "ORIGINAL").expect("seed");
+    }
+    let sabotage = |index: usize| {
+        if index == 10 {
+            fs::write(root.path().join("n3.md"), "a person's edit").expect("edit");
+            fs::remove_file(root.path().join("n10.md")).expect("remove");
+            fs::create_dir(root.path().join("n10.md")).expect("a folder where a file was");
+        }
+    };
+    let plan = (0..12)
+        .map(|index| PlanEntry::write(target(&root, &name(index)), format!("REWRITTEN-{index}")))
+        .collect();
+    let error = apply_all_or_nothing(
+        plan,
+        &ApplyOptions {
+            before_entry: Some(&sabotage),
+            ..options()
+        },
+    )
+    .expect_err("step ten fails");
+    let WriteError::Inconsistent { cause, unrecovered } = &error else {
+        panic!("a rollback that could not finish must not be reported as complete: {error}");
+    };
+    assert!(matches!(**cause, WriteError::Io(_)), "{cause:?}");
+    assert_eq!(unrecovered, &vec![root.path().join("n3.md")]);
+    assert!(error.to_string().contains("INCONSISTENT"), "{error}");
+    for index in (0..10).filter(|index| *index != 3) {
+        let held = fs::read_to_string(root.path().join(format!("n{index}.md"))).expect("read");
+        assert_eq!(held, "ORIGINAL", "n{index} was put back");
+    }
+    assert_eq!(
+        fs::read_to_string(root.path().join("n3.md")).expect("n3"),
+        "a person's edit",
+        "the edit is kept and reported, never overwritten"
+    );
+}
+
 #[test]
 fn a_plan_that_requires_revisions_refuses_an_entry_without_one_before_starting() {
     let (_directory, root) = vault();

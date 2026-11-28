@@ -1242,8 +1242,10 @@ None — the owner delegated the open points and the lead decided them on 2026-1
 - 2026-11-28: the Node `postWriteMaintenance` is `{ nextAction, stepsAboutTouched }` over the touched nodes only, so rows 72 and 74 now describe both servers and the declared `postWriteMaintenance` and `findings` differences are gone from `declared-changes.json`. One gap is the Rust writers': they ask the plan for 5 steps and count what comes back, so `stepsAboutTouched` stops at 5 and a step about a touched node can be cut behind other nodes' steps; the `rename-concept`, `merge-concepts` and `safety/audit-lines-for-each-writer` cases differ there until the plan scans 500 candidates when `touching` is set and reports the filtered total. The Node project-source fingerprint is `inventory-v3` (index blob ids and the bytes of changed files, no file cap); the app computes `inventory-v2` until its probe is ported (`docs/records/decisions/2026-11-28-mcp-lean-shapes-*.md`, addendum).
 - 2026-11-28 (lean shapes of the script server, slice `feat/mcp-rust-lean-shapes`; each step questioned,
   choice and why): `patch_concept` takes `patches` (one to twenty, one consent, all or none, one audit
-  line per node). Planned in memory and applied as one atomic plan, which puts nothing on disk until every
-  patch has passed; the script server writes and restores, so a crash between the two leaves a half-write.
+  line per node). Planned in memory and applied as one plan in order. A refusal, or an I/O error before
+  the first write, leaves nothing; a later I/O error is undone by putting each earlier file back; a
+  process killed mid-batch can leave the first k files patched, in the script server and in this one
+  alike (neither keeps a journal).
   The refusal keeps the script server's words and the code of the failing step (a stale file is
   `conflict`). `validate_vault` states a shared repair once as `byCode.<code>.remedy` and lists only the
   files its rows do not show; the embedded brief keeps three rows and the counts. `match_nodes` answers
