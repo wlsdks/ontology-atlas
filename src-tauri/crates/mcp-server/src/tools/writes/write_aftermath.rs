@@ -276,22 +276,72 @@ struct Count {
     value: fn(&Coverage) -> Option<usize>,
 }
 
-const COUNTS: [Count; 12] = [
-    Count { name: "abilities.surveyed", value: |c| Some(c.breadth.abilities) },
-    Count { name: "abilities.onNode", value: |c| Some(c.breadth.node) },
-    Count { name: "abilities.named", value: |c| Some(c.breadth.named) },
-    Count { name: "abilities.excluded", value: |c| Some(c.breadth.excluded) },
-    Count { name: "abilities.unplaced", value: |c| Some(c.breadth.unplaced.len()) },
-    Count { name: "areas.counted", value: |c| c.areas.as_ref().map(|a| a.counted) },
-    Count { name: "areas.notMapped", value: |c| c.areas.as_ref().map(|a| a.not_mapped) },
-    Count { name: "areas.abilities", value: |c| c.areas.as_ref().map(|a| a.abilities) },
-    Count { name: "areas.uncovered", value: |c| c.areas.as_ref().map(|a| a.uncovered) },
+const COUNTS: [Count; 15] = [
+    Count {
+        name: "abilities.surveyed",
+        value: |c| Some(c.breadth.abilities),
+    },
+    Count {
+        name: "abilities.onNode",
+        value: |c| Some(c.breadth.node),
+    },
+    Count {
+        name: "abilities.named",
+        value: |c| Some(c.breadth.named),
+    },
+    Count {
+        name: "abilities.excluded",
+        value: |c| Some(c.breadth.excluded),
+    },
+    Count {
+        name: "abilities.unplaced",
+        value: |c| Some(c.breadth.unplaced.len()),
+    },
+    Count {
+        name: "areas.counted",
+        value: |c| c.areas.as_ref().map(|a| a.counted),
+    },
+    Count {
+        name: "areas.notMapped",
+        value: |c| c.areas.as_ref().map(|a| a.not_mapped),
+    },
+    Count {
+        name: "areas.abilities",
+        value: |c| c.areas.as_ref().map(|a| a.abilities),
+    },
+    Count {
+        name: "areas.uncovered",
+        value: |c| c.areas.as_ref().map(|a| a.uncovered),
+    },
     Count {
         name: "areas.mappedPercent",
-        value: |c| c.areas.as_ref().and_then(|a| a.mapped_percent).map(usize::from),
+        value: |c| {
+            c.areas
+                .as_ref()
+                .and_then(|a| a.mapped_percent)
+                .map(usize::from)
+        },
     },
-    Count { name: "reads.capabilities", value: |c| c.reads.as_ref().map(|r| r.capabilities) },
-    Count { name: "reads.read", value: |c| c.reads.as_ref().map(|r| r.read) },
+    Count {
+        name: "reads.capabilities",
+        value: |c| c.reads.as_ref().map(|r| r.capabilities),
+    },
+    Count {
+        name: "reads.read",
+        value: |c| c.reads.as_ref().map(|r| r.read),
+    },
+    Count {
+        name: "reads.unread",
+        value: |c| c.reads.as_ref().map(|r| r.unread),
+    },
+    Count {
+        name: "abilityEdges.edges",
+        value: |c| c.ability_edges.map(|e| e.edges),
+    },
+    Count {
+        name: "abilityEdges.capabilitiesWithoutEdge",
+        value: |c| c.ability_edges.map(|e| e.capabilities_without_edge),
+    },
 ];
 
 /// The counts a write moved, as `{ changed: { "section.field": [before, after] } }`, and nothing
@@ -395,7 +445,6 @@ mod tests {
         Coverage {
             breadth: Breadth {
                 abilities: 4,
-                not_listed: 0,
                 node,
                 named: 0,
                 excluded: 0,
@@ -403,13 +452,16 @@ mod tests {
                     .map(|at| UnplacedRow {
                         kind: "command",
                         name: format!("n{at}"),
+                        path: String::new(),
                         evidence: String::new(),
-                        symbol: None,
+                        members: None,
+                        member_count: None,
                     })
                     .collect(),
             },
             areas: None,
             reads: None,
+            ability_edges: None,
         }
     }
 
