@@ -1,93 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { mountDesktopVault, installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
-
-/**
- * WCAG 2.5.8 24x24 floor on the effective hit box (own rect plus ::after rect); needs real layout.
- * Pass if the box is large enough, or the target is inline in a sentence, or its 24 circle
- * overlaps no other target.
- */
-
-interface Audit258Result {
-  scanned: number;
-  failures: { id: string; w: number; h: number }[];
-}
-
-/** The fine-pointer 2.5.8 audit — a predicate that runs inside the browser. */
-const AUDIT_258 = `(() => {
-  const MIN = 24;
-  /*
-   * The selector **must include form controls**: with only \`button, a[href]\`, \`<input>\`,
-   * \`<select>\` and \`<textarea>\` do not exist for this audit, and undersized native checkboxes
-   * would pass.
-   */
-  const RAW = 'button:not([disabled]), a[href], input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
-  /*
-   * **For a checkbox the target is the label, not its own box.** WCAG defines a
-   * target by what receives the click (SC 2.5.5 Understanding), and when a
-   * \`<label>\` wraps it, native behaviour makes a click on the label a toggle, so
-   * the whole label is one target. When a wrapping label exists, **substitute the
-   * label** — otherwise a 16px checkbox and a 24px label are **double-counted as two
-   * targets** and an already-fixed place is reported as a violation.
-   */
-  const seen = new Set();
-  const targets = [];
-  for (const el of Array.from(document.querySelectorAll(RAW))) {
-    const type = (el.getAttribute('type') || '').toLowerCase();
-    const merged = (type === 'checkbox' || type === 'radio') ? (el.closest('label') || el) : el;
-    if (seen.has(merged)) continue;
-    const r = merged.getBoundingClientRect();
-    const cs = getComputedStyle(merged);
-    if (!(r.width > 0 && r.height > 0)) continue;
-    if (cs.visibility === 'hidden' || cs.opacity === '0') continue;
-    if (merged.closest('.sr-only') || merged.closest('[aria-hidden="true"]')) continue;
-    seen.add(merged);
-    targets.push(merged);
-  }
-  const hit = (el) => {
-    const r = el.getBoundingClientRect();
-    const a = getComputedStyle(el, '::after');
-    if (a.content && a.content !== 'none' && a.position === 'absolute') {
-      return { w: Math.max(r.width, parseFloat(a.width) || 0), h: Math.max(r.height, parseFloat(a.height) || 0) };
-    }
-    return { w: r.width, h: r.height };
-  };
-  const inlineExempt = (el) => {
-    if (getComputedStyle(el).display !== 'inline') return false;
-    let p = el.parentElement;
-    while (p && getComputedStyle(p).display === 'inline') p = p.parentElement;
-    if (!p) return false;
-    let targetChars = 0;
-    p.querySelectorAll(RAW).forEach((t) => { targetChars += (t.textContent || '').length; });
-    return (p.textContent || '').length - targetChars > 0;
-  };
-  const box24 = (el) => {
-    const r = el.getBoundingClientRect();
-    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    return { l: cx - MIN / 2, r: cx + MIN / 2, t: cy - MIN / 2, b: cy + MIN / 2 };
-  };
-  const meets = (b) => b.w >= MIN && b.h >= MIN;
-  const intersects = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
-  const spacingClear = (el) => {
-    const mine = box24(el);
-    for (const other of targets) {
-      if (other === el || el.contains(other) || other.contains(el)) continue;
-      const or = other.getBoundingClientRect();
-      const orect = { l: or.left, r: or.right, t: or.top, b: or.bottom };
-      if (intersects(mine, meets(hit(other)) ? orect : box24(other))) return false;
-    }
-    return true;
-  };
-  const id = (el) => el.getAttribute('data-testid') || (el.textContent || '').trim().slice(0, 24) || el.tagName;
-  const failures = [];
-  for (const el of targets) {
-    const b = hit(el);
-    if (meets(b)) continue;
-    if (inlineExempt(el)) continue;
-    if (spacingClear(el)) continue;
-    failures.push({ id: id(el), w: Math.round(b.w), h: Math.round(b.h) });
-  }
-  return { scanned: targets.length, failures };
-})()`;
+import { AUDIT_258, type Audit258Result } from "../touch-target-audit";
 
 /**
  * WCAG 2.5.8 (AA) — the 24×24 floor for fine pointers.
@@ -122,19 +34,6 @@ test.describe("minimum target contract (pointer: fine, WCAG 2.5.8 AA)", () => {
       expect(failures, `2.5.8 shortfall: ${JSON.stringify(failures)}`).toEqual([]);
     });
   }
-
-  // The map's own controls: the screen a plain browser never mounts, measured in the app's faked runtime.
-  test("a target on the map in the installed app under 24×24 must prove either the inline exemption or the spacing exception", async ({ page }) => {
-    await installDesktopRailRuntime(page);
-    await mountDesktopVault(page, "ko");
-    await page.goto("/ko/topology/?guides=off");
-    await expect(page.getByTestId("ontology-map-canvas")).toBeVisible({ timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
-    const { scanned, failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
-    // The rail, the map's controls and the settings entry: fewer means the workbench did not mount.
-    expect(scanned, `too few targets were scanned on the map (${scanned})`).toBeGreaterThanOrEqual(15);
-    expect(failures, `2.5.8 shortfall: ${JSON.stringify(failures)}`).toEqual([]);
-  });
 
   test("instrument probe: catches crowded targets under 24 and lets spaced targets pass", async ({ page }) => {
     await page.goto("/ko/download/?guides=off");
