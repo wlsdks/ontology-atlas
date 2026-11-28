@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { readSampleCensus, SampleMapPage } from '@/views/sample-map';
+import { SampleMapPage } from '@/views/sample-map';
+import { readSampleCensus } from '@/views/build-time-readers';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 
 export async function generateMetadata({

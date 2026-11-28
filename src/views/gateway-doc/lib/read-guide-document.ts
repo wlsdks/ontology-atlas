@@ -4,8 +4,6 @@ import { join } from 'node:path';
 import { guideSourcePath, type GuidePage } from '../model/guide-pages';
 import { readGatewayDocument, type GatewayDocument } from './read-vault-doc';
 
-export { GUIDE_TRANSLATIONS_DIR, guideSourcePath } from '../model/guide-pages';
-
 /**
  * Guide chapters in the reader's language. English is the vault document; another locale's body is
  * localized data kept outside the vault, so the Library and MCP see one guide, read at build time

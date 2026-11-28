@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslations } from 'use-intl';
 
-import { CHANGELOG_CONTENT_LOCALES, GatewayDocPage } from '@/views/gateway-doc/browser';
+import { CHANGELOG_CONTENT_LOCALES, GatewayDocPage } from '@/views/gateway-doc';
 
 import { loadScreenMetadata } from '../../-site/load-screen-metadata';
 import { MetadataTags } from '../../-site/metadata-tags';

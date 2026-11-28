@@ -3,7 +3,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { firstCommitDate, lastCommitDate } from '@/shared/lib/public-pages/source-dates';
 
 import { GUIDE_ENTRY_PAGE, type GuidePage } from '../model/guide-pages';
-import { guideSourcePath } from './read-guide-document';
+import { guideSourcePath } from '../model/guide-pages';
 import { guideStructuredData } from './guide-structured-data';
 
 export interface GuideChapterMeta {

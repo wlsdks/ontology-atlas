@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { CHANGELOG_CONTENT_LOCALES, GatewayDocPage, readGatewayDocument } from '@/views/gateway-doc';
+import { CHANGELOG_CONTENT_LOCALES, GatewayDocPage } from '@/views/gateway-doc';
+import { readGatewayDocument } from '@/views/build-time-readers';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 
 export async function generateMetadata({

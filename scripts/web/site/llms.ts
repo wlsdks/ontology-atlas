@@ -1,6 +1,7 @@
 import nav from '../../../messages/en/gatewayNav.json';
 import { SITE_URL } from '@/shared/config';
-import { GUIDE_PAGES, guideCanonicalPath, readVaultDoc } from '@/views/gateway-doc';
+import { GUIDE_PAGES, guideCanonicalPath } from '@/views/gateway-doc';
+import { readVaultDoc } from '@/views/build-time-readers';
 
 const REPO = 'https://github.com/wlsdks/ontology-atlas';
 

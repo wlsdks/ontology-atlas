@@ -1,5 +1,5 @@
 import { JsonLd } from '@/shared/ui';
-import { GatewayDocPage } from '@/views/gateway-doc/browser';
+import { GatewayDocPage } from '@/views/gateway-doc';
 
 import { MetadataTags } from './metadata-tags';
 import type { loadGuideChapter } from './guide-chapter';

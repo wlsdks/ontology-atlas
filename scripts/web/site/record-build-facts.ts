@@ -1,8 +1,7 @@
 import { loadWorkbenchCatalog } from '@/i18n/workbench-catalog';
 import { pickMessagePaths } from '@/i18n/gateway-messages';
 import { firstCommitDateAsync, lastCommitDateAsync } from '@/shared/lib/public-pages/source-dates';
-import { readGatewayDocument } from '@/views/gateway-doc';
-import { readSampleCensus } from '@/views/sample-map';
+import { readGatewayDocument, readSampleCensus } from '@/views/build-time-readers';
 
 import {
   factKey,
