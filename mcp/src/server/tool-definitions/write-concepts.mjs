@@ -198,7 +198,9 @@ export const PATCH_CONCEPT_TOOL = {
     'Update the frontmatter and/or body of an existing node, to revise or deepen it; in a filled vault prefer it over adding. ' +
     'Frontmatter patches are key by key: null deletes a key, omission keeps it. A given body replaces the whole body. ' +
     'Pass `expected_mtime` from the last read or write: a changed file throws VaultConflictError. ' +
-    'Returns `slug`, `mtime` (the next `expected_mtime`) and ' + WRITE_FINDINGS_GUIDANCE + '. ' + FAMILY_SCOPE_RULE_EN,
+    'Send one node as `slug` with its fields, or up to 20 as `patches`: one consent, every patch checked before any file is touched, ' +
+    'and all-or-nothing, so a patch that fails puts the earlier files back. ' +
+    'Returns `slug`, `mtime` (the next `expected_mtime`) and ' + WRITE_FINDINGS_GUIDANCE + '; `patches` returns one `{slug, ok, changed, mtime}` row per node. ' + FAMILY_SCOPE_RULE_EN,
   inputSchema: {
     type: 'object',
     properties: {
@@ -219,8 +221,24 @@ export const PATCH_CONCEPT_TOOL = {
         description:
           'Conflict guard: mtime from the last read or write of this node (add_relations returns it only when guarded).',
       },
+      patches: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 20,
+        description: 'Instead of `slug`: up to 20 patches in one call, one per node, written all or none.',
+        items: {
+          type: 'object',
+          properties: {
+            slug: nonBlankStringSchema('Vault-relative slug (omit the .md extension).'),
+            frontmatter: { type: 'object', additionalProperties: true, description: 'Key/value patches; null removes a key.' },
+            body: { type: 'string', description: 'Replacement body; kept when omitted.' },
+            expected_mtime: { type: 'number', minimum: 0, description: 'Conflict guard for this node.' },
+          },
+          required: ['slug'],
+          additionalProperties: false,
+        },
+      },
     },
-    required: ['slug'],
   },
   outputSchema: {
     type: 'object',
@@ -231,9 +249,25 @@ export const PATCH_CONCEPT_TOOL = {
       mtime: { type: 'number', minimum: 0 },
       mintedUid: { type: 'string' },
       notice: { type: 'string' },
+      patches: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            slug: { type: 'string' },
+            changed: { type: 'boolean' },
+            mtime: { type: 'number', minimum: 0 },
+            mintedUid: { type: 'string' },
+            notice: { type: 'string' },
+          },
+          required: ['ok', 'slug', 'changed', 'mtime'],
+          additionalProperties: false,
+        },
+      },
       findings: WRITE_FINDINGS_SCHEMA,
     },
-    required: ['ok', 'slug', 'changed', 'mtime'],
+    required: ['ok'],
     additionalProperties: false,
   },
 };

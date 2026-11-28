@@ -1,4 +1,4 @@
-import { statSync } from 'node:fs';
+import { readFileSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import {
   CREATED_BY_KEY,
   buildFrontmatter,
@@ -24,6 +24,7 @@ import { isValidVaultTitle } from '../../validate.mjs';
 import { loadVaultDocs } from '../../vault/documents/document-cache.mjs';
 import { configureNodeEligibilityRepoRoot } from '../../vault/writes/eligibility-gate.mjs';
 import { updateDoc, writeDoc } from '../../vault/writes/doc-writes.mjs';
+import { slugToWritePath } from '../../vault/documents/slug-paths.mjs';
 import { detectDuplicateTitle } from '../../vault/graph/graph-queries.mjs';
 import { coverageChange, measureBuildDepth, repositorySurvey } from '../../construction/build-depth.mjs';
 import { sessionReads } from '../../construction/session-reads.mjs';
@@ -245,16 +246,21 @@ function measureBatchDepth(docs = loadVaultDocs(VAULT_ROOT)) {
   }
 }
 
-function patchConcept({ slug, frontmatter, body, expected_mtime }) {
-  requireNonBlankString(slug, 'slug');
-  requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
+const PATCH_BATCH_MAX = 20;
+const PATCH_KEYS = ['slug', 'frontmatter', 'body', 'expected_mtime'];
+
+/** The checks one patch passes before any file is touched; `label` names the row in a batch. */
+function requirePatchFields({ slug, frontmatter, body, expected_mtime }, label = '') {
+  const at = (name) => (label ? `${label}.${name}` : name);
+  requireNonBlankString(slug, at('slug'));
+  requireOptionalNonNegativeNumber(expected_mtime, at('expected_mtime'));
   if (frontmatter === undefined && body === undefined) {
-    throw new Error('At least one of `frontmatter` or `body` is required.');
+    throw new Error(`At least one of \`${at('frontmatter')}\` or \`${at('body')}\` is required.`);
   }
-  requireOptionalPlainObject(frontmatter, 'frontmatter');
+  requireOptionalPlainObject(frontmatter, at('frontmatter'));
   requireValidFrontmatterPatch(frontmatter);
   if (body !== undefined && typeof body !== 'string') {
-    throw new Error('body must be a string.');
+    throw new Error(`${at('body')} must be a string.`);
   }
   // A patch with `title` must be non-empty, matching the UI's renameVaultDoc. `null`
   // means "delete the key", and deleting `title` breaks the frontmatter.
@@ -267,15 +273,26 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
       throw new Error('title must be a non-empty string.');
     }
   }
+}
+
+function patchConcept(args) {
+  if (args.patches !== undefined) return patchConcepts(args);
+  const { slug, frontmatter, body, expected_mtime } = args;
+  requirePatchFields({ slug, frontmatter, body, expected_mtime });
+  const row = patchOne({ slug, frontmatter, body, expected_mtime });
+  const findings = findingsOnWrittenNodes([slug]);
+  return { ok: true, ...row, ...(findings.length > 0 ? { findings } : {}) };
+}
+
+/** One checked patch written to its file: the row a caller gets back for that node. */
+function patchOne({ slug, frontmatter, body, expected_mtime }) {
   requireNodeNotReservedForHuman(readDocIfPresent(slug), 'patch_concept');
   const { filePath, mintedUid } = updateDoc(VAULT_ROOT, slug, {
     frontmatter,
     body,
     expectedMtime: typeof expected_mtime === 'number' ? expected_mtime : undefined,
   });
-  const findings = findingsOnWrittenNodes([slug]);
   return {
-    ok: true,
     slug,
     changed: true,
     mtime: statSync(filePath).mtimeMs,
@@ -289,8 +306,68 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
             `This write minted ${mintedUid} for it. Tell the human — the node now has a permanent identity.`,
         }
       : {}),
-    ...(findings.length > 0 ? { findings } : {}),
   };
+}
+
+/**
+ * Several patches in one call, one consent: every patch is checked before the first
+ * file is touched, and a patch that still fails (a changed file, a refused identity)
+ * puts the files already written back as they were, so the call changes all of its
+ * nodes or none.
+ */
+function patchConcepts(args) {
+  const extra = PATCH_KEYS.filter((key) => args[key] !== undefined);
+  if (extra.length > 0) {
+    throw new Error(`Send either \`patches\` or \`${extra[0]}\` on its own, not both.`);
+  }
+  const { patches } = args;
+  if (!Array.isArray(patches) || patches.length === 0 || patches.length > PATCH_BATCH_MAX) {
+    throw new Error(`patches must hold 1 to ${PATCH_BATCH_MAX} patches.`);
+  }
+  const seen = new Set();
+  patches.forEach((patch, index) => {
+    const label = `patches[${index}]`;
+    requirePlainObject(patch, label);
+    requireAllowedObjectKeys(patch, label, PATCH_KEYS);
+    requirePatchFields(patch, label);
+    if (seen.has(patch.slug)) throw new Error(`${label}.slug repeats "${patch.slug}": send one patch per node.`);
+    seen.add(patch.slug);
+    requireNodeNotReservedForHuman(readDocIfPresent(patch.slug), 'patch_concept');
+  });
+  const written = [];
+  const rows = [];
+  try {
+    for (const [index, patch] of patches.entries()) {
+      const filePath = slugToWritePath(VAULT_ROOT, patch.slug);
+      let before = null;
+      try {
+        before = { raw: readFileSync(filePath), mtimeMs: statSync(filePath).mtimeMs };
+      } catch { /* a missing file is reported by the write below */ }
+      // Snapshot first: a write that fails after its file landed is put back too.
+      if (before) written.push({ filePath, ...before });
+      try {
+        rows.push({ ok: true, ...patchOne(patch) });
+      } catch (error) {
+        throw new Error(`patches[${index}] (${patch.slug}): ${error.message}`, { cause: error });
+      }
+    }
+  } catch (error) {
+    const failures = [];
+    for (const entry of written.reverse()) {
+      try {
+        writeFileSync(entry.filePath, entry.raw);
+        utimesSync(entry.filePath, entry.mtimeMs / 1000, entry.mtimeMs / 1000);
+      } catch (restoreError) {
+        failures.push(`${entry.filePath} (${restoreError?.code ?? restoreError})`);
+      }
+    }
+    const state = failures.length > 0
+      ? `Could not put ${failures.length} file(s) back: ${failures.join(', ')}. Restore them from Git before retrying.`
+      : 'No node was changed: the files this call touched were put back as they were.';
+    throw new Error(`${error.message} ${state}`, { cause: error });
+  }
+  const findings = findingsOnWrittenNodes(rows.map((row) => row.slug));
+  return { ok: true, patches: rows, ...(findings.length > 0 ? { findings } : {}) };
 }
 
 export {

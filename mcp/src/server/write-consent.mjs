@@ -56,8 +56,11 @@ export function describeWrite(toolName, args) {
           : 'Replace one relation';
       }
       return from && to ? `Remove the link ${from} → ${to}` : 'Remove one relation';
-    case 'patch_concept':
+    case 'patch_concept': {
+      const n = count('patches');
+      if (n !== null) return n === 1 && typeof a.patches[0]?.slug === 'string' ? `Edit concept ${shown(a.patches[0].slug)}` : `Edit ${n} concept(s)`;
       return slug ? `Edit concept ${slug}` : 'Edit one concept';
+    }
     case 'rename_concept':
       if (a.newKind !== undefined) {
         return named('oldSlug') ? `Change the kind of ${text('oldSlug')}` : 'Change one concept kind';

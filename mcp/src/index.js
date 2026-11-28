@@ -174,8 +174,13 @@ async function callTool(request) {
         return ok(logWrite(name, args, removeRelation(args)));
       case 'add_relations':
         return ok(logWrite(name, args, addRelationsBatch(args)));
-      case 'patch_concept':
-        return ok(logWrite(name, args, patchConcept(args)));
+      case 'patch_concept': {
+        const result = patchConcept(args);
+        if (!Array.isArray(result.patches)) return ok(logWrite(name, args, result));
+        // One audit line per patched node, in the single-patch format.
+        for (const row of result.patches) logWrite(name, { slug: row.slug }, row);
+        return ok(result);
+      }
       case 'find_backlinks':
         return ok(findBacklinksTool(args));
       case 'find_neighbors':

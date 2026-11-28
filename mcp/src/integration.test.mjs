@@ -924,7 +924,9 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(addRelation?.outputSchema?.properties?.postWriteMaintenance, undefined);
     const patchConcept = findTool("patch_concept");
     assert.equal(patchConcept?.outputSchema?.type, "object");
-    assert.deepEqual(patchConcept?.outputSchema?.required, ["ok", "slug", "changed", "mtime"]);
+    assert.deepEqual(patchConcept?.outputSchema?.required, ["ok"]);
+    assert.equal(patchConcept?.inputSchema?.properties?.patches?.maxItems, 20);
+    assert.deepEqual(patchConcept?.outputSchema?.properties?.patches?.items?.required, ["ok", "slug", "changed", "mtime"]);
     assert.equal(patchConcept?.outputSchema?.additionalProperties, false);
     assert.equal(patchConcept?.outputSchema?.properties?.ok?.type, "boolean");
     assert.equal(patchConcept?.outputSchema?.properties?.slug?.type, "string");
@@ -3319,7 +3321,7 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
       { offset: 0, limit: 3, total: briefValidation.summary.problemFiles },
     );
     assert.equal(briefValidation.problems.length, Math.min(3, briefValidation.summary.problemFiles));
-    assert.equal(briefValidation.nextCall, undefined);
+    assert.equal(briefValidation.nextCall.tool, "validate_vault");
     assert.equal(agentBrief.projectSlug, "project");
     assert.equal(agentBrief.projectSource.status, "review_required");
     assert.equal(agentBrief.projectSource.currentness, "stale");
@@ -6775,6 +6777,63 @@ await test("patch_concept — a stale expected_mtime returns a conflict error re
     assert.match(text, /conflict|VaultConflictError|modified externally/i);
     assert.equal(getCallStructured(responses, 2)?.ok, false);
     assert.equal(getCallStructured(responses, 2)?.errorCode, "vault_conflict");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("patch_concept patches — one call writes every node and leaves one audit line per node", async () => {
+  const root = makeVault([
+    { slug: "capabilities/foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
+    { slug: "capabilities/bar", content: "---\nkind: capability\ntitle: Bar\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "patch_concept", {
+        patches: [
+          { slug: "capabilities/foo", frontmatter: { title: "Foo renamed" } },
+          { slug: "capabilities/bar", body: "Replaced body.\n" },
+        ],
+      }),
+    ]);
+    const answer = getCallStructured(responses, 2);
+    assert.equal(answer.ok, true);
+    assert.deepEqual(answer.patches.map((row) => [row.slug, row.ok, row.changed]), [
+      ["capabilities/foo", true, true],
+      ["capabilities/bar", true, true],
+    ]);
+    assert.match(readFileSync(join(root, "capabilities/foo.md"), "utf-8"), /title: Foo renamed/);
+    assert.match(readFileSync(join(root, "capabilities/bar.md"), "utf-8"), /Replaced body/);
+    const entries = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n").map((line) => JSON.parse(line));
+    assert.deepEqual(entries.filter((entry) => entry.tool === "patch_concept").map((entry) => entry.target).sort(), ["capabilities/bar", "capabilities/foo"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("patch_concept patches — a patch that fails puts the earlier nodes back and a mixed call is refused", async () => {
+  const root = makeVault([
+    { slug: "capabilities/foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
+    { slug: "capabilities/bar", content: "---\nkind: capability\ntitle: Bar\n---\n" },
+  ]);
+  try {
+    const fooBefore = readFileSync(join(root, "capabilities/foo.md"), "utf-8");
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "patch_concept", {
+        patches: [
+          { slug: "capabilities/foo", frontmatter: { title: "Never kept" } },
+          { slug: "capabilities/bar", frontmatter: { title: "Stale" }, expected_mtime: 1 },
+        ],
+      }),
+      callTool(3, "patch_concept", { slug: "capabilities/foo", patches: [{ slug: "capabilities/bar", body: "x" }] }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(responses.find((r) => r.id === 2).result.content[0].text, /patches\[1\] \(capabilities\/bar\).*No node was changed/s);
+    assert.equal(readFileSync(join(root, "capabilities/foo.md"), "utf-8"), fooBefore);
+    assert.equal(isErrorResponse(responses, 3), true);
+    assert.match(responses.find((r) => r.id === 3).result.content[0].text, /either `patches` or `slug`/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
