@@ -19,7 +19,7 @@ Project meaning receipt keeps the assessment of a project's five competency answ
 - Supporting implementation: `mcp/src/meaning/meaning-assessment.mjs#deriveMeaningAssessment`
 - Focused test: `mcp/src/project-meaning/project-meaning-receipt.test.mjs#body digest binds the receipt to the entire current project Markdown`
 - Focused test: `mcp/src/project-meaning/project-meaning-restart.test.mjs#fresh MCP readers keep edited answers unconfirmed until explicit finalization`
-- `mcp/src/tools/agent-brief/meaning-readiness.mjs` reads the assessment for health, workspace and task briefs.
+- `mcp/src/tools/agent-brief/meaning-readiness.mjs` reads the assessment for health, workspace and agent briefs.
 - `mcp/src/tools/project-source.mjs` finalizes only after checking the current document timestamp, vault validation, complete project scope and the recorded witnesses.
 
 ## Includes
