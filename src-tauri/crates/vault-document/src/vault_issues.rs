@@ -28,6 +28,70 @@ fn is_path_like(reference: &str) -> bool {
         })
 }
 
+/// The documents a call asks findings about.
+enum Asked<'s> {
+    Every,
+    Slugs(HashSet<&'s str>),
+}
+
+impl Asked<'_> {
+    fn includes(&self, slug: &str) -> bool {
+        match self {
+            Self::Every => true,
+            Self::Slugs(slugs) => slugs.contains(slug),
+        }
+    }
+
+    /// The claims the documents asked about make, or `None` when every document is asked about: a
+    /// pass over the vault then gathers only the claims those documents share with others.
+    fn claims_of<'d, C: IntoIterator<Item = &'d str>>(
+        &self,
+        documents: &'d [LoadedDocument],
+        claims: impl Fn(&'d LoadedDocument) -> C,
+    ) -> Option<HashSet<&'d str>> {
+        match self {
+            Self::Every => None,
+            Self::Slugs(_) => Some(
+                documents
+                    .iter()
+                    .filter(|document| self.includes(document.slug()))
+                    .flat_map(claims)
+                    .collect(),
+            ),
+        }
+    }
+}
+
+/// The `slug:` a document declares, trimmed, when it declares one.
+fn declared_slug(document: &LoadedDocument) -> Option<&str> {
+    document
+        .frontmatter()
+        .text("slug")
+        .map(trim)
+        .filter(|slug| !slug.is_empty())
+}
+
+/// The well-formed identities a document claims, its `uid` first, each once.
+fn identities(document: &LoadedDocument) -> Vec<&str> {
+    let frontmatter = document.frontmatter();
+    let mut identities: Vec<&str> = Vec::new();
+    if let Some(uid) = frontmatter.get("uid") {
+        if node_uid_issue(Some(uid)).is_none() {
+            identities.extend(uid.as_text());
+        }
+    }
+    for merged in frontmatter.list("merged_uids").unwrap_or_default() {
+        if node_uid_issue(Some(&crate::frontmatter::Value::Text(merged.clone()))).is_none() {
+            identities.push(merged);
+        }
+    }
+    if identities.len() > 1 {
+        let mut seen: HashSet<&str> = HashSet::new();
+        identities.retain(|identity| seen.insert(identity));
+    }
+    identities
+}
+
 impl VaultIssues {
     /// Every finding about `documents`. `with_messages` is false when only their number matters.
     pub fn find(
@@ -35,10 +99,26 @@ impl VaultIssues {
         index: &ReferenceIndex<'_>,
         with_messages: bool,
     ) -> Self {
+        Self::of(documents, index, with_messages, &Asked::Every)
+    }
+
+    /// The findings about the documents of `slugs` only, each as [`Self::find`] gives it: a call
+    /// that reads a few nodes does not gather what every other node shares.
+    pub fn about(documents: &[LoadedDocument], index: &ReferenceIndex<'_>, slugs: &[&str]) -> Self {
+        let asked = Asked::Slugs(slugs.iter().copied().collect());
+        Self::of(documents, index, true, &asked)
+    }
+
+    fn of(
+        documents: &[LoadedDocument],
+        index: &ReferenceIndex<'_>,
+        with_messages: bool,
+        asked: &Asked<'_>,
+    ) -> Self {
         let mut found = Self::default();
-        found.add_dangling_references(documents, index, with_messages);
-        found.add_duplicate_slugs(documents, with_messages);
-        found.add_duplicate_identities(documents, with_messages);
+        found.add_dangling_references(documents, index, with_messages, asked);
+        found.add_duplicate_slugs(documents, with_messages, asked);
+        found.add_duplicate_identities(documents, with_messages, asked);
         found
     }
 
@@ -62,8 +142,12 @@ impl VaultIssues {
         documents: &[LoadedDocument],
         index: &ReferenceIndex<'_>,
         with_messages: bool,
+        asked: &Asked<'_>,
     ) {
-        for document in documents {
+        for document in documents
+            .iter()
+            .filter(|document| asked.includes(document.slug()))
+        {
             for neighbor in neighbor_refs(document.frontmatter()) {
                 if neighbor.key == "elements" && is_path_like(&neighbor.reference) {
                     continue;
@@ -86,18 +170,25 @@ impl VaultIssues {
         }
     }
 
-    fn add_duplicate_slugs(&mut self, documents: &[LoadedDocument], with_messages: bool) {
+    fn add_duplicate_slugs(
+        &mut self,
+        documents: &[LoadedDocument],
+        with_messages: bool,
+        asked: &Asked<'_>,
+    ) {
+        let wanted = asked.claims_of(documents, declared_slug);
         let mut by_declared: Vec<(&str, Vec<&LoadedDocument>)> = Vec::new();
         let mut position: HashMap<&str, usize> = HashMap::new();
         for document in documents {
-            let Some(declared) = document
-                .frontmatter()
-                .text("slug")
-                .map(trim)
-                .filter(|slug| !slug.is_empty())
-            else {
+            let Some(declared) = declared_slug(document) else {
                 continue;
             };
+            if wanted
+                .as_ref()
+                .is_some_and(|wanted| !wanted.contains(declared))
+            {
+                continue;
+            }
             let at = *position.entry(declared).or_insert_with(|| {
                 by_declared.push((declared, Vec::new()));
                 by_declared.len() - 1
@@ -110,7 +201,10 @@ impl VaultIssues {
             if group.len() < 2 {
                 continue;
             }
-            for document in &group {
+            for document in group
+                .iter()
+                .filter(|document| asked.includes(document.slug()))
+            {
                 let rest = group
                     .iter()
                     .filter(|other| other.slug() != document.slug())
@@ -131,26 +225,21 @@ impl VaultIssues {
         }
     }
 
-    fn add_duplicate_identities(&mut self, documents: &[LoadedDocument], with_messages: bool) {
+    fn add_duplicate_identities(
+        &mut self,
+        documents: &[LoadedDocument],
+        with_messages: bool,
+        asked: &Asked<'_>,
+    ) {
+        let wanted = asked.claims_of(documents, identities);
         let mut claims: Vec<(&str, Vec<&LoadedDocument>)> = Vec::new();
         let mut position: HashMap<&str, usize> = HashMap::new();
         for document in documents {
-            let frontmatter = document.frontmatter();
-            let mut identities: Vec<&str> = Vec::new();
-            if let Some(uid) = frontmatter.get("uid") {
-                if node_uid_issue(Some(uid)).is_none() {
-                    identities.extend(uid.as_text());
-                }
-            }
-            for merged in frontmatter.list("merged_uids").unwrap_or_default() {
-                if node_uid_issue(Some(&crate::frontmatter::Value::Text(merged.clone()))).is_none()
+            for identity in identities(document) {
+                if wanted
+                    .as_ref()
+                    .is_some_and(|wanted| !wanted.contains(identity))
                 {
-                    identities.push(merged);
-                }
-            }
-            let mut seen: HashSet<&str> = HashSet::new();
-            for identity in identities {
-                if !seen.insert(identity) {
                     continue;
                 }
                 let at = *position.entry(identity).or_insert_with(|| {
@@ -166,7 +255,10 @@ impl VaultIssues {
             if group.len() < 2 {
                 continue;
             }
-            for document in &group {
+            for document in group
+                .iter()
+                .filter(|document| asked.includes(document.slug()))
+            {
                 let rest = group
                     .iter()
                     .filter(|other| other.slug() != document.slug())

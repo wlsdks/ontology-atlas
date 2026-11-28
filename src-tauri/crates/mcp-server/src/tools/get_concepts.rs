@@ -230,11 +230,16 @@ struct Request<'a> {
     root: &'a VaultRoot,
     documents: &'a [LoadedDocument],
     lookup: SlugLookup<'a>,
-    vault_issues: VaultIssues,
+}
+
+/// One selection resolved: the text it was given as, and the slug it names when it names one.
+struct Resolved {
+    text: String,
+    canonical: Option<String>,
 }
 
 impl Request<'_> {
-    fn read(&self, selected: &serde_json::Value) -> Result<Found, ToolError> {
+    fn resolve(&self, selected: &serde_json::Value) -> Result<Resolved, ToolError> {
         let name = self.selector.singular();
         let text = non_blank_text(selected, name)?;
         let canonical = match self.selector {
@@ -251,20 +256,28 @@ impl Request<'_> {
                     .map(str::to_string)
             }
         };
-        let missing = || match self.selector {
-            Selector::Slug => doc_not_found(self.root, self.documents, &text),
-            Selector::Uid => uid_not_found(&text),
-        };
-        let Some(canonical) = canonical else {
-            return Err(missing());
-        };
-        let document = LoadedVault::read_named(self.root, &canonical)
-            .map_err(|error| unopenable(&error))?
-            .ok_or_else(missing)?;
-        self.describe(document)
+        Ok(Resolved { text, canonical })
     }
 
-    fn describe(&self, document: LoadedDocument) -> Result<Found, ToolError> {
+    fn read(&self, resolved: &Resolved, vault_issues: &VaultIssues) -> Result<Found, ToolError> {
+        let missing = || match self.selector {
+            Selector::Slug => doc_not_found(self.root, self.documents, &resolved.text),
+            Selector::Uid => uid_not_found(&resolved.text),
+        };
+        let Some(canonical) = &resolved.canonical else {
+            return Err(missing());
+        };
+        let document = LoadedVault::read_named(self.root, canonical)
+            .map_err(|error| unopenable(&error))?
+            .ok_or_else(missing)?;
+        self.describe(document, vault_issues)
+    }
+
+    fn describe(
+        &self,
+        document: LoadedDocument,
+        vault_issues: &VaultIssues,
+    ) -> Result<Found, ToolError> {
         let slug = document.slug();
         let body = document
             .body()
@@ -274,7 +287,7 @@ impl Request<'_> {
         if document.node_kind().is_none() {
             warnings.push(Issue::warning("not-a-graph-node", NOT_A_NODE));
         }
-        warnings.extend_from_slice(self.vault_issues.for_slug(slug));
+        warnings.extend_from_slice(vault_issues.for_slug(slug));
         let frontmatter = document.frontmatter();
         let edges = neighbor_refs(frontmatter)
             .into_iter()
@@ -359,17 +372,29 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     }
     let read = read_vault(context)?;
     let documents = read.vault.documents();
-    let index = ReferenceIndex::new(documents);
     let request = Request {
         selector,
         mode,
         root: &read.root,
         documents,
         lookup: SlugLookup::new(documents),
-        vault_issues: VaultIssues::find(documents, &index, true),
     };
-    let results: Vec<Result<Found, ToolError>> =
-        selected.iter().map(|choice| request.read(choice)).collect();
+    let resolved: Vec<Result<Resolved, ToolError>> = selected
+        .iter()
+        .map(|choice| request.resolve(choice))
+        .collect();
+    // What the vault says of the nodes asked for, and of no other.
+    let vault_issues = {
+        let asked: Vec<&str> = resolved
+            .iter()
+            .filter_map(|resolved| resolved.as_ref().ok()?.canonical.as_deref())
+            .collect();
+        VaultIssues::about(documents, &ReferenceIndex::new(documents), &asked)
+    };
+    let results: Vec<Result<Found, ToolError>> = resolved
+        .into_iter()
+        .map(|resolved| resolved.and_then(|resolved| request.read(&resolved, &vault_issues)))
+        .collect();
     let concepts = results
         .iter()
         .zip(&selected)
