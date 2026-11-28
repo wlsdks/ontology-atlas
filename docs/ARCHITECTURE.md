@@ -864,7 +864,7 @@ left out of the app's bundle like `/download`.
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
 /ontology/studio           compatibility redirect; translates node/mode/edit to /topology
-/ontology/insights         compatibility redirect (src/views/insights-redirect/): tab=harness →
+/ontology/insights         compatibility redirect (`beforeLoad`, `retired-address-targets.ts`): tab=harness →
                            /architecture/?view=overview with other flags kept; tab=library →
                            /library/?tab=wiki; review=analysis:<id> or node=<slug> →
                            /topology/?p=<canonical id>; anything else → /topology/
@@ -1055,8 +1055,8 @@ to an agent.
   input to canonical via `translateOntologyDeeplinkToTopologyParam`
   (`capabilities/foo` → `capability:foo`; already-canonical / bare /
   evidence-path pass through).
-- **Compatibility redirect**: `OntologyEditRedirectPage` normalizes legacy
-  `/ontology/edit` and `/ontology/studio` query values and replaces the route
+- **Compatibility redirect**: the `/ontology/edit` and `/ontology/studio` routes
+  normalize legacy query values in `beforeLoad` and replace the address
   with `/topology?p=...&workbench=edit` or `/topology?workbench=create`.
 - **Reading a link**: `parseHomeRouteState` owns `p/workbench/edit`, and
   `parseOntologyStudioEditParam` remains only as the compatibility parser for
@@ -1067,8 +1067,8 @@ to an agent.
   addresses files, not nodes, so its `?slug=` deliberately stays a file path.
 - Both the building and the reading side are pinned by `ontology-node-href.test.ts`,
   `translate-ontology-deeplink.test.ts`, and
-  `url-state.test.ts`, and `OntologyEditRedirectPage.test.tsx`. The retired
-  Analysis address is pinned by `InsightsRedirectPage.test.tsx`.
+  `url-state.test.ts`, and `retired-address-targets.test.ts`, which also pins
+  the retired Analysis address.
 
 ## Build pipeline
 
