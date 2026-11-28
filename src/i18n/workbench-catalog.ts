@@ -14,8 +14,10 @@ import type { AppLocale } from '@/i18n/locales';
  */
 export type MessageCatalog = Record<string, unknown>;
 
+type SettledPromise = Promise<MessageCatalog> & { status?: 'fulfilled'; value?: MessageCatalog };
+
 const loaded = new Map<AppLocale, MessageCatalog>();
-const pending = new Map<AppLocale, Promise<MessageCatalog>>();
+const pending = new Map<AppLocale, SettledPromise>();
 const listeners = new Set<() => void>();
 
 function importCatalog(locale: AppLocale): Promise<{ default: MessageCatalog }> {
@@ -36,8 +38,11 @@ function importCatalog(locale: AppLocale): Promise<{ default: MessageCatalog }> 
 export function loadWorkbenchCatalog(locale: AppLocale): Promise<MessageCatalog> {
   const inFlight = pending.get(locale);
   if (inFlight) return inFlight;
-  const promise = importCatalog(locale).then((module) => {
+  const promise: SettledPromise = importCatalog(locale).then((module) => {
     loaded.set(locale, module.default);
+    // The fields React's `use` reads to take a settled promise without suspending.
+    promise.status = 'fulfilled';
+    promise.value = module.default;
     listeners.forEach((listener) => listener());
     return module.default;
   });
