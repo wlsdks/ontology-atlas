@@ -174,6 +174,7 @@ pub fn write_through_checkpoint(
                 target: slug.clone(),
                 summary: format!("test write {slug}"),
                 why: arguments.string("why"),
+                logged_as: None,
             },
             concepts: ConceptEffect::new(vec![slug], vec![], vec![]),
             share,

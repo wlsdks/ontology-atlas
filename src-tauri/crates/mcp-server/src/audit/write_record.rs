@@ -68,6 +68,9 @@ pub struct ActivityContent {
     pub target: String,
     pub summary: String,
     pub why: Option<String>,
+    /// The tool name the line carries when it is not the tool called: a rename that changes the
+    /// kind and a removal that replaces the relation are logged as the tools they stand for.
+    pub logged_as: Option<&'static str>,
 }
 
 pub enum WriteRecord {

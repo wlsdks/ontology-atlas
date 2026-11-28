@@ -1191,5 +1191,8 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   the files (one orphan engine in `vault-document`, which the retired `find_orphans` tool had
   used), and a `mentions` search lists the plain Markdown pages beside the nodes with `isNode`,
   an excerpt and its hints. The import review no longer names the cut `proposal` call (row 80).
-  Rows 79 to 84 declare what still differs. Not declared, because a gap is no change: every
-  answer that needs a writer or `validate_wiki`, which slices 10 and 11 port.
+  Rows 79 to 84 declare what still differs. After merging slice 10 the writer cases agree with
+  the script server; one gap was fixed: the activity log names `replace_relation` and
+  `reclassify_concept` for a removal with `replaceWith` and a rename with `newKind`, as the script
+  server's log does (an `ActivityContent` may carry `logged_as`). Not declared, because a gap is no
+  change: every answer that needs `absorb_document` or `validate_wiki`, which slice 11 ports.

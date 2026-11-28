@@ -165,6 +165,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
                 target: into_slug.clone(),
                 summary: format!("merge {from_slug} → {into_slug}"),
                 why: None,
+                logged_as: None,
             },
             concepts: effect(&[], &[&into_slug], &[&from_slug]),
             share: ShareMeasure::Measure(Box::new(move || counts)),

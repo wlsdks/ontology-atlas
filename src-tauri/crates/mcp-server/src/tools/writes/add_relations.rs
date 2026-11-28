@@ -328,6 +328,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
                 target: "(batch)".to_string(),
                 summary: format!("add_relations {ok_rows} rows written"),
                 why: (!reasons.is_empty()).then(|| reasons.join(" · ")),
+                logged_as: None,
             },
             concepts: effect(&[], &changed_from, &[]),
             share: ShareMeasure::Unchanged,
@@ -358,6 +359,7 @@ pub fn call_one(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone,
                 target: text("from"),
                 summary: format!("{} --{}--> {}", text("from"), text("type"), text("to")),
                 why: member(&members, "why").and_then(Setting::as_text).map(str::to_string),
+                logged_as: None,
             },
             concepts: if row.changed {
                 effect(&[], &[&row.from], &[])

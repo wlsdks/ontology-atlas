@@ -88,7 +88,7 @@ impl AuditLog {
         let agent = agent_heartbeat::agent_name(&self.sidecar, client_name);
         let activity_result = activity_log::append(
             &self.sidecar,
-            tool.name(),
+            activity.logged_as.unwrap_or(tool.name()),
             &activity,
             agent.as_deref(),
             now_ms(),

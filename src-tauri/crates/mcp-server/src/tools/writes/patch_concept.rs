@@ -79,6 +79,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
                 target: slug.clone(),
                 summary: format!("patch_concept {slug}"),
                 why: None,
+                logged_as: None,
             },
             concepts: effect(&[], &[&slug], &[]),
             share: ShareMeasure::Measure(Box::new(move || counts)),

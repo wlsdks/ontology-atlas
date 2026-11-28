@@ -94,6 +94,7 @@ mod tests {
             target: "elements/a".to_string(),
             summary: "add_concepts 1 rows written".to_string(),
             why: None,
+            logged_as: None,
         }
     }
 
@@ -109,6 +110,7 @@ mod tests {
         );
         let named = ActivityContent {
             why: Some("because".to_string()),
+            logged_as: None,
             ..content()
         };
         let line =

@@ -36,12 +36,19 @@ fn preview_fields(state: PreviewState) -> Fields {
         .with("blockedReasons", Setting::texts(state.blocked_reasons))
 }
 
-fn record(from: &str, summary: String, why: Option<String>, changed: bool) -> WriteRecord {
+fn record(
+    from: &str,
+    summary: String,
+    why: Option<String>,
+    changed: bool,
+    logged_as: Option<&'static str>,
+) -> WriteRecord {
     WriteRecord::Wrote {
         activity: ActivityContent {
             target: from.to_string(),
             summary,
             why,
+            logged_as,
         },
         concepts: if changed {
             effect(&[], &[from], &[])
@@ -112,7 +119,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         },
     );
     let summary = format!("remove {canonical_from} --{requested_text}--> {canonical_to}");
-    let summary_of = |changed| record(&canonical_from, summary.clone(), None, changed);
+    let summary_of = |changed| record(&canonical_from, summary.clone(), None, changed, None);
     let build = |ok: bool, dry: bool, changed: bool, state: PreviewState, after: Option<Setting>| {
         preview_fields(state)
             .with_bool("exists", present)
@@ -253,7 +260,13 @@ fn replace_relation(
             .with_some("postWriteMaintenance", after)
             .prefixed(ok, dry, changed)
     };
-    let kept = || record(&from, activity_summary.clone(), sent_why.clone(), true);
+    let kept = || record(
+        &from,
+        activity_summary.clone(),
+        sent_why.clone(),
+        true,
+        Some("replace_relation"),
+    );
     if !confirm {
         return Ok(WriteDone {
             output: output(build(false, true, false, None))?,
