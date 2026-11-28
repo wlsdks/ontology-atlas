@@ -58,7 +58,11 @@ pub fn normalize(path: &str) -> String {
 }
 
 pub fn join(parts: &[&str]) -> String {
-    let kept: Vec<&str> = parts.iter().copied().filter(|part| !part.is_empty()).collect();
+    let kept: Vec<&str> = parts
+        .iter()
+        .copied()
+        .filter(|part| !part.is_empty())
+        .collect();
     if kept.is_empty() {
         ".".to_string()
     } else {
@@ -76,7 +80,10 @@ mod tests {
         assert_eq!(extname(".bashrc"), "");
         assert_eq!(dirname("a/b/c.ts"), "a/b");
         assert_eq!(dirname("c.ts"), ".");
-        assert_eq!(join(&["src/order", "../payment/charge"]), "src/payment/charge");
+        assert_eq!(
+            join(&["src/order", "../payment/charge"]),
+            "src/payment/charge"
+        );
         assert_eq!(join(&[".", "x"]), "x");
         assert_eq!(normalize("../a/./b/.."), "../a");
         assert_eq!(basename("a/index"), "index");

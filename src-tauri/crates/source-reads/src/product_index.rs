@@ -69,7 +69,9 @@ impl ProductIndex {
                 let absolute = file
                     .path
                     .split('/')
-                    .fold(root.as_path().to_path_buf(), |joined, part| joined.join(part));
+                    .fold(root.as_path().to_path_buf(), |joined, part| {
+                        joined.join(part)
+                    });
                 let text = reading.read_text(&absolute).unwrap_or_default();
                 let declarations = outline_file(&text, &file.path)
                     .declarations
@@ -102,7 +104,9 @@ impl ProductIndex {
         }
         let absolute = path
             .split('/')
-            .fold(self.root.as_path().to_path_buf(), |joined, part| joined.join(part));
+            .fold(self.root.as_path().to_path_buf(), |joined, part| {
+                joined.join(part)
+            });
         let text: Rc<str> = DiskSource::new(&self.root, MAX_FILE_BYTES as usize)
             .read_text(&absolute)
             .map_or_else(|_| Rc::from(""), |text| Rc::from(&*text));

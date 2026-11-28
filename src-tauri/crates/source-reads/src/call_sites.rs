@@ -20,7 +20,10 @@ pub struct CallSites {
 }
 
 /// The part of a Python line outside a triple-quoted string, and the quote still open after it.
-fn code_outside_docstring(line: &str, open: Option<&'static str>) -> (String, Option<&'static str>) {
+fn code_outside_docstring(
+    line: &str,
+    open: Option<&'static str>,
+) -> (String, Option<&'static str>) {
     let mut text = String::new();
     let mut quote = open;
     let mut at = 0;

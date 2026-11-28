@@ -44,13 +44,16 @@ pub fn language_of(path: &str) -> String {
 
 fn is_known_family(extension: &str) -> bool {
     let lower = extension.to_lowercase();
-    JS_EXTENSIONS.contains(&lower.as_str()) || matches!(lower.as_str(), ".py" | ".pyi" | ".go" | ".rs")
+    JS_EXTENSIONS.contains(&lower.as_str())
+        || matches!(lower.as_str(), ".py" | ".pyi" | ".go" | ".rs")
 }
 
 fn strip_extension(path: &str) -> String {
     let extension = extname(path);
     if is_known_family(extension) {
-        path.get(..path.len() - extension.len()).unwrap_or(path).to_string()
+        path.get(..path.len() - extension.len())
+            .unwrap_or(path)
+            .to_string()
     } else {
         path.to_string()
     }
@@ -157,7 +160,10 @@ fn js_spec(file_path: &str, raw: &str) -> Option<Spec> {
     }
     if spec.starts_with('.') {
         let resolved = strip_extension(&normalize(&join(&[&dirname(file_path), spec])));
-        let exact = resolved.strip_suffix("/index").unwrap_or(&resolved).to_string();
+        let exact = resolved
+            .strip_suffix("/index")
+            .unwrap_or(&resolved)
+            .to_string();
         return Some(Spec {
             exact: Some(exact),
             ..Spec::default()
@@ -284,7 +290,10 @@ impl Imports {
             return;
         }
         let held = self.names.get(local);
-        if held.is_some_and(|rows| rows.iter().any(|row| row.spec == *spec && row.imported == imported)) {
+        if held.is_some_and(|rows| {
+            rows.iter()
+                .any(|row| row.spec == *spec && row.imported == imported)
+        }) {
             return;
         }
         if (held.is_none() && self.names.len() >= NAMES)
@@ -293,10 +302,13 @@ impl Imports {
             self.incomplete = true;
             return;
         }
-        self.names.entry(local.to_string()).or_default().push(NameBinding {
-            spec: spec.clone(),
-            imported: imported.to_string(),
-        });
+        self.names
+            .entry(local.to_string())
+            .or_default()
+            .push(NameBinding {
+                spec: spec.clone(),
+                imported: imported.to_string(),
+            });
     }
 }
 
@@ -351,10 +363,8 @@ static JS_IMPORT_OR_EXPORT: LazyLock<Regex> = LazyLock::new(|| js_regex(r"\b(?:i
 static JS_LONG_START: LazyLock<Regex> = LazyLock::new(|| js_regex(r"^\s*(?:import|export)\b"));
 static JS_BARE_IMPORT: LazyLock<Regex> = LazyLock::new(|| js_regex(r#"^import\s*['"]"#));
 static SEMICOLON_END: LazyLock<Regex> = LazyLock::new(|| js_regex(r";\s*$"));
-static NAMESPACE: LazyLock<Regex> =
-    LazyLock::new(|| js_regex(r"\* ?as ([A-Za-z_$][\w$]*)"));
-static DEFAULT_HEAD: LazyLock<Regex> =
-    LazyLock::new(|| js_regex(r"^([A-Za-z_$][\w$]*)\s*(?:,|$)"));
+static NAMESPACE: LazyLock<Regex> = LazyLock::new(|| js_regex(r"\* ?as ([A-Za-z_$][\w$]*)"));
+static DEFAULT_HEAD: LazyLock<Regex> = LazyLock::new(|| js_regex(r"^([A-Za-z_$][\w$]*)\s*(?:,|$)"));
 static AS_OR_COLON: LazyLock<Regex> = LazyLock::new(|| js_regex(r" as |:"));
 static AS_WORD: LazyLock<Regex> = LazyLock::new(|| js_regex(r" as "));
 static PY_FROM: LazyLock<Regex> =
@@ -377,7 +387,11 @@ fn js_clause(imports: &mut Imports, spec: &Spec, clause: &str) {
         imports.add_module(namespace.as_str(), Some(spec.clone()));
     }
     let open = body.find('{');
-    let close = open.and_then(|open| body.get(open..).and_then(|rest| rest.find('}')).map(|at| open + at));
+    let close = open.and_then(|open| {
+        body.get(open..)
+            .and_then(|rest| rest.find('}'))
+            .map(|at| open + at)
+    });
     if let (Some(open), Some(close)) = (open, close) {
         if close > open {
             for item in body.get(open + 1..close).unwrap_or("").split(',') {
@@ -394,7 +408,10 @@ fn js_clause(imports: &mut Imports, spec: &Spec, clause: &str) {
         }
     }
     let head_text = js_trim(open.map_or(body.as_str(), |open| body.get(..open).unwrap_or("")));
-    if let Some(head) = DEFAULT_HEAD.captures(head_text).and_then(|found| found.get(1)) {
+    if let Some(head) = DEFAULT_HEAD
+        .captures(head_text)
+        .and_then(|found| found.get(1))
+    {
         imports.add_name(head.as_str(), Some(spec), head.as_str());
         imports.add_module(head.as_str(), Some(spec.clone()));
     }
@@ -472,7 +489,12 @@ fn read_python(path: &str, lines: &[String], imports: &mut Imports) {
             let module = from.get(2).map_or("", |module| module.as_str());
             let mut names = from.get(3).map_or("", |names| names.as_str()).to_string();
             if names.starts_with('(') && !names.contains(')') {
-                let found = statement(lines, index + 1, |held, _| held.contains(')'), STATEMENT_LINES);
+                let found = statement(
+                    lines,
+                    index + 1,
+                    |held, _| held.contains(')'),
+                    STATEMENT_LINES,
+                );
                 index = found.last;
                 if found.cut {
                     imports.incomplete = true;
@@ -585,10 +607,13 @@ fn read_rust(lines: &[String], imports: &mut Imports) {
         let items: Vec<&str> = match open {
             None => vec![prefix.pop().unwrap_or("")],
             Some(open) => {
-                let end = path.rfind('}').unwrap_or_else(|| {
-                    path.char_indices().next_back().map_or(0, |(at, _)| at)
-                });
-                path.get(open + 1..end.max(open + 1)).unwrap_or("").split(',').collect()
+                let end = path
+                    .rfind('}')
+                    .unwrap_or_else(|| path.char_indices().next_back().map_or(0, |(at, _)| at));
+                path.get(open + 1..end.max(open + 1))
+                    .unwrap_or("")
+                    .split(',')
+                    .collect()
             }
         };
         for item in items {
@@ -602,7 +627,8 @@ fn read_rust(lines: &[String], imports: &mut Imports) {
             if utf16::len(route) > SPEC_CHARS {
                 continue;
             }
-            let mut segments: Vec<&str> = route.split("::").filter(|part| !part.is_empty()).collect();
+            let mut segments: Vec<&str> =
+                route.split("::").filter(|part| !part.is_empty()).collect();
             let Some(name) = segments.pop() else { continue };
             if name == "*" || name == "self" {
                 continue;
@@ -663,12 +689,22 @@ mod tests {
         assert!(imports.modules.get("lib").is_some_and(|spec| spec.internal));
         assert!(imports.names.contains_key("a"));
 
-        let python = complete_lines("from .util import (\n    one,\n    two as deux,\n)\nimport os.path as p\n");
+        let python = complete_lines(
+            "from .util import (\n    one,\n    two as deux,\n)\nimport os.path as p\n",
+        );
         let imports = read_imports("pkg/mod.py", &python);
         assert!(imports.names.contains_key("one") && imports.names.contains_key("deux"));
-        assert_eq!(imports.modules.get("p").and_then(|spec| spec.tail.as_deref()), Some("os/path"));
+        assert_eq!(
+            imports
+                .modules
+                .get("p")
+                .and_then(|spec| spec.tail.as_deref()),
+            Some("os/path")
+        );
 
-        let go = complete_lines("import (\n\tfoo \"example.com/x/foo\"\n\t\"example.com/x/bar/v2\"\n)\n");
+        let go = complete_lines(
+            "import (\n\tfoo \"example.com/x/foo\"\n\t\"example.com/x/bar/v2\"\n)\n",
+        );
         let imports = read_imports("a/b.go", &go);
         assert!(imports.modules.contains_key("foo") && imports.modules.contains_key("bar"));
 

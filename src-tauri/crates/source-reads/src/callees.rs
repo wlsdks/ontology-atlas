@@ -48,20 +48,61 @@ const MAX_NAME_DECLARATIONS: usize = 64;
 const LINE_CHARS: usize = 2000;
 
 const NOT_A_CALLEE: [&str; 48] = [
-    "if", "for", "while", "switch", "catch", "return", "function", "func", "def", "class", "new",
-    "typeof", "await", "yield", "super", "print", "len", "make", "append", "cap", "panic", "require",
-    "import", "isinstance", "range", "str", "int", "float", "list", "dict", "set", "tuple", "bool",
-    "with", "elif", "assert", "not", "and", "or", "in", "is", "lambda", "match", "case", "select",
-    "go", "defer", "fn",
+    "if",
+    "for",
+    "while",
+    "switch",
+    "catch",
+    "return",
+    "function",
+    "func",
+    "def",
+    "class",
+    "new",
+    "typeof",
+    "await",
+    "yield",
+    "super",
+    "print",
+    "len",
+    "make",
+    "append",
+    "cap",
+    "panic",
+    "require",
+    "import",
+    "isinstance",
+    "range",
+    "str",
+    "int",
+    "float",
+    "list",
+    "dict",
+    "set",
+    "tuple",
+    "bool",
+    "with",
+    "elif",
+    "assert",
+    "not",
+    "and",
+    "or",
+    "in",
+    "is",
+    "lambda",
+    "match",
+    "case",
+    "select",
+    "go",
+    "defer",
+    "fn",
 ];
 
 static IDENTIFIER: LazyLock<Regex> = LazyLock::new(|| js_regex(r"[A-Za-z_$][\w$]*"));
-static GO_RECEIVER: LazyLock<Regex> =
-    LazyLock::new(|| js_regex(r"^func\s*\(\s*([A-Za-z_]\w*)\s"));
+static GO_RECEIVER: LazyLock<Regex> = LazyLock::new(|| js_regex(r"^func\s*\(\s*([A-Za-z_]\w*)\s"));
 static PYTHON_BASES: LazyLock<Regex> =
     LazyLock::new(|| js_regex(r"^class\s+[A-Za-z_]\w*\s*\(([^)]{0,300})\)"));
-static JS_EXTENDS: LazyLock<Regex> =
-    LazyLock::new(|| js_regex(r"\bextends\s+([A-Za-z_$][\w$.]*)"));
+static JS_EXTENDS: LazyLock<Regex> = LazyLock::new(|| js_regex(r"\bextends\s+([A-Za-z_$][\w$.]*)"));
 static PLAIN_NAME: LazyLock<Regex> = LazyLock::new(|| js_regex(r"^[A-Za-z_]\w*$"));
 
 fn is_qualifier_byte(byte: u8) -> bool {
@@ -77,7 +118,11 @@ fn qualifier_of(text: &str, start: usize) -> Option<String> {
     }
     let mut index = start - 1;
     let stop = start.saturating_sub(QUALIFIER_CHARS);
-    while index > stop && bytes.get(index - 1).is_some_and(|byte| is_qualifier_byte(*byte)) {
+    while index > stop
+        && bytes
+            .get(index - 1)
+            .is_some_and(|byte| is_qualifier_byte(*byte))
+    {
         index -= 1;
     }
     let chain: String = text
@@ -86,7 +131,8 @@ fn qualifier_of(text: &str, start: usize) -> Option<String> {
         .chars()
         .filter(|character| *character != '?')
         .collect();
-    if chain.is_empty() || chain.starts_with('.') || chain.starts_with(|c: char| c.is_ascii_digit()) {
+    if chain.is_empty() || chain.starts_with('.') || chain.starts_with(|c: char| c.is_ascii_digit())
+    {
         return None;
     }
     Some(chain)
@@ -150,7 +196,11 @@ fn calls_in(text: &str, self_names: &HashSet<String>) -> Vec<Call> {
             };
             let key = format!(
                 "{via:?}\0{}\0{name}",
-                if via == Via::Qualified { chain.as_str() } else { "" }
+                if via == Via::Qualified {
+                    chain.as_str()
+                } else {
+                    ""
+                }
             );
             if seen.insert(key) {
                 calls.push(Call { name, via, chain });
@@ -161,7 +211,8 @@ fn calls_in(text: &str, self_names: &HashSet<String>) -> Vec<Call> {
 }
 
 fn folder_of(path: &str) -> &str {
-    path.rfind('/').map_or("", |slash| path.get(..slash).unwrap_or(""))
+    path.rfind('/')
+        .map_or("", |slash| path.get(..slash).unwrap_or(""))
 }
 
 fn member_of<'a>(
@@ -239,7 +290,11 @@ impl CalleeContext<'_> {
     /// names. Only when no binding's module names a file of this project is the name looked up
     /// everywhere, capped, and marked by name.
     fn imported_rows(&self, from: &OpenedFile, name: &str) -> (Vec<DeclarationRow>, bool) {
-        let bindings = from.imports().names.get(name).map_or(&[][..], Vec::as_slice);
+        let bindings = from
+            .imports()
+            .names
+            .get(name)
+            .map_or(&[][..], Vec::as_slice);
         let same = Self::same_language(&from.path);
         let rows: Vec<DeclarationRow> = bindings
             .iter()
@@ -260,7 +315,10 @@ impl CalleeContext<'_> {
         if everywhere.len() > MAX_NAME_DECLARATIONS {
             (Vec::new(), true)
         } else {
-            (everywhere.into_iter().filter(|row| same(row)).collect(), true)
+            (
+                everywhere.into_iter().filter(|row| same(row)).collect(),
+                true,
+            )
         }
     }
 
@@ -329,7 +387,12 @@ pub fn callees_of(
     file: &Rc<OpenedFile>,
     declaration: &OutlineDeclaration,
 ) -> Vec<Callee> {
-    let own = declaration.name.rsplit('.').next().unwrap_or("").to_string();
+    let own = declaration
+        .name
+        .rsplit('.')
+        .next()
+        .unwrap_or("")
+        .to_string();
     let signature = if declaration.signature.is_empty() {
         file.lines
             .get(declaration.line.saturating_sub(1))
@@ -347,7 +410,10 @@ pub fn callees_of(
         .map(|(head, _)| head.to_string());
     let self_names: HashSet<String> = match &go_receiver {
         Some(receiver) => HashSet::from([receiver.clone()]),
-        None => ["this", "self", "cls"].iter().map(|name| (*name).to_string()).collect(),
+        None => ["this", "self", "cls"]
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect(),
     };
     let owner = if go_receiver.is_some() {
         None
@@ -519,7 +585,12 @@ pub fn callees_of(
         } else {
             (context.package_rows(file, &name), false)
         };
-        let rows = unique(found.into_iter().filter(|row| row.path != file.path).collect());
+        let rows = unique(
+            found
+                .into_iter()
+                .filter(|row| row.path != file.path)
+                .collect(),
+        );
         if !rows.is_empty() && rows.len() <= 2 {
             for row in &rows {
                 push(

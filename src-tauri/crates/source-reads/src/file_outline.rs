@@ -102,11 +102,15 @@ enum Scanner {
 
 fn language_of(path: &str) -> (&'static str, Option<Scanner>) {
     match extension_of(path).as_str() {
-        ".ts" | ".mts" | ".cts" => ("typescript", Some(Scanner::Tree(SourceLanguage::TypeScript))),
+        ".ts" | ".mts" | ".cts" => (
+            "typescript",
+            Some(Scanner::Tree(SourceLanguage::TypeScript)),
+        ),
         ".tsx" => ("typescript", Some(Scanner::Tree(SourceLanguage::Tsx))),
-        ".js" | ".jsx" | ".mjs" | ".cjs" => {
-            ("javascript", Some(Scanner::Tree(SourceLanguage::JavaScript)))
-        }
+        ".js" | ".jsx" | ".mjs" | ".cjs" => (
+            "javascript",
+            Some(Scanner::Tree(SourceLanguage::JavaScript)),
+        ),
         ".py" | ".pyi" => ("python", Some(Scanner::Tree(SourceLanguage::Python))),
         ".go" => ("go", Some(Scanner::Tree(SourceLanguage::Go))),
         ".java" => ("java", Some(Scanner::Tree(SourceLanguage::Java))),
@@ -140,42 +144,61 @@ pub fn outline_file(text: &str, path: &str) -> FileOutline {
         };
     };
     match scanner {
-        Scanner::Tree(tree_language) => match outline_text(tree_language, text) {
-            Ok(outline) => FileOutline {
-                language,
-                declarations: outline
-                    .declarations
-                    .into_iter()
-                    .map(|declaration| OutlineDeclaration {
-                        line: declaration.line,
-                        kind: declaration.kind.into(),
-                        name: declaration.name,
-                        signature: declaration.signature,
-                    })
-                    .collect(),
-                truncated: outline.truncated,
-            },
-            // A file the parser could not finish in budget has no outline, and the row says it
-            // stopped early.
-            Err(_) => FileOutline {
-                language,
-                declarations: Vec::new(),
-                truncated: true,
-            },
-        },
+        Scanner::Tree(tree_language) => {
+            let (rows, left_out) = one_line_per_row(text);
+            match outline_text(tree_language, &rows) {
+                Ok(outline) => FileOutline {
+                    language,
+                    declarations: outline
+                        .declarations
+                        .into_iter()
+                        .map(|declaration| OutlineDeclaration {
+                            line: declaration.line,
+                            kind: declaration.kind.into(),
+                            name: declaration.name,
+                            signature: declaration.signature,
+                        })
+                        .collect(),
+                    truncated: outline.truncated || left_out,
+                },
+                // A file the parser could not finish in budget has no outline, and the row says it
+                // stopped early.
+                Err(_) => FileOutline {
+                    language,
+                    declarations: Vec::new(),
+                    truncated: true,
+                },
+            }
+        }
         Scanner::Markdown => scan_lines(text, language, markdown_sections),
         Scanner::Ruby => scan_lines(text, language, ruby_declarations),
         Scanner::CSharp => scan_lines(text, language, curly_brace_declarations),
     }
 }
 
-/// Lines split at `\r\n`, `\n` or `\r`, a line over [`LINE_CHARACTERS`] blanked.
-fn scan_lines(
-    text: &str,
-    language: &'static str,
-    scan: fn(&[String], &mut Collector),
-) -> FileOutline {
+/// `text` as the parser should see it, and whether a line was left out. A line ends at `\r\n`, `\n`
+/// or a lone `\r`, as the lines a read quotes do, so a declaration's line number and signature
+/// agree with them; a line over [`LINE_CHARACTERS`] is generated or minified and is blanked, its
+/// row kept, so the outline says it stopped early and no declaration sits on it.
+fn one_line_per_row(text: &str) -> (String, bool) {
+    if !text.contains('\r') && !text.lines().any(|line| line.len() > LINE_CHARACTERS) {
+        return (text.to_string(), false);
+    }
     let mut skipped = false;
+    let mut rows: Vec<String> = Vec::new();
+    for line in split_rows(text) {
+        if answer_format::utf16::len(&line) > LINE_CHARACTERS {
+            skipped = true;
+            rows.push(String::new());
+        } else {
+            rows.push(line);
+        }
+    }
+    (rows.join("\n"), skipped)
+}
+
+/// Lines split at `\r\n`, `\n` or `\r`.
+fn split_rows(text: &str) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
     let mut current = String::new();
     let mut characters = text.chars().peekable();
@@ -192,8 +215,19 @@ fn scan_lines(
         }
     }
     lines.push(current);
+    lines
+}
+
+/// Lines split at `\r\n`, `\n` or `\r`, a line over [`LINE_CHARACTERS`] blanked.
+fn scan_lines(
+    text: &str,
+    language: &'static str,
+    scan: fn(&[String], &mut Collector),
+) -> FileOutline {
+    let mut skipped = false;
+    let mut lines = split_rows(text);
     for line in &mut lines {
-        if line.chars().count() > LINE_CHARACTERS {
+        if answer_format::utf16::len(line) > LINE_CHARACTERS {
             skipped = true;
             line.clear();
         }
@@ -288,8 +322,26 @@ fn ruby_declarations(lines: &[String], out: &mut Collector) {
 
 /// Call-shaped words (`name(`) that are not declarations; without them `if (ready) {` is a method.
 const NOT_A_DECLARATION: [&str; 20] = [
-    "case", "catch", "do", "else", "fixed", "for", "foreach", "function", "if", "lock", "new",
-    "return", "switch", "synchronized", "try", "unsafe", "using", "when", "while", "with",
+    "case",
+    "catch",
+    "do",
+    "else",
+    "fixed",
+    "for",
+    "foreach",
+    "function",
+    "if",
+    "lock",
+    "new",
+    "return",
+    "switch",
+    "synchronized",
+    "try",
+    "unsafe",
+    "using",
+    "when",
+    "while",
+    "with",
 ];
 
 static JVM_TYPE: LazyLock<Regex> = LazyLock::new(|| {
@@ -336,7 +388,12 @@ fn curly_brace_declarations(lines: &[String], out: &mut Collector) {
         let indent = indent_of(line);
         if let Some(found) = JVM_TYPE.captures(trimmed) {
             let word = found.get(1).map_or("", |word| word.as_str());
-            let kind = match word.split_whitespace().collect::<Vec<_>>().join(" ").as_str() {
+            let kind = match word
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .as_str()
+            {
                 "enum" | "enum class" => OutlineKind::Enum,
                 "interface" => OutlineKind::Interface,
                 "struct" => OutlineKind::Struct,
@@ -391,9 +448,15 @@ mod tests {
         );
         let ruby = outline_file("class Box\n  def open\n  end\nend\n", "box.rb");
         assert_eq!(ruby.declarations.len(), 2);
-        let csharp = outline_file("public class Cart {\n  public void Add(int x) {\n  }\n}\n", "Cart.cs");
+        let csharp = outline_file(
+            "public class Cart {\n  public void Add(int x) {\n  }\n}\n",
+            "Cart.cs",
+        );
         assert_eq!(csharp.declarations.len(), 2);
         let unknown = outline_file("int main() {}", "main.c");
-        assert_eq!((unknown.language, unknown.declarations.len()), ("unknown", 0));
+        assert_eq!(
+            (unknown.language, unknown.declarations.len()),
+            ("unknown", 0)
+        );
     }
 }

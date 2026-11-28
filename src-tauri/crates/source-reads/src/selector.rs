@@ -106,7 +106,10 @@ const ALLOWED_FIELDS: [&str; 6] = [
     "symbol",
 ];
 
-fn selector_at(index: usize, object: &Map<String, Value>) -> Result<SourceReadSelector, SelectorRefusal> {
+fn selector_at(
+    index: usize,
+    object: &Map<String, Value>,
+) -> Result<SourceReadSelector, SelectorRefusal> {
     if let Some(unknown) = object
         .keys()
         .find(|key| !ALLOWED_FIELDS.contains(&key.as_str()))
@@ -271,7 +274,10 @@ mod tests {
             parse_source_reads(&json!([{"path":"a.ts","symbol":"Invoice.total","maxLines":5}])),
             Ok(vec![SourceReadSelector {
                 path: "a.ts".into(),
-                target: ReadTarget::Symbol { symbol: "Invoice.total".into(), max_lines: Some(5) },
+                target: ReadTarget::Symbol {
+                    symbol: "Invoice.total".into(),
+                    max_lines: Some(5)
+                },
                 expected_sha256: None,
             }])
         );

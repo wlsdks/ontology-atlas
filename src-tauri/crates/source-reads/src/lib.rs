@@ -32,6 +32,6 @@ pub use session_reads::{ReadRange, ReadsUnder, SessionReads};
 pub use source_evidence::{read_source_evidence, AGGREGATE_TEXT_BYTES};
 pub use source_reads_text::{fit_source_reads, render_source_reads};
 pub use source_row::{
-    AskedFor, CallerSite, Callee, ContextPart, ContextRole, NextRead, OmittedPart, OutlineRow,
+    AskedFor, Callee, CallerSite, ContextPart, ContextRole, NextRead, OmittedPart, OutlineRow,
     ReadRow, SourceEvidence, SourceRow,
 };

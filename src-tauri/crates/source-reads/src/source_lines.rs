@@ -12,7 +12,11 @@ pub fn complete_lines(text: &str) -> Vec<String> {
         if byte == b'\n' {
             at += 1;
         } else if byte == b'\r' {
-            at += if bytes.get(at + 1) == Some(&b'\n') { 2 } else { 1 };
+            at += if bytes.get(at + 1) == Some(&b'\n') {
+                2
+            } else {
+                1
+            };
         } else {
             at += 1;
             continue;

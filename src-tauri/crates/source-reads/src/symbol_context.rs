@@ -19,15 +19,15 @@ use repository_survey::js_regex;
 
 use crate::call_sites::call_sites_of;
 use crate::callees::{callees_of, CalleeContext};
-use crate::declaration_span::{declaration_end, enclosing_class, Ends};
 use crate::deciding_lines::{
-    callee_bonus, called_in_conditions, constants_of, deciding_count, decides_line,
+    called_in_conditions, callee_bonus, constants_of, decides_line, deciding_count,
 };
+use crate::declaration_span::{declaration_end, enclosing_class, Ends};
 use crate::file_outline::{OutlineDeclaration, OutlineKind};
 use crate::opened_file::OpenedFile;
 use crate::read_environment::ReadEnvironment;
 use crate::source_lines::indent_at;
-use crate::source_row::{CallerSite, Callee, ContextPart, ContextRole, NextRead, OmittedPart};
+use crate::source_row::{Callee, CallerSite, ContextPart, ContextRole, NextRead, OmittedPart};
 
 /// 6 KiB holds the three to five deciding parts measured on the trial repositories (a guard window
 /// is about 0.5 KiB, a constructor or options builder 0.5 to 2 KiB) beside an 8 KiB body, so a full
@@ -212,9 +212,9 @@ fn qualified(file: &OpenedFile, symbol: &str, line: usize) -> String {
         .declarations()
         .iter()
         .find(|candidate| candidate.line == line && candidate.name == symbol);
-    match declaration.and_then(|declaration| {
-        enclosing_class(&file.lines, file.declarations(), declaration)
-    }) {
+    match declaration
+        .and_then(|declaration| enclosing_class(&file.lines, file.declarations(), declaration))
+    {
         Some(owner) => format!("{}.{symbol}", owner.name),
         None => symbol.to_string(),
     }
@@ -321,7 +321,10 @@ impl Builder<'_> {
                 let Some(&line) = constants.get(found.as_str()) else {
                     continue;
                 };
-                if rows.iter().any(|row| row.file.path == file.path && row.line == line) {
+                if rows
+                    .iter()
+                    .any(|row| row.file.path == file.path && row.line == line)
+                {
                     continue;
                 }
                 if taken.iter().any(|range| {
@@ -329,10 +332,7 @@ impl Builder<'_> {
                 }) {
                     continue;
                 }
-                let bytes = file
-                    .lines
-                    .get(line - 1)
-                    .map_or(0, String::len);
+                let bytes = file.lines.get(line - 1).map_or(0, String::len);
                 rows.push(ConstantRow {
                     file: file.clone(),
                     line,
@@ -349,7 +349,9 @@ impl Builder<'_> {
 }
 
 fn strengthen(nodes: &mut [Reached], candidates: &mut [Candidate], node: usize) {
-    let Some(held) = nodes.get_mut(node) else { return };
+    let Some(held) = nodes.get_mut(node) else {
+        return;
+    };
     if !held.weak {
         return;
     }
@@ -402,9 +404,13 @@ pub fn symbol_context(
         candidates: Vec::new(),
         constants: RefCell::new(HashMap::new()),
     };
-    let body_decides =
-        deciding_count(lines_between(lines, declaration.line, body_end)) > 0;
-    let own_name = declaration.name.rsplit('.').next().unwrap_or("").to_string();
+    let body_decides = deciding_count(lines_between(lines, declaration.line, body_end)) > 0;
+    let own_name = declaration
+        .name
+        .rsplit('.')
+        .next()
+        .unwrap_or("")
+        .to_string();
 
     // The owner: its header (a class docstring, fields with defaults) and its constructors.
     let owner = owner_of(lines, declarations, declaration);
@@ -419,10 +425,14 @@ pub fn symbol_context(
                 && candidate.kind.is_code()
                 && indent_at(lines, candidate.line) > owner_indent
         });
-        let header_end = (first_member.map_or(owner_declaration.line + 1, |member| member.line) - 1)
-            .min(owner_declaration.line + OWNER_HEADER - 1);
+        let header_end = (first_member.map_or(owner_declaration.line + 1, |member| member.line)
+            - 1)
+        .min(owner_declaration.line + OWNER_HEADER - 1);
         if header_end > owner_declaration.line
-            && !matches!(owner_declaration.kind, OutlineKind::Struct | OutlineKind::Type)
+            && !matches!(
+                owner_declaration.kind,
+                OutlineKind::Struct | OutlineKind::Type
+            )
         {
             let name = owner.as_ref().map_or("", |owner| owner.name.as_str());
             builder.add(
@@ -514,14 +524,30 @@ pub fn symbol_context(
             line: row.sites.first().copied().unwrap_or(0),
         })
         .collect();
-    if !caller_rows.is_empty() && caller_rows.len() <= MAX_CALLERS && found_sites.total <= CALLER_SITES {
+    if !caller_rows.is_empty()
+        && caller_rows.len() <= MAX_CALLERS
+        && found_sites.total <= CALLER_SITES
+    {
         for row in &caller_rows {
             let start = row.caller.line;
-            let end = declaration_end(&row.file.lines, row.file.declarations(), &row.caller, Ends::AtCode);
+            let end = declaration_end(
+                &row.file.lines,
+                row.file.declarations(),
+                &row.caller,
+                Ends::AtCode,
+            );
             let bonus = if body_decides { 3 } else { 7 };
             let symbol = qualified(&row.file, &row.caller.name, row.caller.line);
             if end + 1 - start <= WHOLE_CALLER {
-                builder.add(ContextRole::Caller, &row.file, &symbol, start, end, bonus, AddOptions::default());
+                builder.add(
+                    ContextRole::Caller,
+                    &row.file,
+                    &symbol,
+                    start,
+                    end,
+                    bonus,
+                    AddOptions::default(),
+                );
                 continue;
             }
             let mut numbers: std::collections::BTreeSet<usize> = std::collections::BTreeSet::new();
@@ -602,7 +628,11 @@ pub fn symbol_context(
         let end = declaration_end(&file.lines, file.declarations(), &target, Ends::AtCode);
         let bonus = callee_bonus(
             &callee.name,
-            lines_between(&file.lines, target.line, end.min(target.line + EXAMINED_LINES - 1)),
+            lines_between(
+                &file.lines,
+                target.line,
+                end.min(target.line + EXAMINED_LINES - 1),
+            ),
             &condition_names,
         );
         let key = format!("{}\0{}", callee.path, callee.line);
@@ -647,14 +677,15 @@ pub fn symbol_context(
     let mut deeper = 0;
     // A body is examined as far as a read would serve it.
     let head = |target: &OutlineDeclaration, end: usize| end.min(target.line + EXAMINED_LINES - 1);
-    let resolve = |builder: &Builder<'_>, file: &Rc<OpenedFile>, target: &OutlineDeclaration, end: usize| {
-        let text = slice(&file.lines, target.line, head(target, end));
-        let context = CalleeContext {
-            survey,
-            opener: &builder.environment.opener,
+    let resolve =
+        |builder: &Builder<'_>, file: &Rc<OpenedFile>, target: &OutlineDeclaration, end: usize| {
+            let text = slice(&file.lines, target.line, head(target, end));
+            let context = CalleeContext {
+                survey,
+                opener: &builder.environment.opener,
+            };
+            callees_of(&context, &text, file, target)
         };
-        callees_of(&context, &text, file, target)
-    };
     for Expandable {
         file,
         target,
@@ -717,7 +748,8 @@ pub fn symbol_context(
             if let Some(held) = nodes.get_mut(parent) {
                 held.next.push((node, row.by_name));
             }
-            let inner_end = declaration_end(&inner.lines, inner.declarations(), &found, Ends::AtCode);
+            let inner_end =
+                declaration_end(&inner.lines, inner.declarations(), &found, Ends::AtCode);
             let inner_lines = lines_between(&inner.lines, found.line, head(&found, inner_end));
             if !through && !row.implementation && inner_end + 1 - found.line <= ACCESSOR_LINES {
                 let inner_conditions = called_in_conditions(inner_lines);
@@ -780,7 +812,8 @@ pub fn symbol_context(
     // A constant line is tens of bytes; what the body and the candidates could use is held back
     // for it.
     let body_slice = slice(lines, declaration.line, body_end);
-    let mut texts: Vec<(Option<Rc<OpenedFile>>, &str)> = vec![(Some(own.clone()), body_slice.as_str())];
+    let mut texts: Vec<(Option<Rc<OpenedFile>>, &str)> =
+        vec![(Some(own.clone()), body_slice.as_str())];
     for candidate in &candidates {
         texts.push((builder.open(&candidate.path), candidate.text.as_str()));
     }
@@ -817,7 +850,10 @@ pub fn symbol_context(
             symbol: candidate.symbol.clone(),
             start_line: candidate.start_line,
             end_line: candidate.end_line,
-            cite: format!("{}:L{}-L{}", candidate.path, candidate.start_line, candidate.end_line),
+            cite: format!(
+                "{}:L{}-L{}",
+                candidate.path, candidate.start_line, candidate.end_line
+            ),
             text: candidate.text.clone(),
             via: candidate.via.clone(),
             by_name: candidate.by_name,
@@ -831,13 +867,19 @@ pub fn symbol_context(
     }
 
     // The named constants the body and the served parts use, in the file that uses them.
-    let mut texts: Vec<(Option<Rc<OpenedFile>>, &str)> = vec![(Some(own.clone()), body_slice.as_str())];
+    let mut texts: Vec<(Option<Rc<OpenedFile>>, &str)> =
+        vec![(Some(own.clone()), body_slice.as_str())];
     for part in &parts {
         texts.push((builder.open(&part.path), part.text.as_str()));
     }
     let constants = builder.constants_used(&texts, &taken);
     for row in constants {
-        let text = row.file.lines.get(row.line - 1).cloned().unwrap_or_default();
+        let text = row
+            .file
+            .lines
+            .get(row.line - 1)
+            .cloned()
+            .unwrap_or_default();
         let row_bytes = i64::try_from(row.bytes).unwrap_or(0);
         if text.is_empty() || bytes + row_bytes > budget {
             continue;
@@ -871,10 +913,7 @@ pub fn symbol_context(
 
     let mut deciding = None;
     let caller_shown = parts.iter().any(|part| part.role == ContextRole::Caller);
-    if !caller_shown
-        && !callers.is_empty()
-        && (!body_decides || callers.len() > MAX_CALLERS)
-    {
+    if !caller_shown && !callers.is_empty() && (!body_decides || callers.len() > MAX_CALLERS) {
         let named: Vec<String> = callers
             .iter()
             .take(4)

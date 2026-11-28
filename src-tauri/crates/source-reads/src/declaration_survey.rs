@@ -16,7 +16,8 @@ use crate::product_index::{DeclarationRow, ProductIndex};
 const MODULE_FILES: usize = 8;
 
 fn folder_of(path: &str) -> &str {
-    path.rfind('/').map_or("", |slash| path.get(..slash).unwrap_or(""))
+    path.rfind('/')
+        .map_or("", |slash| path.get(..slash).unwrap_or(""))
 }
 
 fn push_unique(map: &mut HashMap<String, Vec<String>>, key: String, value: &str) {
@@ -62,9 +63,18 @@ impl DeclarationSurvey {
                     .push(row.clone());
             }
         }
-        let mut paths: Vec<&str> = products.files.iter().map(|file| file.path.as_str()).collect();
+        let mut paths: Vec<&str> = products
+            .files
+            .iter()
+            .map(|file| file.path.as_str())
+            .collect();
         let known: HashSet<&str> = paths.iter().copied().collect();
-        paths.extend(by_path.keys().map(String::as_str).filter(|path| !known.contains(path)));
+        paths.extend(
+            by_path
+                .keys()
+                .map(String::as_str)
+                .filter(|path| !known.contains(path)),
+        );
         let mut stems = HashMap::new();
         let mut suffixes = HashMap::new();
         let mut folders = HashMap::new();
@@ -140,7 +150,10 @@ impl DeclarationSurvey {
 
     /// Every file in one folder (a Go package).
     pub fn folder(&self, path: &str) -> Vec<String> {
-        self.folders.get(folder_of(path)).cloned().unwrap_or_default()
+        self.folders
+            .get(folder_of(path))
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Declarations of `name` (or a `Type.name` method) in the module `spec` names.
@@ -179,7 +192,12 @@ impl DeclarationSurvey {
     /// Every declaration of `name` anywhere: only for a binding whose module names no file.
     pub fn everywhere(&self, name: &str) -> Vec<DeclarationRow> {
         let mut rows = self.index.get(name).cloned().unwrap_or_default();
-        rows.extend(self.index.get(&format!("*.{name}")).cloned().unwrap_or_default());
+        rows.extend(
+            self.index
+                .get(&format!("*.{name}"))
+                .cloned()
+                .unwrap_or_default(),
+        );
         rows
     }
 }

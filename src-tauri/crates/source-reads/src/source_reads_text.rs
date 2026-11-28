@@ -131,10 +131,9 @@ fn context_lines(row: &ReadRow) -> Vec<String> {
 
 fn read_lines(row: &ReadRow) -> Vec<String> {
     let range = format!("L{}-L{}", row.start_line, row.end_line);
-    let symbol = row
-        .symbol
-        .as_ref()
-        .map_or(String::new(), |symbol| format!(" {}", repo_text(symbol, 200)));
+    let symbol = row.symbol.as_ref().map_or(String::new(), |symbol| {
+        format!(" {}", repo_text(symbol, 200))
+    });
     let cite = row
         .cite
         .clone()
@@ -145,7 +144,11 @@ fn read_lines(row: &ReadRow) -> Vec<String> {
             t(&row.path),
             row.file_lines
         ),
-        format!("cite {} pinned {}", t(&cite), repo_text(&row.citation, 1400)),
+        format!(
+            "cite {} pinned {}",
+            t(&cite),
+            repo_text(&row.citation, 1400)
+        ),
         fenced(&row.text),
     ];
     lines.extend(context_lines(row));
@@ -218,10 +221,9 @@ fn read_lines(row: &ReadRow) -> Vec<String> {
 }
 
 fn refused_lines(asked: &AskedFor, reason: RefusalReason, status: &str) -> Vec<String> {
-    let symbol = asked
-        .symbol
-        .as_ref()
-        .map_or(String::new(), |symbol| format!(" {}", repo_text(symbol, 200)));
+    let symbol = asked.symbol.as_ref().map_or(String::new(), |symbol| {
+        format!(" {}", repo_text(symbol, 200))
+    });
     let outline = if asked.outline { " outline" } else { "" };
     vec![format!(
         "== {status} {}{symbol}{outline}: {}",
@@ -241,7 +243,8 @@ fn row_lines(row: &SourceRow) -> Vec<String> {
 
 /// The text of a source-only answer for the repository at `root_path`.
 pub fn render_source_reads(root_path: &str, evidence: &SourceEvidence) -> String {
-    let count = |wanted: fn(&SourceRow) -> bool| evidence.rows.iter().filter(|row| wanted(row)).count();
+    let count =
+        |wanted: fn(&SourceRow) -> bool| evidence.rows.iter().filter(|row| wanted(row)).count();
     let read = count(|row| matches!(row, SourceRow::Read(_)));
     let outlined = count(|row| matches!(row, SourceRow::Outlined(_)));
     let omitted = count(|row| matches!(row, SourceRow::Omitted { .. }));

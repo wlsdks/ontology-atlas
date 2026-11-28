@@ -66,12 +66,13 @@ pub fn find_declaration<'a>(
             .saturating_sub(declaration.line)
     };
     let longest = |candidates: Vec<&'a OutlineDeclaration>| {
-        candidates.into_iter().fold(None, |best: Option<&OutlineDeclaration>, candidate| {
-            match best {
+        candidates.into_iter().fold(
+            None,
+            |best: Option<&OutlineDeclaration>, candidate| match best {
                 Some(held) if extent(candidate) <= extent(held) => Some(held),
                 _ => Some(candidate),
-            }
-        })
+            },
+        )
     };
     let exact: Vec<&OutlineDeclaration> = code
         .iter()
@@ -88,8 +89,12 @@ pub fn find_declaration<'a>(
                 .filter(|declaration| declaration.name == owner)
                 .collect(),
         )?;
-        let owner_end =
-            declaration_end(lines, declarations, owner_declaration, Ends::AtAnyDeclaration);
+        let owner_end = declaration_end(
+            lines,
+            declarations,
+            owner_declaration,
+            Ends::AtAnyDeclaration,
+        );
         return longest(
             code.iter()
                 .copied()
@@ -156,7 +161,12 @@ mod tests {
         let member = find_declaration(&lines, &outline.declarations, "Cart.total").expect("member");
         assert_eq!(member.line, 2);
         assert_eq!(
-            declaration_end(&lines, &outline.declarations, member, Ends::AtAnyDeclaration),
+            declaration_end(
+                &lines,
+                &outline.declarations,
+                member,
+                Ends::AtAnyDeclaration
+            ),
             3,
             "the blank line after the body is not part of it"
         );

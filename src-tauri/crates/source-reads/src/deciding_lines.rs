@@ -148,7 +148,9 @@ pub fn constants_of(lines: &[String]) -> HashMap<String, usize> {
             .captures(line.trim_matches(is_js_space))
             .and_then(|found| found.get(1))
         {
-            constants.entry(name.as_str().to_string()).or_insert(index + 1);
+            constants
+                .entry(name.as_str().to_string())
+                .or_insert(index + 1);
         }
     }
     constants
@@ -165,10 +167,14 @@ mod tests {
         assert!(decides_line("const a = ok ? 1 : 2;"));
         assert!(!decides_line("// if this were code\n"));
         assert!(!decides_line("return value;\n"));
-        let lines: Vec<String> = ["const HEADER = \"X-ID\";\n", "function f() {\n", "  const inner = 1;\n"]
-            .iter()
-            .map(|line| (*line).to_string())
-            .collect();
+        let lines: Vec<String> = [
+            "const HEADER = \"X-ID\";\n",
+            "function f() {\n",
+            "  const inner = 1;\n",
+        ]
+        .iter()
+        .map(|line| (*line).to_string())
+        .collect();
         let constants = constants_of(&lines);
         assert_eq!(constants.get("HEADER"), Some(&1));
         assert!(!constants.contains_key("inner"));

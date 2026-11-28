@@ -144,7 +144,9 @@ impl SessionReads {
             }
             let absolute = path
                 .split('/')
-                .fold(root.as_path().to_path_buf(), |joined, part| joined.join(part));
+                .fold(root.as_path().to_path_buf(), |joined, part| {
+                    joined.join(part)
+                });
             let lines = texts
                 .entry(absolute.clone())
                 .or_insert_with(|| lines_of(root, &absolute));

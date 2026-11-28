@@ -10,11 +10,38 @@ use source_scan::DEFAULT_IGNORE;
 use crate::refusal_reason::RefusalReason;
 
 const SOURCE_EXTENSIONS: [&str; 31] = [
-    ".c", ".cc", ".cpp", ".cs", ".css", ".go", ".h", ".hpp", ".html", ".java", ".js", ".jsx",
-    ".kt", ".kts", ".mjs", ".mts", ".php", ".py", ".rb", ".rs", ".scss", ".sh", ".swift", ".ts",
-    ".tsx", ".vue", ".zig",
+    ".c",
+    ".cc",
+    ".cpp",
+    ".cs",
+    ".css",
+    ".go",
+    ".h",
+    ".hpp",
+    ".html",
+    ".java",
+    ".js",
+    ".jsx",
+    ".kt",
+    ".kts",
+    ".mjs",
+    ".mts",
+    ".php",
+    ".py",
+    ".rb",
+    ".rs",
+    ".scss",
+    ".sh",
+    ".swift",
+    ".ts",
+    ".tsx",
+    ".vue",
+    ".zig",
     // Prose shipped beside the code, under the same caps; not a manifest.
-    ".markdown", ".md", ".rst", ".txt",
+    ".markdown",
+    ".md",
+    ".rst",
+    ".txt",
 ];
 
 const MANIFESTS: [&str; 8] = [
