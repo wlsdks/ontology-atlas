@@ -395,7 +395,7 @@ ship, are held to the license policy but not listed.
 
 `pretendard`
 
-## MCP sidecar npm packages (10)
+## MCP sidecar npm packages (3)
 
 The production dependency tree of `mcp/`, which the sidecar binary compiles in.
 
@@ -403,17 +403,9 @@ The production dependency tree of `mcp/`, which the sidecar binary compiles in.
 
 `@modelcontextprotocol/core`, `@modelcontextprotocol/server`
 
-### BSD-2-Clause (1)
+### MIT (1)
 
-`entities`
-
-### MIT (6)
-
-`linkify-it`, `markdown-it`, `mdurl`, `punycode.js`, `uc.micro`, `zod`
-
-### PSF-2.0 (1)
-
-`argparse`
+`zod`
 
 ## Adapted code (0)
 
