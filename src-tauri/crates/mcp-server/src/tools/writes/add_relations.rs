@@ -56,6 +56,7 @@ fn vault_time(milliseconds: f64) -> confined_files::ModifiedTime {
 pub struct RelationRow {
     pub row: Setting,
     pub from: String,
+    pub to: String,
     pub changed: bool,
     pub why: Option<String>,
 }
@@ -129,6 +130,7 @@ fn add_relation(
             return Ok(RelationRow {
                 row: unchanged(None),
                 from: canonical_from,
+                to: canonical_to,
                 changed: false,
                 why: why.clone(),
             });
@@ -150,6 +152,7 @@ fn add_relation(
             return Ok(RelationRow {
                 row: unchanged(notice.as_ref()),
                 from: canonical_from,
+                to: canonical_to,
                 changed: false,
                 why: why.clone(),
             });
@@ -194,6 +197,7 @@ fn add_relation(
     Ok(RelationRow {
         row,
         from: canonical_from,
+        to: canonical_to,
         changed: true,
         why,
     })
@@ -343,18 +347,15 @@ pub fn call_one(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone,
         }
     }
     let row = add_relation(permit, &members, false)?;
-    let text = |key: &str| {
-        member(&members, key)
-            .and_then(Setting::as_text)
-            .unwrap_or_default()
-            .to_string()
-    };
+    let relation_type = member(&members, "type")
+        .and_then(Setting::as_text)
+        .unwrap_or_default();
     Ok(WriteDone {
         output: crate::answer::ToolOutput::json(&Answer(&row.row))?,
         record: WriteRecord::Wrote {
             activity: ActivityContent {
-                target: text("from"),
-                summary: format!("{} --{}--> {}", text("from"), text("type"), text("to")),
+                target: row.from.clone(),
+                summary: format!("{} --{relation_type}--> {}", row.from, row.to),
                 why: member(&members, "why").and_then(Setting::as_text).map(str::to_string),
                 logged_as: None,
             },

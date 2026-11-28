@@ -216,7 +216,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         record: WriteRecord::Wrote {
             activity: ActivityContent {
                 target: new_slug.clone(),
-                summary: format!("rename {old_slug} → {new_slug}"),
+                summary: format!("rename {disk_old} → {new_slug}"),
                 why: None,
                 logged_as: None,
             },
@@ -414,7 +414,7 @@ fn change_kind(
         record: WriteRecord::Wrote {
             activity: ActivityContent {
                 target: canonical_new.clone(),
-                summary: format!("reclassify {slug} → {new_kind}"),
+                summary: format!("reclassify {canonical_old} → {new_kind}"),
                 why: None,
                 logged_as: Some("reclassify_concept"),
             },

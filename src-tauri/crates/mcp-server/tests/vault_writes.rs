@@ -176,6 +176,55 @@ fn a_file_that_already_has_a_device_name_is_still_a_referrer_and_can_be_renamed_
     assert!(vault.file("con.md").is_none());
 }
 
+/// An activity line says which node changed, so a node has one spelling in it: the slug the typed
+/// name means. What was typed is in the call, which the agent has.
+#[test]
+fn an_activity_line_names_the_slug_a_loose_name_means_for_every_writer() {
+    let mut vault = Vault::start();
+    vault.plant(
+        "third.md",
+        "---\nuid: 44444444-4444-4444-8444-444444444444\nslug: third\nkind: document\ntitle: Third\n---\n\nT.\n",
+    );
+    let calls = [
+        ("add_relation", r#"{"from":"Other","to":"THIRD","type":"relates"}"#),
+        (
+            "remove_relation",
+            r#"{"from":"Other","to":"Notes","type":"relates","replaceWith":{"to":"Third","type":"relates"},"confirm":true}"#,
+        ),
+        ("rename_concept", r#"{"oldSlug":"Third","newSlug":"fourth","confirm":true}"#),
+        (
+            "rename_concept",
+            r#"{"oldSlug":"Notes","newKind":"domain","newSlug":"domains/notes","confirm":true}"#,
+        ),
+    ];
+    for (tool, arguments) in calls {
+        let answer = vault.call(tool, arguments);
+        assert_eq!(answer["ok"], true, "{tool}: {answer}");
+    }
+    let log = vault.file(".ontology-atlas/activity.jsonl").expect("the activity log");
+    let lines: Vec<(String, String)> = log
+        .lines()
+        .map(|line| serde_json::from_str::<Value>(line).expect("a whole line"))
+        .map(|line| {
+            (
+                line["target"].as_str().unwrap_or_default().to_string(),
+                line["summary"].as_str().unwrap_or_default().to_string(),
+            )
+        })
+        .collect();
+    let expected = [
+        ("other", "other --relates--> third"),
+        ("other", "replace other --relates--> notes with --relates--> third"),
+        ("fourth", "rename third \u{2192} fourth"),
+        ("domains/notes", "reclassify notes \u{2192} domain"),
+    ];
+    assert_eq!(
+        lines,
+        expected.map(|(target, summary)| (target.to_string(), summary.to_string())),
+        "{log}"
+    );
+}
+
 #[test]
 fn a_batch_that_names_one_node_twice_in_different_spellings_is_refused_as_a_repeat() {
     let mut vault = Vault::start();
