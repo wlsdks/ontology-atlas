@@ -8618,6 +8618,38 @@
       "reason": "Row 28 (with row 27): totalEdges counts every edge among all the nodes the walk reaches, once each. Checked: it equals the edges among those nodes in the compiled graph of the vault, where the JavaScript server counted only the edges its search took."
     },
     {
+      "case": "graph/analysis-folder-is-a-link",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
+    },
+    {
+      "case": "graph/analysis-folder-is-a-link",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
+    },
+    {
+      "case": "graph/analysis-records-over-a-hundred-files-paged-by-cursor",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
+    },
+    {
+      "case": "graph/analysis-records-over-a-hundred-files-paged-by-cursor",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
+    },
+    {
       "case": "graph/query-plan-containment-tangle",
       "where": "answer",
       "id": 1,
