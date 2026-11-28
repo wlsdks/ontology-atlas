@@ -14,7 +14,7 @@ Every module of `src/` is named here once.
 | What kinds, fields and review states exist? | `schema.rs` (`KNOWN_KINDS`, `GRAPH_ARRAY_KEYS`), `starter_body.rs` |
 | What is wrong with one document? | `validation.rs`, `body_findings.rs`, `evidence_limit.rs`, `meaning_wording.rs` |
 | What is wrong only across the vault? | `vault_issues.rs` (dangling references, duplicate slugs and uids: `find` for every document, `about` for the few a call names) |
-| What does a name mean? | `reference_index.rs` (relation references), `slug_resolution.rs` (a slug or uid an agent typed) |
+| What does a name mean? | `reference_index.rs` (relation references), `slug_resolution.rs` (a slug or uid an agent typed), `slug_list.rs` (`SlugList`: the slugs one name means, held without a list when it means one) |
 | Which nodes does one node point at? | `relations.rs` |
 | What did one file come to? | `loaded_document.rs` (frontmatter, faults, link targets, a digest; the text is not kept) |
 | Which link targets does a body hold? | `body_links.rs` (listed once per file; a name it cannot answer from the list reads the body) |
