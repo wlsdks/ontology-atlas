@@ -50,7 +50,8 @@ function isFile(path) {
  * @param {string} vaultRoot — passed as OATLAS_VAULT env
  * @param {string} toolName — e.g. 'find_backlinks'
  * @param {Record<string, unknown>} args — tool arguments
- * @param {{ repoRoot?: string }} options — explicit repository boundary for scan tools
+ * @param {{ repoRoot?: string, timeoutMs?: number }} options — explicit repository boundary for scan tools;
+ *   `timeoutMs` for a call that validates a whole vault and repository, which outlasts the default under load
  * @returns {Promise<unknown>}
  */
 export function callMcpTool(vaultRoot, toolName, args = {}, options = {}) {
@@ -60,7 +61,7 @@ export function callMcpTool(vaultRoot, toolName, args = {}, options = {}) {
       throw new Error('repoRoot must be a non-empty absolute path when provided.');
     }
     const entry = resolveMcpEntry();
-    const timeoutMs = mcpCallTimeoutMs();
+    const timeoutMs = options.timeoutMs ?? mcpCallTimeoutMs();
     const killGraceMs = mcpKillGraceMs();
     // `OATLAS_REPO_ROOT` is passed only when stated. Defaulting to `process.cwd()` skipped the server's own
     // order (the vault's git top-level first) and checked another vault's paths against this repository.

@@ -80,7 +80,8 @@ if (!statSync(REPO).isDirectory()) {
   process.exit(2);
 }
 
-const validation = await callMcpTool(VAULT, "validate_vault", {}, { repoRoot: REPO });
+// A whole-vault validation takes about 6 s here alone and more under a busy machine.
+const validation = await callMcpTool(VAULT, "validate_vault", {}, { repoRoot: REPO, timeoutMs: 120_000 });
 const { pathDrift } = validation;
 if (!pathDrift?.checked) {
   process.stderr.write(`validate_vault did not check paths: ${pathDrift?.reason ?? "no pathDrift in its answer"}\n`);
