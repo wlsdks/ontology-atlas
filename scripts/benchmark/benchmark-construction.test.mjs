@@ -34,7 +34,7 @@ test('includes indexing and validation in repeated read measurements', () => {
   }
 });
 
-test('blank paths do not earn a path score and failed runs keep their failure', () => {
+test('blank paths do not earn a path score and failed runs keep their failure', async () => {
   const root = mkdtempSync(join(tmpdir(), 'construction-report-'));
   try {
     mkdirSync(join(root, 'capabilities'));
@@ -42,7 +42,7 @@ test('blank paths do not earn a path score and failed runs keep their failure', 
       writeFileSync(join(root, `capabilities/empty-${i}.md`),
         `---\nuid: 00000000-0000-4000-8000-00000000000${i}\nkind: capability\ntitle: Empty path ${i}\npath: ${JSON.stringify(path)}\n---\nReads a fixture.\n`);
     }
-    const row = constructionReport({ id: 'failed', model: 'local', sourceRevision: 'frozen',
+    const row = await constructionReport({ id: 'failed', model: 'local', sourceRevision: 'frozen',
       wallMs: 10, vaultRoot: root, repoRoot: root, outcome: { status: 'failed', reason: 'request timeout' } });
     assert.equal(row.structure.declaredPathClaims, 0);
     assert.equal(row.structure.declaredPathAccuracy, null);
@@ -50,12 +50,12 @@ test('blank paths do not earn a path score and failed runs keep their failure', 
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test('empty vault and unaudited quality do not earn perfect scores', () => {
+test('empty vault and unaudited quality do not earn perfect scores', async () => {
   const root = mkdtempSync(join(tmpdir(), 'construction-report-'));
   try {
-    const row = constructionReport({ id: 'empty', model: 'local', sourceRevision: 'frozen',
+    const row = await constructionReport({ id: 'empty', model: 'local', sourceRevision: 'frozen',
       wallMs: 10, vaultRoot: root, repoRoot: root });
-    assert.equal(row.structure.authorableNodes, 0);
+    assert.equal(row.structure.nodes, 0);
     assert.equal(row.structure.declaredPathAccuracy, null);
     assert.equal(row.tools.errorRate, null);
     assert.equal(row.quality.status, 'not_measured');

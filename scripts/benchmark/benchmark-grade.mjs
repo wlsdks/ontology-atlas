@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildMarkdown } from '../../mcp/src/parser.mjs';
+import { buildNodeMarkdown } from '../lib/vault/node-markdown.mjs';
 import { CASES } from './benchmark-lifecycle.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -65,7 +65,7 @@ export function prepareGradingWorkspace({ packetPath, rubricPath, scratchRoot })
     for (const node of entry.nodes) {
       const target = join(scratchRoot, `vault-${entry.id}`, `${node.slug}.md`);
       mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, buildMarkdown({
+      writeFileSync(target, buildNodeMarkdown({
         frontmatter: { slug: node.slug, kind: node.kind, title: node.title, ...node.frontmatter },
         body: node.body,
       }), 'utf8');

@@ -2,11 +2,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadVaultDocs } from '../../mcp/src/vault/documents/document-cache.mjs';
-import { compileOntology } from '../../mcp/src/ontology-compiler.mjs';
-import { detectVaultPathDrift } from '../../mcp/src/drift/detect-drift.mjs';
-import { validateVaultDocument } from '../../mcp/src/validate.mjs';
-import { READ_TOOL_NAMES } from '../../mcp/src/server/registry.mjs';
+import { callMcpTool } from '../../mcp/scripts/call-tool.mjs';
+
+/** The server's own list of tools that only read, from the tool surface it embeds. */
+const READ_TOOL_NAMES = new Set(JSON.parse(readFileSync(
+  new URL('../../src-tauri/crates/mcp-server/surface/registry.json', import.meta.url), 'utf8')).readTools);
 
 const bytes = (value) => value === undefined ? null : Buffer.byteLength(
   typeof value === 'string' ? value : JSON.stringify(value));
@@ -89,21 +89,27 @@ export function qualityMetrics(quality) {
     failedClaims: quality.claims.filter((c) => c.verdict === 'failed') };
 }
 
-export function constructionReport(run) {
+/** What the vault holds, as the server answers for it: the graph, the validation and the source paths. */
+async function vaultStructure(run) {
+  const options = run.repoRoot ? { repoRoot: run.repoRoot } : {};
+  const graph = await callMcpTool(run.vaultRoot, 'compile_ontology', {}, options);
+  const validation = await callMcpTool(run.vaultRoot, 'validate_vault', {}, options);
+  const pathDrift = validation.pathDrift ?? { pathsChecked: 0, drifts: [] };
+  return {
+    nodes: graph.nodeCount, edges: graph.edgeCount, unresolvedEdges: graph.unresolvedEdgeCount,
+    byKind: graph.byKind, graphIssues: graph.issueCount,
+    validation: validation.summary,
+    declaredPathClaims: pathDrift.pathsChecked, missingPaths: pathDrift.drifts,
+    declaredPathAccuracy: ratio(pathDrift.pathsChecked - pathDrift.drifts.length, pathDrift.pathsChecked) };
+}
+
+export async function constructionReport(run) {
   if (!run.id || !run.model || !run.sourceRevision || !Number.isFinite(run.wallMs) || run.wallMs < 0) {
     throw new Error('Run needs id, model, sourceRevision and measured wallMs');
   }
   const calls = run.events ? acpToolCalls(readFileSync(run.events, 'utf8').trim().split('\n')
     .filter(Boolean).map((line) => JSON.parse(line))) : (run.toolCalls ?? []);
-  const docs = loadVaultDocs(run.vaultRoot).filter((d) => d.frontmatter.kind);
-  const authorable = docs.filter((d) => d.frontmatter.kind !== 'vault-readme');
-  const graph = compileOntology(docs);
-  const issues = authorable.flatMap((doc) => validateVaultDocument(doc.raw, { slug: doc.slug }).issues
-    .map((issue) => ({ slug: doc.slug, ...issue })));
-  const { drifts: drift } = detectVaultPathDrift({ docs: authorable, repoRoot: run.repoRoot });
-  const declaredPaths = authorable.filter((d) => typeof d.frontmatter.path === 'string' &&
-    d.frontmatter.path.trim().length > 0);
-  const pathDrifts = drift.filter((d) => d.key === 'path');
+  const structure = await vaultStructure(run);
   const metrics = toolMetrics(calls);
   const finalization = calls.filter((call) => call.name === 'finalize_project_meaning')
     .map((call) => toolPayload(call.output)).findLast((payload) => payload?.ok === true &&
@@ -116,12 +122,7 @@ export function constructionReport(run) {
     finalization: finalization ? { status: 'receipt_observed_in_trace',
       meaningStatusAtFinalization: finalization.meaningAssessment?.status ?? 'unknown' }
       : { status: 'not_observed', meaningStatusAtFinalization: 'unknown' },
-    structure: { nodes: docs.length, authorableNodes: authorable.length, edges: graph.edges.length,
-      byKind: Object.fromEntries([...new Set(docs.map((d) => d.frontmatter.kind))]
-        .map((kind) => [kind, docs.filter((d) => d.frontmatter.kind === kind).length])),
-      validationIssues: issues, graphIssues: graph.issues,
-      declaredPathClaims: declaredPaths.length, missingPaths: drift,
-      declaredPathAccuracy: ratio(declaredPaths.length - pathDrifts.length, declaredPaths.length) },
+    structure,
     quality: qualityMetrics(run.quality),
     limits: ['Static structure and declared path existence do not establish semantic qualification.',
       'Quality verdicts are supplied audit evidence, not a model-independent qualification receipt.',
@@ -139,7 +140,7 @@ function toolPayload(output) {
   return result;
 }
 
-function runCli() {
+async function runCli() {
   const input = process.argv[2];
   if (!input || input === '--help') {
     console.log('Usage: pnpm benchmark:construction <runs.json> [--json]\nRead-only report; runs is a nonempty array of construction run manifests. See docs/benchmark/CONSTRUCTION.md.');
@@ -147,19 +148,20 @@ function runCli() {
   }
   const runs = JSON.parse(readFileSync(resolve(input), 'utf8'));
   if (!Array.isArray(runs) || runs.length === 0) throw new Error('Construction run inventory is empty');
-  const rows = runs.map(constructionReport);
+  const rows = [];
+  for (const run of runs) rows.push(await constructionReport(run));
   if (process.argv.includes('--json')) console.log(JSON.stringify({ version: 1, rows }, null, 2));
   else {
     console.log('| Run | Model | Profile | Outcome | Seconds | Calls / errors | Nodes / edges | Questions answered | Verified claims |');
     console.log('|---|---|---|---|---:|---:|---:|---:|---:|');
     for (const row of rows) {
       const q = row.quality;
-      console.log(`| ${row.id} | ${row.model} | ${row.profile} | ${row.outcome.status} | ${(row.wallMs / 1000).toFixed(1)} | ${row.tools.calls} / ${row.tools.failed} | ${row.structure.authorableNodes} / ${row.structure.edges} | ${q.questions ? `${q.questions.answered}/${q.questions.total}` : 'not measured'} | ${q.claims ? `${q.claims.verified}/${q.claims.total}` : 'not measured'} |`);
+      console.log(`| ${row.id} | ${row.model} | ${row.profile} | ${row.outcome.status} | ${(row.wallMs / 1000).toFixed(1)} | ${row.tools.calls} / ${row.tools.failed} | ${row.structure.nodes} / ${row.structure.edges} | ${q.questions ? `${q.questions.answered}/${q.questions.total}` : 'not measured'} | ${q.claims ? `${q.claims.verified}/${q.claims.total}` : 'not measured'} |`);
     }
     console.log('\nDescriptive measurements; no aggregate quality grade or model ranking.');
   }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try { runCli(); } catch (error) { console.error(error.message); process.exitCode = 1; }
+  runCli().catch((error) => { console.error(error.message); process.exitCode = 1; });
 }
