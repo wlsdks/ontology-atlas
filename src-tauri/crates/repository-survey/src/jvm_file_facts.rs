@@ -497,15 +497,11 @@ fn method_names(
             .is_some_and(|character| {
                 character.is_ascii_alphanumeric() || character == '_' || character == '$'
             });
-        if preceded_by_word {
-            // The pattern does not start inside a name: try from the next character on.
-            at = boundary_ceil(&head, whole.start() + 1);
-            if at >= head.len() {
-                break;
-            }
-            continue;
+        if !preceded_by_word {
+            names.push((member.head_start + whole.start(), name.as_str().to_string()));
         }
-        names.push((member.head_start + whole.start(), name.as_str().to_string()));
+        // A name inside a longer word is skipped whole: every later start within it is also
+        // preceded by a word character, so resuming one byte on rescans it once per byte.
         at = whole.end();
         if at >= head.len() {
             break;
@@ -1136,5 +1132,27 @@ mod tests {
         assert_eq!(call.class, Some(0));
         assert_eq!(call.method.as_deref(), Some("start"));
         assert_eq!(call.line, 4);
+    }
+
+    #[test]
+    fn a_name_inside_a_longer_word_is_skipped_once_not_once_per_byte() {
+        let head = format!("9{}( void run()", "a".repeat(100_000));
+        let member = RawMember {
+            head_start: 0,
+            head_end: head.len(),
+            body_close: head.len(),
+        };
+        let started = std::time::Instant::now();
+        let names = method_names(&head, &member, &[], false);
+        assert_eq!(
+            names.iter().map(|(_, name)| name.as_str()).collect::<Vec<_>>(),
+            ["run"],
+            "the digit-led word is no method name, the later one is"
+        );
+        assert!(
+            started.elapsed().as_millis() < 100,
+            "took {:?}",
+            started.elapsed()
+        );
     }
 }
