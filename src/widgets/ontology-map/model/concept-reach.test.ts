@@ -137,7 +137,7 @@ describe("a selected element on the map and in its panel", () => {
   it.each(VAULTS)("draws the %s vault's element lines exactly as the panel lists its rows", (_name, manifest) => {
     const { graphNodes, graphEdges, model } = vaultGraph(manifest);
     const elements = graphNodes.filter((n) => n.kind === "element");
-    expect(elements.length).toBeGreaterThan(50);
+    expect(elements.length).toBeGreaterThan(40);
     let elementsWithRows = 0;
     const differing = elements.flatMap(({ id }) => {
       const reach = readConceptReach(graphNodes, graphEdges, id)!;

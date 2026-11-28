@@ -77,6 +77,7 @@ function queryWalk({ projectSlug, domainSlug, capabilitySlug, otherCapabilitySlu
     node_profile: { ...about, limit: 8 },
     project_scope: { project: projectSlug, limit: 8 },
     project_map: { project: projectSlug, itemLimit: 5 },
+    domain_matrix: { project: projectSlug },
     relation_check: { from: capabilitySlug, to: domainSlug, type: "domain" },
     components: { limit: 5 },
     lineage: { ...about, depth: 3, limit: 10 },

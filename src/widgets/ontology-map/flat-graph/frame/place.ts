@@ -109,8 +109,23 @@ export function screenOf(id: string): StampedPoint {
     const own = F.layout.positions.get(id);
     // A dot dragged away from its capability follows the pointer; the rest follow the capability wherever it goes.
     if (own && Math.hypot(home.x - own.x - (centre.x - rest.x), home.y - own.y - (centre.y - rest.y)) > DRAG_SLACK) continue;
-    x += (centre.x * F.scale + F.originX + offset.x - x) * fan.share;
-    y += (centre.y * F.scale + F.originY + offset.y - y) * fan.share;
+    const centreX = centre.x * F.scale + F.originX;
+    const centreY = centre.y * F.scale + F.originY;
+    const homeReach = Math.hypot(x - centreX, y - centreY);
+    const fanReach = Math.hypot(offset.x, offset.y);
+    if (fan.share >= 1 || homeReach < 1e-6 || fanReach < 1e-6) {
+      x += (centreX + offset.x - x) * fan.share;
+      y += (centreY + offset.y - y) * fan.share;
+      continue;
+    }
+    // A dot on the far side of the disc from its place in the fan swings round the disc rather than
+    // crossing it, as `openedElements` swings a half-closed fan.
+    const homeTurn = Math.atan2(y - centreY, x - centreX);
+    const swing = ((Math.atan2(offset.y, offset.x) - homeTurn + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
+    const turn = homeTurn + swing * fan.share;
+    const reach = homeReach + (fanReach - homeReach) * fan.share;
+    x = centreX + reach * Math.cos(turn);
+    y = centreY + reach * Math.sin(turn);
   }
   const step = F.stepsOff ? undefined : F.steps.get(id);
   if (step !== undefined) {

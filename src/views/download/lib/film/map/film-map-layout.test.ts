@@ -11,7 +11,7 @@ import type { FilmLabel } from './film-map-labels';
 import { layoutFilmMap } from './film-map-layout';
 import type { FilmCopy, FilmMapLayout } from './film-map-shapes';
 import type { FilmMarkTokens } from './film-map-sizes';
-import { domainFlows, pickFilmConcept, readFilmVault, type FilmVault } from '../film-vault';
+import { MAX_LEAVING_LINES, domainFlows, pickFilmConcept, readFilmVault, reachOf, type FilmVault } from '../film-vault';
 import { buildStageGraph } from '../../stage-graph';
 
 /**
@@ -281,8 +281,18 @@ describe('the film map on the bundled vault', () => {
   const vault = vaultFor('en');
   const pick = pickFilmConcept(vault)!;
 
-  it('picks the capability whose relations reach the most other domains', () => {
-    expect(pick).toBe('capability:vault-graph-query');
+  it('picks the capability whose relations reach the most other domains, among those that are not a broom', () => {
+    const reachedDomains = (id: string) => {
+      const reach = reachOf(vault, id);
+      const ends = [...reach.needs, ...reach.neededBy, ...reach.relates];
+      const own = vault.byId.get(id)!.domain;
+      const others = new Set(ends.map((end) => vault.byId.get(end)?.domain).filter((domain) => domain && domain !== own));
+      return { domains: others.size, leaving: ends.length - reach.ownNeeds.length, ends: ends.length };
+    };
+    const candidates = vault.capabilities.map((cap) => ({ id: cap.id, ...reachedDomains(cap.id) })).filter((row) => row.ends > 0 && row.leaving <= MAX_LEAVING_LINES);
+    expect(candidates.length).toBeGreaterThan(0);
+    expect(candidates.find((row) => row.id === pick)).toBeDefined();
+    expect(reachedDomains(pick).domains).toBe(Math.max(...candidates.map((row) => row.domains)));
   });
 
   for (const stage of STAGES) {
