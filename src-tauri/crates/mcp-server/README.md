@@ -20,13 +20,15 @@ request, then `src/dispatch.rs` for the checks every call passes.
 | `src/error.rs` | `ToolError` and `ErrorCode`: the code is chosen where the failure is made, never read from its message |
 | `src/surface.rs` + `surface/` | The generated tool list the program embeds and sends as written |
 | `src/suggestions.rs` | The nearest allowed name for "did you mean" |
-| `src/tools.rs` | The handlers. A read tool joins `call`; a write tool joins `write_handler`, which names every `WriteTool` with no catch-all |
+| `src/tools/writes/` | The seven vault writers and the two retired singular names (`add_concept`, `add_relation`): one file per tool, and beside them what they share: the vault as a write reads it (`vault_view`), the refusals every writer makes (`write_gates`, `slug_refusal`, `object_checks`), the one patch path (`patch_document`), the lean answer parts (`write_aftermath`, `answer_fields`, `redirect_support`) |
+| `src/tools.rs` | The handlers. A read tool joins `call`; a write tool joins `write_handler`, which names every `WriteTool` with no catch-all; `absorb_document`, `connect_project_source` and `finalize_project_meaning` are not ported yet |
 | `tests/` | `protocol_table.rs` runs the program as an agent does; `oracle.rs` compares it with the JavaScript server on the rows that are not declared changes; `plan_answers.rs` states in full the `query_plan` answers the declared rows excuse whole (`plan_answers/`: one `<case>.tsv` of answers per case, `vaults/` the planted vaults) |
 
 Rules this crate keeps:
 
 - An answer is a typed `#[derive(Serialize)]` struct; the field order is the key order. Nothing builds
-  a JSON tree.
+  a JSON tree, except a write's rows, which carry values the agent sent (frontmatter of any shape)
+  in an ordered `vault_edit::Setting` so their order and number text survive.
 - A tool's arguments are never read until its handler asks, so any nesting depth reaches the shell.
 - Half of a surrogate pair is not text: a name is read with U+FFFD, an argument that holds one is
   refused by name, and a request id is written back exactly as sent.

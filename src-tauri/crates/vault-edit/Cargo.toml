@@ -1,0 +1,23 @@
+[package]
+name = "vault-edit"
+version = "0.1.0"
+description = "The exact new text of the vault files a write changes: frontmatter lines, bodies, new nodes, references moved by a rename"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+confined-files = { path = "../confined-files" }
+vault-document = { path = "../vault-document" }
+# The two link shapes a rename rewrites in a body: `[[slug]]` and `(slug.md)`.
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl"] }
+thiserror = "2"
+# A reference typed decomposed (how macOS names files) still names the composed slug.
+icu_normalizer = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

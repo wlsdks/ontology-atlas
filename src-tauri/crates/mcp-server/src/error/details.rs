@@ -567,3 +567,91 @@ mod tests {
         );
     }
 }
+
+/// A name that is already taken, and how to go on from there.
+#[derive(Debug, Default, Serialize)]
+pub struct ConflictDetails {
+    #[serde(rename = "rowName", skip_serializing_if = "Option::is_none")]
+    pub row_name: Option<String>,
+    #[serde(rename = "conflictSubject")]
+    pub subject: &'static str,
+    #[serde(rename = "conflictSlug")]
+    pub slug: String,
+    #[serde(rename = "firstSeenAt", skip_serializing_if = "Option::is_none")]
+    pub first_seen_at: Option<String>,
+    #[serde(rename = "recoveryTools", skip_serializing_if = "Vec::is_empty")]
+    pub recovery_tools: Vec<&'static str>,
+    #[serde(rename = "avoidTools", skip_serializing_if = "Vec::is_empty")]
+    pub avoid_tools: Vec<&'static str>,
+    #[serde(rename = "overwriteOption", skip_serializing_if = "Option::is_none")]
+    pub overwrite_option: Option<&'static str>,
+}
+
+impl ToolError {
+    pub fn conflict_with(message: impl Into<String>, details: ConflictDetails) -> Self {
+        Self {
+            details: Some(Box::new(Details::Conflict(details))),
+            ..Self::new(ErrorCode::Conflict, message)
+        }
+    }
+}
+
+/// A row of a batch with a field it does not have.
+#[derive(Debug, Serialize)]
+pub struct UnknownFieldDetails {
+    #[serde(rename = "rowName")]
+    pub row_name: String,
+    #[serde(rename = "receivedField", skip_serializing_if = "Option::is_none")]
+    pub received_field: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggestion: Option<String>,
+    #[serde(rename = "unknownFields")]
+    pub unknown: Vec<UnknownField>,
+    #[serde(rename = "allowedFields")]
+    pub allowed: Vec<String>,
+    #[serde(rename = "receivedFields")]
+    pub received: Vec<String>,
+}
+
+impl ToolError {
+    /// `row_name` holds fields outside `allowed`; `received` is every field it holds, sorted.
+    pub fn unknown_fields(
+        row_name: &str,
+        unknown: Vec<UnknownField>,
+        allowed: &[&str],
+        received: Vec<String>,
+    ) -> Self {
+        let received_text = if received.is_empty() {
+            "none".to_string()
+        } else {
+            received.join(", ")
+        };
+        let allowed_text = allowed.join(", ");
+        let message = match unknown.as_slice() {
+            [only] => format!(
+                "Unknown field \"{}\" in {row_name}.{} Allowed fields: {allowed_text}. Received fields: {received_text}.",
+                only.name,
+                did_you_mean(only.suggestion.as_deref()),
+            ),
+            _ => format!(
+                "Unknown fields in {row_name}: {}. Allowed fields: {allowed_text}. Received fields: {received_text}.",
+                quoted_list(&unknown)
+            ),
+        };
+        let single = match unknown.as_slice() {
+            [only] => Some((only.name.clone(), only.suggestion.clone())),
+            _ => None,
+        };
+        Self {
+            details: Some(Box::new(Details::UnknownFields(UnknownFieldDetails {
+                row_name: row_name.to_string(),
+                received_field: single.as_ref().map(|(name, _)| name.clone()),
+                suggestion: single.and_then(|(_, suggestion)| suggestion),
+                unknown,
+                allowed: allowed.iter().map(|name| (*name).to_string()).collect(),
+                received,
+            }))),
+            ..Self::new(ErrorCode::InvalidArguments, message)
+        }
+    }
+}
