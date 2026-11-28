@@ -985,6 +985,8 @@ pub fn read_jvm_file(path: &str, text: &str) -> JvmFileFacts {
 
 /// Java: a class member `static void main(String[] args)`. Kotlin: a top-level `fun main`, named
 /// for its file, or a `@JvmStatic fun main` in an object.
+// Each argument is a view of the one file already read; a struct would only rename them.
+#[allow(clippy::too_many_arguments)]
 fn executables_of(
     path: &str,
     kotlin: bool,

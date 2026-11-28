@@ -20,17 +20,26 @@ fn names(line: &str, name: &str) -> bool {
     let mut after_keyword = None;
     line.match_indices(name).any(|(start, _)| {
         let end = start + name.len();
-        let quoted = start > 0
-            && QUOTES.contains(&bytes[start - 1])
+        let quoted = start
+            .checked_sub(1)
+            .and_then(|before| bytes.get(before))
+            .is_some_and(|byte| QUOTES.contains(byte))
             && bytes.get(end).is_some_and(|byte| QUOTES.contains(byte));
         quoted
             || (ends_at_word_boundary(bytes, end)
-                && after_keyword.get_or_insert_with(|| keyword_then_space(line))[start])
+                && after_keyword
+                    .get_or_insert_with(|| keyword_then_space(line))
+                    .get(start)
+                    .copied()
+                    .unwrap_or(false))
     })
 }
 
 fn ends_at_word_boundary(bytes: &[u8], at: usize) -> bool {
-    let before = at > 0 && is_word(bytes[at - 1]);
+    let before = at
+        .checked_sub(1)
+        .and_then(|before| bytes.get(before))
+        .is_some_and(|byte| is_word(*byte));
     let after = bytes.get(at).is_some_and(|byte| is_word(*byte));
     before != after
 }
@@ -49,8 +58,10 @@ fn keyword_then_space(line: &str) -> Vec<bool> {
     for (at, character) in line.char_indices() {
         chained = chained || ends_with_keyword(line, bytes, at);
         let next = at + character.len_utf8();
-        spaced[next] = chained && is_js_space(character);
-        chained = spaced[next];
+        chained = chained && is_js_space(character);
+        if let Some(slot) = spaced.get_mut(next) {
+            *slot = chained;
+        }
     }
     spaced
 }
@@ -58,7 +69,10 @@ fn keyword_then_space(line: &str) -> Vec<bool> {
 fn ends_with_keyword(line: &str, bytes: &[u8], at: usize) -> bool {
     KEYWORDS.iter().any(|keyword| {
         line[..at].ends_with(keyword)
-            && !(at > keyword.len() && is_word(bytes[at - keyword.len() - 1]))
+            && !at
+                .checked_sub(keyword.len() + 1)
+                .and_then(|before| bytes.get(before))
+                .is_some_and(|byte| is_word(*byte))
     })
 }
 
