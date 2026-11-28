@@ -1,0 +1,11 @@
+---
+analysis_schema: "atlas-analysis/v1"
+record_type: "review"
+id: "8a6e1d2c-7b3f-4c9a-b5d4-1e2f3a4b5c6d"
+created_at: "2026-11-27T10:00:00.000Z"
+runId: "3f2b7c1e-9d4a-4e8b-a1c6-5d0e7f8a9b10"
+findingId: "finding-1"
+disposition: "retain"
+actor: "user-action"
+---
+Kept because it matches the code.
