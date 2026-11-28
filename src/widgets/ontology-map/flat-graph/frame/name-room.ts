@@ -176,14 +176,16 @@ export function nameClear(n: PlacedName, at: Point, x: number, y: number, held: 
   const maxX = x + n.box.maxX - pad;
   const minY = y + n.box.minY + pad;
   const maxY = y + n.box.maxY - pad;
+  const gliding = Math.abs(x - at.x) > NAME_REST_PX || Math.abs(y - at.y) > NAME_REST_PX;
   if (held) {
     // Admission may rest the selection's name over a disc on its plate; one still shrinking from a closed star was not there.
     for (let i = 0; i < grownDiscCount; i += 1) if (grownMarks.items[i]!.id !== n.id && boxAir(minX, maxX, minY, maxY, grownMarks.items[i]!) <= ROOM_GONE_PX) return false;
+    // A name still gliding to its place was not placed over a disc by admission: it gives way to any disc it passes over.
+    if (gliding && gridCrosses(n.id, minX, maxX, minY, maxY, true, false)) return false;
   } else if (gridCrosses(n.id, minX, maxX, minY, maxY, true, n.backed !== true)) {
     // Domains and the project draw from their own lists; a name gives way to them like any disc.
     return false;
   }
-  const gliding = Math.abs(x - at.x) > NAME_REST_PX || Math.abs(y - at.y) > NAME_REST_PX;
   for (let i = 0; i < L.names.size; i += 1) {
     const o = L.names.items[i]!;
     const ox = o.x - o.name.dx;
