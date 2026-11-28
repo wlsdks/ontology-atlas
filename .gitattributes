@@ -5,3 +5,8 @@ src/entities/docs-vault/data/** linguist-generated=true
 public/docs-vault/** linguist-generated=true
 src/views/download/model/dogfood-census.generated.ts linguist-generated=true
 public/third-party-licenses.txt linguist-generated=true
+
+# `pnpm build:app` rewrites this file with LF and fails when the bytes it read first differ. Git for Windows
+# checks text out as CRLF under its default `core.autocrlf=true`, so the file is pinned to LF everywhere
+# (gitattributes(5): `eol=lf` keeps the working tree's line endings equal to the index's).
+src/app/route-tree.gen.ts text eol=lf
