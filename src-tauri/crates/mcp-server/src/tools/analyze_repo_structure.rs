@@ -62,7 +62,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let ignore = optional_text_list(arguments, "ignore", IGNORE_MAX_ITEMS)?.unwrap_or_default();
     let source_only = optional_boolean(arguments, "sourceOnly")?.unwrap_or(false);
     if source_only && (is_sent(arguments, "proposal") || is_sent(arguments, "qualification")) {
-        return Err(ToolError::failed(
+        return Err(ToolError::invalid(
             "sourceOnly cannot be combined with proposal or qualification; omit sourceOnly for full analysis and lifecycle replay.",
         ));
     }
