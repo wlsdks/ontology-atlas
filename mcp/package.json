@@ -86,6 +86,7 @@
     "src/project-source/project-source-vocabulary.mjs",
     "src/query.mjs",
     "src/compare-text.mjs",
+    "src/compare-code-points.mjs",
     "src/schema.mjs",
     "src/validate.mjs",
     "src/library/wiki-schema.mjs",
@@ -218,6 +219,10 @@
     "src/ontology-engine/traversal/traversal-analysis.mjs",
     "src/project-source/project-source-graph-hash.mjs",
     "src/project-source/project-source-inspection.mjs",
+    "src/project-source/project-source-git-state.mjs",
+    "src/project-source/project-source-folder-state.mjs",
+    "src/project-source/project-source-inventory-limits.mjs",
+    "src/project-source/project-source-vault-exclusion.mjs",
     "src/project-source/project-source-receipt.mjs",
     "src/evidence-search/source-evidence.mjs",
     "src/evidence-search/source-outline.mjs",
@@ -248,7 +253,7 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "node --test src/parser.test.mjs",
-    "test:all": "node --test src/evidence-search/source-evidence.test.mjs src/git/git-tools.test.mjs src/parser.test.mjs src/vault/writes/document-patch.test.mjs src/query.test.mjs src/validate.test.mjs src/tools/repo-analysis/*.test.mjs src/vault/vault.test.mjs src/vault/documents/file-snapshot.test.mjs src/vault/sidecar/vault-sidecar.test.mjs src/library/constellations.test.mjs src/vault/writes/write-path-gate.test.mjs src/vault/writes/redirect-backlinks.test.mjs src/vault/writes/conflict-detection.test.mjs src/meaning/source-evidence-findings.test.mjs src/construction/build-depth/*.test.mjs src/infer-imports.test.mjs src/infer-imports/*.test.mjs src/infer-imports/*/*.test.mjs src/drift/reconcile-imports.test.mjs src/drift/detect-drift.test.mjs src/evidence-search/evidence-score.test.mjs src/vault/sidecar/ontology-atlas-ignore.test.mjs src/server/compiled-cache.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/ontology-engine/*.test.mjs src/ontology-engine/*/*.test.mjs src/project-source/project-source-receipt.test.mjs src/project-source/project-source-connect.test.mjs src/project-meaning/project-meaning-inventory.test.mjs src/project-meaning/project-meaning-receipt.test.mjs src/project-meaning/project-meaning-restart.test.mjs src/suggestions.test.mjs src/json-rpc-lines.test.mjs src/vault/absorb.test.mjs src/verify-script.test.mjs src/tools/query-ontology-args.test.mjs src/tools/writes/write-gates.test.mjs src/tools/writes/write-gate-call-sites.test.mjs src/meaning/source-hidden-field-trial.test.mjs src/integration.test.mjs",
+    "test:all": "node --test src/evidence-search/source-evidence.test.mjs src/git/git-tools.test.mjs src/parser.test.mjs src/vault/writes/document-patch.test.mjs src/query.test.mjs src/validate.test.mjs src/tools/repo-analysis/*.test.mjs src/vault/vault.test.mjs src/vault/documents/file-snapshot.test.mjs src/vault/sidecar/vault-sidecar.test.mjs src/library/constellations.test.mjs src/vault/writes/write-path-gate.test.mjs src/vault/writes/redirect-backlinks.test.mjs src/vault/writes/conflict-detection.test.mjs src/meaning/source-evidence-findings.test.mjs src/construction/build-depth/*.test.mjs src/infer-imports.test.mjs src/infer-imports/*.test.mjs src/infer-imports/*/*.test.mjs src/drift/reconcile-imports.test.mjs src/drift/detect-drift.test.mjs src/evidence-search/evidence-score.test.mjs src/vault/sidecar/ontology-atlas-ignore.test.mjs src/server/compiled-cache.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/ontology-engine/*.test.mjs src/ontology-engine/*/*.test.mjs src/project-source/project-source-receipt.test.mjs src/project-source/project-source-inspection.test.mjs src/compare-code-points.test.mjs src/project-source/project-source-connect.test.mjs src/project-meaning/project-meaning-inventory.test.mjs src/project-meaning/project-meaning-receipt.test.mjs src/project-meaning/project-meaning-restart.test.mjs src/suggestions.test.mjs src/json-rpc-lines.test.mjs src/vault/absorb.test.mjs src/verify-script.test.mjs src/tools/query-ontology-args.test.mjs src/tools/writes/write-gates.test.mjs src/tools/writes/write-gate-call-sites.test.mjs src/meaning/source-hidden-field-trial.test.mjs src/integration.test.mjs",
     "test:smoke": "node src/parser.test.mjs",
     "verify": "node scripts/verify.mjs"
   },
