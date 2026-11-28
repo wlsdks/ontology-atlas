@@ -167,7 +167,6 @@ fn a_decomposed_name_on_disk_is_read_when_it_is_typed_composed() {
     );
 }
 
-/// `CON`, `PRN`, `AUX`, `NUL`, `COM1`-`COM9` and `LPT1`-`LPT9` name devices, also with an extension.
 #[cfg(windows)]
 mod windows {
     use super::*;
@@ -177,14 +176,6 @@ mod windows {
         let planted = planted();
         fs::write(planted.root.path().join("sources/Plan.md"), "plan").expect("file");
         assert_eq!(read(&planted, "sources/PLAN.MD"), Ok(b"plan".to_vec()));
-    }
-
-    #[test]
-    fn a_reserved_device_name_hands_over_no_device() {
-        let planted = planted();
-        for name in ["sources/CON", "sources/nul.txt", "sources/COM1.md"] {
-            assert!(read(&planted, name).is_err(), "{name} opened");
-        }
     }
 
     #[test]

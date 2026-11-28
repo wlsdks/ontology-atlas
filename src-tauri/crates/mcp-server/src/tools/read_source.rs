@@ -53,6 +53,9 @@ fn path_refusal(refusal: RawSourcePathRefusal) -> ToolError {
         RawSourcePathRefusal::HiddenOrCredential { path } => ToolError::invalid(format!(
             "read_source: `{path}` is a hidden file or has a credential-like name (secret, credentials, *.pem, *.key), which a vault read never opens. Rename the document if it is neither."
         )),
+        RawSourcePathRefusal::NotAFileName { path } => ToolError::invalid(format!(
+            "read_source: `{path}` has a part that is not a file name on Windows: one with a `:` or a NUL, or a device name such as CON, NUL or COM1 (also with an extension). Rename the file so the vault reads the same on every system."
+        )),
     }
 }
 

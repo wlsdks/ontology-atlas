@@ -48,6 +48,13 @@ pub enum RawSourcePathRefusal {
     /// read never opens one.
     #[error("`{path}` is hidden or named like a credential")]
     HiddenOrCredential { path: String },
+    /// A part no Windows file can have, refused on every system so an answer does not depend on
+    /// where the vault lies: a `:` (Windows reads `plan.docx:stream` as an alternate data stream of
+    /// `plan.docx`, a second file behind the first), a NUL, or a reserved device name (`CON`, `PRN`,
+    /// `AUX`, `NUL`, `COM1` to `COM9`, `LPT1` to `LPT9`, in any letter case and with any extension,
+    /// which Windows opens as the device and not as a file).
+    #[error("`{path}` has a part that is not a file name on Windows (a `:`, a NUL or a device name such as CON or COM1)")]
+    NotAFileName { path: String },
 }
 
 /// A file below `sources/`, spelled with `/` and checked: no part is empty, `.`, `..`, hidden or
@@ -86,6 +93,9 @@ impl RawSourcePath {
         {
             return Err(RawSourcePathRefusal::HiddenOrCredential { path: spelled });
         }
+        if parts.iter().any(|part| is_not_a_file_name(part)) {
+            return Err(RawSourcePathRefusal::NotAFileName { path: spelled });
+        }
         Ok(Self {
             parts: parts.iter().map(ToString::to_string).collect(),
             spelled,
@@ -103,6 +113,29 @@ impl RawSourcePath {
         name.rsplit_once('.')
             .map_or(String::new(), |(_, extension)| extension.to_lowercase())
     }
+}
+
+/// Whether a part could not be a file name on Windows. Microsoft, "Naming Files, Paths, and
+/// Namespaces" (learn.microsoft.com/windows/win32/fileio/naming-a-file): "Do not use the following
+/// reserved names for the name of a file: CON, PRN, AUX, NUL, COM0 to COM9, COM¹, COM², COM³,
+/// LPT0 to LPT9, LPT¹, LPT², LPT³ ... Also avoid these names followed immediately by an extension;
+/// for example, NUL.txt and NUL.tar.gz are both equivalent to NUL", and a colon is reserved (it
+/// names a stream, "Using Streams" in the same documentation).
+fn is_not_a_file_name(part: &str) -> bool {
+    if part.contains(':') || part.contains('\0') {
+        return true;
+    }
+    let stem = part.split('.').next().unwrap_or("").trim_end_matches(' ');
+    let upper = stem.to_ascii_uppercase();
+    if matches!(upper.as_str(), "CON" | "PRN" | "AUX" | "NUL") {
+        return true;
+    }
+    let mut characters = upper.chars();
+    let device: String = characters.by_ref().take(3).collect();
+    let number = characters.next();
+    characters.next().is_none()
+        && matches!(device.as_str(), "COM" | "LPT")
+        && number.is_some_and(|digit| matches!(digit, '0'..='9' | '\u{b9}' | '\u{b2}' | '\u{b3}'))
 }
 
 /// Why a raw source was not read.
@@ -265,6 +298,51 @@ mod tests {
             RawSourcePath::parse(&long).expect_err("too long"),
             RawSourcePathRefusal::TooLong
         );
+    }
+
+    #[test]
+    fn a_part_no_windows_file_can_have_is_refused_on_every_system() {
+        let refused = [
+            "sources/plan.docx:stream",
+            "sources/a:b.md",
+            "sources/C:/plan.md",
+            "sources/a\0b.md",
+            "sources/CON",
+            "sources/con.md",
+            "sources/Nul.tar.gz",
+            "sources/PRN.txt",
+            "sources/aux",
+            "sources/COM1",
+            "sources/com9.md",
+            "sources/lpt1.docx",
+            "sources/LPT0",
+            "sources/COM\u{b9}.md",
+            "sources/dir/AUX.md",
+            "sources/AUX /plan.md",
+            "sources/CON .txt",
+        ];
+        for typed in refused {
+            assert_eq!(
+                RawSourcePath::parse(typed),
+                Err(RawSourcePathRefusal::NotAFileName {
+                    path: typed.to_string()
+                }),
+                "{typed:?}"
+            );
+        }
+        for allowed in [
+            "sources/console.md",
+            "sources/com10.md",
+            "sources/COM.md",
+            "sources/lpt.md",
+            "sources/aux-notes.md",
+            "sources/communication.docx",
+            "sources/nullable.md",
+            "sources/a.con.md",
+            "sources/prn1.md",
+        ] {
+            assert!(RawSourcePath::parse(allowed).is_ok(), "{allowed:?}");
+        }
     }
 
     #[test]
