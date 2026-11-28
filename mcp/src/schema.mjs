@@ -112,10 +112,9 @@ export function mergeNodeIdentityHistory(fromFrontmatter, intoFrontmatter) {
  * it to `human`.
  */
 export const CREATED_BY_KEY = 'created_by';
-export const CREATED_BY_HUMAN = 'human';
 export const CREATED_BY_AGENT_PREFIX = 'agent:';
 /** The call path proves an agent wrote it but not which one; unknown stays unknown, never `human`. */
-export const CREATED_BY_AGENT_UNKNOWN = `${CREATED_BY_AGENT_PREFIX}unknown`;
+const CREATED_BY_AGENT_UNKNOWN = `${CREATED_BY_AGENT_PREFIX}unknown`;
 
 /**
  * The commit at which an agent reread a concept against its cited code and found it still

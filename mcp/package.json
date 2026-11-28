@@ -92,7 +92,6 @@
     "src/library/wiki-schema.mjs",
     "src/library/wiki-folder.mjs",
     "src/library/wiki-judgement.mjs",
-    "src/library/wiki-report.mjs",
     "src/vault/writes/atomic-writes.mjs",
     "src/vault/writes/backlink-rewrite.mjs",
     "src/vault/writes/doc-writes.mjs",

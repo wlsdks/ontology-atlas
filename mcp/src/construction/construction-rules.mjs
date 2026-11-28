@@ -12,7 +12,6 @@
  */
 
 import {
-  NODE_ELIGIBILITY_GATE,
   ONTOLOGY_META_MODEL_REFERENCE,
   VAULT_KIND_SCHEMA,
 } from '../schema.mjs';
@@ -58,59 +57,6 @@ machine identity and the \`slug\` is its current address. Reads return both. Use
 frontmatter relations and every graph-operation input. A slug change never makes
 a new uid.`;
 
-/**
- * The procedure a model follows before adding a child to a parent, written as
- * steps rather than judgement so weaker models can follow it. Step 5 never
- * blocks a write: the gate reports, and the person and the maintenance queue decide.
- */
-export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_concepts / patch_concept
-
-1. BEFORE adding a child to a parent, call get_concepts({slugs:[parentSlug]}) and read
-   \`neighbors\`.
-2. Count the parent's children that RESOLVE to real vault nodes — an entry that
-   resolves to nothing is evidence, not a child, and does not count. Compare that
-   against this vault's own distribution (the \`census\` of list_concepts /
-   query_ontology({operation:'facets'})). Until the vault has enough parents of
-   that kind to have a distribution, use this starting range: about ${NODE_ELIGIBILITY_GATE.BOOTSTRAP_FANOUT_TRIGGER.domain_to_capability} capabilities
-   under a domain, about ${NODE_ELIGIBILITY_GATE.BOOTSTRAP_FANOUT_TRIGGER.capability_to_element} elements under a capability. Crossing that is a
-   TRIGGER for step 3 — NOT a limit. There is no maximum number of children,
-   crossing it is not a defect, and it never blocks a write.
-3. When triggered, answer before writing:
-   a. Can you write ONE non-circular sentence why the new child is NOT interchangeable
-      with an existing sibling? If you cannot, patch_concept the existing sibling's
-      body instead of creating a new node. THIS IS THE TEST — the other two are hints.
-   b. Is the candidate title a file/import path rather than a concept name? A path is
-      EVIDENCE of a concept, not the concept — do not create one node per file unless
-      each file's role differs in a sentence you can actually write.
-   c. Do several existing children share a name/path prefix? Glance at them, but do
-      NOT treat this as the condition — prefixed siblings are often legitimate, and
-      broken ones often share no prefix. It only tells you where to look first.
-4. IF (a) fails for 3+ existing children, the fix is a BRIDGE NODE: one node inserted
-   between the parent and those children, named after the behavior they share. Call
-   add_concepts ONCE for it, then patch_concept each matching child to point at it.
-   Create a bridge only when all four hold:
-   i.   It names a shared BEHAVIOR. "Group A" / "Part 2" / "Other" divide the pile
-        without adding meaning — those are not bridges, they are empty buckets with
-        a name on them.
-   ii.  You can state that behavior in ONE sentence. If you cannot write the
-        sentence, you have not found the grouping yet.
-   iii. The bridge itself passes (a) against its own siblings — a bridge that is
-        interchangeable with an existing node is a duplicate, not a layer.
-   iv.  You actually reparent the children afterwards. A bridge left empty IS the
-        empty bucket it was meant to prevent, and it does not go unnoticed: a node
-        that groups nothing is reported for retirement.
-   IF you cannot satisfy all four: create NOTHING — count alone is not evidence of
-   a problem.
-5. This procedure does not block writes. Skipping it still succeeds; \`warnings\` /
-   \`findings\` on the response flag it for cleanup instead.
-6. When you create a \`capability\`, attach its EVIDENCE in the same pass. Put one
-   canonical implementation entry point in \`path:\` — the repo-relative file or
-   directory an unfamiliar agent should open first. \`elements:\` contains only
-   slugs of real element nodes whose implementation roles differ in a sentence;
-   never put a raw file path in that graph relation. A capability with neither
-   \`path:\` nor an element relation is a claim nobody can open. This does not block
-   the write; the node is reported under \`capability_without_evidence\` in
-   \`maintenance_plan\` until it points at something.`;
 
 /**
  * Appended to the add_concepts description, the text a model

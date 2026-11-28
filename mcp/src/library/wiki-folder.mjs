@@ -354,26 +354,3 @@ export function wikiFolderJudgement(pages) {
   };
 }
 
-/**
- * The folder half: facts only visible with every page present. Whether pages
- * disagree is an agent's lint judgement; these are deterministic
- * facts: `dangling-wikilink` (a `[[wiki/…]]` target not in the folder), `orphan-page` (no
- * inbound link, two or more pages only), `shared-source-unlinked` (pages written
- * from one primary source that do not link each other).
- * Why these three: they are the folder faults (missing cross-references, unlinked
- * pages from one source) a script can decide while every single page validates.
- *
- * @param {Array<{ path: string, raw: string, parsed?: { frontmatter: object, body: string } }>} pages
- *   every page, template excluded, each with a vault-relative `path` (`wiki/<slug>.md`);
- *   `parsed`, when given, is `parseFrontmatter(raw)`
- * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
- *   one entry per input page, in input order, `problems` possibly empty
- */
-export function validateWikiFolder(pages) {
-  const facts = (pages ?? []).map((page) => {
-    const text = String(page.raw ?? '');
-    return { path: String(page.path ?? ''), facts: wikiFolderFacts(text, page.parsed ?? parseFrontmatter(text)) };
-  });
-  const judgement = wikiFolderJudgement(facts);
-  return facts.map((page, index) => ({ path: page.path, problems: judgement.problemsOf(index) }));
-}

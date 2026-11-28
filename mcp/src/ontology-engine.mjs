@@ -177,7 +177,7 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
     QUERY_ONTOLOGY_OPERATIONS,
   );
 }
-export function createOntologyEngine(artifact, options = {}) {
+function createOntologyEngine(artifact, options = {}) {
   const ontologyAtlasIgnorePatterns = Array.isArray(options.ontologyAtlasIgnorePatterns)
     ? options.ontologyAtlasIgnorePatterns
     : [];
