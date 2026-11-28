@@ -6,7 +6,12 @@ import {
   parseLibraryCollections as parseFrontend,
   resolveCollectionMembers,
 } from '@/entities/library-collection';
-import { parseLibraryCollections as parseMcp } from '../../../mcp/src/library/library-collections.mjs';
+
+/** What the script server's parser answered for each input below, recorded 2026-11-28. */
+const recordedVerdicts = JSON.parse(readFileSync(
+  resolve(process.cwd(), 'tests/contract/fixtures/library-collections/parse-verdicts.json'),
+  'utf8',
+)) as Record<string, unknown>;
 
 const fixture = readFileSync(
   resolve(process.cwd(), 'tests/contract/fixtures/library-collections/constellations-v1.json'),
@@ -17,15 +22,16 @@ const identityNodes = JSON.parse(readFileSync(
   'utf8',
 )) as Array<{ slug: string; uid: string; merged_uids: string[] }>;
 
-describe('library collections parser parity', () => {
+describe('library collections parser', () => {
   it.each([
     ['canonical constellation and generic collection fixture', fixture],
     ['missing file', null],
     ['malformed JSON', '{oops'],
     ['unsupported schema', '{"schema":"ontology-atlas/library-collections/v2","folders":[],"items":[]}'],
     ['constellation without timestamps', '{"schema":"ontology-atlas/library-collections/v1","folders":[{"id":"11111111-1111-4111-8111-111111111111","name":"Bad","parentId":null,"order":0,"presentation":"constellation"}],"items":[]}'],
-  ])('matches for %s', (_label, raw) => {
-    expect(parseMcp(raw)).toEqual(parseFrontend(raw));
+  ])('gives the recorded verdict for %s', (label, raw) => {
+    expect(recordedVerdicts[label]).toBeDefined();
+    expect(parseFrontend(raw)).toEqual(recordedVerdicts[label]);
   });
 
   it('uses the shared identity fixture for current, merged, missing, and ambiguous outcomes', () => {

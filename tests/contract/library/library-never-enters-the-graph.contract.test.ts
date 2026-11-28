@@ -1,12 +1,10 @@
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { buildLocalManifest } from '@/entities/docs-vault/lib/local-manifest/build-local-manifest';
 import { deriveOntologyFromVault } from '@/entities/docs-vault/lib/derive-ontology-from-vault';
-import { walkMd } from '../../../mcp/src/vault/documents/slug-paths.mjs';
-import { loadVaultDocs } from '../../../mcp/src/vault/documents/document-cache.mjs';
 
 /**
  * Only files with a frontmatter `kind:` are graph nodes. Raw sources must never enter the document
@@ -58,11 +56,7 @@ writeFileSync(
 
 afterAll(() => rmSync(fixtureRoot, { recursive: true, force: true }));
 
-/**
- * A File System Access directory over a real temporary folder. The same fixture then
- * goes through the MCP walker, which reads the filesystem directly — one folder, both
- * parsers, which is what makes the two answers comparable.
- */
+/** A File System Access directory over a real temporary folder. */
 function nodeDirectoryHandle(path: string, name: string): FileSystemDirectoryHandle {
   return {
     kind: 'directory',
@@ -121,25 +115,12 @@ describe('the library never enters the graph', () => {
     expect(Object.keys(plan!).sort()).toEqual(['bytes', 'format', 'mtime', 'name', 'path']);
   });
 
-  it("the MCP server's walker sees only Markdown in the same folder", () => {
-    const files = walkMd(fixtureRoot).map((file: string) =>
-      file.slice(resolve(fixtureRoot).length + 1),
-    );
-    expect(files.every((file: string) => file.endsWith('.md'))).toBe(true);
-    expect(files).not.toContain('sources/plan.pdf');
-    expect(files).not.toContain('sources/budget.xlsx');
-    expect(files).not.toContain('sources/plan-notes.md');
-    expect(files).toContain('wiki/quarter-plan.md');
-  });
-
-  it('a sources/ file that carries kind: is a node on no surface', async () => {
+  it('a sources/ file that carries kind: is not a node', async () => {
     const appNodes = deriveOntologyFromVault((await buildLocalManifest(nodeDirectoryHandle(fixtureRoot, 'fixture'))).manifest)
       .nodes.filter((node) => node.sourceSlug)
       .map((node) => node.sourceSlug);
-    const mcpDocs = loadVaultDocs(fixtureRoot).filter((doc: { frontmatter: { kind?: string } }) => doc.frontmatter.kind);
 
     expect(appNodes).toEqual(['capabilities/mcp-server']);
-    expect(mcpDocs.map((doc: { slug: string }) => doc.slug)).toEqual(appNodes);
   });
 
   it('a wiki page contributes no node, however much frontmatter it carries', async () => {

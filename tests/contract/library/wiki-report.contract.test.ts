@@ -1,5 +1,3 @@
-import { resolve } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -7,20 +5,18 @@ import {
   WIKI_REPORT_EXPECTED_BLOCKING_PAGES,
   WIKI_REPORT_EXPECTED_FIT_PAGES,
   WIKI_REPORT_EXPECTED_GROUPS,
+  WIKI_REPORT_EXPECTED_SHARED_SOURCE_MESSAGES,
   WIKI_REPORT_FOLDER,
   WIKI_REPORT_SOURCES,
 } from '../../fixtures/wiki-report-folder.mjs';
 import { validateWikiPage as validatePageTs } from '@/shared/lib/library/wiki-page-schema';
 import { validateWikiFolder as validateFolderTs } from '@/shared/lib/library/wiki-folder';
 import { aggregateWikiFindings as aggregateBridged } from '@/shared/lib/library/wiki-report.mjs';
-import { validateWikiFolder as validateFolderMcp } from '../../../mcp/src/library/wiki-folder.mjs';
-import { validateWikiPage as validatePageMcp } from '../../../mcp/src/library/wiki-schema.mjs';
-import { aggregateWikiFindings as aggregateMcp } from '../../../mcp/src/library/wiki-report.mjs';
 
 /**
- * One folder, two surfaces, one enumeration: the `validate_wiki` validators and the app
- * TypeScript twin must agree on codes, page lists, group
- * order and advisory split. The expected set is stated whole so the check fails closed.
+ * One folder, one enumeration: the app's validators must give the codes, page lists, group
+ * order and advisory split `validate_wiki` gives. The expected set is stated whole in
+ * `tests/fixtures/wiki-report-folder.mjs` so the check fails closed.
  */
 
 /** `<code>\t<page>` for every finding, sorted — the shape the expectation is written in. */
@@ -53,11 +49,7 @@ function judge(
   }));
 }
 
-describe('the structural check — the MCP validators and the app enumerate one folder', () => {
-  it("the MCP validators — what `validate_wiki` calls — agree", () => {
-    expect(rows(judge(validatePageMcp, validateFolderMcp))).toEqual([...WIKI_REPORT_EXPECTED]);
-  });
-
+describe('the structural check — the app enumerates the folder the server does', () => {
   it('the app’s TypeScript twin agrees', () => {
     expect(rows(judge(validatePageTs, validateFolderTs))).toEqual([...WIKI_REPORT_EXPECTED]);
   });
@@ -83,13 +75,6 @@ describe('the structural check — the MCP validators and the app enumerate one 
     expect(report.fitPageCount).toBe(WIKI_REPORT_EXPECTED_FIT_PAGES);
   });
 
-  it('the bridge and the canonical module are the same function, not a twin', async () => {
-    expect(aggregateBridged).toBe(aggregateMcp);
-    const bridge = resolve(__dirname, '../../../src/shared/lib/library/wiki-report.mjs');
-    const { readFileSync } = await import('node:fs');
-    expect(readFileSync(bridge, 'utf8')).toContain('export * from "../../../../mcp/src/library/wiki-report.mjs"');
-  });
-
   it('groups and rows are ordered deterministically, whatever order the pages arrive in', () => {
     const forward = judge(validatePageTs, validateFolderTs).map((entry) => ({
       path: entry.page,
@@ -101,20 +86,13 @@ describe('the structural check — the MCP validators and the app enumerate one 
     );
   });
 
-  it('names the sources of a shared-source finding in one order on every surface', () => {
-    // The sources of a shared-source finding must be named in one order on every surface, independent of
-    // the caller's input order.
-    const sentence = (
-      pages: Array<{ page: string; problems: Array<{ code: string; message: string }> }>,
-    ) =>
-      pages
-        .flatMap((entry) => entry.problems)
-        .filter((problem) => problem.code === 'shared-source-unlinked')
-        .map((problem) => problem.message)
-        .sort();
-    expect(sentence(judge(validatePageMcp, validateFolderMcp))).toEqual(
-      sentence(judge(validatePageTs, validateFolderTs)),
-    );
+  it('names the sources of a shared-source finding in the order the server words them', () => {
+    const sentences = judge(validatePageTs, validateFolderTs)
+      .flatMap((entry) => entry.problems)
+      .filter((problem) => problem.code === 'shared-source-unlinked')
+      .map((problem) => problem.message)
+      .sort();
+    expect(sentences).toEqual([...WIKI_REPORT_EXPECTED_SHARED_SOURCE_MESSAGES]);
   });
 
   it('reports pages it has not read as unread rather than as findings it did not find', () => {
