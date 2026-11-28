@@ -1,10 +1,12 @@
 //! What a map still lacks against its survey, as counts and the first rows to act on. The answer
-//! is small by design: counts, ten unplaced abilities per page (`offset` pages through the rest),
-//! and the next files to map. A reader who wants the rest asks for the next page; a full list in
+//! is small by design: counts, ten unplaced abilities per page (`unplacedOffset` pages through the
+//! rest, on a cursor of its own so that paging the problem list never skips an unplaced row), and
+//! the next files to map. A reader who wants the rest asks for the next page; a full list in
 //! every answer was about 7,000 tokens a call.
 
 use std::collections::HashMap;
 
+use answer_format::pagination::Pagination;
 use confined_files::SourceFiles;
 use repository_survey::{AbilityRow, Survey};
 use serde::Serialize;
@@ -84,12 +86,7 @@ pub struct Coverage {
 
 #[derive(Serialize, Clone, Copy)]
 struct UnplacedPage<'a> {
-    total: usize,
-    offset: usize,
-    returned: usize,
-    /// Where the next ten start, when there are more.
-    #[serde(rename = "nextOffset", skip_serializing_if = "Option::is_none")]
-    next_offset: Option<usize>,
+    pagination: Pagination,
     rows: &'a [UnplacedRow],
 }
 
@@ -109,7 +106,7 @@ fn is_zero(count: &usize) -> bool {
     *count == 0
 }
 
-/// One page of the measure: every count, and ten unplaced rows from `offset`.
+/// One page of the measure: every count, and ten unplaced rows from `unplaced_offset`.
 #[derive(Serialize, Clone, Copy)]
 pub struct CoveragePage<'a> {
     breadth: BreadthPage<'a>,
@@ -130,9 +127,9 @@ impl Coverage {
                 .is_none_or(|areas| areas.counted == 0)
     }
 
-    pub fn page(&self, offset: usize) -> CoveragePage<'_> {
+    pub fn page(&self, unplaced_offset: usize) -> CoveragePage<'_> {
         let total = self.breadth.unplaced.len();
-        let start = offset.min(total);
+        let start = unplaced_offset.min(total);
         let end = (start + UNPLACED_PAGE_ROWS).min(total);
         let rows = self.breadth.unplaced.get(start..end).unwrap_or_default();
         CoveragePage {
@@ -143,10 +140,7 @@ impl Coverage {
                 named: self.breadth.named,
                 excluded: self.breadth.excluded,
                 unplaced: UnplacedPage {
-                    total,
-                    offset: start,
-                    returned: rows.len(),
-                    next_offset: (end < total).then_some(end),
+                    pagination: Pagination::of(start, UNPLACED_PAGE_ROWS, total, rows.len()),
                     rows,
                 },
             },
@@ -340,10 +334,11 @@ mod tests {
             reads: None,
         };
         let first = serde_json::to_value(coverage.page(0)).expect("serializes");
-        assert_eq!(first["breadth"]["unplaced"]["total"], 25);
-        assert_eq!(first["breadth"]["unplaced"]["returned"], 10);
+        assert_eq!(first["breadth"]["unplaced"]["pagination"]["total"], 25);
+        assert_eq!(first["breadth"]["unplaced"]["pagination"]["returned"], 10);
+        assert_eq!(first["breadth"]["unplaced"]["pagination"]["nextOffset"], 10);
         let last = serde_json::to_value(coverage.page(20)).expect("serializes");
-        assert_eq!(last["breadth"]["unplaced"]["returned"], 5);
+        assert_eq!(last["breadth"]["unplaced"]["pagination"]["returned"], 5);
         assert_eq!(last["breadth"]["unplaced"]["rows"][0]["name"], "n20");
     }
 }

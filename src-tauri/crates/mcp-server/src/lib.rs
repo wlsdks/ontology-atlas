@@ -21,6 +21,8 @@ pub mod consent;
 pub mod dispatch;
 pub mod error;
 pub mod protocol;
+#[cfg(feature = "differential-inputs")]
+mod pinned_inputs;
 mod raw_json;
 mod retired_arguments;
 pub mod runtime;

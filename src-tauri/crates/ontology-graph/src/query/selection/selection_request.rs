@@ -56,6 +56,9 @@ pub struct SelectionArguments {
     pub kinds: Option<Vec<String>>,
     pub executable_only: Option<bool>,
     pub after_action_id: Option<String>,
+    /// Keeps only the maintenance steps about these slugs, and reads only their bodies: what a
+    /// write asks after the nodes it changed. A call of `query_ontology` never sets it.
+    pub touching: Option<Vec<String>>,
 }
 
 /// A domain or project whose membership changed after its description was last written, as the

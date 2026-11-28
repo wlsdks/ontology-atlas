@@ -23,6 +23,7 @@ members = [
   "crates/meaning-findings",
   "crates/build-depth",
   "crates/vault-validation",
+  "crates/vault-edit",
   "crates/raw-source-text",
   "crates/saved-constellations",
   "crates/mcp-server",

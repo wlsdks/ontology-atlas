@@ -44,6 +44,26 @@ pub fn folder_for_kind(kind: &str) -> &'static str {
     }
 }
 
+/// Why `slug` may not nest a path under the folder of `kind`, or `None` when it is flat: a slug is
+/// the node's name, and a location belongs in `path:`.
+pub fn flat_slug_issue(kind: &str, slug: &str) -> Option<String> {
+    let folder = folder_for_kind(kind);
+    let rest = slug.strip_prefix(folder).filter(|_| !folder.is_empty())?;
+    if !rest.contains(['/', '\\']) {
+        return None;
+    }
+    let tail = rest
+        .split(['/', '\\'])
+        .rfind(|part| !part.is_empty())
+        .unwrap_or(rest);
+    Some(format!(
+        "slug \"{slug}\" nests a path under {folder}: a slug is the node's NAME, not a location. \
+         Node identity is resolved by the slug tail on three surfaces (web derivation, unique-tail lookup, deep links), \
+         so path-style slugs silently merge distinct nodes the moment two files share a basename. \
+         Use a flat slug under the kind folder (e.g. \"{folder}{tail}\") and record the file location in path: instead."
+    ))
+}
+
 /// Fields a kind should carry so the tree can place it: advisory, never an error.
 fn expected_fields(kind: &str) -> &'static [&'static str] {
     match kind {

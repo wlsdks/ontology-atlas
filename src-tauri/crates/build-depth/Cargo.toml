@@ -20,6 +20,7 @@ regex = { version = "1", default-features = false, features = ["std", "perf", "u
 
 [dev-dependencies]
 serde_json = "1"
+tempfile = "3"
 
 [lints]
 workspace = true

@@ -8,6 +8,7 @@ mod mentions_ranking;
 mod zero_rows_hint;
 
 use answer_format::collation::compare_text;
+use answer_format::pagination::Pagination;
 use serde::Serialize;
 use vault_document::frontmatter::Value;
 use vault_document::schema::KNOWN_KINDS;
@@ -31,18 +32,6 @@ use crate::error::{ReceivedValue, ToolError};
 
 const DEFAULT_LIMIT: f64 = 100.0;
 const MAXIMUM_LIMIT: f64 = 500.0;
-
-#[derive(Serialize)]
-struct Pagination {
-    offset: usize,
-    limit: usize,
-    total: usize,
-    returned: usize,
-    #[serde(rename = "hasMore")]
-    has_more: bool,
-    #[serde(rename = "nextOffset")]
-    next_offset: Option<usize>,
-}
 
 #[derive(Serialize)]
 struct VaultWarnings {
@@ -248,14 +237,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         mentions: mentions.as_deref(),
         returned,
         limited: has_more,
-        pagination: Pagination {
-            offset,
-            limit,
-            total: ranked.len(),
-            returned,
-            has_more,
-            next_offset: has_more.then_some(offset + returned),
-        },
+        pagination: Pagination::of(offset, limit, ranked.len(), returned),
         summary_hint: (truncated_summaries > 0).then(|| {
             format!(
                 "{truncated_summaries} row(s) carry a partial summary (summaryTruncated: true). Read those bodies in full with get_concepts({{ slugs: [...], body: \"full\" }})."

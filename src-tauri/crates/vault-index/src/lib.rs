@@ -838,7 +838,7 @@ mod tests {
             .unwrap();
         let (a, b) = (stamp_of("a.md"), stamp_of("b.md"));
         insert_row(&conn, "a.md", a, a.mtime_ns);
-        insert_row(&conn, "b.md", b, b.mtime_ns + stamps::RACY_WINDOW_NS);
+        insert_row(&conn, "b.md", b, b.mtime_ns + i64::try_from(confined_files::SETTLE_NANOSECONDS).unwrap());
         let files = vec!["a.md".to_string(), "b.md".to_string()];
         let plan = stamp_pass(&conn, &vault, &files).unwrap();
         let racy: Vec<_> = plan

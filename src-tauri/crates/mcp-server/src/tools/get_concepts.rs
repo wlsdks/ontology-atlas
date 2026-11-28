@@ -161,7 +161,7 @@ struct Concepts<'a> {
 }
 
 /// The sentence for a name under `sources/`, where every file is a raw source and never a node.
-fn raw_source_issue(raw_source: &str) -> String {
+pub(super) fn raw_source_issue(raw_source: &str) -> String {
     format!(
         "slug \"{raw_source}\" must not name a file under {VAULT_SOURCES_DIR}/: every file there is a raw source, never a node. Write or move a node into a kind folder such as domains/ or capabilities/, and read the source with read_source({{ path: \"{}\" }}).",
         raw_source_file_for_slug(raw_source)

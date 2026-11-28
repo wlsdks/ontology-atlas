@@ -122,21 +122,39 @@ fn revision_of(changed_at: String, text: &str) -> Revision {
     }
 }
 
-/// The revisions of each node's file, newest first, for the nodes of `slugs` whose file has a
-/// history. A node with none is absent, never guessed. `vault_scope` is where the vault lies
-/// below the top of `repository`.
+/// What the history said about a set of nodes, and whether it was asked about every one of them.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct NodeRevisions {
+    /// The revisions of each node's file, newest first, for the nodes whose file has a history.
+    /// A node with none is absent, never guessed.
+    pub by_slug: HashMap<String, Vec<Revision>>,
+    /// How many nodes Git could not be asked about (a run that failed): their absence says
+    /// nothing, where the absence of a node Git answered for says it has no history.
+    pub unread: usize,
+}
+
+impl NodeRevisions {
+    /// Whether every node was read, which is the only answer worth keeping for the next call.
+    pub fn is_complete(&self) -> bool {
+        self.unread == 0
+    }
+}
+
+/// The revisions of each node's file for the nodes of `slugs`. `vault_scope` is where the vault
+/// lies below the top of `repository`.
 pub fn node_revisions(
     repository: &Repository,
     vault_scope: &RepoPath,
     slugs: &[&str],
-) -> HashMap<String, Vec<Revision>> {
-    let mut found = HashMap::new();
+) -> NodeRevisions {
+    let mut found = NodeRevisions::default();
     for slug in slugs {
         let Some(file) = RepoPath::new(&format!("{slug}.md")) else {
             continue;
         };
         let path = vault_scope.join(&file);
         let Ok(commits) = repository.file_commits(&path, MAX_REVISIONS) else {
+            found.unread += 1;
             continue;
         };
         let requests: Vec<BlobAt> = commits
@@ -147,6 +165,7 @@ pub fn node_revisions(
             })
             .collect();
         let Ok(blobs) = repository.blobs(&requests) else {
+            found.unread += 1;
             continue;
         };
         let revisions: Vec<Revision> = commits
@@ -158,7 +177,7 @@ pub fn node_revisions(
             })
             .collect();
         if !revisions.is_empty() {
-            found.insert((*slug).to_string(), revisions);
+            found.by_slug.insert((*slug).to_string(), revisions);
         }
     }
     found

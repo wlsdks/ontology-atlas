@@ -118,7 +118,6 @@ fn file_sha(root: &Path, relative: &str) -> Option<Sha> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::stamps::RACY_WINDOW_NS;
 
     struct Vault(std::path::PathBuf);
 
@@ -159,7 +158,7 @@ mod tests {
         let stamp = Volume::of(&vault.0).stamp(&vault.0.join("a.md")).unwrap();
         let right = file_sha(&vault.0, "a.md").unwrap().to_vec();
         let wrong = vec![0u8; 32];
-        let settled = stamp.mtime_ns + RACY_WINDOW_NS + 1;
+        let settled = stamp.mtime_ns + i64::try_from(confined_files::SETTLE_NANOSECONDS).unwrap() + 1;
         let racy = stamp.mtime_ns;
         let unvouched = Volume::untrusted().stamp(&vault.0.join("a.md")).unwrap();
         assert_eq!(unvouched.ctime_ns, 0);

@@ -2,7 +2,7 @@
 //! that changed and the one look at each name that proves the others did not.
 //!
 //! An entry is trusted when the file's stamp (device, inode, size, modification and change times)
-//! is the one it was read at, and the file was already older than [`RACY_WINDOW_NANOSECONDS`] when
+//! is the one it was read at, and the file had settled (`confined_files::SETTLE_NANOSECONDS`) when
 //! it was read. A file written within that window of being read can be written again inside the
 //! clock's grain with no stamp changing, so it is read again on every call until it has aged out of
 //! the window. The cache holds frontmatter, issues and link targets, not text.
@@ -14,15 +14,13 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard, PoisonError};
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use confined_files::{ConfinedPath, FileSnapshot, FileStamp, StableReadError, VaultRoot};
+use confined_files::{
+    now_nanoseconds, ConfinedPath, FileSnapshot, FileStamp, StableReadError, VaultRoot,
+};
 
 use crate::loaded_document::{FileReadError, LoadedDocument};
 use crate::reader_threads::{read_on_reader_threads, Reading};
-
-/// A file this recently written or changed, when it was read, is not trusted yet.
-const RACY_WINDOW_NANOSECONDS: i128 = 2_000_000_000;
 
 struct Entry {
     stamp: FileStamp,
@@ -67,12 +65,6 @@ enum Outcome {
     /// Nothing regular is there any more.
     Gone,
     Failed(FileReadError),
-}
-
-fn now_nanoseconds() -> i128 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| i128::try_from(elapsed.as_nanos()).unwrap_or(0))
 }
 
 /// The kept document of a file whose stamp is the one a settled entry was read at.
@@ -154,6 +146,7 @@ impl DocumentCache {
             &unsettled,
             |(file, _)| {
                 self.reads.fetch_add(1, Ordering::Relaxed);
+                let read_at = now_nanoseconds();
                 let snapshot = file.read_snapshot();
                 let bytes = snapshot
                     .as_ref()
@@ -161,11 +154,13 @@ impl DocumentCache {
                     .and_then(Option::as_ref)
                     .map_or(0, |snapshot| snapshot.bytes.len());
                 Reading {
-                    value: snapshot,
+                    value: (read_at, snapshot),
                     bytes,
                 }
             },
-            |(file, cached), snapshot| self.outcome_of(root, file, *cached, snapshot),
+            |(file, cached), (read_at, snapshot)| {
+                self.outcome_of(root, file, *cached, read_at, snapshot)
+            },
         )
         .into_iter();
         // At the first change, the files before it, which were all kept, start the new entries.
@@ -222,6 +217,7 @@ impl DocumentCache {
         root: &VaultRoot,
         file: &ConfinedPath,
         cached: Option<&Entry>,
+        read_at: i128,
         snapshot: Result<Option<FileSnapshot>, StableReadError>,
     ) -> Outcome {
         let slug = match cached {
@@ -237,7 +233,7 @@ impl DocumentCache {
             Err(error) => return Outcome::Failed(FileReadError::of(&slug, error)),
         };
         let stamp = snapshot.stamp;
-        let settled = !stamp.is_recent(now_nanoseconds(), RACY_WINDOW_NANOSECONDS);
+        let settled = stamp.is_settled_at(read_at);
         // A file written lately and not since has the same bytes it had: keep what was read of them.
         if let Some(entry) = cached
             .filter(|entry| entry.stamp == stamp && entry.document.was_read_from(&snapshot.bytes))

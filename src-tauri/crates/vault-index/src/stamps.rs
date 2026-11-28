@@ -334,13 +334,10 @@ pub(crate) fn now_ns() -> i64 {
     time_ns(SystemTime::now())
 }
 
-/// Two seconds covers one FAT/exFAT timestamp tick and a same-size rewrite inside one tick.
-pub(crate) const RACY_WINDOW_NS: i64 = 2_000_000_000;
-
 /// A row whose file was modified within the window before the row was read from disk may describe
 /// an older version with the same stamp, so its stamp alone is not trusted.
 pub(crate) fn is_racy(file_mtime_ns: i64, row_read_at_ns: i64) -> bool {
-    file_mtime_ns > row_read_at_ns.saturating_sub(RACY_WINDOW_NS)
+    !confined_files::is_settled_at(i128::from(file_mtime_ns), i128::from(row_read_at_ns))
 }
 
 pub(crate) type Sha = [u8; 32];
@@ -389,8 +386,9 @@ mod tests {
     fn a_row_is_racy_until_two_seconds_separate_the_edit_from_the_read() {
         let read_at = 10_000_000_000;
         assert!(is_racy(read_at, read_at));
-        assert!(is_racy(read_at - RACY_WINDOW_NS + 1, read_at));
-        assert!(!is_racy(read_at - RACY_WINDOW_NS, read_at));
+        let window = i64::try_from(confined_files::SETTLE_NANOSECONDS).unwrap();
+        assert!(is_racy(read_at - window + 1, read_at));
+        assert!(!is_racy(read_at - window, read_at));
         assert!(
             is_racy(read_at + 5, read_at),
             "a modified time in the future is never trusted"

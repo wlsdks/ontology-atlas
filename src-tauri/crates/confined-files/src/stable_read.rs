@@ -50,23 +50,11 @@ impl FileStamp {
         ModifiedTime::from_nanoseconds(self.modified_ns)
     }
 
-    /// Whether this stamp was taken less than `window_ns` before `now_ns` (nanoseconds since the
-    /// epoch), by the file's own times: a file written that recently may be written again within
-    /// the clock's grain without any stamp changing, so a cache does not trust it yet.
-    pub fn is_recent(self, now_ns: i128, window_ns: i128) -> bool {
-        let newest = self.modified_ns.max(self.changed_ns);
-        now_ns.saturating_sub(newest) < window_ns
-    }
-
-    /// Whether this stamp was already older than two seconds when the call is made, so a later
-    /// stamp that equals it proves the file was not written since: a file written again inside the
-    /// clock's grain keeps its stamp, and only one that had settled can be trusted to change it.
-    pub fn is_settled(self) -> bool {
-        const SETTLE_NANOSECONDS: i128 = 2_000_000_000;
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |elapsed| i128::try_from(elapsed.as_nanos()).unwrap_or(0));
-        !self.is_recent(now, SETTLE_NANOSECONDS)
+    /// Whether the file was already settled (see [`crate::SETTLE_NANOSECONDS`]) at `read_at_ns`,
+    /// the moment taken before it was read or stamped, by the later of its own times: only then
+    /// does a later stamp that equals this one prove the file was not written since.
+    pub fn is_settled_at(self, read_at_ns: i128) -> bool {
+        crate::settle_rule::is_settled_at(self.modified_ns.max(self.changed_ns), read_at_ns)
     }
 }
 

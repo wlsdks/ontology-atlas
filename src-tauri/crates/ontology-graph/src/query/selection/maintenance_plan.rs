@@ -183,8 +183,15 @@ struct BodyReading<'a> {
     starter_bodies: NodeMask,
 }
 
-fn read_bodies(graph: &CompiledGraph, limit: usize) -> BodyReading<'_> {
-    let nodes: Vec<NodeId> = graph.node_ids().collect();
+fn read_bodies<'a>(
+    graph: &'a CompiledGraph,
+    limit: usize,
+    touching: Option<&[String]>,
+) -> BodyReading<'a> {
+    let nodes: Vec<NodeId> = graph
+        .node_ids()
+        .filter(|id| touching.is_none_or(|slugs| slugs.iter().any(|slug| slug == graph.node(*id).slug())))
+        .collect();
     let run = nodes
         .len()
         .div_ceil(worker_count())
@@ -493,7 +500,7 @@ pub fn maintenance_plan<'a>(
     let dangling = dangling_references(graph, limit);
     let unassigned = unassigned_nodes(graph, limit);
     let empty = empty_domains(graph, limit);
-    let bodies = read_bodies(graph, limit);
+    let bodies = read_bodies(graph, limit, arguments.touching.as_deref());
     let unearned = unearned_nodes(graph, &bodies.starter_bodies, limit);
     let without_evidence = capabilities_without_evidence(graph, limit);
     let flat = flat_slugs(graph, limit);
@@ -609,6 +616,13 @@ pub fn maintenance_plan<'a>(
     }
     stale_summary_steps(graph, request, &mut steps);
 
+    if let Some(touching) = arguments.touching.as_deref() {
+        steps.retain(|step| {
+            step.slugs()
+                .iter()
+                .any(|slug| touching.iter().any(|touched| touched == slug))
+        });
+    }
     let total_steps = steps.len();
     steps.sort_by(compare_steps);
     let mut slots: Vec<Option<Action<'a>>> = steps

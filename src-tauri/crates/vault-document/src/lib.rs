@@ -33,10 +33,10 @@ pub mod starter_body;
 mod validation;
 mod vault_issues;
 
-pub use backlinks::{find_backlinks, Backlink};
+pub use backlinks::{find_backlinks, AmbiguousReferences, Backlink};
 pub use body_delivery::{
     describe_body_delivery, BodyDelivery, BodyInfo, BodyMode, EXCERPT_MAX_CHARS,
-    FULL_BODY_MAX_CHARS, FULL_BODY_MAX_DOCUMENTS, SUMMARY_MAX_CHARS,
+    summary_excerpt, FULL_BODY_MAX_CHARS, FULL_BODY_MAX_DOCUMENTS, SUMMARY_MAX_CHARS,
 };
 pub use body_findings::{body_findings, BodyFinding};
 pub use document::{Document, RawShape};

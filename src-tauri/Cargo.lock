@@ -498,6 +498,7 @@ dependencies = [
  "serde_json",
  "source-reads",
  "source-scan",
+ "tempfile",
  "vault-document",
 ]
 
@@ -3056,6 +3057,7 @@ dependencies = [
  "thiserror 2.0.21",
  "uuid",
  "vault-document",
+ "vault-edit",
  "vault-validation",
 ]
 
@@ -6426,9 +6428,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "vault-edit"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "icu_normalizer",
+ "regex",
+ "tempfile",
+ "thiserror 2.0.21",
+ "vault-document",
+]
+
+[[package]]
 name = "vault-index"
 version = "0.1.0"
 dependencies = [
+ "confined-files",
  "icu_normalizer",
  "libc",
  "miniz_oxide",

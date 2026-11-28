@@ -160,6 +160,19 @@ impl<'a> WritePermit<'a> {
     }
 }
 
+impl WritePermit<'_> {
+    /// [`Self::apply`] for a plan that rewrites files the tool did not name (a rename or a merge
+    /// reaches every referrer): each entry must carry what it was made from, or the plan is refused.
+    pub fn apply_requiring_revisions(
+        &self,
+        plan: Vec<PlanEntry>,
+        reservations: Reservations<'_>,
+    ) -> Result<Applied, ToolError> {
+        apply_all_or_nothing(plan, &ApplyOptions::new(reservations).requiring_revisions())
+            .map_err(failure_answer)
+    }
+}
+
 /// A failed write as the agent reads it: the public code of its class and the words of the error.
 pub fn failure_answer(error: WriteError) -> ToolError {
     let code = match error.class() {
@@ -167,8 +180,17 @@ pub fn failure_answer(error: WriteError) -> ToolError {
         WriteErrorClass::Conflict => ErrorCode::Conflict,
         WriteErrorClass::ToolError => ErrorCode::ToolError,
     };
-    ToolError::new(code, error.to_string())
+    let mut message = error.to_string();
+    if code == ErrorCode::VaultConflict {
+        message.push_str(RECOVERY_AFTER_CONFLICT);
+    }
+    ToolError::new(code, message)
 }
+
+/// Names only a recovery that works: most write tools do not accept `force`, and a delete's `force`
+/// means "despite backlinks", not "ignore the file's time".
+const RECOVERY_AFTER_CONFLICT: &str =
+    " Re-read the doc with get_concepts to get the current expected_mtime, then retry the write.";
 
 #[cfg(test)]
 mod tests {

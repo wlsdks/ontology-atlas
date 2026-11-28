@@ -27,6 +27,8 @@ fn count(number: f64) -> usize {
 
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
     let offset = optional_non_negative_integer(arguments, "offset", None)?.map(count);
+    let unplaced_offset =
+        optional_non_negative_integer(arguments, "unplacedOffset", None)?.map(count);
     let limit = optional_positive_integer(arguments, "limit", Some(MAXIMUM_LIMIT))?.map(count);
     let repo_root = optional_non_blank_text(arguments, "repoRoot")?;
 
@@ -40,7 +42,12 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let page = page_validation(
         &report.frame,
         &report.list,
-        &PageRequest::asked(offset.unwrap_or(0), limit, repo_root.as_deref()),
+        &PageRequest::asked(
+            offset.unwrap_or(0),
+            unplaced_offset.unwrap_or(0),
+            limit,
+            repo_root.as_deref(),
+        ),
     );
     ToolOutput::json(&page)
 }

@@ -117,6 +117,10 @@ pub struct RecorderInputs {
 
 /// A fresh random id (version 4 UUID) for a session or an analysis.
 fn new_id_text() -> String {
+    #[cfg(feature = "differential-inputs")]
+    if let Some(pinned) = crate::pinned_inputs::next_id("map-analysis-log") {
+        return pinned;
+    }
     uuid::Uuid::new_v4().to_string()
 }
 

@@ -42,6 +42,10 @@ pub struct AuditLog {
 /// The server's one clock, in milliseconds since the epoch: every time it writes to an audit file
 /// or reports in an answer comes from here, so a test or a pinned run replaces it in one place.
 pub(crate) fn now_ms() -> i64 {
+    #[cfg(feature = "differential-inputs")]
+    if let Some(pinned) = crate::pinned_inputs::clock_ms() {
+        return pinned;
+    }
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |elapsed| {
@@ -57,6 +61,12 @@ impl AuditLog {
             sidecar,
             recorder: Mutex::new(recorder),
         }
+    }
+
+    /// The name this vault gives the agent that is calling: the name it registered, else the name
+    /// its client sent, else none.
+    pub fn agent_name(&self, client_name: &str) -> Option<String> {
+        agent_heartbeat::agent_name(&self.sidecar, client_name)
     }
 
     /// Adds what a finished write did to both files. Both are tried even if the first fails; the

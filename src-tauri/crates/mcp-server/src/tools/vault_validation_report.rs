@@ -13,8 +13,8 @@ use source_reads::ReadsUnder;
 use source_scan::place_folder;
 use vault_document::{LoadedDocument, ReferenceIndex};
 use vault_validation::{
-    collect_issues, evidence_drift, list_problems, path_drift, path_drift_unchecked,
-    raw_source_kind_issues, summary_freshness, EvidenceHistory, ProblemList, ValidationFrame,
+    collect_issues, evidence_drift, evidence_drift_root_missing, list_problems, path_drift,
+    path_drift_root_missing, path_drift_unchecked, raw_source_kind_issues, summary_freshness, EvidenceHistory, ProblemList, ValidationFrame,
 };
 
 use super::import_scan_target::ScanTarget;
@@ -37,12 +37,19 @@ pub fn build_report(
 ) -> Result<VaultReport, ToolError> {
     let index = ReferenceIndex::new(documents);
     let config = context.config();
-    let grounded = repo_root.is_some() || config.repo_resolution != "process.cwd";
+    let named = repo_root.is_some() || config.repo_resolution != "process.cwd";
     let target = ScanTarget::allow_named(context, repo_root, "repoRoot")?;
+    // A root that is not there is one finding, not one for each path that cites a file under it. Only
+    // a root read from the disk can be missing: a census holds what the app listed.
+    let disk_source = (named && !target.reads_census())
+        .then(|| target.source_with_limit(WITNESS_TEXT_MAX_BYTES));
+    let repo_root_missing = disk_source
+        .as_ref()
+        .is_some_and(|disk| disk.kind(target.root()) == Ok(None));
+    let grounded = named && !repo_root_missing;
     // A claim about code is read from the disk, or from the census when the app supplies one: the
     // census holds no Git history, so what only Git can date is then not measured.
-    let disk = (grounded && !target.reads_census())
-        .then(|| target.source_with_limit(WITNESS_TEXT_MAX_BYTES));
+    let disk = disk_source.filter(|_| grounded);
     let census = (grounded && target.reads_census())
         .then(|| target.census_run())
         .transpose()?;
@@ -92,7 +99,12 @@ pub fn build_report(
         }
     };
 
-    let (evidence, drift) = if let Some(source) = source {
+    let (evidence, drift) = if repo_root_missing {
+        (
+            evidence_drift_root_missing(),
+            path_drift_root_missing(target.label.clone()),
+        )
+    } else if let Some(source) = source {
         let evidence = if let Some(disk) = &disk {
             match locate_from(context, "path_last_changes", target.root())? {
                 Located::Found(found) => {
@@ -129,6 +141,7 @@ pub fn build_report(
     Ok(VaultReport {
         frame: ValidationFrame {
             scanned: documents.len(),
+            repo_root_missing,
             coverage,
             summary_freshness: freshness,
             evidence_drift: evidence,

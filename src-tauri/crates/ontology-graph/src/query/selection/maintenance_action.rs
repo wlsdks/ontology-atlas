@@ -121,6 +121,18 @@ impl Step<'_> {
         self.proposed().is_some()
     }
 
+    /// Every node the step is about.
+    pub fn slugs(&self) -> Vec<&str> {
+        match &self.subject {
+            Subject::Write { node, .. } | Subject::Review { node } => {
+                node.as_ref().map(NodeSummary::slug).into_iter().collect()
+            }
+            Subject::Link { nodes, .. } => vec![nodes.source_slug(), nodes.target_slug()],
+            Subject::Cycle(cycle) => cycle.nodes().to_vec(),
+            Subject::Issue(issue) => issue.slug().into_iter().collect(),
+        }
+    }
+
     fn node_slug(&self) -> Option<&str> {
         match &self.subject {
             Subject::Write { node, .. } | Subject::Review { node } => {

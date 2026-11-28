@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 
+use answer_format::pagination::Pagination;
 use build_depth::{Coverage, CoveragePage};
 use serde::Serialize;
 use vault_document::Issue;
@@ -24,15 +25,26 @@ const SENTENCE_MIN_CHARS: usize = 40;
 /// Everything the answer says besides which problem rows it shows.
 pub struct ValidationFrame {
     pub scanned: usize,
+    /// The repository root the call named, or the server's own, is not on disk: said once, in
+    /// `repoRoot`, where a row for each cited path would ask for each to be patched away.
+    pub repo_root_missing: bool,
     pub coverage: Option<Coverage>,
     pub summary_freshness: SummaryFreshness,
     pub evidence_drift: EvidenceDrift,
     pub path_drift: PathDrift,
 }
 
+/// What is said of the repository root when it is not there.
+#[derive(Serialize)]
+struct RepoRoot {
+    missing: bool,
+}
+
 #[derive(Serialize)]
 struct Frame<'a> {
     scanned: usize,
+    #[serde(rename = "repoRoot", skip_serializing_if = "Option::is_none")]
+    repo_root: Option<RepoRoot>,
     #[serde(skip_serializing_if = "Option::is_none")]
     coverage: Option<CoveragePage<'a>>,
     problems: &'a [Problem],
@@ -45,18 +57,6 @@ struct Frame<'a> {
     path_drift: &'a PathDrift,
 }
 
-#[derive(Serialize)]
-struct Pagination {
-    offset: usize,
-    limit: usize,
-    total: usize,
-    returned: usize,
-    #[serde(rename = "hasMore")]
-    has_more: bool,
-    #[serde(rename = "nextOffset")]
-    next_offset: Option<usize>,
-}
-
 /// The answer: where the page lies, then the frame with the page's rows.
 #[derive(Serialize)]
 pub struct ValidationPage<'a> {
@@ -67,6 +67,8 @@ pub struct ValidationPage<'a> {
     #[serde(rename = "problemsHint", skip_serializing_if = "Option::is_none")]
     hint: Option<String>,
     scanned: usize,
+    #[serde(rename = "repoRoot", skip_serializing_if = "Option::is_none")]
+    repo_root: Option<RepoRoot>,
     #[serde(skip_serializing_if = "Option::is_none")]
     coverage: Option<CoveragePage<'a>>,
     problems: Vec<Problem>,
@@ -82,6 +84,9 @@ pub struct ValidationPage<'a> {
 /// Which rows a caller asked for, and the arguments to repeat in the next call's text.
 pub struct PageRequest<'a> {
     offset: usize,
+    /// Where the unplaced abilities of the coverage resume; their own cursor, because the problem
+    /// list and the unplaced list are cut at different row counts.
+    unplaced_offset: usize,
     /// `None` when the caller named no limit: the page is then also held to its size.
     limit: Option<usize>,
     repo_root: Option<&'a str>,
@@ -90,9 +95,15 @@ pub struct PageRequest<'a> {
 
 impl<'a> PageRequest<'a> {
     /// The page a caller of `validate_vault` named.
-    pub const fn asked(offset: usize, limit: Option<usize>, repo_root: Option<&'a str>) -> Self {
+    pub const fn asked(
+        offset: usize,
+        unplaced_offset: usize,
+        limit: Option<usize>,
+        repo_root: Option<&'a str>,
+    ) -> Self {
         Self {
             offset,
+            unplaced_offset,
             limit,
             repo_root,
             brief: false,
@@ -104,6 +115,7 @@ impl<'a> PageRequest<'a> {
     pub const fn brief() -> Self {
         Self {
             offset: 0,
+            unplaced_offset: 0,
             limit: Some(BRIEF_PAGE_LIMIT),
             repo_root: None,
             brief: true,
@@ -239,7 +251,7 @@ pub fn page_validation<'a>(
     let coverage = frame
         .coverage
         .as_ref()
-        .map(|measured| measured.page(request.offset));
+        .map(|measured| measured.page(request.unplaced_offset));
     let total = list.problems.len();
     let start = request.offset.min(total);
     let limit = request.limit.unwrap_or(DEFAULT_PAGE_LIMIT);
@@ -261,6 +273,7 @@ pub fn page_validation<'a>(
     if request.limit.is_none() && !request.brief {
         let empty = Frame {
             scanned: frame.scanned,
+            repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
             coverage,
             problems: &[],
             summary: &summary,
@@ -324,16 +337,10 @@ pub fn page_validation<'a>(
     });
     ValidationPage {
         next_call,
-        pagination: Pagination {
-            offset: start,
-            limit,
-            total,
-            returned: rows.len(),
-            has_more: next_offset.is_some(),
-            next_offset,
-        },
+        pagination: Pagination::of(start, limit, total, rows.len()),
         hint,
         scanned: frame.scanned,
+        repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
         coverage,
         problems: rows,
         summary,
@@ -345,7 +352,13 @@ pub fn page_validation<'a>(
 
 #[cfg(test)]
 mod tests {
+    use build_depth::{Breadth, UnplacedRow};
+    use serde_json::Value;
+
     use super::*;
+    use crate::evidence_drift::EvidenceCounts;
+    use crate::path_drift::path_drift_unchecked;
+    use crate::problem_list::{ProblemSummary, TalliesByCode};
 
     fn row(slug: &str, message: &str) -> Problem {
         Problem {
@@ -375,5 +388,114 @@ mod tests {
             Some("\"node-two\" cites a file that is no longer in the repository at all. Repair as the first path-drift on this page says.")
         );
         assert_eq!(folded[2].issues[0].message.as_deref(), Some(other));
+    }
+
+    fn frame_with_unplaced(unplaced: usize) -> ValidationFrame {
+        ValidationFrame {
+            scanned: 0,
+            repo_root_missing: false,
+            coverage: Some(Coverage {
+                breadth: Breadth {
+                    abilities: unplaced,
+                    not_listed: 0,
+                    node: 0,
+                    named: 0,
+                    excluded: 0,
+                    unplaced: (0..unplaced)
+                        .map(|at| UnplacedRow {
+                            kind: "command",
+                            name: format!("ability-{at}"),
+                            evidence: format!("a.ts:L{at}"),
+                            symbol: None,
+                        })
+                        .collect(),
+                },
+                areas: None,
+                reads: None,
+            }),
+            summary_freshness: SummaryFreshness {
+                checked: true,
+                summary_nodes: 0,
+                stale: Vec::new(),
+                hint: String::new(),
+            },
+            evidence_drift: EvidenceDrift {
+                checked: false,
+                reason: None,
+                repo_root: None,
+                counts: EvidenceCounts {
+                    current: 0,
+                    stale: 0,
+                    missing: 0,
+                    unknown: 0,
+                    folder_only: 0,
+                },
+                stale: Vec::new(),
+                missing: Vec::new(),
+                folder_only: Vec::new(),
+                hint: String::new(),
+            },
+            path_drift: path_drift_unchecked(String::new()),
+        }
+    }
+
+    fn problem_list(files: usize) -> ProblemList {
+        ProblemList {
+            problems: (0..files)
+                .map(|at| row(&format!("node-{at:03}"), "a short finding"))
+                .collect(),
+            summary: ProblemSummary {
+                problem_files: files,
+                error_files: 0,
+                warning_files: files,
+                by_code: TalliesByCode::default(),
+            },
+        }
+    }
+
+    fn names_in(answer: &Value, pointer: &str, key: &str) -> Vec<String> {
+        answer
+            .pointer(pointer)
+            .and_then(Value::as_array)
+            .map(|rows| {
+                rows.iter()
+                    .filter_map(|row| row[key].as_str().map(str::to_string))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn following_each_cursor_shows_every_problem_file_and_every_unplaced_ability_once() {
+        let frame = frame_with_unplaced(47);
+        let list = problem_list(150);
+        let (mut problem_cursor, mut unplaced_cursor) = (Some(0usize), Some(0usize));
+        let mut problems: Vec<String> = Vec::new();
+        let mut unplaced: Vec<String> = Vec::new();
+        let mut calls = 0;
+        while problem_cursor.is_some() || unplaced_cursor.is_some() {
+            calls += 1;
+            assert!(calls <= 10, "the cursors never reached an end");
+            let request = PageRequest::asked(
+                problem_cursor.unwrap_or(list.problems.len()),
+                unplaced_cursor.unwrap_or(usize::MAX),
+                Some(100),
+                None,
+            );
+            let page = serde_json::to_value(page_validation(&frame, &list, &request))
+                .expect("serializes");
+            problems.extend(names_in(&page, "/problems", "slug"));
+            unplaced.extend(names_in(&page, "/coverage/breadth/unplaced/rows", "name"));
+            problem_cursor = page["problemsPagination"]["nextOffset"]
+                .as_u64()
+                .map(|next| usize::try_from(next).expect("fits"));
+            unplaced_cursor = page["coverage"]["breadth"]["unplaced"]["pagination"]["nextOffset"]
+                .as_u64()
+                .map(|next| usize::try_from(next).expect("fits"));
+        }
+        let expected_problems: Vec<String> = (0..150).map(|at| format!("node-{at:03}")).collect();
+        let expected_unplaced: Vec<String> = (0..47).map(|at| format!("ability-{at}")).collect();
+        assert_eq!(problems, expected_problems);
+        assert_eq!(unplaced, expected_unplaced);
     }
 }

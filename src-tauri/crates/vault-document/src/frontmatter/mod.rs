@@ -16,6 +16,7 @@ mod value;
 pub use answer_format::key_order::in_object_order;
 pub use block::{read_block, ReadBlock, ReadEntry};
 pub use diagnostic::{Diagnostic, DiagnosticCode};
+pub use javascript_number::to_number as javascript_number;
 pub use key::Key;
 pub use line::Line;
 pub use value::{Scalar, Value};
