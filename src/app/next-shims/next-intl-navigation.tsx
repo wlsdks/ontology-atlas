@@ -50,8 +50,18 @@ export function createNavigation(routing: Routing) {
     const router = useTanStackRouter();
     const current = useLocale();
     return useMemo(() => {
-      const go = (address: string, options: AddressNavigation & { locale?: string } = {}, replace = false) =>
-        navigateToAddress(router, withLocale(address, options.locale ?? current), { ...options, replace });
+      const go = (address: string, options: AddressNavigation & { locale?: string } = {}, replace = false) => {
+        const located = withLocale(address, options.locale ?? current);
+        // The same rule as `Link`: in a plain browser a move to another page is a page load, because each public
+        // page is its own prerendered document and carries what only its own document holds.
+        if (!isTauriVaultRuntime() && isInternal(located)) {
+          const target = withTrailingSlash(located);
+          if (replace) window.location.replace(target);
+          else window.location.assign(target);
+          return;
+        }
+        navigateToAddress(router, located, { ...options, replace });
+      };
       return {
         push: (address: string, options?: AddressNavigation & { locale?: string }) => go(address, options),
         replace: (address: string, options?: AddressNavigation & { locale?: string }) => go(address, options, true),

@@ -99,4 +99,31 @@ test.describe("the prerendered website", () => {
     await page.waitForURL("**/en/guide/relations/");
     expect(documents).toEqual(["/en/guide/relations/"]);
   });
+
+  test("changes the language as a page load, so the new page keeps what only its own document holds", async ({ page, request }) => {
+    const html = await (await request.get("/en/guide/")).text();
+    test.skip(html.includes("/_next/"), "Next's export changes the language inside one document; this is the Vite prerender's rule");
+
+    // The sample's size and a chapter's dates are recorded into each document at build time; a move inside the
+    // router would render the new language's page without them.
+    for (const { path, keeps } of [
+      { path: "/sample/", keeps: "sample-map-size" },
+      { path: "/guide/relations/", keeps: "gateway-doc-updated" },
+    ]) {
+      await page.goto(`/en${path}`);
+      await page.waitForLoadState("networkidle");
+      await expect(page.getByTestId(keeps), `/en${path}`).toBeVisible();
+      const documents: string[] = [];
+      const noteDocument = (pending: { resourceType(): string; url(): string }) => {
+        if (pending.resourceType() === "document") documents.push(new URL(pending.url()).pathname);
+      };
+      page.on("request", noteDocument);
+      await page.getByRole("radio", { name: /^KO\b/ }).first().click();
+      await page.waitForURL(`**/ko${path}`);
+      await page.waitForLoadState("networkidle");
+      page.off("request", noteDocument);
+      expect(documents, `/ko${path} was not loaded as a document`).toEqual([`/ko${path}`]);
+      await expect(page.getByTestId(keeps), `/ko${path} lost what its own document holds`).toBeVisible();
+    }
+  });
 });
