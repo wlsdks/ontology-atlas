@@ -75,7 +75,7 @@ test.describe("project ontology construction review", () => {
 
   test("an expert-review draft changes the CQs and plan but preserves the original verdict and digest", async ({ page }) => {
     const localKeysBefore = await page.evaluate(() =>
-      Object.keys(localStorage).filter((key) => key !== "ontology-atlas:last-route").sort(),
+      Object.keys(localStorage).sort(),
     );
     await openJson(page, envelope());
     await page.getByTestId("construction-review-evidence-toggle").click();
@@ -88,7 +88,7 @@ test.describe("project ontology construction review", () => {
     await expect(page.getByTestId("construction-review-summary")).toHaveAttribute("data-qualification-status", "qualified");
     await expect(page.getByTestId("construction-review-summary")).toHaveAttribute("data-plan-equality", "equal");
     await expect
-      .poll(() => page.evaluate(() => Object.keys(localStorage).filter((key) => key !== "ontology-atlas:last-route").sort()))
+      .poll(() => page.evaluate(() => Object.keys(localStorage).sort()))
       .toEqual(localKeysBefore);
   });
 

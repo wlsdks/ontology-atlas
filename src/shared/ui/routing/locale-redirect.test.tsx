@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { LocaleRedirect } from './locale-redirect';
-import { ROUTE_MEMORY_KEY } from './route-memory';
+
+/** The key an older version wrote to remember the last work surface; nothing writes or reads it now. */
+const LAST_ROUTE_KEY = 'ontology-atlas:last-route';
 
 /** Every colour goes through a CSS token (`.claude/rules/design.md`). */
 describe('LocaleRedirect', () => {
@@ -49,7 +51,7 @@ describe('LocaleRedirect', () => {
    */
   it('sends to the gateway even when a last work surface is remembered', () => {
     window.localStorage.setItem('ontology-atlas:locale', 'en');
-    window.localStorage.setItem(ROUTE_MEMORY_KEY, '/en/topology/');
+    window.localStorage.setItem(LAST_ROUTE_KEY, '/en/topology/');
 
     render(<LocaleRedirect />);
 
@@ -58,7 +60,7 @@ describe('LocaleRedirect', () => {
 
   it('sends a remembered route in another locale to the stored language gateway', () => {
     window.localStorage.setItem('ontology-atlas:locale', 'en');
-    window.localStorage.setItem(ROUTE_MEMORY_KEY, '/ko/topology/');
+    window.localStorage.setItem(LAST_ROUTE_KEY, '/ko/topology/');
 
     render(<LocaleRedirect />);
 

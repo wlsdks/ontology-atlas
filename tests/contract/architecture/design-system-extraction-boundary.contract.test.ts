@@ -23,7 +23,6 @@ const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
   ["fallbacks/gateway-entry-fallback.tsx", "screen dedicated to the gateway (/download)"],
   ["routing/route-focus-manager.tsx", "router and i18n navigation"],
   ["fallbacks/route-loading-fallback.tsx", "routing loading surface"],
-  ["routing/route-memory.tsx", "routing memory"],
   ["routing/locale-redirect.tsx", "locale routing fallback"],
   ["hints/term-hint.tsx", "reads this app's glossary messages (termHints)"],
   ["document/locale-html-lang.tsx", "locale html lang synchronisation"],
