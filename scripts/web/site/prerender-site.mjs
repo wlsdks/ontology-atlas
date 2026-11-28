@@ -15,9 +15,14 @@ const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const DEFAULT_SITE_FOLDER = 'src-tauri/target/site-vite';
 
 export async function prerenderSite(siteFolder) {
+  // React's development build checks keys, owners and props on every element, which this run never needs; the pages are
+  // what the production build would render. Set before Vite reads it and before React is loaded.
+  process.env.NODE_ENV ??= 'production';
   const server = await createServer({
     root: repository,
     configFile: join(repository, 'vite.config.ts'),
+    // The mode the website's client build ran in, so the config answers as it did there.
+    mode: 'site',
     appType: 'custom',
     logLevel: 'error',
     server: { middlewareMode: true, hmr: false, watch: null },
