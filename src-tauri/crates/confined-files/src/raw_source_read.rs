@@ -18,11 +18,14 @@
 use std::fs;
 use std::io::Read;
 
+use icu_normalizer::ComposingNormalizerBorrowed;
+
 use crate::os_error::OsErrorCode;
-use crate::plain_file::{self, FileFacts};
+use crate::plain_file;
 use crate::private_names::{is_credential_name, is_hidden_name};
 use crate::real_paths::real_path;
 use crate::slug_rules::VAULT_SOURCES_DIR;
+use crate::stable_read::FileStamp;
 use crate::vault_root::VaultRoot;
 
 /// The longest path an agent may name, in bytes. Every operating system refuses a longer one
@@ -46,6 +49,13 @@ pub enum RawSourcePathRefusal {
     /// read never opens one.
     #[error("`{path}` is hidden or named like a credential")]
     HiddenOrCredential { path: String },
+    /// A part no Windows file can have, refused on every system so an answer does not depend on
+    /// where the vault lies: a `:` (Windows reads `plan.docx:stream` as an alternate data stream of
+    /// `plan.docx`, a second file behind the first), a NUL, or a reserved device name (`CON`, `PRN`,
+    /// `AUX`, `NUL`, `COM1` to `COM9`, `LPT1` to `LPT9`, in any letter case and with any extension,
+    /// which Windows opens as the device and not as a file).
+    #[error("`{path}` has a part that is not a file name on Windows (a `:`, a NUL or a device name such as CON or COM1)")]
+    NotAFileName { path: String },
 }
 
 /// A file below `sources/`, spelled with `/` and checked: no part is empty, `.`, `..`, hidden or
@@ -84,6 +94,9 @@ impl RawSourcePath {
         {
             return Err(RawSourcePathRefusal::HiddenOrCredential { path: spelled });
         }
+        if parts.iter().any(|part| is_not_a_file_name(part)) {
+            return Err(RawSourcePathRefusal::NotAFileName { path: spelled });
+        }
         Ok(Self {
             parts: parts.iter().map(ToString::to_string).collect(),
             spelled,
@@ -101,6 +114,29 @@ impl RawSourcePath {
         name.rsplit_once('.')
             .map_or(String::new(), |(_, extension)| extension.to_lowercase())
     }
+}
+
+/// Whether a part could not be a file name on Windows. Microsoft, "Naming Files, Paths, and
+/// Namespaces" (learn.microsoft.com/windows/win32/fileio/naming-a-file): "Do not use the following
+/// reserved names for the name of a file: CON, PRN, AUX, NUL, COM0 to COM9, COM¹, COM², COM³,
+/// LPT0 to LPT9, LPT¹, LPT², LPT³ ... Also avoid these names followed immediately by an extension;
+/// for example, NUL.txt and NUL.tar.gz are both equivalent to NUL", and a colon is reserved (it
+/// names a stream, "Using Streams" in the same documentation).
+fn is_not_a_file_name(part: &str) -> bool {
+    if part.contains(':') || part.contains('\0') {
+        return true;
+    }
+    let stem = part.split('.').next().unwrap_or("").trim_end_matches(' ');
+    let upper = stem.to_ascii_uppercase();
+    if matches!(upper.as_str(), "CON" | "PRN" | "AUX" | "NUL") {
+        return true;
+    }
+    let mut characters = upper.chars();
+    let device: String = characters.by_ref().take(3).collect();
+    let number = characters.next();
+    characters.next().is_none()
+        && matches!(device.as_str(), "COM" | "LPT")
+        && number.is_some_and(|digit| matches!(digit, '0'..='9' | '\u{b9}' | '\u{b2}' | '\u{b3}'))
 }
 
 /// Why a raw source was not read.
@@ -178,7 +214,7 @@ impl VaultRoot {
             .read_to_end(&mut bytes)
             .map_err(|_| RawSourceReadRefusal::Unreadable)?;
         let after = plain_file::facts_of(&file).map_err(|_| RawSourceReadRefusal::Unreadable)?;
-        if bytes.len() as u64 != before.size || !same_version(before, after) {
+        if bytes.len() as u64 != before.size || FileStamp::of(before) != FileStamp::of(after) {
             return Err(RawSourceReadRefusal::Changed);
         }
         if !spells_the_real_path() {
@@ -204,20 +240,35 @@ impl VaultRoot {
             && real_parts
                 .iter()
                 .zip(parts)
-                .all(|(real, named)| real == named || real.to_lowercase() == named.to_lowercase())
+                .all(|(real, named)| same_part(real, named))
     }
 }
 
-fn same_version(before: FileFacts, after: FileFacts) -> bool {
-    before.size == after.size
-        && before.identity == after.identity
-        && before.modified_ns == after.modified_ns
-        && before.changed_ns == after.changed_ns
+/// Whether the disk's spelling of a part is the name's: the same text, or the same text in another
+/// letter case, or in another Unicode normalization form (macOS keeps a name as it was created,
+/// decomposed when a Korean or accented name came from a decomposing program, and finds it by
+/// either form).
+fn same_part(real: &str, named: &str) -> bool {
+    if real == named {
+        return true;
+    }
+    let nfc = ComposingNormalizerBorrowed::new_nfc();
+    nfc.normalize(real).to_lowercase() == nfc.normalize(named).to_lowercase()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_part_spelled_in_another_normalization_form_or_case_is_the_same_part() {
+        // U+CDE8 (a Hangul syllable) against its decomposition, and e-acute against e + U+0301.
+        assert!(same_part("\u{110e}\u{1171}.md", "\u{cde8}.md"));
+        assert!(same_part("caf\u{e9}.md", "cafe\u{301}.md"));
+        assert!(same_part("PLAN.md", "plan.md"));
+        assert!(!same_part("plan.md", "plans.md"));
+        assert!(!same_part("cafe.md", "caf\u{e9}.md"));
+    }
 
     #[test]
     fn a_name_is_checked_before_the_disk_is_asked() {
@@ -241,6 +292,51 @@ mod tests {
             RawSourcePath::parse(&long).expect_err("too long"),
             RawSourcePathRefusal::TooLong
         );
+    }
+
+    #[test]
+    fn a_part_no_windows_file_can_have_is_refused_on_every_system() {
+        let refused = [
+            "sources/plan.docx:stream",
+            "sources/a:b.md",
+            "sources/C:/plan.md",
+            "sources/a\0b.md",
+            "sources/CON",
+            "sources/con.md",
+            "sources/Nul.tar.gz",
+            "sources/PRN.txt",
+            "sources/aux",
+            "sources/COM1",
+            "sources/com9.md",
+            "sources/lpt1.docx",
+            "sources/LPT0",
+            "sources/COM\u{b9}.md",
+            "sources/dir/AUX.md",
+            "sources/AUX /plan.md",
+            "sources/CON .txt",
+        ];
+        for typed in refused {
+            assert_eq!(
+                RawSourcePath::parse(typed),
+                Err(RawSourcePathRefusal::NotAFileName {
+                    path: typed.to_string()
+                }),
+                "{typed:?}"
+            );
+        }
+        for allowed in [
+            "sources/console.md",
+            "sources/com10.md",
+            "sources/COM.md",
+            "sources/lpt.md",
+            "sources/aux-notes.md",
+            "sources/communication.docx",
+            "sources/nullable.md",
+            "sources/a.con.md",
+            "sources/prn1.md",
+        ] {
+            assert!(RawSourcePath::parse(allowed).is_ok(), "{allowed:?}");
+        }
     }
 
     #[test]

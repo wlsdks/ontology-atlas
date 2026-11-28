@@ -87,12 +87,51 @@ fn composed_and_decomposed_text_find_each_other_in_a_title_and_a_body() {
     assert_eq!(found(&vault, decomposed, false).len(), 2);
 }
 
+/// The search of a loaded vault, as its error: a file the vault no longer holds fails here.
+fn search_result(vault: &Vault, query: &str) -> Result<Vec<String>, vault_document::FileReadError> {
+    let query = EvidenceQuery::new(query).expect("a query");
+    search_evidence(vault.loaded.documents(), &query, false).map(|hits| {
+        hits.into_iter()
+            .map(|hit| hit.document.slug().to_string())
+            .collect()
+    })
+}
+
 #[test]
 fn a_body_is_not_searched_again_for_text_a_first_search_showed_absent() {
     let vault = vault(&[("a.md", &node("A", &"word ".repeat(10_000)))]);
-    assert!(found(&vault, "needle in a haystack", false).is_empty());
-    assert!(found(&vault, "needle in a haystack", false).is_empty());
-    assert_eq!(found(&vault, "word word", false).len(), 1);
+    assert_eq!(search_result(&vault, "needle in a haystack"), Ok(vec![]));
+    // The file is gone: a search that opened it again would fail, so one that answers did not.
+    fs::remove_file(vault._directory.path().join("a.md")).expect("remove");
+    assert_eq!(search_result(&vault, "needle in a haystack"), Ok(vec![]));
+    // Another text the fingerprint of the body rules out is answered without the file as well.
+    assert_eq!(search_result(&vault, "zzzqqq xxyyzz"), Ok(vec![]));
+    // A text the fingerprint cannot rule out needs the body, and the body is no longer there.
+    assert!(matches!(
+        search_result(&vault, "word word"),
+        Err(vault_document::FileReadError::Unreadable { .. }
+            | vault_document::FileReadError::Changed { .. })
+    ));
+}
+
+#[test]
+fn a_matching_search_repeated_after_the_file_was_replaced_answers_as_the_first_did() {
+    let vault = vault(&[("a.md", &node("A", &"word ".repeat(10_000)))]);
+    assert_eq!(
+        search_result(&vault, "word word"),
+        Ok(vec!["a".to_string()])
+    );
+    fs::write(
+        vault._directory.path().join("a.md"),
+        node("A", "nothing of the first version is left"),
+    )
+    .expect("replace");
+    // The loaded vault is the version of its read: the remembered answer stands for it, and a
+    // new call of the tool loads the vault again.
+    assert_eq!(
+        search_result(&vault, "word word"),
+        Ok(vec!["a".to_string()])
+    );
 }
 
 #[test]

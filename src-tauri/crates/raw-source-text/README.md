@@ -21,9 +21,12 @@ the disk is `confined-files`' (`VaultRoot::read_raw_source`), and this crate nam
 
 ## What it promises
 
-- A hostile file costs its size and no more: every scan moves forward, a ZIP entry inflates at most
-  to what it declares and to the 64 MiB one read may unpack, two entries over the same bytes are
-  refused, and units outside the window are counted and never built.
+- A hostile file's cost is bounded: every scan moves forward, a ZIP entry inflates at most to what
+  it declares and to the 64 MiB one read may unpack, two entries over the same bytes are refused,
+  and units outside the window are counted and never built. An XLSX cell borrows its shared string,
+  and a row past 64 MiB of text (a 1,789-byte file can name a megabyte 300 times) is refused before
+  its cells are joined. The window stops building units once it
+  holds its 60,000 characters, so at most two units over that are ever built.
 - A reference that names no character (`&#99999999;`) stays as written; one bad reference no longer
   fails the read.
 - A text format whose first 8,000 bytes hold a NUL (Git's own test) is reported as `binary` with

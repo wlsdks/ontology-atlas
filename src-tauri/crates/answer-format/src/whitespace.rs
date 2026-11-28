@@ -26,6 +26,24 @@ pub fn trim(text: &str) -> &str {
     text.trim_matches(is_whitespace)
 }
 
+/// `text.replace(/\s+/g, ' ').trim()`: every run of whitespace is one space and neither end has any.
+pub fn collapse_whitespace(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut in_gap = false;
+    for character in text.chars() {
+        if is_whitespace(character) {
+            in_gap = true;
+        } else {
+            if in_gap && !out.is_empty() {
+                out.push(' ');
+            }
+            in_gap = false;
+            out.push(character);
+        }
+    }
+    out
+}
+
 /// The line terminators a JavaScript `.` does not match.
 pub fn is_line_terminator(character: char) -> bool {
     matches!(character, '\n' | '\r' | '\u{2028}' | '\u{2029}')
@@ -34,6 +52,16 @@ pub fn is_line_terminator(character: char) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_run_of_whitespace_is_one_space_and_the_ends_have_none() {
+        assert_eq!(
+            collapse_whitespace("\u{feff} a \t\n b\u{a0}\u{a0}c  "),
+            "a b c"
+        );
+        assert_eq!(collapse_whitespace(" \u{85} "), "\u{85}");
+        assert_eq!(collapse_whitespace(""), "");
+    }
 
     #[test]
     fn trim_uses_the_ecmascript_whitespace_set() {

@@ -351,6 +351,65 @@ fn find_element_start(lowered: &str, open: &str, from: usize) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
+
+    /// Text made of the pieces a hostile part is made of: tags opened and never closed, references
+    /// cut short, quotes and multi-byte characters.
+    fn markup() -> impl Strategy<Value = String> {
+        proptest::collection::vec(
+            prop_oneof![
+                Just("<w:p>"),
+                Just("</w:p>"),
+                Just("<c r=\"A1\""),
+                Just("<c>"),
+                Just("</c>"),
+                Just("<row r=\"2\">"),
+                Just("</row>"),
+                Just("<v>"),
+                Just("</v>"),
+                Just("&amp;"),
+                Just("&#x"),
+                Just("&#99999999;"),
+                Just("&"),
+                Just("<"),
+                Just(">"),
+                Just("/"),
+                Just("\""),
+                Just(" "),
+                Just("\u{e9}"),
+                Just("\u{1f600}"),
+                Just("x"),
+            ],
+            0..60,
+        )
+        .prop_map(|pieces| pieces.concat())
+    }
+
+    /// Whether `part` lies inside `whole`, and where it starts.
+    fn offset_in(whole: &str, part: &str) -> Option<usize> {
+        let start = (part.as_ptr() as usize).checked_sub(whole.as_ptr() as usize)?;
+        (start + part.len() <= whole.len()).then_some(start)
+    }
+
+    proptest! {
+        #[test]
+        fn every_scan_returns_ordered_parts_of_its_input_and_a_reference_never_grows(xml in markup()) {
+            for spans in [
+                between(&xml, "<v>", "</v>"),
+                element_spans(&xml, "w:p"),
+                element_spans(&xml, "c"),
+            ] {
+                let mut end_of_last = 0;
+                for span in spans {
+                    let start = offset_in(&xml, span).expect("a part of the input");
+                    prop_assert!(start >= end_of_last, "spans overlap in {xml:?}");
+                    end_of_last = start + span.len();
+                }
+            }
+            prop_assert!(decode_xml_text(&xml).len() <= xml.len());
+            let _ = (text_of(&xml), row_cells(&xml), sheet_rows(&xml));
+        }
+    }
 
     #[test]
     fn a_reference_that_names_no_character_stays_as_written() {

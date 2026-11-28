@@ -2,19 +2,19 @@
 //! is the row's own number in the sheet. Cells are joined with ` | ` so a row reads as one line;
 //! shared strings are resolved and a formula gives its cached value.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
-use answer_format::whitespace::trim;
+use answer_format::whitespace::{collapse_whitespace, trim};
 
 use crate::citable_unit::{Unit, UnitKind, UnitPlace};
-use crate::docx_units::collapse_whitespace;
 use crate::markup_scan::{
     attribute_pair, attribute_value, between, decode_xml_text, open_tags, row_cells, sheet_rows,
     text_of,
 };
 use crate::unit_window::WindowCollector;
 use crate::units_error::UnitsError;
-use crate::zip_archive::ZipArchive;
+use crate::zip_archive::{ZipArchive, UNPACK_BUDGET_BYTES};
 
 struct SheetEntry {
     number: usize,
@@ -50,32 +50,54 @@ fn sheet_part(target: &str) -> String {
     format!("xl/{}", target.strip_prefix("xl/").unwrap_or(target))
 }
 
-fn cell_value(attributes: &str, body: &str, shared: &[String]) -> String {
+/// What a cell holds before its whitespace is collapsed. A shared string is borrowed, so a row of
+/// cells that all name one megabyte of text costs the cells, not the megabytes.
+fn cell_text<'a>(attributes: &str, body: &str, shared: &'a [String]) -> Cow<'a, str> {
     let cell_type = attribute_value(attributes, "t");
     let first_value = || between(body, "<v>", "</v>").first().copied().unwrap_or("");
-    let value = match cell_type {
+    match cell_type {
         Some("s") => {
             let index = text_of(first_value());
             let digits: String = trim(&index)
                 .chars()
                 .take_while(char::is_ascii_digit)
                 .collect();
-            digits
-                .parse::<usize>()
-                .ok()
-                .and_then(|index| shared.get(index))
-                .cloned()
-                .unwrap_or_default()
+            Cow::Borrowed(
+                digits
+                    .parse::<usize>()
+                    .ok()
+                    .and_then(|index| shared.get(index))
+                    .map_or("", String::as_str),
+            )
         }
-        Some("inlineStr") => text_of(
+        Some("inlineStr") => Cow::Owned(text_of(
             between(body, "<is>", "</is>")
                 .first()
                 .copied()
                 .unwrap_or(""),
-        ),
-        _ => text_of(first_value()),
-    };
-    collapse_whitespace(trim(&value))
+        )),
+        _ => Cow::Owned(text_of(first_value())),
+    }
+}
+
+/// The text of a row of cells: each collapsed, the empty ones at the end already dropped, the rest
+/// joined with ` | `. Only a row inside the window is ever joined.
+fn row_text(cells: &[Cow<'_, str>]) -> String {
+    let collapsed: Vec<String> = cells
+        .iter()
+        .map(|cell| collapse_whitespace(trim(cell)))
+        .collect();
+    let joined = collapsed.join(" | ");
+    trim(&joined).to_string()
+}
+
+/// The characters of a row before its cells are joined, counted with the separators. A row past
+/// what one read may unpack is refused, however many cells name the same shared string.
+fn row_size(cells: &[Cow<'_, str>]) -> usize {
+    const SEPARATOR: usize = " | ".len();
+    cells.iter().fold(0_usize, |size, cell| {
+        size.saturating_add(cell.len()).saturating_add(SEPARATOR)
+    })
 }
 
 pub(crate) fn offer_xlsx_units(
@@ -112,23 +134,25 @@ pub(crate) fn offer_xlsx_units(
         };
         let xml = String::from_utf8_lossy(&bytes);
         for row in sheet_rows(&xml) {
-            let mut cells: Vec<String> = row_cells(row.body)
+            let cells: Vec<Cow<'_, str>> = row_cells(row.body)
                 .iter()
-                .map(|cell| cell_value(cell.attributes, cell.body, &shared))
+                .map(|cell| cell_text(cell.attributes, cell.body, &shared))
                 .collect();
-            while cells.last().is_some_and(String::is_empty) {
-                cells.pop();
-            }
-            let joined = cells.join(" | ");
-            let text = trim(&joined);
-            if !text.is_empty() {
-                collector.offer(|| Unit {
+            let Some(last) = cells.iter().rposition(|cell| !trim(cell).is_empty()) else {
+                continue;
+            };
+            let cells = cells.get(..=last).unwrap_or_default();
+            if row_size(cells) > UNPACK_BUDGET_BYTES {
+                return Err(UnitsError::RowPastBudget {
                     anchor: format!("s{}r{}", sheet.number, row.number),
-                    place: UnitPlace::Sheet(sheet.name.clone()),
-                    text: text.to_string(),
-                    kind: UnitKind::Row,
                 });
             }
+            collector.offer(|| Unit {
+                anchor: format!("s{}r{}", sheet.number, row.number),
+                place: UnitPlace::Sheet(sheet.name.clone()),
+                text: row_text(cells),
+                kind: UnitKind::Row,
+            });
         }
     }
     Ok(())

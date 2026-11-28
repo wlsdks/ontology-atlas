@@ -4,7 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use answer_format::whitespace::{is_whitespace, trim};
+use answer_format::whitespace::{collapse_whitespace, trim};
 
 use crate::citable_unit::{Unit, UnitKind, UnitPlace};
 use crate::heading_slug::heading_slug;
@@ -15,24 +15,6 @@ struct Paragraph {
     text: String,
     /// The anchor a heading would have without a repeat to tell apart; `None` for a paragraph.
     heading_base: Option<String>,
-}
-
-/// `\s+` of the text collapsed to one space, and the ends trimmed.
-pub(crate) fn collapse_whitespace(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut in_gap = false;
-    for character in text.chars() {
-        if is_whitespace(character) {
-            in_gap = true;
-        } else {
-            if in_gap && !out.is_empty() {
-                out.push(' ');
-            }
-            in_gap = false;
-            out.push(character);
-        }
-    }
-    out
 }
 
 /// The tabs and line breaks of a paragraph read as spaces, so words do not fuse.
