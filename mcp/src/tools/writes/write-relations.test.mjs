@@ -11,7 +11,7 @@ const replacing = (replaceWith) => () => removeRelation({
 });
 
 test('a replacement target or type with a line break in it is refused as the old newTo and newType were', () => {
-  for (const terminator of [' ', ' ', '\n', '\r']) {
+  for (const terminator of ['\u2028', '\u2029', '\n', '\r']) {
     const codePoint = terminator.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
     assert.throws(
       replacing({ to: `elements/pay${terminator}ments`, type: 'depends_on' }),
