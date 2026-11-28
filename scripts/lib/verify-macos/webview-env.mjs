@@ -72,7 +72,9 @@ const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
   // App identity is checked in the document title. The truncated body need not
   // repeat the brand; require both the destination and its rendered map content.
   /Map|지도/,
-  /INDEX|Concept map|개념|Workspace|작업공간|Relief/,
+  // The map's own controls, which open the screen's first 240 characters (the probe's window) in every
+  // language: the re-layout button and the concept sets opener, beside the earlier words.
+  /Auto-arrange|자동 정렬|自動配置|自动排列|Concept sets|개념 묶음|概念セット|概念集|INDEX|Concept map|개념|Workspace|작업공간|Relief/,
 ];
 
 const WEBVIEW_PLANNING_WORKBENCH_MARKERS = [

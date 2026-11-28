@@ -204,6 +204,16 @@ test("payload contract · topology route accepts the current map shell", () => {
   assert.equal(markers.every((marker) => marker.test("Atlas\nDocs\nWorkshop")), false);
 });
 
+test("payload contract · topology route accepts the map controls the first 240 characters hold", () => {
+  const markers = webviewWorkbenchMarkersForPath("/en/topology/");
+  // The opening of the installed app's map screen as the probe read it: the navigation rail, then
+  // the map's own controls, with no INDEX or Relief words yet.
+  const firstScreen =
+    "Ontology AtlasSkip to main content\nontology\nMap\nHarness\nLibrary\nPlanning\nAutomations\nProjects\nAgents\nChanges\nGit\nWorkshop\nMap\n\nAuto-arrange\n\nFlat\nConcept sets\nSearch\n\n5% on the map";
+  assert.equal(markers.every((marker) => marker.test(firstScreen)), true);
+  assert.equal(markers.every((marker) => marker.test("Ontology Atlas\nMap\nHarness\nLibrary\nPlanning")), false);
+});
+
 test("payload contract · a valid payload passes", () => {
   assert.equal(validateWebviewVerifyPayload(validPayload()), null);
 });
