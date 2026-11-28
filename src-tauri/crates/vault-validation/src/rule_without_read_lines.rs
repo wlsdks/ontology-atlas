@@ -24,7 +24,8 @@ const UNIT_SOURCE_EXTENSIONS: [&str; 31] = [
 ];
 
 fn pattern(source: &str) -> Regex {
-    // Every pattern in this file is a constant that the tests below exercise.
+    // Every pattern is a literal of this file, and the tests below run each; a path from a vault
+    // never becomes part of a pattern.
     Regex::new(source)
         .unwrap_or_else(|error| unreachable!("a built-in pattern is invalid: {error}"))
 }
@@ -200,18 +201,23 @@ fn cited_lines_decide(source: Option<&dyn SourceFiles>, cite: &Cite) -> bool {
         .any(|line| decides_line(line.trim_end_matches('\r')))
 }
 
+static SYMBOL_AFTER_PATH: LazyLock<Regex> = LazyLock::new(|| {
+    pattern(r"^`?(?:#|:|\s+|,\s*)`?([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)?)")
+});
+
 /// The symbol a body cites right after its path, in any form builders write: "`src/x.ts`
 /// `issueInvoice`", "src/x.ts issueInvoice", "src/x.py#Owner.method".
 fn cited_symbol(body: &str, path: &str) -> Option<String> {
-    let after_path = pattern(&format!(
-        r"{}`?(?:#|:|\s+|,\s*)`?([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)?)",
-        regex::escape(path)
-    ));
-    let found = after_path.captures_iter(body).find_map(|captures| {
-        let symbol = captures.get(1)?.as_str().trim_end_matches('.').to_string();
+    body.match_indices(path).find_map(|(at, _)| {
+        let rest = body.get(at + path.len()..)?;
+        let symbol = SYMBOL_AFTER_PATH
+            .captures(rest)?
+            .get(1)?
+            .as_str()
+            .trim_end_matches('.')
+            .to_string();
         (!SYMBOL_STOP.is_match(&symbol)).then_some(symbol)
-    });
-    found
+    })
 }
 
 fn node_path(document: &LoadedDocument) -> Option<String> {
@@ -286,6 +292,13 @@ pub fn rule_cite_findings(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_node_path_of_six_hundred_kilobytes_is_searched_for_and_never_compiled_into_a_pattern() {
+        let path = format!("src/{}.ts", "a.".repeat(300_000));
+        let body = format!("`{path}` issueInvoice");
+        assert_eq!(cited_symbol(&body, &path).as_deref(), Some("issueInvoice"));
+    }
 
     #[test]
     fn a_paragraph_states_a_rule_by_its_prose_and_not_by_a_code_span() {
