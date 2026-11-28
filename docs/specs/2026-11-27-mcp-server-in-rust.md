@@ -664,7 +664,8 @@ every slice merges into `integration/mcp-rust-2026-11-27` with `git merge --no-f
 | 6 | Source scan: `tree-sitter` imports and outlines, `infer_imports`, `inspect_architecture`; `cargo bloat` per grammar | 5 |
 | 7 | Evidence search: `find_evidence`, `read_source`, the `vault-index` probe, `strsim` (the agent brief moved to slice 11) | 4, 6 |
 | 8 | Repository survey with `rayon`: `analyze_repo_structure` | 6, 7 |
-| 9 | Meaning findings and construction depth; completes `validate_vault` | 5, 8 |
+| 8b | Source reads inside the survey: `sourceReads` (type families, symbol context, callees, import bindings, outlines) and their per-session state | 8 |
+| 9 | Meaning findings and construction depth; completes `validate_vault`; the survey's `view: "analysis"`, `proposal` and `qualification` | 5, 8 |
 | 10 | Vault writes and `git_snapshot`: the nine writers; also the test-only cargo feature that reads `ATLAS_DIFF_CLOCK_MS` and `ATLAS_DIFF_UID_SEED` (no crate reads them yet) | 4, 9 |
 | 11 | Library, wiki and project source: seven tools; then `agent_brief`, whose answer embeds the validation, meaning and project-source checks | 10 |
 | 12 | Nothing imports `mcp/src`: scripts, tests and screen modules moved; goldens recorded from JavaScript | 11 |
