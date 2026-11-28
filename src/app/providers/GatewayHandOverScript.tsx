@@ -13,7 +13,8 @@ const HAND_OVER = [
   "try{",
   "if(!window.isTauri){",
   `var m=/\\/(${LOCALES})\\/?$/.exec(location.pathname);`,
-  "if(m){location.replace(location.pathname.slice(0,m.index)+'/'+m[1]+'/download/');}",
+  // A prefix that starts `//` would read as another site's address, so its leading slashes collapse to one.
+  "if(m){location.replace(location.pathname.slice(0,m.index).replace(/^\\/+/,'/')+'/'+m[1]+'/download/');}",
   "}",
   "}catch(e){}",
 ].join("");
