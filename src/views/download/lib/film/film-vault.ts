@@ -103,7 +103,7 @@ export function reachOf(vault: FilmVault, id: string): FilmReach {
 }
 
 /** Lines that leave the pick's own fan: more than this reads as a broom, so the next concept is taken. */
-const MAX_LEAVING_LINES = 9;
+export const MAX_LEAVING_LINES = 9;
 
 /**
  * The capability the film opens and selects: its relations reach the most other domains; ties go
