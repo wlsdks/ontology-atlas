@@ -5,6 +5,7 @@
 //! reshape the card; the JavaScript server forgot that for the slug of a one-row batch.
 
 use answer_format::json::quote;
+use confined_files::AbsorbedPlace;
 
 use super::shown_text::shown;
 use crate::arguments::Arguments;
@@ -35,8 +36,12 @@ impl Sent<'_> {
     }
 }
 
+/// Where the file an `absorb_document` call names really is: the card shows that, not the name the
+/// agent typed, which can be a link to somewhere else.
+pub type FindDocument<'a> = &'a dyn Fn(&str) -> Option<AbsorbedPlace>;
+
 /// What `tool` will do, called with `arguments`, in one line without a final stop.
-pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
+pub fn summary(tool: WriteTool, arguments: &Arguments, find_document: FindDocument<'_>) -> String {
     let sent = Sent(arguments);
     match tool {
         WriteTool::AddConcept => match sent.named("slug") {
@@ -60,10 +65,7 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
             Some(slug) => format!("Delete concept {slug}"),
             None => "Delete one concept".to_string(),
         },
-        WriteTool::AbsorbDocument => match sent.quoted("filePath") {
-            Some(path) => format!("Absorb {path} into typed nodes"),
-            None => "Absorb a document into typed nodes".to_string(),
-        },
+        WriteTool::AbsorbDocument => absorb_document(&sent, find_document),
         WriteTool::ConnectProjectSource => connect_project_source(&sent),
         WriteTool::DisconnectProjectSource => {
             "Disconnect a source folder from this vault".to_string()
@@ -71,6 +73,26 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
         WriteTool::FinalizeProjectMeaning => finalize_project_meaning(&sent),
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => "Write one test file".to_string(),
+    }
+}
+
+/// `absorb_document` rewrites a file, so the card names the file it will really rewrite, and says
+/// when that file is not in the repository.
+fn absorb_document(sent: &Sent<'_>, find_document: FindDocument<'_>) -> String {
+    let Some(typed) = sent.0.string("filePath") else {
+        return "Absorb a document into typed nodes".to_string();
+    };
+    match find_document(&typed) {
+        Some(place) => {
+            let path = shown(&quote(&place.path().to_string_lossy()));
+            let outside = if place.is_outside_repository() {
+                " (outside the repository)"
+            } else {
+                ""
+            };
+            format!("Absorb {path}{outside} into typed nodes")
+        }
+        None => format!("Absorb {} into typed nodes", shown(&quote(&typed))),
     }
 }
 
@@ -222,7 +244,7 @@ mod tests {
     }
 
     fn said(tool: WriteTool, text: &str) -> String {
-        summary(tool, &arguments(text))
+        summary(tool, &arguments(text), &|_| None)
     }
 
     /// Each expected line is what the JavaScript server's `describeWrite` returns for the call.
@@ -269,6 +291,51 @@ mod tests {
         ];
         for (tool, call, expected) in cases {
             assert_eq!(said(*tool, call), *expected, "{} {call}", tool.name());
+        }
+    }
+
+    fn folder() -> tempfile::TempDir {
+        tempfile::Builder::new()
+            .prefix("card-")
+            .tempdir()
+            .expect("temporary folder")
+    }
+
+    fn absorb_card(repository: &std::path::Path, typed: &std::path::Path) -> String {
+        let call = format!(r#"{{"filePath":{}}}"#, quote(&typed.to_string_lossy()));
+        summary(WriteTool::AbsorbDocument, &arguments(&call), &|requested| {
+            AbsorbedPlace::locate(requested, repository).ok()
+        })
+    }
+
+    #[test]
+    fn the_absorb_card_shows_the_file_it_will_rewrite_and_says_when_it_is_outside_the_repository() {
+        let repository = folder();
+        let elsewhere = folder();
+        let inside = repository.path().join("AGENTS.md");
+        let outside = elsewhere.path().join("notes.md");
+        std::fs::write(&inside, "# A\n").expect("fixture");
+        std::fs::write(&outside, "# N\n").expect("fixture");
+        let real = |path: &std::path::Path| {
+            quote(&confined_files::real_path(path).expect("real path").to_string_lossy())
+        };
+        assert_eq!(
+            absorb_card(repository.path(), &inside),
+            format!("Absorb {} into typed nodes", real(&inside))
+        );
+        assert_eq!(
+            absorb_card(repository.path(), &outside),
+            format!("Absorb {} (outside the repository) into typed nodes", real(&outside))
+        );
+        #[cfg(unix)]
+        {
+            let link = repository.path().join("looks-inside.md");
+            std::os::unix::fs::symlink(&outside, &link).expect("link");
+            assert_eq!(
+                absorb_card(repository.path(), &link),
+                format!("Absorb {} (outside the repository) into typed nodes", real(&outside)),
+                "a link in the repository is shown as the file it leads to"
+            );
         }
     }
 

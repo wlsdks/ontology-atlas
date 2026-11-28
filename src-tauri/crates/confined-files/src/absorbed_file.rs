@@ -2,14 +2,16 @@
 //! typed, usually outside the vault (a repository's `AGENTS.md`), so it cannot be a vault slug.
 //!
 //! What stands in for the vault's confinement is a list of refusals made once, here, before the
-//! tool sees a byte: the name must be a plain Markdown file's (never hidden, never a credential, never
-//! a Windows device), the real path (every link resolved) is what is judged and what is rewritten,
-//! and the text must be UTF-8 and within [`ABSORBED_FILE_MAX_BYTES`], so a rewrite never changes bytes
-//! it did not read. Whether the real path lies inside the repository is a fact the tool reports and
-//! gates on; it is not a refusal here.
+//! tool sees a byte: the name must be a plain Markdown file's (never hidden, never a Windows
+//! device), the real path (every link resolved) is what is judged and what is rewritten, no folder
+//! of it may be named like a credential, and the text must be UTF-8 and within
+//! [`ABSORBED_FILE_MAX_BYTES`], so a rewrite never changes bytes it did not read. Whether the real
+//! path lies inside the repository is a fact the tool reports and gates on; it is not a refusal
+//! here, but it decides which hidden folders are refused: an instruction file lives in `.github/` or
+//! `.cursor/` of a repository, and nowhere hidden outside one.
 
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use crate::confined_root::resolve_path;
 use crate::modified_time::ModifiedTime;
@@ -33,7 +35,7 @@ pub enum AbsorbedFileRefusal {
     NotFound(PathBuf),
     #[error("{name} is not a Markdown file: absorb_document reads `.md` files only")]
     NotMarkdown { name: String },
-    #[error("{name} is a hidden file or has the name of a credential, so it is never read")]
+    #[error("{name} is hidden or has the name of a credential, so it is never read")]
     PrivateName { name: String },
     #[error("{name} is a Windows device or stream name, not a file name")]
     DeviceName { name: String },
@@ -45,11 +47,19 @@ pub enum AbsorbedFileRefusal {
     Io(#[from] IoFailure),
 }
 
+/// Where a document to absorb really is, once its name and every folder above it have been
+/// judged. Nothing of it has been read: this is what the consent card shows a person, and what a
+/// dry run stops at.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AbsorbedPlace {
+    real: PathBuf,
+    outside_repository: bool,
+}
+
 /// A document opened for absorption: its real path, its text and the time it had.
 #[derive(Debug, Clone)]
 pub struct AbsorbedFile {
-    real: PathBuf,
-    outside_repository: bool,
+    place: AbsorbedPlace,
     text: String,
     modified: Option<ModifiedTime>,
 }
@@ -60,7 +70,8 @@ fn final_name(path: &Path) -> String {
         .unwrap_or_default()
 }
 
-fn refuse_name(name: &str) -> Result<(), AbsorbedFileRefusal> {
+/// The refusals of one name, and of a file's final name in particular.
+fn refuse_final_name(name: &str) -> Result<(), AbsorbedFileRefusal> {
     let owned = || name.to_string();
     if is_not_a_file_name(name) {
         return Err(AbsorbedFileRefusal::DeviceName { name: owned() });
@@ -74,10 +85,44 @@ fn refuse_name(name: &str) -> Result<(), AbsorbedFileRefusal> {
     Ok(())
 }
 
-impl AbsorbedFile {
-    /// Opens `requested` (resolved against the working folder like any relative path) for
-    /// absorption. `repository` is the folder whose inside needs no extra consent.
-    pub fn open(requested: &str, repository: &Path) -> Result<Self, AbsorbedFileRefusal> {
+/// The folders of `real` that are judged: below the repository's folder when the file is inside
+/// it, so the place a person keeps the repository is theirs to name; every folder when it is not.
+fn judged_folders(real: &Path, repository_real: &Path, outside_repository: bool) -> Vec<String> {
+    let names = real.components().filter_map(|part| match part {
+        Component::Normal(name) => Some(name.to_string_lossy().into_owned()),
+        _ => None,
+    });
+    let skipped = if outside_repository {
+        0
+    } else {
+        repository_real
+            .components()
+            .filter(|part| matches!(part, Component::Normal(_)))
+            .count()
+    };
+    let mut folders: Vec<String> = names.skip(skipped).collect();
+    folders.pop();
+    folders
+}
+
+fn refuse_folders(
+    real: &Path,
+    repository_real: &Path,
+    outside_repository: bool,
+) -> Result<(), AbsorbedFileRefusal> {
+    for folder in judged_folders(real, repository_real, outside_repository) {
+        let hidden = outside_repository && is_hidden_name(&folder);
+        if hidden || is_credential_name(&folder) {
+            return Err(AbsorbedFileRefusal::PrivateName { name: folder });
+        }
+    }
+    Ok(())
+}
+
+impl AbsorbedPlace {
+    /// Finds `requested` (resolved against the working folder like any relative path) and judges
+    /// its names without opening it. `repository` is the folder whose inside needs no extra consent.
+    pub fn locate(requested: &str, repository: &Path) -> Result<Self, AbsorbedFileRefusal> {
         let base = std::env::current_dir()
             .map_err(|source| IoFailure::new("cwd", PathBuf::from("."), source))?;
         let resolved = resolve_path(&base, Path::new(requested));
@@ -86,16 +131,36 @@ impl AbsorbedFile {
             return Err(AbsorbedFileRefusal::NotFound(resolved));
         }
         // The name typed and the name it resolves to: a harmless link to `.env` is still `.env`.
-        refuse_name(&final_name(&resolved))?;
+        refuse_final_name(&final_name(&resolved))?;
         let real = real_path(&resolved).map_err(|source| IoFailure::new("realpath", &resolved, source))?;
-        refuse_name(&final_name(&real))?;
+        refuse_final_name(&final_name(&real))?;
         let repository_real = real_path(repository)
             .map_err(|source| IoFailure::new("realpath", repository, source))?;
         let outside_repository = !is_within_folding_case(&repository_real, &real);
-        let (text, modified) = read_text(&real)?;
+        refuse_folders(&real, &repository_real, outside_repository)?;
         Ok(Self {
             real,
             outside_repository,
+        })
+    }
+
+    /// The path with every link resolved: the file that is read and rewritten.
+    pub fn path(&self) -> &Path {
+        &self.real
+    }
+
+    pub fn is_outside_repository(&self) -> bool {
+        self.outside_repository
+    }
+}
+
+impl AbsorbedFile {
+    /// Opens `requested` for absorption after [`AbsorbedPlace::locate`] has judged it.
+    pub fn open(requested: &str, repository: &Path) -> Result<Self, AbsorbedFileRefusal> {
+        let place = AbsorbedPlace::locate(requested, repository)?;
+        let (text, modified) = read_text(&place.real)?;
+        Ok(Self {
+            place,
             text,
             modified,
         })
@@ -103,7 +168,7 @@ impl AbsorbedFile {
 
     /// The path with every link resolved: the file that is read and rewritten.
     pub fn path(&self) -> &Path {
-        &self.real
+        &self.place.real
     }
 
     pub fn text(&self) -> &str {
@@ -115,7 +180,7 @@ impl AbsorbedFile {
     }
 
     pub fn is_outside_repository(&self) -> bool {
-        self.outside_repository
+        self.place.outside_repository
     }
 
     /// How a node's `source:` names this file from the vault: the path below the vault's real
@@ -124,10 +189,10 @@ impl AbsorbedFile {
     pub fn reference_from(&self, vault: &Path) -> String {
         let vault_real = real_path(vault).unwrap_or_else(|_| vault.to_path_buf());
         let from: Vec<_> = vault_real.components().collect();
-        let to: Vec<_> = self.real.components().collect();
+        let to: Vec<_> = self.place.real.components().collect();
         let shared = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
         if shared == 0 {
-            return self.real.to_string_lossy().replace('\\', "/");
+            return self.place.real.to_string_lossy().replace('\\', "/");
         }
         let mut parts: Vec<String> = Vec::new();
         parts.extend(from.iter().skip(shared).map(|_| "..".to_string()));
@@ -137,7 +202,7 @@ impl AbsorbedFile {
 
     /// Where the copy of the original is kept.
     pub fn backup_path(&self) -> PathBuf {
-        let mut name = self.real.clone().into_os_string();
+        let mut name = self.place.real.clone().into_os_string();
         name.push(ABSORB_BACKUP_SUFFIX);
         PathBuf::from(name)
     }
@@ -148,7 +213,7 @@ impl AbsorbedFile {
 
     /// The source as a path a plan may rewrite.
     pub fn writable_source(&self) -> WritablePath {
-        WritablePath::from_confined(ConfinedPath::new(self.real.clone()))
+        WritablePath::from_confined(ConfinedPath::new(self.place.real.clone()))
     }
 
     /// The backup as a path a plan may create.
@@ -176,8 +241,13 @@ fn read_text(path: &Path) -> Result<(String, Option<ModifiedTime>), AbsorbedFile
 mod tests {
     use super::*;
 
+    /// Not `tempfile::tempdir()`, whose folders start with a dot: outside the repository a hidden
+    /// folder is refused.
     fn folder() -> tempfile::TempDir {
-        tempfile::tempdir().expect("temporary folder")
+        tempfile::Builder::new()
+            .prefix("absorb-")
+            .tempdir()
+            .expect("temporary folder")
     }
 
     fn written(dir: &Path, name: &str, text: &str) -> String {
@@ -217,6 +287,55 @@ mod tests {
             AbsorbedFile::open(&repository.path().join("missing.md").display().to_string(), repository.path()),
             Err(AbsorbedFileRefusal::NotFound(_))
         ));
+    }
+
+    fn nested(root: &Path, folders: &[&str], name: &str, text: &str) -> String {
+        let mut path = root.to_path_buf();
+        path.extend(folders);
+        std::fs::create_dir_all(&path).expect("folders");
+        written(&path, name, text)
+    }
+
+    #[test]
+    fn a_credential_folder_anywhere_above_a_file_refuses_it_and_a_hidden_one_only_outside_the_repository() {
+        let repository = folder();
+        let elsewhere = folder();
+        for (root, folders, outside) in [
+            (elsewhere.path(), vec!["secrets"], true),
+            (elsewhere.path(), vec!["keys.pem"], true),
+            (elsewhere.path(), vec![".config"], true),
+            (elsewhere.path(), vec!["ok", ".ssh", "deep"], true),
+            (repository.path(), vec!["docs", "credentials"], false),
+        ] {
+            let file = nested(root, &folders, "AGENTS.md", "# A\n");
+            let refusal = AbsorbedFile::open(&file, repository.path()).expect_err(&file);
+            assert!(matches!(refusal, AbsorbedFileRefusal::PrivateName { .. }), "{file}: {refusal}");
+            assert_eq!(outside, !file.starts_with(&repository.path().display().to_string()));
+        }
+        for dot_folder in [".github", ".cursor", ".claude/rules"] {
+            let parts: Vec<&str> = dot_folder.split('/').collect();
+            let file = nested(repository.path(), &parts, "AGENTS.md", "# A\n");
+            let opened = AbsorbedFile::open(&file, repository.path()).expect(dot_folder);
+            assert!(!opened.is_outside_repository(), "{dot_folder}");
+        }
+    }
+
+    #[test]
+    fn the_folder_that_holds_the_repository_is_not_judged() {
+        let above = folder();
+        let repository = above.path().join("secrets").join(".work").join("project");
+        let file = nested(&repository, &[".github"], "AGENTS.md", "# A\n");
+        let opened = AbsorbedFile::open(&file, &repository).expect("the repository's own place is theirs");
+        assert!(!opened.is_outside_repository());
+    }
+
+    #[test]
+    fn a_refused_folder_is_refused_before_the_file_is_opened() {
+        let repository = folder();
+        let elsewhere = folder();
+        let file = nested(elsewhere.path(), &[".ssh"], "notes.md", "# N\n");
+        let place = AbsorbedPlace::locate(&file, repository.path());
+        assert!(matches!(place, Err(AbsorbedFileRefusal::PrivateName { .. })), "{place:?}");
     }
 
     #[test]

@@ -21,6 +21,7 @@ mod write_question;
 
 use std::time::Duration;
 
+use confined_files::AbsorbedPlace;
 use serde::Serialize;
 
 use crate::arguments::Arguments;
@@ -89,7 +90,10 @@ fn ask_within(
     if !context.can_ask_client() {
         return Err(ConsentRefusal::NoWayToAsk.into());
     }
-    let summary = write_question::summary(tool, arguments);
+    let repository = &context.config().repo_root;
+    let summary = write_question::summary(tool, arguments, &|requested| {
+        AbsorbedPlace::locate(requested, repository).ok()
+    });
     let message = format!("{summary}. Apply this change to the vault?");
     let question = Question {
         mode: "form",
