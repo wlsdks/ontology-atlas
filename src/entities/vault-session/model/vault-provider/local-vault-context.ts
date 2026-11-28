@@ -14,7 +14,7 @@ export function useLocalVault(): LocalVaultValue {
   if (value === null) {
     throw new Error(
       "useLocalVault must be called inside <LocalVaultProvider>. " +
-        "Mount the provider in app/[locale]/layout.tsx (already done for " +
+        "Mount the provider in src/app/router/AppLocaleLayout.tsx (already done for " +
         "production paths). Tests rendering components that consume the " +
         "vault must wrap them in <LocalVaultProvider>.",
     );

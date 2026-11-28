@@ -1,8 +1,8 @@
 import { useLayoutEffect } from "react";
 
 /**
- * Sets `document.title` on the client. The App Router rewrites `<title>` to the layout default on the
- * initial commit, so `useLayoutEffect` writes before paint and a MutationObserver restores our value
+ * Sets `document.title` on the client. The route's own `PageTitle` writes the generic screen title on
+ * the initial commit, so `useLayoutEffect` writes before paint and a MutationObserver restores our value
  * when anything else rewrites it. A `null` or empty title is a no-op.
  */
 export function useDocumentTitle(title: string | null | undefined): void {

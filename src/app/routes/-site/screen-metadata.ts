@@ -72,7 +72,7 @@ export function screenMetadata(head: ScreenHead, locale: AppLocale, read: ReadMe
   return resolveMetadata(screenOwnMetadata(head, locale, read), read);
 }
 
-/** The merge Next performed and the site's addresses were indexed under: a field a page sets replaces the inherited one whole. */
+/** The merge the site's addresses were indexed under: a field a page sets replaces the inherited one whole. */
 export function resolveMetadata(own: PageMetadata, read: ReadMessage): { metadata: PageMetadata; title: string } {
   const { metadata: inLanguage, siteName } = localeMetadata(read);
   const merged: PageMetadata = { ...siteMetadata(), ...inLanguage, ...own };
