@@ -8,7 +8,7 @@
 //! failure at the last step leaves no node behind (the script server left them).
 
 use answer_format::whitespace::trim;
-use confined_files::{AbsorbedFile, AbsorbedFileRefusal, PlanEntry, Reservations};
+use confined_files::{AbsorbedFile, AbsorbedFileRefusal, AbsorbedPlace, PlanEntry, Reservations};
 use document_absorption::{plan_absorption, slim_pointer, AbsorptionPlan, Action};
 use serde::Serialize;
 use vault_edit::{check_node_identity, new_file, new_node_fields, NewNode, NodeUids, Setting};
@@ -150,6 +150,7 @@ fn head<'a>(
 fn refusal(error: AbsorbedFileRefusal) -> ToolError {
     match error {
         AbsorbedFileRefusal::NotFound(_) => ToolError::new(ErrorCode::NotFound, error.to_string()),
+        AbsorbedFileRefusal::Moved(_) => ToolError::new(ErrorCode::Conflict, error.to_string()),
         AbsorbedFileRefusal::Io(_) => ToolError::failed(error.to_string()),
         _ => ToolError::invalid(error.to_string()),
     }
@@ -185,7 +186,9 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
     let confirm = optional_boolean(arguments, "confirm")?.unwrap_or(false);
     let allow_outside_repo = optional_boolean(arguments, "allowOutsideRepo")?.unwrap_or(false);
     let context = permit.context();
-    let source = AbsorbedFile::open(&file_path, &context.config().repo_root).map_err(refusal)?;
+    let place = AbsorbedPlace::locate(&file_path, context.config().absorb_repository()).map_err(refusal)?;
+    permit.ensure_card_named(&place)?;
+    let source = place.read().map_err(refusal)?;
     let view = VaultView::read(permit)?;
     let source_path = source.path().to_string_lossy().into_owned();
     let backup_path = source.backup_path().to_string_lossy().into_owned();

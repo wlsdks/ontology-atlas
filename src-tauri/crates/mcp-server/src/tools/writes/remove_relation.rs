@@ -247,7 +247,7 @@ fn replace_relation(
             .into_setting()
     };
     let activity_summary = format!(
-        "replace {from} --{old_type_text}--> {old_to} with --{new_type_text}--> {new_to_text}"
+        "replace {canonical_from} --{old_type_text}--> {canonical_old} with --{new_type_text}--> {canonical_new}"
     );
     let build = |ok: bool, dry: bool, changed: bool, after: Option<Setting>| {
         preview_fields(PreviewState::of(dry, true, Vec::new()))
@@ -259,7 +259,7 @@ fn replace_relation(
             .prefixed(ok, dry, changed)
     };
     let kept = || record(
-        &from,
+        &canonical_from,
         activity_summary.clone(),
         sent_why.clone(),
         true,

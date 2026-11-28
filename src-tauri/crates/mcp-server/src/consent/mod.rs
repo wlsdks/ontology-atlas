@@ -66,14 +66,23 @@ struct Question<'a> {
     requested_schema: MessageOnly,
 }
 
-/// Asks a person, if this vault asks, whether `tool` may do what `arguments` say. `Ok(true)` is a
-/// person's yes, `Ok(false)` a vault or a call that does not ask; every other end is a refusal that
+/// What a person said yes to, beyond the words of the card: the file an `absorb_document` card
+/// named. The handler must write that file, not whatever the typed path leads to by then.
+#[derive(Debug, Clone, Default)]
+pub struct Approval {
+    /// The place the card showed, when the card found one: `None` is a card that showed the typed
+    /// path because it could not resolve it, which approves no file at all.
+    pub absorbed_place: Option<AbsorbedPlace>,
+}
+
+/// Asks a person, if this vault asks, whether `tool` may do what `arguments` say. `Ok(Some)` is a
+/// person's yes, `Ok(None)` a vault or a call that does not ask; every other end is a refusal that
 /// wrote nothing.
 pub fn ask_before_writing(
     context: &CallContext<'_>,
     tool: WriteTool,
     arguments: &Arguments,
-) -> Result<bool, ToolError> {
+) -> Result<Option<Approval>, ToolError> {
     ask_within(context, tool, arguments, ANSWER_WINDOW)
 }
 
@@ -82,17 +91,16 @@ fn ask_within(
     tool: WriteTool,
     arguments: &Arguments,
     window: Duration,
-) -> Result<bool, ToolError> {
+) -> Result<Option<Approval>, ToolError> {
     if !context.config().modes.write_consent {
-        return Ok(false);
+        return Ok(None);
     }
     if arguments.asks_for_preview() {
-        return Ok(false);
+        return Ok(None);
     }
     if !context.can_ask_client() {
         return Err(ConsentRefusal::NoWayToAsk.into());
     }
-    let repository = &context.config().repo_root;
     // The card names the folder a connect would bind, not "inferred from this vault's location".
     let named;
     let shown_arguments = if tool == WriteTool::ConnectProjectSource {
@@ -106,9 +114,11 @@ fn ask_within(
     } else {
         arguments
     };
-    let summary = write_question::summary(tool, shown_arguments, &|requested| {
-        AbsorbedPlace::locate(requested, repository).ok()
-    });
+    let absorbed_place = (tool == WriteTool::AbsorbDocument)
+        .then(|| arguments.string("filePath"))
+        .flatten()
+        .and_then(|requested| AbsorbedPlace::locate(&requested, context.config().absorb_repository()).ok());
+    let summary = write_question::summary(tool, shown_arguments, absorbed_place.as_ref());
     let message = format!("{summary}. Apply this change to the vault?");
     let question = Question {
         mode: "form",
@@ -124,7 +134,7 @@ fn ask_within(
     let failed = |problem| ConsentRefusal::QuestionFailed(problem).into();
     match context.ask_client("elicitation/create", &question, window) {
         ClientAnswer::Replied(ClientReply::Result(result)) => match PersonAnswer::read(&result) {
-            Some(answer) if answer.approves() => Ok(true),
+            Some(answer) if answer.approves() => Ok(Some(Approval { absorbed_place })),
             Some(answer) => Err(ConsentRefusal::NotApproved {
                 action: answer.action,
                 summary,

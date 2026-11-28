@@ -8,7 +8,8 @@
 //! [`ABSORBED_FILE_MAX_BYTES`], so a rewrite never changes bytes it did not read. Whether the real
 //! path lies inside the repository is a fact the tool reports and gates on; it is not a refusal
 //! here, but it decides which hidden folders are refused: an instruction file lives in `.github/` or
-//! `.cursor/` of a repository, and nowhere hidden outside one.
+//! `.cursor/` of a repository, and nowhere hidden outside one. A folder the server only guessed
+//! (the one it was started in, perhaps a home folder) is not a repository for that purpose.
 
 use std::io::{self, Read};
 use std::path::{Component, Path, PathBuf};
@@ -42,12 +43,38 @@ pub enum AbsorbedFileRefusal {
     DeviceName { name: String },
     #[error("{} is {bytes} bytes; absorb_document reads at most {max} bytes", .path.display())]
     TooLarge { path: PathBuf, bytes: u64, max: u64 },
+    #[error("{} is not where it was when it was checked: a folder above it now leads elsewhere, so it is not read", .0.display())]
+    Moved(PathBuf),
     #[error("{} is a link, has more than one name or is not a regular file, so it is not rewritten", .0.display())]
     NotPlainFile(PathBuf),
     #[error("{} is not UTF-8 text, so rewriting it would change bytes that were not read", .0.display())]
     NotText(PathBuf),
     #[error(transparent)]
     Io(#[from] IoFailure),
+}
+
+/// The folder whose inside needs no extra consent, and whether the program was ever pointed at it.
+#[derive(Debug, Clone, Copy)]
+pub enum AbsorbRepository<'a> {
+    /// The launcher named it, or the vault is inside it: a hidden folder in it, `.github/` or
+    /// `.cursor/`, holds instruction files.
+    Grounded(&'a Path),
+    /// Only the folder the server was started in. A file below it is "inside" for the consent
+    /// gate, but nothing hidden is: it may be the home folder, whose `.claude/` and `.ssh/` hold
+    /// what no repository does.
+    Guessed(&'a Path),
+}
+
+impl AbsorbRepository<'_> {
+    fn path(&self) -> &Path {
+        match self {
+            Self::Grounded(path) | Self::Guessed(path) => path,
+        }
+    }
+
+    fn allows_hidden_folders(&self) -> bool {
+        matches!(self, Self::Grounded(_))
+    }
 }
 
 /// Where a document to absorb really is, once its name and every folder above it have been
@@ -113,9 +140,10 @@ fn refuse_folders(
     real: &Path,
     repository_real: &Path,
     outside_repository: bool,
+    hidden_is_refused: bool,
 ) -> Result<(), AbsorbedFileRefusal> {
     for folder in judged_folders(real, repository_real, outside_repository) {
-        let hidden = outside_repository && is_hidden_name(&folder);
+        let hidden = hidden_is_refused && is_hidden_name(&folder);
         if hidden || is_credential_name(&folder) {
             return Err(AbsorbedFileRefusal::PrivateName { name: folder });
         }
@@ -126,7 +154,10 @@ fn refuse_folders(
 impl AbsorbedPlace {
     /// Finds `requested` (resolved against the working folder like any relative path) and judges
     /// its names without opening it. `repository` is the folder whose inside needs no extra consent.
-    pub fn locate(requested: &str, repository: &Path) -> Result<Self, AbsorbedFileRefusal> {
+    pub fn locate(
+        requested: &str,
+        repository: AbsorbRepository<'_>,
+    ) -> Result<Self, AbsorbedFileRefusal> {
         let base = std::env::current_dir()
             .map_err(|source| IoFailure::new("cwd", PathBuf::from("."), source))?;
         let resolved = resolve_path(&base, Path::new(requested));
@@ -138,10 +169,11 @@ impl AbsorbedPlace {
         refuse_final_name(&final_name(&resolved))?;
         let real = real_path(&resolved).map_err(|source| IoFailure::new("realpath", &resolved, source))?;
         refuse_final_name(&final_name(&real))?;
-        let repository_real = real_path(repository)
-            .map_err(|source| IoFailure::new("realpath", repository, source))?;
+        let repository_real = real_path(repository.path())
+            .map_err(|source| IoFailure::new("realpath", repository.path(), source))?;
         let outside_repository = !is_within_folding_case(&repository_real, &real);
-        refuse_folders(&real, &repository_real, outside_repository)?;
+        let hidden_is_refused = outside_repository || !repository.allows_hidden_folders();
+        refuse_folders(&real, &repository_real, outside_repository, hidden_is_refused)?;
         Ok(Self {
             real,
             outside_repository,
@@ -176,6 +208,11 @@ impl AbsorbedPlace {
         if !facts.plain {
             return Err(AbsorbedFileRefusal::NotPlainFile(path));
         }
+        // `O_NOFOLLOW` judged the last name only: a folder above it swapped for a link since
+        // `locate` would lead the open somewhere else, so the handle says where it really is.
+        if plain_file::path_of(&file).map_err(io)? != path {
+            return Err(AbsorbedFileRefusal::Moved(path));
+        }
         if facts.size > ABSORBED_FILE_MAX_BYTES {
             return Err(AbsorbedFileRefusal::TooLarge {
                 path,
@@ -208,7 +245,10 @@ impl AbsorbedPlace {
 
 impl AbsorbedFile {
     /// Locates and reads `requested` for absorption.
-    pub fn open(requested: &str, repository: &Path) -> Result<Self, AbsorbedFileRefusal> {
+    pub fn open(
+        requested: &str,
+        repository: AbsorbRepository<'_>,
+    ) -> Result<Self, AbsorbedFileRefusal> {
         AbsorbedPlace::locate(requested, repository)?.read()
     }
 
@@ -287,6 +327,10 @@ mod tests {
             .expect("temporary folder")
     }
 
+    fn grounded(path: &Path) -> AbsorbRepository<'_> {
+        AbsorbRepository::Grounded(path)
+    }
+
     fn written(dir: &Path, name: &str, text: &str) -> String {
         let path = dir.join(name);
         std::fs::write(&path, text).expect("fixture file");
@@ -299,10 +343,10 @@ mod tests {
         let elsewhere = folder();
         let inside = written(repository.path(), "AGENTS.md", "# A\n");
         let outside = written(elsewhere.path(), "notes.md", "# N\n");
-        let opened = AbsorbedFile::open(&inside, repository.path()).expect("inside opens");
+        let opened = AbsorbedFile::open(&inside, grounded(repository.path())).expect("inside opens");
         assert!(!opened.is_outside_repository());
         assert_eq!(opened.text(), "# A\n");
-        let opened = AbsorbedFile::open(&outside, repository.path()).expect("outside opens");
+        let opened = AbsorbedFile::open(&outside, grounded(repository.path())).expect("outside opens");
         assert!(opened.is_outside_repository());
         assert!(opened.backup_path().to_string_lossy().ends_with("notes.md.pre-absorb.bak"));
     }
@@ -317,11 +361,11 @@ mod tests {
             ("data.csv", "Markdown"),
         ] {
             let file = written(repository.path(), name, "x");
-            let refusal = AbsorbedFile::open(&file, repository.path()).expect_err(name);
+            let refusal = AbsorbedFile::open(&file, grounded(repository.path())).expect_err(name);
             assert!(refusal.to_string().contains(refused), "{name}: {refusal}");
         }
         assert!(matches!(
-            AbsorbedFile::open(&repository.path().join("missing.md").display().to_string(), repository.path()),
+            AbsorbedFile::open(&repository.path().join("missing.md").display().to_string(), grounded(repository.path())),
             Err(AbsorbedFileRefusal::NotFound(_))
         ));
     }
@@ -345,16 +389,31 @@ mod tests {
             (repository.path(), vec!["docs", "credentials"], false),
         ] {
             let file = nested(root, &folders, "AGENTS.md", "# A\n");
-            let refusal = AbsorbedFile::open(&file, repository.path()).expect_err(&file);
+            let refusal = AbsorbedFile::open(&file, grounded(repository.path())).expect_err(&file);
             assert!(matches!(refusal, AbsorbedFileRefusal::PrivateName { .. }), "{file}: {refusal}");
             assert_eq!(outside, !file.starts_with(&repository.path().display().to_string()));
         }
         for dot_folder in [".github", ".cursor", ".claude/rules"] {
             let parts: Vec<&str> = dot_folder.split('/').collect();
             let file = nested(repository.path(), &parts, "AGENTS.md", "# A\n");
-            let opened = AbsorbedFile::open(&file, repository.path()).expect(dot_folder);
+            let opened = AbsorbedFile::open(&file, grounded(repository.path())).expect(dot_folder);
             assert!(!opened.is_outside_repository(), "{dot_folder}");
         }
+    }
+
+    /// A folder the server only started in can be a home folder: its `.claude/` is no repository's
+    /// instruction folder, so a hidden folder below it is refused unless the program was pointed
+    /// at the repository.
+    #[test]
+    fn a_hidden_folder_below_a_guessed_repository_is_refused_and_below_a_grounded_one_is_not() {
+        let home = folder();
+        let file = nested(home.path(), &[".claude"], "CLAUDE.md", "# C\n");
+        let guessed = AbsorbedFile::open(&file, AbsorbRepository::Guessed(home.path()));
+        assert!(matches!(guessed, Err(AbsorbedFileRefusal::PrivateName { .. })), "{guessed:?}");
+        let grounded = AbsorbedFile::open(&file, AbsorbRepository::Grounded(home.path())).expect("grounded");
+        assert!(!grounded.is_outside_repository());
+        let plain = nested(home.path(), &["docs"], "AGENTS.md", "# A\n");
+        assert!(AbsorbedFile::open(&plain, AbsorbRepository::Guessed(home.path())).is_ok());
     }
 
     #[test]
@@ -362,7 +421,7 @@ mod tests {
         let above = folder();
         let repository = above.path().join("secrets").join(".work").join("project");
         let file = nested(&repository, &[".github"], "AGENTS.md", "# A\n");
-        let opened = AbsorbedFile::open(&file, &repository).expect("the repository's own place is theirs");
+        let opened = AbsorbedFile::open(&file, grounded(&repository)).expect("the repository's own place is theirs");
         assert!(!opened.is_outside_repository());
     }
 
@@ -371,7 +430,7 @@ mod tests {
         let repository = folder();
         let elsewhere = folder();
         let file = nested(elsewhere.path(), &[".ssh"], "notes.md", "# N\n");
-        let place = AbsorbedPlace::locate(&file, repository.path());
+        let place = AbsorbedPlace::locate(&file, grounded(repository.path()));
         assert!(matches!(place, Err(AbsorbedFileRefusal::PrivateName { .. })), "{place:?}");
     }
 
@@ -381,7 +440,7 @@ mod tests {
         let path = repository.path().join("latin.md");
         std::fs::write(&path, [0x23, 0x20, 0xe9]).expect("fixture file");
         assert!(matches!(
-            AbsorbedFile::open(&path.display().to_string(), repository.path()),
+            AbsorbedFile::open(&path.display().to_string(), grounded(repository.path())),
             Err(AbsorbedFileRefusal::NotText(_))
         ));
     }
@@ -393,7 +452,7 @@ mod tests {
         let target = written(repository.path(), ".env", "KEY=1");
         let link = repository.path().join("harmless.md");
         std::os::unix::fs::symlink(&target, &link).expect("link");
-        let refusal = AbsorbedFile::open(&link.display().to_string(), repository.path())
+        let refusal = AbsorbedFile::open(&link.display().to_string(), grounded(repository.path()))
             .expect_err("a link to .env");
         assert!(matches!(refusal, AbsorbedFileRefusal::PrivateName { .. }), "{refusal}");
     }
@@ -412,7 +471,7 @@ mod tests {
         for &hard in swaps {
             let name = if hard { "hard.md" } else { "soft.md" };
             let file = written(repository.path(), name, "# A\n");
-            let place = AbsorbedPlace::locate(&file, repository.path()).expect("passes the name check");
+            let place = AbsorbedPlace::locate(&file, grounded(repository.path())).expect("passes the name check");
             std::fs::remove_file(&file).expect("swap out");
             if hard {
                 std::fs::hard_link(&secret, &file).expect("hard link");
@@ -425,6 +484,37 @@ mod tests {
         }
     }
 
+    /// `O_NOFOLLOW` judges the last name only. A folder above the file swapped for a link after
+    /// the check opens another file whose last name is plain; the handle's own path shows it.
+    #[cfg(unix)]
+    #[test]
+    fn a_folder_swapped_for_a_link_after_the_name_check_is_refused_not_read() {
+        let repository = folder();
+        let elsewhere = folder();
+        let file = nested(repository.path(), &["docs"], "AGENTS.md", "# A\n");
+        written(elsewhere.path(), "AGENTS.md", "SECRET");
+        let place = AbsorbedPlace::locate(&file, grounded(repository.path())).expect("passes the name check");
+        std::fs::rename(repository.path().join("docs"), repository.path().join("docs.moved")).expect("move");
+        std::os::unix::fs::symlink(elsewhere.path(), repository.path().join("docs")).expect("link");
+        let refusal = place.read().expect_err("the handle is another file's");
+        assert!(matches!(refusal, AbsorbedFileRefusal::Moved(_)), "{refusal}");
+    }
+
+    /// The handle's path is what Windows says it is: `GetFinalPathNameByHandleW` returns the
+    /// normalized, long-name path whatever letter case or short name opened it (Microsoft,
+    /// "GetFinalPathNameByHandleW", `FILE_NAME_NORMALIZED`), which is what `real_path` returns.
+    #[cfg(windows)]
+    #[test]
+    fn a_file_opened_by_a_path_in_other_letter_case_is_the_file_that_was_checked() {
+        let repository = folder();
+        let file = written(repository.path(), "AGENTS.md", "# A\n");
+        let place = AbsorbedPlace::locate(&file, grounded(repository.path())).expect("located");
+        let shouted = place.path().to_string_lossy().to_uppercase();
+        let handle = plain_file::open_read(Path::new(&shouted)).expect("opens by any case");
+        assert_eq!(plain_file::path_of(&handle).expect("final path"), place.path());
+        assert!(place.read().is_ok());
+    }
+
     /// A copy with the same text and time has another identity, which is all a swap changes.
     #[cfg(unix)]
     #[test]
@@ -432,7 +522,7 @@ mod tests {
         use crate::write_plan::{apply_all_or_nothing, ApplyOptions, PlanEntry, Reservations};
         let repository = folder();
         let file = written(repository.path(), "AGENTS.md", "# A\n");
-        let opened = AbsorbedFile::open(&file, repository.path()).expect("opens");
+        let opened = AbsorbedFile::open(&file, grounded(repository.path())).expect("opens");
         let entry = || {
             PlanEntry::write(opened.writable_source(), "pointer\n".to_string())
                 .expecting_text(opened.text().to_string())
@@ -443,7 +533,7 @@ mod tests {
         std::fs::rename(repository.path().join("copy.md"), &file).expect("swap in the copy");
         let refused = apply_all_or_nothing(vec![entry()], &options);
         assert!(matches!(refused, Err(crate::atomic_write::WriteError::ChangedOnDisk(_))), "{refused:?}");
-        let again = AbsorbedFile::open(&file, repository.path()).expect("opens again");
+        let again = AbsorbedFile::open(&file, grounded(repository.path())).expect("opens again");
         let entry = PlanEntry::write(again.writable_source(), "pointer\n".to_string())
             .expecting_text(again.text().to_string())
             .expecting_identity(again.identity());

@@ -11,7 +11,9 @@ use crate::confined_root::{ensure_vault_root, resolve_path, VaultRootError};
 use crate::markdown_walk::list_markdown_files;
 use crate::plain_file;
 use crate::real_paths::{is_within, real_path, segments_below};
-use crate::slug_rules::{unwritable_slug_reason, UnwritableReason, VAULT_SOURCES_DIR};
+use crate::slug_rules::{
+    device_name_reason, unwritable_slug_reason, UnwritableReason, VAULT_SOURCES_DIR,
+};
 use crate::stable_read::{FileSnapshot, FileStamp, StableReadError};
 
 /// The most bytes of a top-level declarative file that is read: a few hundred lines of patterns.
@@ -279,7 +281,9 @@ impl VaultRoot {
     }
 
     /// [`Self::read_path`] for a file a write tool will create, change or delete: it also refuses
-    /// what `unwritable_slug_issue` names, as typed or where the slug resolves through a link.
+    /// what `unwritable_slug_reason` names, as typed or where the slug resolves through a link.
+    /// A Windows device name is refused only while no file is there, so a file that already has
+    /// one can still be edited, renamed and deleted.
     pub fn write_path(&self, slug: &str) -> Result<WritablePath, SlugError> {
         if let Some(reason) = unwritable_slug_reason(slug) {
             return Err(SlugError::Unwritable {
@@ -288,6 +292,16 @@ impl VaultRoot {
             });
         }
         let confined = self.read_path(slug)?;
+        // The write replaces a link at the name and never follows it, so what a new file is
+        // called is the typed slug, whatever a dangling link there pointed at.
+        if std::fs::metadata(confined.as_path()).is_err() {
+            if let Some(reason) = device_name_reason(slug) {
+                return Err(SlugError::Unwritable {
+                    slug: slug.to_string(),
+                    reason,
+                });
+            }
+        }
         self.refuse_unwritable_through_links(slug, confined.as_path())?;
         Ok(WritablePath { path: confined })
     }
@@ -620,6 +634,23 @@ mod tests {
         ));
         assert!(root.write_path("capabilities/read").is_ok());
         assert!(root.read_path(".claude/rules").is_ok());
+    }
+
+    #[test]
+    fn a_device_name_bars_a_new_file_but_not_one_that_is_already_there() {
+        let (_directory, root) = vault();
+        assert!(matches!(
+            refusal(root.write_path("elements/aux")),
+            SlugError::Unwritable {
+                reason: UnwritableReason::DeviceName { .. },
+                ..
+            }
+        ));
+        std::fs::create_dir_all(root.path().join("elements")).expect("folder");
+        std::fs::write(root.path().join("elements/aux.md"), "x").expect("a file that was there first");
+        assert!(root.write_path("elements/aux").is_ok());
+        let file = root.markdown_files().into_iter().next().expect("listed");
+        assert!(root.writable(&file).is_ok());
     }
 
     #[test]
