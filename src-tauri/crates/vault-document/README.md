@@ -20,8 +20,8 @@ Every module of `src/` is named here once.
 | Which link targets does a body hold? | `body_links.rs` (listed once per file; a name it cannot answer from the list reads the body) |
 | What is kept between calls? | `document_cache.rs` |
 | Every file read for one call | `loaded_vault.rs` |
-| How are many files read? | `serial_reads.rs` (`read_serially`: one thread reads, the pool parses what was read) |
-| Which documents mention a title? | `evidence_search.rs` (`search_evidence`: substring in the title, the references or the body, scored; bodies read one after another and searched on every core), `search_text.rs` (lower case and one Unicode form), `search_needle.rs` (the folded text with its runs hashed once and the number each document's memo of its last answer is kept under), `body_signature.rs` (a bit fingerprint a first read leaves, so a search for text a body lacks opens no file), `near_titles.rs` (titles a typo or a shared word away, `strsim`) |
+| How are many files read? | `reader_threads.rs` (`read_on_reader_threads`: three threads read, `READER_THREADS` says why three, and the pool parses what was read) |
+| Which documents mention a title? | `evidence_search.rs` (`search_evidence`: substring in the title, the references or the body, scored; bodies read on a few threads and searched on every core), `search_text.rs` (lower case and one Unicode form), `search_needle.rs` (the folded text with its runs hashed once and the number each document's memo of its last answer is kept under), `body_signature.rs` (a bit fingerprint a first read leaves, so a search for text a body lacks opens no file), `near_titles.rs` (titles a typo or a shared word away, `strsim`) |
 | The six plain reads | `kind_census.rs`, `backlinks.rs`, `orphans.rs`, `query_filter.rs`, `review.rs`, `body_delivery.rs`, `read_hints.rs` |
 
 ## What it promises

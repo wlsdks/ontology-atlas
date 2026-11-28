@@ -19,7 +19,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use confined_files::{ConfinedPath, FileSnapshot, FileStamp, StableReadError, VaultRoot};
 
 use crate::loaded_document::{FileReadError, LoadedDocument};
-use crate::serial_reads::{read_serially, Reading};
+use crate::reader_threads::{read_on_reader_threads, Reading};
 
 /// A file this recently written or changed, when it was read, is not trusted yet.
 const RACY_WINDOW_NANOSECONDS: i128 = 2_000_000_000;
@@ -134,12 +134,15 @@ impl DocumentCache {
                 by_path.get(file.as_path()).copied()
             }
         };
-        // One look at every name, on this thread, a folder's files together (`serial_reads` says
-        // why not on every core); a settled file whose stamp holds is kept, the rest are read.
-        // A kept document is one word per file; only the files read hold a whole outcome.
+        // One look at every name, a folder's files together, on this thread: on three threads the
+        // looks of a repeat call cost 60 to 100 ms more CPU on the scale gate and left the process
+        // 4 MB larger after each call (`reader_threads` says why). A settled file whose stamp
+        // holds is kept, the rest are read. A kept document is one word per file; only the files
+        // read hold a whole outcome.
+        let stamps = ConfinedPath::stamps(files);
         let mut kept_documents: Vec<Option<LoadedDocument>> = Vec::with_capacity(files.len());
         let mut unsettled: Vec<(&ConfinedPath, Option<&Entry>)> = Vec::new();
-        for (position, (file, stamp)) in files.iter().zip(ConfinedPath::stamps(files)).enumerate() {
+        for (position, (file, stamp)) in files.iter().zip(stamps).enumerate() {
             let cached = cached_for(position, file);
             let document = kept(cached, &stamp);
             if document.is_none() {
@@ -147,7 +150,7 @@ impl DocumentCache {
             }
             kept_documents.push(document);
         }
-        let mut read = read_serially(
+        let mut read = read_on_reader_threads(
             &unsettled,
             |(file, _)| {
                 self.reads.fetch_add(1, Ordering::Relaxed);

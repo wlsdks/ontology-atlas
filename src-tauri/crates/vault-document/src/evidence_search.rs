@@ -12,9 +12,9 @@ use answer_format::whitespace::trim;
 use rayon::prelude::*;
 
 use crate::loaded_document::{FileReadError, LoadedDocument};
+use crate::reader_threads::{read_on_reader_threads, Reading};
 use crate::search_needle::SearchNeedle;
 use crate::search_text::{folded, words};
-use crate::serial_reads::{read_serially, Reading};
 
 /// Where the title was found. A title match is `Frontmatter` whichever key held it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -159,8 +159,8 @@ fn body_hit<'a>(
 
 /// Every document that mentions the title, best first: by score, a node before a note of the same
 /// score, then the collation of the slug. Titles and references are judged on every core; a body is
-/// read only where they did not match and an earlier search cannot answer for it, one file after
-/// another (see `serial_reads`), and searched on every core.
+/// read only where they did not match and an earlier search cannot answer for it, on a few reader
+/// threads (see `reader_threads`), and searched on every core.
 pub fn search_evidence<'a>(
     documents: &'a [LoadedDocument],
     query: &EvidenceQuery,
@@ -183,7 +183,7 @@ pub fn search_evidence<'a>(
             }
         }
     }
-    let answered = read_serially(
+    let answered = read_on_reader_threads(
         &ask_body,
         |(_, document, ..)| {
             let read = document.read_body();
