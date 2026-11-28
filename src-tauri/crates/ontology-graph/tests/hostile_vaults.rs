@@ -56,10 +56,9 @@ fn a_chain_ten_thousand_long_is_ordered_searched_and_bounded_without_recursion()
             Vec::new()
         }
     });
-    let order = answer(&graph, &request("topological_order"));
+    let order = answer(&graph, &request("health"))["dependencyOrder"].clone();
     assert_eq!(order["acyclic"], true);
     assert_eq!(order["orderedCount"], CHAIN);
-    assert_eq!(order["layers"].as_array().map(Vec::len), Some(100));
 
     // The two ends are ten thousand edges apart: a search within twenty hops says so.
     let ends = |operation: &str| QueryRequest {
@@ -68,9 +67,6 @@ fn a_chain_ten_thousand_long_is_ordered_searched_and_bounded_without_recursion()
         ..request(operation)
     };
     assert_eq!(answer(&graph, &ends("path"))["found"], false);
-    let all = answer(&graph, &ends("all_paths"));
-    assert_eq!(all["found"], false);
-    assert_eq!(all["exhaustive"], true);
 
     // Ten thousand starting points overspend the default budget of expanded states: the search
     // stops, and says zero cycles is not proof of none.
@@ -82,12 +78,11 @@ fn a_chain_ten_thousand_long_is_ordered_searched_and_bounded_without_recursion()
 #[test]
 fn a_ring_ten_thousand_long_blocks_the_order_and_is_no_cycle_within_the_depth() {
     let graph = vault(CHAIN, |number| vec![(number + 1) % CHAIN]);
-    let order = answer(&graph, &request("topological_order"));
+    let order = answer(&graph, &request("health"))["dependencyOrder"].clone();
     assert_eq!(order["acyclic"], false);
     assert_eq!(order["orderedCount"], 0);
-    // The list of blocked nodes is cut at the call's limit, and the answer says it was.
-    assert_eq!(order["blocked"].as_array().map(Vec::len), Some(100));
-    assert_eq!(order["limited"], true);
+    // The list of blocked nodes is cut at the health check's own limit.
+    assert_eq!(order["blocked"].as_array().map(Vec::len), Some(20));
     let cycles = answer(&graph, &request("cycles"));
     assert_eq!(cycles["totalCycles"], 0);
     let components = answer(&graph, &request("components"));
@@ -118,8 +113,8 @@ fn fifty_thousand_nodes_and_a_hub_they_all_depend_on_answer_every_summary() {
     assert_eq!(overview["hubs"][0]["slug"], slug(0));
     let communities = answer(&graph, &request("communities"));
     assert_eq!(communities["summary"]["communities"], 1);
-    let centrality = answer(&graph, &request("centrality"));
-    assert_eq!(centrality["rankings"]["pageRank"][0]["slug"], slug(0));
+    let busiest = answer(&graph, &request("match_nodes"));
+    assert_eq!(busiest["nodes"][0]["slug"], slug(0));
     let neighbors = answer(
         &graph,
         &QueryRequest {

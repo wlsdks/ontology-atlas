@@ -4,7 +4,6 @@
 use indexmap::IndexMap;
 use serde::Serialize;
 
-use super::expansion_start::expansion_start;
 use super::graph_walk::has_traversal_step;
 use super::hop::{path_edges, Hop};
 use super::neighborhood::{hops_between, Neighborhood, Reached};
@@ -13,6 +12,7 @@ use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::name_counts::{kind_counts, sorted_counts};
 use crate::query::node_mask::NodeMask;
+use crate::query::node_resolution::resolve;
 use crate::query::node_summary::{summaries, NodeSummary};
 use crate::query::operation_defaults::REACHABILITY;
 use crate::query::query_error::QueryError;
@@ -74,7 +74,7 @@ pub fn reachability<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<ReachabilityAnswer<'a>, QueryError> {
-    let start = expansion_start(graph, request, &REACHABILITY)?;
+    let start = resolve(graph, request.slug.as_deref(), "slug")?;
     let direction = REACHABILITY.direction(request);
     let depth = REACHABILITY.depth(request);
     let limit = REACHABILITY.limit(request);

@@ -1,15 +1,11 @@
 //! The operations that pick nodes out of the graph or summarize it: `overview`, `schema`,
-//! `facets`, `components`, `communities`, `centrality`, `similar_nodes`, `match_nodes`,
-//! `match_edges`, `recommend_relations`, `node_profile`, `domain_profile`, `domain_matrix`,
-//! `growth_plan`, `maintenance_plan`, `health` and `workspace_brief`. What they read about the
+//! `facets`, `components`, `communities`, `similar_nodes`, `match_nodes`, `recommend_relations`,
+//! `node_profile`, `growth_plan`, `maintenance_plan`, `health` and `workspace_brief`. What they read about the
 //! world beside the graph (the vault's validation, its ignore file, the reads its bodies ask for)
 //! reaches them in `QueryRequest::selection`, handed over by the tool layer.
 
-mod centrality;
 mod clusters;
 mod dependency_view;
-mod domain_matrix;
-mod domain_profile;
 mod follow_up;
 mod graph_summary;
 mod growth_candidates;
@@ -18,7 +14,6 @@ mod health;
 mod ignored_references;
 mod maintenance_action;
 mod maintenance_plan;
-mod match_edges;
 mod match_nodes;
 mod node_profile;
 mod outside_checks;
@@ -31,12 +26,11 @@ mod similar_nodes;
 mod starter_examples;
 mod workspace_brief;
 
-pub(in crate::query) use match_edges::scan_edges;
 pub(in crate::query) use match_nodes::count_matching_nodes;
 
 pub use ignored_references::parse_patterns as parse_ignore_patterns;
 pub use selection_request::{
-    LineSpan, MeaningReviewFacts, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest,
+    LineSpan, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest,
     StaleSummary, UncertaintyRead, VaultValidationFacts,
 };
 
@@ -53,14 +47,10 @@ pub enum SelectionOperation {
     Facets,
     Components,
     Communities,
-    Centrality,
     SimilarNodes,
     MatchNodes,
-    MatchEdges,
     RecommendRelations,
     NodeProfile,
-    DomainProfile,
-    DomainMatrix,
     GrowthPlan,
     MaintenancePlan,
     Health,
@@ -75,14 +65,10 @@ impl SelectionOperation {
             Self::Facets => "facets",
             Self::Components => "components",
             Self::Communities => "communities",
-            Self::Centrality => "centrality",
             Self::SimilarNodes => "similar_nodes",
             Self::MatchNodes => "match_nodes",
-            Self::MatchEdges => "match_edges",
             Self::RecommendRelations => "recommend_relations",
             Self::NodeProfile => "node_profile",
-            Self::DomainProfile => "domain_profile",
-            Self::DomainMatrix => "domain_matrix",
             Self::GrowthPlan => "growth_plan",
             Self::MaintenancePlan => "maintenance_plan",
             Self::Health => "health",
@@ -103,14 +89,10 @@ pub enum SelectionAnswer<'a> {
     Facets(graph_summary::FacetsAnswer<'a>),
     Components(clusters::ComponentsAnswer<'a>),
     Communities(clusters::CommunitiesAnswer<'a>),
-    Centrality(centrality::CentralityAnswer<'a>),
     SimilarNodes(similar_nodes::SimilarNodesAnswer<'a>),
     MatchNodes(match_nodes::MatchNodesAnswer<'a>),
-    MatchEdges(match_edges::MatchEdgesAnswer<'a>),
     RecommendRelations(relation_recommendations::RecommendRelationsAnswer<'a>),
     NodeProfile(node_profile::NodeProfileAnswer<'a>),
-    DomainProfile(domain_profile::DomainProfileAnswer<'a>),
-    DomainMatrix(domain_matrix::DomainMatrixAnswer<'a>),
     GrowthPlan(growth_plan::GrowthPlanAnswer<'a>),
     MaintenancePlan(maintenance_plan::MaintenancePlanAnswer<'a>),
     Health(health::HealthAnswer<'a>),
@@ -138,29 +120,17 @@ pub fn run<'a>(
         SelectionOperation::Communities => {
             SelectionAnswer::Communities(clusters::communities(graph, request)?)
         }
-        SelectionOperation::Centrality => {
-            SelectionAnswer::Centrality(centrality::centrality(graph, request)?)
-        }
         SelectionOperation::SimilarNodes => {
             SelectionAnswer::SimilarNodes(similar_nodes::similar_nodes(graph, request)?)
         }
         SelectionOperation::MatchNodes => {
             SelectionAnswer::MatchNodes(match_nodes::match_nodes(graph, request)?)
         }
-        SelectionOperation::MatchEdges => {
-            SelectionAnswer::MatchEdges(match_edges::match_edges(graph, request)?)
-        }
         SelectionOperation::RecommendRelations => SelectionAnswer::RecommendRelations(
             relation_recommendations::recommend_relations(graph, request)?,
         ),
         SelectionOperation::NodeProfile => {
             SelectionAnswer::NodeProfile(node_profile::node_profile(graph, request)?)
-        }
-        SelectionOperation::DomainProfile => {
-            SelectionAnswer::DomainProfile(domain_profile::domain_profile(graph, request)?)
-        }
-        SelectionOperation::DomainMatrix => {
-            SelectionAnswer::DomainMatrix(domain_matrix::domain_matrix(graph, request)?)
         }
         SelectionOperation::GrowthPlan => {
             SelectionAnswer::GrowthPlan(growth_plan::growth_plan(graph, request)?)

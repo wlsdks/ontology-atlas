@@ -93,30 +93,20 @@ impl Serialize for PlannedArguments {
 }
 
 /// The arguments a suggested call may carry, in the order it writes them. `types` closes the list.
-const SUGGESTED_ORDER: [&str; 27] = [
+const SUGGESTED_ORDER: [&str; 17] = [
     "slug",
-    "seed",
     "from",
     "to",
     "project",
     "direction",
     "depth",
     "maxHops",
-    "searchBudget",
-    "iterations",
     "limit",
     "kind",
     "domain",
-    "slugContains",
-    "minDegree",
-    "maxDegree",
-    "minInDegree",
-    "minOutDegree",
     "hasIncoming",
     "hasOutgoing",
     "sort",
-    "fromKind",
-    "toKind",
     "includeExternal",
     "includeUnresolved",
     "pattern",

@@ -1,7 +1,6 @@
-//! The checks `health` and `workspace_brief` carry that no graph can make: whether the vault's files
-//! validate, and whether the project meaning assessments are current. The tool layer hands over what
-//! those found (`OutsideFacts`); this file turns it into the check, the action that asks for it and
-//! the verdict it changes. With nothing handed over there is no check, so an answer never claims a
+//! The check `health` and `workspace_brief` carry that no graph can make: whether the vault's files
+//! validate. The tool layer hands over what that found (`OutsideFacts`); this file turns it into the
+//! check, the action that asks for it and the verdict it changes. With nothing handed over there is no check, so an answer never claims a
 //! validation that did not run.
 
 use answer_format::json::RawJson;
@@ -23,7 +22,6 @@ pub struct OutsideChecks {
     checks: Vec<HealthCheck>,
     validation: Option<Box<RawJson>>,
     validation_action: Option<AttentionAction>,
-    meaning_action: Option<AttentionAction>,
     needs_attention: bool,
 }
 
@@ -84,28 +82,10 @@ impl OutsideChecks {
             ));
             validation = Some(found.brief.clone());
         }
-        let mut meaning_action = None;
-        if let Some(review) = &facts.meaning_review {
-            needs_attention = true;
-            checks.push(HealthCheck::new(
-                "meaning_assessment",
-                "warn",
-                review.count,
-                review.message.clone(),
-            ));
-            meaning_action = Some(AttentionAction {
-                id: "meaning_assessment",
-                kind: "meaning_assessment",
-                severity: "warn",
-                count: review.count,
-                message: review.message.clone(),
-            });
-        }
         Self {
             checks,
             validation,
             validation_action,
-            meaning_action,
             needs_attention,
         }
     }
@@ -123,16 +103,12 @@ impl OutsideChecks {
         OutsideParts {
             checks: self.checks,
             validation: self.validation,
-            actions: [self.meaning_action, self.validation_action]
-                .into_iter()
-                .flatten()
-                .collect(),
+            actions: self.validation_action.into_iter().collect(),
         }
     }
 }
 
-/// The checks, the validation object and the actions that come first in a brief's next actions:
-/// the meaning review before the validation, as an agent should read them.
+/// The checks, the validation object and the actions that come first in a brief's next actions.
 pub struct OutsideParts {
     pub checks: Vec<HealthCheck>,
     pub validation: Option<Box<RawJson>>,

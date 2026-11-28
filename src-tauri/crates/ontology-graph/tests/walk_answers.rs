@@ -121,20 +121,18 @@ fn a_limit_cuts_the_lists_an_answer_writes_and_not_what_it_counts() {
     assert_eq!(rows(&reach["edges"]["rows"]).len(), 2);
     assert_eq!(reach["edges"]["limited"], true);
 
-    for operation in ["subgraph", "builder_context"] {
-        let slice = answer(
-            &graph,
-            &QueryRequest {
-                depth: Some(2),
-                ..from_hub(operation)
-            },
-        );
-        assert_eq!(slice["totalNodes"], 6, "{operation}");
-        assert_eq!(slice["totalEdges"], 6, "{operation}");
-        assert_eq!(rows(&slice["nodes"]).len(), 2, "{operation}");
-        assert_eq!(rows(&slice["edges"]).len(), 1, "{operation}");
-        assert_eq!(slice["limited"], true, "{operation}");
-    }
+    let slice = answer(
+        &graph,
+        &QueryRequest {
+            depth: Some(2),
+            ..from_hub("subgraph")
+        },
+    );
+    assert_eq!(slice["totalNodes"], 6);
+    assert_eq!(slice["totalEdges"], 6);
+    assert_eq!(rows(&slice["nodes"]).len(), 2);
+    assert_eq!(rows(&slice["edges"]).len(), 1);
+    assert_eq!(slice["limited"], true);
 }
 
 /// A capability file whose uid is `number`, holding the capabilities `holds`.

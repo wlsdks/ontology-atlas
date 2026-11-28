@@ -6,7 +6,6 @@
 //! they share lives here: the request, the error, the names of relations and nodes, and the rows
 //! every answer repeats.
 
-mod analysis_operation;
 mod containment_steps;
 mod domain_lookup;
 mod edge_rows;
@@ -22,6 +21,7 @@ mod query_error;
 mod relation_set;
 mod request;
 mod scope;
+mod score_rounding;
 mod selection;
 mod step;
 mod walks;
@@ -30,13 +30,12 @@ use serde::Serialize;
 
 use crate::compiled_graph::CompiledGraph;
 
-pub use analysis_operation::AnalysisOperation;
 pub use operation::{Operation, PendingOperation};
 pub use query_error::QueryError;
 pub use relation_set::RELATION_TYPE_VALUES;
 pub use request::{Direction, QueryRequest, SEARCH_BUDGET_MAX};
 pub use selection::{
-    parse_ignore_patterns, LineSpan, MeaningReviewFacts, NodeSort, OutsideFacts,
+    parse_ignore_patterns, LineSpan, NodeSort, OutsideFacts,
     SelectionArguments, SelectionOperation, SelectionRequest, StaleSummary, UncertaintyRead,
     VaultValidationFacts,
 };
@@ -78,7 +77,7 @@ pub struct QueryAnswer<'a> {
 }
 
 /// Answers the call from `graph`. An operation no module answers yet is refused by name, and so is
-/// one that reads the analysis records, which the tool layer answers from the vault's files.
+/// the one that reads an analysis record, which the tool layer answers from the vault's files.
 pub fn run<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
@@ -91,8 +90,8 @@ pub fn run<'a>(
             OperationAnswer::Selection(Box::new(selection::run(graph, operation, request)?))
         }
         Operation::QueryPlan => OperationAnswer::Plan(Box::new(plan::query_plan(graph, request)?)),
-        Operation::Analysis(operation) => {
-            return Err(QueryError::NotAGraphOperation(operation.name()));
+        Operation::AnalysisRecord => {
+            return Err(QueryError::NotAGraphOperation(Operation::AnalysisRecord.name()));
         }
         Operation::Pending(operation) => {
             return Err(QueryError::NotAnsweredYet(operation.name()));

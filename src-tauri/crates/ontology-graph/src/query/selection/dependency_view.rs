@@ -1,6 +1,6 @@
 //! What the dependency walks say, as `health` and `maintenance_plan` need it: whether dependencies
 //! loop and whether they can be put in order. The walks own the search and the written rows; this
-//! asks them with the defaults a call of `cycles` or `topological_order` has and keeps the facts
+//! asks them with the defaults a call of `cycles` has and keeps the facts
 //! as typed values, so the two never disagree about what a cycle is.
 
 use crate::compiled_graph::CompiledGraph;
@@ -8,7 +8,7 @@ use crate::query::operation_defaults::{CYCLES_MAX_HOPS, CYCLES_SEARCH_BUDGET};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::walks::dependency_cycles::{find_cycles, CycleRow};
-use crate::query::walks::topological_order::{order_dependencies, BlockedRow};
+use crate::query::walks::dependency_order::{order_dependencies, BlockedRow};
 
 /// The relations the dependency walks read unless the call names others.
 pub fn default_types() -> Vec<String> {
@@ -68,7 +68,7 @@ pub fn order<'a>(
     argument: &str,
 ) -> Result<OrderReport<'a>, QueryError> {
     let relations = RelationSet::parse(Some(types), argument)?;
-    let found = order_dependencies(graph, relations.as_ref(), false);
+    let found = order_dependencies(graph, relations.as_ref());
     Ok(OrderReport {
         acyclic: found.is_acyclic(),
         total_nodes: found.total_nodes,

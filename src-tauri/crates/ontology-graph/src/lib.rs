@@ -19,8 +19,8 @@ pub use compiled_graph::{
 pub use graph_compiler::compile;
 pub use identity_error::{IdentityError, IdentityFault};
 pub use query::{
-    parse_ignore_patterns, run as run_query, AnalysisOperation, Direction, LineSpan,
-    MeaningReviewFacts, NodeSort, Operation, OutsideFacts, PendingOperation, QueryAnswer,
+    parse_ignore_patterns, run as run_query, Direction, LineSpan,
+    NodeSort, Operation, OutsideFacts, PendingOperation, QueryAnswer,
     QueryError, QueryRequest, SelectionArguments, SelectionOperation, SelectionRequest,
     StaleSummary, UncertaintyRead, VaultValidationFacts, WalkOperation, RELATION_TYPE_VALUES,
     SEARCH_BUDGET_MAX,

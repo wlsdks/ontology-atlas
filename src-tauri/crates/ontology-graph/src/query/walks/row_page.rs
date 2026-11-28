@@ -3,9 +3,6 @@
 
 use serde::Serialize;
 
-use crate::compiled_graph::{CompiledGraph, NodeId};
-use crate::query::node_summary::NodeSummary;
-
 #[derive(Serialize)]
 pub struct RowPage<T> {
     total: usize,
@@ -68,19 +65,5 @@ impl<T> NodePage<T> {
             limited: total > limit,
             nodes,
         }
-    }
-}
-
-impl<'a> NodePage<NodeSummary<'a>> {
-    /// The first `limit` of `ids`, each as a summary, with how many there were.
-    pub fn of_nodes(graph: &'a CompiledGraph, ids: &[NodeId], limit: usize) -> Self {
-        Self::new(
-            ids.len(),
-            limit,
-            ids.iter()
-                .take(limit)
-                .map(|&id| NodeSummary::of(graph, id))
-                .collect(),
-        )
     }
 }

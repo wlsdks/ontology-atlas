@@ -23,16 +23,14 @@ use crate::compiled_graph::CompiledGraph;
 use crate::query::node_resolution::resolve;
 use crate::query::operation::Operation;
 use crate::query::operation_defaults::{
-    default_limit, neighbors_direction, ALL_PATHS_SEARCH_BUDGET, BUILDER_CONTEXT, CENTRALITY_LIMIT,
-    DEPENDENCY_IMPACT, ITERATIONS, MATCH_EDGES_LIMIT, MATCH_NODES_LIMIT, NEIGHBORS_LIMIT,
+    default_limit, neighbors_direction, DEPENDENCY_IMPACT, MATCH_NODES_LIMIT, NEIGHBORS_LIMIT,
     PATH_MAX_HOPS, REACHABILITY, SUBGRAPH,
 };
 use crate::query::query_error::QueryError;
-use crate::query::relation_set::{allowed, public_relation_type, RelationSet};
+use crate::query::relation_set::{public_relation_type, RelationSet};
 use crate::query::request::{Direction, QueryRequest};
 use crate::query::selection::SelectionOperation;
-use crate::query::selection::{count_matching_nodes, scan_edges};
-use crate::query::walks::expansion_start::expansion_start;
+use crate::query::selection::count_matching_nodes;
 use crate::query::walks::impact::refuse_structural_types;
 use crate::query::walks::neighbors::count_filtered_edges;
 use crate::query::walks::WalkOperation;
@@ -44,16 +42,6 @@ const NODE_KINDS: [&str; 6] = [
     "element",
     "document",
     "vault-readme",
-];
-const EDGE_END_KINDS: [&str; 8] = [
-    "project",
-    "domain",
-    "capability",
-    "element",
-    "document",
-    "vault-readme",
-    "external",
-    "unresolved",
 ];
 
 #[derive(Serialize)]
@@ -203,62 +191,33 @@ fn read_paths(
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let direction = Direction::for_paths(request.direction);
     let max_hops = request.max_hops.unwrap_or(PATH_MAX_HOPS);
-    let enumerates = target == WalkOperation::AllPaths;
     let limit = limit_of(Operation::Walk(target), request);
-    let search_budget = if enumerates {
-        Some(request.search_budget(ALL_PATHS_SEARCH_BUDGET)?)
-    } else {
-        None
-    };
     let traversal = estimate_traversal(graph, from, direction, types.as_ref(), max_hops);
     let mut arguments = head(Operation::Walk(target), public_names(types.as_ref()), limit);
     arguments.put("from", ArgumentValue::text(graph.node(from).slug()));
     arguments.put("to", ArgumentValue::text(graph.node(to).slug()));
     arguments.put("direction", ArgumentValue::text(direction_name(direction)));
     arguments.put("maxHops", ArgumentValue::Count(max_hops));
-    if let Some(budget) = search_budget {
-        arguments.put("searchBudget", ArgumentValue::Count(budget));
-    }
     let mut indexes = adjacency_indexes(direction);
     indexes.push("aliasToSlug");
     if types.is_some() {
         indexes.push("edge.type filter");
     }
-    let mut warnings = Vec::new();
     let potential = traversal.potential_path_upper_bound;
-    if let (true, Some(limit), Some(budget)) = (enumerates, limit, search_budget) {
-        if potential > limit as f64 {
-            warnings.push(
-                "all_paths may be truncated by limit; reduce maxHops or add relation types."
-                    .to_string(),
-            );
-        }
-        if potential > budget as f64 {
-            warnings.push("all_paths may stop at searchBudget before exhaustive enumeration; reduce maxHops, add relation types, or raise searchBudget.".to_string());
-        }
-    }
-    let result_upper_bound = match (enumerates, limit, search_budget) {
-        (true, Some(limit), Some(budget)) => potential.min(limit as f64).min(budget as f64),
-        _ => 1.0,
-    };
     let cost_class = CostClass::of(traversal.edge_scans as f64 + potential);
     Ok(Reading {
         arguments,
         indexes,
         estimate: CostEstimate::PathSearch {
-            strategy: if enumerates {
-                "bounded_path_enumeration"
-            } else {
-                "bounded_bfs"
-            },
+            strategy: "bounded_bfs",
             edge_scans: traversal.edge_scans,
             reachable_within_depth: traversal.reachable_within_depth,
             frontier_by_depth: traversal.frontier_by_depth,
             potential_path_upper_bound: potential,
-            result_upper_bound,
+            result_upper_bound: 1.0,
             cost_class,
         },
-        warnings,
+        warnings: Vec::new(),
     })
 }
 
@@ -270,10 +229,9 @@ fn read_expansion(
     let defaults = match target {
         WalkOperation::Reachability => &REACHABILITY,
         WalkOperation::Subgraph => &SUBGRAPH,
-        WalkOperation::BuilderContext => &BUILDER_CONTEXT,
         _ => &DEPENDENCY_IMPACT,
     };
-    let start = expansion_start(graph, request, defaults)?;
+    let start = resolve(graph, request.slug.as_deref(), "slug")?;
     let dependencies_only = matches!(target, WalkOperation::Impact | WalkOperation::BlastRadius);
     let types = if dependencies_only {
         refuse_structural_types(request)?;
@@ -325,26 +283,6 @@ fn read_match_nodes(graph: &CompiledGraph, request: &QueryRequest) -> Result<Rea
     );
     arguments.put("kind", ArgumentValue::of_text(selected.kind.as_deref()));
     arguments.put("domain", ArgumentValue::of_text(selected.domain.as_deref()));
-    arguments.put(
-        "slugContains",
-        ArgumentValue::of_text(
-            selected
-                .slug_contains
-                .as_deref()
-                .map(str::to_lowercase)
-                .as_deref(),
-        ),
-    );
-    arguments.put("minDegree", ArgumentValue::of_count(selected.min_degree));
-    arguments.put("maxDegree", ArgumentValue::of_count(selected.max_degree));
-    arguments.put(
-        "minInDegree",
-        ArgumentValue::of_count(selected.min_in_degree),
-    );
-    arguments.put(
-        "minOutDegree",
-        ArgumentValue::of_count(selected.min_out_degree),
-    );
     arguments.put("hasIncoming", ArgumentValue::of_flag(selected.has_incoming));
     arguments.put("hasOutgoing", ArgumentValue::of_flag(selected.has_outgoing));
     arguments.put(
@@ -361,102 +299,6 @@ fn read_match_nodes(graph: &CompiledGraph, request: &QueryRequest) -> Result<Rea
             total_matches: total,
             result_upper_bound: total.min(limit),
             cost_class: CostClass::of(nodes as f64),
-        },
-        warnings: Vec::new(),
-    })
-}
-
-fn read_match_edges(graph: &CompiledGraph, request: &QueryRequest) -> Result<Reading, QueryError> {
-    let selected = &request.selection.arguments;
-    check_kind(selected.from_kind.as_ref(), "fromKind", &NODE_KINDS)?;
-    check_kind(selected.to_kind.as_ref(), "toKind", &EDGE_END_KINDS)?;
-    let limit = request.limit.unwrap_or(MATCH_EDGES_LIMIT);
-    let scan = scan_edges(graph, request)?;
-    let mut arguments = head(
-        Operation::Selection(SelectionOperation::MatchEdges),
-        public_names(scan.types.as_ref()),
-        Some(limit),
-    );
-    let slug_of = |node| ArgumentValue::text(graph.node(node).slug());
-    arguments.put("from", scan.from.map_or(ArgumentValue::Absent, slug_of));
-    arguments.put("to", scan.to.map_or(ArgumentValue::Absent, slug_of));
-    arguments.put(
-        "fromKind",
-        ArgumentValue::of_text(selected.from_kind.as_deref()),
-    );
-    arguments.put(
-        "toKind",
-        ArgumentValue::of_text(selected.to_kind.as_deref()),
-    );
-    arguments.put(
-        "includeExternal",
-        ArgumentValue::Flag(scan.include_external),
-    );
-    arguments.put(
-        "includeUnresolved",
-        ArgumentValue::Flag(scan.include_unresolved),
-    );
-    let mut indexes = vec!["edges"];
-    if scan.types.is_some() {
-        indexes.push("edge.type filter");
-    }
-    if scan.from.is_some() || scan.to.is_some() {
-        indexes.push("aliasToSlug");
-    }
-    let edges = graph.edges().len();
-    Ok(Reading {
-        arguments,
-        indexes,
-        estimate: CostEstimate::EdgeScan {
-            strategy: "edge_scan",
-            edge_scans: edges,
-            total_matches: scan.matched.len(),
-            result_upper_bound: scan.matched.len().min(limit),
-            cost_class: CostClass::of(edges as f64),
-        },
-        warnings: Vec::new(),
-    })
-}
-
-fn read_centrality(graph: &CompiledGraph, request: &QueryRequest) -> Result<Reading, QueryError> {
-    let types = RelationSet::parse(request.types.as_deref(), "types")?;
-    let limit = request.limit.unwrap_or(CENTRALITY_LIMIT);
-    let iterations = request.iterations.unwrap_or(ITERATIONS);
-    let mut has_outgoing = vec![false; graph.nodes().len()];
-    let mut resolved = 0_usize;
-    for edge in graph.edges() {
-        if edge.is_resolved() && allowed(types.as_ref(), edge.via) {
-            resolved += 1;
-            if let Some(slot) = has_outgoing.get_mut(edge.from.index()) {
-                *slot = true;
-            }
-        }
-    }
-    let nodes = graph.nodes().len();
-    let sources = has_outgoing.iter().filter(|has| **has).count();
-    let work_units = (nodes + resolved).saturating_mul(iterations);
-    let mut arguments = head(
-        Operation::Selection(SelectionOperation::Centrality),
-        public_names(types.as_ref()),
-        Some(limit),
-    );
-    arguments.put("iterations", ArgumentValue::Count(iterations));
-    let mut indexes = vec!["nodes", "edges"];
-    if types.is_some() {
-        indexes.push("edge.type filter");
-    }
-    Ok(Reading {
-        arguments,
-        indexes,
-        estimate: CostEstimate::Centrality {
-            strategy: "page_rank_centrality",
-            node_scans: nodes,
-            edge_scans: resolved,
-            iterations,
-            dangling_nodes: nodes.saturating_sub(sources),
-            ranking_work_units: work_units,
-            result_upper_bound: nodes.min(limit),
-            cost_class: CostClass::of(work_units.div_ceil(20) as f64),
         },
         warnings: Vec::new(),
     })
@@ -493,11 +335,7 @@ fn read_whole_graph(
     if let Some(direction) = request.direction {
         arguments.put("direction", ArgumentValue::text(direction_name(direction)));
     }
-    for (name, count) in [
-        ("depth", request.depth),
-        ("maxHops", request.max_hops),
-        ("iterations", request.iterations),
-    ] {
+    for (name, count) in [("depth", request.depth), ("maxHops", request.max_hops)] {
         if let Some(count) = count {
             arguments.put(name, ArgumentValue::Count(count));
         }
@@ -527,19 +365,16 @@ fn read(
 ) -> Result<Reading, QueryError> {
     match target {
         Operation::Walk(WalkOperation::Neighbors) => read_neighbors(graph, request),
-        Operation::Walk(
-            walk @ (WalkOperation::Path | WalkOperation::AllPaths | WalkOperation::ExplainRelation),
-        ) => read_paths(graph, request, walk),
+        Operation::Walk(walk @ (WalkOperation::Path | WalkOperation::ExplainRelation)) => {
+            read_paths(graph, request, walk)
+        }
         Operation::Walk(
             walk @ (WalkOperation::Reachability
             | WalkOperation::Impact
             | WalkOperation::BlastRadius
-            | WalkOperation::Subgraph
-            | WalkOperation::BuilderContext),
+            | WalkOperation::Subgraph),
         ) => read_expansion(graph, request, walk),
         Operation::Selection(SelectionOperation::MatchNodes) => read_match_nodes(graph, request),
-        Operation::Selection(SelectionOperation::MatchEdges) => read_match_edges(graph, request),
-        Operation::Selection(SelectionOperation::Centrality) => read_centrality(graph, request),
         other => read_whole_graph(graph, request, other),
     }
 }

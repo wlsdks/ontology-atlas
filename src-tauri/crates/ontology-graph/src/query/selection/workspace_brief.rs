@@ -202,13 +202,12 @@ pub fn workspace_brief<'a>(
     request: &QueryRequest,
 ) -> Result<WorkspaceBriefAnswer<'a>, QueryError> {
     let limit = request.limit.unwrap_or(WORKSPACE_BRIEF_LIMIT);
-    let arguments = &request.selection.arguments;
     let mut question = HealthQuestion::from_request(request);
-    question.component_limit = arguments.component_limit.unwrap_or(limit);
-    question.cycle_limit = arguments.cycle_limit.unwrap_or(limit);
-    question.recommendation_limit = arguments.recommendation_limit.unwrap_or(limit);
-    question.order_limit = arguments.order_limit.unwrap_or(limit);
-    question.node_limit = request.node_limit.unwrap_or(limit);
+    question.component_limit = limit;
+    question.cycle_limit = limit;
+    question.recommendation_limit = limit;
+    question.order_limit = limit;
+    question.node_limit = limit;
     question.max_hops = None;
     question.component_types_argument = "componentTypes";
     let HealthAnswer { status, checks, .. } = health(graph, &question)?;

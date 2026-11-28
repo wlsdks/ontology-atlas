@@ -19,7 +19,7 @@ use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::QueryRequest;
 use crate::query::walks::dependency_cycles::CycleRow;
-use crate::query::walks::topological_order::BlockedRow;
+use crate::query::walks::dependency_order::BlockedRow;
 
 /// Kinds that hold the graph together without being part of what it describes; a group made only
 /// of them is not an island worth reporting.
@@ -241,7 +241,8 @@ impl HealthAnswer<'_> {
     }
 }
 
-/// What a call asks of `health`: the limits and the relation filters its arguments carry.
+/// What a call asks of `health`: the limits of each list and the relation filter. `workspace_brief`
+/// asks for the same lists with a limit of its own.
 pub struct HealthQuestion {
     pub component_limit: usize,
     pub node_limit: usize,
@@ -249,7 +250,6 @@ pub struct HealthQuestion {
     pub recommendation_limit: usize,
     pub order_limit: usize,
     pub max_hops: Option<usize>,
-    pub dependency_types: Option<Vec<String>>,
     pub component_types: Option<Vec<String>>,
     /// Whether `componentTypes` or `types` was sent at all, which names the graph "scoped".
     pub scoped: bool,
@@ -260,27 +260,16 @@ pub struct HealthQuestion {
 impl HealthQuestion {
     /// The question a `health` call asks.
     pub fn from_request(request: &QueryRequest) -> Self {
-        let arguments = &request.selection.arguments;
-        let component_types = arguments
-            .component_types
-            .clone()
-            .or_else(|| request.types.clone());
+        let component_types = request.types.clone();
         Self {
-            component_limit: arguments.component_limit.unwrap_or(HEALTH_COMPONENT_LIMIT),
-            node_limit: request.node_limit.unwrap_or(HEALTH_NODE_LIMIT),
-            cycle_limit: arguments.cycle_limit.unwrap_or(HEALTH_CYCLE_LIMIT),
-            recommendation_limit: arguments
-                .recommendation_limit
-                .unwrap_or(HEALTH_RECOMMENDATION_LIMIT),
-            order_limit: arguments.order_limit.unwrap_or(HEALTH_ORDER_LIMIT),
+            component_limit: HEALTH_COMPONENT_LIMIT,
+            node_limit: HEALTH_NODE_LIMIT,
+            cycle_limit: HEALTH_CYCLE_LIMIT,
+            recommendation_limit: HEALTH_RECOMMENDATION_LIMIT,
+            order_limit: HEALTH_ORDER_LIMIT,
             max_hops: request.max_hops.or(request.depth),
-            dependency_types: arguments.dependency_types.clone(),
             scoped: component_types.is_some(),
-            component_types_argument: if arguments.component_types.is_some() {
-                "componentTypes"
-            } else {
-                "types"
-            },
+            component_types_argument: "types",
             component_types,
         }
     }
@@ -318,22 +307,19 @@ pub fn health<'a>(
         .count();
     let ignored = groups.len() - actionable;
     let recommended = recommend(graph, None, question.recommendation_limit);
-    let dependency_types = question
-        .dependency_types
-        .clone()
-        .unwrap_or_else(default_types);
+    let dependency_types = default_types();
     let cycles = dependency_view::cycles(
         graph,
         question.cycle_limit,
         question.max_hops,
         &dependency_types,
-        "dependencyTypes",
+        "types",
     )?;
     let order = dependency_view::order(
         graph,
         question.order_limit,
         &dependency_types,
-        "dependencyTypes",
+        "types",
     )?;
 
     let counts = graph.edge_counts();

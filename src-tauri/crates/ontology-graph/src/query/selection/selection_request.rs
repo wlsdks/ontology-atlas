@@ -37,32 +37,23 @@ impl NodeSort {
 
 /// The arguments only the selection operations read, each as the call sent it: `None` is an
 /// argument that was not sent. The arguments every family reads (`slug`, `limit`, `itemLimit`,
-/// `project`, `type`, `relation`, `types`) are on the request itself.
+/// `project`, `type`, `types`) are on the request itself.
 #[derive(Debug, Clone, Default)]
 pub struct SelectionArguments {
     pub kind: Option<String>,
     pub domain: Option<String>,
-    pub slug_contains: Option<String>,
-    pub min_degree: Option<usize>,
-    pub max_degree: Option<usize>,
-    pub min_in_degree: Option<usize>,
-    pub min_out_degree: Option<usize>,
     pub has_incoming: Option<bool>,
     pub has_outgoing: Option<bool>,
     pub sort: Option<NodeSort>,
-    pub from_kind: Option<String>,
-    pub to_kind: Option<String>,
+    /// `offset` of `match_nodes`: the rows of the sorted match to skip.
+    pub offset: Option<usize>,
+    /// `excludeKinds` of `match_nodes`: node kinds left out of the match.
+    pub exclude_kinds: Option<Vec<String>>,
     pub candidate_slug: Option<String>,
     pub title: Option<String>,
-    pub component_limit: Option<usize>,
-    pub cycle_limit: Option<usize>,
-    pub recommendation_limit: Option<usize>,
-    pub order_limit: Option<usize>,
     pub phases: Option<Vec<String>>,
     pub severities: Option<Vec<String>>,
     pub kinds: Option<Vec<String>>,
-    pub dependency_types: Option<Vec<String>>,
-    pub component_types: Option<Vec<String>>,
     pub executable_only: Option<bool>,
     pub after_action_id: Option<String>,
 }
@@ -114,20 +105,11 @@ pub struct VaultValidationFacts {
     pub repo_root: Option<String>,
 }
 
-/// A project meaning assessment that is not current, as the meaning tools judge it. Supplied only
-/// when something needs review; a vault whose assessments are current supplies none.
-#[derive(Debug, Clone)]
-pub struct MeaningReviewFacts {
-    pub count: usize,
-    pub message: String,
-}
-
 /// What the tool layer reads from beside the graph.
 #[derive(Debug, Clone, Default)]
 pub struct OutsideFacts {
     /// `None` when no validation was handed over: the answer then carries no validation check.
     pub validation: Option<VaultValidationFacts>,
-    pub meaning_review: Option<MeaningReviewFacts>,
     /// The `.ontology-atlasignore` patterns of the vault, one per line of the file.
     pub ignore_patterns: Vec<String>,
     pub stale_summaries: Vec<StaleSummary>,

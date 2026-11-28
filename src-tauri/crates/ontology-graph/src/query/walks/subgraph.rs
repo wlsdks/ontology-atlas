@@ -2,18 +2,17 @@
 
 use serde::Serialize;
 
-use super::expansion_start::expansion_start;
 use super::neighborhood::{Neighborhood, NodeAtDistance};
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::node_mask::NodeMask;
-use crate::query::operation_defaults::{Expansion, SUBGRAPH};
+use crate::query::operation_defaults::SUBGRAPH;
+use crate::query::node_resolution::resolve;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::{Direction, QueryRequest};
 
-/// The cut of the neighborhood of a node that `subgraph` and `builder_context` answer with: the
-/// first `limit` nodes, nearest first and the seed before any, and the first `limit` of the edges
+/// The cut of the neighborhood of a node that `subgraph` answers with: the first `limit` nodes, nearest first and the seed before any, and the first `limit` of the edges
 /// among them. Both totals count everything found: every node reached, and every edge among them.
 pub struct Subgraph {
     pub seed: NodeId,
@@ -30,16 +29,12 @@ pub struct Subgraph {
 }
 
 impl Subgraph {
-    /// The subgraph around the node the call names, as `defaults` reads the name.
-    pub fn of_call(
-        graph: &CompiledGraph,
-        request: &QueryRequest,
-        defaults: &Expansion,
-    ) -> Result<Self, QueryError> {
-        let seed = expansion_start(graph, request, defaults)?;
-        let direction = defaults.direction(request);
-        let depth = defaults.depth(request);
-        let limit = defaults.limit(request);
+    /// The subgraph around the node the call names.
+    pub fn of_call(graph: &CompiledGraph, request: &QueryRequest) -> Result<Self, QueryError> {
+        let seed = resolve(graph, request.slug.as_deref(), "slug")?;
+        let direction = SUBGRAPH.direction(request);
+        let depth = SUBGRAPH.depth(request);
+        let limit = SUBGRAPH.limit(request);
         let types = RelationSet::parse(request.types.as_deref(), "types")?;
         let neighborhood = Neighborhood::explore(graph, seed, direction, depth, types.as_ref());
 
@@ -127,7 +122,7 @@ pub fn subgraph<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<SubgraphAnswer<'a>, QueryError> {
-    let slice = Subgraph::of_call(graph, request, &SUBGRAPH)?;
+    let slice = Subgraph::of_call(graph, request)?;
     Ok(SubgraphAnswer {
         operation: "subgraph",
         seed: graph.node(slice.seed).slug(),

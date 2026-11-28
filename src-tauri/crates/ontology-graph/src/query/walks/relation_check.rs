@@ -166,11 +166,11 @@ pub struct RelationCheckAnswer<'a> {
 
 /// The relation the call proposes, by the name edges carry.
 fn proposed_relation(request: &QueryRequest) -> Result<&'static str, QueryError> {
-    let (argument, label) = match (&request.relation_type, &request.relation) {
-        (Some(text), _) => (Some(text), "type"),
-        (None, other) => (other.as_ref(), "relation"),
-    };
-    let Some(text) = argument.filter(|text| !trim(text).is_empty()) else {
+    let Some(text) = request
+        .relation_type
+        .as_ref()
+        .filter(|text| !trim(text).is_empty())
+    else {
         return Err(QueryError::Invalid(
             "type (string) is required for relation_check.".to_string(),
         ));
@@ -180,7 +180,7 @@ fn proposed_relation(request: &QueryRequest) -> Result<&'static str, QueryError>
         Some(&"depends_on") => Ok("dependencies"),
         Some(&known) => Ok(known),
         None => Err(QueryError::NotAnAllowedValue {
-            name: label.to_string(),
+            name: "type".to_string(),
             received: name.to_string(),
             allowed: RELATION_TYPE_VALUES.to_vec(),
         }),

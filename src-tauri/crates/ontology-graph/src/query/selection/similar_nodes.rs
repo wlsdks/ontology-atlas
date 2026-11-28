@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 use serde::Serialize;
 
-use super::centrality::round_score;
+use crate::query::score_rounding::round_score;
 use super::clusters::undirected_adjacency;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::node_resolution::resolve;

@@ -11,9 +11,6 @@ use crate::query::walks::WalkOperation;
 /// The relations a narrower call is limited to when it names none.
 const SAFER_TYPES: [&str; 2] = ["depends_on", "relates"];
 const SAFER_LIMIT: usize = 25;
-const SAFER_PATH_LIMIT: usize = 10;
-const SAFER_SEARCH_BUDGET: usize = 1000;
-const SAFER_ITERATIONS: usize = 20;
 const SAFER_HOPS_CEILING: usize = 3;
 const SAFER_DEPTH_CEILING: usize = 2;
 
@@ -54,32 +51,18 @@ fn narrowed(target: Operation, suggested: &SuggestedCall) -> SuggestedCall {
     let mut narrower = suggested.arguments().clone();
     let arguments = &mut narrower;
     match target {
-        Operation::Walk(
-            WalkOperation::AllPaths | WalkOperation::Path | WalkOperation::ExplainRelation,
-        ) => {
+        Operation::Walk(WalkOperation::Path | WalkOperation::ExplainRelation) => {
             if let Some(hops) = arguments.count("maxHops") {
                 let fewer = hops.saturating_sub(1).clamp(1, SAFER_HOPS_CEILING);
                 set_count(arguments, "maxHops", fewer);
             }
             without_types_name_the_usual_two(arguments);
-            if target == Operation::Walk(WalkOperation::AllPaths) {
-                let limit = lowered(arguments, "limit", SAFER_PATH_LIMIT, SAFER_PATH_LIMIT);
-                set_count(arguments, "limit", limit);
-                let budget = lowered(
-                    arguments,
-                    "searchBudget",
-                    SAFER_SEARCH_BUDGET,
-                    SAFER_SEARCH_BUDGET,
-                );
-                set_count(arguments, "searchBudget", budget);
-            }
         }
         Operation::Walk(
             WalkOperation::Reachability
             | WalkOperation::Impact
             | WalkOperation::BlastRadius
-            | WalkOperation::Subgraph
-            | WalkOperation::BuilderContext,
+            | WalkOperation::Subgraph,
         ) => {
             if let Some(depth) = arguments.count("depth") {
                 let shallower = depth.saturating_sub(1).clamp(1, SAFER_DEPTH_CEILING);
@@ -88,13 +71,6 @@ fn narrowed(target: Operation, suggested: &SuggestedCall) -> SuggestedCall {
             without_types_name_the_usual_two(arguments);
             let limit = lowered(arguments, "limit", SAFER_LIMIT, SAFER_LIMIT);
             set_count(arguments, "limit", limit);
-        }
-        Operation::Selection(crate::query::selection::SelectionOperation::Centrality) => {
-            let limit = lowered(arguments, "limit", SAFER_LIMIT, SAFER_LIMIT);
-            set_count(arguments, "limit", limit);
-            let iterations = lowered(arguments, "iterations", SAFER_ITERATIONS, SAFER_ITERATIONS);
-            set_count(arguments, "iterations", iterations);
-            without_types_name_the_usual_two(arguments);
         }
         _ => {
             let limit = lowered(arguments, "limit", SAFER_LIMIT, SAFER_LIMIT);

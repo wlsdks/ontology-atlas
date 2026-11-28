@@ -140,7 +140,7 @@ fn subject_of(target: &str) -> QueryRequest {
     let hub = Some(big_slug(0));
     let request = call(target);
     match target {
-        "path" | "all_paths" | "explain_relation" => QueryRequest {
+        "path" | "explain_relation" => QueryRequest {
             from: Some(big_slug(100)),
             to: hub,
             ..request
@@ -164,7 +164,7 @@ fn subject_of(target: &str) -> QueryRequest {
             project: Some("atlas".to_string()),
             ..request
         },
-        "domain_profile" | "lineage" => QueryRequest {
+        "lineage" => QueryRequest {
             slug: Some("domains/core".to_string()),
             ..request
         },
@@ -173,8 +173,8 @@ fn subject_of(target: &str) -> QueryRequest {
             request.selection.arguments.kind = Some("capability".to_string());
             request
         }
-        "neighbors" | "reachability" | "impact" | "blast_radius" | "subgraph"
-        | "builder_context" | "node_profile" | "similar_nodes" => QueryRequest {
+        "neighbors" | "reachability" | "impact" | "blast_radius" | "subgraph" | "node_profile"
+        | "similar_nodes" => QueryRequest {
             slug: hub,
             ..request
         },
@@ -199,7 +199,6 @@ fn with_stated(request: &QueryRequest, stated: &Value) -> QueryRequest {
     request.direction = stated["direction"].as_str().and_then(Direction::parse);
     request.depth = count("depth");
     request.max_hops = count("maxHops");
-    request.iterations = count("iterations");
     request.limit = count("limit");
     request.search_budget = stated["searchBudget"].as_f64();
     request
@@ -225,7 +224,7 @@ fn a_plan_for_every_operation_states_what_the_operation_does_when_a_call_leaves_
         );
         planned_count += 1;
     }
-    assert_eq!(planned_count, 34);
+    assert_eq!(planned_count, 27);
 }
 
 #[test]
@@ -236,7 +235,6 @@ fn a_plan_states_a_limit_where_the_operation_has_one_and_none_where_it_has_not()
     };
     assert_eq!(limit_of("node_profile"), 20);
     assert_eq!(limit_of("explain_relation"), 20);
-    assert_eq!(limit_of("centrality"), 10);
     assert_eq!(limit_of("containment_tree"), 200);
     assert_eq!(limit_of("health"), Value::Null);
     assert_eq!(limit_of("path"), Value::Null);
@@ -248,37 +246,27 @@ fn a_plan_counts_what_the_operation_counts() {
     let planned = plan(&graph, "match_nodes", call("query_plan"));
     let ran = json_of(&graph, &call("match_nodes"));
     assert_eq!(planned["estimate"]["totalMatches"], ran["totalMatches"]);
-    let planned = plan(&graph, "match_edges", call("query_plan"));
-    let ran = json_of(&graph, &call("match_edges"));
-    assert_eq!(planned["estimate"]["totalMatches"], ran["totalMatches"]);
 }
 
 #[test]
-fn a_plan_names_its_start_the_way_the_operation_does() {
+fn a_plan_refuses_the_start_name_an_operation_refuses_and_resolves_the_one_it_resolves() {
     let graph = big_vault();
-    let by_seed = |operation: &str, name: &str| QueryRequest {
-        seed: Some(name.to_string()),
+    let named = |operation: &str, name: &str| QueryRequest {
+        slug: Some(name.to_string()),
         ..call(operation)
     };
-    for operation in ["reachability", "impact", "blast_radius"] {
-        let refused = run_query(&graph, &by_seed(operation, &big_slug(0))).err();
-        assert!(refused.is_some(), "{operation} takes no seed");
+    for operation in ["reachability", "impact", "blast_radius", "subgraph"] {
+        let refused = run_query(&graph, &named(operation, "domain:core")).err();
+        assert!(refused.is_some(), "{operation} takes a slug, not a focus name");
         let planned = run_query(
             &graph,
-            &plan_of(operation, by_seed("query_plan", &big_slug(0))),
+            &plan_of(operation, named("query_plan", "domain:core")),
         )
         .err();
         assert_eq!(planned, refused, "{operation}");
     }
-    let focus = "domain:core";
-    let planned = plan(&graph, "builder_context", by_seed("query_plan", focus));
-    let ran = json_of(&graph, &by_seed("builder_context", focus));
-    assert_eq!(planned["normalized"]["slug"], ran["focus"]);
-    assert_eq!(planned["normalized"]["slug"], "domains/core");
-    let planned = plan(&graph, "subgraph", by_seed("query_plan", &big_slug(5)));
+    let planned = plan(&graph, "subgraph", named("query_plan", &big_slug(5)));
     assert_eq!(planned["normalized"]["slug"], big_slug(5));
-    assert!(run_query(&graph, &by_seed("subgraph", focus)).is_err());
-    assert!(run_query(&graph, &plan_of("subgraph", by_seed("query_plan", focus))).is_err());
 }
 
 #[test]
@@ -358,7 +346,7 @@ fn a_search_over_a_ring_of_cycles_is_counted_once_per_node_and_stops_when_nothin
     let started = Instant::now();
     let planned = plan(
         &ring,
-        "all_paths",
+        "path",
         QueryRequest {
             from: Some(slug(0)),
             to: Some(slug(15)),
@@ -384,6 +372,4 @@ fn a_search_over_a_ring_of_cycles_is_counted_once_per_node_and_stops_when_nothin
     assert_eq!(planned["execution"]["shouldRun"], false);
     assert_eq!(planned["execution"]["nextStep"], "narrow");
     assert_eq!(planned["execution"]["saferQuery"]["maxHops"], 3);
-    assert_eq!(planned["execution"]["saferQuery"]["limit"], 10);
-    assert!(planned["warnings"].as_array().expect("warnings").len() == 2);
 }

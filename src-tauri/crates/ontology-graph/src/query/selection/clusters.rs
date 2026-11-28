@@ -146,10 +146,9 @@ pub fn components<'a>(
     request: &QueryRequest,
 ) -> Result<ComponentsAnswer<'a>, QueryError> {
     let limit = request.limit.unwrap_or(CLUSTER_GROUP_LIMIT);
-    let node_limit = request.node_limit.unwrap_or(CLUSTER_NODE_LIMIT);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let groups = connected_components(graph, types.as_ref());
-    Ok(describe_components(graph, &groups, limit, node_limit))
+    Ok(describe_components(graph, &groups, limit, CLUSTER_NODE_LIMIT))
 }
 
 /// The label each node ends with: the node whose slug names its community.
@@ -270,8 +269,8 @@ pub fn communities<'a>(
     request: &QueryRequest,
 ) -> Result<CommunitiesAnswer<'a>, QueryError> {
     let limit = request.limit.unwrap_or(CLUSTER_GROUP_LIMIT);
-    let node_limit = request.node_limit.unwrap_or(CLUSTER_NODE_LIMIT);
-    let iterations = request.iterations.unwrap_or(ITERATIONS);
+    let node_limit = CLUSTER_NODE_LIMIT;
+    let iterations = ITERATIONS;
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let adjacency = undirected_adjacency(graph, types.as_ref());
     let labels = propagate_labels(graph, &adjacency, iterations);

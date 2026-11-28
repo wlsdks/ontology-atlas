@@ -76,17 +76,6 @@ pub struct DomainSummary {
     edges: EdgeCounts,
 }
 
-impl DomainSummary {
-    pub fn of(graph: &CompiledGraph, scope: &Scope, edges: &ScopeEdges) -> Self {
-        Self {
-            nodes: scope.nodes.len(),
-            capabilities: scope.of_kind(graph, "capability").len(),
-            elements: scope.of_kind(graph, "element").len(),
-            edges: EdgeCounts::of(edges),
-        }
-    }
-}
-
 #[derive(Serialize)]
 pub struct DomainRow<'a> {
     pub(in crate::query) slug: &'a str,
@@ -293,7 +282,7 @@ pub fn fitted_map<'a>(
         map.narrowed_to_fit = Some(NarrowedToFit {
             requested_item_limit: requested,
             item_limit,
-            next: format!("Lists were cut to {item_limit} per domain to keep this answer under {MAP_TEXT_CHARS} characters; query_ontology({{operation:\"domain_profile\", slug}}) lists one domain in full."),
+            next: format!("Lists were cut to {item_limit} per domain to keep this answer under {MAP_TEXT_CHARS} characters; query_ontology({{operation:\"node_profile\", slug}}) lists one domain in full."),
         });
     }
     map
