@@ -46,6 +46,7 @@ pub use breadth_map::{
     UnitRow, SURVEY_RESPONSE_CHARS,
 };
 pub use git_ignored_paths::git_ignored_paths;
+pub use js_pattern::{is_js_space, js_regex};
 pub use source_class::SourceClass;
 pub use survey_files::SurveyFiles;
 pub use survey_text::{format_count, repo_line, repo_text};

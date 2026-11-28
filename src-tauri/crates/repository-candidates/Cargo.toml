@@ -1,0 +1,29 @@
+[package]
+name = "repository-candidates"
+version = "0.1.0"
+description = "The project, domain, capability and element candidates a repository's layout, documents and imports propose, with the evidence each rests on"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+confined-files = { path = "../confined-files" }
+repository-survey = { path = "../repository-survey" }
+source-scan = { path = "../source-scan" }
+# Text patterns the scan reads repositories with; the engine matches in linear time, so a hostile
+# line cannot make a pattern run long.
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-case", "unicode-gencat", "unicode-perl"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# A README is read as CommonMark blocks with source offsets, so a quoted or fenced line is never
+# a heading.
+pulldown-cmark = { version = "0.13", default-features = false }
+# Two excerpts that differ only in compatibility forms are one witness.
+icu_normalizer = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
