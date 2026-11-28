@@ -17,6 +17,14 @@ use crate::raw_source_read::{real_spelling, RealSpelling};
 use crate::scan_root::SourceRoot;
 use crate::stable_read::FileStamp;
 
+/// A repository file as one version: its bytes and the stamp of the file they were read from, which
+/// a later `stat` compares to learn whether the version is still the file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RepositoryFile {
+    pub bytes: Vec<u8>,
+    pub stamp: FileStamp,
+}
+
 /// Why a repository file was not read.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum RepositoryFileRefusal {
@@ -59,7 +67,7 @@ impl SourceRoot {
         &self,
         parts: &[&str],
         max_bytes: u64,
-    ) -> Result<Vec<u8>, RepositoryFileRefusal> {
+    ) -> Result<RepositoryFile, RepositoryFileRefusal> {
         let mut file_path = self.as_path().to_path_buf();
         for part in parts {
             file_path.push(part);
@@ -117,7 +125,10 @@ impl SourceRoot {
         if spelling() != RealSpelling::AsNamed {
             return Err(RepositoryFileRefusal::Changed);
         }
-        Ok(bytes)
+        Ok(RepositoryFile {
+            bytes,
+            stamp: FileStamp::of(after),
+        })
     }
 }
 
@@ -165,8 +176,9 @@ mod tests {
         repository_with_links(&real);
         let root = root_of(&real);
         assert_eq!(
-            root.read_repository_file(&["src", "a.ts"], 1024).as_deref(),
-            Ok(&b"export const a = 1;\n"[..])
+            root.read_repository_file(&["src", "a.ts"], 1024)
+                .map(|file| file.bytes),
+            Ok(b"export const a = 1;\n".to_vec())
         );
         assert_eq!(
             root.read_repository_file(&["linked", "a.ts"], 1024),
@@ -198,7 +210,10 @@ mod tests {
     /// Plants `src/<real>` and names it as `src/<lookalike>`. A case-insensitive disk (APFS, NTFS)
     /// opens the lookalike as the real file; a case-sensitive one does not find it. Either way the
     /// bytes of the credential are not returned.
-    fn lookalike_answer(real: &str, lookalike: &str) -> Result<Vec<u8>, RepositoryFileRefusal> {
+    fn lookalike_answer(
+        real: &str,
+        lookalike: &str,
+    ) -> Result<RepositoryFile, RepositoryFileRefusal> {
         let base = tempfile::tempdir().expect("temp dir");
         let folder = std::fs::canonicalize(base.path()).expect("real");
         std::fs::create_dir_all(folder.join("src")).expect("src");

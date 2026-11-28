@@ -52,6 +52,12 @@ fn now_nanoseconds() -> i128 {
         .map_or(0, |elapsed| i128::try_from(elapsed.as_nanos()).unwrap_or(0))
 }
 
+/// Whether a file with this stamp was already older than the racy window when the stamp was
+/// taken, so a stamp that still matches proves the file was not written since.
+pub fn is_settled(stamp: FileStamp) -> bool {
+    !stamp.is_recent(now_nanoseconds(), RACY_WINDOW_NANOSECONDS)
+}
+
 fn locked() -> std::sync::MutexGuard<'static, Kept> {
     KEPT.lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)

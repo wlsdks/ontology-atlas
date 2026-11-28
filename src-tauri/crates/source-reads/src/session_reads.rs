@@ -6,20 +6,26 @@
 //! id, so the process is the session: a restarted server has no record and says so. Files are
 //! keyed by their real absolute path, so a read made with `rootPath` at a package folder counts for
 //! the repository it sits in, and the path the server cited under that folder still names the
-//! file. Each range keeps a hash of the lines it served; a range whose lines changed since no
-//! longer counts.
+//! file.
+//!
+//! A range is recorded from the text that was served (its hash) and the stamp of the file version
+//! it came from, both taken when the file was read, so the record never describes bytes the agent
+//! did not see. A range counts while the file's stamp is the one it was served from; when the stamp
+//! has moved the file is read again, outside the lock, and the range counts only if its lines still
+//! hash the same.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use confined_files::{sha256_hex, DiskSource, SourceFiles, SourceRoot};
+use confined_files::{sha256_hex, FileStamp, SourceRoot};
 
-use crate::source_row::{ContextRole, SourceEvidence, SourceRow};
+use crate::opened_file::MAX_FILE_BYTES;
+use crate::source_lines::{complete_lines, decode_source};
+use crate::source_row::{ContextRole, ServedVersion, SourceEvidence, SourceRow};
 
 const FILE_LIMIT: usize = 20_000;
 const RANGES_PER_FILE: usize = 256;
-const HASHED_BYTES: usize = 2 * 1024 * 1024;
 
 /// A range of lines this session served, with what served it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,7 +39,7 @@ pub struct ReadRange {
     /// A context part's role, when the range came as context.
     pub role: Option<ContextRole>,
     pub by_name: bool,
-    sha256: String,
+    served: ServedVersion,
 }
 
 struct FileEntry {
@@ -69,22 +75,6 @@ impl ReadsUnder {
     }
 }
 
-fn lines_of(root: &SourceRoot, absolute: &Path) -> Option<Vec<String>> {
-    let disk = DiskSource::new(root, HASHED_BYTES);
-    let text = disk.read_text(absolute).ok()?;
-    Some(text.split_inclusive('\n').map(str::to_string).collect())
-}
-
-fn hash_lines(lines: &[String], start_line: usize, end_line: usize) -> String {
-    let joined: String = lines
-        .iter()
-        .skip(start_line.saturating_sub(1))
-        .take((end_line + 1).saturating_sub(start_line))
-        .map(String::as_str)
-        .collect();
-    sha256_hex(joined.as_bytes())
-}
-
 fn below(root: &Path, absolute: &Path) -> Option<String> {
     let relative = absolute.strip_prefix(root).ok()?;
     let parts: Vec<String> = relative
@@ -94,14 +84,76 @@ fn below(root: &Path, absolute: &Path) -> Option<String> {
     (!parts.is_empty()).then(|| parts.join("/"))
 }
 
+/// The lines of `lines` from `start_line` to `end_line`, joined as a read serves them.
+fn hash_of_lines(lines: &[String], start_line: usize, end_line: usize) -> String {
+    let joined: String = lines
+        .iter()
+        .skip(start_line.saturating_sub(1))
+        .take((end_line + 1).saturating_sub(start_line))
+        .map(String::as_str)
+        .collect();
+    sha256_hex(joined.as_bytes())
+}
+
+/// What the file is now, read once for every range of it that needs a look.
+struct CurrentFile {
+    stamp: FileStamp,
+    lines: Vec<String>,
+}
+
+fn read_current(root: &SourceRoot, relative: &str) -> Option<CurrentFile> {
+    let parts: Vec<&str> = relative.split('/').collect();
+    let file = root.read_repository_file(&parts, MAX_FILE_BYTES).ok()?;
+    let text = decode_source(&file.bytes)?;
+    Some(CurrentFile {
+        stamp: file.stamp,
+        lines: complete_lines(text),
+    })
+}
+
+/// What looking at one file's ranges found: the ranges that no longer count, and the ranges whose
+/// stamp moved but whose lines read the same, with the stamp they now stand on.
+#[derive(Default)]
+struct Judged {
+    gone: Vec<ReadRange>,
+    refreshed: Vec<(ReadRange, FileStamp)>,
+}
+
+fn judge(root: &SourceRoot, relative: &str, ranges: &[ReadRange]) -> Judged {
+    let parts: Vec<&str> = relative.split('/').collect();
+    let stamp = root.repository_file_stamp(&parts);
+    let mut judged = Judged::default();
+    let mut current: Option<Option<CurrentFile>> = None;
+    for range in ranges {
+        if stamp == Some(range.served.file_stamp) && range.served.file_settled {
+            continue;
+        }
+        let file = current.get_or_insert_with(|| read_current(root, relative));
+        match file {
+            Some(file)
+                if hash_of_lines(&file.lines, range.start_line, range.end_line)
+                    == range.served.text_sha256 =>
+            {
+                judged.refreshed.push((range.clone(), file.stamp));
+            }
+            _ => judged.gone.push(range.clone()),
+        }
+    }
+    judged
+}
+
+fn locked(files: &Mutex<Files>) -> MutexGuard<'_, Files> {
+    files.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
 impl SessionReads {
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Records every delivered line range, symbol read and context part of `evidence`.
+    /// Records every delivered line range, symbol read and context part of `evidence`. Nothing is
+    /// read from the disk: each range carries the version it was served from.
     pub fn record(&self, root: &SourceRoot, evidence: &SourceEvidence) {
-        let mut texts: HashMap<PathBuf, Option<Vec<String>>> = HashMap::new();
         let mut additions: Vec<(String, ReadRange)> = Vec::new();
         for row in &evidence.rows {
             let SourceRow::Read(read) = row else { continue };
@@ -116,7 +168,7 @@ impl SessionReads {
                     read: read_tag.clone(),
                     role: None,
                     by_name: false,
-                    sha256: String::new(),
+                    served: read.served.clone(),
                 },
             ));
             for part in &read.context {
@@ -129,15 +181,13 @@ impl SessionReads {
                         read: read_tag.clone(),
                         role: Some(part.role),
                         by_name: part.by_name,
-                        sha256: String::new(),
+                        served: part.served.clone(),
                     },
                 ));
             }
         }
-        let Ok(mut files) = self.files.lock() else {
-            return;
-        };
-        for (path, mut range) in additions {
+        let mut files = locked(&self.files);
+        for (path, range) in additions {
             if path.is_empty() || path.starts_with('/') || path.split('/').any(|part| part == "..")
             {
                 continue;
@@ -147,11 +197,6 @@ impl SessionReads {
                 .fold(root.as_path().to_path_buf(), |joined, part| {
                     joined.join(part)
                 });
-            let lines = texts
-                .entry(absolute.clone())
-                .or_insert_with(|| lines_of(root, &absolute));
-            let Some(lines) = lines else { continue };
-            range.sha256 = hash_lines(lines, range.start_line, range.end_line);
             let mut entry = files.entries.remove(&absolute).unwrap_or(FileEntry {
                 ranges: Vec::new(),
                 roots: Vec::new(),
@@ -175,44 +220,56 @@ impl SessionReads {
     }
 
     /// The ranges served inside `root` whose lines are unchanged; a file with none left is
-    /// forgotten.
+    /// forgotten. The files are looked at without the lock held, so a call that records is never
+    /// kept waiting for the disk.
     pub fn reads_under(&self, root: &SourceRoot) -> ReadsUnder {
-        let mut under = ReadsUnder::default();
-        let Ok(mut files) = self.files.lock() else {
-            return under;
+        let held: Vec<(PathBuf, String, Vec<ReadRange>, Vec<PathBuf>)> = {
+            let files = locked(&self.files);
+            files
+                .entries
+                .iter()
+                .filter_map(|(absolute, entry)| {
+                    let relative = below(root.as_path(), absolute)?;
+                    Some((
+                        absolute.clone(),
+                        relative,
+                        entry.ranges.clone(),
+                        entry.roots.clone(),
+                    ))
+                })
+                .collect()
         };
-        let inside: Vec<PathBuf> = files
-            .entries
-            .keys()
-            .filter(|absolute| below(root.as_path(), absolute).is_some())
-            .cloned()
+        let judgements: Vec<Judged> = held
+            .iter()
+            .map(|(_, relative, ranges, _)| judge(root, relative, ranges))
             .collect();
-        for absolute in inside {
-            let Some(relative) = below(root.as_path(), &absolute) else {
-                continue;
-            };
-            let lines = lines_of(root, &absolute);
-            let Some(entry) = files.entries.get_mut(&absolute) else {
-                continue;
-            };
-            entry.ranges = match &lines {
-                Some(lines) => entry
-                    .ranges
-                    .iter()
-                    .filter(|range| {
-                        hash_lines(lines, range.start_line, range.end_line) == range.sha256
-                    })
-                    .cloned()
-                    .collect(),
-                None => Vec::new(),
-            };
-            if entry.ranges.is_empty() {
-                files.entries.remove(&absolute);
-                files.order.retain(|held| *held != absolute);
-                continue;
+        let mut kept: Vec<(String, Vec<ReadRange>, PathBuf, Vec<PathBuf>)> = Vec::new();
+        {
+            let mut files = locked(&self.files);
+            for ((absolute, relative, ranges, roots), judged) in held.into_iter().zip(judgements) {
+                let Some(entry) = files.entries.get_mut(&absolute) else {
+                    continue;
+                };
+                entry.ranges.retain(|range| !judged.gone.contains(range));
+                for (before, stamp) in &judged.refreshed {
+                    if let Some(range) = entry.ranges.iter_mut().find(|range| *range == before) {
+                        range.served.file_stamp = *stamp;
+                    }
+                }
+                if entry.ranges.is_empty() {
+                    files.entries.remove(&absolute);
+                    files.order.retain(|held| *held != absolute);
+                    continue;
+                }
+                let counted: Vec<ReadRange> = ranges
+                    .into_iter()
+                    .filter(|range| !judged.gone.contains(range))
+                    .collect();
+                kept.push((relative, counted, absolute, roots));
             }
-            let ranges = entry.ranges.clone();
-            let roots = entry.roots.clone();
+        }
+        let mut under = ReadsUnder::default();
+        for (relative, ranges, absolute, roots) in kept {
             for read_root in roots {
                 if read_root.as_path() == root.as_path() {
                     continue;

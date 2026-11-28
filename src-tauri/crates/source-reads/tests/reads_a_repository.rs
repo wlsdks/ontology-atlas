@@ -171,3 +171,59 @@ fn a_cancelled_call_reads_no_more_selectors() {
     });
     assert_eq!(read.rows.len(), 2, "cancelled before the third selector");
 }
+
+/// The lines a read serves end at `\r\n`, `\n` or a lone `\r`; the record must hash those lines,
+/// not the file split another way, or a change inside a served line goes unnoticed.
+#[test]
+fn a_range_in_a_file_with_lone_carriage_returns_is_judged_by_the_lines_served() {
+    let (base, root) = repository(&[(
+        "src/old_mac.ts",
+        "const a = 1;\rconst b = 2;\rconst c = 3;\r",
+    )]);
+    let served = evidence(
+        &root,
+        serde_json::json!([{ "path": "src/old_mac.ts", "startLine": 2, "maxLines": 1 }]),
+    );
+    let Some(SourceRow::Read(row)) = served.rows.first() else {
+        panic!("the line is served: {:?}", served.rows.first());
+    };
+    assert_eq!(row.text, "const b = 2;\r");
+    let session = SessionReads::new();
+    session.record(&root, &served);
+    let real = std::fs::canonicalize(base.path()).expect("real");
+    std::fs::write(
+        real.join("src/old_mac.ts"),
+        "const a = 1;\rconst b = 9;\rconst c = 3;\r",
+    )
+    .expect("changed inside the served line");
+    assert!(
+        session.reads_under(&root).reads.is_empty(),
+        "the second line changed, and the record judges that line"
+    );
+}
+
+#[test]
+fn a_rewrite_that_leaves_the_served_lines_alone_keeps_the_range() {
+    let (base, root) = repository(&[("src/a.ts", "export const a = 1;\nexport const b = 2;\n")]);
+    let served = evidence(
+        &root,
+        serde_json::json!([{ "path": "src/a.ts", "startLine": 1, "maxLines": 1 }]),
+    );
+    let session = SessionReads::new();
+    session.record(&root, &served);
+    let real = std::fs::canonicalize(base.path()).expect("real");
+    std::fs::write(
+        real.join("src/a.ts"),
+        "export const a = 1;\nexport const b = 3;\n",
+    )
+    .expect("another line changed");
+    assert_eq!(
+        session
+            .reads_under(&root)
+            .reads
+            .get("src/a.ts")
+            .map(Vec::len),
+        Some(1),
+        "the stamp moved, the served line did not"
+    );
+}

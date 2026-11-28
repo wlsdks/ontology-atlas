@@ -1,6 +1,10 @@
 //! The rows a call of `sourceReads` answers with, one per selector, in the order asked.
 
+use confined_files::{sha256_hex, FileStamp};
+
 use crate::file_outline::OutlineDeclaration;
+use crate::kept_files::is_settled;
+use crate::opened_file::OpenedFile;
 use crate::refusal_reason::RefusalReason;
 use crate::selector::{ReadTarget, SourceReadSelector};
 
@@ -61,6 +65,29 @@ impl ContextRole {
     }
 }
 
+/// What a range of lines was when it was served: the hash of the text that was sent and the stamp
+/// of the file it was read from. The session keeps it to tell later whether the lines still read
+/// the same, asking the disk only when the stamp has moved.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ServedVersion {
+    pub text_sha256: String,
+    pub file_stamp: FileStamp,
+    /// Whether the file was already older than the racy window when it was read: only then does a
+    /// stamp that still matches prove the file was not written again.
+    pub file_settled: bool,
+}
+
+impl ServedVersion {
+    /// The version of `file` that `text`, some of its lines, was served from.
+    pub fn of(text: &str, file: &OpenedFile) -> Self {
+        Self {
+            text_sha256: sha256_hex(text.as_bytes()),
+            file_stamp: file.stamp,
+            file_settled: is_settled(file.stamp),
+        }
+    }
+}
+
 /// One piece of code that decides what a symbol's body does, with its own cite.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContextPart {
@@ -75,6 +102,7 @@ pub struct ContextPart {
     pub via: Option<String>,
     pub by_name: bool,
     pub next: Option<NextRead>,
+    pub served: ServedVersion,
 }
 
 /// A part the budget left out, named so a later read can ask for it.
@@ -105,6 +133,7 @@ pub struct ReadRow {
     pub start_line: usize,
     pub end_line: usize,
     pub text: String,
+    pub served: ServedVersion,
     pub cite: Option<String>,
     pub returned_bytes: usize,
     pub truncated: bool,
