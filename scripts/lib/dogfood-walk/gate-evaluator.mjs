@@ -27,14 +27,13 @@ import {
 import {
   strictArgsFailure,
   strictEnumFailure,
-  strictFindOrphansKindFailure,
   strictGraphKindFilterFailure,
   strictListConceptsKindFailure,
   strictMaintenanceFilterFailure,
   strictMatchEdgesTypeFailure,
   strictMatchNodesSortFailure,
   strictMultiArgsFailure,
-  strictQueryConceptsFilterFailure,
+  strictListConceptsFilterFailure,
   strictRecommendRelationsKindFilterFailure,
   strictRelationCheckFailure as verifyStrictRelationCheckFailure,
   strictRelationFilterFailure,
@@ -53,7 +52,7 @@ import {
   allPathsPlanShapeFailure,
   allPathsShapeFailure,
   componentsShapeFailure,
-  evidenceShapeFailure,
+  mentionsShapeFailure,
   getConceptsShapeFailure,
   neighborsShapeFailure,
   patternWalkShapeFailure,
@@ -98,6 +97,7 @@ import {
   healthShapeFailureForDogfood,
   healthStatusSummary,
   matchesShapeFailure,
+  nodesShapeFailure,
   orphansShapeFailure,
   workspaceBriefShapeFailure,
 } from "./shape-validators/shape-validators-workspace.mjs";
@@ -188,10 +188,10 @@ export function evaluateDogfoodGate({
   blStructured,
   orph,
   orphStructured,
-  queryConcepts,
-  queryConceptsStructured,
-  queryConceptsLimited,
-  queryConceptsLimitedStructured,
+  listConceptsFilter,
+  listConceptsFilterStructured,
+  listConceptsFilterLimited,
+  listConceptsFilterLimitedStructured,
   analyzedRepo,
   analyzedRepoStructured,
   inferredImports,
@@ -292,10 +292,9 @@ export function evaluateDogfoodGate({
   strictMaintenanceSeverityFilter,
   strictMaintenanceKindFilter,
   strictRelationFilter,
-  strictFindOrphansKindFilter,
-  strictFindOrphansExcludeKindFilter,
-  strictQueryConceptsKindFilter,
-  strictQueryConceptsHasKeyFilter,
+  strictOrphanMatchNodesKindFilter,
+  strictListConceptsFilterKind,
+  strictListConceptsFilterHasKey,
   strictListConceptsKindFilter,
   strictRelationCheck,
   strictGraphKindFilter,
@@ -320,11 +319,11 @@ export function evaluateDogfoodGate({
   recordResult(failures, "list_concepts_census", census);
   recordResult(failures, "list_concepts", list);
   recordResult(failures, "get_concepts", batch);
-  recordResult(failures, "find_evidence", ev);
+  recordResult(failures, "list_concepts_mentions", ev);
   recordResult(failures, "find_backlinks", bl);
-  recordResult(failures, "find_orphans", orph);
-  recordResult(failures, "query_concepts", queryConcepts);
-  recordResult(failures, "query_concepts_limited", queryConceptsLimited);
+  recordResult(failures, "orphan_match_nodes", orph);
+  recordResult(failures, "list_concepts_filter", listConceptsFilter);
+  recordResult(failures, "list_concepts_filter_limited", listConceptsFilterLimited);
   // The breadth map is text, so `rawText` is its result rather than a parse failure.
   if (analyzedRepo?.rawText === undefined) recordResult(failures, "analyze_repo_structure", analyzedRepo);
   recordResult(failures, "infer_imports", inferredImports);
@@ -387,17 +386,15 @@ export function evaluateDogfoodGate({
   if (strictMaintenanceKindFilterError) failures.push(`strict_maintenance_kind_filter: ${strictMaintenanceKindFilterError}`);
   const strictRelationFilterError = strictRelationFilterFailure(strictRelationFilter);
   if (strictRelationFilterError) failures.push(`strict_relation_filter: ${strictRelationFilterError}`);
-  const strictFindOrphansKindFilterError = strictFindOrphansKindFailure(strictFindOrphansKindFilter);
-  if (strictFindOrphansKindFilterError) failures.push(`strict_find_orphans_kind_filter: ${strictFindOrphansKindFilterError}`);
-  const strictFindOrphansExcludeKindFilterError = strictFindOrphansKindFailure(strictFindOrphansExcludeKindFilter, { field: "excludeKinds items" });
-  if (strictFindOrphansExcludeKindFilterError) failures.push(`strict_find_orphans_exclude_kind_filter: ${strictFindOrphansExcludeKindFilterError}`);
-  const strictQueryConceptsKindFilterError = strictQueryConceptsFilterFailure(strictQueryConceptsKindFilter);
-  if (strictQueryConceptsKindFilterError) failures.push(`strict_query_concepts_kind_filter: ${strictQueryConceptsKindFilterError}`);
-  const strictQueryConceptsHasKeyFilterError = strictQueryConceptsFilterFailure(
-    strictQueryConceptsHasKeyFilter,
+  const strictOrphanMatchNodesKindFilterError = strictListConceptsKindFailure(strictOrphanMatchNodesKindFilter);
+  if (strictOrphanMatchNodesKindFilterError) failures.push(`strict_orphan_match_nodes_kind_filter: ${strictOrphanMatchNodesKindFilterError}`);
+  const strictListConceptsFilterKindError = strictListConceptsFilterFailure(strictListConceptsFilterKind);
+  if (strictListConceptsFilterKindError) failures.push(`strict_list_concepts_filter_kind: ${strictListConceptsFilterKindError}`);
+  const strictListConceptsFilterHasKeyError = strictListConceptsFilterFailure(
+    strictListConceptsFilterHasKey,
     { field: "has key", received: "capabilties", suggestion: "capabilities" },
   );
-  if (strictQueryConceptsHasKeyFilterError) failures.push(`strict_query_concepts_has_key_filter: ${strictQueryConceptsHasKeyFilterError}`);
+  if (strictListConceptsFilterHasKeyError) failures.push(`strict_list_concepts_filter_has_key: ${strictListConceptsFilterHasKeyError}`);
   const strictListConceptsKindFilterError = strictListConceptsKindFailure(strictListConceptsKindFilter);
   if (strictListConceptsKindFilterError) failures.push(`strict_list_concepts_kind_filter: ${strictListConceptsKindFilterError}`);
   const strictRelationCheckError = verifyStrictRelationCheckFailure(strictRelationCheck);
@@ -507,9 +504,9 @@ export function evaluateDogfoodGate({
     else recordStructuredContentFailure(failures, "get_concepts", batch, batchStructured);
   }
   if (ev) {
-    const evidenceFailure = evidenceShapeFailure(ev);
+    const evidenceFailure = mentionsShapeFailure(ev);
     if (evidenceFailure) failures.push(evidenceFailure);
-    else recordStructuredContentFailure(failures, "find_evidence", ev, evStructured);
+    else recordStructuredContentFailure(failures, "list_concepts_mentions", ev, evStructured);
   }
   if (bl) {
     const backlinksFailure = matchesShapeFailure("find_backlinks", bl);
@@ -519,22 +516,22 @@ export function evaluateDogfoodGate({
   if (orph) {
     const orphansFailure = orphansShapeFailure(orph);
     if (orphansFailure) failures.push(orphansFailure);
-    else recordStructuredContentFailure(failures, "find_orphans", orph, orphStructured);
+    else recordStructuredContentFailure(failures, "orphan_match_nodes", orph, orphStructured);
   }
-  if (queryConcepts) {
-    const queryConceptsFailure = matchesShapeFailure("query_concepts", queryConcepts);
-    if (queryConceptsFailure) failures.push(queryConceptsFailure);
-    else recordStructuredContentFailure(failures, "query_concepts", queryConcepts, queryConceptsStructured);
+  if (listConceptsFilter) {
+    const listConceptsFilterFailure = nodesShapeFailure("list_concepts_filter", listConceptsFilter);
+    if (listConceptsFilterFailure) failures.push(listConceptsFilterFailure);
+    else recordStructuredContentFailure(failures, "list_concepts_filter", listConceptsFilter, listConceptsFilterStructured);
   }
-  if (queryConceptsLimited) {
-    const queryConceptsLimitedFailure = matchesShapeFailure("query_concepts_limited", queryConceptsLimited);
-    if (queryConceptsLimitedFailure) failures.push(queryConceptsLimitedFailure);
+  if (listConceptsFilterLimited) {
+    const listConceptsFilterLimitedFailure = nodesShapeFailure("list_concepts_filter_limited", listConceptsFilterLimited);
+    if (listConceptsFilterLimitedFailure) failures.push(listConceptsFilterLimitedFailure);
     else {
-      if (queryConceptsLimited.limited !== true) failures.push("query_concepts_limited: expected limited=true");
-      if ((queryConceptsLimited.matches || []).some((row) => row?.slug === targets.projectSlug)) {
-        failures.push("query_concepts_limited: excluded project slug was returned");
+      if (listConceptsFilterLimited.limited !== true) failures.push("list_concepts_filter_limited: expected limited=true");
+      if ((listConceptsFilterLimited.nodes || []).some((row) => row?.slug === targets.projectSlug)) {
+        failures.push("list_concepts_filter_limited: excluded project slug was returned");
       }
-      recordStructuredContentFailure(failures, "query_concepts_limited", queryConceptsLimited, queryConceptsLimitedStructured);
+      recordStructuredContentFailure(failures, "list_concepts_filter_limited", listConceptsFilterLimited, listConceptsFilterLimitedStructured);
     }
   }
   if (analyzedRepo) {

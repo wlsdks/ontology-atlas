@@ -375,8 +375,8 @@ export const okShape = {
       },
     ],
   },
-  ev: { matches: [] },
-  evStructured: { matches: [] },
+  ev: { total: 0, nodes: [] },
+  evStructured: { total: 0, nodes: [] },
   bl: {
     target: "capabilities/mcp-server",
     total: 1,
@@ -387,34 +387,34 @@ export const okShape = {
     total: 1,
     matches: [{ slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server" }],
   },
-  orph: { total: 0, orphans: [] },
-  orphStructured: { total: 0, orphans: [] },
-  queryConcepts: {
+  orph: { totalMatches: 0, nodes: [] },
+  orphStructured: { totalMatches: 0, nodes: [] },
+  listConceptsFilter: {
     filter: "kind=capability",
     parsedAs: "kind=capability",
     total: 1,
-    matches: [{ slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server", mtime: 1 }],
+    nodes: [{ slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server", mtime: 1 }],
     limited: false,
   },
-  queryConceptsStructured: {
+  listConceptsFilterStructured: {
     filter: "kind=capability",
     parsedAs: "kind=capability",
     total: 1,
-    matches: [{ slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server", mtime: 1 }],
+    nodes: [{ slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server", mtime: 1 }],
     limited: false,
   },
-  queryConceptsLimited: {
+  listConceptsFilterLimited: {
     filter: "slug!=project",
     parsedAs: "slug!=project",
     total: 1,
-    matches: [{ slug: "README", kind: "vault-readme", title: "README", mtime: 1 }],
+    nodes: [{ slug: "README", kind: "vault-readme", title: "README", mtime: 1 }],
     limited: true,
   },
-  queryConceptsLimitedStructured: {
+  listConceptsFilterLimitedStructured: {
     filter: "slug!=project",
     parsedAs: "slug!=project",
     total: 1,
-    matches: [{ slug: "README", kind: "vault-readme", title: "README", mtime: 1 }],
+    nodes: [{ slug: "README", kind: "vault-readme", title: "README", mtime: 1 }],
     limited: true,
   },
   // The breadth map arrives as its text rows alone, with no structuredContent.
@@ -1983,16 +1983,16 @@ export const okShape = {
   strictArgs: {
     result: {
       isError: true,
-      content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit.' }],
+      content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: lmit.' }],
       structuredContent: {
         ok: false,
         errorCode: "unknown_argument",
-        error: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit.',
+        error: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: lmit.',
         toolName: "list_concepts",
         receivedArgument: "lmit",
         suggestion: "limit",
         unknownArguments: [{ name: "lmit", suggestion: "limit" }],
-        allowedArguments: ["domain", "kind", "limit", "offset", "since", "summary"],
+        allowedArguments: ["domain", "filter", "kind", "limit", "mentions", "offset", "since", "summary"],
         receivedArguments: ["lmit"],
       },
     },
@@ -2000,18 +2000,18 @@ export const okShape = {
   strictMultiArgs: {
     result: {
       isError: true,
-      content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.' }],
+      content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: lmit, summry.' }],
       structuredContent: {
         ok: false,
         errorCode: "unknown_argument",
-        error: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.',
+        error: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: lmit, summry.',
         toolName: "list_concepts",
         receivedArguments: ["lmit", "summry"],
         unknownArguments: [
           { name: "lmit", suggestion: "limit" },
           { name: "summry", suggestion: "summary" },
         ],
-        allowedArguments: ["domain", "kind", "limit", "offset", "since", "summary"],
+        allowedArguments: ["domain", "filter", "kind", "limit", "mentions", "offset", "since", "summary"],
       },
     },
   },
@@ -2050,10 +2050,10 @@ export const okShape = {
   // change.
   strictMaintenanceKindFilter: strictValueErrorResponse("kinds items", [...MAINTENANCE_KIND_VALUES], "add_mising_relation", "add_missing_relation"),
   strictRelationFilter: strictValueErrorResponse("dependencyTypes items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
-  strictFindOrphansKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
+  strictOrphanMatchNodesKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictFindOrphansExcludeKindFilter: strictValueErrorResponse("excludeKinds items", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
-  strictQueryConceptsKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
-  strictQueryConceptsHasKeyFilter: strictValueErrorResponse("has key", [...GRAPH_ARRAY_KEYS], "capabilties", "capabilities"),
+  strictListConceptsFilterKind: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
+  strictListConceptsFilterHasKey: strictValueErrorResponse("has key", [...GRAPH_ARRAY_KEYS], "capabilties", "capabilities"),
   strictListConceptsKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictRelationCheck: strictValueErrorResponse("type", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
   strictGraphKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),

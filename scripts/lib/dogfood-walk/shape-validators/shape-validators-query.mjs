@@ -35,11 +35,11 @@ export function structuredContentMismatchFailure(label, parsed, structured) {
   return `${label} structuredContent mismatch — ${structuredContentMismatchSummary(parsed, structured)}`;
 }
 
-export function evidenceShapeFailure(result) {
-  if (!Array.isArray(result.matches)) {
-    return "find_evidence response missing matches array";
+export function mentionsShapeFailure(result) {
+  if (!Array.isArray(result.nodes)) {
+    return "list_concepts mentions response missing nodes array";
   }
-  return matchRowsFailure("find_evidence", result.matches);
+  return matchRowsFailure("list_concepts mentions", result.nodes);
 }
 
 export function getConceptsShapeFailure(result, targets) {

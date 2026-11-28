@@ -91,9 +91,9 @@ describe('focused check suggestions', () => {
       ['mcp/src/server/tool-definitions/read.mjs', 'pnpm test:mcp:unit'],
       ['mcp/src/server/tool-definitions/read.mjs', 'pnpm docs:surface:check'],
       ['mcp/src/server/tool-definitions/read.mjs', 'pnpm integration:mcp:surface'],
-      ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm test:mcp:unit'],
-      ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm docs:surface:check'],
-      ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm integration:mcp:surface'],
+      ['mcp/src/server/tool-schemas/vault-node-shapes.mjs', 'pnpm test:mcp:unit'],
+      ['mcp/src/server/tool-schemas/vault-node-shapes.mjs', 'pnpm docs:surface:check'],
+      ['mcp/src/server/tool-schemas/vault-node-shapes.mjs', 'pnpm integration:mcp:surface'],
       ['mcp/src/server/tool-schemas/destructive-preview.mjs', 'pnpm integration:mcp:write'],
       ['mcp/src/tools/repo-analysis/inspect-architecture.mjs', 'pnpm integration:mcp:repo-analysis'],
       ['mcp/src/construction/construction-card.mjs', 'pnpm dogfood:verify'],
@@ -556,7 +556,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
 
-  it('suggests read integration, not graph integration, for the query_concepts DSL parser', () => {
+  it('suggests read integration, not graph integration, for the list_concepts filter DSL parser', () => {
     const result = suggestFocusedChecks(['mcp/src/query.mjs']);
 
     assert.deepEqual(domainCommands(result), [

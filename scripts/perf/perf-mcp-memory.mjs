@@ -178,7 +178,7 @@ async function startServer(vault) {
 const LEAK_CALLS = [
   ['list_concepts', {}],
   ['get_concepts', { slugs: ['capabilities/c-5'] }],
-  ['find_evidence', { title: 'vault', limit: 10 }],
+  ['list_concepts', { mentions: 'vault', limit: 10 }],
   ['query_ontology', { operation: 'neighbors', slug: 'capabilities/c-5' }],
   ['compile_ontology', { summary: true }],
   ['query_ontology', { operation: 'health' }],

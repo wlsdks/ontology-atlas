@@ -149,29 +149,11 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: batchOutputSchemaDrifted }),
       ["tools/list: get_concepts outputSchema row mtime drift"],
     );
-    const evidenceOutputSchemaDrifted = makeDogfoodToolsList();
-    evidenceOutputSchemaDrifted.tools.find((tool) => tool.name === "find_evidence").outputSchema.properties.matches.items.properties.matchedIn.enum = ["frontmatter"];
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: evidenceOutputSchemaDrifted }),
-      ["tools/list: find_evidence outputSchema match matchedIn drift"],
-    );
     const backlinksOutputSchemaDrifted = makeDogfoodToolsList();
     backlinksOutputSchemaDrifted.tools.find((tool) => tool.name === "find_backlinks").outputSchema.properties.matches.items.properties.matchedKeys.items.type = "number";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: backlinksOutputSchemaDrifted }),
       ["tools/list: find_backlinks outputSchema matches drift"],
-    );
-    const orphansOutputSchemaDrifted = makeDogfoodToolsList();
-    orphansOutputSchemaDrifted.tools.find((tool) => tool.name === "find_orphans").outputSchema.properties.orphans.items.properties.mtime.type = "string";
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: orphansOutputSchemaDrifted }),
-      ["tools/list: find_orphans outputSchema row mtime drift"],
-    );
-    const queryConceptsOutputSchemaDrifted = makeDogfoodToolsList();
-    queryConceptsOutputSchemaDrifted.tools.find((tool) => tool.name === "query_concepts").outputSchema.properties.matches.items.properties.mtime.type = "string";
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: queryConceptsOutputSchemaDrifted }),
-      ["tools/list: query_concepts outputSchema row mtime drift"],
     );
     const compileOutputSchemaDrifted = makeDogfoodToolsList();
     compileOutputSchemaDrifted.tools.find((tool) => tool.name === "compile_ontology").outputSchema.properties.byKind.additionalProperties.type = "number";
@@ -542,7 +524,7 @@ describe("evaluateDogfoodGate", () => {
       ["strict_multi_args: strict multi-argument response did not report all received list_concepts arguments"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictMultiArgs: structuredError('Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.') }),
+      evaluateDogfoodGate({ ...okShape, strictMultiArgs: structuredError('Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: lmit, summry.') }),
       ["strict_multi_args: strict multi-argument structured error missing received arguments"],
     );
   });
@@ -706,81 +688,77 @@ describe("evaluateDogfoodGate", () => {
     );
   });
 
-  it("fails malformed strict find_orphans kind dogfood responses", () => {
+  it("fails malformed strict orphan match_nodes kind dogfood responses", () => {
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictFindOrphansKindFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
-      ["strict_find_orphans_kind_filter: strict find_orphans kind response was not rejected"],
+      evaluateDogfoodGate({ ...okShape, strictOrphanMatchNodesKindFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_orphan_match_nodes_kind_filter: strict list_concepts kind response was not rejected"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictFindOrphansKindFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
-      ["strict_find_orphans_kind_filter: strict find_orphans kind response did not report the invalid kind filter"],
+      evaluateDogfoodGate({ ...okShape, strictOrphanMatchNodesKindFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_orphan_match_nodes_kind_filter: strict list_concepts kind response did not report the invalid kind filter"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        strictFindOrphansKindFilter: {
+        strictOrphanMatchNodesKindFilter: {
           result: {
             isError: true,
             content: [{ text: 'kind must be one of: project, domain, capability.' }],
           },
         },
       }),
-      ["strict_find_orphans_kind_filter: strict find_orphans kind response did not report the invalid kind value"],
+      ["strict_orphan_match_nodes_kind_filter: strict list_concepts kind response did not report the invalid kind value"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        strictFindOrphansKindFilter: {
+        strictOrphanMatchNodesKindFilter: {
           result: {
             isError: true,
             content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }],
           },
         },
       }),
-      ["strict_find_orphans_kind_filter: strict find_orphans kind response did not suggest the closest kind value"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictFindOrphansExcludeKindFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
-      ["strict_find_orphans_exclude_kind_filter: strict find_orphans kind response did not report the invalid excludeKinds items filter"],
+      ["strict_orphan_match_nodes_kind_filter: strict list_concepts kind response did not suggest the closest kind value"],
     );
   });
 
-  it("fails malformed strict query_concepts filter dogfood responses", () => {
+  it("fails malformed strict list_concepts filter dogfood responses", () => {
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictQueryConceptsKindFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
-      ["strict_query_concepts_kind_filter: strict query_concepts filter response was not rejected"],
+      evaluateDogfoodGate({ ...okShape, strictListConceptsFilterKind: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_list_concepts_filter_kind: strict list_concepts filter response was not rejected"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictQueryConceptsKindFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
-      ["strict_query_concepts_kind_filter: strict query_concepts filter response did not report the invalid kind"],
+      evaluateDogfoodGate({ ...okShape, strictListConceptsFilterKind: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_list_concepts_filter_kind: strict list_concepts filter response did not report the invalid kind"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        strictQueryConceptsKindFilter: {
+        strictListConceptsFilterKind: {
           result: {
             isError: true,
             content: [{ text: 'kind must be one of: project, domain, capability.' }],
           },
         },
       }),
-      ["strict_query_concepts_kind_filter: strict query_concepts filter response did not report the invalid kind value"],
+      ["strict_list_concepts_filter_kind: strict list_concepts filter response did not report the invalid kind value"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        strictQueryConceptsKindFilter: {
+        strictListConceptsFilterKind: {
           result: {
             isError: true,
             content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }],
           },
         },
       }),
-      ["strict_query_concepts_kind_filter: strict query_concepts filter response did not suggest the closest kind value"],
+      ["strict_list_concepts_filter_kind: strict list_concepts filter response did not suggest the closest kind value"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictQueryConceptsHasKeyFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
-      ["strict_query_concepts_has_key_filter: strict query_concepts filter response did not report the invalid has key"],
+      evaluateDogfoodGate({ ...okShape, strictListConceptsFilterHasKey: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_list_concepts_filter_has_key: strict list_concepts filter response did not report the invalid has key"],
     );
   });
 
@@ -1210,18 +1188,18 @@ describe("evaluateDogfoodGate", () => {
     );
   });
 
-  it("fails on malformed find_evidence payloads", () => {
+  it("fails on malformed list_concepts mentions payloads", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, ev: {} }),
-      ["find_evidence response missing matches array"],
+      ["list_concepts mentions response missing nodes array"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, ev: { matches: [{}] } }),
-      ["find_evidence response missing row slug at index 0"],
+      evaluateDogfoodGate({ ...okShape, ev: { nodes: [{}] } }),
+      ["list_concepts mentions response missing row slug at index 0"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, evStructured: { matches: [{ slug: "other" }] } }),
-      ['find_evidence structuredContent mismatch — $.matches[0]: parsed undefined, structuredContent {"slug":"other"}'],
+      evaluateDogfoodGate({ ...okShape, evStructured: { total: 0, nodes: [{ slug: "other" }] } }),
+      ['list_concepts_mentions structuredContent mismatch — $.nodes[0]: parsed undefined, structuredContent {"slug":"other"}'],
     );
   });
 
@@ -1244,50 +1222,50 @@ describe("evaluateDogfoodGate", () => {
     );
   });
 
-  it("fails on malformed find_orphans payloads", () => {
+  it("fails on malformed orphan match_nodes payloads", () => {
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, orph: { orphans: [] } }),
-      ["find_orphans response missing total count"],
+      evaluateDogfoodGate({ ...okShape, orph: { nodes: [] } }),
+      ["orphan match_nodes response missing totalMatches count"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, orph: { total: 0 } }),
-      ["find_orphans response missing orphans array"],
+      evaluateDogfoodGate({ ...okShape, orph: { totalMatches: 0 } }),
+      ["orphan match_nodes response missing nodes array"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, orph: { total: 0, orphans: [{}] } }),
-      ["find_orphans response orphan count exceeds total — orphans 1, total 0"],
+      evaluateDogfoodGate({ ...okShape, orph: { totalMatches: 0, nodes: [{}] } }),
+      ["orphan match_nodes response node count exceeds totalMatches — nodes 1, totalMatches 0"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, orphStructured: { total: 1, orphans: [] } }),
-      ["find_orphans structuredContent mismatch — $.total: parsed 0, structuredContent 1"],
+      evaluateDogfoodGate({ ...okShape, orphStructured: { totalMatches: 1, nodes: [] } }),
+      ["orphan_match_nodes structuredContent mismatch — $.totalMatches: parsed 0, structuredContent 1"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, queryConceptsStructured: { ...okShape.queryConcepts, total: 2 } }),
-      ["query_concepts structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
+      evaluateDogfoodGate({ ...okShape, listConceptsFilterStructured: { ...okShape.listConceptsFilter, total: 2 } }),
+      ["list_concepts_filter structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, queryConceptsLimited: { ...okShape.queryConceptsLimited, limited: false } }),
+      evaluateDogfoodGate({ ...okShape, listConceptsFilterLimited: { ...okShape.listConceptsFilterLimited, limited: false } }),
       [
-        "query_concepts_limited: expected limited=true",
-        "query_concepts_limited structuredContent mismatch — $.limited: parsed false, structuredContent true",
+        "list_concepts_filter_limited: expected limited=true",
+        "list_concepts_filter_limited structuredContent mismatch — $.limited: parsed false, structuredContent true",
       ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        queryConceptsLimited: {
-          ...okShape.queryConceptsLimited,
-          matches: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
+        listConceptsFilterLimited: {
+          ...okShape.listConceptsFilterLimited,
+          nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
         },
       }),
       [
-        "query_concepts_limited: excluded project slug was returned",
-        'query_concepts_limited structuredContent mismatch — $.matches[0].slug: parsed "project", structuredContent "README"',
+        "list_concepts_filter_limited: excluded project slug was returned",
+        'list_concepts_filter_limited structuredContent mismatch — $.nodes[0].slug: parsed "project", structuredContent "README"',
       ],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, queryConceptsLimitedStructured: { ...okShape.queryConceptsLimited, total: 2 } }),
-      ["query_concepts_limited structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
+      evaluateDogfoodGate({ ...okShape, listConceptsFilterLimitedStructured: { ...okShape.listConceptsFilterLimited, total: 2 } }),
+      ["list_concepts_filter_limited structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, analyzedRepo: { rawText: "Analysis of /repo" } }),
