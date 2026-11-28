@@ -11122,10 +11122,250 @@
       "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
     },
     {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 44,
+      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 44,
+      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 44,
+      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.errorCode",
+      "change": 44,
+      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.errorCode",
+      "change": 44,
+      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text#/edges/2/traversedFrom",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text#/edges/2/traversedTo",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.edges[2].traversedFrom",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.edges[2].traversedTo",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/status",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/health/validation",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/health/status",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/health/checks",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/nextActions",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.status",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.health.validation",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.health.status",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.health.checks",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.nextActions",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/status",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/status",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/checks",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/nextActions",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.status",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.status",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.checks",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.nextActions",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
       "case": "evidence/find-evidence-edge-names",
       "where": "answer",
       "id": 3,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/matches/0/score",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.matches[0].score",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11133,7 +11373,47 @@
       "case": "evidence/find-evidence-edge-names",
       "where": "answer",
       "id": 4,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/matches",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/bodyHint",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.matches",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.bodyHint",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11141,7 +11421,159 @@
       "case": "evidence/find-evidence-edge-names",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/matches/0/uid",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/matches/0/slug",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/matches/0/title",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/matches/0/domain",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/matches/0/mtime",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/matches/0/excerpt",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/matches/0/bodyChars",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/matches",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/bodyHint",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.matches[0].uid",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.matches[0].slug",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.matches[0].title",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.matches[0].domain",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.matches[0].mtime",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.matches[0].excerpt",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.matches[0].bodyChars",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.matches",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.bodyHint",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11149,15 +11581,47 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 1,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/growthHint",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
     {
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text",
+      "id": 1,
+      "path": "result.content[0].text#/total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/matches",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.growthHint",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.matches",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11165,7 +11629,15 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/matches/0/score",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.matches[0].score",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11173,7 +11645,47 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 3,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/growthHint",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/matches",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.growthHint",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.matches",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11181,7 +11693,47 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 4,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/growthHint",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/matches",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.growthHint",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.total",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.matches",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11189,7 +11741,79 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 8,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/growthHint/reason",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/growthHint/suggestion",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/growthHint/exampleCall/tool",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/growthHint/exampleCall/args/concepts",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/growthHint/exampleCall/args/slugs",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.growthHint.reason",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.growthHint.suggestion",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.growthHint.exampleCall.tool",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.growthHint.exampleCall.args.concepts",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.growthHint.exampleCall.args.slugs",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11197,7 +11821,159 @@
       "case": "evidence/find-evidence-unicode-and-typos",
       "where": "answer",
       "id": 9,
-      "path": "result.content[0].text",
+      "path": "result.content[0].text#/growthHint/reason",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text#/growthHint/suggestion",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text#/growthHint/exampleCall/tool",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text#/growthHint/exampleCall/args/concepts",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text#/growthHint/exampleCall/args/slugs",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.growthHint.reason",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.growthHint.suggestion",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.growthHint.exampleCall.tool",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.growthHint.exampleCall.args.concepts",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.growthHint.exampleCall.args.slugs",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/growthHint/reason",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/growthHint/suggestion",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/growthHint/exampleCall/tool",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/growthHint/exampleCall/args/concepts",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/growthHint/exampleCall/args/slugs",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.growthHint.reason",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.growthHint.suggestion",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.growthHint.exampleCall.tool",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.growthHint.exampleCall.args.concepts",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.growthHint.exampleCall.args.slugs",
       "change": 40,
       "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
     },
@@ -11207,15 +11983,95 @@
       "id": 1,
       "path": "result.isError",
       "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-argument-bounds",
       "where": "answer",
-      "id": 10,
+      "id": 1,
       "path": "result.content[0].text",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.path",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.format",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.unitCount",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.from",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.units",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.truncated",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.sha256",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.ok",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-argument-bounds",
@@ -11223,7 +12079,95 @@
       "id": 2,
       "path": "result.isError",
       "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.path",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.format",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.unitCount",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.from",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.units",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.truncated",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.sha256",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.ok",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-argument-bounds",
@@ -11231,7 +12175,95 @@
       "id": 3,
       "path": "result.isError",
       "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.path",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.format",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.unitCount",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.from",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.units",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.truncated",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.sha256",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.ok",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-argument-bounds",
@@ -11239,7 +12271,95 @@
       "id": 4,
       "path": "result.isError",
       "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.path",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.format",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.unitCount",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.from",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.units",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.truncated",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.sha256",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.ok",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-argument-bounds",
@@ -11247,7 +12367,95 @@
       "id": 5,
       "path": "result.isError",
       "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.path",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.format",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.unitCount",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.from",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.units",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.truncated",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.sha256",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.ok",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-argument-bounds",
@@ -11255,7 +12463,95 @@
       "id": 7,
       "path": "result.isError",
       "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.path",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.format",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.unitCount",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.from",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.units",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.truncated",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.sha256",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.ok",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-argument-bounds",
@@ -11263,15 +12559,143 @@
       "id": 8,
       "path": "result.isError",
       "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.path",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.format",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.unitCount",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.from",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.units",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.truncated",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.sha256",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.ok",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-argument-bounds",
       "where": "answer",
       "id": 9,
       "path": "result.content[0].text",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-bytes",
@@ -11348,6 +12772,118 @@
     {
       "case": "evidence/read-source-hostile-files",
       "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/note",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/format",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/unitCount",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/units",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.note",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.format",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.unitCount",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.units",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.error",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.error",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.error",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
       "id": 12,
       "path": "result.structuredContent.errorCode",
       "change": 38,
@@ -11388,18 +12924,26 @@
     {
       "case": "evidence/read-source-hostile-files",
       "where": "answer",
-      "id": 19,
+      "id": 18,
       "path": "result.structuredContent.errorCode",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     },
     {
       "case": "evidence/read-source-hostile-files",
       "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text",
+      "id": 18,
+      "path": "result.structuredContent.error",
       "change": 41,
       "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
     },
     {
       "case": "evidence/read-source-hostile-files",
@@ -11418,36 +12962,100 @@
       "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
     },
     {
-      "case": "evidence/read-source-hostile-files",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text",
-      "change": 41,
-      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
-    },
-    {
-      "case": "evidence/read-source-hostile-files",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text",
-      "change": 41,
-      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
-    },
-    {
-      "case": "evidence/read-source-hostile-files",
-      "where": "answer",
-      "id": 7,
-      "path": "result.content[0].text",
-      "change": 41,
-      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
-    },
-    {
       "case": "evidence/read-source-library-files",
       "where": "answer",
       "id": 3,
       "path": "result.isError",
       "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.path",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.format",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.unitCount",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.from",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.units",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.truncated",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.sha256",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.ok",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
       "case": "evidence/read-source-library-files",
@@ -11469,6 +13077,102 @@
       "case": "evidence/read-source-miniature-repo",
       "where": "answer",
       "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 9,
       "path": "result.structuredContent.errorCode",
       "change": 38,
       "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
@@ -11546,70 +13250,6 @@
       "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
     },
     {
-      "case": "evidence/read-source-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.errorCode",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
-    },
-    {
-      "case": "evidence/read-source-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text",
-      "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
-    },
-    {
-      "case": "evidence/read-source-miniature-repo",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.errorCode",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
-    },
-    {
-      "case": "evidence/read-source-miniature-repo",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text",
-      "change": 39,
-      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
-    },
-    {
-      "case": "evidence/read-source-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.errorCode",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
-    },
-    {
-      "case": "evidence/read-source-miniature-repo",
-      "where": "answer",
-      "id": 7,
-      "path": "result.structuredContent.errorCode",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
-    },
-    {
-      "case": "evidence/read-source-miniature-repo",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.errorCode",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
-    },
-    {
-      "case": "evidence/read-source-miniature-repo",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.errorCode",
-      "change": 38,
-      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
-    },
-    {
       "case": "evidence/read-source-office-and-tables",
       "where": "answer",
       "id": 3,
@@ -11618,92 +13258,92 @@
       "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     },
     {
-      "case": "evidence/agent-brief-operations",
+      "case": "evidence/read-source-office-and-tables",
       "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.errorCode",
-      "change": 44,
-      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 10,
+      "id": 3,
       "path": "result.content[0].text",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     },
     {
-      "case": "evidence/agent-brief-operations",
+      "case": "evidence/read-source-office-and-tables",
       "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.errorCode",
-      "change": 44,
-      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+      "id": 3,
+      "path": "result.structuredContent.ok",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     },
     {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.errorCode",
-      "change": 44,
-      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 7,
-      "path": "result.structuredContent.errorCode",
-      "change": 44,
-      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.errorCode",
-      "change": 44,
-      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text",
-      "change": 28,
-      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.errorCode",
-      "change": 44,
-      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.errorCode",
-      "change": 44,
-      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
+      "case": "evidence/read-source-office-and-tables",
       "where": "answer",
       "id": 3,
       "path": "result.structuredContent.errorCode",
-      "change": 44,
-      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     },
     {
-      "case": "evidence/agent-brief-storefront",
+      "case": "evidence/read-source-office-and-tables",
       "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-office-and-tables",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.path",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-office-and-tables",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.format",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-office-and-tables",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.unitCount",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-office-and-tables",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.from",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-office-and-tables",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.units",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-office-and-tables",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.truncated",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-office-and-tables",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.sha256",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     }
   ]
 }
