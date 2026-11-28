@@ -59,17 +59,19 @@ fn readable(
     base: &RepoPath,
     files: &dyn EvidenceFiles,
 ) -> Option<Readable> {
-    // The name the caller wrote is checked as written, before it goes under the folder, so a
-    // folder spelled ` notes` or `-drafts` does not decide whether a cited name is acceptable.
-    let working_path = base.join(&RepoPath::new(request.path)?);
-    if names_hidden_or_credential_file(working_path.as_str()) || files.refuses(&working_path) {
+    // The working file is asked for below the folder the files are rooted at, the committed one
+    // below the top of the repository: they are the same file named from two places, so a folder
+    // `base` that lies below the top is in the committed name only.
+    let working_path = RepoPath::new(request.path)?;
+    let committed_path = base.join(&working_path);
+    if names_hidden_or_credential_file(committed_path.as_str()) || files.refuses(&working_path) {
         return None;
     }
     let commit = CommitId::new(request.commit)?;
     Some(Readable {
         committed: BlobAt {
             commit,
-            path: working_path.clone(),
+            path: committed_path,
         },
         working_path,
     })

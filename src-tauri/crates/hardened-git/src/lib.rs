@@ -12,6 +12,7 @@
 mod argv;
 mod environment;
 mod filter_overrides;
+mod history_state;
 mod repo_path;
 mod repository;
 mod runner;
@@ -24,6 +25,7 @@ pub use filter_overrides::clear_filter_cache;
 /// The config read with a time limit a test can shorten; only a test build has it.
 #[cfg(feature = "test-hooks")]
 pub use filter_overrides::discover_filter_overrides_with_limit;
+pub use history_state::HistoryState;
 pub use repo_path::RepoPath;
 pub use repository::{
     BlobAt, CommitId, CommitSummary, GitReadError, OperationInProgress, Repository, RepositoryFacts,

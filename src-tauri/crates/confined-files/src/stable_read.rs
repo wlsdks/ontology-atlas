@@ -57,6 +57,17 @@ impl FileStamp {
         let newest = self.modified_ns.max(self.changed_ns);
         now_ns.saturating_sub(newest) < window_ns
     }
+
+    /// Whether this stamp was already older than two seconds when the call is made, so a later
+    /// stamp that equals it proves the file was not written since: a file written again inside the
+    /// clock's grain keeps its stamp, and only one that had settled can be trusted to change it.
+    pub fn is_settled(self) -> bool {
+        const SETTLE_NANOSECONDS: i128 = 2_000_000_000;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |elapsed| i128::try_from(elapsed.as_nanos()).unwrap_or(0));
+        !self.is_recent(now, SETTLE_NANOSECONDS)
+    }
 }
 
 /// The bytes of a file and the stamp of the version they belong to.

@@ -32,6 +32,8 @@ repository-survey = { path = "../repository-survey" }
 # The exact reads of `sourceReads`, and the record of which lines this session served.
 source-reads = { path = "../source-reads" }
 vault-validation = { path = "../vault-validation" }
+# The constellations a person saved, which `get_constellation` lists.
+saved-constellations = { path = "../saved-constellations" }
 meaning-findings = { path = "../meaning-findings" }
 raw-source-text = { path = "../raw-source-text" }
 # Answers are typed structs written as JSON. `raw_value` sends the tool list as the text the

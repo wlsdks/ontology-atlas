@@ -12608,22 +12608,6 @@
       "reason": "list_concepts `mentions` compares text lower-cased in one Unicode form and counts the words of any script, so a text typed composed finds a note saved decomposed and a Korean title earns the word-overlap tie-break (row 40)."
     },
     {
-      "case": "git/no-git-executable",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/summaryFreshness/hint",
-      "change": 17,
-      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
-    },
-    {
-      "case": "git/no-git-executable",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.summaryFreshness.hint",
-      "change": 17,
-      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
-    },
-    {
       "case": "graph/analysis-folder-is-a-link",
       "where": "answer",
       "id": 1,
@@ -15438,6 +15422,70 @@
       "path": "result.structuredContent.validation.coverage",
       "change": 65,
       "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/coverage",
+      "change": 65,
+      "reason": "Without a surveyable repository the Depth sentence that counts capabilities citing lines an earlier session recorded is not ported: coverage stays absent as when the survey found no ability and no area (row 65), where the script server still said it."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.coverage",
+      "change": 65,
+      "reason": "Without a surveyable repository the Depth sentence that counts capabilities citing lines an earlier session recorded is not ported: coverage stays absent as when the survey found no ability and no area (row 65), where the script server still said it."
+    },
+    {
+      "case": "shell/every-tool-in-read-only-mode",
+      "where": "answer",
+      "id": 16,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "shell/every-tool-in-read-only-mode",
+      "where": "answer",
+      "id": 16,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "shell/every-tool-in-read-only-mode",
+      "where": "answer",
+      "id": 16,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "shell/every-tool-with-empty-arguments-profile-construction",
+      "where": "answer",
+      "id": 16,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "shell/every-tool-with-empty-arguments-profile-construction",
+      "where": "answer",
+      "id": 16,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "shell/every-tool-with-empty-arguments-profile-construction",
+      "where": "answer",
+      "id": 16,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     }
   ]
 }

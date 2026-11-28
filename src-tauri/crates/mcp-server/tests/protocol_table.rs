@@ -447,13 +447,13 @@ fn an_unknown_argument_is_refused_by_name_before_the_handler_runs() {
 
 #[test]
 fn a_known_tool_this_build_has_not_ported_answers_not_ported_only_in_a_test_build() {
-    let run = rust(&[], &call(2, "get_constellation", "{}"));
+    let run = rust(&[], &call(2, "validate_wiki", "{}"));
     assert_eq!(
         run.lines,
         [concat!(
-            r#"{"result":{"content":[{"type":"text","text":"Error: Tool \"get_constellation\" is not ported to the Rust server yet."}],"#,
+            r#"{"result":{"content":[{"type":"text","text":"Error: Tool \"validate_wiki\" is not ported to the Rust server yet."}],"#,
             r#""structuredContent":{"ok":false,"errorCode":"not_ported","#,
-            r#""error":"Tool \"get_constellation\" is not ported to the Rust server yet."},"isError":true},"jsonrpc":"2.0","id":2}"#
+            r#""error":"Tool \"validate_wiki\" is not ported to the Rust server yet."},"isError":true},"jsonrpc":"2.0","id":2}"#
         )]
     );
 }

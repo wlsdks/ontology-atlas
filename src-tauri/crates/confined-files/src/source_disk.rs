@@ -117,10 +117,11 @@ impl DiskSource {
         follow: bool,
         sees_hidden: bool,
     ) -> Result<Option<PathBuf>, Refusal> {
-        let real_root = self
-            .real_root
-            .as_ref()
-            .ok_or(Refusal::OutsideApprovedRoot)?;
+        // A folder that is not there holds nothing, and nothing outside it is reachable through it:
+        // the answer is "nothing is there", never a refusal that a caller reads as "not looked at".
+        let Some(real_root) = self.real_root.as_ref() else {
+            return Ok(None);
+        };
         let judged = if follow {
             checked
         } else {
@@ -714,5 +715,27 @@ mod tests {
         let mut late = vec![b'a'; BINARY_PROBE_BYTES];
         late.push(0);
         assert!(evidence_text(&late).is_some());
+    }
+}
+
+#[cfg(test)]
+mod missing_root_tests {
+    use super::*;
+    use crate::scan_root::ScanRoots;
+
+    #[test]
+    fn a_root_that_is_not_there_holds_nothing_and_refuses_nothing() {
+        let directory = tempfile::tempdir().expect("temp dir");
+        let root = directory.path().join("absent");
+        let scan = ScanRoots::new(root.clone(), root.clone()).expect("roots");
+        let source = DiskSource::new(&scan.allow(&root, "rootPath").expect("allowed"), 1024);
+        let file = Path::new("src/app.ts");
+        assert_eq!(source.kind(file), Ok(None));
+        assert_eq!(source.link_kind(file), Ok(None));
+        assert_eq!(source.regular_file_exists(file), Ok(false));
+        assert!(matches!(
+            source.read_text(file),
+            Err(SourceReadError::Absent)
+        ));
     }
 }

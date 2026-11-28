@@ -5,6 +5,7 @@ mod code_remedy;
 mod evidence_drift;
 mod evidence_verdict;
 mod issue_collection;
+mod kept_history;
 mod node_revisions;
 mod path_drift;
 mod problem_list;
@@ -19,6 +20,7 @@ pub use evidence_drift::{
 };
 pub use evidence_verdict::{judge_evidence, CitedEntry, Judgement, PathChange, Verdict};
 pub use issue_collection::{collect_issues, IssueCollection};
+pub use kept_history::KeptHistory;
 pub use node_revisions::{contained_slugs, node_revisions, Revision, CONTAINMENT_KEYS};
 pub use path_drift::{path_drift, path_drift_unchecked, Drift, PathDrift};
 pub use problem_list::{list_problems, CodeTally, Problem, ProblemList, ProblemSummary};

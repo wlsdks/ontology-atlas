@@ -226,6 +226,27 @@ fn a_repository_before_its_first_commit_names_its_branch_and_has_no_commit() {
     );
     assert!(reader.touch_history(&[path("draft.md")], 5).is_err());
     assert!(reader.facts().expect("facts").is_some());
+    assert!(
+        reader.history_state().is_err(),
+        "no commit is no history, so nothing is kept under it"
+    );
+}
+
+#[test]
+fn the_history_state_moves_with_a_commit_and_stays_while_only_the_working_tree_changes() {
+    let base = TempDir::new("typed-history-state");
+    let repo = new_repository(&base, "repo");
+    plain_git(&repo, &["checkout", "-q", "-b", "main"]);
+    commit_note(&repo);
+    let reader = repository(&repo);
+    let before = reader.history_state().expect("a state");
+
+    std::fs::write(repo.join("note.md"), "# edited, not committed\n").expect("edit");
+    std::fs::write(repo.join("new.md"), "untracked\n").expect("untracked");
+    assert_eq!(reader.history_state().expect("a state"), before);
+
+    commit_note(&repo);
+    assert_ne!(reader.history_state().expect("a state"), before);
 }
 
 #[test]

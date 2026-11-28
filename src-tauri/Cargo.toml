@@ -24,6 +24,7 @@ members = [
   "crates/build-depth",
   "crates/vault-validation",
   "crates/raw-source-text",
+  "crates/saved-constellations",
   "crates/mcp-server",
 ]
 
