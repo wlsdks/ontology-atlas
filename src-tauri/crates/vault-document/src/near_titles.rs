@@ -61,7 +61,8 @@ fn typo_closeness(query: &Folded, candidate: &Folded) -> f64 {
     let longer = query.characters.max(candidate.characters);
     if longer == 0
         || longer > TYPO_MAX_CHARACTERS
-        || query.characters.abs_diff(candidate.characters) as f64 > longer as f64 * (1.0 - TYPO_FLOOR)
+        || query.characters.abs_diff(candidate.characters) as f64
+            > longer as f64 * (1.0 - TYPO_FLOOR)
     {
         return 0.0;
     }
@@ -113,10 +114,14 @@ mod tests {
     use super::*;
 
     fn titles(query: &str, held: &[(&'static str, &str)]) -> Vec<String> {
-        near_titles(query, held.iter().map(|(slug, title)| (*slug, (*title).to_string())))
-            .into_iter()
-            .map(|near| near.slug)
-            .collect()
+        near_titles(
+            query,
+            held.iter()
+                .map(|(slug, title)| (*slug, (*title).to_string())),
+        )
+        .into_iter()
+        .map(|near| near.slug)
+        .collect()
     }
 
     #[test]
@@ -124,11 +129,17 @@ mod tests {
         let held = [
             ("capabilities/charge-card", "Charge Card"),
             ("capabilities/place-order", "Place Order"),
-            ("capabilities/cancel-order", "\u{c8fc}\u{bb38} \u{CDE8}\u{c18c}"),
+            (
+                "capabilities/cancel-order",
+                "\u{c8fc}\u{bb38} \u{CDE8}\u{c18c}",
+            ),
         ];
         assert_eq!(titles("Chrage Card", &held), ["capabilities/charge-card"]);
         assert_eq!(titles("Place Ordr", &held), ["capabilities/place-order"]);
-        assert_eq!(titles("\u{CDE8}\u{c18c} \u{c8fc}\u{bb38}", &held), ["capabilities/cancel-order"]);
+        assert_eq!(
+            titles("\u{CDE8}\u{c18c} \u{c8fc}\u{bb38}", &held),
+            ["capabilities/cancel-order"]
+        );
         assert!(titles("refund policy", &held).is_empty());
     }
 

@@ -10,6 +10,7 @@
 // has, so what the client sends back is what the server reported. Every case of the `vault-read` and
 // `writes` families also runs a second time under a clock far in the future (`-late-clock`), because
 // the document cache trusts a file only when it was written long before "now".
+import { docxCutShort, docxOf, docxPastTheUnpackBudget, xlsxOf } from './office-fixtures.mjs';
 import { LATE_CLOCK_MS } from './servers.mjs';
 
 const AUTO = Symbol('auto');
@@ -1128,6 +1129,117 @@ add('evidence', 'read-source-bytes', { vault: 'edge-bytes' }, [
   call('read_source', { path: 'capabilities/unicode-separators.md', from: 8, limit: 4 }),
   call('read_source', { path: 'capabilities/numbers.md' }),
   call('read_source', { path: 'capabilities/prototype-keys.md' }),
+]);
+const para = (text, style) => `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ''}<w:r><w:t>${text}</w:t></w:r></w:p>`;
+const source = (name, text) => ({ $: 'write-file', path: `sources/${name}`, text });
+const sourceBytes = (name, base64, extra = {}) => ({ $: 'write-file', path: `sources/${name}`, base64, ...extra });
+const readSource = (name, args = {}) => call('read_source', { path: `sources/${name}`, ...args });
+add('evidence', 'read-source-office-and-tables', { vault: 'library' }, [
+  sourceBytes('plan.docx', docxOf([
+    para('Order plan', 'Heading1'), para('Charge the card first.'), para('Order plan', 'Heading1'), para('Then ship it.'),
+    '<w:tbl><w:tr><w:tc><w:p><w:r><w:t>sku</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>qty &amp; unit</w:t></w:r></w:p></w:tc></w:tr></w:tbl>',
+    para('Notes', 'Heading2'), para('㄰ㅏㄱ'),
+  ].join(''))),
+  sourceBytes('refs.docx', docxOf(para('Refund &#x110000; and &#12345678901; kept as written, &#x41; is A'))),
+  sourceBytes('book.xlsx', xlsxOf([
+    { name: 'Orders', rows: [['sku', 'qty'], ['a-1', 3], ['b-2', 4]] },
+    { name: 'Refunds', rows: [['reason'], ['late']] },
+  ])),
+  source('quoted.csv', 'name,note\r\n"Smith, J","said ""hi""\nthen left"\n\n7,\n'),
+  source('table.tsv', 'a\tb\n1\t2\n'),
+  source('page.html', '<html><head><style>p{}</style><script>var x=1</script></head><body><h1>Title &amp; more</h1><p>one<br>two</p></body></html>'),
+  source('lines.txt', 'first\r\n\r\n  third  \nlast'),
+  readSource('plan.docx'),
+  readSource('plan.docx', { from: 2, limit: 3 }),
+  readSource('refs.docx'),
+  readSource('book.xlsx'),
+  readSource('book.xlsx', { sheet: 2 }),
+  readSource('book.xlsx', { sheet: 9 }),
+  readSource('quoted.csv'),
+  readSource('table.tsv'),
+  readSource('page.html'),
+  readSource('lines.txt', { from: 2, limit: 1 }),
+  readSource('PLAN.DOCX', { limit: 1 }),
+]);
+add('evidence', 'read-source-hostile-files', { vault: 'library' }, [
+  sourceBytes('binary.dat', Buffer.from([0, 1, 2, 3, 255]).toString('base64')),
+  sourceBytes('nul.txt', Buffer.from('text\u0000more').toString('base64')),
+  sourceBytes('scan.pdf', Buffer.from('%PDF-1.7 not text').toString('base64')),
+  sourceBytes('broken.docx', Buffer.from('this is not a zip archive').toString('base64')),
+  sourceBytes('cut.docx', docxCutShort()),
+  sourceBytes('empty.xlsx', xlsxOf([])),
+  sourceBytes('bomb.docx', docxPastTheUnpackBudget()),
+  sourceBytes('long-lines.txt', Buffer.from(`${'x'.repeat(5000)}\n`).toString('base64'), { repeat: 40 }),
+  sourceBytes('many-lines.txt', Buffer.from('line\n').toString('base64'), { repeat: 5000 }),
+  { $: 'write-file', path: 'sources/huge.txt', text: '', size: 101 * 1024 * 1024 },
+  source('.env', 'KEY=value\n'),
+  source('secrets.txt', 'password\n'),
+  source('server.pem', 'key\n'),
+  { $: 'symlink', path: 'sources/linked.md', target: '/etc/hosts' },
+  { $: 'mkdir', path: 'sources/folder.md' },
+  readSource('binary.dat'),
+  readSource('nul.txt'),
+  readSource('scan.pdf'),
+  readSource('broken.docx'),
+  readSource('cut.docx'),
+  readSource('empty.xlsx'),
+  readSource('bomb.docx'),
+  readSource('long-lines.txt', { from: 39, limit: 5 }),
+  readSource('many-lines.txt', { from: 4990, limit: 1000 }),
+  readSource('many-lines.txt', { limit: 1000 }),
+  readSource('huge.txt'),
+  readSource('.env'),
+  readSource('secrets.txt'),
+  readSource('server.pem'),
+  readSource('linked.md'),
+  readSource('folder.md'),
+  readSource('notes.md/extra'),
+  call('read_source', { path: `sources/${'deep/'.repeat(1200)}file.txt` }),
+  call('read_source', { path: 'sources/../wiki/plan.md' }),
+  call('read_source', { path: 'sources\\notes.md' }),
+  call('read_source', { path: 'sources/' }),
+  call('read_source', { path: 'sources' }),
+]);
+add('evidence', 'read-source-argument-bounds', { vault: 'library' }, [
+  readSource('notes.md', { from: 0 }),
+  readSource('notes.md', { from: 1.5 }),
+  readSource('notes.md', { from: '2' }),
+  readSource('notes.md', { limit: 0 }),
+  readSource('notes.md', { limit: 1001 }),
+  readSource('notes.md', { limit: 1000 }),
+  readSource('notes.md', { sheet: 0 }),
+  readSource('notes.md', { from: -1 }),
+  call('read_source', {}),
+  call('read_source', { path: 5 }),
+]);
+add('evidence', 'find-evidence-unicode-and-typos', { vault: 'storefront' }, [
+  { $: 'write-file', path: 'capabilities/ko-note.md', text: `---\nuid: 3c1f4b8e-5a2d-4c7e-9b1a-0d6e8f2a4c10\nslug: capabilities/ko-note\nkind: capability\ntitle: ${'주문 취소'.normalize('NFD')}\ndomain: domains/order\n---\n\nBody about ${'결제 승인'.normalize('NFD')} and Café au lait.\n` },
+  { $: 'touch', path: 'capabilities/ko-note.md', mtimeMs: 1_700_000_500_000 },
+  call('find_evidence', { title: '주문 취소' }),
+  call('find_evidence', { title: '주문 취소'.normalize('NFD') }),
+  call('find_evidence', { title: '결제 승인' }),
+  call('find_evidence', { title: 'Café au lait' }),
+  call('find_evidence', { title: 'CAFÉ' }),
+  call('find_evidence', { title: 'Crat' }),
+  call('find_evidence', { title: 'Plce Order' }),
+  call('find_evidence', { title: 'Adres Bok' }),
+  call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc190' }),
+  call('find_evidence', { title: '취소 주문 승' }),
+  call('find_evidence', { title: 'refund policy for returns' }),
+  call('find_evidence', { title: 'x'.repeat(300) }),
+]);
+add('evidence', 'find-evidence-hostile-queries', { vault: 'storefront' }, [
+  call('find_evidence', { title: Array.from({ length: 4000 }, (_, i) => `term${i}`).join(' ') }),
+  call('find_evidence', { title: 'a '.repeat(20000).trim() }),
+  call('find_evidence', { title: '\u0000' }),
+  call('find_evidence', { title: 'cart\u0000' }),
+  call('find_evidence', { title: '😀' }),
+  call('find_evidence', { title: 'Cart', limit: 0 }),
+  call('find_evidence', { title: 'Cart', limit: 501 }),
+  call('find_evidence', { title: 'Cart', limit: 1.5 }),
+  call('find_evidence', { title: 'Cart', nodesOnly: 'yes' }),
+  call('find_evidence', {}),
+  call('find_evidence', { title: 5 }),
 ]);
 add('evidence', 'agent-brief-operations', { vault: 'miniature-repo' }, [
   call('query_ontology', { operation: 'agent_brief', task: 'change how a card is charged' }),

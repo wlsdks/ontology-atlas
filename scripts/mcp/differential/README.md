@@ -107,7 +107,8 @@ Nothing, except what a committed list names:
 A case file starts with a header line (`case`, `vault` fixture name, optional `env`, `clockMs`,
 `snapshot`, `mustNotExist`, `folder: "invariants"`), then one step per line: a JSON-RPC request (with
 optional `timeoutMs`, `settleMs`, `noWait`), a `{"raw": "..."}` line, a notification (`notify`), or a
-directive `{"$": ...}`: `await`, `wait`, `touch`, `write-file`, `mkdir`, `remove`, `symlink`, `chmod`,
+directive `{"$": ...}`: `await`, `wait`, `touch`, `write-file` (`text`, or `base64` bytes, either
+`repeat`ed; `size` makes the file that long with a hole after what was written), `mkdir`, `remove`, `symlink`, `chmod`,
 `git` (`args`: one `git` run in the folder that holds the vault, hardened as the harness reads the
 repository), `close-stdin`, `close-stdout`, `kill`, `kill-after-first-write`.
 

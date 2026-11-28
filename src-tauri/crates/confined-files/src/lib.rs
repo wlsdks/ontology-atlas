@@ -54,9 +54,9 @@ pub use source_disk::{
     evidence_text, DiskSource, ReadBudget, MAX_EVIDENCE_READ_BYTES, MAX_EVIDENCE_TEXT_BYTES,
 };
 pub use source_snapshot::{
-    confined_source_reads_enabled, sha256_hex, ListedDirectory, Lookup, ReadBoundary, ReadFile, SnapshotError,
-    SnapshotSource, SourceSnapshot, MAX_ENTRIES, MAX_FILE_TEXT_BYTES, MAX_TEXT_BYTES,
-    MAX_TRANSPORT_BYTES, SNAPSHOT_CONTRACT, SNAPSHOT_DESCRIPTOR,
+    confined_source_reads_enabled, sha256_hex, ListedDirectory, Lookup, ReadBoundary, ReadFile,
+    SnapshotError, SnapshotSource, SourceSnapshot, MAX_ENTRIES, MAX_FILE_TEXT_BYTES,
+    MAX_TEXT_BYTES, MAX_TRANSPORT_BYTES, SNAPSHOT_CONTRACT, SNAPSHOT_DESCRIPTOR,
 };
 pub use stable_read::{FileSnapshot, FileStamp, StableReadError, MAX_ATTEMPTS};
 pub use vault_root::{ConfinedPath, SlugError, VaultRoot, WritablePath, TOP_FILE_MAX_BYTES};

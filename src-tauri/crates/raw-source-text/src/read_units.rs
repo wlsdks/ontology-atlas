@@ -50,7 +50,9 @@ pub fn read_units(
     let format = SourceFormat::of_extension(extension);
     let from = window.from.max(1);
     if format.is_text() && bytes.iter().take(BINARY_TEST_BYTES).any(|&byte| byte == 0) {
-        let note = format!("The file holds a NUL byte, so it is not text and nothing was read. {NO_TEXT_ADVICE}");
+        let note = format!(
+            "The file holds a NUL byte, so it is not text and nothing was read. {NO_TEXT_ADVICE}"
+        );
         return Ok(no_units(SourceFormat::Binary, from, note));
     }
     let mut collector = WindowCollector::new(window);
@@ -70,8 +72,13 @@ pub fn read_units(
             offer_xlsx_units(&mut archive, window.sheet, &mut collector)?;
         }
         SourceFormat::Csv => {
-            let delimiter = if extension.eq_ignore_ascii_case("tsv") { b'\t' } else { b',' };
-            let unclosed = offer_table_units(&String::from_utf8_lossy(bytes), delimiter, &mut collector);
+            let delimiter = if extension.eq_ignore_ascii_case("tsv") {
+                b'\t'
+            } else {
+                b','
+            };
+            let unclosed =
+                offer_table_units(&String::from_utf8_lossy(bytes), delimiter, &mut collector);
             note = unclosed.map(|line| {
                 format!("Unclosed quoted record begins at physical line r{line}; its raw remainder was retained as one unit through EOF. This is not a full CSV/TSV validity check.")
             });

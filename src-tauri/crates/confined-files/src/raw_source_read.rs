@@ -236,7 +236,7 @@ mod tests {
             let error = RawSourcePath::parse(typed).expect_err(typed);
             assert!(error.to_string().contains(refusal), "{typed}: {error}");
         }
-        let long = format!("sources/{}", "a/".repeat(RAW_SOURCE_PATH_MAX_BYTES));
+        let long = format!("sources/{}a.md", "a/".repeat(RAW_SOURCE_PATH_MAX_BYTES));
         assert_eq!(
             RawSourcePath::parse(&long).expect_err("too long"),
             RawSourcePathRefusal::TooLong

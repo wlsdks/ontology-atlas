@@ -109,13 +109,18 @@ fn is_word_byte(byte: u8) -> bool {
 fn begins_with_name(rest: &str, name: &str) -> bool {
     rest.get(..name.len())
         .is_some_and(|head| head.eq_ignore_ascii_case(name))
-        && !rest.as_bytes().get(name.len()).is_some_and(|&byte| is_word_byte(byte))
+        && !rest
+            .as_bytes()
+            .get(name.len())
+            .is_some_and(|&byte| is_word_byte(byte))
 }
 
 /// A line break for the end of a block and for `<br>`, nothing for any other tag.
 fn line_break_for(tag: &str) -> Option<&'static str> {
     let breaks = match tag.strip_prefix('/') {
-        Some(closing) => BLOCK_ELEMENTS.iter().any(|name| begins_with_name(closing, name)),
+        Some(closing) => BLOCK_ELEMENTS
+            .iter()
+            .any(|name| begins_with_name(closing, name)),
         None => begins_with_name(tag, "br"),
     };
     breaks.then_some("\n")

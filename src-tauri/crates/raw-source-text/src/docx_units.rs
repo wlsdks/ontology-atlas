@@ -38,7 +38,10 @@ pub(crate) fn collapse_whitespace(text: &str) -> String {
 /// The tabs and line breaks of a paragraph read as spaces, so words do not fuse.
 fn space_for_tab_and_break(tag: &str) -> Option<&'static str> {
     let is_break = tag.strip_prefix("w:br").is_some_and(|rest| {
-        !rest.as_bytes().first().is_some_and(|&byte| byte.is_ascii_alphanumeric() || byte == b'_')
+        !rest
+            .as_bytes()
+            .first()
+            .is_some_and(|&byte| byte.is_ascii_alphanumeric() || byte == b'_')
             && rest.ends_with('/')
     });
     (tag == "w:tab/" || is_break).then_some(" ")
@@ -49,7 +52,10 @@ fn is_heading_style(style: &str) -> bool {
     ["heading", "title"]
         .iter()
         .any(|name| without_digits.eq_ignore_ascii_case(name))
-        || matches!(without_digits, "\u{c81c}\u{baa9}" | "\u{898b}\u{51fa}\u{3057}")
+        || matches!(
+            without_digits,
+            "\u{c81c}\u{baa9}" | "\u{898b}\u{51fa}\u{3057}"
+        )
 }
 
 fn paragraph_style(paragraph: &str) -> &str {
@@ -102,7 +108,12 @@ fn ambiguous_bases(paragraphs: &[Paragraph], counts: &HashMap<&str, usize>) -> V
         .filter_map(|paragraph| paragraph.heading_base.as_deref())
         .filter(|base| seen.insert(*base))
         .filter(|base| counts.get(base).copied().unwrap_or(0) > 1)
-        .map(|base| format!("{base} ({} occurrences)", counts.get(base).copied().unwrap_or(0)))
+        .map(|base| {
+            format!(
+                "{base} ({} occurrences)",
+                counts.get(base).copied().unwrap_or(0)
+            )
+        })
         .collect()
 }
 
@@ -191,7 +202,14 @@ mod tests {
         let anchors: Vec<&str> = units.iter().map(|unit| unit.anchor.as_str()).collect();
         assert_eq!(
             anchors,
-            ["p1", "h:scope-2", "h:scope-2", "h:scope-3", "h:scope-1", "h:scope-1"]
+            [
+                "p1",
+                "h:scope-2",
+                "h:scope-2",
+                "h:scope-3",
+                "h:scope-1",
+                "h:scope-1"
+            ]
         );
         assert!(note.contains("h:scope (2 occurrences)"));
     }

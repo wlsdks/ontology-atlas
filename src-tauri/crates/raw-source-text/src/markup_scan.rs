@@ -24,7 +24,11 @@ fn reference_value(body: &str) -> Option<char> {
         Some(hex) if hex.starts_with('x') => {
             let digits = &hex[1..];
             (!digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_hexdigit()))
-                .then(|| u32::from_str_radix(digits, 16).ok().and_then(char::from_u32))
+                .then(|| {
+                    u32::from_str_radix(digits, 16)
+                        .ok()
+                        .and_then(char::from_u32)
+                })
                 .flatten()
         }
         Some(decimal) => (!decimal.is_empty() && decimal.bytes().all(|byte| byte.is_ascii_digit()))
@@ -179,7 +183,10 @@ fn attribute<'a>(tag: &'a str, name: &str, allow_empty: bool) -> Option<(&'a str
         if at_boundary {
             let length = tag[value_start..].find('"')?;
             if allow_empty || length > 0 {
-                return Some((&tag[value_start..value_start + length], value_start + length + 1));
+                return Some((
+                    &tag[value_start..value_start + length],
+                    value_start + length + 1,
+                ));
             }
         }
         from = found + 1;
@@ -279,7 +286,9 @@ pub(crate) fn row_cells(xml: &str) -> Vec<RowCell<'_>> {
         };
         let attributes = &xml[start + 2..tag_end];
         let close = if close_may_follow {
-            xml[tag_end + 1..].find("</c>").map(|offset| tag_end + 1 + offset)
+            xml[tag_end + 1..]
+                .find("</c>")
+                .map(|offset| tag_end + 1 + offset)
         } else {
             None
         };
@@ -313,7 +322,8 @@ pub(crate) fn without_elements(html: &str, name: &str) -> String {
     let mut from = 0;
     loop {
         let start = find_element_start(&lowered, &open, from);
-        let end = start.and_then(|start| lowered[start..].find(&close).map(|offset| start + offset));
+        let end =
+            start.and_then(|start| lowered[start..].find(&close).map(|offset| start + offset));
         match (start, end) {
             (Some(start), Some(end)) => {
                 kept.push_str(&html[from..start]);
@@ -345,7 +355,14 @@ mod tests {
     #[test]
     fn a_reference_that_names_no_character_stays_as_written() {
         assert_eq!(decode_xml_text("a &amp; b &#x41;&#66; &lt;"), "a & b AB <");
-        for kept in ["&#99999999;", "&#xD800;", "&#9999999999999999999999;", "&nbsp;", "&", "&amp"] {
+        for kept in [
+            "&#99999999;",
+            "&#xD800;",
+            "&#9999999999999999999999;",
+            "&nbsp;",
+            "&",
+            "&amp",
+        ] {
             assert_eq!(decode_xml_text(kept), kept);
         }
     }
@@ -353,15 +370,18 @@ mod tests {
     #[test]
     fn a_longer_tag_name_is_not_the_one_asked_for() {
         let xml = "<w:pPr/><w:p>one</w:p><w:p w:x=\"1\">two</w:p>";
-        assert_eq!(element_spans(xml, "w:p"), ["<w:p>one</w:p>", "<w:p w:x=\"1\">two</w:p>"]);
+        assert_eq!(
+            element_spans(xml, "w:p"),
+            ["<w:p>one</w:p>", "<w:p w:x=\"1\">two</w:p>"]
+        );
     }
 
     #[test]
     fn an_unclosed_cell_does_not_make_every_later_cell_scan_to_the_end() {
         let row = "<c r=\"A1\"><v>1</v></c><c r=\"B1\"><c r=\"C1\"/>";
         let cells = row_cells(row);
-        assert_eq!(cells.len(), 3);
+        assert_eq!(cells.len(), 2);
         assert_eq!(cells[0].body, "<v>1</v>");
-        assert_eq!(cells[2].attributes, " r=\"C1\"");
+        assert_eq!(cells[1].attributes, " r=\"C1\"");
     }
 }

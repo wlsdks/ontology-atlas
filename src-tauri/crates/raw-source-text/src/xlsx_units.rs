@@ -67,7 +67,12 @@ fn cell_value(attributes: &str, body: &str, shared: &[String]) -> String {
                 .cloned()
                 .unwrap_or_default()
         }
-        Some("inlineStr") => text_of(between(body, "<is>", "</is>").first().copied().unwrap_or("")),
+        Some("inlineStr") => text_of(
+            between(body, "<is>", "</is>")
+                .first()
+                .copied()
+                .unwrap_or(""),
+        ),
         _ => text_of(first_value()),
     };
     collapse_whitespace(trim(&value))

@@ -29,4 +29,5 @@ the disk is `confined-files`' (`VaultRoot::read_raw_source`), and this crate nam
 - A text format whose first 8,000 bytes hold a NUL (Git's own test) is reported as `binary` with
   nothing read, so garbage is never cited as text.
 - Anchors are what the JavaScript server wrote, so a wiki page written before keeps pointing at
-  the same unit (`tests/anchors_are_stable.rs`).
+  the same unit (the differential corpus cases `read-source-office-and-tables` and
+  `read-source-hostile-files` replay both servers and compare the anchors byte for byte).

@@ -31,7 +31,10 @@ mod tests {
     #[test]
     fn composed_and_decomposed_text_fold_to_the_same_text() {
         // U+C8FC is U+110C U+116E decomposed; U+00C9 is E and a combining acute.
-        assert_eq!(folded("\u{c8fc}\u{bb38}"), folded("\u{110c}\u{116e}\u{1106}\u{116e}\u{11ab}"));
+        assert_eq!(
+            folded("\u{c8fc}\u{bb38}"),
+            folded("\u{110c}\u{116e}\u{1106}\u{116e}\u{11ab}")
+        );
         assert_eq!(folded("E\u{301}clair"), folded("\u{c9}clair"));
         assert_eq!(folded("\u{c9}CLAIR"), "\u{e9}clair");
     }

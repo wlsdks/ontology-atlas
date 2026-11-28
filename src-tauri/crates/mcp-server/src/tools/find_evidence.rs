@@ -120,8 +120,16 @@ fn body_hint(listed: &[Match<'_>]) -> Option<String> {
     if cut.is_empty() {
         return None;
     }
-    let named: Vec<String> = cut.iter().take(SLUGS_NAMED).map(|slug| format!("\"{slug}\"")).collect();
-    let more = if cut.len() > SLUGS_NAMED { ", \u{2026}" } else { "" };
+    let named: Vec<String> = cut
+        .iter()
+        .take(SLUGS_NAMED)
+        .map(|slug| format!("\"{slug}\""))
+        .collect();
+    let more = if cut.len() > SLUGS_NAMED {
+        ", \u{2026}"
+    } else {
+        ""
+    };
     Some(format!(
         "{} of {} match(es) returned a partial excerpt \u{2014} the matched text may sit past it. Read the whole body with get_concepts({{ slugs: [{}{more}], body: \"full\" }}).",
         cut.len(),
@@ -142,7 +150,8 @@ fn count(number: f64) -> usize {
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
     let title = required_non_blank_text(arguments, "title")?;
     let limit = count(
-        optional_positive_integer(arguments, "limit", Some(MAXIMUM_LIMIT))?.unwrap_or(DEFAULT_LIMIT),
+        optional_positive_integer(arguments, "limit", Some(MAXIMUM_LIMIT))?
+            .unwrap_or(DEFAULT_LIMIT),
     );
     let nodes_only = optional_boolean(arguments, "nodesOnly")?.unwrap_or(false);
     let query = EvidenceQuery::new(&title)

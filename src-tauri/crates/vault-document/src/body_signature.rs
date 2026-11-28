@@ -84,7 +84,14 @@ mod tests {
     fn a_text_in_the_body_is_never_ruled_out() {
         let body = "the ledger balances every order a customer places, \u{c8fc}\u{bb38} included";
         let signature = BodySignature::of(body);
-        for needle in ["ledger", "balances every", "customer places", "\u{c8fc}\u{bb38}", "of", "x"] {
+        for needle in [
+            "ledger",
+            "balances every",
+            "customer places",
+            "\u{c8fc}\u{bb38}",
+            "of",
+            "x",
+        ] {
             if body.contains(needle) {
                 assert!(signature.may_contain(needle), "{needle}");
             }

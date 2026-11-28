@@ -2072,6 +2072,502 @@
       "path": "result.structuredContent.errorCode",
       "change": 22,
       "reason": "An argument that only another argument allows, sent alone (`task` without `detail` `compact`), is a wrong call and answers invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/find-evidence-unicode-and-typos",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text",
+      "change": 40,
+      "reason": "find_evidence compares text lower-cased in one Unicode form and counts the words of any script, so a title typed composed finds a note saved decomposed, a Korean title earns the word-overlap tie-break, and a title a typo away is offered as a near title (row 40)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 5,
+      "path": "result.isError",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 7,
+      "path": "result.isError",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 8,
+      "path": "result.isError",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-bytes",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 12,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 13,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 21,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 22,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-hostile-files",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-library-files",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 11,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 12,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 13,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 15,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 16,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "read_source checks from, limit and sheet as its advertised schema says (whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path; the JavaScript server accepted and clamped them (row 39)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-miniature-repo",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "evidence/read-source-office-and-tables",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 41,
+      "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     }
   ]
 }

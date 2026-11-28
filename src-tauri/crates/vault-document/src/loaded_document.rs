@@ -6,7 +6,7 @@
 //! version the rest was read from. A document that was named, not listed, keeps its body.
 
 use std::borrow::Cow;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use confined_files::{ConfinedPath, FileSnapshot, OsErrorCode, StableReadError};
 use sha2::{Digest, Sha256};
@@ -19,6 +19,10 @@ use crate::search_text::folded;
 use crate::validation::{validate_document, Issue};
 
 /// Why a file could not be read.
+/// A needle longer than this is not remembered, so a query of thousands of words is not copied
+/// into every document of a vault of fifty thousand.
+const REMEMBERED_NEEDLE_MAX_BYTES: usize = 256;
+
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum FileReadError {
     /// The file is there and cannot be read: a link that loops, a permission, a lock held by
@@ -82,6 +86,9 @@ struct Record {
     body: Option<String>,
     /// What a text search may skip this body by, made by the first search that reads it.
     signature: OnceLock<BodySignature>,
+    /// The last needle `body_includes` was asked, and its answer: a search repeated for a word most
+    /// bodies hold reads no file. It is dropped with the record when the file changes.
+    last_needle: Mutex<Option<(String, bool)>>,
 }
 
 impl LoadedDocument {
@@ -118,6 +125,7 @@ impl LoadedDocument {
                 digest,
                 body: kept,
                 signature: OnceLock::new(),
+                last_needle: Mutex::new(None),
             }),
         }
     }
@@ -204,6 +212,9 @@ impl LoadedDocument {
     /// call reads the body and keeps a fingerprint of it, so a later search for text the body lacks
     /// opens no file.
     pub fn body_includes(&self, folded_needle: &str) -> Result<bool, FileReadError> {
+        if let Some(answer) = self.remembered_answer(folded_needle) {
+            return Ok(answer);
+        }
         if let Some(signature) = self.record.signature.get() {
             if !signature.may_contain(folded_needle) {
                 return Ok(false);
@@ -215,7 +226,25 @@ impl LoadedDocument {
             .record
             .signature
             .get_or_init(|| BodySignature::of(&folded_body));
-        Ok(signature.may_contain(folded_needle) && folded_body.contains(folded_needle))
+        let answer = signature.may_contain(folded_needle) && folded_body.contains(folded_needle);
+        self.remember_answer(folded_needle, answer);
+        Ok(answer)
+    }
+
+    fn remembered_answer(&self, folded_needle: &str) -> Option<bool> {
+        let last = self.record.last_needle.lock().ok()?;
+        last.as_ref()
+            .filter(|(needle, _)| needle == folded_needle)
+            .map(|(_, answer)| *answer)
+    }
+
+    fn remember_answer(&self, folded_needle: &str, answer: bool) {
+        if folded_needle.len() > REMEMBERED_NEEDLE_MAX_BYTES {
+            return;
+        }
+        if let Ok(mut last) = self.record.last_needle.lock() {
+            *last = Some((folded_needle.to_string(), answer));
+        }
     }
 
     /// `frontmatter.kind` when it is a non-blank text: what makes a document a node.

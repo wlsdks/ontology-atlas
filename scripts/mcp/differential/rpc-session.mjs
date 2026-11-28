@@ -2,7 +2,7 @@
 // step answered before the next is sent, so a request can name a file time the previous one wrote.
 import { execFileSync, spawn } from 'node:child_process';
 import {
-  chmodSync, mkdirSync, readdirSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync,
+  chmodSync, mkdirSync, readdirSync, rmSync, statSync, symlinkSync, truncateSync, utimesSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 
@@ -82,6 +82,14 @@ function idKey(id) {
 function decodeLine(buffer) {
   const text = buffer.toString('utf8');
   return { text, bytes: Buffer.from(text, 'utf8').equals(buffer) ? undefined : buffer.toString('latin1') };
+}
+
+/**
+ * What a `write-file` step writes: `text`, or the bytes of `base64`, repeated `repeat` times.
+ */
+function fileContent(step) {
+  const once = step.base64 !== undefined ? Buffer.from(step.base64, 'base64') : Buffer.from(step.text ?? '');
+  return step.repeat === undefined ? once : Buffer.concat(Array.from({ length: step.repeat }, () => once));
 }
 
 /**
@@ -255,7 +263,10 @@ export async function runSession({ server, steps, env, cwd, vaultPath, handshake
     }
     if (step.$ === 'write-file') {
       mkdirSync(path.dirname(path.join(vaultPath, step.path)), { recursive: true });
-      writeFileSync(path.join(vaultPath, step.path), step.text);
+      writeFileSync(path.join(vaultPath, step.path), fileContent(step));
+      // A `size` makes the file that long, a hole after what was written: a file past a read cap
+      // costs the disk nothing.
+      if (step.size !== undefined) truncateSync(path.join(vaultPath, step.path), step.size);
       continue;
     }
     if (step.$ === 'git') {

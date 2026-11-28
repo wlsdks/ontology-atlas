@@ -37,8 +37,8 @@ pub use body_delivery::{
 };
 pub use body_findings::{body_findings, BodyFinding};
 pub use document::{Document, RawShape};
-pub use evidence_search::{search_evidence, EvidenceHit, EvidenceQuery, MatchedIn};
 pub use document_cache::{CacheCounts, DocumentCache};
+pub use evidence_search::{search_evidence, EvidenceHit, EvidenceQuery, MatchedIn};
 pub use kind_census::{kind_census, KindCensus, KindCounts};
 pub use loaded_document::{DisplayTitle, FileReadError, LoadedDocument};
 pub use loaded_vault::{LoadedVault, NamedReadError};
