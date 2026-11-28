@@ -719,6 +719,15 @@ window-in-units rules and the shapes the patterns cannot see (a nested generic, 
 split across lines by a comment); it changes rows only where the patterns were wrong, so each such
 case is declared with its corpus case.
 
+Left to a later slice by the review of the source reads: `source-reads` reads a file's imports from
+its lines (`import_bindings.rs`, by patterns over statements of at most 40 lines and 2,000
+characters each) although `source-scan` already reads imports from the syntax tree for
+`infer_imports`. Folding the line reader onto the tree removes the caps and the patterns. The case
+that shows the difference is a file whose `import {` list runs over 45 lines, one name to a line,
+before `} from './x'`: the line reader stops at the 40th line, binds only the names it saw and marks
+the file's bindings incomplete, so a call of a name past the 40th line is not followed to `./x`,
+and the tree reads all 45. Each row that changes is declared with its corpus case.
+
 Slice 10 may start after slice 4 under named fields if the manifest shows that the bytes a write
 puts on disk depend only on built functions.
 
