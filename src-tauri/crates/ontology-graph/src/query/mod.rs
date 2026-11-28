@@ -17,6 +17,7 @@ mod operation;
 mod operation_defaults;
 mod plan;
 mod project_root;
+mod project_scope_slugs;
 mod query_error;
 mod relation_set;
 mod request;
@@ -31,6 +32,7 @@ use serde::Serialize;
 use crate::compiled_graph::CompiledGraph;
 
 pub use operation::{Operation, PendingOperation};
+pub use project_scope_slugs::project_scope_slugs;
 pub use query_error::QueryError;
 pub use relation_set::RELATION_TYPE_VALUES;
 pub use request::{Direction, QueryRequest, SEARCH_BUDGET_MAX};
