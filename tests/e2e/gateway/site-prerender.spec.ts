@@ -33,25 +33,34 @@ test.describe("the prerendered website", () => {
     test.use({ javaScriptEnabled: false });
 
     test("has a public page's words in the document, and draws no map", async ({ page }) => {
-      for (const { path, reads } of PUBLIC_PAGES) {
-        await page.goto(`/en${path}`);
-        await expect(page.getByTestId(reads), path).toBeVisible();
-        await expect(page.locator("main h1"), path).toHaveCount(1);
-        // The download page's own stage is canvas markup in the document; the map and the sample's map run in scripts.
-        if (path !== "/download/") await expect(page.locator("canvas"), path).toHaveCount(0);
+      for (const locale of routing.locales) {
+        for (const { path, reads } of PUBLIC_PAGES) {
+          const address = `/${locale}${path}`;
+          await page.goto(address);
+          await expect(page.getByTestId(reads), address).toBeVisible();
+          await expect(page.locator("main h1"), address).toHaveCount(1);
+          // The download page's own stage is canvas markup in the document; the map and the sample's map run in scripts.
+          if (path !== "/download/") await expect(page.locator("canvas"), address).toHaveCount(0);
+        }
       }
     });
 
     test("has the guide's chapter text, not a loading picture", async ({ page }) => {
-      await page.goto("/en/guide/relations/");
-      const body = await page.getByTestId("gateway-doc-body").innerText();
-      expect(body.length, "the chapter body is empty").toBeGreaterThan(1500);
-      await expect(page.getByTestId("gateway-doc-empty")).toHaveCount(0);
+      for (const locale of routing.locales) {
+        const address = `/${locale}/guide/relations/`;
+        await page.goto(address);
+        const body = await page.getByTestId("gateway-doc-body").innerText();
+        // A chapter in a script of fewer letters per idea is still pages long; a loading picture is a line.
+        expect(body.length, `${address}: the chapter body is empty`).toBeGreaterThan(800);
+        await expect(page.getByTestId("gateway-doc-empty"), address).toHaveCount(0);
+      }
     });
 
     test("has an app address's page that says the app is needed", async ({ page }) => {
-      await page.goto("/en/topology/");
-      await expect(page.getByTestId("app-only-page")).toBeVisible();
+      for (const locale of routing.locales) {
+        await page.goto(`/${locale}/topology/`);
+        await expect(page.getByTestId("app-only-page"), locale).toBeVisible();
+      }
     });
   });
 
