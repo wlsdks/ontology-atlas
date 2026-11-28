@@ -4,6 +4,7 @@
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { importTypeScriptModule } from '../../lib/import-typescript-module.mjs';
 import { parseFrontmatter } from '../../lib/parse-frontmatter.mjs';
 import { readPoPilotSource } from '../../lib/records/po-pilot-records.mjs';
 import { readLedgerSource } from '../../lib/records/record-ledgers.mjs';
@@ -115,18 +116,16 @@ export function deterministicGeneratedAt(docs) {
 }
 
 /**
- * The canonical meaning judgements, loaded if this checkout has them: they live in `mcp/src` and are
- * imported rather than retyped, so the static manifest and the app's builder share one rule. The
- * import is dynamic and optional because the `prepare` hook copies the build alone into a bare
- * worktree (no `mcp/`), where a static import is a module-resolution crash.
+ * The app's meaning judgements, loaded if this checkout has them: they are imported rather than
+ * retyped, so the static manifest and the app's builder share one rule. The import is dynamic and
+ * optional because the `prepare` hook copies the build alone into a bare worktree (no `src/`),
+ * where a static import is a module-resolution crash.
  */
 const meaningRules = await (async () => {
   try {
-    const [findings, schema] = await Promise.all([
-      import('../../../mcp/src/meaning/meaning-findings.mjs'),
-      import('../../../mcp/src/schema.mjs'),
-    ]);
-    return { findings, folderForKind: schema.folderForKind };
+    return await importTypeScriptModule(
+      new URL('../../../src/shared/lib/vault-document/meaning-findings.ts', import.meta.url),
+    );
   } catch {
     return null;
   }
@@ -134,29 +133,22 @@ const meaningRules = await (async () => {
 
 if (!meaningRules) {
   console.warn(
-    '[docs-vault] mcp/src is not in this checkout: meaning findings are recorded as null (not computed), not as an empty list.',
+    '[docs-vault] src/shared/lib/vault-document is not in this checkout: meaning findings are recorded as null (not computed), not as an empty list.',
   );
 }
 
 /**
  * The meaning findings for one document, as portable codes: `undefined` (no `kind:`, never a node),
  * `null` (a node, rule unavailable, nothing measured), or an array (the rule ran; empty means nothing found).
- * Mirrors `meaningFindings` in `src/shared/lib/vault-document/meaning-findings.ts`; the canonical rules
- * live in `mcp/src/meaning/meaning-findings.mjs`, except `slug-outside-kind-folder`, which sits in the
- * write gate and is read from the schema (`tests/contract/analysis/meaning-findings-parity.contract.test.ts`).
- * `folder-only-evidence` is absent on both paths: it asks the filesystem whether a cited path is a
- * directory, which the browser cannot.
+ * `folder-only-evidence` is absent: it asks the filesystem whether a cited path is a directory,
+ * which this module cannot.
  */
 function meaningFindingCodes({ kind, slug, title, body }) {
   if (typeof kind !== 'string' || !kind.trim()) return undefined;
   if (!meaningRules) return null;
-  const input = { kind, slug: slug ?? '', title: title ?? '', body: body ?? '' };
-  const codes = meaningRules.findings.bodyMeaningFindings(input).map((finding) => finding.code);
-  const folder = meaningRules.folderForKind(kind);
-  if (slug && folder && !slug.startsWith(folder)) {
-    codes.push('slug-outside-kind-folder');
-  }
-  return codes;
+  return meaningRules
+    .meaningFindings({ kind, slug: slug ?? '', title: title ?? '', body: body ?? '' })
+    .map((finding) => finding.code);
 }
 
 /**

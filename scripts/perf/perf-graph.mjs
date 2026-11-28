@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-// Graph-engine scale audit for compile_ontology + query_ontology hot paths.
+// Graph scale audit for compile_ontology + query_ontology hot paths.
 //
-// This is intentionally in-process: it measures the compiler and graph query
-// engine without Codex/Claude process startup, MCP JSON-RPC transport, or file
-// system noise. Use it before deciding whether a native helper (for example Go)
-// is justified.
+// Each figure is one `tools/call` to the server over stdio, as an agent sees it: the request
+// written to the answer line read, on a server that has already loaded the generated vault. The
+// process start is not counted. Every run opens a fresh server.
 //
 // Usage:
 //   node scripts/perf/perf-graph.mjs
@@ -15,9 +14,15 @@
 
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { compileOntology } from "../../mcp/src/ontology-compiler.mjs";
-import { queryCompiledOntology } from "../../mcp/src/ontology-engine.mjs";
+import { buildNodeMarkdown } from "../lib/vault/node-markdown.mjs";
+import { openTimedToolSession } from "./lib/timed-tool-session.mjs";
+
+const SERVER_ENTRY = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "mcp", "src", "index.js");
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const json = args.includes("--json");
@@ -77,16 +82,18 @@ function parseSize(value, flag) {
  * The compiler requires an immutable `uid` per node; the bench mints uids the way a real vault
  * does (`randomUUID`), or it dies at the compile step before measuring query performance.
  */
-function doc(slug, frontmatter, mtime = 1) {
-  // Benchmark fixtures are ephemeral but still exercise the v2 identity
-  // contract. Mint once when the fixture is created; repeated measurements
-  // compile the same document objects and therefore the same identities.
-  return {
-    slug,
-    frontmatter: { uid: randomUUID(), slug, ...frontmatter },
-    body: "",
-    mtime,
-  };
+function doc(slug, frontmatter) {
+  return { slug, frontmatter: { uid: randomUUID(), slug, ...frontmatter } };
+}
+
+function writeVault(docs) {
+  const root = mkdtempSync(join(tmpdir(), "perf-graph-"));
+  for (const { slug, frontmatter } of docs) {
+    const target = join(root, `${slug}.md`);
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, buildNodeMarkdown({ frontmatter }), "utf8");
+  }
+  return root;
 }
 
 function generateDocs(n) {
@@ -142,21 +149,35 @@ function generateDocs(n) {
   return docs.slice(0, n);
 }
 
-function measure(label, callback) {
-  const start = performance.now();
-  const value = callback();
-  return { label, ms: performance.now() - start, value };
+async function measureCall(session, label, name, args) {
+  const { ms, value } = await session.call(name, args);
+  return { label, ms, value };
 }
 
 function round(ms) {
   return Number(ms.toFixed(2));
 }
 
-function runScaleOnce(docs) {
-  const compileFull = measure("compile_full", () => compileOntology(docs));
-  const compileIndexes = measure("compile_indexes", () => compileOntology(docs, { includeIndexes: true }));
-  const compileSummary = measure("compile_summary", () => compileOntology(docs, { summary: true }));
-  const artifact = compileIndexes.value;
+async function runScaleOnce(vaultRoot) {
+  const session = await openTimedToolSession({ command: process.execPath, args: [SERVER_ENTRY], vaultRoot });
+  try {
+    return await measureWith(session);
+  } finally {
+    session.close();
+  }
+}
+
+async function measureWith(session) {
+  await session.call("list_concepts", { limit: 1 });
+  const compileFull = await measureCall(session, "compile_full", "compile_ontology", { full: true });
+  const compileIndexes = await measureCall(session, "compile_indexes", "compile_ontology", { includeIndexes: true });
+  const compileSummary = await measureCall(session, "compile_summary", "compile_ontology", { summary: true });
+  const artifact = {
+    nodeCount: compileSummary.value.nodeCount,
+    edgeCount: compileSummary.value.edgeCount,
+    resolvedEdgeCount: compileSummary.value.resolvedEdgeCount,
+    graphHash: compileSummary.value.graphHash,
+  };
   const center = "capabilities/cap-10";
   const peer = "capabilities/cap-20";
   const project = "project/perf-workbench";
@@ -228,12 +249,20 @@ function runScaleOnce(docs) {
     {
       label: "graph_db_pack",
       query: null,
-      run: () => graphDbPackQueries.map((query) => queryCompiledOntology(artifact, query)),
     },
     { label: "project_map", query: { operation: "project_map", project, itemLimit: 20 } },
-  ].map(({ label, query, run }) =>
-    measure(label, () => (run ? run() : queryCompiledOntology(artifact, query))),
-  );
+  ];
+  const queryResults = [];
+  for (const { label, query } of queryInputs) {
+    if (query) {
+      queryResults.push(await measureCall(session, label, "query_ontology", query));
+      continue;
+    }
+    const start = performance.now();
+    const values = [];
+    for (const packQuery of graphDbPackQueries) values.push((await session.call("query_ontology", packQuery)).value);
+    queryResults.push({ label, ms: performance.now() - start, value: values });
+  }
 
   return {
     graph: {
@@ -247,13 +276,13 @@ function runScaleOnce(docs) {
       indexesMs: round(compileIndexes.ms),
       summaryMs: round(compileSummary.ms),
     },
-    queries: Object.fromEntries(queryInputs.map((row) => [row.label, round(row.ms)])),
+    queries: Object.fromEntries(queryResults.map((row) => [row.label, round(row.ms)])),
     queryDiagnostics: {
       query_plan_match_nodes: queryPlanDiagnostics(
-        queryInputs.find((row) => row.label === "query_plan_match_nodes")?.value,
+        queryResults.find((row) => row.label === "query_plan_match_nodes")?.value,
       ),
       graph_db_pack: graphDbPackDiagnostics(
-        queryInputs.find((row) => row.label === "graph_db_pack")?.value,
+        queryResults.find((row) => row.label === "graph_db_pack")?.value,
       ),
     },
   };
@@ -302,9 +331,14 @@ function aggregateMetric(rows, section, metric) {
   return summarize(rows.map((row) => row[section][metric]));
 }
 
-function runScale(n) {
-  const docs = generateDocs(n);
-  const rows = Array.from({ length: runs }, () => runScaleOnce(docs));
+async function runScale(n) {
+  const vaultRoot = writeVault(generateDocs(n));
+  const rows = [];
+  try {
+    for (let run = 0; run < runs; run += 1) rows.push(await runScaleOnce(vaultRoot));
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+  }
   const first = rows[0];
   const compileStats = Object.fromEntries(
     Object.keys(first.compile).map((metric) => [metric, aggregateMetric(rows, "compile", metric)]),
@@ -327,13 +361,14 @@ function runScale(n) {
   };
 }
 
-const results = sizes.map(runScale);
+const results = [];
+for (const n of sizes) results.push(await runScale(n));
 const failures = check ? collectBudgetFailures(results, budgets) : [];
 
 if (json) {
   console.log(JSON.stringify({ check, budgets, failures, results }, null, 2));
 } else {
-  console.log("[perf-graph] compile_ontology + query_ontology in-process scale audit");
+  console.log("[perf-graph] compile_ontology + query_ontology scale audit over stdio");
   console.log(`[perf-graph] runs per size: ${runs} (reported values are medians)`);
   if (check) {
     console.log(

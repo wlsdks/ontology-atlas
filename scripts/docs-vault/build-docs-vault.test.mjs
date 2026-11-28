@@ -334,10 +334,10 @@ test('dated evidence, drafts, plans and launch copy stay in the repository but l
 /**
  * **The manifest records what the validator hears about each body — or says it did not ask.**
  *
- * The five portable meaning findings come from `mcp/src`, a sibling package this script
+ * The five portable meaning findings come from the app's `meaningFindings`, which this script
  * imports rather than retypes, so the static manifest and the app's own builder answer
  * with one rule. That import is optional: `prepare` copies this script alone into a bare
- * worktree, and a checkout with no `mcp/` must still build a manifest — recording `null`
+ * worktree, and a checkout with no `src/` must still build a manifest — recording `null`
  * (nobody asked) rather than `[]` (asked and clean), because a later reader turning the
  * second into "this file is fine" is the whole failure this field exists to prevent.
  */
@@ -378,10 +378,10 @@ test('meaning findings ride the scan: codes for a node, no key for a plain docum
   }
 });
 
-test('a checkout with no mcp/ records null, not an empty list, and says why', async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-no-mcp-'));
+test('a checkout with no src/ records null, not an empty list, and says why', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-no-src-'));
   try {
-    // The shape `prepare` materializes: this script, its `generator/` parts and the libraries it imports, no `mcp/`.
+    // The shape `prepare` materializes: this script, its `generator/` parts and the libraries it imports, no `src/`.
     await mkdir(path.join(root, 'scripts', 'lib'), { recursive: true });
     cpSync(path.join(SOURCE_ROOT, 'scripts/docs-vault/generator'), path.join(root, 'scripts/docs-vault/generator'), {
       recursive: true,
@@ -389,6 +389,7 @@ test('a checkout with no mcp/ records null, not an empty list, and says why', as
     for (const relative of [
       'scripts/docs-vault/build-docs-vault.mjs',
       'scripts/lib/parse-frontmatter.mjs',
+      'scripts/lib/import-typescript-module.mjs',
       'scripts/lib/records/record-ledgers.mjs',
       'scripts/lib/records/po-pilot-records.mjs',
       'scripts/lib/records/po-pilot.mjs',
@@ -417,7 +418,7 @@ test('a checkout with no mcp/ records null, not an empty list, and says why', as
     const rows = JSON.parse(run.stdout.trim().split('\n').at(-1));
     assert.deepEqual(rows, [['capabilities/pay', null]]);
     // The silence is named once, where whoever reads the build output can see it.
-    assert.match(run.stderr, /mcp\/src is not in this checkout/);
+    assert.match(run.stderr, /src\/shared\/lib\/vault-document is not in this checkout/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

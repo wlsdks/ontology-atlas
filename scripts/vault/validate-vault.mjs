@@ -12,6 +12,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { importTypeScriptModule } from "../lib/import-typescript-module.mjs";
 import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
 import { inspectMergedUids, nodeUidIssue } from "../lib/vault/node-uid.mjs";
 /*
@@ -19,18 +20,9 @@ import { inspectMergedUids, nodeUidIssue } from "../lib/vault/node-uid.mjs";
  * reads the repository's own vault, and a second implementation could report a different number
  * than the app does for the same folder. The file imports nothing and Node strips its types, so
  * plain `node` runs it with no install, which the install-free CI job relies on.
- *
- * The root package has no `"type"`, so Node says so on stderr when it first reads that `.ts` file.
- * A lane that prints nothing when the vault is clean must not, and only that one warning is held back.
  */
-const warningPrinters = process.listeners("warning");
-process.removeAllListeners("warning");
-process.on("warning", (warning) => {
-  if (warning.code === "MODULE_TYPELESS_PACKAGE_JSON") return;
-  for (const print of warningPrinters) print(warning);
-});
-const { folderForKind, meaningFindings } = await import(
-  "../../src/shared/lib/vault-document/meaning-findings.ts"
+const { folderForKind, meaningFindings } = await importTypeScriptModule(
+  new URL("../../src/shared/lib/vault-document/meaning-findings.ts", import.meta.url),
 );
 
 const VAULT_SOURCES_DIR = "sources";
