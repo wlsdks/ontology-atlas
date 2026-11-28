@@ -3,9 +3,10 @@
 //! The survey's patterns were written for JavaScript, whose `\s`, `\w`, `\d` and `\b` mean
 //! something narrower or different from the same letters in `regex` (which is Unicode-wide by
 //! default): `\w` is ASCII only, `\s` is the ECMAScript white space and line terminators, and `\b`
-//! is the ASCII word boundary. [`js_regex`] rewrites those four so one pattern text means in Rust
-//! what it meant before. Case folding is the one thing left to the caller: `(?i)` folds Unicode,
-//! and no pattern here has a letter that folds across the ASCII boundary.
+//! is the ASCII word boundary, and `.` leaves out all four line terminators, not `\n` alone.
+//! [`js_regex`] rewrites those so one pattern text means in Rust what it meant before. Case
+//! folding is the one thing left to the caller: `(?i)` folds Unicode, and a pattern with an `s` or
+//! a `k` in it compares the lower-cased ASCII text instead.
 
 use regex::Regex;
 
@@ -13,6 +14,28 @@ use regex::Regex;
 const SPACE: &str =
     "\\t\\n\\x0B\\x0C\\r \\x{A0}\\x{1680}\\x{2000}-\\x{200A}\\x{2028}\\x{2029}\\x{202F}\\x{205F}\\x{3000}\\x{FEFF}";
 const WORD: &str = "A-Za-z0-9_";
+/// The four ECMAScript line terminators, as a class body.
+const LINE_TERMINATORS: &str = "\\n\\r\\x{2028}\\x{2029}";
+
+/// Whether ECMAScript calls `character` white space or a line terminator.
+pub fn is_js_space(character: char) -> bool {
+    matches!(
+        character,
+        '\t' | '\n' | '\u{B}' | '\u{C}' | '\r' | ' ' | '\u{A0}' | '\u{1680}' | '\u{2000}'
+            ..='\u{200A}'
+                | '\u{2028}'
+                | '\u{2029}'
+                | '\u{202F}'
+                | '\u{205F}'
+                | '\u{3000}'
+                | '\u{FEFF}'
+    )
+}
+
+/// `text` without the white space and line terminators ECMAScript's `trimEnd` removes at its end.
+pub fn js_trim_end(text: &str) -> &str {
+    text.trim_end_matches(is_js_space)
+}
 
 /// `pattern` with `\s`, `\S`, `\w`, `\W`, `\d`, `\D` and `\b` read as ECMAScript reads them. Every
 /// pattern is a literal of this crate, so one that does not compile is a defect the first test that
@@ -65,6 +88,11 @@ fn translate(pattern: &str) -> String {
                     }
                 }
             }
+            '.' if !in_class => {
+                out.push_str("[^");
+                out.push_str(LINE_TERMINATORS);
+                out.push(']');
+            }
             '[' if !in_class => {
                 in_class = true;
                 out.push('[');
@@ -101,6 +129,25 @@ mod tests {
             "U+0085 is not white space in ECMAScript"
         );
         assert!(space.is_match("a\u{2028}b"));
+    }
+
+    #[test]
+    fn a_dot_stops_at_every_line_terminator_and_trimming_removes_a_byte_order_mark() {
+        let dot = js_regex(r"^a.b$");
+        assert!(dot.is_match("a-b"));
+        assert!(
+            !dot.is_match("a\u{2028}b"),
+            "U+2028 ends a line in ECMAScript"
+        );
+        assert!(!dot.is_match("a\rb"));
+        assert!(js_regex(r"a\.b").is_match("a.b"));
+        assert!(!js_regex(r"a\.b").is_match("axb"));
+        assert_eq!(js_trim_end("x \u{FEFF}\u{A0}"), "x");
+        assert_eq!(
+            js_trim_end("x\u{85}"),
+            "x\u{85}",
+            "U+0085 is not white space in ECMAScript"
+        );
     }
 
     #[test]

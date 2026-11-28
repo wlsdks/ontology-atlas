@@ -20,10 +20,12 @@ the same as reading one file after another.
 | `entry_points.rs`, `entry_signals.rs` | Manifest and source entry points |
 | `ability_rows.rs`, `ability_row.rs` | The 120-row ability floor and one row's text |
 | `library_exports.rs`, `sibling_families.rs`, `dispatched_operations.rs`, `documented_abilities.rs` | Where abilities come from |
+| `operator_rows.rs`, `operator_language.rs`, `subcommand_rows.rs`, `flag_rows.rs`, `setting_rows.rs`, `worker_rows.rs`, `enclosing_declarations.rs` | An operator's side: subcommands a parser registers, flags grouped as the code groups them, the settings a configuration type turns on, background workers, and the declaration a line sits in |
+| `jvm_masking.rs`, `jvm_file_facts.rs`, `jvm_rows.rs` | Java and Kotlin: comments and literals blanked, each file's classes read once, then routes, executables, workers and families across files |
 | `readme_purpose.rs`, `doc_pages.rs` | README purpose, documentation pages |
 | `git_ignored_paths.rs` | What Git ignores, so a built checkout counts like a clean one |
 | `survey_files.rs` | The only way a path from a manifest or README becomes a read |
 | `survey_text.rs`, `js_pattern.rs`, `name_key.rs`, `bounded_lines.rs`, `declaration_index.rs` | Text escaping and counts, JavaScript pattern meanings, name comparison, line bounds, the declaration index |
 
-Not read by this build: subcommands, flags, settings, background workers and JVM operation
-families (`ability_rows::GAPS`).
+Folders a scan skips (build output, caches, editor settings, virtual environments) are one list,
+`source_scan::DEFAULT_IGNORE`, shared with the import scan.

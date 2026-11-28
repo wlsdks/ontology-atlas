@@ -16,7 +16,7 @@ use confined_files::{EntryKind, Refusal, SourceFiles, SourceReadError};
 use rayon::prelude::*;
 use source_scan::{
     declared_workspace_members, extension_of, outline_text, walk_sorted, Declaration,
-    DeclaredMember, Entry, Flow, SourceLanguage, WalkLimits,
+    DeclaredMember, Entry, Flow, SourceLanguage, WalkLimits, DEFAULT_IGNORE,
 };
 
 use crate::ability_row::AbilityRow;
@@ -24,8 +24,11 @@ use crate::dispatched_operations::dispatched_operations;
 use crate::entry_signals::{read_entry_signals, EntrySignals};
 use crate::folder_tree::{FolderTree, TreeFile, ROOT};
 use crate::git_ignored_paths::nfc;
+use crate::jvm_file_facts::{read_jvm_file, JvmFileFacts};
+use crate::operator_rows::{operator_rows, OperatorRows};
 use crate::source_class::{class_of, SourceClass};
 use crate::survey_files::SurveyFiles;
+use crate::tooling_path::is_tooling;
 
 /// The walk stops after this many source files.
 pub const MAX_FILES: usize = 8000;
@@ -44,26 +47,6 @@ const SOURCE_EXTENSIONS: [&str; 31] = [
     ".scala", ".svelte", ".swift", ".ts", ".tsx", ".vue", ".zig",
 ];
 
-/// Folders that hold what a build made or a tool cached, never what a person wrote.
-pub const SURVEY_IGNORE: [&str; 16] = [
-    "node_modules",
-    ".git",
-    "out",
-    "dist",
-    "build",
-    ".next",
-    ".expo",
-    ".turbo",
-    ".cache",
-    ".idea",
-    ".vscode",
-    "coverage",
-    "__pycache__",
-    ".pytest_cache",
-    ".venv",
-    "venv",
-];
-
 /// A folder whose children are the units, never a unit itself.
 const CONTAINER_FOLDERS: [&str; 12] = [
     "apps", "cmd", "crates", "internal", "lib", "libs", "modules", "packages", "pkg", "plugins",
@@ -76,6 +59,10 @@ pub struct ProductReading {
     pub signals: EntrySignals,
     pub declarations: Vec<Declaration>,
     pub dispatched: Vec<AbilityRow>,
+    /// What an operator gets from the file: subcommands, flags, settings and workers.
+    pub operator: Option<OperatorRows>,
+    /// A Java or Kotlin file's classes, for the rows that need other files.
+    pub jvm: Option<JvmFileFacts>,
 }
 
 #[derive(Debug, Clone)]
@@ -137,7 +124,7 @@ impl Collection {
 }
 
 pub struct CollectOptions<'a> {
-    /// Folder names to skip besides [`SURVEY_IGNORE`].
+    /// Folder names to skip besides [`DEFAULT_IGNORE`].
     pub ignore: &'a [String],
     /// A folder below the root, `/`-separated, whose files are the map being built and are
     /// left out: the vault when it lies inside the repository.
@@ -182,7 +169,7 @@ fn walk_source_files(
     options: &CollectOptions<'_>,
 ) -> (Vec<(String, PathBuf)>, bool) {
     let root = source.root().to_path_buf();
-    let ignored: HashSet<&str> = SURVEY_IGNORE
+    let ignored: HashSet<&str> = DEFAULT_IGNORE
         .iter()
         .copied()
         .chain(options.ignore.iter().map(String::as_str))
@@ -236,6 +223,7 @@ fn walk_source_files(
 
 fn read_product(path: &str, text: &str) -> ProductReading {
     let scanned = answer_format::utf16::prefix(text, SCAN_UNITS);
+    let tooling = is_tooling(path);
     let declarations = if text.len() <= MAX_INDEXED_BYTES {
         extension_of(path)
             .and_then(|extension| SourceLanguage::of_extension(&extension.to_ascii_lowercase()))
@@ -249,6 +237,15 @@ fn read_product(path: &str, text: &str) -> ProductReading {
         signals: read_entry_signals(path, scanned),
         declarations,
         dispatched: dispatched_operations(path, scanned),
+        operator: if tooling {
+            None
+        } else {
+            operator_rows(path, scanned)
+        },
+        jvm: (!tooling
+            && (path.ends_with(".java") || path.ends_with(".kt"))
+            && !scanned.is_empty())
+        .then(|| read_jvm_file(path, scanned)),
     }
 }
 
@@ -285,7 +282,7 @@ pub fn collect_source_units(files: &SurveyFiles<'_>, options: &CollectOptions<'_
         .into_par_iter()
         .map(|(path, absolute)| survey_file(source, path, &absolute))
         .collect();
-    let extra_ignore: Vec<String> = SURVEY_IGNORE
+    let extra_ignore: Vec<String> = DEFAULT_IGNORE
         .iter()
         .map(|name| (*name).to_string())
         .chain(options.ignore.iter().cloned())

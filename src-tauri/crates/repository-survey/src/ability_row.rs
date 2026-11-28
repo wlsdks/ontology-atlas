@@ -16,6 +16,11 @@ pub enum AbilityKind {
     Export,
     Operation,
     Documented,
+    Subcommand,
+    Flag,
+    Flags,
+    Setting,
+    Worker,
 }
 
 impl AbilityKind {
@@ -31,6 +36,11 @@ impl AbilityKind {
             Self::Export => "export",
             Self::Operation => "operation",
             Self::Documented => "documented",
+            Self::Subcommand => "subcommand",
+            Self::Flag => "flag",
+            Self::Flags => "flags",
+            Self::Setting => "setting",
+            Self::Worker => "worker",
         }
     }
 }

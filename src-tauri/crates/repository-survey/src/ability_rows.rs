@@ -6,8 +6,9 @@
 //!
 //! Rows come from the entry points, the exports of a library, folders whose files each declare the
 //! operation they are named after, dispatchers that route by command name, and headings the docs
-//! share with the code. Subcommands, flags, settings, workers and the JVM families are not read by
-//! this build (`GAPS`).
+//! share with the code, and from the operator's side: subcommands a parser registers, flags, the
+//! settings a configuration type turns on, background workers, and the Java and Kotlin routes,
+//! executables, workers and families.
 
 use std::collections::HashSet;
 use std::sync::LazyLock;
@@ -20,8 +21,11 @@ use crate::declaration_index::{declaration_index, DeclarationIndex};
 use crate::documented_abilities::{documented_abilities, Documents, VocabularyFile};
 use crate::entry_points::{executable_name, EntryPoint};
 use crate::js_pattern::js_regex;
+use crate::jvm_file_facts::JvmFileFacts;
+use crate::jvm_rows::jvm_rows;
 use crate::library_exports::{library_abilities, FAMILY_SIZE};
 use crate::name_key::name_key;
+use crate::operator_rows::OperatorRows;
 use crate::sibling_families::sibling_families;
 use crate::source_class::SourceClass;
 use crate::survey_files::SurveyFiles;
@@ -30,9 +34,6 @@ use crate::unit_collection::Collection;
 
 pub const ABILITY_LIMIT: usize = 120;
 const SCAN_UNITS: usize = 256 * 1024;
-
-/// What this build of the survey does not read, said in the map so a builder looks for it.
-pub const GAPS: &str = "Subcommands, flags, settings, background workers and JVM operation families are not listed by this build; read them from the outlines.";
 
 static MAIN_LINE: LazyLock<Regex> =
     LazyLock::new(|| js_regex(r#"^func main\(\)|^fn main\(\)|^if __name__ == ["']__main__["']"#));
@@ -189,6 +190,31 @@ pub fn abilities_of(
         {
             push(row.clone(), false, &mut rows);
         }
+    }
+    // Subcommands, flags, settings and workers, each kind across every file before the next.
+    let operator_files: Vec<&OperatorRows> = product
+        .iter()
+        .filter_map(|file| file.reading.as_ref()?.operator.as_ref())
+        .collect();
+    for kind_rows in [
+        |rows: &OperatorRows| rows.subcommands.clone(),
+        |rows: &OperatorRows| rows.flags.clone(),
+        |rows: &OperatorRows| rows.settings.clone(),
+        |rows: &OperatorRows| rows.workers.clone(),
+    ] {
+        for rows_of_file in &operator_files {
+            for row in kind_rows(rows_of_file) {
+                push(row, true, &mut rows);
+            }
+        }
+    }
+    let jvm_files: Vec<&JvmFileFacts> = product
+        .iter()
+        .filter_map(|file| file.reading.as_ref()?.jvm.as_ref())
+        .collect();
+    for row in jvm_rows(&jvm_files) {
+        let merge = row.kind == AbilityKind::Worker;
+        push(row, merge, &mut rows);
     }
     let vocabulary: Vec<VocabularyFile<'_>> = product
         .iter()
