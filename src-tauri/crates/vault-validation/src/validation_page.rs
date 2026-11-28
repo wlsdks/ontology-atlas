@@ -78,6 +78,11 @@ struct EvidenceRows<'a> {
     omitted: Option<OmittedRows>,
 }
 
+/// The first ten rows of a group.
+fn first_rows<T>(rows: &[T]) -> &[T] {
+    rows.get(..EVIDENCE_ROWS).unwrap_or(rows)
+}
+
 fn evidence_rows(drift: &EvidenceDrift) -> EvidenceRows<'_> {
     let cut = |length: usize| length.checked_sub(EVIDENCE_ROWS).filter(|rest| *rest > 0);
     let omitted = OmittedRows {
@@ -91,9 +96,9 @@ fn evidence_rows(drift: &EvidenceDrift) -> EvidenceRows<'_> {
         reason: &drift.reason,
         repo_root: &drift.repo_root,
         counts: &drift.counts,
-        stale: &drift.stale[..drift.stale.len().min(EVIDENCE_ROWS)],
-        missing: &drift.missing[..drift.missing.len().min(EVIDENCE_ROWS)],
-        folder_only: &drift.folder_only[..drift.folder_only.len().min(EVIDENCE_ROWS)],
+        stale: first_rows(&drift.stale),
+        missing: first_rows(&drift.missing),
+        folder_only: first_rows(&drift.folder_only),
         hint: &drift.hint,
         omitted: any.then_some(omitted),
     }
@@ -701,5 +706,48 @@ mod tests {
         let expected_unplaced: Vec<String> = (0..47).map(|at| format!("ability-{at}")).collect();
         assert_eq!(problems, expected_problems);
         assert_eq!(unplaced, expected_unplaced);
+    }
+
+    #[test]
+    fn a_page_names_only_files_its_rows_do_not_and_a_brief_keeps_three_rows_and_the_counts() {
+        let list = ProblemList {
+            problems: (0..5)
+                .map(|at| Problem {
+                    slug: format!("node-{at}"),
+                    issues: vec![Issue::warning("path-drift", "short")],
+                })
+                .collect(),
+            summary: ProblemSummary {
+                problem_files: 5,
+                error_files: 0,
+                warning_files: 5,
+                by_code: TalliesByCode(vec![(
+                    "path-drift",
+                    CodeTally {
+                        severity: vault_document::Severity::Warning,
+                        count: 5,
+                        remedy: None,
+                        files: (0..5).map(|at| format!("node-{at}")).collect(),
+                        files_omitted: None,
+                    },
+                )]),
+            },
+        };
+        let frame = frame_with_unplaced(12);
+        let page = serde_json::to_value(page_validation(
+            &frame,
+            &list,
+            &PageRequest::asked(0, 0, Some(2), None),
+        ))
+        .expect("serializes");
+        assert_eq!(
+            page["summary"]["byCode"]["path-drift"]["files"],
+            serde_json::json!(["node-2", "node-3", "node-4"])
+        );
+        let brief = serde_json::to_value(brief_validation(&frame, &list)).expect("serializes");
+        assert_eq!(brief["problems"].as_array().map(Vec::len), Some(3));
+        assert_eq!(brief["nextCall"]["arguments"]["offset"], 3);
+        assert!(brief["summary"]["byCode"]["path-drift"].get("files").is_none());
+        assert_eq!(brief["coverage"]["breadth"]["unplaced"], 12);
     }
 }

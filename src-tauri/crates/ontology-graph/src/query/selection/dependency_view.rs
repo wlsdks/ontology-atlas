@@ -69,12 +69,13 @@ pub struct OrderReport<'a> {
     pub limited: bool,
     /// The first `limit` ordered nodes, prerequisites first.
     pub order: Vec<OrderedRow<'a>>,
-    /// Every node a cycle keeps out of the order.
+    /// The first `limit` nodes a cycle keeps out of the order: a ring of ten thousand would
+    /// otherwise answer with ten thousand rows (row 24).
     pub blocked: Vec<BlockedRow<'a>>,
 }
 
-/// Whether `types` can be put in prerequisite order: the first `limit` ordered nodes, and every
-/// node a cycle blocks.
+/// Whether `types` can be put in prerequisite order: the first `limit` ordered nodes, and the first
+/// `limit` nodes a cycle blocks.
 pub fn order<'a>(
     graph: &'a CompiledGraph,
     limit: usize,
@@ -104,6 +105,7 @@ pub fn order<'a>(
         blocked: found
             .blocked
             .iter()
+            .take(limit)
             .map(|blocked| BlockedRow::of(graph, blocked))
             .collect(),
     })

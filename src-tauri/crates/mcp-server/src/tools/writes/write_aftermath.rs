@@ -343,3 +343,49 @@ pub fn source_state(context: &CallContext<'_>) -> SourceState {
         dirty: Some(dirty),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use build_depth::{Breadth, Coverage, UnplacedRow};
+
+    use super::*;
+
+    fn coverage(unplaced: usize, node: usize) -> Coverage {
+        Coverage {
+            breadth: Breadth {
+                abilities: 4,
+                not_listed: 0,
+                node,
+                named: 0,
+                excluded: 0,
+                unplaced: (0..unplaced)
+                    .map(|at| UnplacedRow {
+                        kind: "command",
+                        name: format!("n{at}"),
+                        evidence: String::new(),
+                        symbol: None,
+                    })
+                    .collect(),
+            },
+            areas: None,
+            reads: None,
+        }
+    }
+
+    #[test]
+    fn a_write_reports_only_the_counts_it_moved_as_before_and_after_pairs() {
+        let change = coverage_change(Some(&coverage(3, 1)), Some(&coverage(2, 2)))
+            .expect("two counts moved");
+        let Some(Setting::Map(moved)) = change.member("changed") else {
+            panic!("changed is a table");
+        };
+        let names: Vec<&str> = moved.iter().map(|(name, _)| name.as_str()).collect();
+        assert_eq!(names, ["abilities.onNode", "abilities.unplaced"]);
+        assert_eq!(
+            moved[1].1,
+            Setting::List(vec![Setting::Number(3.0), Setting::Number(2.0)])
+        );
+        assert!(coverage_change(Some(&coverage(3, 1)), Some(&coverage(3, 1))).is_none());
+        assert!(coverage_change(None, Some(&coverage(3, 1))).is_none());
+    }
+}
