@@ -9340,54 +9340,6 @@
     {
       "case": "graph/analysis-records-with-line-separators",
       "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.records",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.problems",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.returned",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/records",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/problems",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/returned",
-      "change": 42,
-      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
       "id": 2,
       "path": "result.content[0].text",
       "change": 42,

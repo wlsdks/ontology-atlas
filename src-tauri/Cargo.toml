@@ -18,6 +18,7 @@ members = [
   "crates/vault-document",
   "crates/ontology-graph",
   "crates/source-scan",
+  "crates/raw-source-text",
   "crates/mcp-server",
 ]
 
