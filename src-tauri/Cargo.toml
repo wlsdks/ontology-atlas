@@ -7,7 +7,7 @@ edition = "2021"
 license = "MIT"
 
 [workspace]
-# The seven `mcp-server` family crates depend on neither `tauri` nor an async runtime, so the app can
+# The eight `mcp-server` family crates depend on neither `tauri` nor an async runtime, so the app can
 # link them; `mcp-server` alone builds the `ontology-atlas-mcp` program.
 members = [
   "crates/vault-index",
@@ -17,6 +17,7 @@ members = [
   "crates/vault-document",
   "crates/ontology-graph",
   "crates/source-scan",
+  "crates/raw-source-text",
   "crates/mcp-server",
 ]
 

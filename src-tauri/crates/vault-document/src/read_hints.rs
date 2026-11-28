@@ -8,6 +8,7 @@ use answer_format::whitespace::{is_whitespace, trim};
 use confined_files::raw_source_file_for_slug;
 use serde::Serialize;
 
+use crate::near_titles::NearTitle;
 use crate::query_filter::QueryFilter;
 use crate::reference_index::tail_of;
 
@@ -168,6 +169,70 @@ pub fn slug_not_found_hint(
         reason: format!("\"{slug}\" does not resolve to a vault node, and no similarly-named node exists."),
         suggestion: "This may be a real gap in the vault: add it if it describes an actual capability/element/domain.".to_string(),
         example_call: add_concept_example(slug),
+    }
+}
+
+/// The slug a hint suggests for a title: lower case, runs of anything but `a-z`, `0-9` and Hangul
+/// syllables one dash, no dash at either end, `untitled` when nothing is left.
+fn slug_for_title(title: &str) -> String {
+    let lowered = title.to_lowercase();
+    let mut slug = String::new();
+    let mut pending_dash = false;
+    for character in trim(&lowered).chars() {
+        if character.is_ascii_lowercase()
+            || character.is_ascii_digit()
+            || ('\u{ac00}'..='\u{d7a3}').contains(&character)
+        {
+            if pending_dash && !slug.is_empty() {
+                slug.push('-');
+            }
+            pending_dash = false;
+            slug.push(character);
+        } else {
+            pending_dash = true;
+        }
+    }
+    if slug.is_empty() {
+        "untitled".to_string()
+    } else {
+        slug
+    }
+}
+
+/// A title no document mentions: the near titles to check before adding it, or the node to add.
+pub fn evidence_zero_hits_hint(title: &str, near: &[NearTitle]) -> GrowthHint {
+    if let Some(closest) = near.first() {
+        let names: Vec<String> = near
+            .iter()
+            .map(|title| format!("{} ({})", title.title, title.slug))
+            .collect();
+        return GrowthHint {
+            reason: format!("No vault doc mentions \"{title}\"."),
+            suggestion: format!(
+                "Closest existing node(s) by title: {}: confirm this isn't the same concept under a different name before adding a new one.",
+                names.join(", ")
+            ),
+            example_call: ExampleCall {
+                tool: "get_concepts",
+                args: ExampleArguments::GetConcepts {
+                    slugs: vec![closest.slug.clone()],
+                },
+            },
+        };
+    }
+    GrowthHint {
+        reason: format!("No vault doc mentions \"{title}\", and no similarly-titled node exists."),
+        suggestion: "This concept may not be captured in the vault yet: add it if it describes a real capability/element/domain.".to_string(),
+        example_call: ExampleCall {
+            tool: "add_concepts",
+            args: ExampleArguments::AddConcepts {
+                concepts: vec![ConceptStub {
+                    slug: slug_for_title(title),
+                    kind: "element",
+                    title: title.to_string(),
+                }],
+            },
+        },
     }
 }
 

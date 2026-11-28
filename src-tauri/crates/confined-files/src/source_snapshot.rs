@@ -427,7 +427,9 @@ impl SnapshotSource<'_> {
     }
 }
 
-fn sha256_hex(bytes: &[u8]) -> String {
+/// The SHA-256 of `bytes` as lower-case hexadecimal, the form every answer that names a file's
+/// content gives.
+pub fn sha256_hex(bytes: &[u8]) -> String {
     Sha256::digest(bytes)
         .iter()
         .map(|byte| format!("{byte:02x}"))

@@ -6,14 +6,17 @@ mod backlinks;
 mod body_delivery;
 mod body_findings;
 mod body_links;
+mod body_signature;
 mod document;
 mod document_cache;
 mod evidence_limit;
+mod evidence_search;
 pub mod frontmatter;
 mod kind_census;
 mod loaded_document;
 mod loaded_vault;
 pub mod meaning_wording;
+mod near_titles;
 mod orphans;
 mod query_filter;
 mod read_hints;
@@ -21,6 +24,7 @@ mod reference_index;
 mod relations;
 mod review;
 pub mod schema;
+mod search_text;
 mod slug_resolution;
 pub mod starter_body;
 mod validation;
@@ -34,12 +38,16 @@ pub use body_delivery::{
 pub use body_findings::{body_findings, BodyFinding};
 pub use document::{Document, RawShape};
 pub use document_cache::{CacheCounts, DocumentCache};
+pub use evidence_search::{search_evidence, EvidenceHit, EvidenceQuery, MatchedIn};
 pub use kind_census::{kind_census, KindCensus, KindCounts};
 pub use loaded_document::{DisplayTitle, FileReadError, LoadedDocument};
 pub use loaded_vault::{LoadedVault, NamedReadError};
+pub use near_titles::{near_titles, NearTitle};
 pub use orphans::{find_orphans, Orphan};
 pub use query_filter::{FilterError, QueryFilter};
-pub use read_hints::{query_zero_rows_hint, slug_not_found_hint, GrowthHint, Reference};
+pub use read_hints::{
+    evidence_zero_hits_hint, query_zero_rows_hint, slug_not_found_hint, GrowthHint, Reference,
+};
 pub use reference_index::ReferenceIndex;
 pub use relations::{
     dependency_refs, neighbor_refs, normalized_refs, relation_note_for, NeighborRef,

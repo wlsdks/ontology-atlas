@@ -1,0 +1,23 @@
+[package]
+name = "raw-source-text"
+version = "0.1.0"
+description = "The text of a raw vault source (DOCX, XLSX, CSV, text, HTML) cut into the units a wiki citation names"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+# A DOCX or XLSX is a ZIP of DEFLATE streams. The app already links this exact version (png,
+# through tray-icon), so it adds no crate. MIT or Zlib or Apache-2.0.
+miniz_oxide = "=0.8.9"
+# `NFKD` for the heading names an anchor is made of; the same pin as `vault-document`.
+icu_normalizer = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+[dev-dependencies]
+proptest = "1"
+
+[lints]
+workspace = true

@@ -1,0 +1,252 @@
+//! One raw source below the vault's `sources/` folder, named by an agent and read whole.
+//!
+//! The name is checked once, into a [`RawSourcePath`]: only a value of that type reaches the disk,
+//! so the read needs no check of its own. The read then refuses what a stranger's vault may plant
+//! at the name: a link anywhere on the path (a link is a link, never the file it points at), a pipe,
+//! a folder, a file that is hard to hold still, and a file over the size the caller allows.
+//!
+//! - macOS and Linux: every part of the path is looked at with `lstat` (a link is a link), the file
+//!   is opened with `O_NOFOLLOW | O_NONBLOCK` (`plain_file`), and the open handle's facts decide
+//!   its type and size.
+//! - Windows: the final file is opened as itself (`FILE_FLAG_OPEN_REPARSE_POINT`) and a name
+//!   surrogate reparse tag (a symbolic link or a junction) is refused by its handle facts. A folder
+//!   that is a junction cannot be told from a folder by `symlink_metadata`, so the real path of the
+//!   file must spell the same parts as the name did (`GetFinalPathNameByHandle`, as `real_path`
+//!   reads it); otherwise it is a link. Microsoft, "Reparse Point Tags" and "Naming Files, Paths,
+//!   and Namespaces" (`\\?\` paths and the 260-character limit).
+
+use std::fs;
+use std::io::Read;
+
+use crate::os_error::OsErrorCode;
+use crate::plain_file::{self, FileFacts};
+use crate::private_names::{is_credential_name, is_hidden_name};
+use crate::real_paths::real_path;
+use crate::slug_rules::VAULT_SOURCES_DIR;
+use crate::vault_root::VaultRoot;
+
+/// The longest path an agent may name, in bytes. Every operating system refuses a longer one
+/// (`PATH_MAX` is 1,024 on macOS and 4,096 on Linux; Windows stops at 260 characters unless the
+/// path is verbatim), so a longer one is not looked up part by part.
+pub const RAW_SOURCE_PATH_MAX_BYTES: usize = 4096;
+
+/// Why a name is not a raw source, before the disk is asked.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum RawSourcePathRefusal {
+    /// The name is not below `sources/`: it is a vault document or repository code.
+    #[error("`{path}` is not below sources/")]
+    NotUnderSources { path: String },
+    /// An empty part, `.`, `..`, a trailing slash or nothing after `sources/`: no file is named.
+    #[error("`{path}` names no file under sources/")]
+    NamesNoFile { path: String },
+    /// Longer than [`RAW_SOURCE_PATH_MAX_BYTES`].
+    #[error("the path is longer than {RAW_SOURCE_PATH_MAX_BYTES} bytes")]
+    TooLong,
+    /// A part is hidden (`.env`) or named like a credential (`secrets.yml`, `id_rsa`): a vault
+    /// read never opens one.
+    #[error("`{path}` is hidden or named like a credential")]
+    HiddenOrCredential { path: String },
+}
+
+/// A file below `sources/`, spelled with `/` and checked: no part is empty, `.`, `..`, hidden or
+/// named like a credential, and the name is not too long.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RawSourcePath {
+    spelled: String,
+    parts: Vec<String>,
+}
+
+impl RawSourcePath {
+    /// `path` as an agent typed it: a `\` is a `/` (a Windows agent's spelling) and a leading `./`
+    /// is dropped.
+    pub fn parse(path: &str) -> Result<Self, RawSourcePathRefusal> {
+        let spelled = path.replace('\\', "/");
+        let spelled = spelled.strip_prefix("./").unwrap_or(&spelled).to_string();
+        let parts: Vec<&str> = spelled.split('/').collect();
+        let below_sources = parts.first() == Some(&VAULT_SOURCES_DIR) && parts.len() > 1;
+        let names_parent = parts.contains(&"..");
+        if !spelled.starts_with("sources/") && !spelled.is_empty() && !names_parent {
+            return Err(RawSourcePathRefusal::NotUnderSources { path: spelled });
+        }
+        if !below_sources
+            || parts
+                .iter()
+                .any(|part| part.is_empty() || *part == "." || *part == "..")
+        {
+            return Err(RawSourcePathRefusal::NamesNoFile { path: spelled });
+        }
+        if spelled.len() > RAW_SOURCE_PATH_MAX_BYTES {
+            return Err(RawSourcePathRefusal::TooLong);
+        }
+        if parts
+            .iter()
+            .any(|part| is_hidden_name(part) || is_credential_name(part))
+        {
+            return Err(RawSourcePathRefusal::HiddenOrCredential { path: spelled });
+        }
+        Ok(Self {
+            parts: parts.iter().map(ToString::to_string).collect(),
+            spelled,
+        })
+    }
+
+    /// The vault-relative path as the answer spells it.
+    pub fn as_str(&self) -> &str {
+        &self.spelled
+    }
+
+    /// The extension of the file, lower-cased, or empty.
+    pub fn extension(&self) -> String {
+        let name = self.parts.last().map_or("", String::as_str);
+        name.rsplit_once('.')
+            .map_or(String::new(), |(_, extension)| extension.to_lowercase())
+    }
+}
+
+/// Why a raw source was not read.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum RawSourceReadRefusal {
+    #[error("nothing is at that path")]
+    NotFound,
+    /// A part of the path is a link, or the path resolves somewhere other than where it is spelled.
+    #[error("the path is or runs through a link")]
+    ThroughLink,
+    #[error("not a regular file")]
+    NotRegular,
+    /// More bytes than the caller allows, by the file's size.
+    #[error("larger than {max_bytes} bytes")]
+    TooLarge { max_bytes: u64 },
+    #[error("the file changed while it was read")]
+    Changed,
+    /// The operating system refused to open or read it (a permission, a lock).
+    #[error("the file could not be opened for reading")]
+    Unreadable,
+}
+
+impl VaultRoot {
+    /// The bytes of the raw source `path` names, when it is a regular file of at most `max_bytes`
+    /// that no link leads to, read as one version.
+    pub fn read_raw_source(
+        &self,
+        path: &RawSourcePath,
+        max_bytes: u64,
+    ) -> Result<Vec<u8>, RawSourceReadRefusal> {
+        let mut file_path = self.path().to_path_buf();
+        for part in &path.parts {
+            file_path.push(part);
+            match fs::symlink_metadata(&file_path) {
+                Ok(metadata) if metadata.file_type().is_symlink() => {
+                    return Err(RawSourceReadRefusal::ThroughLink)
+                }
+                Ok(_) => {}
+                Err(error) if OsErrorCode::of(&error) == OsErrorCode::NotFound => {
+                    return Err(RawSourceReadRefusal::NotFound)
+                }
+                Err(error) if OsErrorCode::of(&error) == OsErrorCode::NotADirectory => {
+                    return Err(RawSourceReadRefusal::NotFound)
+                }
+                Err(error) if OsErrorCode::of(&error) == OsErrorCode::NameTooLong => {
+                    return Err(RawSourceReadRefusal::NotFound)
+                }
+                Err(_) => return Err(RawSourceReadRefusal::Unreadable),
+            }
+        }
+        let spells_the_real_path = || self.real_parts_equal(&file_path, &path.parts);
+        let mut file = match plain_file::open_read(&file_path) {
+            Ok(file) => file,
+            Err(error) if plain_file::is_link_refusal(&error) => {
+                return Err(RawSourceReadRefusal::ThroughLink)
+            }
+            Err(error) if OsErrorCode::of(&error) == OsErrorCode::NotFound => {
+                return Err(RawSourceReadRefusal::NotFound)
+            }
+            Err(_) => return Err(RawSourceReadRefusal::Unreadable),
+        };
+        let before = plain_file::facts_of(&file).map_err(|_| RawSourceReadRefusal::Unreadable)?;
+        if !before.regular {
+            return Err(RawSourceReadRefusal::NotRegular);
+        }
+        if before.size > max_bytes {
+            return Err(RawSourceReadRefusal::TooLarge { max_bytes });
+        }
+        if !spells_the_real_path() {
+            return Err(RawSourceReadRefusal::ThroughLink);
+        }
+        let mut bytes = Vec::with_capacity(usize::try_from(before.size).unwrap_or(0));
+        file.by_ref()
+            .take(max_bytes.saturating_add(1))
+            .read_to_end(&mut bytes)
+            .map_err(|_| RawSourceReadRefusal::Unreadable)?;
+        let after = plain_file::facts_of(&file).map_err(|_| RawSourceReadRefusal::Unreadable)?;
+        if bytes.len() as u64 != before.size || !same_version(before, after) {
+            return Err(RawSourceReadRefusal::Changed);
+        }
+        if !spells_the_real_path() {
+            return Err(RawSourceReadRefusal::Changed);
+        }
+        Ok(bytes)
+    }
+
+    /// Whether the real path of `file` is the vault's real path followed by `parts`, each part
+    /// spelled as named or as the disk spells it with another letter case.
+    fn real_parts_equal(&self, file: &std::path::Path, parts: &[String]) -> bool {
+        let (Ok(real_root), Ok(real_file)) = (real_path(self.path()), real_path(file)) else {
+            return false;
+        };
+        let Ok(below) = real_file.strip_prefix(&real_root) else {
+            return false;
+        };
+        let real_parts: Vec<String> = below
+            .components()
+            .map(|part| part.as_os_str().to_string_lossy().into_owned())
+            .collect();
+        real_parts.len() == parts.len()
+            && real_parts
+                .iter()
+                .zip(parts)
+                .all(|(real, named)| real == named || real.to_lowercase() == named.to_lowercase())
+    }
+}
+
+fn same_version(before: FileFacts, after: FileFacts) -> bool {
+    before.size == after.size
+        && before.identity == after.identity
+        && before.modified_ns == after.modified_ns
+        && before.changed_ns == after.changed_ns
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_name_is_checked_before_the_disk_is_asked() {
+        for (typed, refusal) in [
+            ("src/a.ts", "not below"),
+            ("sources", "not below"),
+            ("sources/", "names no file"),
+            ("sources//a.md", "names no file"),
+            ("sources/./a.md", "names no file"),
+            ("sources/../a.md", "names no file"),
+            ("../sources/a.md", "names no file"),
+            ("sources/.env", "hidden"),
+            ("sources/notes/Secrets.yml", "hidden"),
+            ("sources/key.pem", "hidden"),
+        ] {
+            let error = RawSourcePath::parse(typed).expect_err(typed);
+            assert!(error.to_string().contains(refusal), "{typed}: {error}");
+        }
+        let long = format!("sources/{}a.md", "a/".repeat(RAW_SOURCE_PATH_MAX_BYTES));
+        assert_eq!(
+            RawSourcePath::parse(&long).expect_err("too long"),
+            RawSourcePathRefusal::TooLong
+        );
+    }
+
+    #[test]
+    fn a_windows_spelling_names_the_same_file() {
+        let path = RawSourcePath::parse(r".\sources\Plan.DOCX").expect("named");
+        assert_eq!(path.as_str(), "sources/Plan.DOCX");
+        assert_eq!(path.extension(), "docx");
+    }
+}
