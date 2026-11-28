@@ -17,6 +17,7 @@ use crate::atomic_write::{
 };
 use crate::modified_time::ModifiedTime;
 use crate::os_error::{IoFailure, OsErrorCode};
+use crate::plain_file::FileIdentity;
 use crate::real_paths::real_path;
 use crate::vault_root::WritablePath;
 
@@ -37,6 +38,9 @@ pub struct PlanEntry {
     /// The file did not exist when the plan was made.
     pub expected_absent: bool,
     pub expected_modified: Option<ModifiedTime>,
+    /// The file the plan was made from, by identity: the name must still lead to that file, which
+    /// must still be a plain file. Text and time cannot say a file was swapped for a copy.
+    pub expected_identity: Option<FileIdentity>,
 }
 
 impl PlanEntry {
@@ -47,6 +51,7 @@ impl PlanEntry {
             expected_text: None,
             expected_absent: false,
             expected_modified: None,
+            expected_identity: None,
         }
     }
 
@@ -57,6 +62,7 @@ impl PlanEntry {
             expected_text: None,
             expected_absent: false,
             expected_modified: None,
+            expected_identity: None,
         }
     }
 
@@ -75,6 +81,11 @@ impl PlanEntry {
         self
     }
 
+    pub fn expecting_identity(mut self, identity: FileIdentity) -> Self {
+        self.expected_identity = Some(identity);
+        self
+    }
+
     fn is_write(&self) -> bool {
         matches!(self.operation, PlannedOperation::Write { .. })
     }
@@ -89,6 +100,11 @@ impl PlanEntry {
         }
         if let Some(text) = &self.expected_text {
             if !file_holds_text(self.path(), text) {
+                return true;
+            }
+        }
+        if let Some(identity) = self.expected_identity {
+            if !identity.is_still_at(self.path()) {
                 return true;
             }
         }

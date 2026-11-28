@@ -34,6 +34,7 @@ mod vault_root;
 mod vault_sidecar;
 mod write_plan;
 
+pub use plain_file::FileIdentity;
 pub use absorbed_file::{
     AbsorbedFile, AbsorbedFileRefusal, AbsorbedPlace, ABSORBED_FILE_MAX_BYTES,
     ABSORB_BACKUP_SUFFIX,

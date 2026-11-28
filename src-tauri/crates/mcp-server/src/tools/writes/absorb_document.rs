@@ -283,7 +283,8 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
     entries.push(
         PlanEntry::write(write.absorbed_source(&source), slim_pointer(&plan))
             .expecting_text(source.text().to_string())
-            .expecting_modified(source.modified_time()),
+            .expecting_modified(source.modified_time())
+            .expecting_identity(source.identity()),
     );
     write.apply(
         entries,

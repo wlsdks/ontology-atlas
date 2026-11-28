@@ -10,12 +10,13 @@
 //! here, but it decides which hidden folders are refused: an instruction file lives in `.github/` or
 //! `.cursor/` of a repository, and nowhere hidden outside one.
 
-use std::io;
+use std::io::{self, Read};
 use std::path::{Component, Path, PathBuf};
 
 use crate::confined_root::resolve_path;
 use crate::modified_time::ModifiedTime;
 use crate::os_error::IoFailure;
+use crate::plain_file::{self, FileIdentity};
 use crate::plain_parts::is_not_a_file_name;
 use crate::private_names::{is_credential_name, is_hidden_name};
 use crate::real_paths::{is_within_folding_case, real_path};
@@ -41,6 +42,8 @@ pub enum AbsorbedFileRefusal {
     DeviceName { name: String },
     #[error("{} is {bytes} bytes; absorb_document reads at most {max} bytes", .path.display())]
     TooLarge { path: PathBuf, bytes: u64, max: u64 },
+    #[error("{} is a link, has more than one name or is not a regular file, so it is not rewritten", .0.display())]
+    NotPlainFile(PathBuf),
     #[error("{} is not UTF-8 text, so rewriting it would change bytes that were not read", .0.display())]
     NotText(PathBuf),
     #[error(transparent)]
@@ -62,6 +65,7 @@ pub struct AbsorbedFile {
     place: AbsorbedPlace,
     text: String,
     modified: Option<ModifiedTime>,
+    identity: FileIdentity,
 }
 
 fn final_name(path: &Path) -> String {
@@ -154,16 +158,64 @@ impl AbsorbedPlace {
     }
 }
 
-impl AbsorbedFile {
-    /// Opens `requested` for absorption after [`AbsorbedPlace::locate`] has judged it.
-    pub fn open(requested: &str, repository: &Path) -> Result<Self, AbsorbedFileRefusal> {
-        let place = AbsorbedPlace::locate(requested, repository)?;
-        let (text, modified) = read_text(&place.real)?;
-        Ok(Self {
-            place,
+impl AbsorbedPlace {
+    /// Opens the file once, without following a link, and reads it from that handle. What was
+    /// judged by name is judged again by what the handle is: a link or a hard link swapped in since
+    /// [`Self::locate`] is refused, not read.
+    pub fn read(self) -> Result<AbsorbedFile, AbsorbedFileRefusal> {
+        let path = self.real.clone();
+        let io = |source: io::Error| AbsorbedFileRefusal::from(IoFailure::new("read", &path, source));
+        let mut file = plain_file::open_read(&path).map_err(|source| {
+            if plain_file::is_link_refusal(&source) {
+                AbsorbedFileRefusal::NotPlainFile(path.clone())
+            } else {
+                io(source)
+            }
+        })?;
+        let facts = plain_file::facts_of(&file).map_err(io)?;
+        if !facts.plain {
+            return Err(AbsorbedFileRefusal::NotPlainFile(path));
+        }
+        if facts.size > ABSORBED_FILE_MAX_BYTES {
+            return Err(AbsorbedFileRefusal::TooLarge {
+                path,
+                bytes: facts.size,
+                max: ABSORBED_FILE_MAX_BYTES,
+            });
+        }
+        let modified = file.metadata().map_err(io).map(|metadata| ModifiedTime::of(&metadata))?;
+        let mut bytes = Vec::new();
+        (&mut file)
+            .take(ABSORBED_FILE_MAX_BYTES + 1)
+            .read_to_end(&mut bytes)
+            .map_err(io)?;
+        if bytes.len() as u64 > ABSORBED_FILE_MAX_BYTES {
+            return Err(AbsorbedFileRefusal::TooLarge {
+                path,
+                bytes: bytes.len() as u64,
+                max: ABSORBED_FILE_MAX_BYTES,
+            });
+        }
+        let text = String::from_utf8(bytes).map_err(|_| AbsorbedFileRefusal::NotText(path))?;
+        Ok(AbsorbedFile {
+            identity: FileIdentity::of(&facts),
+            place: self,
             text,
             modified,
         })
+    }
+}
+
+impl AbsorbedFile {
+    /// Locates and reads `requested` for absorption.
+    pub fn open(requested: &str, repository: &Path) -> Result<Self, AbsorbedFileRefusal> {
+        AbsorbedPlace::locate(requested, repository)?.read()
+    }
+
+    /// The identity of the file that was read: a plan that rewrites it states this, so a file
+    /// swapped in after the read is a conflict.
+    pub fn identity(&self) -> FileIdentity {
+        self.identity
     }
 
     /// The path with every link resolved: the file that is read and rewritten.
@@ -220,21 +272,6 @@ impl AbsorbedFile {
     pub fn writable_backup(&self) -> WritablePath {
         WritablePath::from_confined(ConfinedPath::new(self.backup_path()))
     }
-}
-
-fn read_text(path: &Path) -> Result<(String, Option<ModifiedTime>), AbsorbedFileRefusal> {
-    let io = |source: io::Error| AbsorbedFileRefusal::from(IoFailure::new("read", path, source));
-    let metadata = std::fs::metadata(path).map_err(io)?;
-    if metadata.len() > ABSORBED_FILE_MAX_BYTES {
-        return Err(AbsorbedFileRefusal::TooLarge {
-            path: path.to_path_buf(),
-            bytes: metadata.len(),
-            max: ABSORBED_FILE_MAX_BYTES,
-        });
-    }
-    let bytes = std::fs::read(path).map_err(io)?;
-    let text = String::from_utf8(bytes).map_err(|_| AbsorbedFileRefusal::NotText(path.to_path_buf()))?;
-    Ok((text, ModifiedTime::of(&metadata)))
 }
 
 #[cfg(test)]
@@ -359,5 +396,58 @@ mod tests {
         let refusal = AbsorbedFile::open(&link.display().to_string(), repository.path())
             .expect_err("a link to .env");
         assert!(matches!(refusal, AbsorbedFileRefusal::PrivateName { .. }), "{refusal}");
+    }
+
+    /// The name check passed, then the file was replaced under the same name. The check is not
+    /// the read: what is read is what the open handle is.
+    ///
+    /// A hard link is refused on Windows too: `GetFileInformationByHandle` reports the number of
+    /// links of the opened file (Microsoft, "BY_HANDLE_FILE_INFORMATION", `nNumberOfLinks`).
+    #[test]
+    fn a_link_or_a_hard_link_swapped_in_after_the_name_check_is_refused_not_read() {
+        let repository = folder();
+        let elsewhere = folder();
+        let secret = written(elsewhere.path(), "other.md", "SECRET");
+        let swaps: &[bool] = if cfg!(unix) { &[false, true] } else { &[true] };
+        for &hard in swaps {
+            let name = if hard { "hard.md" } else { "soft.md" };
+            let file = written(repository.path(), name, "# A\n");
+            let place = AbsorbedPlace::locate(&file, repository.path()).expect("passes the name check");
+            std::fs::remove_file(&file).expect("swap out");
+            if hard {
+                std::fs::hard_link(&secret, &file).expect("hard link");
+            } else {
+                #[cfg(unix)]
+                std::os::unix::fs::symlink(&secret, &file).expect("link");
+            }
+            let refusal = place.read().expect_err(name);
+            assert!(matches!(refusal, AbsorbedFileRefusal::NotPlainFile(_)), "{name}: {refusal}");
+        }
+    }
+
+    /// A copy with the same text and time has another identity, which is all a swap changes.
+    #[cfg(unix)]
+    #[test]
+    fn a_file_swapped_for_a_copy_after_the_read_is_not_rewritten() {
+        use crate::write_plan::{apply_all_or_nothing, ApplyOptions, PlanEntry, Reservations};
+        let repository = folder();
+        let file = written(repository.path(), "AGENTS.md", "# A\n");
+        let opened = AbsorbedFile::open(&file, repository.path()).expect("opens");
+        let entry = || {
+            PlanEntry::write(opened.writable_source(), "pointer\n".to_string())
+                .expecting_text(opened.text().to_string())
+                .expecting_identity(opened.identity())
+        };
+        let options = ApplyOptions::new(Reservations::AllowReserved);
+        std::fs::copy(&file, repository.path().join("copy.md")).expect("copy");
+        std::fs::rename(repository.path().join("copy.md"), &file).expect("swap in the copy");
+        let refused = apply_all_or_nothing(vec![entry()], &options);
+        assert!(matches!(refused, Err(crate::atomic_write::WriteError::ChangedOnDisk(_))), "{refused:?}");
+        let again = AbsorbedFile::open(&file, repository.path()).expect("opens again");
+        let entry = PlanEntry::write(again.writable_source(), "pointer\n".to_string())
+            .expecting_text(again.text().to_string())
+            .expecting_identity(again.identity());
+        apply_all_or_nothing(vec![entry], &options).expect("the file that was read is rewritten");
+        assert_eq!(std::fs::read_to_string(&file).expect("read"), "pointer\n");
     }
 }
