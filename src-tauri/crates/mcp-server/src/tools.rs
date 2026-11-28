@@ -29,6 +29,7 @@ mod infer_imports;
 mod inspect_architecture;
 mod kept_survey;
 mod list_concepts;
+mod project_graph;
 mod query_ontology;
 mod read_source;
 mod read_vault;

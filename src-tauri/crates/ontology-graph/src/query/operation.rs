@@ -1,23 +1,8 @@
 //! The operations of `query_ontology`, in the order its schema lists them. Each family of
-//! operations is an enum of its own, owned by the module that answers it; the operation nobody
-//! answers yet is `PendingOperation`, which a slice empties as it ports it.
+//! operations is an enum of its own, owned by the module that answers it.
 
 use crate::query::selection::SelectionOperation;
 use crate::query::walks::WalkOperation;
-
-/// Operations that no module answers yet.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PendingOperation {
-    AgentBrief,
-}
-
-impl PendingOperation {
-    pub const fn name(self) -> &'static str {
-        match self {
-            Self::AgentBrief => "agent_brief",
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
@@ -27,7 +12,6 @@ pub enum Operation {
     QueryPlan,
     /// Reads one of the vault's analysis records, not the graph.
     AnalysisRecord,
-    Pending(PendingOperation),
 }
 
 impl Operation {
@@ -60,7 +44,7 @@ impl Operation {
         Self::Selection(SelectionOperation::RecommendRelations),
         Self::Selection(SelectionOperation::GrowthPlan),
         Self::Selection(SelectionOperation::MaintenancePlan),
-        Self::Pending(PendingOperation::AgentBrief),
+        Self::Selection(SelectionOperation::AgentBrief),
         Self::AnalysisRecord,
         Self::Selection(SelectionOperation::WorkspaceBrief),
         Self::Selection(SelectionOperation::Health),
@@ -72,7 +56,6 @@ impl Operation {
             Self::Selection(operation) => operation.name(),
             Self::QueryPlan => "query_plan",
             Self::AnalysisRecord => "analysis_record",
-            Self::Pending(operation) => operation.name(),
         }
     }
 

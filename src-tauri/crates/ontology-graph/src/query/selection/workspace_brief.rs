@@ -11,7 +11,7 @@ use serde::Serialize;
 
 use super::graph_summary::{top_hubs, DegreeRow};
 use super::growth_candidates::DanglingReferenceRow;
-use super::growth_plan::{growth_plan_with_limit, GrowthPlanAnswer, GrowthSummary};
+use super::growth_plan::{growth_plan_with_limit, BodiesLookedAt, GrowthPlanAnswer, GrowthSummary};
 use super::health::{health, HealthAnswer, HealthCheck, HealthQuestion};
 use super::outside_checks::{AttentionAction, OutsideChecks};
 use super::proposed_action::ProposedAction;
@@ -31,7 +31,7 @@ const PROJECT_ITEM_LIMIT: usize = 20;
 const SAMPLE_LIMIT: usize = 3;
 
 #[derive(Serialize)]
-struct BriefSummary<'a> {
+pub(super) struct BriefSummary<'a> {
     #[serde(rename = "graphHash")]
     graph_hash: &'a str,
     #[serde(rename = "maxMtime")]
@@ -51,12 +51,50 @@ struct BriefSummary<'a> {
     growth_actions: usize,
 }
 
+impl BriefSummary<'_> {
+    pub(super) fn node_count(&self) -> usize {
+        self.nodes
+    }
+
+    pub(super) fn edge_count(&self) -> usize {
+        self.edges
+    }
+
+    pub(super) fn project_count(&self) -> usize {
+        self.projects
+    }
+
+    pub(super) fn domain_count(&self) -> usize {
+        self.domains
+    }
+
+    pub(super) fn capability_count(&self) -> usize {
+        self.capabilities
+    }
+
+    pub(super) fn element_count(&self) -> usize {
+        self.elements
+    }
+
+    pub(super) fn unresolved_count(&self) -> usize {
+        self.unresolved_edges
+    }
+
+    pub(super) fn external_count(&self) -> usize {
+        self.external_edges
+    }
+
+    pub(super) fn growth_action_count(&self) -> usize {
+        self.growth_actions
+    }
+}
+
 #[derive(Serialize)]
-struct BriefHealth {
-    status: &'static str,
-    checks: Vec<HealthCheck>,
+pub(super) struct BriefHealth {
+    pub(super) status: &'static str,
+    pub(super) checks: Vec<HealthCheck>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    validation: Option<Box<RawJson>>,
+    pub(super) validation: Option<Box<RawJson>>,
 }
 
 #[derive(Serialize)]
@@ -83,7 +121,7 @@ struct BriefProjects<'a> {
 }
 
 #[derive(Serialize)]
-struct HealthCheckAction {
+pub(super) struct HealthCheckAction {
     kind: &'static str,
     severity: &'static str,
     id: &'static str,
@@ -92,7 +130,7 @@ struct HealthCheckAction {
 }
 
 #[derive(Serialize)]
-struct SampledAction<Sample> {
+pub(super) struct SampledAction<Sample> {
     id: &'static str,
     kind: &'static str,
     severity: &'static str,
@@ -103,7 +141,7 @@ struct SampledAction<Sample> {
 
 #[derive(Serialize)]
 #[serde(untagged)]
-enum NextAction<'a> {
+pub(super) enum NextAction<'a> {
     Outside(AttentionAction),
     Check(HealthCheckAction),
     Writes(SampledAction<ProposedAction>),
@@ -113,14 +151,17 @@ enum NextAction<'a> {
 #[derive(Serialize)]
 pub struct WorkspaceBriefAnswer<'a> {
     operation: &'static str,
-    status: &'static str,
-    summary: BriefSummary<'a>,
-    health: BriefHealth,
+    pub(super) status: &'static str,
+    /// The verdict before the vault's validation was taken into it.
+    #[serde(skip)]
+    pub(super) graph_status: &'static str,
+    pub(super) summary: BriefSummary<'a>,
+    pub(super) health: BriefHealth,
     growth: GrowthSummary,
     projects: BriefProjects<'a>,
     hotspots: Vec<DegreeRow<'a>>,
     #[serde(rename = "nextActions")]
-    next_actions: Vec<NextAction<'a>>,
+    pub(super) next_actions: Vec<NextAction<'a>>,
 }
 
 fn next_actions<'a>(
@@ -202,6 +243,23 @@ pub fn workspace_brief<'a>(
     request: &QueryRequest,
 ) -> Result<WorkspaceBriefAnswer<'a>, QueryError> {
     let limit = request.limit.unwrap_or(WORKSPACE_BRIEF_LIMIT);
+    workspace_brief_of(graph, request, limit, ProjectMaps::Included)
+}
+
+/// Whether the brief carries the short map of each project, which a brief that only reads the
+/// counts of this one (`agent_brief`) leaves unbuilt.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ProjectMaps {
+    Included,
+    Left,
+}
+
+pub fn workspace_brief_of<'a>(
+    graph: &'a CompiledGraph,
+    request: &QueryRequest,
+    limit: usize,
+    project_maps: ProjectMaps,
+) -> Result<WorkspaceBriefAnswer<'a>, QueryError> {
     let mut question = HealthQuestion::from_request(request);
     question.component_limit = limit;
     question.cycle_limit = limit;
@@ -211,14 +269,20 @@ pub fn workspace_brief<'a>(
     question.max_hops = None;
     question.component_types_argument = "componentTypes";
     let HealthAnswer { status, checks, .. } = health(graph, &question)?;
-    let growth = growth_plan_with_limit(graph, request, limit)?;
+    let graph_status = status;
+    let growth = growth_plan_with_limit(graph, request, limit, BodiesLookedAt::No)?;
 
     let counts = graph.edge_counts();
     let by_kind = kind_counts(graph, graph.node_ids());
     let roots = project_roots(graph);
+    let mapped_projects = if project_maps == ProjectMaps::Included {
+        limit
+    } else {
+        0
+    };
     let maps: Vec<ProjectBrief<'a>> = roots
         .iter()
-        .take(limit)
+        .take(mapped_projects)
         .map(|project| {
             let map = fitted_map(graph, *project, limit, limit.min(PROJECT_ITEM_LIMIT));
             ProjectBrief {
@@ -260,6 +324,7 @@ pub fn workspace_brief<'a>(
     Ok(WorkspaceBriefAnswer {
         operation: "workspace_brief",
         status,
+        graph_status,
         summary: BriefSummary {
             graph_hash: graph.graph_hash(),
             max_mtime: graph.max_mtime(),

@@ -39,6 +39,18 @@ pub fn top_hubs_among(
     nodes: impl IntoIterator<Item = NodeId>,
     limit: usize,
 ) -> Vec<DegreeRow<'_>> {
+    top_hub_ids_among(graph, nodes, limit)
+        .into_iter()
+        .map(|id| DegreeRow::of(graph, id))
+        .collect()
+}
+
+/// The nodes `top_hubs_among` lists, as ids.
+pub fn top_hub_ids_among(
+    graph: &CompiledGraph,
+    nodes: impl IntoIterator<Item = NodeId>,
+    limit: usize,
+) -> Vec<NodeId> {
     let mut nodes: Vec<NodeId> = nodes.into_iter().collect();
     nodes.sort_by(|left, right| {
         let (left_node, right_node) = (graph.node(*left), graph.node(*right));
@@ -48,16 +60,18 @@ pub fn top_hubs_among(
             .then_with(|| right_node.in_degree.cmp(&left_node.in_degree))
             .then_with(|| left.cmp(right))
     });
+    nodes.truncate(limit);
     nodes
-        .into_iter()
-        .take(limit)
-        .map(|id| DegreeRow::of(graph, id))
-        .collect()
 }
 
 /// The `limit` most connected nodes of the graph.
 pub fn top_hubs(graph: &CompiledGraph, limit: usize) -> Vec<DegreeRow<'_>> {
     top_hubs_among(graph, graph.node_ids(), limit)
+}
+
+/// The ids of the `limit` most connected nodes of the graph.
+pub fn top_hub_ids(graph: &CompiledGraph, limit: usize) -> Vec<NodeId> {
+    top_hub_ids_among(graph, graph.node_ids(), limit)
 }
 
 #[derive(Serialize)]

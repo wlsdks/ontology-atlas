@@ -214,10 +214,7 @@ fn a_plan_for_every_operation_states_what_the_operation_does_when_a_call_leaves_
         let stated = &planned["normalized"];
         let bare = run_query(&graph, &sent);
         // `match_nodes` is answered from the vault's files, never from the compiled graph.
-        if matches!(
-            bare,
-            Err(QueryError::NotAnsweredYet(_) | QueryError::NotAGraphOperation(_))
-        ) {
+        if matches!(bare, Err(QueryError::NotAGraphOperation(_))) {
             continue;
         }
         let expected = json_of(&graph, &sent);
@@ -228,7 +225,7 @@ fn a_plan_for_every_operation_states_what_the_operation_does_when_a_call_leaves_
         );
         planned_count += 1;
     }
-    assert_eq!(planned_count, 27);
+    assert_eq!(planned_count, 28);
 }
 
 #[test]

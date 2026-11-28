@@ -420,7 +420,9 @@ pub fn page_validation<'a>(
     if request.limit.is_none() {
         let empty = Frame {
             scanned: frame.scanned,
-            repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
+            repo_root: frame
+                .repo_root_missing
+                .then_some(RepoRoot { missing: true }),
             coverage,
             problems: &[],
             summary: &summary,
@@ -480,7 +482,9 @@ pub fn page_validation<'a>(
         pagination: Pagination::of(start, limit, total, rows.len()),
         hint,
         scanned: frame.scanned,
-        repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
+        repo_root: frame
+            .repo_root_missing
+            .then_some(RepoRoot { missing: true }),
         coverage,
         problems: rows,
         summary,
@@ -492,10 +496,7 @@ pub fn page_validation<'a>(
 
 /// The first three problem files and the counts behind everything else, for the tools that embed
 /// the validation.
-pub fn brief_validation<'a>(
-    frame: &'a ValidationFrame,
-    list: &ProblemList,
-) -> BriefValidation<'a> {
+pub fn brief_validation<'a>(frame: &'a ValidationFrame, list: &ProblemList) -> BriefValidation<'a> {
     let total = list.problems.len();
     let (shortened, remedies) = split_repeated_remedies(&list.problems);
     let rows: Vec<Problem> = shortened.into_iter().take(BRIEF_PAGE_LIMIT).collect();
@@ -581,8 +582,14 @@ mod tests {
             row("node-two", &format!("{}{guidance}", named("node-two"))),
         ];
         let (kept, remedies) = split_repeated_remedies(&rows);
-        assert_eq!(kept[0].issues[0].message.as_deref(), Some(named("node-one").as_str()));
-        assert_eq!(kept[1].issues[0].message.as_deref(), Some(named("node-two").as_str()));
+        assert_eq!(
+            kept[0].issues[0].message.as_deref(),
+            Some(named("node-one").as_str())
+        );
+        assert_eq!(
+            kept[1].issues[0].message.as_deref(),
+            Some(named("node-two").as_str())
+        );
         assert_eq!(
             remedies.get("path-drift").map(String::as_str),
             Some("Fix the path in the frontmatter or remove the entry from the node.")
@@ -606,7 +613,6 @@ mod tests {
             coverage: Some(Coverage {
                 breadth: Breadth {
                     abilities: unplaced,
-                    not_listed: 0,
                     node: 0,
                     named: 0,
                     excluded: 0,
@@ -614,13 +620,16 @@ mod tests {
                         .map(|at| UnplacedRow {
                             kind: "command",
                             name: format!("ability-{at}"),
+                            path: "a.ts".to_string(),
                             evidence: format!("a.ts:L{at}"),
-                            symbol: None,
+                            members: None,
+                            member_count: None,
                         })
                         .collect(),
                 },
                 areas: None,
                 reads: None,
+                ability_edges: None,
             }),
             summary_freshness: SummaryFreshness {
                 checked: true,
@@ -691,14 +700,14 @@ mod tests {
                 Some(100),
                 None,
             );
-            let page = serde_json::to_value(page_validation(&frame, &list, &request))
-                .expect("serializes");
+            let page =
+                serde_json::to_value(page_validation(&frame, &list, &request)).expect("serializes");
             problems.extend(names_in(&page, "/problems", "slug"));
-            unplaced.extend(names_in(&page, "/coverage/breadth/unplaced/rows", "name"));
+            unplaced.extend(names_in(&page, "/coverage/unplaced", "name"));
             problem_cursor = page["problemsPagination"]["nextOffset"]
                 .as_u64()
                 .map(|next| usize::try_from(next).expect("fits"));
-            unplaced_cursor = page["coverage"]["breadth"]["unplaced"]["pagination"]["nextOffset"]
+            unplaced_cursor = page["coverage"]["unplacedOffset"]["nextOffset"]
                 .as_u64()
                 .map(|next| usize::try_from(next).expect("fits"));
         }
@@ -747,7 +756,9 @@ mod tests {
         let brief = serde_json::to_value(brief_validation(&frame, &list)).expect("serializes");
         assert_eq!(brief["problems"].as_array().map(Vec::len), Some(3));
         assert_eq!(brief["nextCall"]["arguments"]["offset"], 3);
-        assert!(brief["summary"]["byCode"]["path-drift"].get("files").is_none());
-        assert_eq!(brief["coverage"]["breadth"]["unplaced"], 12);
+        assert!(brief["summary"]["byCode"]["path-drift"]
+            .get("files")
+            .is_none());
+        assert_eq!(brief["coverage"]["abilities"]["unplaced"], 12);
     }
 }

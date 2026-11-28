@@ -7,6 +7,7 @@ use std::sync::LazyLock;
 
 use confined_files::SourceFiles;
 use regex::Regex;
+use source_reads::ReadsUnder;
 use source_scan::extension_of;
 
 pub(crate) const SMALL_SOURCE_BYTES: usize = 256 * 1024;
@@ -87,7 +88,6 @@ pub(crate) fn line_cites(body: &str, source: Option<&dyn SourceFiles>) -> Vec<Ci
         .collect()
 }
 
-
 /// A small source file the vault names, or `None`: another kind of file, a name the scan may not
 /// open, a file over the size a read allows.
 pub(crate) fn read_small_source(source: &dyn SourceFiles, path: &str) -> Option<String> {
@@ -98,7 +98,6 @@ pub(crate) fn read_small_source(source: &dyn SourceFiles, path: &str) -> Option<
     let text = source.read_text(Path::new(path)).ok()?;
     (text.len() <= SMALL_SOURCE_BYTES).then(|| text.into_owned())
 }
-
 
 /// The small files a call has read for its cites, by path; a file that could not be read is
 /// remembered too.
@@ -125,14 +124,42 @@ impl CitedText {
             return decide(text.as_deref());
         }
         self.kept_bytes += size;
-        decide(self.files.entry(path.to_string()).or_insert(text).as_deref())
+        decide(
+            self.files
+                .entry(path.to_string())
+                .or_insert(text)
+                .as_deref(),
+        )
     }
 }
-
 
 static SYMBOL_AFTER_PATH: LazyLock<Regex> = LazyLock::new(|| {
     pattern(r"^`?(?:#|:|\s+|,\s*)`?([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)?)")
 });
+
+/// Whether this session served every line of the cite, under the path a sub-root read cited it by.
+pub(crate) fn served_lines(reads: &ReadsUnder, cite: &Cite) -> bool {
+    let Some(ranges) = reads.reads.get(reads.read_path(&cite.path)) else {
+        return false;
+    };
+    (cite.start_line..=cite.end_line).all(|line| {
+        ranges
+            .iter()
+            .any(|range| range.start_line <= line && line <= range.end_line)
+    })
+}
+
+/// Whether the cited range lies inside a file of the repository: one small enough to read, with
+/// at least as many lines as the cite ends at.
+pub(crate) fn cited_lines_exist(
+    source: &dyn SourceFiles,
+    texts: &mut CitedText,
+    cite: &Cite,
+) -> bool {
+    texts.with_text(source, &cite.path, |text| {
+        text.is_some_and(|text| text.split('\n').count() >= cite.end_line)
+    })
+}
 
 /// The symbol a body cites right after its path, in any form builders write: "`src/x.ts`
 /// `issueInvoice`", "src/x.ts issueInvoice", "src/x.py#Owner.method".
@@ -159,7 +186,6 @@ mod tests {
         let body = format!("`{path}` issueInvoice");
         assert_eq!(cited_symbol(&body, &path).as_deref(), Some("issueInvoice"));
     }
-
 
     #[test]
     fn cites_read_each_spelling_and_the_symbol_after_a_path() {
@@ -237,7 +263,8 @@ mod tests {
         };
         let mut texts = CitedText::default();
         for _ in 0..5 {
-            assert!(texts.with_text(&source, &cite.path, |text| text.is_some_and(|text| text.contains("throw"))));
+            assert!(texts.with_text(&source, &cite.path, |text| text
+                .is_some_and(|text| text.contains("throw"))));
         }
         assert_eq!(source.opened.get(), 1);
     }

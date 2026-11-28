@@ -177,8 +177,13 @@ function groupedFindingLine([first, ...rest]) {
  */
 function findingsOnWrittenNodes(writtenSlugs) {
   const byKind = new Map();
-  for (const action of maintenancePlanAfterWrite(FINDING_STEPS_MAX, writtenSlugs).actions) {
+  const { actions } = maintenancePlanAfterWrite(FINDING_STEPS_MAX, writtenSlugs);
+  // A dangling reference is both a compile issue and a call that resolves it, in the same
+  // words; the call says the same and also names the repair, so the issue adds only noise.
+  const withCall = new Set(actions.filter((action) => action.executable).map((action) => action.reason));
+  for (const action of actions) {
     if (SETTLED_MAP_REVIEW_KINDS.has(action.kind)) continue;
+    if (!action.executable && withCall.has(action.reason)) continue;
     byKind.set(action.kind, [...(byKind.get(action.kind) ?? []), action]);
   }
   return [...byKind.values()].map(groupedFindingLine);

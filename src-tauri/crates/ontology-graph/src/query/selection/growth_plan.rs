@@ -15,8 +15,9 @@ use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use crate::query::walks::row_page::RowPage;
 
-/// The reads the vault's own uncertainty sections ask for. `no_bodies` says the vault holds no
-/// document, so an empty list is never taken for "nothing to read". The reads themselves come from
+/// The reads the vault's own uncertainty sections ask for. `no_bodies` says no body was looked at
+/// (the vault holds no node, or the answer is a brief that never reads bodies), so an empty list is
+/// never taken for "nothing to read". The reads themselves come from
 /// outside the graph (`OutsideFacts::next_reads`): finding them means reading the prose of each
 /// uncertainty section, which belongs to the meaning slice, and ordering them means looking at the
 /// source files, which belongs to the source scan.
@@ -27,8 +28,8 @@ struct NextReads {
 }
 
 impl NextReads {
-    fn of(vault_has_documents: bool, reads: Option<&[UncertaintyRead]>, limit: usize) -> Self {
-        if !vault_has_documents {
+    fn of(bodies_looked_at: bool, reads: Option<&[UncertaintyRead]>, limit: usize) -> Self {
+        if !bodies_looked_at {
             return Self {
                 total: 0,
                 rows: Vec::new(),
@@ -108,7 +109,14 @@ pub fn growth_plan<'a>(
     request: &QueryRequest,
 ) -> Result<GrowthPlanAnswer<'a>, QueryError> {
     let limit = request.limit.unwrap_or(GROWTH_PLAN_LIMIT);
-    growth_plan_with_limit(graph, request, limit)
+    growth_plan_with_limit(graph, request, limit, BodiesLookedAt::Yes)
+}
+
+/// Whether the answer is one that reads the bodies of the nodes for their next reads.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum BodiesLookedAt {
+    Yes,
+    No,
 }
 
 /// The plan with `limit` rows per group, which `workspace_brief` asks for with its own limit.
@@ -116,6 +124,7 @@ pub fn growth_plan_with_limit<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
     limit: usize,
+    bodies: BodiesLookedAt,
 ) -> Result<GrowthPlanAnswer<'a>, QueryError> {
     let outside = &request.selection.outside;
     let recommendations = RecommendRelationsAnswer::of(recommend(graph, None, limit), limit);
@@ -124,7 +133,7 @@ pub fn growth_plan_with_limit<'a>(
     let unassigned = unassigned_nodes(graph, limit);
     let empty = empty_domains(graph, limit);
     let next_reads = NextReads::of(
-        !graph.nodes().is_empty(),
+        bodies == BodiesLookedAt::Yes && !graph.nodes().is_empty(),
         outside.next_reads.as_deref(),
         limit,
     );
