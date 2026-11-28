@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use answer_format::collation::compare_text;
+use answer_format::pagination::Pagination;
 use indexmap::IndexMap;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -101,27 +102,13 @@ impl Window {
     }
 
     fn meta(&self) -> Pagination {
-        let has_more = self.end < self.total;
-        Pagination {
-            offset: self.start,
-            limit: self.limit.unwrap_or(self.total - self.start),
-            total: self.total,
-            returned: self.end - self.start,
-            has_more,
-            next_offset: has_more.then_some(self.end),
-        }
+        Pagination::of(
+            self.start,
+            self.limit.unwrap_or(self.total - self.start),
+            self.total,
+            self.end - self.start,
+        )
     }
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct Pagination {
-    offset: usize,
-    limit: usize,
-    total: usize,
-    returned: usize,
-    has_more: bool,
-    next_offset: Option<usize>,
 }
 
 /// How many nodes hold each value of a key, in the order of the key's text.

@@ -6,6 +6,7 @@
 use saved_constellations::{
     list_constellations, read_saved_collections, CollectionsSource, Constellation, Status,
 };
+use answer_format::pagination::Pagination;
 use serde::Serialize;
 use vault_document::frontmatter::Value as FrontmatterValue;
 
@@ -24,18 +25,6 @@ const MAX_RELATION_LIMIT: f64 = 200.0;
 const LIST_CONTRACT: &str = "savedConstellationList:v1";
 const CONTEXT_CONTRACT: &str = "savedConstellationContext:v1";
 const LIST_GUIDANCE: &str = "This is saved task-scope metadata. Membership and purpose do not establish ontology relations, accepted meaning, currentness, or complete impact coverage.";
-
-#[derive(Serialize)]
-struct Pagination {
-    offset: usize,
-    limit: usize,
-    total: usize,
-    returned: usize,
-    #[serde(rename = "hasMore")]
-    has_more: bool,
-    #[serde(rename = "nextOffset")]
-    next_offset: Option<usize>,
-}
 
 #[derive(Serialize)]
 struct ConstellationList<'a> {
@@ -93,14 +82,7 @@ fn list(
             total: 0,
             returned: 0,
             limited: false,
-            pagination: Pagination {
-                offset: 0,
-                limit: 0,
-                total: 0,
-                returned: 0,
-                has_more: false,
-                next_offset: None,
-            },
+            pagination: Pagination::of(0, 0, 0, 0),
             constellations: &[],
             guidance: unavailable_guidance(
                 source,
@@ -125,14 +107,7 @@ fn list(
         total: all.len(),
         returned: page.len(),
         limited: has_more,
-        pagination: Pagination {
-            offset,
-            limit,
-            total: all.len(),
-            returned: page.len(),
-            has_more,
-            next_offset: has_more.then_some(next),
-        },
+        pagination: Pagination::of(offset, limit, all.len(), page.len()),
         constellations: &page,
         guidance: LIST_GUIDANCE,
     })
