@@ -1130,3 +1130,5 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   probed with `fstat` first. Not built: `sourceReads` from the census (row 67), which needs
   `source-reads` to open files from a `SourceFiles` instead of a `SourceRoot`; the evidence dating
   of `validate_vault` under a census (row 69), which needs Git history a census does not carry.
+- 2026-11-28: the Node server cut `analysis_history`, the compact brief (`detail:"compact"` and `task`) and `view:"analysis"` with the proposal route (`docs/records/decisions/2026-11-28-mcp-lean-cuts-*.md`). The Rust port does not carry them: each answers `invalid_arguments` naming its replacement, and `agent_brief` is the small brief with counts, first rows and the `validate_vault` call. `domain_matrix` stays, because the app's Flat dial shows its counts.
+
