@@ -15486,6 +15486,726 @@
       "path": "result.structuredContent.error",
       "change": 39,
       "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-at-the-transport-limit",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-at-the-transport-limit",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-at-the-transport-limit",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-at-the-transport-limit",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-over-the-transport-limit",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-over-the-transport-limit",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-over-the-transport-limit",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-over-the-transport-limit",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-over-the-transport-limit",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-over-the-transport-limit",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-descriptor-over-the-transport-limit",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-at-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-at-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-at-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-at-the-cap",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-over-the-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-over-the-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-over-the-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-over-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-over-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-over-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-file-text-over-the-cap",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-at-the-entry-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-at-the-entry-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-at-the-entry-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-at-the-entry-cap",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-marked-truncated",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-marked-truncated",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-marked-truncated",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-marked-truncated",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-marked-truncated",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-marked-truncated",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-marked-truncated",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-over-the-entry-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-over-the-entry-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-over-the-entry-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-over-the-entry-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-over-the-entry-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-over-the-entry-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-over-the-entry-cap",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-with-another-contract",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-with-another-contract",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-with-another-contract",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-with-another-contract",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-with-another-contract",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-with-another-contract",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-snapshot-with-another-contract",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-total-text-over-the-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-total-text-over-the-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-total-text-over-the-cap",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-reads-total-text-over-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-total-text-over-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-total-text-over-the-cap",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-total-text-over-the-cap",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-reads-valid-snapshot",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-valid-snapshot",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-valid-snapshot",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-reads-valid-snapshot",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-source-reads-on-hostile-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-on-hostile-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-on-hostile-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-on-hostile-vault",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-source-reads-on-hostile-vault",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-source-reads-on-hostile-vault",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent",
+      "change": 67,
+      "reason": "With the app's census (`OATLAS_CONFINED_SOURCE_READS=1`) `analyze_repo_structure` `sourceReads` is refused by name; the JavaScript server answers it from the disk, since only its import scan reads the census. The selected reads open a file, check it did not change and pin the lines to the bytes they stood on, and no census run answers those questions yet (row 67)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.isError",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.coverage",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.error",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.errorCode",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.evidenceDrift",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.ok",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.pathDrift",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.problems",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.problemsHint",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.problemsPagination",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.scanned",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.summary",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.summaryFreshness",
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
+    },
+    {
+      "case": "safety/confined-source-reads-with-a-bad-descriptor",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-with-a-bad-descriptor",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-with-a-bad-descriptor",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent",
+      "change": 68,
+      "reason": "With a census that is missing, truncated, over a limit, of another contract or of another folder, the `analyze_repo_structure` breadth map is refused with the census's own message; the JavaScript server reads the disk for the map and blanks only the import edges, so a census it rejected still lets it read the repository (row 68)."
+    },
+    {
+      "case": "safety/confined-source-reads-with-a-bad-descriptor",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 38,
+      "reason": "A read_source refusal carries the code that names its cause: invalid_arguments for a path outside sources/, one that names no file or a hidden or credential-style name, not_found for a file that is not there; the JavaScript server answered tool_error for all (row 38 of the specification's table)."
     }
   ]
 }
