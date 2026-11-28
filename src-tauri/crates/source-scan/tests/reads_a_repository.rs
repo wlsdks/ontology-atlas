@@ -112,3 +112,38 @@ fn pairs_stop_being_read_when_the_call_has_read_all_it_is_allowed_to() {
         "the earlier requests are the ones read: {read:?}"
     );
 }
+
+/// Answers with the name it was asked for, so a test sees which file the working side reads.
+struct NamesWhatItIsAsked;
+
+impl EvidenceFiles for NamesWhatItIsAsked {
+    fn refuses(&self, _path: &RepoPath) -> bool {
+        false
+    }
+
+    fn working_text(&self, path: &RepoPath, _budget: &mut ReadBudget) -> Option<String> {
+        Some(path.as_str().to_string())
+    }
+}
+
+#[test]
+fn a_package_below_the_top_reads_its_committed_file_by_the_full_name_and_its_working_file_by_the_short_one(
+) {
+    let scratch = Scratch::new("package-below-the-top");
+    let repo = scratch.repository("repo");
+    write(&repo, "pkg/a.ts", "export const a = 1;\n");
+    let commit = commit_all(&repo, "a package");
+
+    let readings = read_evidence_pairs(
+        &Repository::at(&repo),
+        &RepoPath::new("pkg").expect("a path"),
+        &NamesWhatItIsAsked,
+        &[EvidenceRequest {
+            path: "a.ts",
+            commit: &commit,
+        }],
+    );
+
+    assert_eq!(readings[0].before.as_deref(), Some("export const a = 1;\n"));
+    assert_eq!(readings[0].after.as_deref(), Some("a.ts"));
+}
