@@ -23,7 +23,7 @@ export const WEBSITE_ONLY_ENTRIES = Object.freeze([
 /** The file an IndexNow engine fetches to prove the host is ours: `<32 hex digits>.txt` at the root. */
 const INDEXNOW_KEY_FILE = /^[0-9a-f]{32}\.txt$/;
 
-export function isWebsiteOnlyEntry(name) {
+function isWebsiteOnlyEntry(name) {
   return WEBSITE_ONLY_ENTRIES.includes(name) || INDEXNOW_KEY_FILE.test(name);
 }
 
