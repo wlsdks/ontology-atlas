@@ -24,6 +24,7 @@ use crate::deciding_lines::{
 };
 use crate::declaration_span::{declaration_end, enclosing_class, Ends};
 use crate::file_outline::{OutlineDeclaration, OutlineKind};
+use crate::name_scans::returns_named;
 use crate::opened_file::OpenedFile;
 use crate::read_environment::ReadEnvironment;
 use crate::source_lines::indent_at;
@@ -451,8 +452,6 @@ pub fn symbol_context(
         }
     }
     if let Some(owner) = &owner {
-        let escaped = regex::escape(&owner.name);
-        let returns_owner = js_regex(&format!(r"\)\s*\(?\*?{escaped}\b"));
         let owner_end = owner
             .declaration
             .as_ref()
@@ -470,7 +469,7 @@ pub fn symbol_context(
                                     && owner_end.is_some_and(|end| candidate.line <= end)
                             }))
                         || (candidate.kind == OutlineKind::Function
-                            && returns_owner.is_match(&candidate.signature)))
+                            && returns_named(&candidate.signature, &owner.name)))
             })
             .collect();
         for constructor in constructors {
