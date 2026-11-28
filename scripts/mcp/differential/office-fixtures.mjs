@@ -8,7 +8,7 @@ const CENTRAL_HEADER = 0x02014b50;
 const END_OF_DIRECTORY = 0x06054b50;
 
 /** One ZIP archive. An entry is `{ name, data, stored?: boolean, declaredSize?: number }`. */
-export function zipOf(entries) {
+function zipOf(entries) {
   const parts = [];
   const directory = [];
   let offset = 0;

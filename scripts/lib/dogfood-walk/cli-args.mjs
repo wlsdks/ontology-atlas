@@ -43,10 +43,6 @@ export function dogfoodUsage() {
   ].join("\n");
 }
 
-export function shouldPrintDogfoodHelp(argv = process.argv.slice(2)) {
-  return parseDogfoodArgs(argv).help;
-}
-
 export function parseDogfoodArgs(argv = process.argv.slice(2)) {
   const args = stripLeadingPnpmSeparator(Array.isArray(argv) ? argv : []);
   const help = args.includes("--help") || args.includes("-h");

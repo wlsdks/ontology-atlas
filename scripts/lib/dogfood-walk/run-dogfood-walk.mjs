@@ -91,7 +91,7 @@ export function stepFailure(step, answer) {
 }
 
 /** What is wrong with the handshake and tools/list answers, as a list. */
-export function surfaceFailures(initialize, toolsList) {
+function surfaceFailures(initialize, toolsList) {
   const tools = toolsList?.result?.tools;
   const failures = [initializeInstructionsFailure(initialize), toolsListInventoryFailure(tools)];
   if (Array.isArray(tools)) {

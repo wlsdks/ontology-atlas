@@ -508,6 +508,30 @@
       "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
       "consumer": "scripts/brand/moru-cast/preview.mjs",
       "witness": "scripts/brand/moru-cast/life/pose-variety.mjs"
+    },
+    {
+      "key": "frontend:runtime:binaries:scripts/mcp/program-size/check-program-size.mjs:size",
+      "reason": "The program-size gate reads each tree-sitter archive's section sizes with the system `size` tool and reports the figure as not measured where the tool is missing.",
+      "consumer": "scripts/mcp/program-size/check-program-size.mjs",
+      "witness": "size"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/mcp/program-size/check-program-size.mjs:size",
+      "reason": "The program-size gate reads each tree-sitter archive's section sizes with the system `size` tool and reports the figure as not measured where the tool is missing.",
+      "consumer": "scripts/mcp/program-size/check-program-size.mjs",
+      "witness": "size"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/mcp/program-size/check-program-size.mjs:size",
+      "reason": "The program-size gate reads each tree-sitter archive's section sizes with the system `size` tool and reports the figure as not measured where the tool is missing.",
+      "consumer": "scripts/mcp/program-size/check-program-size.mjs",
+      "witness": "size"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/mcp/program-size/check-program-size.mjs:size",
+      "reason": "The program-size gate reads each tree-sitter archive's section sizes with the system `size` tool and reports the figure as not measured where the tool is missing.",
+      "consumer": "scripts/mcp/program-size/check-program-size.mjs",
+      "witness": "size"
     }
   ]
 }

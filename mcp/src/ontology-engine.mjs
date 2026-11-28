@@ -85,7 +85,6 @@ const AGENT_WORKFLOW_GUIDE = Object.freeze({
     'MCP-connected use and verification checks.',
 });
 export {
-  EDGE_TARGET_KIND_VALUES,
   NODE_KIND_VALUES,
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
