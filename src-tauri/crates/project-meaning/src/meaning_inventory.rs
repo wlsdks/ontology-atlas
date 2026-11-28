@@ -92,29 +92,33 @@ pub struct InventoryInput<'a> {
     pub documents: &'a [&'a LoadedDocument],
     /// The body the project node will have, when it is not the file's.
     pub project_body: Option<&'a str>,
-    pub source: &'a SourceView,
+    /// The receipt to draw witnesses from: `trusted_view_receipt` of the stored view, or a receipt
+    /// just measured.
+    pub receipt: Option<&'a SourceReceipt>,
     pub verify_citation: Option<&'a dyn Fn(&SourceRangeCitation) -> bool>,
 }
 
-/// A receipt the inventory may draw witnesses from: the view it was read through is current enough
-/// to trust, and every field of it is in the form it is stored in.
-fn usable_receipt<'a>(source: &'a SourceView, project_slug: &str) -> Option<&'a SourceReceipt> {
-    if source.contract_version != 1
-        || source.project_slug != project_slug
-        || source.binding_cardinality != 1
-        || !RECEIPT_STATUSES.contains(&source.status.as_str())
-        || !VIEW_CURRENTNESS.contains(&source.currentness)
-    {
-        return None;
-    }
-    let receipt = source.receipt.as_ref()?;
+/// The receipt of a stored view, when the view itself may be trusted: it is the one binding of this
+/// project, in a status and currentness the contract names.
+pub fn trusted_view_receipt<'a>(source: &'a SourceView, project_slug: &str) -> Option<&'a SourceReceipt> {
+    let trusted = source.contract_version == 1
+        && source.project_slug == project_slug
+        && source.binding_cardinality == 1
+        && RECEIPT_STATUSES.contains(&source.status.as_str())
+        && VIEW_CURRENTNESS.contains(&source.currentness);
+    source.receipt.as_ref().filter(|_| trusted)
+}
+
+/// Whether every field of the receipt is in the form it is stored in, so its witnesses may be
+/// drawn from.
+fn receipt_is_sound(receipt: &SourceReceipt, project_slug: &str) -> bool {
     let witnesses_hold = receipt.witnesses.iter().all(|witness| {
         non_blank(&witness.id, 200)
             && safe_vault_slug(&witness.node_slug, SLUG_MAX_UNITS)
             && non_blank(&witness.role, 200)
             && safe_relative_path(&witness.path)
     });
-    let sound = receipt.contract_version == 1
+    receipt.contract_version == 1
         && receipt.project_slug == project_slug
         && safe_graph_hash(&receipt.graph_hash)
         && non_blank(&receipt.source_id, 200)
@@ -125,8 +129,7 @@ fn usable_receipt<'a>(source: &'a SourceView, project_slug: &str) -> Option<&'a 
         && non_blank(&receipt.measured_at, 100)
         && RECEIPT_STATUSES.contains(&receipt.status.as_str())
         && receipt.currentness == "current"
-        && witnesses_hold;
-    sound.then_some(receipt)
+        && witnesses_hold
 }
 
 fn path_of(document: &LoadedDocument) -> Option<&str> {
@@ -159,7 +162,9 @@ pub fn build_meaning_inventory(
     {
         return Err(InventoryUnavailable::InvalidProjectScope);
     }
-    let receipt = usable_receipt(input.source, input.project_slug)
+    let receipt = input
+        .receipt
+        .filter(|receipt| receipt_is_sound(receipt, input.project_slug))
         .ok_or(InventoryUnavailable::SourceReceiptUnavailable)?;
 
     let kinds: Vec<(String, String)> = concepts

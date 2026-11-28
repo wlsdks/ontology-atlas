@@ -3053,6 +3053,7 @@ dependencies = [
  "mcp-server",
  "meaning-findings",
  "ontology-graph",
+ "project-meaning",
  "project-source",
  "raw-source-text",
  "regex",

@@ -41,6 +41,8 @@ document-absorption = { path = "../document-absorption" }
 # The wiki page contract `validate_wiki` judges pages against.
 wiki-pages = { path = "../wiki-pages" }
 project-source = { path = "../project-source" }
+# The competency answers, their inventory, assessment and receipt that `finalize_project_meaning` judges.
+project-meaning = { path = "../project-meaning" }
 meaning-findings = { path = "../meaning-findings" }
 raw-source-text = { path = "../raw-source-text" }
 # Answers are typed structs written as JSON. `raw_value` sends the tool list as the text the

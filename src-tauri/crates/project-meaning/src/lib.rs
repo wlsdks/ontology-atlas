@@ -8,6 +8,7 @@ mod meaning_inventory;
 mod meaning_questions;
 mod meaning_receipt;
 mod stored_name_shapes;
+mod structure_readiness;
 
 pub use competency_answers::{
     render_competency_answers, with_competency_section, RenderedAnswers,
@@ -22,7 +23,7 @@ pub use meaning_assessment::{
     CompetencyBlock, QuestionRow, SourceFacts, UnresolvedRow,
 };
 pub use meaning_inventory::{
-    build_meaning_inventory, Inventory, InventoryInput, InventoryRelation, InventoryUnavailable,
+    build_meaning_inventory, trusted_view_receipt, Inventory, InventoryInput, InventoryRelation, InventoryUnavailable,
 };
 pub use meaning_questions::{
     question_ids, Question, WitnessKind, ASSESSMENT_CONTRACT, COMPETENCY_CONTRACT,
@@ -32,4 +33,5 @@ pub use meaning_receipt::{
     body_digest, finalize_meaning_receipt, read_meaning_assessment, AssessedProject,
     MeaningReceipt, ReceiptSubject, ReceiptWriteFailure, MEANING_STATE_RELATIVE_PATH,
 };
+pub use structure_readiness::{structure_readiness, ValidationCounts};
 pub use stored_name_shapes::{safe_graph_hash, safe_vault_slug, SLUG_MAX_UNITS};

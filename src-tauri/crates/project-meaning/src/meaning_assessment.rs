@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 use project_source::{
     is_gap_id, is_persistable_evidence_reference, is_persistable_path_witness,
-    parse_source_range_citation,
+    parse_source_range_citation, SourceView,
 };
 use serde::Serialize;
 
@@ -72,6 +72,24 @@ pub struct SourceFacts {
     pub source_revision: Option<String>,
     pub source_fingerprint: Option<String>,
     pub measured_at: Option<String>,
+}
+
+impl SourceFacts {
+    /// What the stored view of a project's source says, as far as the assessment reads it.
+    pub fn of_view(view: &SourceView) -> Self {
+        let receipt = view.receipt.as_ref();
+        Self {
+            status: Some(view.status.clone()),
+            currentness: Some(view.currentness.to_string()),
+            top_gap_id: view.top_gap.as_ref().map(|gap| gap.id.clone()),
+            receipt_contract_version: receipt.map(|held| held.contract_version),
+            graph_hash: receipt.map(|held| held.graph_hash.clone()),
+            source_id: receipt.map(|held| held.source_id.clone()),
+            source_revision: receipt.map(|held| held.source_revision.clone()),
+            source_fingerprint: receipt.map(|held| held.source_fingerprint.clone()),
+            measured_at: receipt.map(|held| held.measured_at.clone()),
+        }
+    }
 }
 
 /// One row of the competency answers as the assessment judges it.
