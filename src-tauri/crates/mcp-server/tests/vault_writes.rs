@@ -86,6 +86,28 @@ fn a_patch_changes_the_lines_it_names_and_keeps_every_other_byte() {
     assert_eq!(vault.file("notes.md").as_deref(), Some(expected.as_str()));
 }
 
+/// The server starts in the repository that holds this crate, and the vault is a temporary folder
+/// outside any repository: that repository is not the vault's code, so a write neither surveys it
+/// nor reads its `HEAD`, and the line it adds to the vault records none of its facts.
+#[test]
+fn a_write_in_a_vault_outside_any_repository_records_nothing_of_the_one_the_server_started_in() {
+    let mut vault = Vault::start();
+    let connection = vault.call("connection_info", "{}");
+    assert_eq!(
+        connection["repoResolution"], "git.rev-parse",
+        "the server is started inside a repository: {connection}"
+    );
+    let answer = vault.call("patch_concept", r#"{"slug":"notes","body":"Changed."}"#);
+    assert_eq!(answer["ok"], true);
+    let record = vault
+        .file(".ontology-atlas/map-analysis.jsonl")
+        .expect("the write's line");
+    let line: Value = serde_json::from_str(record.lines().last().expect("a line")).expect("json");
+    for key in ["sourceCommit", "sourceDirty", "abilities", "areas"] {
+        assert_eq!(line[key], Value::Null, "{key}: {line}");
+    }
+}
+
 #[test]
 fn a_dangling_reference_on_a_written_node_is_one_findings_line_the_call_that_resolves_it() {
     let mut vault = Vault::start();

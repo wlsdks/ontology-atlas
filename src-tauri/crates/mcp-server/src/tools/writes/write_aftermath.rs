@@ -262,12 +262,14 @@ pub fn post_write_maintenance(context: &CallContext<'_>, touched: &[String]) -> 
         .into_setting()
 }
 
-/// The code's coverage by the documents given, or `None` when no repository is known.
+/// The code's coverage by the documents given, or `None` when no repository is grounded: a
+/// repository the server was only started in is not the vault's code, and surveying it would read
+/// an unrelated tree on every write.
 pub fn measure_coverage(
     context: &CallContext<'_>,
     documents: &[LoadedDocument],
 ) -> Option<Coverage> {
-    if context.config().repo_resolution == "process.cwd" {
+    if !context.config().repo_grounded {
         return None;
     }
     let target = ScanTarget::allow_named(context, None, "repoRoot").ok()?;
@@ -407,7 +409,8 @@ pub fn counts_after(permit: &Permit<'_>) -> Result<ShareCounts, ToolError> {
     Ok(share_counts(coverage.as_ref(), source_state(context)))
 }
 
-/// The code's `HEAD` and whether it holds uncommitted changes outside the vault.
+/// The code's `HEAD` and whether it holds uncommitted changes outside the vault; neither is known
+/// when no repository is grounded.
 #[derive(Debug, Clone, Default)]
 pub struct SourceState {
     pub commit: Option<String>,
@@ -417,7 +420,7 @@ pub struct SourceState {
 pub fn source_state(context: &CallContext<'_>) -> SourceState {
     use hardened_git::{RepoPath, Repository};
     let config = context.config();
-    if config.repo_resolution == "process.cwd" {
+    if !config.repo_grounded {
         return SourceState::default();
     }
     let repository = Repository::at(&config.repo_root);
