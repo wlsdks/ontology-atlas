@@ -1,11 +1,11 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
   buildAgentAnalyzePrompt,
   buildAgentSetupPrompt,
 } from "@/shared/config/agent/agent-prompts";
+
+import { advertisedToolNames } from "../server-session/tool-surface";
 
 /**
  * **Instructions that fail the moment they are pasted are a trap, not help.**
@@ -14,25 +14,16 @@ import {
  * tool name in them does not exist, the agent stops at that line and the user digs
  * through their own configuration, never suspecting the sentence we handed them.
  *
- * So the names are **compared against the MCP server's real tool list** — the server
- * source is the source of truth, not a second list we maintain by hand (a duplicate
+ * So the names are **compared against the MCP server's real tool list** — the surface the
+ * server embeds is the source of truth, not a second list we maintain by hand (a duplicate
  * starts drifting immediately).
  *
  * Two unusable things are blocked alongside: skills that exist only in our repository
  * (`/ontology-*`) and `npx ontology-atlas`, which is not in the registry. Both are
  * 404s in a user's environment.
  */
-const MCP_DEFINITIONS = join(process.cwd(), "mcp", "src", "server", "tool-definitions");
-const MCP_DEFINITION_FILES = readdirSync(MCP_DEFINITIONS)
-  .filter((file) => file.endsWith(".mjs"))
-  .map((file) => join(MCP_DEFINITIONS, file));
 function registeredToolNames(): Set<string> {
-  const source = MCP_DEFINITION_FILES.map((file) => readFileSync(file, "utf8")).join("\n");
-  const names = new Set<string>();
-  for (const match of source.matchAll(/name:\s*["']([a-z][a-z0-9_]*)["']/g)) {
-    names.add(match[1]);
-  }
-  return names;
+  return new Set(advertisedToolNames());
 }
 
 /**
@@ -44,7 +35,7 @@ function registeredToolNames(): Set<string> {
  * tools would turn this gate falsely red every time — and then nobody looks at it.
  */
 const NOT_TOOLS = new Set([
-  // Vault relation types — vocabulary from `mcp/src/schema.mjs`.
+  // Vault relation types — vocabulary from the vault schema.
   "depends_on",
   "is_a",
   "relates_to",

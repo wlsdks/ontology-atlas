@@ -30,3 +30,13 @@ export function advertisedToolNames(): string[] {
     .map((tool) => tool.name)
     .filter((name) => !retired.has(name));
 }
+
+/** What the server says when a client connects: the text of `initialize.instructions`. */
+export function serverInstructions(): string {
+  return readFileSync(join(SURFACE_DIRECTORY, 'instructions.txt'), 'utf8');
+}
+
+/** The construction card and the guide topics `connection_info({ guide })` serves. */
+export function serverGuides(): { card: string; topics: string[]; texts: Record<string, string> } {
+  return readSurfaceJson('guides.json');
+}
