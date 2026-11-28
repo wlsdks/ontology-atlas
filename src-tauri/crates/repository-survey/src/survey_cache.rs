@@ -19,7 +19,7 @@ use hardened_git::{Repository, StatusRow};
 use source_scan::{place_folder, walk_sorted, Entry, Flow, WalkLimits, DEFAULT_IGNORE};
 
 use crate::breadth_map::{build_breadth_map, Survey, SurveyRequest};
-use crate::git_ignored_paths::git_ignored_paths;
+use crate::git_ignored_paths::{git_ignored_paths, nfc};
 use crate::survey_files::SurveyFiles;
 use crate::unit_collection::SurveyedFile;
 
@@ -43,6 +43,10 @@ struct ChangedFile {
     path: String,
     status: (char, char),
     stamp: Option<FileStamp>,
+    /// What lies below a row that names a folder: a repository inside this one is listed as one
+    /// row, `vendor/lib/`, and a submodule as its folder, whatever changes in them. Empty for a
+    /// file.
+    inside: Vec<(String, Option<FileStamp>)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -87,30 +91,61 @@ fn below_prefix<'a>(path: &'a str, prefix: &str) -> Option<&'a str> {
     path.strip_prefix(prefix)?.strip_prefix('/')
 }
 
-fn changed_files(root: &SourceRoot, prefix: &str, rows: &[StatusRow]) -> Vec<ChangedFile> {
-    let mut changed: Vec<ChangedFile> = rows
-        .iter()
-        .filter_map(|row| {
-            let path = below_prefix(&row.path, prefix)?;
-            Some(ChangedFile {
-                path: path.to_string(),
-                status: (row.index, row.worktree),
-                stamp: root.repository_file_stamp(&parts_of(path)),
-            })
-        })
-        .collect();
+/// Git prints names precomposed (NFC) on macOS while the disk may keep them decomposed, and the
+/// survey's own paths are NFC, so a row's path is compared in NFC. The stamp is taken at the path
+/// as Git printed it when that lies below the prefix as written, else at the NFC path, which a
+/// disk that ignores the form of a name finds as well.
+fn changed_files(
+    source: &dyn SourceFiles,
+    root: &SourceRoot,
+    prefix: &str,
+    rows: &[StatusRow],
+) -> Option<Vec<ChangedFile>> {
+    let mut stamped_below = 0usize;
+    let mut changed: Vec<ChangedFile> = Vec::new();
+    for row in rows {
+        let normalized = nfc(&row.path);
+        let Some(path) = below_prefix(&normalized, prefix) else {
+            continue;
+        };
+        let as_printed = below_prefix(&row.path, prefix)
+            .unwrap_or(path)
+            .trim_end_matches('/');
+        let stamp = root.repository_file_stamp(&parts_of(as_printed));
+        let inside = if stamp.is_some() {
+            Vec::new()
+        } else {
+            let folder = parts_of(as_printed)
+                .iter()
+                .fold(root.as_path().to_path_buf(), |joined, part| joined.join(part));
+            let files = stamped_files_below(
+                source,
+                root,
+                &folder,
+                FOLDER_FILE_LIMIT.saturating_sub(stamped_below),
+            )?;
+            stamped_below += files.len();
+            files
+        };
+        changed.push(ChangedFile {
+            path: path.trim_end_matches('/').to_string(),
+            status: (row.index, row.worktree),
+            stamp,
+            inside,
+        });
+    }
     changed.sort_by(|left, right| left.path.cmp(&right.path));
-    changed
+    Some(changed)
 }
 
 /// The state of a folder Git tracks, from one `status`; `None` when Git cannot say. `prefix` is
 /// known once the folder was placed in its repository.
-fn git_state(root: &SourceRoot, prefix: &str) -> Option<RepositoryState> {
+fn git_state(source: &dyn SourceFiles, root: &SourceRoot, prefix: &str) -> Option<RepositoryState> {
     let tree = Repository::at(root.as_path()).working_tree(&[]).ok()?;
     Some(RepositoryState::Git {
         head: tree.head.commit().map(|commit| commit.as_str().to_string()),
         prefix: prefix.to_string(),
-        changed: changed_files(root, prefix, &tree.rows),
+        changed: changed_files(source, root, prefix, &tree.rows)?,
     })
 }
 
@@ -123,12 +158,18 @@ fn placed_prefix(root: &Path) -> Option<String> {
     Some(if place == "." {
         String::new()
     } else {
-        place.to_string()
+        nfc(place)
     })
 }
 
-/// Every file of a folder without Git with its stamp, in name order; `None` past the limit.
-fn folder_state(source: &dyn SourceFiles, root: &SourceRoot) -> Option<RepositoryState> {
+/// Every file below `folder` with its stamp, named from the survey's root and in name order;
+/// `None` past `limit` files.
+fn stamped_files_below(
+    source: &dyn SourceFiles,
+    root: &SourceRoot,
+    folder: &Path,
+    limit: usize,
+) -> Option<Vec<(String, Option<FileStamp>)>> {
     let base = root.as_path().to_path_buf();
     let mut files: Vec<(String, Option<FileStamp>)> = Vec::new();
     let mut over = false;
@@ -139,7 +180,7 @@ fn folder_state(source: &dyn SourceFiles, root: &SourceRoot) -> Option<Repositor
         if entry.kind != EntryKind::File {
             return Flow::Continue;
         }
-        if files.len() >= FOLDER_FILE_LIMIT {
+        if files.len() >= limit {
             over = true;
             return Flow::Stop;
         }
@@ -151,11 +192,17 @@ fn folder_state(source: &dyn SourceFiles, root: &SourceRoot) -> Option<Repositor
             .map(|part| part.as_os_str().to_string_lossy().into_owned())
             .collect();
         let borrowed: Vec<&str> = parts.iter().map(String::as_str).collect();
-        files.push((parts.join("/"), root.repository_file_stamp(&borrowed)));
+        files.push((nfc(&parts.join("/")), root.repository_file_stamp(&borrowed)));
         Flow::Continue
     };
-    walk_sorted(source, &base, WalkLimits::UNBOUNDED_NAMES, &admit, &mut visit);
-    (!over).then_some(RepositoryState::Folder { files })
+    walk_sorted(source, folder, WalkLimits::UNBOUNDED_NAMES, &admit, &mut visit);
+    (!over).then_some(files)
+}
+
+/// Every file of a folder without Git with its stamp, in name order; `None` past the limit.
+fn folder_state(source: &dyn SourceFiles, root: &SourceRoot) -> Option<RepositoryState> {
+    let files = stamped_files_below(source, root, root.as_path(), FOLDER_FILE_LIMIT)?;
+    Some(RepositoryState::Folder { files })
 }
 
 /// The files whose readings a rebuilt survey may not reuse: those that differed from the commit
@@ -178,7 +225,10 @@ fn files_to_read_again(old: &RepositoryState, new: &RepositoryState) -> Option<H
             old_changed
                 .iter()
                 .chain(new_changed)
-                .map(|file| file.path.clone())
+                .flat_map(|file| {
+                    std::iter::once(file.path.clone())
+                        .chain(file.inside.iter().map(|(path, _)| path.clone()))
+                })
                 .collect(),
         ),
         _ => None,
@@ -202,10 +252,10 @@ impl SurveyCache {
                 .map(|slot| (slot.state.clone(), Arc::clone(&slot.survey)))
         };
         let now = match &kept {
-            Some((RepositoryState::Git { prefix, .. }, _)) => git_state(root, prefix),
+            Some((RepositoryState::Git { prefix, .. }, _)) => git_state(files.source(), root, prefix),
             Some((RepositoryState::Folder { .. }, _)) => folder_state(files.source(), root),
             None => placed_prefix(root.as_path())
-                .and_then(|prefix| git_state(root, &prefix))
+                .and_then(|prefix| git_state(files.source(), root, &prefix))
                 .or_else(|| folder_state(files.source(), root)),
         };
         if let (Some((before, survey)), Some(now)) = (&kept, &now) {

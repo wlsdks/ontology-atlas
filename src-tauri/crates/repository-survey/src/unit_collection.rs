@@ -149,15 +149,17 @@ fn count_lines(text: &str) -> usize {
     }
 }
 
+/// Where `path` lies below `root`, `/`-separated and in NFC: Git names a file precomposed
+/// while a macOS disk may keep it decomposed, and a survey's paths are compared with Git's.
 fn relative_below(root: &Path, path: &Path) -> Option<String> {
     let below = path.strip_prefix(root).ok()?;
-    Some(
-        below
+    Some(nfc(
+        &below
             .components()
             .map(|part| part.as_os_str().to_string_lossy().into_owned())
             .collect::<Vec<_>>()
             .join("/"),
-    )
+    ))
 }
 
 fn has_source_extension(name: &str) -> bool {
@@ -178,7 +180,8 @@ fn walk_source_files(
         .copied()
         .chain(options.ignore.iter().map(String::as_str))
         .collect();
-    let excluded = options.vault_exclusion.as_deref();
+    let excluded = options.vault_exclusion.as_deref().map(nfc);
+    let excluded = excluded.as_deref();
     let admit = |entry: &Entry<'_>| {
         if ignored.contains(entry.name) || entry.name.starts_with('.') {
             return false;
@@ -189,7 +192,7 @@ fn walk_source_files(
         let Some(relative) = relative_below(&root, entry.path) else {
             return false;
         };
-        if options.git_ignored.contains(&nfc(&relative)) {
+        if options.git_ignored.contains(&relative) {
             return false;
         }
         !excluded.is_some_and(|prefix| {
