@@ -268,7 +268,6 @@ fn build_webview_verify_route_script(route: &str) -> String {
       if (expected && live !== expected) {{
         history.replaceState({{}}, "", expected);
         window.dispatchEvent(new PopStateEvent("popstate"));
-        window.dispatchEvent(new Event("app:urlchange"));
       }}
       if (window.__ontologyAtlasVerifyRouteTicks >= 60) {{
         window.clearInterval(window.__ontologyAtlasVerifyRouteInterval);
@@ -282,7 +281,6 @@ fn build_webview_verify_route_script(route: &str) -> String {
     if (currentPath === targetPath) {{
       history.replaceState({{}}, "", next);
       window.dispatchEvent(new PopStateEvent("popstate"));
-      window.dispatchEvent(new Event("app:urlchange"));
       return arrived();
     }}
     const targetLink = Array.from(document.querySelectorAll("a[href]"))
@@ -306,7 +304,6 @@ fn build_webview_verify_route_script(route: &str) -> String {
     }}
     history.replaceState({{}}, "", next);
     window.dispatchEvent(new PopStateEvent("popstate"));
-    window.dispatchEvent(new Event("app:urlchange"));
   }}
   return arrived();
 }})()"#,
@@ -544,7 +541,8 @@ mod tests {
         assert!(script.contains("window.setInterval"));
         assert!(script.contains("__ontologyAtlasVerifyRouteTicks >= 60"));
         assert!(script.contains("history.replaceState({}, \"\", next)"));
-        assert!(script.contains("window.dispatchEvent(new Event(\"app:urlchange\"))"));
+        assert!(script.contains("window.dispatchEvent(new PopStateEvent(\"popstate\"))"));
+        assert!(!script.contains("app:urlchange"));
         assert!(!script.contains("location.replace(next)"));
         assert!(script.contains("location.pathname + location.search + location.hash"));
         assert!(script.contains("\"/en/topology/\""));
