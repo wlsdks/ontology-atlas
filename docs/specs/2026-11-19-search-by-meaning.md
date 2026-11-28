@@ -387,7 +387,7 @@ Places the owner named, ranked by value against cost:
 1. **The Wiki question desk.** The moment exists, the copy already admits the miss, the search is one press, and the person and the scope are bounded. This comes first.
 2. **The Library search field.** It searches on every keystroke (`LibrarySection.tsx:173`). Embedding the query needs a press or a debounce, which makes it a second interaction model. It comes next once vectors exist.
 3. **Related pages.** Cheap once vectors exist, but no observed moment. Third.
-4. **Map and agents through MCP `find_evidence`.** A public contract and a store-access decision (see below). Fourth.
+4. **Map and agents through MCP `list_concepts({mentions})`.** A public contract and a store-access decision (see below). Fourth.
 
 Ways to give back the same ability:
 
@@ -406,7 +406,7 @@ Ways to give back the same ability:
 3. A third-party vector server would carry vault text outside Atlas's audit log. Atlas never executes third-party code (`forbidden.md`).
 4. People ask the question in the desk, not in an agent.
 
-Agents get meaning search later through the existing `find_evidence`. That needs
+Agents get meaning search later through the existing `list_concepts({mentions})`. That needs
 its own decision on whether the MCP may read the vector file read-only. WAL
 already lets another process read (`ARCHITECTURE.md:211-212`); the rule forbids
 it, and the MCP is pure JavaScript.
@@ -548,7 +548,7 @@ writes them.
 
 ## Out of scope
 
-- **The Library search field, related pages, and MCP `find_evidence`:** each needs vectors to exist first, and the first two need an interaction or moment not yet observed.
+- **The Library search field, related pages, and MCP `list_concepts({mentions})`:** each needs vectors to exist first, and the first two need an interaction or moment not yet observed.
 - **Non-loopback runners and API keys:** they send the whole folder's text, and the consent design ships separately.
 - **A built-in or downloaded model:** a new runtime and a new outbound host. Later #1.
 - **Embedding PDFs and other non-Markdown sources:** the index admits `.md` only (`lib.rs:1-6`).
@@ -578,7 +578,7 @@ writes them.
 1. **A built-in model downloaded on the first press** (multilingual-e5-small int8, MIT, 135 MB, from a pinned Hugging Face revision with SHA-256; `candle` or `ort`, whichever adds ≤ 25 MB). Next once one person without Ollama hits `noRunnerBody`, or the runtime-size probe passes.
 2. **"Similar meaning" in the Library search field on Enter, plus related pages in the wiki page header.** Next once AC1 passes.
 3. **An agent offers other wordings for a zero result (ACP, sends only the question).** Next if zero results stay frequent on the owner's wiki.
-4. **MCP `find_evidence` by meaning.** Next once a decision lets the bundled MCP read `vectors.sqlite` read-only, and an agent task shows the need.
+4. **MCP `list_concepts({mentions})` by meaning.** Next once a decision lets the bundled MCP read `vectors.sqlite` read-only, and an agent task shows the need.
 5. **Remote runners and API keys, with consent per run** stating the file count and characters. Next on a request from a person without a local GPU.
 6. **Carry vectors over a folder rename.** Next on the first report of re-preparing.
 
@@ -628,3 +628,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-21: first-use guide, at the owner's request for a wizard that sets up together and a guide-video sample with made-up data. In the app, on the folder's `words` line, a card replaces the setup line until Not now or a preparation started from it (`atlas.meaning.guide-seen`, listed in `FIRST_RUN_SEEN_ENTRIES`). Its sample replays the real stage component with a 20.4-second scripted timeline (download 3 s, fit 1.6 s, read 6 s, done 2.8 s, question and two results 7 s), driven by a 100 ms clock that runs only on screen, in a shown window and while the dialog is closed; reduced motion shows the answered question still. Its passages are English in every locale, because finding the other language's passage is what it shows. Set it up together opens the model dialog guided: what happens with the probe's real figures, then the model list with Back; the consent press is unchanged (decision 9e9ebc55).
 - 2026-11-22: source cites follow the files into the subfolders that now own them (structure cleanup); no plan changed.
 - 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.
+- 2026-11-28: the MCP text search `find_evidence` is now `list_concepts({mentions})` with the same scope (plain Markdown pages answer as `isNode:false`, decision 2026-08-17 (66)); every mention above names the new call.

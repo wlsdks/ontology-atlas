@@ -601,7 +601,7 @@ await test("tools/list — each single-item tool description cross-references it
     assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.warnings?.items?.properties?.severity?.enum, ["error", "warning"]);
     assert.match(
       listConcepts?.description ?? "",
-      /by text with `mentions`[\s\S]*ranks nodes whose title, relations or body say it[\s\S]*adds `matchedIn` and `score` to each row/i,
+      /by text with `mentions`[\s\S]*ranks the nodes whose title, relations or body say it[\s\S]*plain Markdown pages[\s\S]*adds `matchedIn`, `score` and an `excerpt` to each row/i,
       "list_concepts description documents the mentions search",
     );
     assert.match(
@@ -5302,7 +5302,7 @@ await test("get_concept — says so for a document outside the graph", async () 
  * outranked nodes. Loose documents stay visible (a memo may be real evidence),
  * but nodes rank first on a tie, each row carries `isNode`, and `nodesOnly` narrows.
  */
-await test("list_concepts mentions — only graph nodes answer, the best match first", async () => {
+await test("list_concepts mentions — plain Markdown pages answer as isNode:false below nodes of equal score, each row with an excerpt", async () => {
   const root = makeVault([
     {
       slug: "aaa-meeting-note",
@@ -5327,12 +5327,17 @@ await test("list_concepts mentions — only graph nodes answer, the best match f
     ]);
     const all = getCallParsed(responses, 2);
     assert.deepEqual(
-      all.nodes.map((m) => m.slug),
-      ["capabilities/token-issue", "elements/token-store"],
-      "a document without a kind is not a node and never answers",
+      all.nodes.map((m) => [m.slug, m.isNode]),
+      [["capabilities/token-issue", true], ["elements/token-store", true], ["aaa-meeting-note", false]],
+      "the memo answers last: its body ties the element's, and a node outranks a page of equal score",
     );
-    assert.equal(all.total, 2);
-    assert.ok(all.nodes[0].score >= all.nodes[1].score);
+    assert.equal(all.total, 3);
+    const memo = all.nodes[2];
+    assert.equal(memo.uid, undefined);
+    assert.equal(memo.kind, undefined);
+    assert.match(memo.excerpt, /토큰 발급이 느리다/);
+    assert.match(all.nonNodeHint, /1 of 3 row\(s\) are not graph nodes/);
+    for (const row of all.nodes) assert.equal(typeof row.excerpt, "string", `${row.slug} carries an excerpt`);
     const narrowed = getCallParsed(responses, 3);
     assert.deepEqual(narrowed.nodes.map((m) => m.slug), ["elements/token-store"], "mentions joins kind as AND");
   } finally {
