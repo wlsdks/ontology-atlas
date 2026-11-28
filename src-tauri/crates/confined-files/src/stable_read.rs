@@ -32,7 +32,7 @@ pub struct FileStamp {
 }
 
 impl FileStamp {
-    fn of(facts: FileFacts) -> Self {
+    pub(crate) fn of(facts: FileFacts) -> Self {
         Self {
             size: facts.size,
             modified_ns: facts.modified_ns,

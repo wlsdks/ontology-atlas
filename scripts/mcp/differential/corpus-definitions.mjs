@@ -1316,7 +1316,7 @@ add('evidence', 'read-source-office-and-tables', { vault: 'library' }, [
 ]);
 add('evidence', 'read-source-hostile-files', { vault: 'library' }, [
   sourceBytes('binary.dat', Buffer.from([0, 1, 2, 3, 255]).toString('base64')),
-  sourceBytes('nul.txt', Buffer.from('text\u0000more').toString('base64')),
+  sourceBytes('embedded-nul.txt', Buffer.from('text\u0000more').toString('base64')),
   sourceBytes('scan.pdf', Buffer.from('%PDF-1.7 not text').toString('base64')),
   sourceBytes('broken.docx', Buffer.from('this is not a zip archive').toString('base64')),
   sourceBytes('cut.docx', docxCutShort()),
@@ -1331,7 +1331,7 @@ add('evidence', 'read-source-hostile-files', { vault: 'library' }, [
   { $: 'symlink', path: 'sources/linked.md', target: '/etc/hosts' },
   { $: 'mkdir', path: 'sources/folder.md' },
   readSource('binary.dat'),
-  readSource('nul.txt'),
+  readSource('embedded-nul.txt'),
   readSource('scan.pdf'),
   readSource('broken.docx'),
   readSource('cut.docx'),
@@ -1364,6 +1364,9 @@ add('evidence', 'read-source-argument-bounds', { vault: 'library' }, [
   readSource('notes.md', { from: -1 }),
   call('read_source', {}),
   call('read_source', { path: 5 }),
+  readSource('notes.md:stream'),
+  readSource('CON.md'),
+  readSource('com1'),
 ]);
 add('evidence', 'find-evidence-unicode-and-typos', { vault: 'storefront' }, [
   { $: 'write-file', path: 'capabilities/ko-note.md', text: `---\nuid: 3c1f4b8e-5a2d-4c7e-9b1a-0d6e8f2a4c10\nslug: capabilities/ko-note\nkind: capability\ntitle: ${'\uc8fc\ubb38 \ucde8\uc18c'.normalize('NFD')}\ndomain: domains/order\n---\n\nBody about ${'\uacb0\uc81c \uc2b9\uc778'.normalize('NFD')} and Café au lait.\n` },

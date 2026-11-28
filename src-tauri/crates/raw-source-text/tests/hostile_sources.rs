@@ -220,3 +220,54 @@ fn a_workbook_names_sheets_by_number_and_keeps_a_row_anchor_stable() {
     assert_eq!(only_second.units.len(), 1);
     assert_eq!(only_second.units[0].anchor, "s2r5");
 }
+
+/// A workbook whose one shared string is `megabytes` MiB and whose first row has `cells` cells that
+/// all name it, then a second row of one small cell.
+fn workbook_of_one_big_shared_string(megabytes: usize, cells: usize) -> Vec<u8> {
+    let workbook =
+        br#"<workbook><sheets><sheet name="A" sheetId="1" r:id="rId1"/></sheets></workbook>"#;
+    let relations = br#"<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>"#;
+    let shared = format!(
+        "<sst><si><t>{}</t></si></sst>",
+        "a".repeat(megabytes * 1024 * 1024)
+    );
+    let first_row = "<c t=\"s\"><v>0</v></c>".repeat(cells);
+    let sheet = format!(
+        "<worksheet><sheetData><row r=\"1\">{first_row}</row><row r=\"2\"><c><v>7</v></c></row></sheetData></worksheet>"
+    );
+    zip_of(&[
+        entry("xl/workbook.xml", workbook),
+        entry("xl/_rels/workbook.xml.rels", relations),
+        entry("xl/sharedStrings.xml", shared.as_bytes()),
+        entry("xl/worksheets/sheet1.xml", sheet.as_bytes()),
+    ])
+}
+
+#[test]
+fn a_row_of_cells_naming_one_big_string_is_refused_and_a_row_outside_the_window_is_not_built() {
+    let window = UnitWindow {
+        from: 2,
+        ..UnitWindow::default()
+    };
+    // 300 cells of 1 MiB would join to 300 MiB, past what one read unpacks, though the file is tiny.
+    let amplifier = workbook_of_one_big_shared_string(1, 300);
+    assert!(
+        amplifier.len() < 8 * 1024,
+        "the file is {} bytes",
+        amplifier.len()
+    );
+    let refused = read_units(&amplifier, "xlsx", &window).expect_err("a row past the budget");
+    assert!(
+        matches!(refused, UnitsError::RowPastBudget { .. }),
+        "{refused}"
+    );
+    // 20 MiB in a row is allowed, and read from the second row it is counted and never joined.
+    let allowed = workbook_of_one_big_shared_string(1, 20);
+    let units = read_units(&allowed, "xlsx", &window).expect("a row inside the budget");
+    let anchors: Vec<&str> = units
+        .units
+        .iter()
+        .map(|unit| unit.anchor.as_str())
+        .collect();
+    assert_eq!((units.unit_count, anchors), (2, vec!["s1r2"]));
+}

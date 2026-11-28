@@ -7,7 +7,7 @@
 
 use std::collections::HashSet;
 
-use answer_format::whitespace::{is_whitespace, trim};
+use answer_format::whitespace::{collapse_whitespace, trim};
 use serde::Serialize;
 use vault_document::frontmatter::Value;
 use vault_document::starter_body::starter_body;
@@ -348,24 +348,6 @@ pub fn capabilities_without_evidence<'a>(
     RowPage::new(bare.len(), limit, rows)
 }
 
-/// `\s+` folded to one space and trimmed: the shape two bodies are compared in.
-fn folded(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut in_space = false;
-    for character in text.chars() {
-        if is_whitespace(character) {
-            in_space = true;
-        } else {
-            if in_space && !out.is_empty() {
-                out.push(' ');
-            }
-            in_space = false;
-            out.push(character);
-        }
-    }
-    out
-}
-
 /// Whether a body is still the template `add_concepts` writes: it holds the template's prose
 /// after its heading, which boilerplate plus one more line still says nothing beyond.
 pub(super) fn is_starter_body(kind: &str, title: &str, body: &str) -> bool {
@@ -376,8 +358,8 @@ pub(super) fn is_starter_body(kind: &str, title: &str, body: &str) -> bool {
         return false;
     };
     let after_heading: Vec<&str> = starter.split('\n').skip(2).collect();
-    let tail = folded(&after_heading.join("\n"));
-    !tail.is_empty() && folded(body).contains(&tail)
+    let tail = collapse_whitespace(&after_heading.join("\n"));
+    !tail.is_empty() && collapse_whitespace(body).contains(&tail)
 }
 
 /// Capabilities that group nothing. Having no children is common and fine, so one is named only
