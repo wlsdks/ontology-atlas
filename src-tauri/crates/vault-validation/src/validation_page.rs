@@ -703,11 +703,11 @@ mod tests {
             let page =
                 serde_json::to_value(page_validation(&frame, &list, &request)).expect("serializes");
             problems.extend(names_in(&page, "/problems", "slug"));
-            unplaced.extend(names_in(&page, "/coverage/breadth/unplaced/rows", "name"));
+            unplaced.extend(names_in(&page, "/coverage/unplaced", "name"));
             problem_cursor = page["problemsPagination"]["nextOffset"]
                 .as_u64()
                 .map(|next| usize::try_from(next).expect("fits"));
-            unplaced_cursor = page["coverage"]["breadth"]["unplaced"]["pagination"]["nextOffset"]
+            unplaced_cursor = page["coverage"]["unplacedOffset"]["nextOffset"]
                 .as_u64()
                 .map(|next| usize::try_from(next).expect("fits"));
         }
@@ -759,6 +759,6 @@ mod tests {
         assert!(brief["summary"]["byCode"]["path-drift"]
             .get("files")
             .is_none());
-        assert_eq!(brief["coverage"]["breadth"]["unplaced"], 12);
+        assert_eq!(brief["coverage"]["abilities"]["unplaced"], 12);
     }
 }

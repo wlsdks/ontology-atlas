@@ -220,7 +220,7 @@ pub struct AgentBriefAnswer<'a> {
 
 /// The neighbour a first relation check proposes an edge to: the node the entry point already
 /// depends on or relates to, else one that does so to it.
-fn path_target<'a>(graph: &'a CompiledGraph, entry: NodeId) -> Option<&'a str> {
+fn path_target(graph: &CompiledGraph, entry: NodeId) -> Option<&str> {
     let entry_slug = graph.node(entry).slug();
     let is_dependency = |via: &str| DEPENDENCY_RELATIONS.contains(&via);
     let leaving = graph.edge_ids().find_map(|id| {

@@ -169,7 +169,7 @@ pub struct CoverageCounts<'a> {
 
 impl Coverage {
     fn ability_counts(&self) -> Option<AbilityCounts> {
-        (self.breadth.abilities > 0).then(|| AbilityCounts {
+        (self.breadth.abilities > 0).then_some(AbilityCounts {
             surveyed: self.breadth.abilities,
             on_node: self.breadth.node,
             named: self.breadth.named,
