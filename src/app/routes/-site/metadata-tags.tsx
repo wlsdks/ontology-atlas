@@ -1,26 +1,28 @@
 import { cloneElement, type ReactElement } from 'react';
 
-import { SITE_URL } from '@/shared/config';
+import { absoluteUrl } from '@/shared/config';
 import type { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
+import { withTrailingSlash } from '@/shared/lib/public-pages/trailing-slash';
 
 export type PageMetadata = ReturnType<typeof buildPageMetadata>;
 
 type Entry = readonly [key: string, element: ReactElement];
 
-const absoluteUrl = (url: string | URL) => {
+/** A path of this site becomes its absolute address; an address that already names a site stays as written. */
+const absolute = (url: string | URL) => {
   const text = String(url);
-  return text.startsWith('/') ? `${SITE_URL}${text}` : text;
+  return text.startsWith('/') ? absoluteUrl(text) : text;
 };
 
-/** A page's address ends in a slash unless it names a file, as every address of the site does. */
-const withTrailingSlash = (url: string | URL) => {
+/** An address with the site's trailing-slash rule applied to its path. */
+const addressWithSlash = (url: string | URL) => {
   const { origin, pathname, search, hash } = new URL(String(url));
-  return `${origin}${pathname.endsWith('/') || /\.[a-z0-9]+$/i.test(pathname) ? pathname : `${pathname}/`}${search}${hash}`;
+  return `${origin}${withTrailingSlash(pathname)}${search}${hash}`;
 };
 
 /** The address a metadata link names, whether written as text, a URL or a descriptor. */
 const hrefOf = (value: unknown): string | undefined => {
-  if (typeof value === 'string' || value instanceof URL) return withTrailingSlash(value);
+  if (typeof value === 'string' || value instanceof URL) return addressWithSlash(value);
   if (Array.isArray(value)) return hrefOf(value[0]);
   if (value && typeof value === 'object' && 'url' in value) return hrefOf(value.url);
   return undefined;
@@ -51,7 +53,7 @@ function imageEntries(prefix: 'og' | 'twitter', images: unknown): Entry[] {
     const source = typeof image === 'string' || image instanceof URL ? { url: image } : (image as Record<string, unknown>);
     const field = prefix === 'og' ? 'property' : 'name';
     const name = prefix === 'og' ? 'og:image' : 'twitter:image';
-    const entries: Entry[] = [[`${name}-${index}`, <meta key={`${name}-${index}`} {...{ [field]: name }} content={absoluteUrl(source.url as string)} />]];
+    const entries: Entry[] = [[`${name}-${index}`, <meta key={`${name}-${index}`} {...{ [field]: name }} content={absolute(source.url as string)} />]];
     for (const detail of ['width', 'height', 'alt'] as const) {
       if (prefix === 'og' && source[detail] !== undefined) {
         const key = `${name}:${detail}-${index}`;
@@ -100,7 +102,7 @@ export function metadataTags(metadata: PageMetadata, resolvedTitle?: string): Re
   if (og) {
     meta('og:title', typeof og.title === 'string' ? og.title : undefined, 'property');
     meta('og:description', typeof og.description === 'string' ? og.description : undefined, 'property');
-    meta('og:url', og.url === undefined ? undefined : withTrailingSlash(og.url as string), 'property');
+    meta('og:url', og.url === undefined ? undefined : addressWithSlash(og.url as string), 'property');
     meta('og:site_name', typeof og.siteName === 'string' ? og.siteName : undefined, 'property');
     meta('og:locale', typeof og.locale === 'string' ? og.locale : undefined, 'property');
     entries.push(...imageEntries('og', og.images));

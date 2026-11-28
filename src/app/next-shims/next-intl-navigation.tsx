@@ -2,6 +2,7 @@ import { useRouter as useTanStackRouter } from '@tanstack/react-router';
 import { forwardRef, useMemo, type AnchorHTMLAttributes, type MouseEvent } from 'react';
 import { useLocale } from 'use-intl';
 
+import { withTrailingSlash } from '@/shared/lib/public-pages/trailing-slash';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 import { navigateToAddress, type AddressNavigation } from '../router/navigate-to-address';
@@ -28,10 +29,10 @@ function withLocale(address: string, locale: string): string {
 }
 
 /** An in-app address ends its path with a slash, as Next's `trailingSlash` wrote every link; query and hash stay as written. */
-function withTrailingSlash(address: string): string {
+function addressWithSlash(address: string): string {
   if (!isInternal(address)) return address;
   const [, path = '', rest = ''] = /^([^?#]*)(.*)$/.exec(address) ?? [];
-  return path.endsWith('/') || /\.[a-z0-9]+$/i.test(path) ? address : `${path}/${rest}`;
+  return `${withTrailingSlash(path)}${rest}`;
 }
 
 function withoutLocale(pathname: string, locales: readonly string[]): string {
@@ -55,7 +56,7 @@ export function createNavigation(routing: Routing) {
         // The same rule as `Link`: in a plain browser a move to another page is a page load, because each public
         // page is its own prerendered document and carries what only its own document holds.
         if (!isTauriVaultRuntime() && isInternal(located)) {
-          const target = withTrailingSlash(located);
+          const target = addressWithSlash(located);
           if (replace) window.location.replace(target);
           else window.location.assign(target);
           return;
@@ -79,7 +80,7 @@ export function createNavigation(routing: Routing) {
   ) {
     const router = useTanStackRouter();
     const current = useLocale();
-    const address = withTrailingSlash(withLocale(href, locale ?? current));
+    const address = addressWithSlash(withLocale(href, locale ?? current));
     const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
       onClick?.(event);
       if (event.defaultPrevented || event.button !== 0) return;

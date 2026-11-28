@@ -1,6 +1,4 @@
 import { createMemoryHistory, RouterProvider } from '@tanstack/react-router';
-import type { ReactElement } from 'react';
-import { prerenderToNodeStream } from 'react-dom/static';
 import { IntlProvider } from 'use-intl';
 
 import { routing } from '@/i18n/routing';
@@ -11,14 +9,16 @@ import { GatewayEntryFallback } from '@/shared/ui/fallbacks/gateway-entry-fallba
 import { AppOnlyPage } from '@/views/app-only';
 import { absoluteUrl } from '@/shared/config';
 import { SiteDocument, type SiteAssets, type SiteDocumentPage } from '../../../src/app/document/SiteDocument';
-import { APP_ONLY_FACE_CLASS, workbenchFaceClass } from '../../../src/app/providers/AppAddressFaces';
+import { APP_ONLY_FACE_CLASS, workbenchFaceClass } from '../../../src/app/providers/app-address-face-class';
 import { createAtlasRouter } from '../../../src/app/router/create-atlas-router';
 import { MetadataTags } from '../../../src/app/routes/-site/metadata-tags';
-import { messageReader, screenMetadata, siteMetadata } from '../../../src/app/routes/-site/screen-metadata';
+import { messageReader, screenMetadata } from '../../../src/app/routes/-site/screen-metadata';
+import { siteMetadata } from '@/shared/lib/public-pages/site-metadata';
 import { bootScriptFor, listLocaleCodes, loadingPictureFor } from '../../vite/atlas-index-html';
 import { listSitePages, type SitePage } from './list-site-pages';
 import { llmsFullTxt, llmsTxt } from './llms';
 import { recordBuildFacts } from './record-build-facts';
+import { renderToHtml } from './render-to-html';
 import { robotsTxt } from './robots';
 import { rootRedirectScript } from './root-redirect-script';
 import { sitemapEntries, sitemapXml } from './sitemap';
@@ -34,15 +34,6 @@ export interface SiteAssetsReader extends SiteAssets {
 export interface SiteFile {
   path: string;
   text: string;
-}
-
-async function renderToHtml(element: ReactElement): Promise<string> {
-  // Without a limit React sets a large boundary aside as a hidden segment that a script moves into place, which a
-  // reader without scripts would never see.
-  const { prelude } = await prerenderToNodeStream(element, { progressiveChunkSize: Number.POSITIVE_INFINITY });
-  const chunks: Buffer[] = [];
-  for await (const chunk of prelude) chunks.push(Buffer.from(chunk));
-  return Buffer.concat(chunks).toString('utf8');
 }
 
 interface WriterContext {
@@ -85,7 +76,11 @@ async function writeAppAddress(page: Extract<SitePage, { kind: 'app-address' | '
   const resolved = screenMetadata(page.head, page.locale, messageReader(page.locale, messages));
   const atEntry = page.kind === 'locale-entry';
   return renderToHtml(
-    <SiteDocument page={documentPage(page.locale, context)} head={<MetadataTags resolved={resolved} />}>
+    <SiteDocument
+      page={documentPage(page.locale, context)}
+      head={<MetadataTags resolved={resolved} />}
+      {...(atEntry ? {} : { loadingPicture: context.loadingPicture })}
+    >
       {atEntry ? (
         <div data-face="workbench" className={workbenchFaceClass(true)}>
           <IntlProvider locale={page.locale} messages={{ download: messages.download }} timeZone="UTC">
@@ -99,7 +94,6 @@ async function writeAppAddress(page: Extract<SitePage, { kind: 'app-address' | '
               <AppOnlyPage locale={page.locale} />
             </IntlProvider>
           </div>
-          <div data-face="workbench" className={workbenchFaceClass(false)} dangerouslySetInnerHTML={{ __html: context.loadingPicture }} />
         </>
       )}
     </SiteDocument>,

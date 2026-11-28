@@ -1,10 +1,9 @@
 import { createTranslator } from 'use-intl';
 
 import type { AppLocale } from '@/i18n/locales';
-import { SITE_URL } from '@/shared/config';
-import { SITE_NAME } from '@/shared/config/site/site-entity';
+import { documentTitle } from '@/shared/lib/public-pages/document-title';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
-import { withBasePath } from '@/shared/lib/public-pages/base-path';
+import { localeWords, siteMetadata } from '@/shared/lib/public-pages/site-metadata';
 
 import type { PageMetadata } from './metadata-tags';
 
@@ -45,50 +44,10 @@ export function messageReader(locale: AppLocale, messages: MessageTree): ReadMes
     createTranslator({ locale, messages, namespace } as never)(key as never, values as never) as string;
 }
 
-const SITE_TAGLINE_FALLBACK =
-  'Understand what your codebase builds, why it is structured that way, and what a change will affect.';
-
-/** The site's defaults, which every page inherits and a page's own fields replace whole. */
-export function siteMetadata(): PageMetadata {
-  return {
-    title: SITE_NAME,
-    description: SITE_TAGLINE_FALLBACK,
-    keywords: ['Ontology Atlas', 'ontology-atlas', 'codebase ontology', 'ontology', 'knowledge graph', 'markdown', 'frontmatter', 'AI agent', 'MCP', 'topology'],
-    authors: [{ name: SITE_NAME, url: `${SITE_URL}/` }],
-    manifest: withBasePath('/manifest.webmanifest'),
-    verification: {
-      ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } : {}),
-      ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION ? { other: { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } } : {}),
-    },
-    openGraph: {
-      type: 'website',
-      locale: 'en_US',
-      url: SITE_URL,
-      siteName: SITE_NAME,
-      title: SITE_NAME,
-      description: SITE_TAGLINE_FALLBACK,
-      images: [{ url: '/og-image.png', width: 1200, height: 630, alt: SITE_NAME }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: SITE_NAME,
-      description: SITE_TAGLINE_FALLBACK,
-      images: ['/og-image.png'],
-    },
-    robots: { index: true, follow: true },
-  };
-}
-
 /** The language's own words for the site name, tagline and search terms; a page title joins the name with ` · `. */
 function localeMetadata(read: ReadMessage): { metadata: PageMetadata; siteName: string } {
-  const siteName = read('metadata', 'siteName');
-  return {
-    siteName,
-    metadata: {
-      description: read('metadata', 'siteTagline'),
-      keywords: read('metadata', 'keywords').split(/\s*[,，、]\s*/),
-    },
-  };
+  const { siteName, description, keywords } = localeWords((word) => read('metadata', word));
+  return { siteName, metadata: { description, keywords } };
 }
 
 function screenOwnMetadata(head: ScreenHead, locale: AppLocale, read: ReadMessage): PageMetadata {
@@ -121,7 +80,7 @@ export function resolveMetadata(own: PageMetadata, read: ReadMessage): { metadat
   const ownTitle = own.title;
   const title =
     typeof ownTitle === 'string'
-      ? `${ownTitle} · ${siteName}`
+      ? documentTitle(ownTitle, siteName)
       : ownTitle && 'absolute' in ownTitle && ownTitle.absolute
         ? ownTitle.absolute
         : siteName;

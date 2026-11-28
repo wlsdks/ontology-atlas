@@ -1,7 +1,7 @@
-import { createElement, lazy, Suspense, type ReactElement, type ReactNode } from 'react';
-import { prerenderToNodeStream } from 'react-dom/static';
+import { createElement, lazy, Suspense, type ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 
+import { renderToHtml as render } from '../../../scripts/web/site/render-to-html';
 import { MetadataTags } from '../../../src/app/routes/-site/metadata-tags';
 import { SiteDocument, type SiteDocumentProps } from '../../../src/app/document/SiteDocument';
 
@@ -22,13 +22,6 @@ const assets = {
 /** The website's document around `children`; the props are the document's, the children are passed the way createElement takes them. */
 const documentAround = (props: Omit<SiteDocumentProps, 'children'>, child: ReactNode) =>
   createElement(SiteDocument, props as SiteDocumentProps, child);
-
-async function render(element: ReactElement): Promise<string> {
-  const { prelude } = await prerenderToNodeStream(element, { progressiveChunkSize: Number.POSITIVE_INFINITY });
-  const chunks: Buffer[] = [];
-  for await (const chunk of prelude) chunks.push(Buffer.from(chunk));
-  return Buffer.concat(chunks).toString('utf8');
-}
 
 const page = () =>
   render(

@@ -5,6 +5,7 @@ import { siteEntityGraph } from '@/shared/config/site/site-entity';
 import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/site/web-content-security-policy';
 import { JsonLd, serializeJsonForHtml } from '@/shared/ui/document/json-ld';
 
+import { workbenchFaceClass } from '../providers/app-address-face-class';
 import type { RecordedFacts } from '../routes/-site/build-facts';
 
 /** The files the client build wrote that a page links: its stylesheets, its entry script and what that script imports first. */
@@ -38,6 +39,8 @@ export interface SiteDocumentProps {
   head?: ReactNode;
   /** Script that must run in the page itself, after the boot script has chosen the language. */
   inlineScript?: string;
+  /** The loading picture an app address shows to the installed app in the workbench's place, as the HTML `index.html` holds. */
+  loadingPicture?: string;
   children: ReactNode;
 }
 
@@ -57,7 +60,7 @@ const SITE_ICONS = [
  * script or stylesheet, so the policy covers everything that follows; the page's own head follows them. The
  * body's one `#root` holds what the router renders.
  */
-export function SiteDocument({ page, head, inlineScript, children }: SiteDocumentProps) {
+export function SiteDocument({ page, head, inlineScript, loadingPicture, children }: SiteDocumentProps) {
   const { locale, assets, bootScript, entry } = page;
   return (
     <html lang={LOCALE_META[locale].htmlLang} className="h-full overflow-x-hidden">
@@ -75,14 +78,14 @@ export function SiteDocument({ page, head, inlineScript, children }: SiteDocumen
         {assets.stylesheets.map((href) => (
           <link key={href} rel="stylesheet" href={href} />
         ))}
-        {/* eslint-disable-next-line @next/next/no-sync-scripts -- a module script is deferred by the browser */}
-        <script type="module" src={entry ? assets.entryScript : assets.oldFolderCleanupScript} />
+        <script type="module" defer src={entry ? assets.entryScript : assets.oldFolderCleanupScript} />
         {entry ? assets.preloadedModules.map((href) => <link key={href} rel="modulepreload" href={href} />) : null}
       </head>
       <body className="flex min-h-full flex-col overflow-x-hidden">
         <JsonLd data={siteEntityGraph(Object.values(LOCALE_META).map((meta) => meta.htmlLang))} />
         <div id="root" className="contents" {...(entry?.hydratesPath ? { 'data-prerendered': entry.hydratesPath } : {})}>
           {children}
+          {loadingPicture ? <div data-face="workbench" className={workbenchFaceClass(false)} dangerouslySetInnerHTML={{ __html: loadingPicture }} /> : null}
         </div>
         {inlineScript ? <script dangerouslySetInnerHTML={{ __html: inlineScript }} /> : null}
         {entry ? <script id={EMBEDDED_PAGE_ID} type="application/json" dangerouslySetInnerHTML={{ __html: serializeJsonForHtml(page) }} /> : null}
@@ -92,7 +95,7 @@ export function SiteDocument({ page, head, inlineScript, children }: SiteDocumen
 }
 
 /** The record a prerendered page carries, or none in the dev server and in a plain `index.html`. */
-export function readEmbeddedPage(root: Pick<Document, 'getElementById'> = document): SiteDocumentPage | undefined {
-  const text = root.getElementById(EMBEDDED_PAGE_ID)?.textContent;
+export function readEmbeddedPage(root: Pick<Document, 'querySelector'> = document): SiteDocumentPage | undefined {
+  const text = root.querySelector(`script#${EMBEDDED_PAGE_ID}[type="application/json"]`)?.textContent;
   return text ? (JSON.parse(text) as SiteDocumentPage) : undefined;
 }
