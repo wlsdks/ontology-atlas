@@ -1,6 +1,6 @@
 /**
- * Whether a domain or project description predates its latest membership change. Mirrors
- * `mcp/src/git/stale-parent.mjs` (`summary-freshness-parity.contract.test.ts`); no Git.
+ * Whether a domain or project description predates its latest membership change. Follows
+ * the script server's `stale-parent.mjs`, whose verdicts `summary-freshness-parity.contract.test.ts` records; no Git.
  */
 
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";

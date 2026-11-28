@@ -1,0 +1,136 @@
+{
+  "recordedFrom": "the script server (mcp/src/project-source/) on 2026-11-28",
+  "witnesses": {
+    "music": [
+      {
+        "id": "capabilities/play:element:src/play/engine.ts",
+        "nodeSlug": "capabilities/play",
+        "role": "implementation",
+        "path": "src/play/engine.ts"
+      },
+      {
+        "id": "capabilities/play:path",
+        "nodeSlug": "capabilities/play",
+        "role": "entrypoint",
+        "path": "src/play"
+      },
+      {
+        "id": "competency-evidence:1",
+        "nodeSlug": "music-streaming",
+        "role": "competency-evidence",
+        "path": "docs/PRODUCT.md"
+      },
+      {
+        "id": "competency-evidence:2",
+        "nodeSlug": "music-streaming",
+        "role": "competency-evidence",
+        "path": "README.md"
+      },
+      {
+        "id": "competency-evidence:3",
+        "nodeSlug": "music-streaming",
+        "role": "competency-evidence",
+        "path": "src/play/engine.ts"
+      },
+      {
+        "id": "element:engine:path",
+        "nodeSlug": "elements/engine",
+        "role": "implementation",
+        "path": "src/play/engine.ts"
+      },
+      {
+        "id": "element:mixer:path",
+        "nodeSlug": "elements/mixer",
+        "role": "implementation",
+        "path": "src/play/mixer.ts"
+      },
+      {
+        "id": "music-streaming:path",
+        "nodeSlug": "music-streaming",
+        "role": "entrypoint",
+        "path": "src/app"
+      }
+    ],
+    "rootClaims": [
+      {
+        "id": "capabilities/play:path",
+        "nodeSlug": "capabilities/play",
+        "role": "entrypoint",
+        "path": "transform"
+      },
+      {
+        "id": "competency-evidence:1",
+        "nodeSlug": "music-streaming",
+        "role": "competency-evidence",
+        "path": "."
+      },
+      {
+        "id": "competency-evidence:2",
+        "nodeSlug": "music-streaming",
+        "role": "competency-evidence",
+        "path": "generate"
+      },
+      {
+        "id": "competency-evidence:3",
+        "nodeSlug": "music-streaming",
+        "role": "competency-evidence",
+        "path": "jsonschema"
+      },
+      {
+        "id": "competency-evidence:4",
+        "nodeSlug": "music-streaming",
+        "role": "competency-evidence",
+        "path": "transform"
+      }
+    ],
+    "locale": [
+      {
+        "id": "capabilities/queue:path",
+        "nodeSlug": "capabilities/queue",
+        "role": "entrypoint",
+        "path": "src/queue.ts"
+      },
+      {
+        "id": "capabilities/재생:path",
+        "nodeSlug": "capabilities/재생",
+        "role": "entrypoint",
+        "path": "src/play.ts"
+      }
+    ]
+  },
+  "receiptJson": "{\"contractVersion\":1,\"projectSlug\":\"music-streaming\",\"sourceId\":\"sha256:abc\",\"sourceKind\":\"git\",\"sourceRevision\":\"deadbeef\",\"sourceFingerprint\":\"sha256:def\",\"graphHash\":\"project-graph-v1:0000abcd\",\"measuredAt\":\"2026-01-01T00:00:00.000Z\",\"status\":\"review_required\",\"currentness\":\"current\",\"topGap\":{\"id\":\"declared_source_path_missing\",\"nodeSlug\":\"music-streaming\"},\"nextAction\":{\"id\":\"repair_source_path\",\"target\":\"music-streaming\"},\"witnessSummary\":{\"total\":8,\"supported\":5,\"missing\":3},\"witnesses\":[{\"id\":\"capabilities/play:element:src/play/engine.ts\",\"nodeSlug\":\"capabilities/play\",\"role\":\"implementation\",\"path\":\"src/play/engine.ts\",\"supported\":true},{\"id\":\"capabilities/play:path\",\"nodeSlug\":\"capabilities/play\",\"role\":\"entrypoint\",\"path\":\"src/play\",\"supported\":true},{\"id\":\"competency-evidence:1\",\"nodeSlug\":\"music-streaming\",\"role\":\"competency-evidence\",\"path\":\"docs/PRODUCT.md\",\"supported\":false},{\"id\":\"competency-evidence:2\",\"nodeSlug\":\"music-streaming\",\"role\":\"competency-evidence\",\"path\":\"README.md\",\"supported\":false},{\"id\":\"competency-evidence:3\",\"nodeSlug\":\"music-streaming\",\"role\":\"competency-evidence\",\"path\":\"src/play/engine.ts\",\"supported\":true},{\"id\":\"element:engine:path\",\"nodeSlug\":\"elements/engine\",\"role\":\"implementation\",\"path\":\"src/play/engine.ts\",\"supported\":true},{\"id\":\"element:mixer:path\",\"nodeSlug\":\"elements/mixer\",\"role\":\"implementation\",\"path\":\"src/play/mixer.ts\",\"supported\":false},{\"id\":\"music-streaming:path\",\"nodeSlug\":\"music-streaming\",\"role\":\"entrypoint\",\"path\":\"src/app\",\"supported\":true}],\"diagnostics\":{\"dirty\":false,\"truncated\":false}}",
+  "remedyTools": {
+    "connect_source": {
+      "resolvable": true,
+      "tool": "connect_project_source"
+    },
+    "repair_source_binding": {
+      "resolvable": true,
+      "tool": "connect_project_source"
+    },
+    "measure_source": {
+      "resolvable": true,
+      "tool": "connect_project_source"
+    },
+    "record_source_role": {
+      "resolvable": true,
+      "tool": "patch_concept"
+    },
+    "repair_source_path": {
+      "resolvable": true,
+      "tool": "patch_concept"
+    },
+    "review_inventory_limit": {
+      "resolvable": true,
+      "tool": "connect_project_source"
+    },
+    "remeasure_source": {
+      "resolvable": true,
+      "tool": "connect_project_source"
+    },
+    "use_current_evidence": {
+      "resolvable": false,
+      "tool": null
+    }
+  }
+}

@@ -3,16 +3,16 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { findBacklinks } from '../../../mcp/src/vault/graph/graph-queries.mjs';
 import {
   buildDocLinkMarkdown,
   relativeDocPath,
 } from '../../../src/widgets/docs-vault/lib/relative-doc-path';
+import { callServerTool } from '../server-session/call-server-tool';
 
 /**
- * The web mention link and MCP `find_backlinks` are decided by code that knows nothing of each other,
- * so both real functions are pointed at the same temporary vault. The `./` prefix is what makes a
- * same-folder link match the body needles.
+ * The web mention link and the server's `find_backlinks` are decided by code that knows nothing of
+ * each other, so the web function writes into a temporary vault and the server is asked over stdio
+ * about the same folder. The `./` prefix is what makes a same-folder link match the body needles.
  */
 
 let root: string;
@@ -24,6 +24,18 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
+
+interface BacklinkMatch {
+  slug: string;
+  matchedKeys?: string[];
+  matchedInBody?: boolean;
+}
+
+async function backlinksOf(slug: string): Promise<BacklinkMatch[]> {
+  const answer = await callServerTool(root, 'find_backlinks', { slug });
+  expect(answer.isError, String(answer.value)).toBe(false);
+  return (answer.value as { matches: BacklinkMatch[] }).matches;
+}
 
 const UID = '01890f3e-7b5d-4c0a-8f14-123456789abc';
 const UID2 = '11890f3e-7b5d-4c0a-8f14-123456789abc';
@@ -60,9 +72,9 @@ describe('an agent finds the body link a mention wrote through backlinks', () =>
   ] as const;
 
   for (const layout of layouts) {
-    it(`${layout.name}: both the relation and the body link are caught`, () => {
+    it(`${layout.name}: both the relation and the body link are caught`, async () => {
       const link = writeMentionPair(layout.from, layout.to);
-      const matches = findBacklinks(root, layout.to);
+      const matches = await backlinksOf(layout.to);
       const hit = matches.find(
         (m: { slug: string }) => m.slug === layout.from,
       ) as { matchedKeys?: string[]; matchedInBody?: boolean } | undefined;
@@ -75,7 +87,7 @@ describe('an agent finds the body link a mention wrote through backlinks', () =>
       //    see "mentioned in the prose" and loses the context a person wrote.
       expect(
         hit.matchedInBody,
-        `The MCP needle did not find the body link; when the notation changes, check this seam too. ` +
+        `The server's needle did not find the body link; when the notation changes, check this seam too. ` +
           `Link: ${link}`,
       ).toBe(true);
     });
@@ -86,14 +98,14 @@ describe('an agent finds the body link a mention wrote through backlinks', () =>
    * really came from the body. The same document without the body link must have no
    * `matchedInBody`.
    */
-  it('the instrument is alive: with no body link there is no body hit either', () => {
+  it('the instrument is alive: with no body link there is no body hit either', async () => {
     writeNode('capabilities/tgt', `uid: ${UID}\nslug: capabilities/tgt\nkind: capability\ntitle: 타깃`);
     writeNode(
       'domains/src',
       `uid: ${UID2}\nslug: domains/src\nkind: capability\ntitle: 출처\nrelates: [capabilities/tgt]`,
       '본문에는 링크가 없다.',
     );
-    const hit = findBacklinks(root, 'capabilities/tgt').find(
+    const hit = (await backlinksOf('capabilities/tgt')).find(
       (m: { slug: string }) => m.slug === 'domains/src',
     ) as { matchedKeys?: string[]; matchedInBody?: boolean } | undefined;
     expect(hit).toBeTruthy();
@@ -104,10 +116,10 @@ describe('an agent finds the body link a mention wrote through backlinks', () =>
 
   /**
    * Pins what this contract actually depends on: **the slash before the filename.**
-   * MCP's path-shaped needle is `/slug.md`, so a same-folder link written without
+   * The server's path-shaped needle is `/slug.md`, so a same-folder link written without
    * `./` does not match. Adding `./` today is the contract, not a coincidence.
    */
-  it('in every arrangement there is a slash before the file name, a premise of the MCP needle', () => {
+  it("in every arrangement there is a slash before the file name, a premise of the server's needle", () => {
     for (const layout of layouts) {
       const href = relativeDocPath(layout.from, layout.to);
       const tail = layout.to.split('/').pop();

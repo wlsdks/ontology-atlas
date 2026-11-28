@@ -1,0 +1,108 @@
+{
+  "recordedFrom": "the script server (mcp/src/schema.mjs) on 2026-11-28",
+  "authorableKinds": [
+    "project",
+    "domain",
+    "capability",
+    "element",
+    "document"
+  ],
+  "keyForKind": {
+    "domain": "domains",
+    "capability": "capabilities",
+    "element": "elements"
+  },
+  "keyHeldBy": {
+    "project": {
+      "project": null,
+      "domain": "domains",
+      "capability": "capabilities",
+      "element": "elements",
+      "document": null,
+      "vault-readme": null,
+      "unknown": null,
+      "": null
+    },
+    "domain": {
+      "project": null,
+      "domain": null,
+      "capability": "capabilities",
+      "element": "elements",
+      "document": null,
+      "vault-readme": null,
+      "unknown": null,
+      "": null
+    },
+    "capability": {
+      "project": null,
+      "domain": null,
+      "capability": null,
+      "element": "elements",
+      "document": null,
+      "vault-readme": null,
+      "unknown": null,
+      "": null
+    },
+    "element": {
+      "project": null,
+      "domain": null,
+      "capability": null,
+      "element": null,
+      "document": null,
+      "vault-readme": null,
+      "unknown": null,
+      "": null
+    },
+    "document": {
+      "project": null,
+      "domain": null,
+      "capability": null,
+      "element": null,
+      "document": null,
+      "vault-readme": null,
+      "unknown": null,
+      "": null
+    },
+    "vault-readme": {
+      "project": null,
+      "domain": null,
+      "capability": null,
+      "element": null,
+      "document": null,
+      "vault-readme": null,
+      "unknown": null,
+      "": null
+    },
+    "unknown": {
+      "project": null,
+      "domain": null,
+      "capability": null,
+      "element": null,
+      "document": null,
+      "vault-readme": null,
+      "unknown": null,
+      "": null
+    },
+    "": {
+      "project": null,
+      "domain": null,
+      "capability": null,
+      "element": null,
+      "document": null,
+      "vault-readme": null,
+      "unknown": null,
+      "": null
+    }
+  },
+  "requiredExtras": {
+    "project": [],
+    "domain": [],
+    "capability": [
+      "domain"
+    ],
+    "element": [
+      "domain"
+    ],
+    "document": []
+  }
+}

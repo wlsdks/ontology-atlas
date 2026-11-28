@@ -3,8 +3,9 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The agent-facing packages must not hand out retired addresses. Only `mcp/` and `cli/` are scanned:
- * they give addresses to someone who cannot see the app, while `app/` and `src/` host the redirects.
+ * The agent-facing packages must not hand out retired addresses. Only `mcp/`, `cli/` and the Rust
+ * MCP server's crate are scanned: they give addresses to someone who cannot see the app, while
+ * `app/` and `src/` host the redirects.
  */
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -32,24 +33,30 @@ const RETIRED_ADDRESS = new RegExp(
   ].join(''),
 );
 
-function sourceFiles(packageDir: string): string[] {
-  const root = join(repoRoot, packageDir, 'src');
+function filesUnder(root: string, pattern: RegExp): string[] {
   return readdirSync(root, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => join(entry.parentPath, entry.name))
-    .filter((path) => /\.(mjs|js)$/.test(path) && !/\.test\.mjs$/.test(path));
+    .filter((path) => pattern.test(path));
 }
 
-const scanned = [...sourceFiles('mcp'), ...sourceFiles('cli')];
+const sourceFiles = (packageDir: string) => filesUnder(join(repoRoot, packageDir, 'src'), /\.(mjs|js)$/).filter((path) => !/\.test\.mjs$/.test(path));
+/** The Rust server's code and the tool text it embeds: both reach an agent. */
+const rustServerFiles = () =>
+  ['src', 'surface'].flatMap((folder) =>
+    filesUnder(join(repoRoot, 'src-tauri', 'crates', 'mcp-server', folder), /\.(rs|json|txt)$/),
+  );
+
+const scanned = [...sourceFiles('mcp'), ...sourceFiles('cli'), ...rustServerFiles()];
 
 describe('addresses handed to agents point at live surfaces', () => {
   it('scans a real file set that still contains the emitting module', () => {
     // Without this the gate passes loudest when it is broken: a renamed directory would
     // scan nothing at all and report a clean sweep. The anchor must be present by name.
     expect(scanned.length).toBeGreaterThan(10);
-    expect(scanned.map((path) => relative(repoRoot, path))).toContain(
-      'mcp/src/ontology-engine.mjs',
-    );
+    const names = scanned.map((path) => relative(repoRoot, path));
+    expect(names).toContain('mcp/src/ontology-engine.mjs');
+    expect(names).toContain(join('src-tauri', 'crates', 'mcp-server', 'surface', 'instructions.txt'));
   });
 
   it('names no retired route in any address the MCP or CLI surfaces emit', () => {

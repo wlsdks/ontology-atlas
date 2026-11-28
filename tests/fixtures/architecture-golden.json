@@ -1,0 +1,705 @@
+{
+  "recordedFrom": "the script server (mcp/src/architecture/) on 2026-11-28",
+  "profiles": {
+    "fsd": {
+      "contract": "architecture-profile/v1",
+      "uid": "e9f5fe88-3711-4b3c-9f77-3b6f809db82c",
+      "slug": "atlas-web",
+      "projectUid": "8c48b61f-1f75-448e-87a5-6ea2a7b02cf8",
+      "title": "Atlas Web Workbench",
+      "patterns": [
+        {
+          "axis": "source-organization",
+          "name": "feature-sliced-design"
+        }
+      ],
+      "scopePaths": [
+        "app/**",
+        "src/**"
+      ],
+      "excludePaths": [
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ],
+      "roles": [
+        {
+          "id": "routing",
+          "paths": [
+            "app/**"
+          ],
+          "summary": "Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.",
+          "summaries": {}
+        },
+        {
+          "id": "app",
+          "paths": [
+            "src/app/**"
+          ],
+          "summaries": {}
+        },
+        {
+          "id": "views",
+          "paths": [
+            "src/views/**"
+          ],
+          "summary": "One module per route-level screen, assembled from the layers beneath it.",
+          "summaries": {
+            "ko": "라우트가 열 수 있는 화면 하나마다 모듈 하나입니다."
+          }
+        },
+        {
+          "id": "widgets",
+          "paths": [
+            "src/widgets/**"
+          ],
+          "summaries": {}
+        },
+        {
+          "id": "features",
+          "paths": [
+            "src/features/**"
+          ],
+          "summaries": {}
+        },
+        {
+          "id": "entities",
+          "paths": [
+            "src/entities/**"
+          ],
+          "summaries": {}
+        },
+        {
+          "id": "shared",
+          "paths": [
+            "src/shared/**"
+          ],
+          "summaries": {}
+        }
+      ],
+      "dependencyPolicy": "lower-only",
+      "dependencyUsages": [
+        "value"
+      ],
+      "allows": {},
+      "evidence": [
+        "docs/ARCHITECTURE.md#fsd-layers"
+      ]
+    },
+    "hexagonal": {
+      "contract": "architecture-profile/v1",
+      "uid": "22c86542-7512-4b6e-8c73-77be4730c772",
+      "slug": "payments-core",
+      "projectUid": "e91d8a44-a95b-4faf-840d-e71c8b2d935c",
+      "title": "Payments Core",
+      "patterns": [
+        {
+          "axis": "dependency",
+          "name": "hexagonal"
+        },
+        {
+          "axis": "presentation",
+          "name": "mvp"
+        }
+      ],
+      "scopePaths": [
+        "src/payments/**"
+      ],
+      "excludePaths": [],
+      "roles": [
+        {
+          "id": "adapter",
+          "paths": [
+            "src/payments/adapters/**"
+          ],
+          "summaries": {}
+        },
+        {
+          "id": "application",
+          "paths": [
+            "src/payments/application/**"
+          ],
+          "summaries": {}
+        },
+        {
+          "id": "domain",
+          "paths": [
+            "src/payments/domain/**"
+          ],
+          "summary": "The rules the business would still have on paper. Depends on nothing.",
+          "summaries": {}
+        },
+        {
+          "id": "port",
+          "paths": [
+            "src/payments/ports/**"
+          ],
+          "summaries": {}
+        }
+      ],
+      "dependencyPolicy": "explicit",
+      "dependencyUsages": [
+        "value"
+      ],
+      "allows": {
+        "adapter": [
+          "application",
+          "port",
+          "domain"
+        ],
+        "application": [
+          "domain",
+          "port"
+        ],
+        "domain": [],
+        "port": [
+          "domain"
+        ]
+      },
+      "evidence": [
+        "docs/architecture/payments.md"
+      ]
+    },
+    "ambiguous": {
+      "contract": "architecture-profile/v1",
+      "uid": "718f3b9c-a798-4bd1-8bc7-91d9d18dce7e",
+      "slug": "ambiguous-core",
+      "projectUid": "85d731ec-d2de-4a11-b7d2-9b3765a97882",
+      "title": "Ambiguous Core",
+      "patterns": [
+        {
+          "axis": "dependency",
+          "name": "custom"
+        }
+      ],
+      "scopePaths": [
+        "src/**"
+      ],
+      "excludePaths": [],
+      "roles": [
+        {
+          "id": "core",
+          "paths": [
+            "src/core/**"
+          ],
+          "summaries": {}
+        },
+        {
+          "id": "integration",
+          "paths": [
+            "src/integrations/**"
+          ],
+          "summaries": {}
+        }
+      ],
+      "dependencyPolicy": "explicit",
+      "dependencyUsages": [
+        "value",
+        "type_only"
+      ],
+      "allows": {
+        "core": [],
+        "integration": [
+          "core"
+        ]
+      },
+      "evidence": [
+        "ARCHITECTURE.md"
+      ]
+    }
+  },
+  "collisionMessage": "Duplicate architecture profile slug: atlas-web. architecture/atlas-web and architecture/other both declare it with different contents. Give one of them another profile_slug, or narrow the scan so only one is read.",
+  "fsdBrief": {
+    "contract": "architectureBrief:v1",
+    "sideEffect": 0,
+    "profile": {
+      "uid": "e9f5fe88-3711-4b3c-9f77-3b6f809db82c",
+      "slug": "atlas-web",
+      "projectUid": "8c48b61f-1f75-448e-87a5-6ea2a7b02cf8",
+      "title": "Atlas Web Workbench",
+      "patterns": [
+        {
+          "axis": "source-organization",
+          "name": "feature-sliced-design"
+        }
+      ],
+      "scopePaths": [
+        "app/**",
+        "src/**"
+      ],
+      "excludePaths": [
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ],
+      "roles": [
+        {
+          "id": "routing",
+          "paths": [
+            "app/**"
+          ],
+          "allowedDependencies": [
+            "app",
+            "views",
+            "widgets",
+            "features",
+            "entities",
+            "shared"
+          ]
+        },
+        {
+          "id": "app",
+          "paths": [
+            "src/app/**"
+          ],
+          "allowedDependencies": [
+            "views",
+            "widgets",
+            "features",
+            "entities",
+            "shared"
+          ]
+        },
+        {
+          "id": "views",
+          "paths": [
+            "src/views/**"
+          ],
+          "allowedDependencies": [
+            "widgets",
+            "features",
+            "entities",
+            "shared"
+          ]
+        },
+        {
+          "id": "widgets",
+          "paths": [
+            "src/widgets/**"
+          ],
+          "allowedDependencies": [
+            "features",
+            "entities",
+            "shared"
+          ]
+        },
+        {
+          "id": "features",
+          "paths": [
+            "src/features/**"
+          ],
+          "allowedDependencies": [
+            "entities",
+            "shared"
+          ]
+        },
+        {
+          "id": "entities",
+          "paths": [
+            "src/entities/**"
+          ],
+          "allowedDependencies": [
+            "shared"
+          ]
+        },
+        {
+          "id": "shared",
+          "paths": [
+            "src/shared/**"
+          ],
+          "allowedDependencies": []
+        }
+      ],
+      "dependencyPolicy": "lower-only",
+      "dependencyUsages": [
+        "value"
+      ],
+      "evidence": [
+        "docs/ARCHITECTURE.md#fsd-layers"
+      ]
+    },
+    "conformance": {
+      "contract": "architectureConformance:v1",
+      "status": "unknown",
+      "roles": [
+        {
+          "id": "routing",
+          "paths": [
+            "app/**"
+          ],
+          "matchedFileCount": 0,
+          "matchedFiles": [],
+          "matchedFilesLimited": false
+        },
+        {
+          "id": "app",
+          "paths": [
+            "src/app/**"
+          ],
+          "matchedFileCount": 0,
+          "matchedFiles": [],
+          "matchedFilesLimited": false
+        },
+        {
+          "id": "views",
+          "paths": [
+            "src/views/**"
+          ],
+          "matchedFileCount": 0,
+          "matchedFiles": [],
+          "matchedFilesLimited": false
+        },
+        {
+          "id": "widgets",
+          "paths": [
+            "src/widgets/**"
+          ],
+          "matchedFileCount": 0,
+          "matchedFiles": [],
+          "matchedFilesLimited": false
+        },
+        {
+          "id": "features",
+          "paths": [
+            "src/features/**"
+          ],
+          "matchedFileCount": 0,
+          "matchedFiles": [],
+          "matchedFilesLimited": false
+        },
+        {
+          "id": "entities",
+          "paths": [
+            "src/entities/**"
+          ],
+          "matchedFileCount": 0,
+          "matchedFiles": [],
+          "matchedFilesLimited": false
+        },
+        {
+          "id": "shared",
+          "paths": [
+            "src/shared/**"
+          ],
+          "matchedFileCount": 0,
+          "matchedFiles": [],
+          "matchedFilesLimited": false
+        }
+      ],
+      "observedRoleEdges": [],
+      "excludedByUsage": 0,
+      "violationCount": 0,
+      "violations": [],
+      "violationsLimited": false,
+      "unknown": {
+        "coverageIncomplete": true,
+        "unmappedEdges": 0,
+        "unruledEdges": 0,
+        "unknownImportUsages": 0,
+        "emptyRoles": [
+          "routing",
+          "app",
+          "views",
+          "widgets",
+          "features",
+          "entities",
+          "shared"
+        ]
+      },
+      "source": {
+        "rootPath": null,
+        "filesScanned": 12,
+        "supportedLanguages": [],
+        "importUsageCounts": {
+          "value": 0,
+          "type_only": 0,
+          "unknown": 0,
+          "missing": 0
+        }
+      }
+    },
+    "agentPlanContract": {
+      "contract": "architectureChangePlan:v1",
+      "requiredFields": [
+        "touchedRoles",
+        "plannedPaths",
+        "expectedNewDependencies",
+        "crossedBoundaries",
+        "preservedInterfaces",
+        "verificationCommands",
+        "unknowns"
+      ]
+    },
+    "nextActions": [
+      {
+        "id": "close_measurement_gaps",
+        "unknown": {
+          "coverageIncomplete": true,
+          "unmappedEdges": 0,
+          "unruledEdges": 0,
+          "unknownImportUsages": 0,
+          "emptyRoles": [
+            "routing",
+            "app",
+            "views",
+            "widgets",
+            "features",
+            "entities",
+            "shared"
+          ]
+        }
+      },
+      {
+        "id": "plan_within_architecture",
+        "profileSlug": "atlas-web"
+      }
+    ],
+    "measured": {
+      "at": "2026-09-05T08:00:00.000Z",
+      "tool": {
+        "name": "ontology-atlas",
+        "version": "1.0.6"
+      },
+      "source": {
+        "kind": "git",
+        "revision": "abc1234",
+        "dirty": false
+      }
+    }
+  },
+  "hexagonalRecord": {
+    "contract": "architectureRecord:v1",
+    "profile": {
+      "uid": "22c86542-7512-4b6e-8c73-77be4730c772",
+      "slug": "payments-core",
+      "contentHash": "sha256:abababababababababababababababababababababababababababababababab"
+    },
+    "brief": {
+      "contract": "architectureBrief:v1",
+      "sideEffect": 0,
+      "profile": {
+        "uid": "22c86542-7512-4b6e-8c73-77be4730c772",
+        "slug": "payments-core",
+        "projectUid": "e91d8a44-a95b-4faf-840d-e71c8b2d935c",
+        "title": "Payments Core",
+        "patterns": [
+          {
+            "axis": "dependency",
+            "name": "hexagonal"
+          },
+          {
+            "axis": "presentation",
+            "name": "mvp"
+          }
+        ],
+        "scopePaths": [
+          "src/payments/**"
+        ],
+        "excludePaths": [],
+        "roles": [
+          {
+            "id": "adapter",
+            "paths": [
+              "src/payments/adapters/**"
+            ],
+            "allowedDependencies": [
+              "application",
+              "port",
+              "domain"
+            ]
+          },
+          {
+            "id": "application",
+            "paths": [
+              "src/payments/application/**"
+            ],
+            "allowedDependencies": [
+              "domain",
+              "port"
+            ]
+          },
+          {
+            "id": "domain",
+            "paths": [
+              "src/payments/domain/**"
+            ],
+            "allowedDependencies": []
+          },
+          {
+            "id": "port",
+            "paths": [
+              "src/payments/ports/**"
+            ],
+            "allowedDependencies": [
+              "domain"
+            ]
+          }
+        ],
+        "dependencyPolicy": "explicit",
+        "dependencyUsages": [
+          "value"
+        ],
+        "evidence": [
+          "docs/architecture/payments.md"
+        ]
+      },
+      "conformance": {
+        "contract": "architectureConformance:v1",
+        "status": "conforms",
+        "roles": [
+          {
+            "id": "adapter",
+            "paths": [
+              "src/payments/adapters/**"
+            ],
+            "matchedFileCount": 2,
+            "matchedFiles": [
+              "src/payments/adapters/http.ts",
+              "src/payments/adapters/postgres.ts"
+            ],
+            "matchedFilesLimited": false
+          },
+          {
+            "id": "application",
+            "paths": [
+              "src/payments/application/**"
+            ],
+            "matchedFileCount": 1,
+            "matchedFiles": [
+              "src/payments/application/charge.ts"
+            ],
+            "matchedFilesLimited": false
+          },
+          {
+            "id": "domain",
+            "paths": [
+              "src/payments/domain/**"
+            ],
+            "matchedFileCount": 1,
+            "matchedFiles": [
+              "src/payments/domain/payment.ts"
+            ],
+            "matchedFilesLimited": false
+          },
+          {
+            "id": "port",
+            "paths": [
+              "src/payments/ports/**"
+            ],
+            "matchedFileCount": 1,
+            "matchedFiles": [
+              "src/payments/ports/charge.ts"
+            ],
+            "matchedFilesLimited": false
+          }
+        ],
+        "observedRoleEdges": [
+          {
+            "fromRole": "adapter",
+            "toRole": "port",
+            "count": 1,
+            "importUsageCounts": {
+              "value": 1,
+              "type_only": 0,
+              "unknown": 0
+            },
+            "evidence": [
+              {
+                "from": "src/payments/adapters/http.ts",
+                "to": "src/payments/ports/charge.ts",
+                "kind": "static",
+                "importUsage": "value"
+              }
+            ]
+          },
+          {
+            "fromRole": "application",
+            "toRole": "domain",
+            "count": 1,
+            "importUsageCounts": {
+              "value": 1,
+              "type_only": 0,
+              "unknown": 0
+            },
+            "evidence": [
+              {
+                "from": "src/payments/application/charge.ts",
+                "to": "src/payments/domain/payment.ts",
+                "kind": "static",
+                "importUsage": "value"
+              }
+            ]
+          },
+          {
+            "fromRole": "domain",
+            "toRole": "adapter",
+            "count": 1,
+            "importUsageCounts": {
+              "value": 0,
+              "type_only": 1,
+              "unknown": 0
+            },
+            "evidence": [
+              {
+                "from": "src/payments/domain/payment.ts",
+                "to": "src/payments/adapters/postgres.ts",
+                "kind": "static",
+                "importUsage": "type_only"
+              }
+            ]
+          }
+        ],
+        "excludedByUsage": 1,
+        "violationCount": 0,
+        "violations": [],
+        "violationsLimited": false,
+        "unknown": {
+          "coverageIncomplete": false,
+          "unmappedEdges": 0,
+          "unruledEdges": 0,
+          "unknownImportUsages": 0,
+          "emptyRoles": []
+        },
+        "source": {
+          "filesScanned": 8,
+          "supportedLanguages": [
+            "typescript"
+          ],
+          "importUsageCounts": {
+            "value": 2,
+            "type_only": 1,
+            "unknown": 0,
+            "missing": 0
+          }
+        }
+      },
+      "agentPlanContract": {
+        "contract": "architectureChangePlan:v1",
+        "requiredFields": [
+          "touchedRoles",
+          "plannedPaths",
+          "expectedNewDependencies",
+          "crossedBoundaries",
+          "preservedInterfaces",
+          "verificationCommands",
+          "unknowns"
+        ]
+      },
+      "nextActions": [
+        {
+          "id": "plan_within_architecture",
+          "profileSlug": "payments-core"
+        }
+      ],
+      "measured": {
+        "at": "2026-08-27T00:00:00.000Z",
+        "tool": {
+          "name": "ontology-atlas",
+          "version": "0.0.0-contract"
+        },
+        "source": {
+          "kind": "folder",
+          "fingerprint": "sha256:0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f"
+        }
+      }
+    }
+  }
+}

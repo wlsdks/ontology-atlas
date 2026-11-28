@@ -1,5 +1,5 @@
 {
-  "about": "Which commit dates a concept document and a cited file, after each history. A document is dated by the first commit at which it held its present bytes; a cited file by its newest commit. Run by tests/contract/analysis/evidence-drift-parity.contract.test.ts (MCP walk) and src-tauri/src/git/evidence/tests.rs (both desktop walks). Each commit step is one minute after the previous one.",
+  "about": "Which commit dates a concept document and a cited file, after each history. A document is dated by the first commit at which it held its present bytes; a cited file by its newest commit. Run by src-tauri/src/git/evidence/tests.rs (both desktop walks); tests/contract/analysis/evidence-drift-parity.contract.test.ts resolves the verdict from the dates a history walk recorded in document-dating-walks-golden.json. Each commit step is one minute after the previous one.",
   "document": "docs/capabilities/pay.md",
   "code": "src/pay.ts",
   "cases": [

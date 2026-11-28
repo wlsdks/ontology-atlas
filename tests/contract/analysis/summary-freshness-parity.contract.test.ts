@@ -1,20 +1,22 @@
 /**
- * The summary-freshness rule exists twice (`mcp/src/git/stale-parent.mjs` and
- * `src/entities/docs-vault/lib/summary-freshness.ts`) because `src/` cannot import `mcp/`.
- * Both run the same cases and compare the outcome and the lag, not the object shape.
+ * The summary-freshness rule exists twice: the script server's `stale-parent.mjs` and
+ * `src/entities/docs-vault/lib/summary-freshness.ts`. The app runs the cases here and its outcome
+ * and lag are compared with the verdicts recorded from the script server in
+ * `tests/fixtures/summary-freshness-golden.json`, not with the object shape.
  */
 
 import { describe, expect, it } from 'vitest';
 
-import { findStaleParentSummaries, revisionClocks } from '../../../mcp/src/git/stale-parent.mjs';
 import {
   summaryStalenessOf,
   createSummaryStalenessScan,
   type NodeRevision,
 } from '../../../src/entities/docs-vault/lib/summary-freshness';
+import { SUMMARY_FRESHNESS_BASE, SUMMARY_FRESHNESS_CASES } from '../../fixtures/summary-freshness-cases.mjs';
+import golden from '../../fixtures/summary-freshness-golden.json';
 
 const DAY = 86_400_000;
-const BASE = Date.parse('2026-08-01T00:00:00Z');
+const BASE = Date.parse(SUMMARY_FRESHNESS_BASE);
 const at = (days: number) => new Date(BASE + days * DAY).toISOString();
 
 interface Case {
@@ -24,94 +26,7 @@ interface Case {
   timeline: Array<{ day: number; body: string; children: string[] }>;
 }
 
-const CASES: Case[] = [
-  {
-    name: 'membership moved after the prose',
-    kind: 'domain',
-    timeline: [
-      { day: 0, body: 'covers alpha', children: ['capabilities/alpha'] },
-      { day: 10, body: 'covers alpha', children: ['capabilities/alpha', 'capabilities/beta'] },
-    ],
-  },
-  {
-    name: 'prose re-written after the membership moved',
-    kind: 'domain',
-    timeline: [
-      { day: 0, body: 'covers alpha', children: ['capabilities/alpha'] },
-      { day: 4, body: 'covers alpha', children: ['capabilities/alpha', 'capabilities/beta'] },
-      { day: 6, body: 'covers alpha and beta', children: ['capabilities/alpha', 'capabilities/beta'] },
-    ],
-  },
-  {
-    name: 'one commit changed both, which is a re-judgement',
-    kind: 'domain',
-    timeline: [
-      { day: 0, body: 'covers alpha', children: ['capabilities/alpha'] },
-      { day: 7, body: 'covers alpha and beta', children: ['capabilities/alpha', 'capabilities/beta'] },
-    ],
-  },
-  {
-    name: 'a removal counts the same as an addition',
-    kind: 'domain',
-    timeline: [
-      { day: 0, body: 'covers both', children: ['capabilities/alpha', 'capabilities/beta'] },
-      { day: 5, body: 'covers both', children: ['capabilities/alpha'] },
-    ],
-  },
-  {
-    name: 'a reordered containment array is not a change',
-    kind: 'domain',
-    timeline: [
-      { day: 0, body: 'text', children: ['capabilities/alpha', 'capabilities/beta'] },
-      { day: 11, body: 'text', children: ['capabilities/beta', 'capabilities/alpha'] },
-    ],
-  },
-  {
-    name: 'a duplicate member is not a change',
-    kind: 'domain',
-    timeline: [
-      { day: 0, body: 'text', children: ['capabilities/alpha'] },
-      { day: 9, body: 'text', children: ['capabilities/alpha', 'capabilities/alpha'] },
-    ],
-  },
-  {
-    name: 'nothing moved at all',
-    kind: 'domain',
-    timeline: [
-      { day: 0, body: 'text', children: ['capabilities/alpha'] },
-      { day: 20, body: 'text', children: ['capabilities/alpha'] },
-    ],
-  },
-  {
-    name: 'a project is a summary kind too',
-    kind: 'project',
-    timeline: [
-      { day: 0, body: 'holds one domain', children: ['domains/alpha'] },
-      { day: 14, body: 'holds one domain', children: ['domains/alpha', 'domains/beta'] },
-    ],
-  },
-  {
-    name: 'an element is not a summary kind',
-    kind: 'element',
-    timeline: [
-      { day: 0, body: 'text', children: ['capabilities/alpha'] },
-      { day: 14, body: 'text', children: ['capabilities/alpha', 'capabilities/beta'] },
-    ],
-  },
-  {
-    name: 'a summary node holding nothing',
-    kind: 'domain',
-    timeline: [
-      { day: 0, body: 'text', children: [] },
-      { day: 14, body: 'other text', children: [] },
-    ],
-  },
-  {
-    name: 'a single revision cannot separate the clocks',
-    kind: 'domain',
-    timeline: [{ day: 0, body: 'text', children: ['capabilities/alpha'] }],
-  },
-];
+const CASES = SUMMARY_FRESHNESS_CASES as Case[];
 
 const SLUG = 'domains/sample';
 
@@ -131,27 +46,15 @@ function clientRevisions(testCase: Case): NodeRevision[] {
     }));
 }
 
-/** Newest-first revisions in the shape the MCP module takes. */
-function serverRevisions(testCase: Case) {
-  return [...testCase.timeline]
-    .reverse()
-    .map((step) => ({ changedAt: at(step.day), ...revisionClocks({ body: step.body, children: step.children }) }));
+/** What the script server answered for the case; `null` is no verdict. */
+function recordedVerdict(testCase: Case): { slug: string; behindByMs: number } | null {
+  return (golden.verdicts as Record<string, { slug: string; behindByMs: number } | null>)[testCase.name];
 }
 
-function serverVerdict(testCase: Case) {
-  const rows = findStaleParentSummaries({
-    docs: [{ slug: SLUG, frontmatter: { kind: testCase.kind, capabilities: testCase.timeline.at(-1)!.children } }],
-    revisionsOf: () => serverRevisions(testCase),
-  }) as Array<{ slug: string; behindByMs?: number; reasonCode?: string }>;
-  // `insufficient-history` is a cannot-tell, which the client expresses as no answer.
-  const row = rows.find((candidate) => !candidate.reasonCode);
-  return row ?? null;
-}
-
-describe('summary freshness parity between the MCP server and the app', () => {
+describe('summary freshness: the app against the verdicts the script server recorded', () => {
   for (const testCase of CASES) {
-    it(`agrees on: ${testCase.name}`, () => {
-      const server = serverVerdict(testCase);
+    it(`agrees with the recording on: ${testCase.name}`, () => {
+      const server = recordedVerdict(testCase);
       const client = summaryStalenessOf(clientRevisions(testCase));
       const scan = createSummaryStalenessScan(SLUG);
       for (const revision of clientRevisions(testCase)) {
@@ -167,8 +70,12 @@ describe('summary freshness parity between the MCP server and the app', () => {
     });
   }
 
+  it('records a verdict for every case', () => {
+    expect(Object.keys(golden.verdicts).sort()).toEqual(CASES.map((testCase) => testCase.name).sort());
+  });
+
   it('covers both outcomes, so parity cannot be satisfied by agreeing on nothing', () => {
-    const verdicts = CASES.map((testCase) => Boolean(serverVerdict(testCase)));
+    const verdicts = CASES.map((testCase) => Boolean(recordedVerdict(testCase)));
     expect(verdicts).toContain(true);
     expect(verdicts).toContain(false);
   });

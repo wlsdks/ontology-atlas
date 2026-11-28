@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { TOOL_BY_NAME } from "../../../mcp/src/server/registry.mjs";
+import { surfaceTools } from "../server-session/tool-surface";
 
 const repoRoot = resolve(__dirname, "../../..");
 
@@ -76,9 +76,7 @@ function topLevelKeys(object: string): string[] {
   return keys;
 }
 
-const queryOntology = TOOL_BY_NAME.get("query_ontology") as {
-  inputSchema: { properties: Record<string, { enum?: string[] }> };
-};
+const queryOntology = surfaceTools().find((tool) => tool.name === "query_ontology")!;
 const accepted = new Set(Object.keys(queryOntology.inputSchema.properties));
 const operations = new Set(queryOntology.inputSchema.properties.operation?.enum ?? []);
 

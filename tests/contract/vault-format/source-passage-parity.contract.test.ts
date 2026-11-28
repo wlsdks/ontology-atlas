@@ -17,54 +17,39 @@ import {
   SOURCE_PASSAGE_CASES,
   zipFile,
 } from '../../fixtures/source-passage-cases.mjs';
-import {
-  readSourceText as readSourceTextUntyped,
-  READ_SOURCE_DEFAULT_LIMIT as MCP_DEFAULT_LIMIT,
-  READ_SOURCE_MAX_CHARS as MCP_MAX_CHARS,
-  READ_SOURCE_MAX_LIMIT as MCP_MAX_LIMIT,
-} from '../../../mcp/src/library/source-text.mjs';
+import GOLDEN from '../../fixtures/source-passage-golden.json';
 
-type UnitLike = { anchor: string; text: string; kind: string; heading?: string; sheet?: string };
-
-/**
- * The MCP module is plain ESM with JSDoc, so its optional `next`/`note` fields are not
- * in the inferred type. Naming the shape here keeps the comparison honest: if the tool's
- * answer loses a field, this declaration is what has to change.
- */
-const readSourceTextMcp = readSourceTextUntyped as (
-  buffer: Buffer,
-  path: string,
-  options?: { from?: number; limit?: number; sheet?: number },
-) => {
-  path: string;
+interface RecordedCall {
   format: string;
   unitCount: number;
   from: number;
-  units: UnitLike[];
   truncated: boolean;
-  next?: number;
-  note?: string;
-};
+  next: number | null;
+  note: string | null;
+  units: UnitLike[];
+}
+
+type UnitLike = { anchor: string; text: string; kind: string; heading?: string; sheet?: string };
 
 /**
  * **One address, one passage — whoever resolves it.**
  *
  * `[[src:sources/settlement-policy.md#l14]]` is written by an agent through the MCP
- * server's `read_source` (`mcp/src/library/source-text.mjs`) and, since slice U1, resolved for a
- * person by the Library pane through `src/shared/lib/library/source-passage.ts`. Two physical
- * modules exist for the reason `tests/contract/library/wiki-page-schema.contract.test.ts` gives
- * about the wiki format: the MCP package ships separately from the web bundle, and
- * neither imports the other.
+ * server's `read_source` and, since slice U1, resolved for a person by the Library pane through
+ * `src/shared/lib/library/source-passage.ts`. Two implementations exist for the reason
+ * `tests/contract/library/wiki-page-schema.contract.test.ts` gives about the wiki format: the
+ * server and the web bundle ship separately, and neither imports the other.
  *
  * What may not differ is the split. A one-unit disagreement does not look like a bug on
  * screen — it looks like an answer, with somebody else's sentence standing under the
- * fact that cited this one. So every case below is compared **byte for byte**: anchors,
- * kinds, the `sheet` and `heading` fields, the extractor's note, pagination, and the
- * unit text itself.
+ * fact that cited this one. So every case below is compared **byte for byte** to what the script
+ * server's `read_source` answered when `tests/fixtures/source-passage-golden.json` was recorded
+ * (2026-11-28): anchors, kinds, the `sheet` and `heading` fields, the extractor's note,
+ * pagination, and the unit text itself.
  *
- * The DOCX and XLSX halves also pin the one piece of machinery the twin does not share:
- * `mcp/` inflates a zip entry with `node:zlib`, the bundle with `src/shared/lib/library/inflate-raw.ts`,
- * and "the same bytes" has to be measured rather than asserted.
+ * The DOCX and XLSX halves also pin the one piece of machinery the implementations do not share:
+ * the bundle inflates a zip entry with `src/shared/lib/library/inflate-raw.ts`, and "the same
+ * bytes as `node:zlib`" has to be measured rather than asserted.
  */
 
 function comparable(units: readonly UnitLike[]) {
@@ -77,11 +62,11 @@ function comparable(units: readonly UnitLike[]) {
   }));
 }
 
-describe('the source-passage reader and read_source split a file identically', () => {
-  it('agrees on the bounds both readers page with', () => {
-    expect(READ_SOURCE_DEFAULT_LIMIT).toBe(MCP_DEFAULT_LIMIT);
-    expect(READ_SOURCE_MAX_LIMIT).toBe(MCP_MAX_LIMIT);
-    expect(READ_SOURCE_MAX_CHARS).toBe(MCP_MAX_CHARS);
+describe('the source-passage reader splits a file as read_source did', () => {
+  it('pages with the bounds the server pages with', () => {
+    expect(READ_SOURCE_DEFAULT_LIMIT).toBe(GOLDEN.bounds.defaultLimit);
+    expect(READ_SOURCE_MAX_LIMIT).toBe(GOLDEN.bounds.maxLimit);
+    expect(READ_SOURCE_MAX_CHARS).toBe(GOLDEN.bounds.maxChars);
   });
 
   it('covers every format a citation can name', () => {
@@ -98,14 +83,15 @@ describe('the source-passage reader and read_source split a file identically', (
     for (const call of testCase.calls) {
       it(`${testCase.name} — ${JSON.stringify(call)}`, () => {
         const mine = readSourceUnits(testCase.bytes, testCase.path, call);
-        const theirs = readSourceTextMcp(Buffer.from(testCase.bytes), testCase.path, call);
-        expect(mine.format).toBe(theirs.format);
-        expect(mine.unitCount).toBe(theirs.unitCount);
-        expect(mine.from).toBe(theirs.from);
-        expect(mine.truncated).toBe(theirs.truncated);
-        expect(mine.next ?? null).toBe(theirs.next ?? null);
-        expect(mine.note ?? null).toBe(theirs.note ?? null);
-        expect(comparable(mine.units)).toEqual(comparable(theirs.units));
+        const recorded = (GOLDEN.calls as unknown as Record<string, RecordedCall>)[`${testCase.name} — ${JSON.stringify(call)}`];
+        expect(recorded, 'the call was not recorded').toBeDefined();
+        expect(mine.format).toBe(recorded.format);
+        expect(mine.unitCount).toBe(recorded.unitCount);
+        expect(mine.from).toBe(recorded.from);
+        expect(mine.truncated).toBe(recorded.truncated);
+        expect(mine.next ?? null).toBe(recorded.next);
+        expect(mine.note ?? null).toBe(recorded.note);
+        expect(comparable(mine.units)).toEqual(recorded.units);
       });
     }
   }
@@ -130,19 +116,19 @@ describe('the passage a citation names', () => {
     });
   }
 
-  it('resolves every unit the MCP reader returns, at any page, to the same text', () => {
+  it('resolves every unit the reader returns, at any page, to the same text', () => {
     for (const testCase of SOURCE_PASSAGE_CASES) {
       let from = 1;
       let guard = 0;
       for (;;) {
-        const answer = readSourceTextMcp(Buffer.from(testCase.bytes), testCase.path, {
+        const answer = readSourceUnits(testCase.bytes, testCase.path, {
           from,
           limit: READ_SOURCE_MAX_LIMIT,
         });
         for (const unit of answer.units) {
           const passage = citedPassage(testCase.bytes, testCase.path, unit.anchor);
           expect(passage.state, `${testCase.path}#${unit.anchor}`).toBe('resolved');
-          // A `h:` anchor names a heading and the paragraphs beneath it, so the tool's
+          // A `h:` anchor names a heading and the paragraphs beneath it, so the reader's
           // unit must be *one of* the cited units and identical to its counterpart.
           expect(
             passage.cited.map((cited) => cited.text),
@@ -171,14 +157,14 @@ describe('the passage a citation names', () => {
 });
 
 describe('the bundle inflates a zip entry the way node:zlib does', () => {
-  it('matches on every DEFLATE block type, including the module that says so', () => {
+  it('matches on every DEFLATE block type, including the source of the reader that says so', () => {
     const samples: Buffer[] = [
       Buffer.from(''),
       Buffer.from('a'),
       Buffer.from('abcabcabcabcabcabc'.repeat(64)),
       Buffer.from(Array.from({ length: 70_000 }, (_, index) => (index * 37) % 251)),
       Buffer.from('가나다라'.repeat(2_000)),
-      readFileSync('mcp/src/library/source-text.mjs'),
+      readFileSync('src/shared/lib/library/source-units.ts'),
     ];
     for (const sample of samples) {
       // level 0 is a stored block, 1 reaches fixed Huffman, 6 and 9 dynamic Huffman.

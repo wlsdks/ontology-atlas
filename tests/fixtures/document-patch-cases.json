@@ -1,0 +1,160 @@
+[
+  {
+    "name": "a title patch keeps unknown fields and an untouched body",
+    "input": {
+      "rawBefore": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: 환불\nunknown: keep\n---\n\nbody",
+      "frontmatterPatch": {
+        "title": "환불 검토"
+      }
+    },
+    "expected": {
+      "status": "available",
+      "frontmatter": {
+        "uid": "00000000-0000-4000-8000-000000000001",
+        "kind": "capability",
+        "title": "환불 검토",
+        "unknown": "keep"
+      },
+      "body": "\nbody",
+      "markdown": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: 환불 검토\nunknown: keep\n---\n\nbody"
+    }
+  },
+  {
+    "name": "an empty body replaces the body",
+    "input": {
+      "rawBefore": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: 환불\nunknown: keep\n---\n\nbody",
+      "frontmatterPatch": {
+        "title": "환불 검토"
+      },
+      "body": ""
+    },
+    "expected": {
+      "status": "available",
+      "frontmatter": {
+        "uid": "00000000-0000-4000-8000-000000000001",
+        "kind": "capability",
+        "title": "환불 검토",
+        "unknown": "keep"
+      },
+      "body": "",
+      "markdown": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: 환불 검토\nunknown: keep\n---\n\n"
+    }
+  },
+  {
+    "name": "null removes a field",
+    "input": {
+      "rawBefore": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: Refund\nsummary: old\n---\n\nbody\n",
+      "frontmatterPatch": {
+        "summary": null
+      }
+    },
+    "expected": {
+      "status": "available",
+      "frontmatter": {
+        "uid": "00000000-0000-4000-8000-000000000001",
+        "kind": "capability",
+        "title": "Refund"
+      },
+      "body": "\nbody\n",
+      "markdown": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: Refund\n---\n\nbody\n"
+    }
+  },
+  {
+    "name": "relation lists are trimmed, deduplicated and sorted",
+    "input": {
+      "rawBefore": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: Refund\n---\n\nbody\n",
+      "frontmatterPatch": {
+        "depends_on": [
+          "  elements/b ",
+          "elements/a",
+          "elements/b",
+          ""
+        ]
+      }
+    },
+    "expected": {
+      "status": "available",
+      "frontmatter": {
+        "uid": "00000000-0000-4000-8000-000000000001",
+        "kind": "capability",
+        "title": "Refund",
+        "depends_on": [
+          "elements/a",
+          "elements/b"
+        ]
+      },
+      "body": "\nbody\n",
+      "markdown": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: Refund\ndepends_on: [elements/a, elements/b]\n---\n\nbody\n"
+    }
+  },
+  {
+    "name": "a document with a kind and no uid needs a writer-minted uid",
+    "input": {
+      "rawBefore": "---\nkind: capability\ntitle: Refund\n---\n\nbody\n",
+      "frontmatterPatch": {
+        "title": "Refunds"
+      }
+    },
+    "expected": {
+      "status": "unavailable",
+      "reason": "writer_minted_uid_required"
+    }
+  },
+  {
+    "name": "a minted uid is written",
+    "input": {
+      "rawBefore": "---\nkind: capability\ntitle: Refund\n---\n\nbody\n",
+      "frontmatterPatch": {
+        "title": "Refunds"
+      },
+      "mintedUid": "00000000-0000-4000-8000-0000000000aa"
+    },
+    "expected": {
+      "status": "available",
+      "frontmatter": {
+        "kind": "capability",
+        "title": "Refunds",
+        "uid": "00000000-0000-4000-8000-0000000000aa"
+      },
+      "body": "\nbody\n",
+      "markdown": "---\nkind: capability\ntitle: Refunds\nuid: 00000000-0000-4000-8000-0000000000aa\n---\n\nbody\n"
+    }
+  },
+  {
+    "name": "comments and spacing in the frontmatter normalize, Windows line ends included",
+    "input": {
+      "rawBefore": "---\r\nuid: 00000000-0000-4000-8000-000000000001\r\nkind: capability\r\n# a comment\r\ntitle:   Refund\r\n---\r\n\r\nbody\r\n",
+      "frontmatterPatch": {
+        "summary": "New"
+      }
+    },
+    "expected": {
+      "status": "available",
+      "frontmatter": {
+        "uid": "00000000-0000-4000-8000-000000000001",
+        "kind": "capability",
+        "title": "Refund",
+        "summary": "New"
+      },
+      "body": "\nbody\n",
+      "markdown": "---\nuid: 00000000-0000-4000-8000-000000000001\nkind: capability\ntitle: Refund\nsummary: New\n---\n\nbody\n"
+    }
+  },
+  {
+    "name": "a document without frontmatter gains the patched fields",
+    "input": {
+      "rawBefore": "just text\n",
+      "frontmatterPatch": {
+        "title": "Note"
+      }
+    },
+    "expected": {
+      "status": "available",
+      "frontmatter": {
+        "title": "Note"
+      },
+      "body": "just text\n",
+      "markdown": "---\ntitle: Note\n---\n\njust text\n"
+    }
+  }
+]

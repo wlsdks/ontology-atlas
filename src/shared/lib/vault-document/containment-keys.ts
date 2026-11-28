@@ -1,7 +1,7 @@
 /**
- * The app's copy of `CONTAINMENT_KEY_FOR_KIND` / `CONTAINMENT_HOLDER_KINDS` in `mcp/src/schema.mjs`
- * (spec §5): the list named for a kind, and which kinds may keep it. `vault-schema.contract.test.ts`
- * compares both answers over every kind pair. When a document changes kind, an entry naming it moves
+ * The containment tables of the vault schema (spec §5): the list named for a kind, and which kinds may
+ * keep it. `vault-schema.contract.test.ts` holds both answers over every kind pair to the answers
+ * recorded from the script server. When a document changes kind, an entry naming it moves
  * to the list for its new kind only if the referrer's kind may keep that list; nothing is guessed.
  */
 export type ContainmentKey = "domains" | "capabilities" | "elements";

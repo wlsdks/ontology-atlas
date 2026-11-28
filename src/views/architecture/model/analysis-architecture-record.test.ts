@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { FSD_PROFILE_FRONTMATTER } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
-import { buildArchitectureBrief, parseArchitectureProfile } from '../../../../mcp/src/architecture/architecture-profile.mjs';
+import GOLDEN from '../../../../tests/fixtures/architecture-golden.json';
 import { analysisDigest, analysisTextDigest, type AnalysisRun } from '@/entities/analysis-record';
+import type { ArchitectureRecord } from '@/entities/architecture-record';
 import { architectureRecordFromAnalysis } from './analysis-architecture-record';
 
 async function fixture(): Promise<AnalysisRun> {
   const markdown = `---\n${Object.entries(FSD_PROFILE_FRONTMATTER).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n')}\n---\nThe responsibility contract.\n`;
   const digest = await analysisTextDigest(markdown);
-  const result = buildArchitectureBrief(parseArchitectureProfile(FSD_PROFILE_FRONTMATTER), { filesScanned: 12, moduleEdges: [] }, { measured: { at: '2026-09-05T08:00:00.000Z', tool: { name: 'ontology-atlas', version: '1.0.6' }, source: { kind: 'git', revision: 'abc1234', dirty: false } } });
+  // The brief the script server built for the FSD profile, recorded 2026-11-28.
+  const result = structuredClone(GOLDEN.fsdBrief) as unknown as ArchitectureRecord['brief'];
   // The persistence boundary omits machine-local roots from actual tool output.
-  if (result.conformance.source) delete result.conformance.source.rootPath;
+  const conformance = result.conformance as { source?: { rootPath?: string } };
+  if (conformance.source) delete conformance.source.rootPath;
   return {
     schema: 'atlas-analysis/v1', recordType: 'run', id: '95f4ba81-41f7-483b-a617-2a4be815be32', createdAt: '2026-09-05T08:00:00.000Z', mode: 'architecture', scope: { projectSlug: null, projectUid: FSD_PROFILE_FRONTMATTER.project_uid, targetSlugs: [], profileSlug: FSD_PROFILE_FRONTMATTER.profile_slug },
     request: { id: 'u-1', text: 'Analyze.', parentRunId: null }, origin: { surface: 'architecture', runtimeId: 'test', sessionId: null, userEventId: 'u-1', answerEventId: 'a-1', startedAt: '2026-09-05T07:59:00.000Z', stopReason: 'end_turn', outcome: 'completed' },

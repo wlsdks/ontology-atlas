@@ -30,7 +30,7 @@ function quoteYamlScalar(v: string): string {
 }
 
 /**
- * `created_by` mirrors `mcp/src/schema.mjs` (`created-by-provenance.contract.test.ts`). Values are
+ * `created_by` follows the vault schema (`created-by-provenance.contract.test.ts`). Values are
  * `human` and `agent:<name>`; absence is unknown and never filled in as a person.
  */
 const VAULT_CREATED_BY_KEY = "created_by";
