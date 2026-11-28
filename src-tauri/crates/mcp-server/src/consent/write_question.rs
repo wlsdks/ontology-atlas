@@ -5,10 +5,11 @@
 //! reshape the card; the JavaScript server forgot that for the slug of a one-row batch.
 
 use answer_format::json::quote;
+use confined_files::AbsorbedPlace;
 
 use super::shown_text::shown;
 use crate::arguments::Arguments;
-use crate::raw_json::string_member;
+use crate::raw_json::{string_member, Kind};
 use crate::write_tool::WriteTool;
 
 /// What the agent sent, read the way the card needs it: a value of another type is no value.
@@ -35,8 +36,12 @@ impl Sent<'_> {
     }
 }
 
+/// Where the file an `absorb_document` call names really is: the card shows that, not the name the
+/// agent typed, which can be a link to somewhere else.
+pub type FindDocument<'a> = &'a dyn Fn(&str) -> Option<AbsorbedPlace>;
+
 /// What `tool` will do, called with `arguments`, in one line without a final stop.
-pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
+pub fn summary(tool: WriteTool, arguments: &Arguments, find_document: FindDocument<'_>) -> String {
     let sent = Sent(arguments);
     match tool {
         WriteTool::AddConcept => match sent.named("slug") {
@@ -49,15 +54,9 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
             _ => "Add one relation".to_string(),
         },
         WriteTool::AddRelations => add_relations(&sent),
-        WriteTool::RemoveRelation => match (sent.named("from"), sent.named("to")) {
-            (Some(from), Some(to)) => format!("Remove the link {from} \u{2192} {to}"),
-            _ => "Remove one relation".to_string(),
-        },
+        WriteTool::RemoveRelation => remove_relation(&sent),
         WriteTool::PatchConcept => edit_concepts(&sent),
-        WriteTool::RenameConcept => match (sent.text("oldSlug"), sent.text("newSlug")) {
-            (Some(old), Some(new)) => format!("Rename {old} \u{2192} {new}"),
-            _ => "Rename one concept".to_string(),
-        },
+        WriteTool::RenameConcept => rename_concept(&sent),
         WriteTool::MergeConcepts => match (sent.text("fromSlug"), sent.text("intoSlug")) {
             (Some(from), Some(into)) => format!("Merge {from} into {into}"),
             _ => "Merge concepts".to_string(),
@@ -66,10 +65,7 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
             Some(slug) => format!("Delete concept {slug}"),
             None => "Delete one concept".to_string(),
         },
-        WriteTool::AbsorbDocument => match sent.quoted("filePath") {
-            Some(path) => format!("Absorb {path} into typed nodes"),
-            None => "Absorb a document into typed nodes".to_string(),
-        },
+        WriteTool::AbsorbDocument => absorb_document(&sent, find_document),
         WriteTool::ConnectProjectSource => connect_project_source(&sent),
         WriteTool::DisconnectProjectSource => {
             "Disconnect a source folder from this vault".to_string()
@@ -77,6 +73,89 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
         WriteTool::FinalizeProjectMeaning => finalize_project_meaning(&sent),
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => "Write one test file".to_string(),
+    }
+}
+
+/// `absorb_document` rewrites a file, so the card names the file it will really rewrite, and says
+/// when that file is not in the repository.
+fn absorb_document(sent: &Sent<'_>, find_document: FindDocument<'_>) -> String {
+    let Some(typed) = sent.0.string("filePath") else {
+        return "Absorb a document into typed nodes".to_string();
+    };
+    match find_document(&typed) {
+        Some(place) => {
+            let path = shown(&quote(&place.path().to_string_lossy()));
+            let outside = if place.is_outside_repository() {
+                " (outside the repository)"
+            } else {
+                ""
+            };
+            format!("Absorb {path}{outside} into typed nodes")
+        }
+        None => format!("Absorb {} into typed nodes", shown(&quote(&typed))),
+    }
+}
+
+/// `remove_relation` removes one link, or with `replaceWith` swaps its target for another.
+fn remove_relation(sent: &Sent<'_>) -> String {
+    let (from, to) = (sent.named("from"), sent.named("to"));
+    let Some(replacement) = sent
+        .0
+        .get("replaceWith")
+        .filter(|raw| matches!(Kind::of(raw), Kind::Object | Kind::Array))
+    else {
+        return match (from, to) {
+            (Some(from), Some(to)) => format!("Remove the link {from} \u{2192} {to}"),
+            _ => "Remove one relation".to_string(),
+        };
+    };
+    match (from, to, string_member(replacement, "to")) {
+        (Some(from), Some(to), Some(new_to)) => {
+            let new_to = shown(&new_to);
+            format!("Replace the link {from} \u{2192} {to} with {from} \u{2192} {new_to}")
+        }
+        _ => "Replace one relation".to_string(),
+    }
+}
+
+/// `rename_concept` renames a concept, or with `newKind` changes its kind. A kind change may also
+/// move it (`newSlug`), set its domain or replace its body, and the card names each of them.
+fn rename_concept(sent: &Sent<'_>) -> String {
+    if sent.0.get("newKind").is_none() {
+        return match (sent.text("oldSlug"), sent.text("newSlug")) {
+            (Some(old), Some(new)) => format!("Rename {old} \u{2192} {new}"),
+            _ => "Rename one concept".to_string(),
+        };
+    }
+    let Some(old) = sent.text("oldSlug") else {
+        return "Change one concept kind".to_string();
+    };
+    let kind = match sent.text("newKind") {
+        Some(kind) => format!("Change the kind of {old} to {kind}"),
+        None => format!("Change the kind of {old}"),
+    };
+    let mut also = Vec::new();
+    if let Some(new) = sent.text("newSlug") {
+        also.push(format!("rename it to {new}"));
+    }
+    match sent.text("domain") {
+        Some(domain) => also.push(format!("set its domain to {domain}")),
+        None if sent
+            .0
+            .get("domain")
+            .is_some_and(|raw| Kind::of(raw) == Kind::Null) =>
+        {
+            also.push("clear its domain".to_string());
+        }
+        None => {}
+    }
+    if sent.text("body").is_some() {
+        also.push("replace its body".to_string());
+    }
+    match also.split_last() {
+        None => kind,
+        Some((last, [])) => format!("{kind} and {last}"),
+        Some((last, rest)) => format!("{kind}, {} and {last}", rest.join(", ")),
     }
 }
 
@@ -165,7 +244,7 @@ mod tests {
     }
 
     fn said(tool: WriteTool, text: &str) -> String {
-        summary(tool, &arguments(text))
+        summary(tool, &arguments(text), &|_| None)
     }
 
     /// Each expected line is what the JavaScript server's `describeWrite` returns for the call.
@@ -187,8 +266,18 @@ mod tests {
             (AddRelation, r#"{"from":"a"}"#, "Add one relation"),
             (RemoveRelation, r#"{"from":"a","to":"b"}"#, "Remove the link a \u{2192} b"),
             (RemoveRelation, r#"{"from":5,"to":"b"}"#, "Remove one relation"),
+            (RemoveRelation, r#"{"from":"a","to":"b","replaceWith":{"to":"c"}}"#, "Replace the link a \u{2192} b with a \u{2192} c"),
+            (RemoveRelation, r#"{"from":"a","to":"b","replaceWith":{}}"#, "Replace one relation"),
+            (RemoveRelation, r#"{"from":"a","to":"b","replaceWith":null}"#, "Remove the link a \u{2192} b"),
             (PatchConcept, r#"{"slug":"s"}"#, "Edit concept s"),
             (RenameConcept, r#"{"oldSlug":"a","newSlug":"b"}"#, "Rename a \u{2192} b"),
+            (RenameConcept, r#"{"oldSlug":"a"}"#, "Rename one concept"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain"}"#, "Change the kind of a to domain"),
+            (RenameConcept, r#"{"newKind":"domain"}"#, "Change one concept kind"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"element","newSlug":"b"}"#, "Change the kind of a to element and rename it to b"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"element","body":"x"}"#, "Change the kind of a to element and replace its body"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"capability","newSlug":"b","domain":"d","body":""}"#, "Change the kind of a to capability, rename it to b, set its domain to d and replace its body"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain","domain":null}"#, "Change the kind of a to domain and clear its domain"),
             (MergeConcepts, r#"{"fromSlug":"a","intoSlug":"b"}"#, "Merge a into b"),
             (DeleteConcept, r#"{}"#, "Delete one concept"),
             (AbsorbDocument, r#"{"filePath":"/tmp/a b.md"}"#, "Absorb \"/tmp/a b.md\" into typed nodes"),
@@ -202,6 +291,51 @@ mod tests {
         ];
         for (tool, call, expected) in cases {
             assert_eq!(said(*tool, call), *expected, "{} {call}", tool.name());
+        }
+    }
+
+    fn folder() -> tempfile::TempDir {
+        tempfile::Builder::new()
+            .prefix("card-")
+            .tempdir()
+            .expect("temporary folder")
+    }
+
+    fn absorb_card(repository: &std::path::Path, typed: &std::path::Path) -> String {
+        let call = format!(r#"{{"filePath":{}}}"#, quote(&typed.to_string_lossy()));
+        summary(WriteTool::AbsorbDocument, &arguments(&call), &|requested| {
+            AbsorbedPlace::locate(requested, repository).ok()
+        })
+    }
+
+    #[test]
+    fn the_absorb_card_shows_the_file_it_will_rewrite_and_says_when_it_is_outside_the_repository() {
+        let repository = folder();
+        let elsewhere = folder();
+        let inside = repository.path().join("AGENTS.md");
+        let outside = elsewhere.path().join("notes.md");
+        std::fs::write(&inside, "# A\n").expect("fixture");
+        std::fs::write(&outside, "# N\n").expect("fixture");
+        let real = |path: &std::path::Path| {
+            quote(&confined_files::real_path(path).expect("real path").to_string_lossy())
+        };
+        assert_eq!(
+            absorb_card(repository.path(), &inside),
+            format!("Absorb {} into typed nodes", real(&inside))
+        );
+        assert_eq!(
+            absorb_card(repository.path(), &outside),
+            format!("Absorb {} (outside the repository) into typed nodes", real(&outside))
+        );
+        #[cfg(unix)]
+        {
+            let link = repository.path().join("looks-inside.md");
+            std::os::unix::fs::symlink(&outside, &link).expect("link");
+            assert_eq!(
+                absorb_card(repository.path(), &link),
+                format!("Absorb {} (outside the repository) into typed nodes", real(&outside)),
+                "a link in the repository is shown as the file it leads to"
+            );
         }
     }
 

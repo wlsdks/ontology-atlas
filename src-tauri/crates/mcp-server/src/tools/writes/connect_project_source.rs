@@ -13,7 +13,6 @@ use serde::Serialize;
 use super::project_source_selection::{select_source_folder, SourceSelection};
 use super::plain_refusal::plain_refusal;
 use super::vault_view::VaultView;
-use super::write_support::write_permit;
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ConceptEffect, ShareMeasure, WriteDone, WriteRecord};
@@ -174,7 +173,6 @@ fn connected<'a>(
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    let write = write_permit(permit)?;
     let context = permit.context();
     let view = VaultView::read(permit)?;
     let selection = select_source_folder(context, permit.vault(), view.documents(), arguments)?;
@@ -199,7 +197,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
     })?;
     let confirm = sent_flag(arguments, "confirm");
     let stands_for_confirmation =
-        confirm == Some(true) || (write.consented() && confirm != Some(false));
+        confirm == Some(true) || (permit.consented() && confirm != Some(false));
 
     if !stands_for_confirmation {
         let receipt = &measured.receipt;

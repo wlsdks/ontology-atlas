@@ -82,6 +82,7 @@ fn an_edit_made_right_before_the_rename_is_kept_and_the_write_stops_with_a_confl
                 expected_modified: Some(ModifiedTime::from_milliseconds(1000.0)),
             }),
             before_commit: Some(&human),
+            ..AtomicWrite::default()
         },
     )
     .expect_err("conflict");
@@ -172,6 +173,63 @@ fn a_private_originals_mode_is_kept_by_the_rewrite() {
         .mode()
         & 0o777;
     assert_eq!(mode, 0o600);
+}
+
+#[cfg(unix)]
+fn mode_of(path: &Path) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    fs::metadata(path).expect("stat").permissions().mode() & 0o777
+}
+
+#[cfg(unix)]
+fn made_private(path: &Path, text: &str) {
+    use std::os::unix::fs::PermissionsExt;
+    fs::write(path, text).expect("seed");
+    fs::set_permissions(path, fs::Permissions::from_mode(0o600)).expect("chmod");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_copy_made_by_a_plan_is_no_more_open_than_the_file_it_copies() {
+    let (_directory, root) = vault();
+    made_private(&root.path().join("private.md"), "secret");
+    let original = root.path().join("private.md");
+    apply_all_or_nothing(
+        vec![
+            PlanEntry::write(target(&root, "backup"), "secret".to_string())
+                .expecting_absent()
+                .as_open_as(&original),
+            PlanEntry::write(target(&root, "plain"), "x".to_string()).expecting_absent(),
+        ],
+        &options(),
+    )
+    .expect("applied");
+    assert_eq!(mode_of(&root.path().join("backup.md")), 0o600);
+    assert_ne!(
+        mode_of(&root.path().join("plain.md")),
+        0o600,
+        "an entry that names no original gets the system's default, so the test above can tell"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn a_private_file_deleted_and_put_back_by_a_rollback_is_private_again() {
+    let (_directory, root) = vault();
+    made_private(&root.path().join("second.md"), "ORIGINAL-2");
+    fs::create_dir(root.path().join("trap.md")).expect("trap");
+    let error = apply_all_or_nothing(
+        vec![
+            PlanEntry::delete(target(&root, "second")),
+            PlanEntry::write(target(&root, "trap"), "x".to_string()),
+        ],
+        &options(),
+    )
+    .expect_err("the trap fails the second step");
+    assert!(matches!(error, WriteError::RolledBack { .. }), "{error}");
+    let back = root.path().join("second.md");
+    assert_eq!(fs::read_to_string(&back).expect("read"), "ORIGINAL-2");
+    assert_eq!(mode_of(&back), 0o600);
 }
 
 #[test]
@@ -365,6 +423,52 @@ fn each_entry_is_rechecked_right_before_it_applies_and_earlier_writes_roll_back(
     );
 }
 
+/// There is no journal: a process killed in the middle of a batch leaves the files written so far.
+/// While the process lives, an I/O error at step 10 is undone, and when one of the undone files was
+/// edited by someone since, the answer says the vault is inconsistent and names that file, not
+/// "rolled back".
+#[test]
+fn an_io_error_at_step_ten_is_undone_and_a_file_that_cannot_be_put_back_is_named() {
+    let (_directory, root) = vault();
+    let name = |index: usize| format!("n{index}");
+    for index in 0..12 {
+        fs::write(root.path().join(format!("{}.md", name(index))), "ORIGINAL").expect("seed");
+    }
+    let sabotage = |index: usize| {
+        if index == 10 {
+            fs::write(root.path().join("n3.md"), "a person's edit").expect("edit");
+            fs::remove_file(root.path().join("n10.md")).expect("remove");
+            fs::create_dir(root.path().join("n10.md")).expect("a folder where a file was");
+        }
+    };
+    let plan = (0..12)
+        .map(|index| PlanEntry::write(target(&root, &name(index)), format!("REWRITTEN-{index}")))
+        .collect();
+    let error = apply_all_or_nothing(
+        plan,
+        &ApplyOptions {
+            before_entry: Some(&sabotage),
+            ..options()
+        },
+    )
+    .expect_err("step ten fails");
+    let WriteError::Inconsistent { cause, unrecovered } = &error else {
+        panic!("a rollback that could not finish must not be reported as complete: {error}");
+    };
+    assert!(matches!(**cause, WriteError::Io(_)), "{cause:?}");
+    assert_eq!(unrecovered, &vec![root.path().join("n3.md")]);
+    assert!(error.to_string().contains("INCONSISTENT"), "{error}");
+    for index in (0..10).filter(|index| *index != 3) {
+        let held = fs::read_to_string(root.path().join(format!("n{index}.md"))).expect("read");
+        assert_eq!(held, "ORIGINAL", "n{index} was put back");
+    }
+    assert_eq!(
+        fs::read_to_string(root.path().join("n3.md")).expect("n3"),
+        "a person's edit",
+        "the edit is kept and reported, never overwritten"
+    );
+}
+
 #[test]
 fn a_plan_that_requires_revisions_refuses_an_entry_without_one_before_starting() {
     let (_directory, root) = vault();
@@ -416,6 +520,61 @@ fn a_plan_that_writes_a_file_and_deletes_its_other_spelling_keeps_what_it_wrote(
     assert_eq!(
         fs::read_to_string(root.path().join("Auth.md")).expect("auth"),
         "new"
+    );
+}
+
+/// Whether the disk holding `folder` opens `probe.md` as `PROBE.md`.
+fn disk_ignores_letter_case(folder: &Path) -> bool {
+    fs::write(folder.join("probe.md"), "x").expect("probe");
+    folder.join("PROBE.md").exists()
+}
+
+/// A case-only rename writes `auth.md` and deletes `Auth.md`. On a disk that ignores case that is one
+/// file and the delete is dropped; on one that does not, the two names are two files and both steps
+/// run. Which disk this runs on decides which half is checked (CI is Linux, a case-sensitive disk;
+/// a developer's Mac is not unless `TMPDIR` names a case-sensitive volume).
+#[test]
+fn a_case_only_rename_drops_the_delete_only_where_the_disk_ignores_case() {
+    let (_directory, root) = vault();
+    fs::write(root.path().join("Auth.md"), "old").expect("seed");
+    let plan = vec![
+        PlanEntry::write(target(&root, "auth"), "new".to_string()),
+        PlanEntry::delete(target(&root, "Auth")),
+    ];
+    let applied = apply_all_or_nothing(plan, &options()).expect("applied");
+    if disk_ignores_letter_case(root.path()) {
+        assert_eq!(applied.steps, 1, "one file: the delete would erase what was written");
+        assert_eq!(fs::read_to_string(root.path().join("Auth.md")).expect("read"), "new");
+    } else {
+        assert_eq!(applied.steps, 2, "two names, two files");
+        assert!(!root.path().join("Auth.md").exists(), "the old spelling is gone");
+        assert_eq!(fs::read_to_string(root.path().join("auth.md")).expect("read"), "new");
+    }
+}
+
+/// On a case-sensitive disk `Auth.md` and `auth.md` can both exist; deleting one never drops
+/// because the other is written. Skipped where the disk folds case, which cannot hold both.
+#[test]
+fn two_files_that_differ_only_by_case_stay_two_files() {
+    let (_directory, root) = vault();
+    if disk_ignores_letter_case(root.path()) {
+        return;
+    }
+    fs::write(root.path().join("Auth.md"), "upper").expect("seed");
+    fs::write(root.path().join("auth.md"), "lower").expect("seed");
+    let applied = apply_all_or_nothing(
+        vec![
+            PlanEntry::write(target(&root, "auth"), "lower, rewritten".to_string()),
+            PlanEntry::delete(target(&root, "Auth")),
+        ],
+        &options(),
+    )
+    .expect("applied");
+    assert_eq!(applied.steps, 2);
+    assert!(!root.path().join("Auth.md").exists(), "the other file was deleted as asked");
+    assert_eq!(
+        fs::read_to_string(root.path().join("auth.md")).expect("read"),
+        "lower, rewritten"
     );
 }
 
@@ -534,6 +693,12 @@ fn a_plan_that_would_rewrite_a_file_reserved_for_a_person_writes_nothing() {
     let error = apply_all_or_nothing(plan(), &options()).expect_err("reserved");
     assert!(matches!(error, WriteError::Reserved(_)), "{error}");
     assert!(error.to_string().contains("reserved for a person"));
+    assert!(
+        error
+            .to_string()
+            .ends_with("Report it and let the person decide; only they release the reservation."),
+        "an agent that meets a reserved file is told whom to hand it to: {error}"
+    );
     assert_eq!(error.class(), WriteErrorClass::ToolError);
     assert_eq!(
         fs::read_to_string(root.path().join("plain.md")).expect("plain"),

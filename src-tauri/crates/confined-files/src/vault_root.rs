@@ -555,8 +555,13 @@ mod tests {
         symlink(&outside_target, root.path().join("dangling.md")).expect("link");
         // The slug itself names a path inside the vault; what a write does with a link at that
         // path is the atomic write's rename, which replaces the link and never follows it.
-        assert!(root.write_path("dangling").is_ok());
-        assert!(!outside_target.exists());
+        let path = root.write_path("dangling").expect("judged by its folder");
+        crate::atomic_write::write_atomically(&path, "written", &crate::atomic_write::AtomicWrite::default())
+            .expect("the write goes through");
+        assert!(!outside_target.exists(), "the link was not followed to a file outside the vault");
+        let written = std::fs::symlink_metadata(root.path().join("dangling.md")).expect("the file");
+        assert!(written.is_file() && !written.file_type().is_symlink(), "the link was replaced");
+        assert_eq!(std::fs::read_to_string(root.path().join("dangling.md")).expect("read"), "written");
     }
 
     #[test]

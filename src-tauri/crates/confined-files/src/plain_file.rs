@@ -35,6 +35,25 @@ pub(crate) struct FileFacts {
     pub identity: (u64, u64),
 }
 
+/// Which file a name led to when it was read: device and inode on Unix, volume serial number and
+/// file index on Windows. A file replaced under the same name (a link, a hard link, a copy with the
+/// same text) has another identity, which a text comparison cannot tell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FileIdentity((u64, u64));
+
+impl FileIdentity {
+    pub(crate) fn of(facts: &FileFacts) -> Self {
+        Self(facts.identity)
+    }
+
+    /// Whether `path` still names a plain file of this identity, reached without following a link.
+    pub(crate) fn is_still_at(self, path: &Path) -> bool {
+        open_read(path)
+            .and_then(|file| facts_of(&file))
+            .is_ok_and(|facts| facts.plain && Self::of(&facts) == self)
+    }
+}
+
 #[cfg(unix)]
 mod platform {
     use std::os::fd::OwnedFd;

@@ -193,9 +193,9 @@ fn a_client_that_cannot_be_asked_or_answers_the_question_with_an_error_writes_no
 }
 
 #[test]
-fn a_dry_run_asks_nothing_and_leaves_no_audit_line() {
+fn a_preview_asks_nothing_and_leaves_no_audit_line() {
     let mut client = Client::with_consent(r#"{"elicitation":{}}"#);
-    client.write(2, r#"{"slug":"a","dryRun":true}"#);
+    client.write(2, r#"{"slug":"a","confirm":false}"#);
     let answer = client.next();
     assert!(!failed(&answer), "{}", text_of(&answer));
     assert_eq!(
@@ -205,6 +205,21 @@ fn a_dry_run_asks_nothing_and_leaves_no_audit_line() {
     assert_eq!(client.file("a.md"), None);
     assert_eq!(client.file(".ontology-atlas/activity.jsonl"), None);
     assert_eq!(client.file(".ontology-atlas/map-analysis.jsonl"), None);
+}
+
+#[test]
+fn a_real_write_tool_has_no_dry_run_argument_so_nothing_skips_the_question_that_way() {
+    let mut client = Client::with_consent(r#"{"elicitation":{}}"#);
+    client.live.send(&call(
+        2,
+        "add_concepts",
+        r#"{"concepts":[{"slug":"elements/a","kind":"element","title":"A"}],"dryRun":true}"#,
+    ));
+    let answer = client.next();
+    assert_eq!(answer["id"], 2, "the first line is the answer, not a question");
+    assert!(failed(&answer), "{}", text_of(&answer));
+    assert!(text_of(&answer).contains("dryRun"), "{}", text_of(&answer));
+    assert_eq!(client.file("elements/a.md"), None);
 }
 
 #[test]

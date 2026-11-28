@@ -35,8 +35,10 @@ mod vault_root;
 mod vault_sidecar;
 mod write_plan;
 
+pub use plain_file::FileIdentity;
 pub use absorbed_file::{
-    AbsorbedFile, AbsorbedFileRefusal, ABSORBED_FILE_MAX_BYTES, ABSORB_BACKUP_SUFFIX,
+    AbsorbedFile, AbsorbedFileRefusal, AbsorbedPlace, ABSORBED_FILE_MAX_BYTES,
+    ABSORB_BACKUP_SUFFIX,
 };
 pub use atomic_write::{
     check_current_text, check_modified_time, write_atomically, AtomicWrite, ConflictReport,
