@@ -169,7 +169,7 @@ fn source_reads_answer_an_outline_and_a_symbol_as_text_and_refuse_a_credential_f
 }
 
 #[test]
-fn the_analysis_names_what_the_scan_found_and_a_repository_with_cargo_is_refused_by_name() {
+fn the_analysis_names_what_the_scan_found_and_a_repository_with_cargo_names_its_features() {
     let (_scene, root) = repository();
     let result = survey(&root, r#"{"view":"analysis"}"#);
     assert_ne!(result["isError"], true, "{result}");
@@ -177,10 +177,20 @@ fn the_analysis_names_what_the_scan_found_and_a_repository_with_cargo_is_refused
     assert_eq!(answer["proposalValidation"]["status"], "not-provided", "{answer}");
     assert_eq!(answer["proposalValidation"]["canWrite"], false, "{answer}");
     assert_eq!(answer["rootPath"], root.to_string_lossy().as_ref(), "{answer}");
-    write(&root, "Cargo.toml", "[package]\nname = \"shop\"\n");
-    let refused = survey(&root, r#"{"view":"analysis"}"#);
-    assert_eq!(refused["isError"], true, "{refused}");
-    assert!(text_of(&refused).contains("root Cargo.toml"), "{refused}");
+    write(
+        &root,
+        "Cargo.toml",
+        "[package]\nname = \"shop\"\n\n[features]\nfast = []\n",
+    );
+    write(&root, "src/lib.rs", "#[cfg(feature = \"fast\")]\nfn quick() {}\n");
+    let with_cargo = survey(&root, r#"{"view":"analysis"}"#);
+    assert_ne!(with_cargo["isError"], true, "{with_cargo}");
+    let evidence = &with_cargo["structuredContent"]["configurationEvidence"];
+    assert_eq!(evidence["status"], "observed", "{evidence}");
+    assert_eq!(evidence["packages"][0]["packageName"], "shop", "{evidence}");
+    let reference = &evidence["packages"][0]["features"][0]["references"][0];
+    assert_eq!(reference["path"], "src/lib.rs", "{evidence}");
+    assert_eq!(reference["line"], 1, "{evidence}");
 }
 
 #[cfg(unix)]

@@ -12776,6 +12776,182 @@
       "path": "result.structuredContent.skipped",
       "change": 61,
       "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/coverage/workspaceMembersEligible",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.coverage.workspaceMembersEligible",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/coverage/workspaceMembersSkipped",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.coverage.workspaceMembersSkipped",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/coverage/packagesDiscovered",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.coverage.packagesDiscovered",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/coverage/packagesScanned",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.coverage.packagesScanned",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/coverage/sourceFilesScanned",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.coverage.sourceFilesScanned",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/coverage/sourceFilesSkipped",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.coverage.sourceFilesSkipped",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/packages",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.packages",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/unsupportedWorkspaceMembers",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.unsupportedWorkspaceMembers",
+      "change": 62,
+      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/skipped",
+      "change": 59,
+      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.skipped",
+      "change": 59,
+      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-quote-character",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/packages/0/features/0",
+      "change": 63,
+      "reason": "A character literal that holds a double quote (`'\"'`) before an attribute does not open a string in the Cargo feature evidence. The script server takes the quote as the start of a string and misses every attribute up to the next quote, so a feature's references were under-counted; the Rust server reads them (row 63)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-quote-character",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.packages[0].features[0]",
+      "change": 63,
+      "reason": "A character literal that holds a double quote (`'\"'`) before an attribute does not open a string in the Cargo feature evidence. The script server takes the quote as the start of a string and misses every attribute up to the next quote, so a feature's references were under-counted; the Rust server reads them (row 63)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-quote-character",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/configurationEvidence/packages/0/features/1",
+      "change": 63,
+      "reason": "A character literal that holds a double quote (`'\"'`) before an attribute does not open a string in the Cargo feature evidence. The script server takes the quote as the start of a string and misses every attribute up to the next quote, so a feature's references were under-counted; the Rust server reads them (row 63)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-rust-features-quote-character",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.configurationEvidence.packages[0].features[1]",
+      "change": 63,
+      "reason": "A character literal that holds a double quote (`'\"'`) before an attribute does not open a string in the Cargo feature evidence. The script server takes the quote as the start of a string and misses every attribute up to the next quote, so a feature's references were under-counted; the Rust server reads them (row 63)."
     }
   ]
 }

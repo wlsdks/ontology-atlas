@@ -788,7 +788,11 @@ pub fn discover_rust_implementation_evidence(
     }
     match crate::semantic_evidence::package_contract_issue(files, "Cargo.toml", CARGO_MANIFEST_MAX_BYTES) {
         Err(reason) => {
-            skipped.push_once(files.display("Cargo.toml"), reason);
+            // A manifest that is a folder or cannot be opened is not a Rust package, as for the
+            // script server; only a link out of the root or a size over the limit is a finding.
+            if !reason.ends_with("cannot be read") {
+                skipped.push_once(files.display("Cargo.toml"), reason);
+            }
             return empty();
         }
         Ok(text) => {

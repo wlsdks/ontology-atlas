@@ -17,10 +17,7 @@ vault changes through a reviewed write.
 | `semantic_document`, `semantic_evidence`, `semantic_risk`, `semantic_excerpt` | The documents that state meaning, their risk flags and trust, and which sections an excerpt quotes |
 | `source_elements`, `native_evidence` | Packages and folders that become element candidates: workspaces, Python, Go, Rust, C |
 | `meaning_gate` | The questions the scan can and cannot answer, and the extraction contract |
-| `rust_feature_configuration` | The configuration evidence of a repository that has no root `Cargo.toml` |
-
-A repository with a root `Cargo.toml` is not analysed here: its Rust feature configuration
-evidence is not built, and the server refuses it by name instead of answering without it.
+| `cargo_manifest`, `rust_source_files`, `rust_feature_attributes`, `rust_feature_configuration` | Where Cargo features are switched on in source: the manifest's package, features and workspace members, the Rust files of each package's conventional targets, the `cfg` attributes that name a feature, and the evidence built from them |
 
 The Markdown reader was measured against the script server's `markdown-it` on the analysis of this
 repository's own `docs` (983 leaves compared): the only difference is a skipped dotfile row the

@@ -2083,6 +2083,98 @@ add('survey', 'analyze-repo-structure-malformed-review-inputs', { vault: 'miniat
   review({ qualification: qualificationWith({ acceptance: { decision: 'accepted', decidedBy: 'someone', decidedAt: 'yesterday', planDigest: DIGEST, planRevision: 1, acceptedGapIds: [] } }) }),
   review({ proposal: projectWith({ confidence: 2 }), qualification: {} }),
 ]);
+// The Cargo feature evidence of the analysis: a root package and literal workspace members, a
+// feature table that continues over lines, every attribute form, polarity and role the evidence
+// names, and the members and predicates it cannot use.
+const analysis = (extra = {}, root = '$PARENT') => call('analyze_repo_structure', { rootPath: root, view: 'analysis', ...extra });
+add('survey', 'analyze-repo-structure-analysis-rust-features', { vault: 'miniature-repo' }, [
+  planted('Cargo.toml', '[package]\nname = "atlas-shop"\nversion = "0.1.0"\n\n[workspace]\nmembers = ["crates/core", "crates/cli", "crates/missing", "crates/*", "../outside", "/abs/path", "crates\\win", "crates/core", "crates/nopackage", "crates/./cli", " crates/padded"]\n\n[features]\ndefault = ["fast"]\nfast = []\nslow = ["fast", "dep:tokio"]\ntls = [ # comment\n  "dep:rustls",\n]\nunused = []\n"quoted" = []\n'),
+  planted('src/lib.rs', [
+    '#![cfg(not(feature = "slow"))]',
+    '//! # [cfg(feature = "slow")] in a doc comment',
+    '#[cfg(feature = "fast")]',
+    'pub fn fast() {}',
+    '',
+    '#[cfg(all(feature = "fast", feature = "tls"))]',
+    'pub fn both() {}',
+    '#[cfg_attr(feature = "tls", derive(Debug))]',
+    'pub struct Tls;',
+    '#[cfg(feature = NAME)]',
+    'pub fn computed() {}',
+    '#[cfg(feature = "undeclared")]',
+    'pub fn undeclared() {}',
+    '// #[cfg(feature = "slow")]',
+    '/* #[cfg(feature = "slow")] /* nested #[cfg(feature = "slow")] */ still a comment #[cfg(feature = "slow")] */',
+    'const S: &str = "#[cfg(feature = \\"slow\\")]\n   still a string";',
+    'const R: &str = r#"#[cfg(feature = "slow")]"#;',
+    '#[cfg(',
+    '    feature = "fast"',
+    ')]',
+    'pub fn spread() {}',
+    '#[cfg(any(feature = "slow",',
+    '          feature = "fast"))]',
+    'pub fn any() {}',
+    '#[cfg(feature="unused")] #[cfg(not( feature = "unused" ))]',
+    'pub fn twice() {}',
+    '#[derive(Debug)] #[cfg(feature = "quoted")]',
+    'pub struct Quoted;',
+    '',
+  ].join('\n')),
+  planted('src/lexer_test.rs', '#[cfg(feature = "fast")]\nfn in_a_test_name() {}\n'),
+  planted('src/test_util.rs', '#[cfg(feature = "fast")]\nfn util() {}\n'),
+  planted('src/contest.rs', '#[cfg(feature = "fast")]\nfn not_a_test() {}\n'),
+  planted('src/checks.test.rs', '#[cfg(feature = "slow")]\nfn dotted() {}\n'),
+  planted('tests/integration.rs', '#[cfg(feature = "fast")]\nfn it() {}\n'),
+  planted('examples/demo.rs', '#[cfg(feature = "slow")]\nfn demo() {}\n'),
+  planted('benches/speed.rs', '#[cfg(not(feature = "fast"))]\nfn bench() {}\n'),
+  planted('build.rs', '#[cfg(feature = "tls")]\nfn main() {}\n'),
+  planted('src/skipped/target/ignored.rs', '#[cfg(feature = "fast")]\nfn built() {}\n'),
+  planted('src/notes.txt', '#[cfg(feature = "fast")]\n'),
+  planted('crates/core/Cargo.toml', '[package]\nname = "core"\n\n[features]\nfast = []\nextra = ["fast"]\n'),
+  planted('crates/core/src/lib.rs', '#[cfg(feature = "extra")]\nfn extra() {}\n#[cfg(feature = "fast")]\nfn fast() {}\n'),
+  planted('crates/cli/Cargo.toml', '[package]\nname = "cli"\n[features]\nverbose = []\n'),
+  planted('crates/cli/src/main.rs', 'fn main() {\n    #[cfg(feature = "verbose")]\n    println!("v");\n}\n'),
+  planted('crates/nopackage/Cargo.toml', '[workspace]\nmembers = []\n'),
+  analysis(),
+  analysis({ ignore: ['crates'] }),
+  analysis({}, '$PARENT/crates/core'),
+  analysis({}, '$PARENT/crates/nopackage'),
+]);
+add('survey', 'analyze-repo-structure-analysis-rust-features-hostile', { vault: 'miniature-repo' }, [
+  { $: 'write-file', path: '../../outside/Cargo.toml', text: '[package]\nname = "outside"\n' },
+  planted('real-in/Cargo.toml', '[package]\nname = "real-in"\n[features]\nf = []\n'),
+  planted('real-in/src/lib.rs', '#[cfg(feature = "f")]\nfn f() {}\n'),
+  { $: 'symlink', path: '../link-out', target: '../outside' },
+  { $: 'symlink', path: '../link-in', target: 'real-in' },
+  planted('zz-tools/.hidden/Cargo.toml', '[package]\nname = "hidden"\n'),
+  planted('Cargo.toml', '[package]\r\nname = "hostile"\r\n[workspace]\r\nmembers = [\r\n  "link-out",\r\n  "link-in",\r\n  "zz-tools/.hidden",\r\n  "real-in",\r\n]\r\n[features]\r\na-secret = []\r\nf = []\r\nbig = ["' + 'x'.repeat(513) + '"]\r\n' + Array.from({ length: 50 }, (_, index) => `feature-${String(index).padStart(2, '0')} = []`).join('\r\n') + '\r\n'),
+  planted('src/lib.rs', '#[cfg(feature = "f")]\nfn lifetime<\'a>(x: &\'a str) -> &\'a str { x }\n#[cfg(feature = "f")]\nfn after_lifetime() {}\n'),
+  planted('src/secrets.rs', '#[cfg(feature = "a-secret")]\nfn secret() {}\n'),
+  planted('src/credentials.rs', '#[cfg(feature = "a-secret")]\nfn credential() {}\n'),
+  planted('src/wide.rs', `#[cfg(feature = "f")]\n${'// filler\n'.repeat(30000)}`),
+  planted('src/binary.rs', '#[cfg(feature = "f")]\n\u0000\u0000fn b() {}\n'),
+  { $: 'write-file', path: '../src/latin1.rs', base64: 'I1tjZmcoZmVhdHVyZSA9ICJmIildCmZuIGEoKSB7IC8qIP8gKi8gfQo=' },
+  analysis(),
+]);
+// A character literal holding a double quote does not open a string: the attributes after it are read.
+add('survey', 'analyze-repo-structure-analysis-rust-features-quote-character', { vault: 'miniature-repo' }, [
+  planted('Cargo.toml', '[package]\nname = "quoted"\n[features]\nf = []\ng = []\n'),
+  planted('src/lib.rs', 'fn quote() -> char { \'"\' }\n#[cfg(feature = "f")]\nfn after_the_quote() {}\nfn escaped() -> char { \'\\\'\' }\n#[cfg(feature = "g")]\nfn after_the_escape() {}\n'),
+  analysis(),
+]);
+add('survey', 'analyze-repo-structure-analysis-rust-features-unreadable-manifests', { vault: 'miniature-repo' }, [
+  planted('Cargo.toml', '[package]\nname = "open"\n[features]\na = ["b"\n'),
+  analysis(),
+  planted('Cargo.toml', '[workspace]\nmembers = ["a", "b"]\n'),
+  planted('a/Cargo.toml', '[package]\nname = "a"\n[features]\nz = ["y"\n'),
+  planted('b/Cargo.toml', '# no tables at all\n'),
+  analysis(),
+  { $: 'write-file', path: '../Cargo.toml', text: '[package]\nname = "big"\n', size: 300000 },
+  analysis(),
+  { $: 'remove', path: '../Cargo.toml' },
+  { $: 'mkdir', path: '../Cargo.toml' },
+  analysis(),
+]);
 add('survey', 'index-project-retired', { vault: 'miniature-repo' }, [call('index_project', { rootPath: '$PARENT' })]);
 
 // ---------------------------------------------------------------------------------------------

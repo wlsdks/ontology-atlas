@@ -28,6 +28,14 @@ pub enum ReadFailure {
     Unreadable,
 }
 
+/// One name of a folder's listing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListedName {
+    pub name: String,
+    pub kind: EntryKind,
+    pub credential_named: bool,
+}
+
 pub struct RepositoryFiles<'a> {
     files: &'a (dyn SourceFiles + Sync),
     /// The root as the answer names it.
@@ -109,6 +117,31 @@ impl<'a> RepositoryFiles<'a> {
                 (name, probe)
             })
             .collect()
+    }
+
+    /// The names in a folder in UTF-16 order as the folder lists them: what each one is itself (a
+    /// link is a link), and a regular file named like a credential, which is listed but never
+    /// opened. Hidden names are not listed.
+    pub fn listing(&self, relative: &str) -> Vec<ListedName> {
+        let Ok(listing) = self.files.list_directory(&self.absolute(relative)) else {
+            return Vec::new();
+        };
+        let mut listed: Vec<ListedName> = listing
+            .entries
+            .into_iter()
+            .map(|entry| ListedName {
+                name: entry.name,
+                kind: entry.kind,
+                credential_named: false,
+            })
+            .chain(listing.credential_named_files.into_iter().map(|name| ListedName {
+                name,
+                kind: EntryKind::File,
+                credential_named: true,
+            }))
+            .collect();
+        listed.sort_by(|left, right| utf16::compare(&left.name, &right.name));
+        listed
     }
 
     pub fn names(&self, relative: &str) -> Vec<String> {

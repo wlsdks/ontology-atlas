@@ -1,14 +1,14 @@
 //! `analyze_repo_structure`: the breadth map of the repository, the first call of every
 //! construction. The map is read once on the shared pool by `repository-survey`; this file checks
 //! the arguments the way the JavaScript server does and refuses, by name, the parts of the tool
-//! this build does not answer yet (a proposal or qualification to review, and the analysis of a
-//! root with a `Cargo.toml`). `sourceReads` answer from `source-reads`: the reads alone, as text.
-//! `view: "analysis"` is answered by `repository-candidates`.
+//! this build does not answer yet (a proposal or qualification to review). `sourceReads` answer from
+//! `source-reads`: the reads alone, as text. `view: "analysis"` is answered by
+//! `repository-candidates`.
 
 use construction_review::proposal_validation::ProposalValidation;
 use repository_candidates::analysis_view::narrow_to_view;
 use repository_candidates::repository_analysis::{
-    analyze_repository, AnalysisRefusal, AnalysisRequest, RepositoryAnalysis,
+    analyze_repository, AnalysisRequest, RepositoryAnalysis,
 };
 use repository_candidates::repository_files::RepositoryFiles;
 use repository_survey::{build_breadth_map, git_ignored_paths, SurveyFiles, SurveyRequest};
@@ -156,10 +156,7 @@ struct AnalysisAnswer {
 fn analysis_answer(target: &ScanTarget, ignore: &[String]) -> Result<ToolOutput, ToolError> {
     let source = target.source_with_limit(ANALYSIS_FILE_BYTES);
     let files = RepositoryFiles::new(&source, &target.label);
-    let (mut analysis, _imports) = analyze_repository(&files, &AnalysisRequest { ignore })
-        .map_err(|AnalysisRefusal::RustFeatureConfiguration| {
-            not_answered("The structural analysis view of a repository with a root Cargo.toml")
-        })?;
+    let (mut analysis, _imports) = analyze_repository(&files, &AnalysisRequest { ignore });
     let note = narrow_to_view(&mut analysis);
     ToolOutput::json(&AnalysisAnswer {
         analysis,

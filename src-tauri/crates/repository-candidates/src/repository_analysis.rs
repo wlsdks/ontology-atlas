@@ -24,7 +24,7 @@ use crate::project_detection::{
     detect_domains_from_readme, detect_existing_ontology, detect_project, DomainCandidate,
 };
 use crate::repository_files::{join, Probe, RepositoryFiles, SkipLog, Skipped};
-use crate::rust_feature_configuration::{not_present, ConfigurationEvidence};
+use crate::rust_feature_configuration::{collect_configuration_evidence, ConfigurationEvidence};
 use crate::scan_limits::{
     IMPLEMENTATION_SOURCE_ELEMENT_LIMIT, LIBRARY_SOURCE_ELEMENT_LIMIT,
     SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT,
@@ -76,13 +76,6 @@ pub struct ObservedImports {
     pub boundary_elements: Vec<ElementCandidate>,
 }
 
-/// The one reason a repository is not analysed by this build.
-#[derive(Debug, PartialEq, Eq)]
-pub enum AnalysisRefusal {
-    /// The repository has a root `Cargo.toml`; its feature configuration evidence is not built.
-    RustFeatureConfiguration,
-}
-
 fn domain_matcher(domains: &[DomainCandidate]) -> impl Fn(&str) -> Option<String> {
     let slugs: Vec<String> = domains.iter().map(|row| row.slug.clone()).collect();
     move |name: &str| {
@@ -112,10 +105,7 @@ fn capability(
 pub fn analyze_repository(
     files: &RepositoryFiles<'_>,
     request: &AnalysisRequest<'_>,
-) -> Result<(RepositoryAnalysis, ObservedImports), AnalysisRefusal> {
-    if files.probe("Cargo.toml") != Probe::Missing {
-        return Err(AnalysisRefusal::RustFeatureConfiguration);
-    }
+) -> (RepositoryAnalysis, ObservedImports) {
     let ignore: BTreeSet<String> = source_scan::DEFAULT_IGNORE
         .iter()
         .map(|name| (*name).to_string())
@@ -428,11 +418,11 @@ pub fn analyze_repository(
         meaning_gate,
         extraction_contract,
         semantic_evidence,
-        configuration_evidence: not_present(),
+        configuration_evidence: collect_configuration_evidence(files),
         suggested_relations,
         skipped: skipped.into_rows(),
     };
-    Ok((
+    (
         analysis,
         ObservedImports {
             edges: observed_edges,
@@ -442,7 +432,7 @@ pub fn analyze_repository(
                 .chain(go_boundary_owned)
                 .collect(),
         },
-    ))
+    )
 }
 
 /// The import scan the element evidence rests on, over the workspace packages that became
