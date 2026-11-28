@@ -97,7 +97,7 @@ function webServers() {
     };
   }
   const serve = (origin: URL, folder: string, fallback: string | null) => ({
-    command: `node scripts/web/serve-static-export.mjs --dir=${folder} --host=${hostFor(origin)} --port=${origin.port}${fallback ? ` --fallback=${fallback}` : ''}`,
+    command: `node scripts/web/serve-built-folder.mjs --dir=${folder} --host=${hostFor(origin)} --port=${origin.port}${fallback ? ` --fallback=${fallback}` : ''}`,
     url: origin.origin,
     reuseExistingServer: false,
     timeout: 120_000,

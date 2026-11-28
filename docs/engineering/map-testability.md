@@ -114,7 +114,7 @@ The script opens a generated 3000-file folder, then a 31-file control, in a test
 **Readability** (crossings · overlaps) is a separate harness and requires no real input, so it is headless. It opens each of its folders in the same faked app runtime:
 
 ```bash
-node scripts/web/serve-static-export.mjs --port=4173 &
+node scripts/web/serve-built-folder.mjs --port=4173 &
 node scripts/design/measure-graph-readability.mjs
 ```
 

@@ -3,7 +3,7 @@
  * Serves a built folder with zero dependencies: the site folder the way the website host does, or the
  * app folder the way the installed app does. Some e2e specs must measure a layer the dev server lacks,
  * and no package is added to the release surface for one e2e. Usage:
- * `node scripts/web/serve-static-export.mjs [--port=4173] [--host=127.0.0.1] [--dir=out] [--fallback=index.html]`.
+ * `node scripts/web/serve-built-folder.mjs [--port=4173] [--host=127.0.0.1] [--dir=out] [--fallback=index.html]`.
  * Without `--fallback` a missing path answers `404.html`, as the host does. With it, a missing path
  * answers that one document with status 200, as Tauri does for every path the app folder lacks.
  */
@@ -111,7 +111,7 @@ export function startStaticExportServer({ root, port, host = "127.0.0.1", fallba
   server.listen(port, host, () => {
     const address = server.address();
     const actualPort = typeof address === "object" && address ? address.port : port;
-    console.log(`[serve-static-export] ${resolvedRoot} → http://${host}:${actualPort}`);
+    console.log(`[serve-built-folder] ${resolvedRoot} → http://${host}:${actualPort}`);
   });
   return server;
 }

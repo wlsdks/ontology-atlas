@@ -14,9 +14,9 @@ import path from 'node:path';
 import {
   resolveStaticExportFile,
   startStaticExportServer,
-} from './serve-static-export.mjs';
+} from './serve-built-folder.mjs';
 
-describe('serve-static-export security boundary', () => {
+describe('serve-built-folder security boundary', () => {
   const roots = [];
 
   afterEach(() => {

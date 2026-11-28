@@ -13,7 +13,7 @@
 #   red (`scripts/lib/landing/pr-land/main-health.mjs`).
 #
 # The specs run on `macos-15`, the system the app ships on and authors run specs on, so a red night
-# reproduces locally. The static export is built once on Linux and downloaded. A free account runs
+# reproduces locally. The built folders are built once on Linux and downloaded. A free account runs
 # five macOS jobs at once: three shards, the surfaces and the quarantined specs.
 name: Browser suite
 # Quoted: an unquoted YAML value may not hold ': ', and the title holds one.
@@ -108,13 +108,13 @@ jobs:
           # `pnpm typecheck` in Checks owns types for this tree (the build script's type check).
           ATLAS_BUILD_SKIP_TYPECHECK: "1"
       # Both folders one build writes: app specs read the app folder, website specs the site folder.
-      - name: Pack static export
-        run: tar -czf "$RUNNER_TEMP/playwright-export.tgz" out src-tauri/target/desktop-frontend
-      - name: Upload static export
+      - name: Pack built folders
+        run: tar -czf "$RUNNER_TEMP/playwright-built-folders.tgz" out src-tauri/target/desktop-frontend
+      - name: Upload built folders
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: playwright-export-${{ github.sha }}
-          path: ${{ runner.temp }}/playwright-export.tgz
+          name: playwright-built-folders-${{ github.sha }}
+          path: ${{ runner.temp }}/playwright-built-folders.tgz
           compression-level: 0
           if-no-files-found: error
           retention-days: 1
@@ -150,22 +150,22 @@ jobs:
         if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - name: Download static export
+      - name: Download built folders
         if: env.ACTIVE == 'true'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: playwright-export-${{ github.sha }}
+          name: playwright-built-folders-${{ github.sha }}
           path: ${{ runner.temp }}
 
-      - name: Unpack static export
+      - name: Unpack built folders
         if: env.ACTIVE == 'true'
-        run: tar -xzf "$RUNNER_TEMP/playwright-export.tgz"
+        run: tar -xzf "$RUNNER_TEMP/playwright-built-folders.tgz"
 
       - name: Setup Playwright
         if: env.ACTIVE == 'true'
         uses: ./.github/actions/setup-playwright
 
-      - name: Run static-export evidence
+      - name: Run built-folder evidence
         if: env.STATIC == 'true'
         run: node scripts/ci/run-ci-lane.mjs --lane=static
         env:
@@ -179,7 +179,7 @@ jobs:
 
       - name: Skip unaffected Playwright setup
         if: env.ACTIVE != 'true' && needs.changes.result == 'success'
-        run: echo "Neither the static export nor the web gateway is in this plan"
+        run: echo "Neither the built folders nor the web gateway is in this plan"
 
       - name: Upload failure evidence or retry traces
         if: always() && env.ACTIVE == 'true'
@@ -226,16 +226,16 @@ jobs:
         if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - name: Download static export
+      - name: Download built folders
         if: env.ACTIVE == 'true'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: playwright-export-${{ github.sha }}
+          name: playwright-built-folders-${{ github.sha }}
           path: ${{ runner.temp }}
 
-      - name: Unpack static export
+      - name: Unpack built folders
         if: env.ACTIVE == 'true'
-        run: tar -xzf "$RUNNER_TEMP/playwright-export.tgz"
+        run: tar -xzf "$RUNNER_TEMP/playwright-built-folders.tgz"
 
       - name: Setup Playwright
         if: env.ACTIVE == 'true'
@@ -290,14 +290,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - name: Download static export
+      - name: Download built folders
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: playwright-export-${{ github.sha }}
+          name: playwright-built-folders-${{ github.sha }}
           path: ${{ runner.temp }}
 
-      - name: Unpack static export
-        run: tar -xzf "$RUNNER_TEMP/playwright-export.tgz"
+      - name: Unpack built folders
+        run: tar -xzf "$RUNNER_TEMP/playwright-built-folders.tgz"
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright

@@ -139,7 +139,7 @@ const E2E_BROAD_INPUTS = [
   // The Vite build of the app folder: its document and its config shape every screen it serves.
   /^(?:index\.html|vite\.config\.ts)$/,
   /^\.github\/actions\/setup-playwright\//,
-  /^scripts\/(?:web\/serve-static-export|ci\/run-with-retry)(?:\.test)?\.mjs$/,
+  /^scripts\/(?:web\/serve-built-folder|ci\/run-with-retry)(?:\.test)?\.mjs$/,
   // Path aliases and compiler options the Next build reads.
   /^tsconfig\.json$/,
 ];
@@ -192,7 +192,7 @@ const BROWSER_INPUTS = [
 const STATIC_EXPORT_INPUTS = [
   /^playwright\.config\.ts$/,
   /^next\.config\.ts$/,
-  /^scripts\/web\/serve-static-export\.mjs$/,
+  /^scripts\/web\/serve-built-folder\.mjs$/,
   /^tests\/e2e\/contextual-meaning-editor\.spec\.ts$/,
   /^src\/features\/ontology-change-review\//,
 ];

@@ -8,7 +8,7 @@
  * app with the Storefront sample folder open (`scripts/lib/desktop-app/open-folder-in-app.mjs`).
  *
  * Usage (run `pnpm build` first):
- *   node scripts/web/serve-static-export.mjs --port=4173 &
+ *   node scripts/web/serve-built-folder.mjs --port=4173 &
  *   node scripts/design/measure-contrast.mjs [baseUrl] [route...]
  */
 

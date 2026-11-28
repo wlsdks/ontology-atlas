@@ -736,7 +736,7 @@ test('CI regression-test edits run their checks without promoting unrelated prod
   for (const file of [
     'scripts/ci/classify-change.test.mjs', 'scripts/ci/run-ci-lane.test.mjs',
     'scripts/lib/ci/focused-check-suggestions.test.mjs', 'scripts/lib/import-graph/test-reach.test.mjs',
-    'scripts/ci/run-playwright-ci.test.mjs', 'scripts/web/serve-static-export.test.mjs',
+    'scripts/ci/run-playwright-ci.test.mjs', 'scripts/web/serve-built-folder.test.mjs',
   ]) {
     const plan = buildImpactPlan({ files: [file] });
     assert.equal(plan.full, false, file);
@@ -747,7 +747,7 @@ test('CI regression-test edits run their checks without promoting unrelated prod
     assert.ok(plan.lanes.gates.commands.some((command) => command.includes(file) && command.includes('node --test')), file);
     const implementation = file.replace('.test.mjs', '.mjs');
     // The planner and the browser executor run the whole suite; the static server reaches it broadly.
-    const browser = implementation === 'scripts/web/serve-static-export.mjs' ? 'smoke' : 'full';
+    const browser = implementation === 'scripts/web/serve-built-folder.mjs' ? 'smoke' : 'full';
     const runtime = buildImpactPlan({ files: [implementation] });
     assert.equal(runtime.lanes.e2e.mode, browser, implementation);
     const mixed = buildImpactPlan({ files: [file, implementation] });

@@ -7,9 +7,9 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
-const EXPORT_FOLDER = 'src-tauri/target/perf-export';
-export const EXPORT_DIR = join(ROOT, EXPORT_FOLDER);
-const STAMP = join(ROOT, 'src-tauri', 'target', 'perf-export.json');
+const PERF_BUILD_FOLDER = 'src-tauri/target/perf-build';
+export const PERF_BUILD_DIR = join(ROOT, PERF_BUILD_FOLDER);
+const STAMP = join(ROOT, 'src-tauri', 'target', 'perf-build.json');
 
 function head() {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
@@ -19,19 +19,19 @@ function head() {
 }
 
 function run(label, command, args, env = {}) {
-  console.log(`[perf-export] ${label}`);
+  console.log(`[perf-build] ${label}`);
   const result = spawnSync(command, args, { cwd: ROOT, stdio: 'inherit', env: { ...process.env, ...env } });
   if (result.status !== 0) throw new Error(`${label} failed (exit ${result.status})`);
 }
 
-/** Builds the names-kept app folder unless it is a perf export of this commit with no uncommitted source change. */
-export function ensurePerfExport({ rebuild = false } = {}) {
+/** Builds the names-kept app folder unless it is a perf build of this commit with no uncommitted source change. */
+export function ensurePerfBuild({ rebuild = false } = {}) {
   const now = head();
   const stamp = existsSync(STAMP) ? JSON.parse(readFileSync(STAMP, 'utf8')) : null;
   if (!rebuild && stamp && stamp.commit === now.commit && !now.dirty && !stamp.dirty) return stamp;
   run('docs-vault:build', 'pnpm', ['docs-vault:build']);
   run('messages:build', 'pnpm', ['messages:build']);
-  run('vite build, names kept', process.execPath, [join(ROOT, 'node_modules/vite/bin/vite.js'), 'build', '--minify', 'false'], { ATLAS_APP_FOLDER: EXPORT_FOLDER });
+  run('vite build, names kept', process.execPath, [join(ROOT, 'node_modules/vite/bin/vite.js'), 'build', '--minify', 'false'], { ATLAS_APP_FOLDER: PERF_BUILD_FOLDER });
   const written = { ...now, builtAt: new Date().toISOString(), mangling: false };
   writeFileSync(STAMP, JSON.stringify(written));
   return written;

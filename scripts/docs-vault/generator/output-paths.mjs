@@ -17,7 +17,7 @@ export const CONTENT_OUT = path.join(DATA_DIR, 'content.json');
 export const GATEWAY_CONTENT_OUT = path.join(DATA_DIR, 'gateway-content.json');
 export const GATEWAY_CHANGELOG_OUT = path.join(DATA_DIR, 'gateway-changelog.json');
 // How many CHANGELOG sections go into the bundle. It must exceed the screen's display limit
-// (RECENT_SECTIONS = 12 in `app/(gateway)/[locale]/changelog/page.tsx`): the screen trims once more
+// (RECENT_SECTIONS = 12 in `src/app/routes/$locale/_site/changelog.tsx`): the screen trims once more
 // and adds the fold counts, so a higher screen limit makes the excess invisible.
 export const GATEWAY_CHANGELOG_KEEP_SECTIONS = 16;
 // Only `/docs` uses the headings, yet 263KB of them rode in the chunk shared by every route: the

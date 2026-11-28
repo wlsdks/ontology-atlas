@@ -91,7 +91,7 @@ async function waitForServer(base) {
 
 async function serveStaticExport() {
   const port = await freePort();
-  const server = spawn(process.execPath, ["scripts/web/serve-static-export.mjs", `--port=${port}`, `--dir=${APP_FOLDER}`, "--fallback=index.html"], {
+  const server = spawn(process.execPath, ["scripts/web/serve-built-folder.mjs", `--port=${port}`, `--dir=${APP_FOLDER}`, "--fallback=index.html"], {
     cwd: ROOT,
     stdio: ["ignore", process.stderr, "inherit"],
   });

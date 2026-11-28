@@ -6,7 +6,7 @@ import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } 
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ensurePerfExport, EXPORT_DIR } from './perf-export.mjs';
+import { ensurePerfBuild, PERF_BUILD_DIR } from './perf-build.mjs';
 import { MACOS_TOOL } from './macos-memory.mjs';
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
@@ -26,7 +26,7 @@ function probeSource(reportDir) {
 
 function injectProbe(probe) {
   rmSync(FRONTEND, { recursive: true, force: true });
-  cpSync(EXPORT_DIR, FRONTEND, { recursive: true });
+  cpSync(PERF_BUILD_DIR, FRONTEND, { recursive: true });
   writeFileSync(join(FRONTEND, PROBE_FILE), probe);
   let pages = 0;
   const visit = (directory) => {
@@ -63,10 +63,10 @@ function tauriConfig() {
 
 /** The built bundle and its executable, built when missing, stale, or `rebuild`. */
 export function ensurePerfApp({ reportDir, rebuild = false }) {
-  const exportStamp = ensurePerfExport();
+  const perfBuildStamp = ensurePerfBuild();
   const source = probeSource(reportDir);
   const probe = createHash('sha256').update(source).update(JSON.stringify(tauriConfig())).digest('hex').slice(0, 12);
-  const want = { commit: exportStamp.commit, dirty: exportStamp.dirty, reportDir, probe };
+  const want = { commit: perfBuildStamp.commit, dirty: perfBuildStamp.dirty, reportDir, probe };
   const have = existsSync(STAMP) ? JSON.parse(readFileSync(STAMP, 'utf8')) : null;
   if (rebuild || !existsSync(BUNDLE) || !have || have.commit !== want.commit || have.reportDir !== reportDir || have.probe !== probe || want.dirty) {
     const pages = injectProbe(source);
