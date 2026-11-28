@@ -1,6 +1,6 @@
 /**
- * Exact `connect-src` tokens: Tauri IPC plus `'self'` (the router fetches route payloads from the
- * bundle; refusing that forces a full document load). No wildcard or remote host. Read by
+ * Exact `connect-src` tokens: Tauri IPC plus `'self'` (the app fetches its own bundled files, such as
+ * the licence list, from the bundle). No wildcard or remote host. Read by
  * `scripts/desktop/check-desktop-readiness.mjs`.
  */
 export const DESKTOP_CONNECT_SRC_TOKENS = ["'self'", "ipc:", "http://ipc.localhost"];

@@ -5,7 +5,7 @@ const SECURITY_CONTRACTS = [
   'tests/contract/security/url-scheme-one-door.contract.test.ts',
   'tests/contract/security/wikilink-url-scheme.contract.test.ts',
   'tests/contract/security/json-ld-script-safety.contract.test.ts',
-  'tests/contract/security/desktop-route-payload-csp.contract.test.ts',
+  'tests/contract/security/desktop-connect-src.contract.test.ts',
   'tests/contract/security/github-action-pins.contract.test.ts',
   'tests/contract/security/workflow-security.contract.test.ts',
   'tests/contract/security/vault-freshness-workflow-security.contract.test.ts',

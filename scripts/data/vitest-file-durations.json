@@ -186,7 +186,7 @@
     "contract-node:tests/contract/security/connector-runtime-narrowing.contract.test.ts": 0.263,
     "contract-node:tests/contract/security/connector-secret-ref-parity.contract.test.ts": 0.094,
     "contract-node:tests/contract/security/connector-secrets-off-disk.contract.test.ts": 0.201,
-    "contract-node:tests/contract/security/desktop-route-payload-csp.contract.test.ts": 0.107,
+    "contract-node:tests/contract/security/desktop-connect-src.contract.test.ts": 0.107,
     "contract-node:tests/contract/security/github-action-pins.contract.test.ts": 0.065,
     "contract-node:tests/contract/security/json-ld-script-safety.contract.test.ts": 0.14,
     "contract-node:tests/contract/security/llm-audit-log.contract.test.ts": 0.167,

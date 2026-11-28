@@ -6,14 +6,12 @@ import { describe, expect, it } from "vitest";
 import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "../../../scripts/lib/desktop/desktop-csp.mjs";
 
 /**
- * **A rail press in the installed app must be a route change, not a new document.**
+ * **The installed app may fetch its own bundled files and nothing else over the network.**
  *
- * `scripts/lib/desktop/desktop-csp.mjs` carries the measurement: with `'self'` missing from
- * `connect-src`, the App Router's fetch of the arriving route's payload is refused and the
- * router falls back to a full document load. Every rail press then re-booted the app, which
- * is both halves of inspection 122's blocker — one or two frames of the pre-hydration screen
- * (a download button inside the installed app) and then a blank window for the length of the
- * folder restore, 33-67 ms on six documents and 100-300 ms on 104.
+ * `scripts/lib/desktop/desktop-csp.mjs` carries the token list. With `'self'` missing from
+ * `connect-src` the app cannot fetch its own bundled files, such as the licence list. A rail
+ * press is a route change inside one document; `tests/e2e/app-shell/router-contract.spec.ts`
+ * guards that in a browser.
  *
  * ## ⚠️ Why this is a config assertion and not a browser gate
  *
@@ -25,7 +23,7 @@ import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "../../../scripts/
  * config (`scripts/lib/check-rules/`), and a blocker's cause should be guarded by the lane
  * that always runs.
  */
-describe("the installed app may fetch its own route payloads", () => {
+describe("the installed app may fetch its own bundled files", () => {
   const config = JSON.parse(
     readFileSync(path.join(process.cwd(), "src-tauri", "tauri.conf.json"), "utf8"),
   ) as { app?: { security?: { csp?: Record<string, string> } } };
@@ -37,14 +35,12 @@ describe("the installed app may fetch its own route payloads", () => {
   });
 
   /*
-   * ★ `'self'` is the whole fix. Without it the router cannot read the arriving route out of
-   * the bundle and reloads the document instead.
+   * ★ Without `'self'` the app cannot read its own bundled files.
    */
-  it("allows the app's own origin, so a route change stays a route change", () => {
+  it("allows the app's own origin, so it can read its own files", () => {
     expect(
       (csp?.["connect-src"] ?? "").split(/\s+/),
-      "connect-src must allow 'self' — without it every rail press is a full document load " +
-        "(inspection 122, B1/R1)",
+      "connect-src must allow 'self' — without it the app cannot fetch its own bundled files",
     ).toContain("'self'");
   });
 
