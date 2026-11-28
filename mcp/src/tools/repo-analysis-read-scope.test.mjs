@@ -1,7 +1,7 @@
 /*
- * The family line as the server returns it: through `analyze_repo_structure`,
- * in the text of a source-only answer, and counted only inside the folder the
- * server was granted, even when that folder sits inside a larger repository.
+ * A source-only read through `analyze_repo_structure`: text alone, no family
+ * line, and bounded to the folder the server was granted, even when that
+ * folder sits inside a larger repository.
  */
 
 import assert from 'node:assert/strict';
@@ -55,13 +55,13 @@ async function answers(granted, vault, calls) {
   return calls.map((_, index) => responses.find(({ id }) => id === index + 2).result);
 }
 
-/** The family line a read's text carries. */
-function familyLine(result) {
+/** The text a read answers with. */
+function readText(result) {
   assert.equal(result.structuredContent, undefined, 'the reads travel as text alone');
-  return result.content[0].text.split('\n').find((line) => line.startsWith('Family: '))?.slice('Family: '.length);
+  return result.content[0].text;
 }
 
-test('a family is counted only inside the folder the server was granted, never in a folder above it', async () => {
+test('a source read stays inside the folder the server was granted and carries no family line', async () => {
   const root = repository();
   try {
     const granted = join(root, 'granted');
@@ -69,16 +69,16 @@ test('a family is counted only inside the folder the server was granted, never i
     mkdirSync(vault, { recursive: true });
     const slack = { sourceOnly: true, sourceReads: [{ path: 'src/slack.ts', symbol: 'Slack.apply' }] };
     const [atFolder, outside] = await answers(granted, vault, [slack, { ...slack, rootPath: join(root, 'private') }]);
-    const family = familyLine(atFolder);
-    assert.match(family, /^This family has at least 2 members found in this folder: the classes whose header names `Plugin` \(src\/plugin\.ts:L1\) \(Mail src\/mail\.ts:L2, Slack src\/slack\.ts:L2\)\. You read 1 of them; a sentence about the family says "1 of at least 2 read"/);
-    assert.doesNotMatch(family, /plan\.ts|UnannouncedBridge|private/, 'a file above the granted folder never reaches the line');
+    const text = readText(atFolder);
+    assert.match(text, /== read src\/slack\.ts Slack\.apply L3-L7 of 7 lines/);
+    assert.doesNotMatch(text, /^Family: /m, 'the family line is no longer part of a read');
+    assert.doesNotMatch(text, /plan\.ts|UnannouncedBridge|private/, 'a file above the granted folder never reaches the answer');
     assert.equal(outside.isError, true, 'a read addressed to a sibling folder is refused');
+    assert.match(outside.content[0].text, /This server only reads the folder it was opened for/);
 
     mkdirSync(join(root, 'atlas'));
     const [whole] = await answers(root, join(root, 'atlas'), [{ sourceOnly: true, sourceReads: [{ path: 'granted/src/slack.ts', symbol: 'Slack.apply' }] }]);
-    const repositoryFamily = familyLine(whole);
-    assert.match(repositoryFamily, /^This family has at least 3 members found in this folder: the classes whose header names `Plugin` \(granted\/src\/plugin\.ts:L1\) \(Mail granted\/src\/mail\.ts:L2, Slack granted\/src\/slack\.ts:L2, UnannouncedBridge private\/notes\/plan\.ts:L2\)\./,
-      'a server granted the repository root counts the whole repository');
+    assert.match(readText(whole), /== read granted\/src\/slack\.ts Slack\.apply/, 'a server granted the repository root reads inside the whole repository');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
