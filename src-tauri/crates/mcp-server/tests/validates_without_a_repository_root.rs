@@ -61,6 +61,44 @@ fn a_repository_root_that_is_gone_is_said_once_and_no_cited_path_is_called_drift
     assert!(answer.get("coverage").is_none());
 }
 
+/// A vault outside any repository, with no root named, from a server started inside the repository
+/// that holds this crate: that repository is not the vault's code, so nothing is measured against
+/// it and the answer says why.
+#[test]
+fn a_vault_outside_any_repository_is_not_measured_against_the_one_the_server_started_in() {
+    let (_scene, root) = vault_citing_three_paths();
+    let input = call(1, "connection_info", "{}") + &call(2, "validate_vault", "{}");
+    let run = run_to_end(
+        Program::Rust,
+        &[("OATLAS_VAULT", &root.join("ontology").to_string_lossy())],
+        input.as_bytes(),
+    );
+    let answers: Vec<Value> = run
+        .lines
+        .iter()
+        .map(|line| serde_json::from_str(line).expect("json"))
+        .collect();
+    let answer_to = |id: u64| {
+        answers
+            .iter()
+            .find(|answer| answer["id"] == id)
+            .map(|answer| answer["result"]["structuredContent"].clone())
+            .expect("an answer")
+    };
+    let connection = answer_to(1);
+    assert_eq!(
+        connection["repoResolution"], "git.rev-parse",
+        "the server is started inside a repository: {connection}"
+    );
+    let answer = answer_to(2);
+
+    assert_eq!(answer["pathDrift"]["checked"], false);
+    assert!(answer["pathDrift"]["hint"].as_str().is_some_and(|hint| hint
+        .starts_with("Source paths were NOT checked. This vault is not inside a git repository")));
+    assert_eq!(answer["evidenceDrift"]["checked"], false);
+    assert!(answer.get("coverage").is_none());
+}
+
 #[test]
 fn a_root_that_exists_lists_a_gone_path_as_drift_and_says_nothing_of_the_root() {
     let (_scene, root) = vault_citing_three_paths();
