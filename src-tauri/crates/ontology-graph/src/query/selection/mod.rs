@@ -18,6 +18,7 @@ mod maintenance_action;
 mod maintenance_plan;
 mod match_nodes;
 mod node_profile;
+mod orphan_nodes;
 mod outside_checks;
 mod proposed_action;
 mod reference_repair;
@@ -31,6 +32,7 @@ mod workspace_brief;
 pub(in crate::query) use match_nodes::count_matching_nodes;
 
 pub use ignored_references::parse_patterns as parse_ignore_patterns;
+pub use orphan_nodes::{asks_for_orphans, orphan_nodes};
 pub use selection_request::{
     LineSpan, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest, StaleSummary,
     UncertaintyRead, VaultValidationFacts,

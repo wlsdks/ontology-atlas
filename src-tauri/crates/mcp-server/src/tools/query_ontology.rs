@@ -4,8 +4,8 @@
 //! refused first, by `retired_arguments`, with what replaced it.
 
 use ontology_graph::{
-    Direction, NodeSort, Operation, QueryError, QueryRequest, SelectionArguments,
-    RELATION_TYPE_VALUES, SEARCH_BUDGET_MAX,
+    asks_for_orphans, orphan_nodes, Direction, NodeSort, Operation, QueryError, QueryRequest,
+    SelectionArguments, RELATION_TYPE_VALUES, SEARCH_BUDGET_MAX,
 };
 use serde_json::Value;
 
@@ -20,7 +20,7 @@ use crate::dispatch::CallContext;
 use crate::retired_arguments::refuse_retired_query_operation;
 use vault_document::slug_not_found_hint;
 
-use super::read_vault::open_root;
+use super::read_vault::{open_root, read_vault};
 use super::vault_validation_facts::{stale_summaries, validation_facts};
 use crate::error::{ErrorCode, MissingNodeDetails, ReceivedValue, ToolError};
 
@@ -341,6 +341,10 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             request.selection.outside.stale_summaries = stale_summaries(context)?;
         }
         _ => {}
+    }
+    if asks_for_orphans(&request) {
+        let read = read_vault(context)?;
+        return ToolOutput::json(&orphan_nodes(read.vault.documents(), &request));
     }
     let graph = context.compiled_graph().read(context)?;
     let answer = ontology_graph::run_query(&graph, &request)

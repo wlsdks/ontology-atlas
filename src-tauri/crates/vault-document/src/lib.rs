@@ -46,7 +46,7 @@ pub use kind_census::{kind_census, KindCensus, KindCounts};
 pub use loaded_document::{DisplayTitle, FileReadError, LoadedDocument};
 pub use loaded_vault::{LoadedVault, NamedReadError};
 pub use near_titles::{near_titles, NearTitle};
-pub use orphans::{find_orphans, Orphan};
+pub use orphans::{find_orphans, Orphan, OrphanFilter};
 pub use query_filter::{FilterError, QueryFilter};
 pub use read_hints::{
     evidence_zero_hits_hint, query_zero_rows_hint, slug_not_found_hint, GrowthHint, Reference,

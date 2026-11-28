@@ -15,10 +15,11 @@ It reads documents that `vault-document` already read; it never opens a file.
 
 `src/query/` holds the operations of `query_ontology` that read the graph alone, one function per
 operation from the graph and a `QueryRequest` to a typed answer. `Operation` names every operation
-the tool offers; the ones no module answers yet are `Operation::Pending`, which `run` refuses by
-name, and the differential corpus shows which those are. `analysis_history` and
-`analysis_record` are `Operation::Analysis`: they read the vault's record files, not the graph, so
-`mcp-server` answers them and `run` refuses them by name. A family of operations is a folder with
+the tool offers; the one no module answers yet is `Operation::Pending` (`agent_brief`), which `run`
+refuses by name. `analysis_record` is `Operation::AnalysisRecord`: it reads one of the vault's record
+files, not the graph, so `mcp-server` answers it and `run` refuses it by name. `match_nodes` with
+`hasIncoming: false` is answered from the files, not the compiled graph (`orphan_nodes`), so a vault
+that does not compile still lists its orphans. A family of operations is a folder with
 its own `run` and its own answer type: `walks/` follows edges from a node, `selection/` picks nodes
 from the whole graph.
 
@@ -26,8 +27,7 @@ from the whole graph.
 |---|---|
 | `mod.rs` | `run`: the family an operation belongs to, and the `compiledSummary` that closes every answer |
 | `operation.rs` | `Operation`: every operation, its name, and whether a plan may target it |
-| `analysis_operation.rs` | `AnalysisOperation`: the two operations that read the analysis records |
-| `operation_defaults.rs` | `Expansion`, `StartName` and every default an operation applies to an argument a call leaves out (limit, depth, direction); `default_limit` names each operation, which the plan states and the operation applies, so the two cannot disagree |
+| `operation_defaults.rs` | `Expansion` and every default an operation applies to an argument a call leaves out (limit, depth, direction); `default_limit` names each operation, which the plan states and the operation applies, so the two cannot disagree |
 | `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer, and the defaults and caps a walk applies to `depth` and `direction` |
 | `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node, an operation not answered yet |
 | `relation_set.rs` | `RelationSet`: the relation names a call may select, with their aliases |
@@ -43,26 +43,24 @@ from the whole graph.
 | `name_counts.rs` | counts by kind, domain or relation, in the order of the names |
 | `plan/` | `query_plan`: what another operation would cost on this graph, from the same edges and filters the operation uses; `cost_class.rs` (the class of a count), `traversal_estimate.rs` (a bounded search counted level by level), `cost_estimate.rs` (one shape per way of reading the graph), `planned_arguments.rs` (the arguments as the operation takes them and the call to send), `execution_advice.rs` (run, narrow or review, and the narrower call) |
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
-| `walks/neighbors.rs`, `walks/paths.rs` | `neighbors`, `path`, `all_paths`: breadth-first, shortest and budgeted iterative search |
-| `walks/dependency_cycles.rs`, `walks/topological_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn); `find_cycles` and `order_dependencies` give selection the typed facts, so it never reads the written answer |
-| `walks/expansion_start.rs` | `expansion_start`: the node an expansion starts from, named as its operation reads the name (`slug`, `seed`, or a focus name); the operation and the plan both ask here |
-| `walks/neighborhood.rs`, `walks/hop.rs`, `walks/row_page.rs` | `Neighborhood`: the exact breadth-first search that `reachability`, `impact`, `blast_radius`, `subgraph` and `builder_context` cut; `Hop`; the page of rows an answer cuts at `limit` |
+| `walks/neighbors.rs`, `walks/paths.rs` | `neighbors` and `path`: breadth-first and shortest search |
+| `walks/dependency_cycles.rs`, `walks/dependency_order.rs` | `cycles` (bounded Johnson search) and `order_dependencies` (layered Kahn, which `health` reports as `dependencyOrder`); `find_cycles` and `order_dependencies` give selection the typed facts, so it never reads the written answer |
+| `walks/neighborhood.rs`, `walks/hop.rs`, `walks/row_page.rs` | `Neighborhood`: the exact breadth-first search that `reachability`, `impact`, `blast_radius` and `subgraph` cut; `Hop`; the page of rows an answer cuts at `limit` |
 | `walks/reachability.rs`, `walks/lineage.rs` | `reachability` and `lineage`: what a node reaches, and its containers and contents |
 | `walks/pattern_walk.rs` | `pattern_walk`: simple paths that follow a list of relations, a layer at a time |
 | `walks/impact.rs`, `walks/blast_radius.rs`, `walks/dependency_qualification.rs` | `impact` and `blast_radius` over declared `depends_on` edges, and whether each edge carries a reason |
-| `walks/subgraph.rs`, `walks/builder_context.rs`, `walks/builder_focus.rs` | `subgraph`, and `builder_context`: the same cut with the workbench's focus name, canvas position and handoff |
+| `walks/subgraph.rs` | `subgraph`: the nodes around one node and the edges between them |
 | `walks/explain_relation.rs`, `walks/relation_check.rs` | `explain_relation` and `relation_check`: how two nodes relate, and whether a proposed edge fits the graph's patterns |
 | `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs` | `containment_tree`, `project_scope` and `project_map`: what holds what, and what each project holds; `fitted_map` is the map cut to a character bound, which `workspace_brief` carries once per project |
 | `selection/clusters.rs` | `components` and `communities` (label propagation) |
-| `selection/centrality.rs` | `centrality`: PageRank and degree rankings |
 | `selection/graph_summary.rs` | `overview`, `schema`, `facets` |
-| `selection/match_nodes.rs`, `selection/match_edges.rs` | `match_nodes`, `match_edges`: the rows that pass a condition, by degree or slug |
-| `selection/node_profile.rs`, `selection/domain_profile.rs`, `selection/domain_matrix.rs` | one node, one domain, and the domain-to-domain edge table |
+| `selection/match_nodes.rs`, `selection/orphan_nodes.rs` | `match_nodes`: the rows that pass a condition, by degree or slug, paged by `offset`; `orphan_nodes`: the same question for `hasIncoming: false`, read from the files |
+| `selection/node_profile.rs`, `selection/domain_matrix.rs` | one node or one domain, and the domain-to-domain edge table |
 | `selection/similar_nodes.rs`, `selection/relation_recommendations.rs` | `similar_nodes` and `recommend_relations` (the domain links a capability or element lacks) |
 | `selection/health.rs`, `selection/workspace_brief.rs` | `health`: the verdict and its checks; `workspace_brief`: the first page of a vault |
 | `selection/growth_plan.rs`, `selection/growth_candidates.rs` | `growth_plan` and the groups it lists: external files, dangling references, unassigned nodes, empty domains |
 | `selection/maintenance_plan.rs`, `selection/maintenance_action.rs` | `maintenance_plan`: every action in order, with its address (`maint_` and an FNV-1a hash) |
-| `selection/outside_checks.rs` | the validation and meaning-review checks `health` and `workspace_brief` carry when the tool layer hands them over |
+| `selection/outside_checks.rs` | the validation check `health` and `workspace_brief` carry when the tool layer hands them over |
 | `selection/selection_request.rs` | `SelectionArguments`, `OutsideFacts`: what only the selection operations read, beside the arguments `QueryRequest` carries for every family |
 
 `OutsideFacts` is the seam to what a graph cannot know: the vault's `.ontology-atlasignore`, the

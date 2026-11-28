@@ -2,21 +2,18 @@
 
 The analysis records of a vault, kept in `.ontology-atlas/analyses` as one Markdown file each. A run
 keeps one question, the nodes it was answered from and the answer; a review keeps what a person
-decided about one finding. The app writes the files and this module never does: it lists them, reads
-them, and refuses a record that does not match its format or its digests.
+decided about one finding. The app writes and lists the files; this module never writes: it reads
+one record whole, and refuses a record that does not match its format or its digests.
 
 | File | What it owns |
 |---|---|
-| `analysis_archive.rs` | `AnalysisArchive`: `history` (a page of records, newest first) and `record` (one, whole); `HistoryLimit`, the one place the page size is judged |
-| `analysis_record.rs` | `validate`: every rule of the format `atlas-analysis/v1`; `AnalysisRecord`, `AnalysisMode` |
+| `analysis_archive.rs` | `AnalysisArchive`: `record`, one record found by its id and read whole |
+| `analysis_record.rs` | `validate`: every rule of the format `atlas-analysis/v1`; `AnalysisRecord` |
 | `record_text.rs` | `parse_record`: a file's text to a record: one `name: <JSON>` line per field, then the body |
 | `record_value.rs` | `RecordValue`: JSON with its keys in file order, which the answer writes back as a script lists them |
 | `field_checks.rs` | The checks a field passes and the sentence each fails with |
 | `evidence_digest.rs` | `evidence_problems`: the SHA-256 each piece of evidence, observation and profile was stamped with |
-| `name_page.rs` | `NamePage`: the newest names below a cursor, found in one pass while holding one page |
-| `record_summary.rs` | `RecordSummary`: one history row, without evidence or answer |
-| `archive_limits.rs` | The page limits of `analysis_history` |
-| `record_fault.rs` | `RecordFault`: the first rule a record breaks, in the words listed under `problems` |
+| `record_fault.rs` | `RecordFault`: the first rule a record breaks, in the words the refusal gives |
 
 The folder, the byte limit and the name of a record file are `analysis-archive-format`'s, which the
 app that writes the records links too. Files are opened through `confined-files`

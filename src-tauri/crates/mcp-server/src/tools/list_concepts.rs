@@ -1,7 +1,8 @@
 //! `list_concepts`: every node of the vault in pages, with the vault's census and how many findings
 //! the vault carries, so one call tells an agent what is there and whether it is healthy. `filter`
 //! keeps the nodes a predicate such as `kind=capability AND has(elements)` accepts, and `mentions`
-//! keeps the nodes that say a text and lists the best first.
+//! keeps the documents that say a text and lists the best first: the nodes, then the plain Markdown
+//! pages beside them (`isNode: false`).
 
 mod mentions_ranking;
 mod zero_rows_hint;
@@ -69,6 +70,10 @@ struct Listing<'a> {
     pagination: Pagination,
     #[serde(rename = "summaryHint", skip_serializing_if = "Option::is_none")]
     summary_hint: Option<String>,
+    #[serde(rename = "nonNodeHint", skip_serializing_if = "Option::is_none")]
+    non_node_hint: Option<String>,
+    #[serde(rename = "excerptHint", skip_serializing_if = "Option::is_none")]
+    excerpt_hint: Option<String>,
     #[serde(rename = "vaultWarnings", skip_serializing_if = "Option::is_none")]
     vault_warnings: Option<VaultWarnings>,
     #[serde(rename = "growthHint", skip_serializing_if = "Option::is_none")]
@@ -132,7 +137,9 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
 
     let narrowed: Vec<&LoadedDocument> = documents
         .iter()
-        .filter(|document| document.frontmatter().truthy("kind").is_some())
+        .filter(|document| {
+            mentions.is_some() || document.frontmatter().truthy("kind").is_some()
+        })
         .filter(|document| kind.is_none_or(|wanted| has_kind(document, wanted)))
         .filter(|document| {
             domain.as_deref().is_none_or(|wanted| {
@@ -170,11 +177,30 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
 
     let wants_summary = summary == Some(true);
     let mut truncated_summaries = 0;
+    let mut truncated_excerpts = 0;
+    let mut pages_beside_nodes = 0;
     let mut nodes: Vec<ConceptRow<'_>> = Vec::new();
     for (document, found) in ranked.iter().skip(offset).take(limit) {
         let mut row = ConceptRow::of(document);
         if let Some(found) = found {
-            row = row.with_mention(found.matched_in, found.score);
+            row = row.with_mention(found.is_node, found.matched_in, found.score);
+            if !found.is_node {
+                pages_beside_nodes += 1;
+            }
+            let body = document
+                .body()
+                .map_err(|error| ToolError::failed(error.to_string()))?;
+            let excerpt = vault_document::describe_body_delivery(
+                &body,
+                vault_document::BodyMode::Excerpt,
+                SUMMARY_MAX_CHARS,
+                None,
+            );
+            let cut_from = excerpt.info.truncated().then(|| excerpt.info.total_chars());
+            if cut_from.is_some() {
+                truncated_excerpts += 1;
+            }
+            row = row.with_excerpt(excerpt.text, cut_from);
         }
         if !wants_summary {
             nodes.push(row);
@@ -233,6 +259,16 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         summary_hint: (truncated_summaries > 0).then(|| {
             format!(
                 "{truncated_summaries} row(s) carry a partial summary (summaryTruncated: true). Read those bodies in full with get_concepts({{ slugs: [...], body: \"full\" }})."
+            )
+        }),
+        non_node_hint: (pages_beside_nodes > 0).then(|| {
+            format!(
+                "{pages_beside_nodes} of {returned} row(s) are not graph nodes (isNode: false: no `kind:`, such as meeting notes, memos and drafts). They rank below nodes of equal relevance. Pass `kind` to see graph nodes only."
+            )
+        }),
+        excerpt_hint: (truncated_excerpts > 0).then(|| {
+            format!(
+                "{truncated_excerpts} row(s) carry a partial excerpt (excerptTruncated: true); the matched text may sit past it. Read the whole body with get_concepts({{ slugs: [...], body: \"full\" }})."
             )
         }),
         vault_warnings: (errors + warnings > 0).then_some(VaultWarnings {

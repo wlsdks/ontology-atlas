@@ -14,7 +14,7 @@ request, then `src/dispatch.rs` for the checks every call passes.
 | `src/write_checkpoint.rs` | `Permit`: read-only mode, then (unless a dry run) consent and the session's write lock, then the vault and the all-or-nothing apply. A write handler is a function of a permit, and `clippy.toml` refuses a write made around it |
 | `src/consent/` | The question a person is asked before a write (`elicitation/create`): its text per tool, the answer read, and every refusal in words |
 | `src/audit/` | What a finished write adds to `.ontology-atlas/activity.jsonl` and `map-analysis.jsonl`, through `confined-files`' `VaultSidecar` |
-| `src/analysis_records/` | The analysis records in `.ontology-atlas/analyses`: a page of history, one record whole, each judged against its format and digests; read-only, so it needs no permit or audit line |
+| `src/analysis_records/` | The analysis records in `.ontology-atlas/analyses`: one record read whole, judged against its format and digests; read-only, so it needs no permit or audit line |
 | `src/arguments.rs` | A call's arguments as JSON text, read by a handler as the type it expects |
 | `src/answer.rs` | `ToolOutput`, what a handler returns, and `CallToolResult`, how it is written |
 | `src/error.rs` | `ToolError` and `ErrorCode`: the code is chosen where the failure is made, never read from its message |

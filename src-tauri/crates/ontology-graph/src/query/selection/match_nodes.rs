@@ -69,7 +69,7 @@ struct EchoedFilters {
 
 /// Where the page sits in the whole match, and the offset that asks for the next one.
 #[derive(Serialize)]
-struct Pagination {
+pub(super) struct Pagination {
     offset: usize,
     limit: usize,
     returned: usize,
@@ -78,6 +78,24 @@ struct Pagination {
     has_more: bool,
     #[serde(rename = "nextOffset")]
     next_offset: Option<usize>,
+}
+
+impl Pagination {
+    pub(super) fn of(offset: usize, limit: usize, returned: usize, total: usize) -> Self {
+        let has_more = offset + returned < total;
+        Self {
+            offset,
+            limit,
+            returned,
+            total,
+            has_more,
+            next_offset: has_more.then_some(offset + returned),
+        }
+    }
+
+    pub(super) fn has_more(&self) -> bool {
+        self.has_more
+    }
 }
 
 #[derive(Serialize)]
@@ -152,14 +170,7 @@ pub fn match_nodes<'a>(
         },
         total_matches: total,
         limited: has_more,
-        pagination: Pagination {
-            offset,
-            limit,
-            returned: page.len(),
-            total,
-            has_more,
-            next_offset: has_more.then_some(offset + page.len()),
-        },
+        pagination: Pagination::of(offset, limit, page.len(), total),
         nodes: rows,
         follow_up,
     })
