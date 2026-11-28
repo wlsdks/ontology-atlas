@@ -74,7 +74,7 @@ describe('focused check suggestions', () => {
   });
   it('selects the lane of a file that now lives in a folder split out of a command or a tool', () => {
     const subjects = [
-      ['mcp/src/tools/repo-analysis/plan-rules.mjs', 'pnpm integration:mcp:repo-analysis'],
+      ['mcp/src/tools/repo-analysis/analyze-structure.mjs', 'pnpm integration:mcp:repo-analysis'],
       ['cli/src/lib/init/run-init.mjs', 'pnpm test:cli'],
       ['cli/src/lib/status-lines.mjs', 'pnpm test:cli'],
       ['mcp/src/ontology-engine/traversal/graph-measures.mjs', 'pnpm integration:mcp:graph'],
@@ -98,7 +98,7 @@ describe('focused check suggestions', () => {
       ['mcp/src/tools/repo-analysis/inspect-architecture.mjs', 'pnpm integration:mcp:repo-analysis'],
       ['mcp/src/construction/construction-card.mjs', 'pnpm dogfood:verify'],
       ['mcp/src/server/instructions.mjs', 'pnpm dogfood:verify'],
-      ['mcp/src/analyze/candidates/repo-structure.mjs', 'pnpm integration:mcp:repo-analysis'],
+      ['mcp/src/analyze/survey/breadth-map.mjs', 'pnpm integration:mcp:repo-analysis'],
       ['.claude/skills/ontology-field-trial/scripts/acp-replay.sh', 'pnpm exec vitest run tests/contract/agent-instructions/field-trial-replay-scripts.contract.test.ts'],
       ['scripts/lib/benchmark/construction-prompts.mjs', 'pnpm exec vitest run tests/contract/agent-instructions/field-trial-replay-scripts.contract.test.ts'],
       ['docs/guide/body-backed-construction.md', 'pnpm exec vitest run tests/contract/routes/guide-inbody-links.contract.test.ts'],
@@ -401,19 +401,16 @@ describe('focused check suggestions', () => {
 
   it('suggests MCP unit tests for core implementation drift', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/analyze.mjs',
       'mcp/src/ontology-compiler.test.mjs',
       'mcp/src/vault/documents/document-cache.mjs',
       'mcp/scripts/json-rpc-lines.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test mcp/src/analyze.test.mjs',
       'pnpm exec node --test mcp/src/ontology-compiler.test.mjs',
       'pnpm exec node --test mcp/src/vault/vault.test.mjs',
       'pnpm exec node --test mcp/src/json-rpc-lines.test.mjs',
       'pnpm test:mcp:unit',
-      'pnpm integration:mcp:repo-analysis',
       'pnpm integration:mcp:vault-read',
       'pnpm integration:mcp:write',
       'pnpm vault:validate',
@@ -441,31 +438,13 @@ describe('focused check suggestions', () => {
 
   it('discovers a new MCP source and sibling test without a hand-maintained allowlist', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/agent-brief/task-navigation-evidence.mjs',
-      'mcp/src/agent-brief/task-navigation-evidence.test.mjs',
+      'mcp/src/compare-text.mjs',
+      'mcp/src/compare-text.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test mcp/src/agent-brief/task-navigation-evidence.test.mjs',
+      'pnpm exec node --test mcp/src/compare-text.test.mjs',
       'pnpm test:mcp:unit',
-      'pnpm vault:validate',
-    ]);
-    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
-  });
-
-  it('suggests lifecycle, qualification, and meaning tests for ontology construction drift', () => {
-    const result = suggestFocusedChecks([
-      'mcp/src/construction/construction-lifecycle.mjs',
-      'mcp/src/construction/construction-qualification.mjs',
-      'mcp/src/meaning/meaning-evaluation.mjs',
-    ]);
-
-    assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test mcp/src/construction/construction-lifecycle.test.mjs',
-      'pnpm exec node --test mcp/src/construction/construction-qualification.test.mjs',
-      'pnpm exec node --test mcp/src/meaning/meaning-evaluation.test.mjs',
-      'pnpm test:mcp:unit',
-      'pnpm integration:mcp:repo-analysis',
       'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
@@ -515,7 +494,6 @@ describe('focused check suggestions', () => {
       'mcp/src/query.mjs',
       'mcp/src/ontology-engine.mjs',
       'mcp/src/ontology-compiler.mjs',
-      'mcp/src/analyze.mjs',
       'mcp/src/infer-imports.mjs',
       'mcp/src/validate.mjs',
     ]);
@@ -526,7 +504,6 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test mcp/src/query.test.mjs',
       'pnpm exec node --test mcp/src/ontology-engine.test.mjs',
       'pnpm exec node --test mcp/src/ontology-compiler.test.mjs',
-      'pnpm exec node --test mcp/src/analyze.test.mjs',
       'pnpm exec node --test mcp/src/infer-imports.test.mjs',
       'pnpm exec node --test mcp/src/validate.test.mjs',
       'pnpm test:mcp:unit',
@@ -570,12 +547,12 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP repo-analysis integration for code-to-vault handlers', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/analyze.mjs',
+      'mcp/src/analyze/survey/breadth-map.mjs',
       'mcp/src/infer-imports.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test mcp/src/analyze.test.mjs',
+      'pnpm exec node --test mcp/src/analyze/survey/breadth-map.test.mjs',
       'pnpm exec node --test mcp/src/infer-imports.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',

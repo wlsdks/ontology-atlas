@@ -9,8 +9,8 @@ export function dogfoodUsage() {
     "  node scripts/dogfood/dogfood-mcp-walk.mjs [--help]",
     "",
     "Runs the source-checkout MCP dogfood walk against this repo's docs/ontology vault.",
-    "The walk starts the local MCP stdio server, exercises read/diagnosis/graph-query",
-    "surfaces, and exits non-zero when the first-contact or dogfood gate regresses.",
+    "The walk starts the local MCP stdio server, asks every read tool and query operation,",
+    "and exits non-zero when an answer, a refusal, tools/list or the instructions drift.",
     "No positional vault argument is accepted; this script intentionally dogfoods the",
     "repo's own ontology vault.",
     "",
@@ -37,9 +37,9 @@ export function dogfoodUsage() {
     "  pnpm test:dogfood:status        Narrow dogfood status shortcut runner contract.",
     "  pnpm test:mcp:registration      Narrow source-checkout .mcp.json/.mcp.json.example/.codex/config.toml registration template contract.",
     "  pnpm test:mcp:maintenance       Narrow maintenance_plan filter/cursor/resume/work-queue formatter gates.",
-    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, batch cap gates, invalid-only batch row repair + no-write metadata smoke, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize tool-inventory + safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, strict graph kind filters, stderr warning checks.",
-    "  pnpm test:mcp:dogfood:timeout   Narrow dogfood timeout/help retry diagnostics.",
-    "  pnpm dogfood:test               Full dogfood helper regression suite when focused checks are not enough.",
+    "  pnpm test:mcp:dogfood           The walk's target selection, step list and answer checks, with its help, argument and timeout handling.",
+    "  pnpm test:mcp:dogfood:timeout   Narrow the walk's help, argument and timeout handling.",
+    "  pnpm dogfood:test               The same suite through its entry file.",
   ].join("\n");
 }
 

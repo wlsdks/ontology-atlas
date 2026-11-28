@@ -106,7 +106,7 @@ assert.equal(agentBrief.operation, 'agent_brief');
 assert.match(agentBrief.handoffPrompt, /shared codebase graph memory/);
 assert.match(agentBrief.handoffPrompt, /Run these first-contact MCP calls in order/);
 assert.ok(agentBrief.firstCalls.some((call) => call.arguments?.operation === 'workspace_brief'));
-assert.ok(agentBrief.playbooks.some((playbook) => playbook.id === 'graph_traversal'));
+assert.ok(agentBrief.writeGuardrails, 'agent_brief should carry the write guardrails');
 
 const conceptRows = await callMcpTool(vault, 'list_concepts', { kind: 'capability', limit: 20 });
 const capabilitySlugs = slugSet(conceptRows.nodes ?? []);
@@ -145,33 +145,26 @@ const changedFiles = run('git', ['status', '--short', '--untracked-files=all'], 
   .filter(Boolean);
 assert.deepEqual(changedFiles, ['src/features/export/index.ts']);
 
-const proposal = await callMcpTool(vault, 'analyze_repo_structure', {
-  rootPath: project,
-  view: 'analysis',
-});
-assert.equal(proposal.framework, 'fsd');
-assert.ok(
-  proposal.capabilities.some(
-    (candidate) =>
-      candidate.slug === 'capabilities/export' &&
-      candidate.evidence?.source === 'src/features/export',
-  ),
-  'analyze_repo_structure should propose the new code capability without mutating the vault',
+const survey = await callMcpTool(vault, 'analyze_repo_structure', { rootPath: project });
+assert.match(
+  survey.text,
+  /export\/index\.ts[^|\n]*\|[^|\n]*exportNotes/,
+  'analyze_repo_structure should show the new file and its export in the breadth map without mutating the vault',
 );
 
-const afterProposalRows = await callMcpTool(vault, 'list_concepts', {
+const afterSurveyRows = await callMcpTool(vault, 'list_concepts', {
   kind: 'capability',
   limit: 50,
 });
-const afterProposalSlugs = slugSet(afterProposalRows.nodes ?? []);
-assert.equal(afterProposalSlugs.has('capabilities/export'), false);
+const afterSurveySlugs = slugSet(afterSurveyRows.nodes ?? []);
+assert.equal(afterSurveySlugs.has('capabilities/export'), false);
 
 const elapsedMs = Date.now() - startedAt;
 assert.ok(elapsedMs < 10 * 60 * 1000, `memory loop smoke exceeded 10 minutes: ${elapsedMs}ms`);
 
 console.log(
   `memory loop smoke passed: ${project}\n` +
-    `  loop: init -> bootstrap -> validate -> workspace_brief -> agent_brief -> node_profile -> sync proposal\n` +
-    `  proposal: capabilities/export from ${changedFiles[0]}\n` +
+    `  loop: init -> bootstrap -> validate -> workspace_brief -> agent_brief -> node_profile -> survey\n` +
+    `  survey: ${changedFiles[0]} appears in the breadth map\n` +
     `  elapsed: ${elapsedMs}ms`,
 );

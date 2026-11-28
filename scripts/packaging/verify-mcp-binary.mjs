@@ -6,49 +6,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
+import { EXPECTED_TOOLS } from '../../mcp/scripts/verify/tools-list/inventory.mjs';
 
 function request(id, method, params = {}) {
   return `${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`;
 }
 
-export function countExactReadmeAddresses(value) {
-  const counts = { lowercase: 0, uppercase: 0 };
-  const visit = (entry) => {
-    if (entry === 'readme.md') counts.lowercase += 1;
-    else if (entry === 'README.md') counts.uppercase += 1;
-    else if (Array.isArray(entry)) entry.forEach(visit);
-    else if (entry && typeof entry === 'object') Object.values(entry).forEach(visit);
-  };
-  visit(value);
-  return counts;
-}
-
-export function assessMcpExactCaseAnalysis(analysis) {
-  const counts = countExactReadmeAddresses(analysis);
-  const projectEvidence = analysis?.project?.evidence;
-  return {
-    ok:
-      counts.lowercase > 0 &&
-      counts.uppercase === 0 &&
-      Array.isArray(projectEvidence) &&
-      projectEvidence.includes('readme.md'),
-    lowercaseAddresses: counts.lowercase,
-    uppercaseAddresses: counts.uppercase,
-    projectEvidence: Array.isArray(projectEvidence) ? projectEvidence : null,
-  };
-}
-
-function structuredToolResult(result) {
-  if (result?.structuredContent && typeof result.structuredContent === 'object') {
-    return result.structuredContent;
-  }
-  const text = result?.content?.[0]?.text;
-  if (typeof text !== 'string') return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+/** The breadth map names the README by the file's own name; a program that folds case would print the other spelling. */
+export function assessMcpExactCaseSurvey(text) {
+  const lines = String(text).split('\n');
+  const lowercaseAddresses = lines.filter((line) => line.startsWith('readme.md:')).length;
+  const uppercaseAddresses = lines.filter((line) => line.startsWith('README.md:')).length;
+  return { ok: lowercaseAddresses > 0 && uppercaseAddresses === 0, lowercaseAddresses, uppercaseAddresses };
 }
 
 export async function verifyMcpExactCase({ binaryPath, timeoutMs = 25_000 }) {
@@ -129,19 +98,17 @@ export async function verifyMcpExactCase({ binaryPath, timeoutMs = 25_000 }) {
           );
           return;
         }
-        const analysis = structuredToolResult(response.result);
-        if (!analysis) {
-          finish(new Error('compiled MCP exact-case probe returned no structured analysis'));
+        const survey = response.result?.content?.[0]?.text;
+        if (typeof survey !== 'string') {
+          finish(new Error('compiled MCP exact-case probe returned no breadth map'));
           return;
         }
-        const assessment = assessMcpExactCaseAnalysis(analysis);
+        const assessment = assessMcpExactCaseSurvey(survey);
         if (!assessment.ok) {
           finish(
             new Error(
               'compiled MCP changed the exact lowercase readme.md source address ' +
-                `(lowercase=${assessment.lowercaseAddresses}, ` +
-                `uppercase=${assessment.uppercaseAddresses}, ` +
-                `project=${JSON.stringify(assessment.projectEvidence)})`,
+                `(lowercase=${assessment.lowercaseAddresses}, uppercase=${assessment.uppercaseAddresses})`,
             ),
           );
           return;
@@ -149,7 +116,6 @@ export async function verifyMcpExactCase({ binaryPath, timeoutMs = 25_000 }) {
         finish(null, {
           lowercaseAddresses: assessment.lowercaseAddresses,
           uppercaseAddresses: assessment.uppercaseAddresses,
-          projectEvidence: assessment.projectEvidence,
         });
       };
 
@@ -180,7 +146,7 @@ export async function verifyMcpExactCase({ binaryPath, timeoutMs = 25_000 }) {
           clientInfo: { name: 'verify-mcp-exact-case', version: '1' },
         }),
       );
-      child.stdin.write(request(2, 'tools/call', { name: 'analyze_repo_structure', arguments: { view: 'analysis' } }));
+      child.stdin.write(request(2, 'tools/call', { name: 'analyze_repo_structure', arguments: {} }));
 
       deadline = setTimeout(() => {
         finish(
@@ -205,7 +171,7 @@ function removeFixtureRoot(fixtureRoot) {
   }
 }
 
-export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools = 32, timeoutMs = 25_000 }) {
+export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools = EXPECTED_TOOLS.length, timeoutMs = 25_000 }) {
   const binary = path.resolve(binaryPath);
   const vault = path.resolve(vaultPath);
   if (!fs.statSync(binary, { throwIfNoEntry: false })?.isFile()) {
