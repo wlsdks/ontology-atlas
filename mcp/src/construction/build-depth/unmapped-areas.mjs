@@ -291,7 +291,7 @@ export function areaCoverage(docs, survey, { collection = null, repoRoot = null,
 }
 
 /** The area as its `Not mapped yet` bullet and the Areas sentence write it; `areaOfLabel` reads it back. */
-export function areaLabel(area) {
+function areaLabel(area) {
   const where = area.rest
     ? `${area.members.length} smaller folders in ${repoText(area.path)}`
     : `${repoText(area.path)}${area.own ? OWN_FILES : ''}`;

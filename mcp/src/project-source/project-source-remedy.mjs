@@ -116,7 +116,7 @@ export function projectSourceRemedy(view) {
 }
 
 /** Reversal is part of the prescription. */
-export function undoPlan(projectSlug) {
+function undoPlan(projectSlug) {
   if (!projectSlug) return null;
   return {
     tool: { name: PROJECT_SOURCE_DISCONNECT_TOOL, arguments: { projectSlug, confirm: true } },

@@ -219,11 +219,10 @@
           "body",
           "expected_mtime",
           "frontmatter",
+          "patches",
           "slug"
         ],
-        "required": [
-          "slug"
-        ]
+        "required": []
       },
       {
         "name": "query_ontology",
@@ -320,7 +319,8 @@
         "arguments": [
           "limit",
           "offset",
-          "repoRoot"
+          "repoRoot",
+          "unplacedOffset"
         ],
         "required": []
       },

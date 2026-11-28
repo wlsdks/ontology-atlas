@@ -13,7 +13,7 @@ import { ROLE_REPAIR } from './role-placement.mjs';
 import { batchFilesLabel, mappedPercent, notMappedLineGap, openAreaCall } from './unmapped-areas.mjs';
 import { kindOf } from './node-fields.mjs';
 
-export const COVERAGE_UNPLACED_ROWS = 10;
+const COVERAGE_UNPLACED_ROWS = 10;
 const MEMBERS_SHOWN = 6;
 const NAMED_IN_ACTION = 3;
 /** A dependency count under one edge per two capabilities, or one ability-to-ability edge per three, is what finalize refuses. */

@@ -2,7 +2,6 @@ import { nodeUidIssue } from '../../schema.mjs';
 
 import { linkIndexAnswers, linkKeysHold } from '../documents/doc-shape.mjs';
 import { cachedDocShape, docTitle, loadVaultDocs } from '../documents/document-cache.mjs';
-import { compareText } from '../../compare-text.mjs';
 import { collectNeighborRefs, relationNoteFor } from './relation-refs.mjs';
 
 function assertBoundedNonNegativeInteger(value, name, { max }) {

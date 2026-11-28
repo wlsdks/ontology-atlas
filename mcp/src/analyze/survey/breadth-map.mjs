@@ -675,7 +675,7 @@ function areaLines(map) {
  * family or group with its first `membersShown` members and the rest counted.
  * `withFolder: false` leaves out a family's folder, which its evidence names.
  */
-export function abilityRowText(row, { membersShown = MEMBERS_SHOWN, withFolder = true } = {}) {
+function abilityRowText(row, { membersShown = MEMBERS_SHOWN, withFolder = true } = {}) {
   const hidden = (row.membersOmitted ?? 0) + Math.max(0, (row.members?.length ?? 0) - membersShown);
   const listed = (row.members ?? []).slice(0, membersShown).map((name) => t(name, 80)).join(', ');
   const members = row.members ? `: ${[listed, hidden > 0 ? `+${hidden}` : ''].filter(Boolean).join(' ')}` : '';
