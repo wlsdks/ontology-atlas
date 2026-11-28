@@ -1,5 +1,5 @@
 // Blocks drift between the in-app agent's read executor and the MCP server's vault
-// reads.
+// reads. The server is asked over stdio.
 //
 // Tool **names and arguments** are covered by
 // `agent-tool-catalog.contract.test.ts`. What is covered here is **the answers**:
@@ -27,6 +27,9 @@ import {
 } from '@/features/vault-agent/model/agent-tools/tool-executor';
 import type { VaultReadPort } from '@/features/vault-agent/model/agent-tools/vault-read-port';
 import type { NormalizedToolCall } from '@/features/vault-agent/model/providers/provider-adapter';
+
+import { RELATION_KEY_CASES } from '../../fixtures/relation-keys-cases.mjs';
+import { callServerTools } from '../server-session/call-server-tool';
 
 const VAULT_DIR = join(__dirname, '../../../docs/ontology');
 
@@ -81,41 +84,54 @@ async function run<T>(name: string, args: unknown = {}): Promise<T> {
   return JSON.parse(result.content.split('\n…(truncated')[0]) as T;
 }
 
-// The MCP side reads the vault folder directly, never through our manifest.
-const mcpDocuments = await import('../../../mcp/src/vault/documents/document-cache.mjs');
-const mcpGraphQueries = await import('../../../mcp/src/vault/graph/graph-queries.mjs');
-const mcpRelationRefs = await import('../../../mcp/src/vault/graph/relation-refs.mjs');
+interface ServerNode {
+  slug: string;
+  kind: string;
+  title?: string;
+}
+interface ServerBacklinks {
+  matches: Array<{ slug: string; matchedKeys?: string[] }>;
+}
 
-function loadMcpOntologyDocs() {
-  return (mcpDocuments.loadVaultDocs(VAULT_DIR) as Array<{
-    slug: string;
-    frontmatter: Record<string, unknown>;
-  }>).filter((doc) => typeof doc.frontmatter.kind === 'string');
+// The server reads the vault folder directly, never through our manifest: one session answers the
+// census, every node and each node's backlinks.
+const [serverList] = await callServerTools(VAULT_DIR, [{ name: 'list_concepts', arguments: { limit: 500 } }]);
+expect(serverList.isError, JSON.stringify(serverList.value)).toBe(false);
+const serverCensus = (serverList.value as {
+  census: { total: number; byKind: Record<string, number>; referencedOnlyTotal: number };
+}).census;
+const serverNodes = (serverList.value as { nodes: ServerNode[] }).nodes;
+const serverBacklinks = new Map<string, ServerBacklinks['matches']>();
+{
+  const answers = await callServerTools(
+    VAULT_DIR,
+    serverNodes.map((node) => ({ name: 'find_backlinks', arguments: { slug: node.slug } })),
+  );
+  serverNodes.forEach((node, index) => {
+    expect(answers[index].isError, `${node.slug}: ${JSON.stringify(answers[index].value)}`).toBe(false);
+    serverBacklinks.set(node.slug, (answers[index].value as ServerBacklinks).matches);
+  });
 }
 
 describe('agent read executor ↔ MCP vault reads (the real dogfood vault)', () => {
   it('the count per kind and the number of "concepts only named" are wholly equal', async () => {
     // Even the field names match — the in-screen agent and the terminal agent must state
     // the inventory in the same words for a user to compare the two numbers.
-    const mcpKinds = mcpGraphQueries.listKinds(VAULT_DIR) as {
-      total: number;
-      byKind: Record<string, number>;
-      referencedOnlyTotal: number;
-      conceptsIncludingReferenced: number;
-    };
-    const ours = await run<typeof mcpKinds>('list_kinds');
-    expect(ours).toEqual(mcpKinds);
+    const ours = await run<typeof serverCensus & { conceptsIncludingReferenced: number }>('list_kinds');
+    expect(ours).toEqual({
+      ...serverCensus,
+      conceptsIncludingReferenced: serverCensus.total + serverCensus.referencedOnlyTotal,
+    });
   });
 
   it('the set of document slugs per kind is the same', async () => {
     // Fetching everything at once hits the round-trip character limit and truncates
     // rows — that is the contract, not a defect (it protects the user's cost). So the
     // comparison narrows by kind and follows bounded pages, the same way real usage does.
-    const mcpDocs = loadMcpOntologyDocs();
-    const kinds = [...new Set(mcpDocs.map((doc) => String(doc.frontmatter.kind)))];
+    const kinds = [...new Set(serverNodes.map((doc) => doc.kind))];
     for (const kind of kinds) {
-      const expected = mcpDocs
-        .filter((doc) => String(doc.frontmatter.kind) === kind)
+      const expected = serverNodes
+        .filter((doc) => doc.kind === kind)
         .map((doc) => doc.slug)
         .sort();
       const actual: string[] = [];
@@ -140,29 +156,20 @@ describe('agent read executor ↔ MCP vault reads (the real dogfood vault)', () 
   });
 
   it('asking about the same node answers the same kind', async () => {
-    const mcpDocs = loadMcpOntologyDocs();
     // The first few only — a sample suffices for the contract, and an exhaustive run is merely slow.
-    for (const doc of mcpDocs.slice(0, 12)) {
+    for (const doc of serverNodes.slice(0, 12)) {
       const ours = await run<{ kind: string; hasDocument: boolean }>('get_concept', {
         slug: doc.slug,
       });
       expect(ours.hasDocument).toBe(true);
-      expect(ours.kind).toBe(doc.frontmatter.kind);
+      expect(ours.kind).toBe(doc.kind);
     }
   });
 
   it('the set of backlink targets is the same', async () => {
-    const mcpDocs = loadMcpOntologyDocs();
     // The contract means something only on a node that really has backlinks.
-    const withBacklinks = mcpDocs
-      .map((doc) => ({
-        slug: doc.slug,
-        backlinks:
-          (mcpGraphQueries.findBacklinks(VAULT_DIR, doc.slug) as Array<{
-            slug: string;
-            matchedKeys?: string[];
-          }>) ?? [],
-      }))
+    const withBacklinks = serverNodes
+      .map((doc) => ({ slug: doc.slug, backlinks: serverBacklinks.get(doc.slug) ?? [] }))
       .filter((row) => row.backlinks.length > 0)
       .slice(0, 8);
     expect(withBacklinks.length).toBeGreaterThan(0);
@@ -184,29 +191,25 @@ describe('agent read executor ↔ MCP vault reads (the real dogfood vault)', () 
   });
 
   it('title search finds the same documents', async () => {
-    const mcpDocs = loadMcpOntologyDocs();
-    const sample = mcpDocs.find(
-      (doc) => typeof doc.frontmatter.title === 'string' && doc.frontmatter.title.trim(),
-    );
+    const sample = serverNodes.find((doc) => typeof doc.title === 'string' && doc.title.trim());
     expect(sample).toBeTruthy();
     const ours = await run<{ rows: Array<{ slug: string }> }>('list_concepts', {
-      mentions: sample?.frontmatter.title as string,
+      mentions: sample?.title as string,
     });
     expect(ours.rows.some((row) => row.slug === sample?.slug)).toBe(true);
   });
 
   it('the vault body goes out wrapped as untrusted data', async () => {
-    const mcpDocs = loadMcpOntologyDocs();
-    const documented = mcpDocs.find((doc) => doc.slug !== 'README') as { slug: string };
+    const documented = serverNodes.find((doc) => doc.slug !== 'README') as { slug: string };
     const result = await execute(call('get_concept', { slug: documented.slug }));
     expect(result.content).toContain('<untrusted_vault_content>');
   });
 
-  it('the list of frontmatter keys where relations are written equals the MCP one', () => {
+  it('the list of frontmatter keys where relations are written equals the shared relation-key table', () => {
     // Backlinks are counted from this key list, not from map edges. Growing one side
     // creates relations the in-screen agent cannot see.
     expect([...GRAPH_FRONTMATTER_KEYS].sort()).toEqual(
-      [...(mcpRelationRefs.GRAPH_ARRAY_KEYS as string[]), 'domain'].sort(),
+      [...RELATION_KEY_CASES.map((relation: { key: string }) => relation.key), 'domain'].sort(),
     );
   });
 
@@ -216,7 +219,6 @@ describe('agent read executor ↔ MCP vault reads (the real dogfood vault)', () 
     // current; this holds that premise once more.
     const readme = readFileSync(join(VAULT_DIR, 'README.md'), 'utf-8');
     expect(readme.length).toBeGreaterThan(0);
-    const mcpDocs = loadMcpOntologyDocs();
-    expect(port.docs.length).toBe(mcpDocs.length);
+    expect(port.docs.length).toBe(serverNodes.length);
   });
 });
