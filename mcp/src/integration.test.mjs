@@ -8644,7 +8644,7 @@ await test("body delivery — the full body is available and truncation is never
   }
 });
 
-await test("query_ontology agent_brief — selected project and compact task handoff stay bounded and consistent", async () => {
+await test("query_ontology agent_brief — the selected project is the whole brief and a retired compact request is refused", async () => {
   const root = makeVault([
     {
       slug: "project-a",
@@ -8683,46 +8683,16 @@ await test("query_ontology agent_brief — selected project and compact task han
     },
   ]);
   try {
-    const task = "Fix DER SET ordering when an optional value writes no bytes; preserve rejection for present out-of-order elements.";
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", { operation: "agent_brief", project: "project-a" }),
-      callTool(3, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        detail: "compact",
-        task,
-      }),
-      callTool(4, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        detail: "compact",
-      }),
-      callTool(5, "query_ontology", { operation: "agent_brief" }),
-      callTool(6, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        detail: "compact",
-        task: "x".repeat(2001),
-      }),
-      callTool(7, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        task: "Task without compact detail",
-      }),
-      callTool(8, "query_ontology", {
-        operation: "health",
-        detail: "compact",
-      }),
-      callTool(9, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        detail: "full",
-      }),
+      callTool(3, "query_ontology", { operation: "agent_brief", project: "project-a", detail: "compact", task: "Fix DER SET ordering." }),
+      callTool(4, "query_ontology", { operation: "agent_brief" }),
+      callTool(5, "query_ontology", { operation: "agent_brief", project: "project-a", task: "Task without compact detail" }),
+      callTool(6, "query_ontology", { operation: "health", detail: "compact" }),
     ]);
 
     const full = getCallParsed(responses, 2);
-    assert.deepEqual(getCallParsed(responses, 9), full, "omitted detail and explicit full remain byte-shape compatible");
     assert.equal(full.operation, "agent_brief");
     assert.equal(full.projectSlug, "project-a");
     assert.equal(full.graph.nodes, 4);
@@ -8736,442 +8706,21 @@ await test("query_ontology agent_brief — selected project and compact task han
       new RegExp(`Current readiness: ${full.readiness.status} ${full.readiness.score}/100;`),
     );
     assert.match(full.handoffPrompt, new RegExp(`status ${full.status}\\.`));
+    assert.equal(Object.hasOwn(full, "focus"), false, "the brief carries no task navigation");
 
-    const compact = getCallParsed(responses, 3);
-    const compactText = getCallText(responses, 3);
-    assert.equal(compact.contract, "agentBriefCompact:v3");
-    assert.equal(compact.operation, "agent_brief");
-    assert.equal(compact.detail, "compact");
-    assert.equal(compact.sideEffect, false);
-    assert.equal(compact.project.slug, "project-a");
-    assert.equal(Object.hasOwn(compact, "handoffPrompt"), false);
-    assert.equal(compact.task.requestLocal, true);
-    assert.equal(compact.task.persisted, false);
-    assert.equal(compact.task.text, undefined);
-    assert.doesNotMatch(JSON.stringify(compact), new RegExp(task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-    assert.equal(compact.validation.status, "pass");
-    assert.equal(compact.validation.scope, "whole_vault");
-    assert.equal(compact.validation.problemFiles, 0);
-    assert.equal(compact.focus.capability.slug, "capabilities/write-values");
-    assert.equal(compact.focus.capability.claimStatus, "recorded_bounded_claim");
-    assert.deepEqual(compact.focus.evidenceAnchors.map((row) => row.slug), ["elements/writer"]);
-    assert.deepEqual(compact.focus.evidenceAnchors.map((row) => row.path), ["src/writer.rs"]);
-    assert.equal(compact.focus.taskNavigation.status, "blocked");
-    assert.equal(compact.focus.taskNavigation.blockedBy, "source_not_current");
-    assert.equal(compact.focus.taskNavigation.primary, null);
-    assert.equal(compact.focus.impact.completeness, "unknown");
-    assert.ok(compact.focus.unknowns.length > 1);
-    const textUnknowns = compactText.split('\n')
-      .filter((line) => line.startsWith('Unknown: ')).map((line) => JSON.parse(line.slice('Unknown: '.length)).text);
-    assert.deepEqual([...textUnknowns].sort(), [...compact.focus.unknowns].sort());
-    assert.ok(compact.nextReads.some((row) => row.tool === "get_concepts" && row.arguments.body === "full"));
-    const recovery = compact.nextReads[0];
-    assert.deepEqual(recovery.arguments.slugs, ['project-a', 'capabilities/write-values', 'elements/writer']);
-    const recovered = await rpc(root, [
-      ...INIT_REQUESTS, callTool(2, recovery.tool, recovery.arguments),
-    ], { OATLAS_READ_ONLY: '1' });
-    const bodies = getCallParsed(recovered.responses, 2).concepts;
-    assert.deepEqual(bodies.map((row) => row.slug), recovery.arguments.slugs);
-    assert.ok(bodies.every((row) => row.ok && row.bodyInfo.mode === 'full' && !row.bodyInfo.truncated));
-    for (const source of compact.focus.uncertainty.sources) {
-      const body = bodies.find((row) => row.slug === source.slug).body;
-      for (const index of source.unknownIndexes) assert.ok(body.includes(compact.focus.unknowns[index]));
+    for (const id of [3, 5, 6]) {
+      assert.equal(isErrorResponse(responses, id), true, `request ${id} is refused`);
+      assert.equal(getCallStructured(responses, id)?.errorCode, "invalid_arguments");
+      assert.match(getCallStructured(responses, id)?.error ?? "", /detail|task/i);
     }
-    assert.deepEqual(compact.fullDetail, {
-      tool: "query_ontology",
-      arguments: { operation: "agent_brief", project: "project-a", detail: "full" },
-    });
-    assert.deepEqual(compact.safety, {
-      humanApprovalRequiredForMeaningWrites: true,
-      automaticWrite: false,
-      automaticFinalize: false,
-      structuralReadinessIsSemanticApproval: false,
-    });
-    assert.equal(Object.hasOwn(compact, "playbooks"), false);
-    assert.equal(Object.hasOwn(compact, "cliFallbackCommands"), false);
-    assert.doesNotMatch(JSON.stringify(compact), /project-b|domains\/example|capabilities\/example|elements\/example/);
-    assert.ok(
-      Buffer.byteLength(JSON.stringify(compact), "utf8") + Buffer.byteLength(compactText, "utf8") <= 12000,
-      "compact agent brief must fit the 12 KiB first-contact budget across both channels",
-    );
-    assert.match(compactText, new RegExp(`Current source: ${compact.currentness.source.status}/${compact.currentness.source.currentness}`));
-    assert.match(compactText, /Task navigation: blocked/);
-    assert.match(compactText, new RegExp(`Meaning: ${compact.currentness.meaning.status}`));
-    assert.doesNotMatch(
-      loadVaultDocs(root).map((doc) => `${doc.frontmatter?.title ?? ""}\n${doc.body}`).join("\n"),
-      new RegExp(task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
-      "compact task text must not be persisted into vault Markdown",
-    );
-
-    for (const [id, pattern] of [
-      [4, /detail "compact" requires task/i],
-      [5, /project is required when the vault contains multiple project nodes/i],
-      [6, /task must contain at most 2000 characters/i],
-      [7, /task is only valid.*detail "compact"/i],
-      [8, /detail is only valid.*agent_brief/i],
-    ]) {
-      assert.equal(isErrorResponse(responses, id), true);
-      assert.match(getCallStructured(responses, id)?.error ?? "", pattern);
-    }
-    const refusedResponse = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, 'query_ontology', { operation: 'agent_brief', project: 'project-a', detail: 'compact', task: 'Coordinate orbital trajectories.' }),
-    ], { OATLAS_READ_ONLY: '1' });
-    const refused = getCallParsed(refusedResponse.responses, 2);
-    assert.equal(refused.focus.capability, null);
-    assert.equal(refused.focus.refusal.reason, 'no_match');
-    const refusedRead = await rpc(root, [
-      ...INIT_REQUESTS, callTool(2, refused.nextReads[0].tool, refused.nextReads[0].arguments),
-    ], { OATLAS_READ_ONLY: '1' });
-    assert.deepEqual(getCallParsed(refusedRead.responses, 2).concepts.map((row) => ({ slug: row.slug, ok: row.ok })), [{ slug: 'project-a', ok: true }]);
-    const lateLimit = 'Cross-process replacement recovery has not been tested.';
-    const projectPath = join(root, 'project-a.md');
-    writeFileSync(projectPath, readFileSync(projectPath, 'utf8').replace(/## Uncertainty[\s\S]*/u,
-      `## Uncertainty\n\n${'Bounded context. '.repeat(3000)}${lateLimit}\n`));
-    const cappedResponse = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, 'query_ontology', { operation: 'agent_brief', project: 'project-a', detail: 'compact', task }),
-    ], { OATLAS_READ_ONLY: '1' });
-    const capped = getCallParsed(cappedResponse.responses, 2);
-    const projectCoverage = capped.focus.uncertainty.sources.find((row) => row.slug === 'project-a');
-    assert.equal(projectCoverage.totalUnits, 1);
-    assert.equal(projectCoverage.omittedUnits, 1);
-    rmSync(join(root, 'elements/writer.md'));
-    const partialRead = await rpc(root, [
-      ...INIT_REQUESTS, callTool(2, capped.nextReads[0].tool, capped.nextReads[0].arguments),
-    ], { OATLAS_READ_ONLY: '1' });
-    const partialBodies = getCallParsed(partialRead.responses, 2).concepts;
-    const projectBody = partialBodies.find((row) => row.slug === 'project-a');
-    assert.equal(projectBody.ok, true);
-    assert.equal(projectBody.bodyInfo.truncated, true);
-    assert.ok(projectBody.bodyInfo.omittedChars > 0);
-    assert.equal(projectBody.body.includes(lateLimit), false);
-    assert.equal(partialBodies.find((row) => row.slug === 'elements/writer').ok, false);
+    assert.equal(isErrorResponse(responses, 4), true);
+    assert.match(getCallStructured(responses, 4)?.error ?? "", /project is required when the vault contains multiple project nodes/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("query_ontology agent_brief: persisted claim boundaries outrank task noun overlap", async () => {
-  const root = makeVault([
-    {
-      slug: "project",
-      content: "---\nkind: project\ntitle: Policy Runtime\ndomains: [domains/policy]\n---\n## Definition\n\nA runtime that evaluates collateral policy.\n",
-    },
-    {
-      slug: "domains/policy",
-      content: "---\nkind: domain\ntitle: Policy\ncapabilities: [capabilities/policy-appraisal, capabilities/expiry-diagnostics]\n---\n## Definition\n\nPolicy owns collateral acceptance and its reporting boundary.\n",
-    },
-    {
-      slug: "capabilities/policy-appraisal",
-      content: [
-        "---",
-        "kind: capability",
-        "title: Policy Appraisal",
-        "domain: domains/policy",
-        "---",
-        "## Definition",
-        "",
-        "Evaluate whether collateral remains acceptable before expiry using a configured safety margin.",
-        "",
-        "## Includes",
-        "",
-        "- Reject collateral when remaining validity is below the safety margin.",
-        "",
-        "## Excludes",
-        "",
-        "- Post-expiry diagnostic reporting.",
-        "",
-      ].join("\n"),
-    },
-    {
-      slug: "capabilities/expiry-diagnostics",
-      content: [
-        "---",
-        "kind: capability",
-        "title: Expiry Diagnostics",
-        "domain: domains/policy",
-        "---",
-        "## Definition",
-        "",
-        "Report why expired collateral was rejected and expose validity-margin diagnostics.",
-        "",
-        "## Includes",
-        "",
-        "- Post-expiry diagnostic reporting.",
-        "",
-        "## Excludes",
-        "",
-        "- Deciding pre-expiry acceptance policy.",
-        "",
-      ].join("\n"),
-    },
-  ]);
-  const taskCases = [
-    [
-      "Before expiry, reject collateral whose remaining validity is below a safety margin; do not add post-expiry diagnostics.",
-      "capabilities/policy-appraisal",
-    ],
-    [
-      "Implement a pre-expiry validity-margin rejection policy; diagnostics after expiry are out of scope.",
-      "capabilities/policy-appraisal",
-    ],
-    [
-      "Decide pre-expiry acceptance from remaining collateral validity and leave diagnostic reporting unchanged.",
-      "capabilities/policy-appraisal",
-    ],
-    [
-      "Add post-expiry diagnostics explaining rejected collateral; do not change pre-expiry acceptance policy.",
-      "capabilities/expiry-diagnostics",
-    ],
-  ];
-  try {
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      ...taskCases.map(([task], index) => callTool(index + 2, "query_ontology", {
-        operation: "agent_brief",
-        project: "project",
-        detail: "compact",
-        task,
-      })),
-    ]);
-
-    assert.equal(taskCases.length, 4, "the MCP boundary-routing gate must exercise real subjects");
-    for (const [index, [task, expectedSlug]] of taskCases.entries()) {
-      const compact = getCallParsed(responses, index + 2);
-      assert.equal(compact.focus.capability?.slug, expectedSlug, task);
-      assert.equal(compact.readerRules.includes("Capability: selection, not proof."), Boolean(expectedSlug), task);
-      assert.equal(compact.task.text, undefined);
-      assert.doesNotMatch(JSON.stringify(compact), new RegExp(task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-      assert.equal(compact.safety.automaticWrite, false);
-      assert.equal(compact.safety.automaticFinalize, false);
-      assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") + Buffer.byteLength(getCallText(responses, index + 2), "utf8") <= 12000);
-    }
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology agent_brief: literal claims do not become a selected capability", async () => {
-  const root = makeVault([
-    { slug: "project", content: "---\nkind: project\ntitle: Operations\ndomains: [domains/catalog]\n---\nLocal operations.\n" },
-    { slug: "domains/catalog", content: "---\nkind: domain\ntitle: Catalog\ncapabilities: [capabilities/catalog]\n---\nOwns archive indexes.\n" },
-    { slug: "capabilities/catalog", content: "---\nkind: capability\ntitle: Archive Catalog\ndomain: domains/catalog\n---\n## **Includes**\n\n<!--\nRotate encryption keys.\n-->\n\n- Index archive records only after approval.\n" },
-  ]);
-  try {
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", { operation: "agent_brief", project: "project", detail: "compact", task: "Rotate encryption keys." }),
-      callTool(3, "query_ontology", { operation: "agent_brief", project: "project", detail: "compact", task: "Index archive records." }),
-    ]);
-    const refused = getCallParsed(responses, 2);
-    assert.equal(refused.focus.capability, null);
-    assert.equal(refused.focus.refusal.reason, "no_match");
-    assert.equal(refused.focus.taskNavigation.primary, null);
-    assert.equal(refused.safety.automaticWrite, false);
-    assert.ok(getCallText(responses, 2).includes("Task refusal: no_match;"));
-    const selected = getCallParsed(responses, 3);
-    assert.equal(selected.focus.capability?.slug, "capabilities/catalog");
-    assert.ok(selected.focus.qualifiers.units.some((unit) => unit.text.includes("only after approval")));
-    assert.ok(getCallText(responses, 3).includes("only after approval"));
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology agent_brief: current reviewed coordinates become one exact task-navigation batch", async () => {
-  const vault = makeVault([
-    {
-      slug: "project",
-      content: "---\nkind: project\ntitle: Encoding Library\ndomains: [domains/encoding]\n---\n## Definition\n\nA library that writes encoded values.\n",
-    },
-    {
-      slug: "domains/encoding",
-      content: "---\nkind: domain\ntitle: Encoding\ncapabilities: [capabilities/write-values]\n---\n## Definition\n\nEncoding owns value production.\n",
-    },
-    {
-      slug: "capabilities/write-values",
-      content: "---\nkind: capability\ntitle: Write DER Values\ndomain: domains/encoding\nelements: [elements/writer]\n---\n## Definition\n\nWrite DER Values produces encoded output.\n",
-    },
-    {
-      slug: "elements/writer",
-      content: `---
-kind: element
-title: Writer Implementation
-domain: domains/encoding
-path: src/writer.ts
----
-## Definition
-
-Writer Implementation anchors encoded output.
-
-## Evidence
-
-\`\`\`md
-- Primary implementation: \`src/example-only.ts#example\`
-\`\`\`
-
-<!--
-- Focused test: \`tests/example-only.test.ts#example\`
--->
-
-- Primary implementation: \`src/writer.ts#writeDerSet\`
-- Supporting implementation: \`src/writer.ts#writeOptionalValue\`
-- Focused test: \`tests/writer.test.ts#writes optional DER SET values\`
-
-## Includes
-
-DER SET output ordering and optional values.
-
-## Excludes
-
-DER parsing and unrelated encodings.
-`,
-    },
-  ]);
-  const repo = mkdtempSync(join(tmpdir(), "ontology-atlas-task-navigation-repo-"));
-  try {
-    mkdirSync(join(repo, "src"), { recursive: true });
-    mkdirSync(join(repo, "tests"), { recursive: true });
-    writeFileSync(
-      join(repo, "src/writer.ts"),
-      "export function writeDerSet() { return writeOptionalValue(); }\nexport function writeOptionalValue() { return true; }\n",
-    );
-    writeFileSync(
-      join(repo, "tests/writer.test.ts"),
-      "test('writes optional DER SET values', () => {});\n",
-    );
-    const connected = await rpcForRepo(vault, repo, [
-      ...INIT_REQUESTS,
-      callTool(2, "connect_project_source", {
-        projectSlug: "project",
-        rootPath: repo,
-        confirm: true,
-      }),
-    ]);
-    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
-
-    const { responses } = await rpcForRepo(vault, repo, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", {
-        operation: "agent_brief",
-        project: "project",
-        detail: "compact",
-        task: "Write an optional DER SET value.",
-      }),
-    ]);
-    const compact = getCallParsed(responses, 2);
-    const compactText = getCallText(responses, 2);
-    const recovery = compact.nextReads[0];
-    assert.ok(compactText.includes(`${recovery.tool} ${JSON.stringify(recovery.arguments)}`),
-      "MCP text must retain the exact full-body recovery call alongside ready source navigation");
-    assert.equal(compact.contract, "agentBriefCompact:v3");
-    assert.equal(compact.focus.taskNavigation.status, "ready");
-    assert.deepEqual(compact.focus.taskNavigation.primary, {
-      path: "src/writer.ts",
-      symbol: "writeDerSet",
-      role: "primary",
-      line: 1,
-      endLine: 1,
-      sourceStatus: "supported_current",
-    });
-    assert.equal(compact.focus.taskNavigation.supporting.symbol, "writeOptionalValue");
-    assert.equal(compact.focus.taskNavigation.tests[0].symbol, "writes optional DER SET values");
-    assert.equal(compact.focus.taskNavigation.readPlan.targetCount, 3);
-    assert.match(compactText, /Primary: "src\/writer\.ts#writeDerSet:1"/);
-    assert.match(compactText, /Focused tests: \["tests\/writer\.test\.ts#writes optional DER SET values:1"\]/);
-    assert.match(compactText, /IN: "DER SET output ordering and optional values\."/);
-    assert.match(compactText, /OUT: "DER parsing and unrelated encodings\."/);
-    assert.match(compactText, /Verify: runner unknown/);
-    assert.match(compactText, /Read: .*stop_on_match/);
-    assert.match(compactText, /Tests: named positive \+ negative regression; exact observable output\./);
-    assert.equal(JSON.stringify(compact).includes(repo) || compactText.includes(repo), false, "private source root must not cross MCP output");
-    assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") + Buffer.byteLength(compactText, "utf8") <= 12000);
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology agent_brief — read-only known-task wire path stays below 22000 characters", async () => {
-  const scratch = mkdtempSync(join(tmpdir(), "ontology-atlas-compact-wire-"));
-  const vault = join(scratch, "vault");
-  const repo = resolve(__dirname, "../..");
-  cpSync(resolve(repo, "docs/ontology"), vault, {
-    recursive: true,
-    filter: (source) => !source.split(/[\\/]/).includes(".ontology-atlas"),
-  });
-  try {
-    const connected = await rpcForRepo(vault, repo, [
-      ...INIT_REQUESTS,
-      callTool(2, "connect_project_source", {
-        projectSlug: "ontology-atlas",
-        rootPath: repo,
-        confirm: true,
-      }),
-    ]);
-    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
-
-    const { responses } = await rpcForRepo(vault, repo, [
-      ...INIT_REQUESTS,
-      callTool(2, "connection_info", {}),
-      callTool(3, "query_ontology", {
-        operation: "agent_brief",
-        project: "ontology-atlas",
-        detail: "compact",
-        task: "Change the task-scoped compact agent brief projection.",
-      }),
-      callTool(4, "query_ontology", {
-        operation: "agent_brief",
-        project: "ontology-atlas",
-        detail: "full",
-      }),
-    ], { OATLAS_READ_ONLY: "1" });
-    const connectionResponse = responses.find((row) => row.id === 2);
-    const compactResponse = responses.find((row) => row.id === 3);
-    assert.ok(connectionResponse?.result, "connection_info must return one wire result");
-    assert.ok(compactResponse?.result, "compact agent_brief must return one wire result");
-    assert.notEqual(compactResponse.result.isError, true, JSON.stringify(compactResponse.result));
-    const compact = getCallParsed(responses, 3);
-    assert.equal(compact.focus.taskNavigation.status, "ready");
-    assert.equal(compact.focus.taskNavigation.currentness, "current");
-    assert.equal(compact.focus.verification.runner, "package-script");
-    assert.equal(compact.focus.verification.manifest, "mcp/package.json");
-    const structureBytes = Buffer.byteLength(JSON.stringify(compact), "utf8");
-    const textBytes = Buffer.byteLength(getCallText(responses, 3), "utf8");
-    const compactBytes = structureBytes + textBytes;
-    const uncertaintyUnits = compact.focus.uncertainty.sources.reduce((sum, row) => sum + row.unknownIndexes.length, 0);
-    console.log(`    compact agent_brief structure ${structureBytes} + text ${textBytes} = ${compactBytes} bytes; headroom ${12000 - compactBytes}; units ${compact.focus.qualifiers?.units.length ?? 0} qualifier + ${uncertaintyUnits} uncertainty`);
-    assert.ok(
-      compactBytes <= 12000,
-      `compact agent_brief is ${compactBytes} bytes; budget 12000, headroom ${12000 - compactBytes}`,
-    );
-    const repair = compact.meaningRepair;
-    assert.equal(repair.contract, "meaningRepairCompact:v2");
-    assert.equal(repair.status, "human_review_required");
-    const [firstCall] = repair.firstStep.calls;
-    assert.equal(firstCall.arguments.operation, "meaning_repair_review");
-    assert.equal(firstCall.arguments.expectedGraphHash, repair.provenance.graphHash);
-    assert.equal(firstCall.arguments.expectedSourceFingerprint, repair.provenance.sourceFingerprint);
-    assert.equal(firstCall.arguments.reviewRevision, repair.reviewRevision);
-    const full = getCallParsed(responses, 4);
-    assert.deepEqual(compact.fullDetail.arguments, { operation: "agent_brief", project: "ontology-atlas", detail: "full" });
-    assert.deepEqual(full.meaningRepair.workflow.slice(1).map((row) => row.step), repair.omitted.steps);
-    assert.equal(full.meaningRepair.stopWhen.length, repair.omitted.stopConditions);
-    const wireCharacters = JSON.stringify(connectionResponse).length + JSON.stringify(compactResponse).length;
-    // The budget grows by exactly the construction card's allowance
-    // (CONSTRUCTION_CARD_MAX_CHARS, rounded up), not by what the dogfood prose weighs.
-    assert.ok(
-      wireCharacters < 22_000,
-      `connection_info + compact read-only wire path must stay below 22000 characters; received ${wireCharacters} (compact ${compactBytes} bytes, headroom ${12000 - compactBytes})`,
-    );
-    assert.equal(JSON.stringify(compactResponse).includes(repo), false, "wire response must not expose the private root");
-  } finally {
-    rmSync(scratch, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology agent_brief — a valid 501-node project keeps full and compact handoffs", async () => {
+await test("query_ontology agent_brief — a valid 501-node project keeps its full brief", async () => {
   const elementSlugs = Array.from({ length: 500 }, (_, index) => `elements/unit-${String(index + 1).padStart(3, "0")}`);
   const root = makeVault([
     {
@@ -9187,13 +8736,7 @@ await test("query_ontology agent_brief — a valid 501-node project keeps full a
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", { operation: "project_scope", project: "large-project", limit: 500 }),
-      callTool(3, "query_ontology", { operation: "agent_brief", project: "large-project", detail: "full" }),
-      callTool(4, "query_ontology", {
-        operation: "agent_brief",
-        project: "large-project",
-        detail: "compact",
-        task: "Inspect an unrelated lunar camera behavior.",
-      }),
+      callTool(3, "query_ontology", { operation: "agent_brief", project: "large-project" }),
     ]);
     const publicScope = getCallParsed(responses, 2);
     assert.equal(publicScope.nodes.total, 501);
@@ -9204,10 +8747,6 @@ await test("query_ontology agent_brief — a valid 501-node project keeps full a
     assert.equal(full.compiledSummary.nodes, 501);
     assert.equal(full.projectSlug, "large-project");
     assert.equal(full.meaningAssessment.status, "invalid");
-    const compact = getCallParsed(responses, 4);
-    assert.equal(compact.focus.status, "not_recorded");
-    assert.equal(compact.currentness.meaning.status, "invalid");
-    assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") + Buffer.byteLength(getCallText(responses, 4), "utf8") <= 12000);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
