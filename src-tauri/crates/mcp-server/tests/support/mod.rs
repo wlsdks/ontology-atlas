@@ -58,7 +58,7 @@ fn command(program: Program, environment: &[(&str, &str)]) -> Command {
         Program::Rust => Command::new(env!("CARGO_BIN_EXE_ontology-atlas-mcp-rust")),
         Program::JavaScript => {
             let mut node = Command::new("node");
-            node.arg(repository_root().join("mcp/src/index.js"));
+            node.arg(repository_root().join("mcp/src/javascript-server.mjs"));
             node
         }
     };
