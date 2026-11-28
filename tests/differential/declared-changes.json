@@ -2106,22 +2106,6 @@
       "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
     },
     {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text",
-      "change": 42,
-      "reason": "A record whose header holds U+2028 or U+2029, which the app's own writer can produce, is read and listed (row 42); the JavaScript reader refused it as not JSON."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
-      "path": "result.isError",
-      "change": 42,
-      "reason": "A record whose header holds U+2028 or U+2029, which the app's own writer can produce, is read and listed (row 42); the JavaScript reader refused it as not JSON."
-    },
-    {
       "case": "graph/query-plan-containment-tangle",
       "where": "answer",
       "id": 1,

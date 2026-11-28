@@ -65,6 +65,25 @@ describe('immutable analysis record format', () => {
     expect(() => serializeAnalysisRecord({ ...run(), evidence: [] })).toThrow(/evidence/i);
   });
 
+  it('reads a record whose header holds a line or paragraph separator, as the Rust reader does', () => {
+    const value = { ...run(), request: { ...run().request, text: 'Line one\u2028line two\u2029line three.' } };
+    const markdown = serializeAnalysisRecord(value);
+    expect(markdown).toContain('\u2028');
+    expect(parseAnalysisRecord(markdown)).toEqual(value);
+  });
+
+  it('refuses what the Rust reader refuses: half of a surrogate pair, a value nested too deep, a line that is not JSON', () => {
+    const half = '\ud83d';
+    expect(() => serializeAnalysisRecord({ ...run(), request: { ...run().request, text: half } })).toThrow(/bounded string/);
+    const sentence = /supported JSON flow values/;
+    const text = serializeAnalysisRecord(run());
+    expect(() => parseAnalysisRecord(text.replace('"Explain this boundary.\\nKeep unknowns visible."', '"\\ud83d"'))).toThrow(sentence);
+    expect(() => parseAnalysisRecord(text.replace('mode: "meaning"', 'mode: meaning'))).toThrow(sentence);
+    const nested = (levels: number) => text.replace('mode: "meaning"', `mode: "meaning"\nnote: ${'['.repeat(levels)}${']'.repeat(levels)}`);
+    expect(() => parseAnalysisRecord(nested(128))).toThrow(sentence);
+    expect(() => parseAnalysisRecord(nested(127))).toThrow(/unsupported fields/);
+  });
+
   it('retains a review as a separate immutable document', () => {
     const review = { schema: 'atlas-analysis/v1' as const, recordType: 'review' as const, id: '24e7bc39-013c-46e7-86b2-ff2f3aeab58c', createdAt: '2026-09-05T08:05:00.000Z', runId: run().id, findingId: 'finding-1', disposition: 'dismiss' as const, actor: 'user-action' as const, rationale: 'The policy permits this case.\nKeep the original analysis.' };
     expect(parseAnalysisRecord(serializeAnalysisRecord(review))).toEqual(review);
