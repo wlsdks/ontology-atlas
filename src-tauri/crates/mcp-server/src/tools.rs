@@ -36,6 +36,7 @@ mod reply_bytes;
 #[cfg(feature = "test-hooks")]
 mod test_hooks;
 mod validate_vault;
+mod validate_wiki;
 mod vault_facts;
 mod vault_repository;
 mod vault_validation_facts;
@@ -68,6 +69,7 @@ pub fn call(
         "compile_ontology" => Some(compile_ontology::call(context, arguments)),
         "query_ontology" => Some(query_ontology::call(context, arguments)),
         "validate_vault" => Some(validate_vault::call(context, arguments)),
+        "validate_wiki" => Some(validate_wiki::call(context, arguments)),
         "infer_imports" => Some(infer_imports::call(context, arguments)),
         "inspect_architecture" => Some(inspect_architecture::call(context, arguments)),
         "analyze_repo_structure" => Some(analyze_repo_structure::call(context, arguments)),
@@ -87,8 +89,8 @@ pub fn write_handler(tool: WriteTool) -> Option<WriteHandler> {
         WriteTool::RenameConcept => Some(writes::rename_concept),
         WriteTool::MergeConcepts => Some(writes::merge_concepts),
         WriteTool::DeleteConcept => Some(writes::delete_concept),
-        WriteTool::AbsorbDocument
-        | WriteTool::ConnectProjectSource
+        WriteTool::AbsorbDocument => Some(writes::absorb_document),
+        WriteTool::ConnectProjectSource
         | WriteTool::DisconnectProjectSource
         | WriteTool::FinalizeProjectMeaning => None,
         #[cfg(feature = "test-hooks")]

@@ -2,6 +2,7 @@
 //! hold what two or more share. The checkpoint every tool passes (read-only mode, consent, the
 //! write lock) is `write_checkpoint`; what follows from reaching a handler is here.
 
+mod absorb_document;
 mod add_concepts;
 mod add_relations;
 mod answer_fields;
@@ -21,6 +22,7 @@ mod write_aftermath;
 mod write_gates;
 mod write_support;
 
+pub use absorb_document::call as absorb_document;
 pub use add_concepts::{call as add_concepts, call_one as add_concept};
 pub use add_relations::{call as add_relations, call_one as add_relation};
 pub use delete_concept::call as delete_concept;

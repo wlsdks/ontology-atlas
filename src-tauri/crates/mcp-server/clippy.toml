@@ -70,5 +70,7 @@ disallowed-methods = [
   { path = "confined_files::VaultRoot::write_path", reason = "a write handler gets its path from its WritePermit" },
   { path = "confined_files::VaultRoot::writable", reason = "a write handler gets its path from its WritePermit" },
   { path = "confined_files::apply_all_or_nothing", reason = "a write handler applies a plan through its WritePermit" },
+  { path = "confined_files::AbsorbedFile::writable_source", reason = "a write handler gets its path from its WritePermit" },
+  { path = "confined_files::AbsorbedFile::writable_backup", reason = "a write handler gets its path from its WritePermit" },
   { path = "confined_files::write_atomically", reason = "a write handler writes through its WritePermit" },
 ]

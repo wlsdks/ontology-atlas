@@ -305,6 +305,8 @@ merge.
 | 82 | `compile_ontology` and `find_backlinks` for a file that exists and cannot be read (a link that loops, a permission) | `Could not capture a stable file snapshot: <absolute path> (ELOOP: ...)` | `Could not read the file of "<slug>": <operating-system words>`, as row 13 gives `get_concepts` | the absolute path of a disk is no answer to put in a vault's report. Corpus: `handler-fails-on-an-unreadable-file` |
 | 83 | the refusal of an argument nested thousands of levels deep | the sentence of the first check the value fails (`kind must be a non-empty string.`) | `Argument "kind" is not valid: recursion limit exceeded.` | the reader stops at its recursion limit before any check runs; the code is the same, `invalid_arguments`. Corpus: `arguments-nested-thousands-deep` |
 | 84 | an unknown `OATLAS_TOOL_PROFILE` at start | the message, then a JavaScript stack trace that names the source folder | the message alone, and the same exit | a stack trace is no use to the person who set the variable. Corpus: `tools-list-profile-unknown` |
+| 85 | `absorb_document` `postWriteMaintenance` | the head of the whole vault's maintenance plan, as row 72 describes for the seven writers | the same short answer row 72 gives: `nextAction` and `stepsAboutTouched` for the nodes the call wrote | one reduction for every writer, not a second shape for the eighth. Corpus: `absorb-document` |
+| 86 | `absorb_document` for a file that is hidden or credential-named, is not Markdown, or is a device name | the file is read as text and rewritten with a pointer, and a backup is written beside it (`data.csv`, `/etc/hosts` were accepted) | `invalid_arguments`, nothing read past the name and nothing written; the file must be a Markdown file of at most 16 MiB that is valid UTF-8 | the tool rewrites a person's rules file in place; a file Atlas must never read for a source (`.env`, a key, a device) is never one it rewrites. The source, its backup and the new nodes are applied as one all-or-nothing plan, so a refused step leaves no backup behind. Corpus: `absorb-document-hostile-paths` |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -1198,3 +1200,40 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   change: every answer that needs `absorb_document` or `validate_wiki`, which slice 11 ports.
 - 2026-11-28: the Node server cut `analysis_history`, the compact brief (`detail:"compact"` and `task`) and `view:"analysis"` with the proposal route (`docs/records/decisions/2026-11-28-mcp-lean-cuts-*.md`). The Rust port does not carry them: each answers `invalid_arguments` naming its replacement, and `agent_brief` is the small brief with counts, first rows and the `validate_vault` call. `domain_matrix` stays, because the app's Flat dial shows its counts.
 
+- 2026-11-28: slice 11, first half (`feat/mcp-rust-11-library`). `absorb_document` and `validate_wiki`
+  are ported; `connect_project_source`, `disconnect_project_source`, `finalize_project_meaning`, the
+  members of one saved constellation and the `finalizeGate` of `validate_vault` are not (below).
+  Questioned steps. (1) Absorb rewrites a document that usually lies outside the vault (the
+  repository's `AGENTS.md`), so it cannot go through `VaultRoot`. `confined-files::AbsorbedFile`
+  takes its place: it opens the file only when its name is not hidden or credential-like (the typed
+  name and the name a link resolves to), is Markdown, is valid UTF-8 and is at most 16 MiB, and it
+  hands out a `WritablePath` only through the write checkpoint's permit (clippy refuses any other
+  caller, as for `write_path`). The script server rewrote any file it was named, `.env` included;
+  row 86. (2) The source rewrite, its backup and the new document nodes are one all-or-nothing plan
+  with the node reservations as refusals, so a refused step leaves no backup behind. (3) The
+  planning half (split at `##` outside fences, the policy/architecture classifier, the injection
+  scan, the slim pointer, slug choice) is the pure crate `document-absorption`; JavaScript's ASCII
+  `\b` and `\s` are kept by `(?-u:\b)` and a white-space class, since Rust's default is Unicode.
+  (4) `validate_wiki` splits the same way: `wiki-pages` judges one page against its template and the
+  folder for `dangling-wikilink`, `orphan-page` and `shared-source-unlinked`; the tool pages the
+  failing pages by path with an `afterPath` cursor and keeps the 128 KiB reply budget by bisecting
+  the number of pages, as the script server does. The known sources are `sources/` read by one
+  walk (`VaultRoot::raw_source_paths`: dot names skipped, links neither followed nor listed). A
+  page is judged against the whole folder on every call; no per-file fact is kept between calls.
+  Finding for the lead: a `confirm: false` on a tool that asks consent is read by the script
+  server as a refusal to confirm even after the person accepted the card
+  (`connectProjectSourceTool` takes `consented && confirm !== false`), while the other writers
+  treat the accepted card as the confirmation; the Rust writers follow the second reading. The
+  `connection_info` retired-guide sentence for `competency` now matches the script server's.
+  Declared: rows 85 and 86 (212 leaves across `absorb-document`, `absorb-document-hostile-paths`
+  and 30 in `safety/write-guards-on-every-writer`); every `wiki-validation*` case and the
+  constellation cases agree. Measured (one confirmed `absorb_document` of this repository's
+  `AGENTS.md` into the `samples/storefront` vault, three runs each, whole process from start):
+  the script server 68 to 85 ms for the call, 66 MB footprint (104 MB resident), 8,630 bytes;
+  Rust 46 ms, 7 MB footprint (11 MB resident), 2,878 bytes. Not built: the project-source tools
+  (the bounded folder probe and its fingerprint, the witness inventory and receipt, the project
+  scope graph hash, the competency inventory and `agent_brief` readiness that finalize reads), so
+  `library/finalize-project-meaning`, `project-source-*` and the `finalizeGate` leaf of
+  `safety/confined-source-reads-on` still differ; `connect_project_source` was therefore not
+  measured. The `finalizeGate` needs `build-depth` to measure roles and ability-to-ability edges,
+  which the Rust crate does not yet.

@@ -71,7 +71,7 @@ const RETIRED_QUERY_OPERATIONS: [(&str, &str); 8] = [
 /// `connection_info` guide topics no longer served, with where the text went.
 const RETIRED_GUIDES: [(&str, &str); 1] = [(
     "competency",
-    "The answer layout is in the refusal of finalize_project_meaning: call it without `answers` and read the refusal.",
+    "The answer layout is the `answers` item schema of finalize_project_meaning in tools/list: one row per fixed question with id, status, answer and the witness lists the question names.",
 )];
 
 /// `null` is no value, and `detail: "full"` asks for what a brief is anyway.

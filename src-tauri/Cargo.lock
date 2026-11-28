@@ -3047,6 +3047,7 @@ dependencies = [
  "answer-format",
  "build-depth",
  "confined-files",
+ "document-absorption",
  "hardened-git",
  "indexmap 2.14.0",
  "mcp-server",
@@ -3068,6 +3069,7 @@ dependencies = [
  "vault-document",
  "vault-edit",
  "vault-validation",
+ "wiki-pages",
 ]
 
 [[package]]
@@ -6842,6 +6844,17 @@ dependencies = [
  "thiserror 2.0.21",
  "windows",
  "windows-core",
+]
+
+[[package]]
+name = "wiki-pages"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "icu_normalizer",
+ "regex",
+ "serde",
+ "vault-document",
 ]
 
 [[package]]
