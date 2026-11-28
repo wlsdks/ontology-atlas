@@ -30,6 +30,7 @@ mod import_answers;
 mod import_scan_target;
 mod infer_imports;
 mod inspect_architecture;
+mod kept_survey;
 mod list_concepts;
 mod query_concepts;
 mod query_ontology;

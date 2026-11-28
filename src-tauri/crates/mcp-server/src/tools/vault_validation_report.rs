@@ -5,6 +5,7 @@
 //! started for when it was found, or the `repoRoot` the call names. Without one the report says
 //! what was not measured instead of measuring the working directory.
 
+use build_depth::measure_against_survey;
 use confined_files::{SourceFiles, VaultRoot};
 use hardened_git::RepoPath;
 use meaning_findings::WITNESS_TEXT_MAX_BYTES;
@@ -16,6 +17,7 @@ use vault_validation::{
 };
 
 use super::import_scan_target::ScanTarget;
+use super::kept_survey::kept_survey;
 use super::vault_repository::{locate, locate_from, Located};
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
@@ -38,11 +40,21 @@ pub fn build_report(
     let target = ScanTarget::allow_named(context, repo_root, "repoRoot")?;
     let source = target.source_with_limit(WITNESS_TEXT_MAX_BYTES);
 
+    let measured = grounded.then(|| {
+        let survey = kept_survey(context, &target, &[]);
+        let reads = context.source_reads().reads_under(target.source_root());
+        measure_against_survey(documents, &survey, &reads, &source)
+    });
+    let (coverage, survey_findings) = match measured {
+        Some(measured) => (measured.coverage, measured.findings),
+        None => (None, Vec::new()),
+    };
     let issues = collect_issues(
         documents,
         &index,
         grounded.then_some(&source as &dyn SourceFiles),
         raw_source_kind_issues(root),
+        survey_findings,
     );
     let list = list_problems(&issues.files, issues.by_slug);
 
@@ -82,7 +94,7 @@ pub fn build_report(
     Ok(VaultReport {
         frame: ValidationFrame {
             scanned: documents.len(),
-            coverage: None,
+            coverage,
             summary_freshness: freshness,
             evidence_drift: evidence,
             path_drift: drift,

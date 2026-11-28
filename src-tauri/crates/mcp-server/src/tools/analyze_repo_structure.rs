@@ -4,7 +4,6 @@
 //! (`view: "analysis"`) and the review of a `proposal` or `qualification` are retired: the call is
 //! refused by name and points to the tools that write a vault.
 
-use repository_survey::{build_breadth_map, git_ignored_paths, SurveyFiles, SurveyRequest};
 use source_reads::{
     fit_source_reads, parse_source_reads, read_source_evidence, render_source_reads,
 };
@@ -13,6 +12,7 @@ use super::argument_checks::{
     optional_boolean, optional_non_blank_text, optional_non_negative_integer, optional_text_list,
 };
 use super::import_scan_target::ScanTarget;
+use super::kept_survey::kept_survey;
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
@@ -20,8 +20,6 @@ use crate::error::ToolError;
 
 const IGNORE_MAX_ITEMS: usize = 200;
 const MAX_DEPTH_MAX: f64 = 10.0;
-/// A source file over this many bytes is generated or data, never read as code.
-const SURVEY_FILE_BYTES: usize = 1024 * 1024;
 
 /// An argument that was sent at all, `null` included.
 fn is_sent(arguments: &Arguments, name: &str) -> bool {
@@ -37,17 +35,6 @@ fn is_set(arguments: &Arguments, name: &str) -> bool {
 
 /// What a call for a retired part is told.
 const RETIRED: &str = "view \"analysis\", proposal and qualification are retired: the structural analysis and the review of a proposal no longer exist. Call analyze_repo_structure for the breadth map, read the code with sourceReads, then write what you found with add_concepts and add_relations.";
-
-/// The folder the vault lies in below `root`, `/`-separated; `None` when the vault is the root or
-/// outside it.
-fn vault_below(root: &std::path::Path, vault_root: &std::path::Path) -> Option<String> {
-    let below = vault_root.strip_prefix(root).ok()?;
-    let parts: Vec<String> = below
-        .components()
-        .map(|part| part.as_os_str().to_string_lossy().into_owned())
-        .collect();
-    (!parts.is_empty()).then(|| parts.join("/"))
-}
 
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
     let root_path = optional_non_blank_text(arguments, "rootPath")?;
@@ -98,17 +85,6 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             &evidence,
         )));
     }
-    let source = target.source_with_limit(SURVEY_FILE_BYTES);
-    let files = SurveyFiles::new(&source);
-    let git_ignored = git_ignored_paths(target.root());
-    let survey = build_breadth_map(
-        &files,
-        &SurveyRequest {
-            root_path: &target.label,
-            ignore: &ignore,
-            vault_exclusion: vault_below(target.root(), &context.config().vault_root),
-            git_ignored: &git_ignored,
-        },
-    );
-    Ok(ToolOutput::text(survey.text))
+    let survey = kept_survey(context, &target, &ignore);
+    Ok(ToolOutput::text(survey.text.clone()))
 }

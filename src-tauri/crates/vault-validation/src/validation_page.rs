@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 
+use build_depth::{Coverage, CoveragePage};
 use serde::Serialize;
 use vault_document::Issue;
 
@@ -23,7 +24,7 @@ const SENTENCE_MIN_CHARS: usize = 40;
 /// Everything the answer says besides which problem rows it shows.
 pub struct ValidationFrame {
     pub scanned: usize,
-    pub coverage: Option<String>,
+    pub coverage: Option<Coverage>,
     pub summary_freshness: SummaryFreshness,
     pub evidence_drift: EvidenceDrift,
     pub path_drift: PathDrift,
@@ -33,7 +34,7 @@ pub struct ValidationFrame {
 struct Frame<'a> {
     scanned: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
-    coverage: &'a Option<String>,
+    coverage: Option<CoveragePage<'a>>,
     problems: &'a [Problem],
     summary: &'a ProblemSummary,
     #[serde(rename = "summaryFreshness")]
@@ -67,7 +68,7 @@ pub struct ValidationPage<'a> {
     hint: Option<String>,
     scanned: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
-    coverage: &'a Option<String>,
+    coverage: Option<CoveragePage<'a>>,
     problems: Vec<Problem>,
     summary: ProblemSummary,
     #[serde(rename = "summaryFreshness")]
@@ -214,6 +215,7 @@ fn sampled(by_code: &TalliesByCode) -> TalliesByCode {
                     CodeTally {
                         severity: tally.severity,
                         count: tally.count,
+                        remedy: tally.remedy,
                         files: tally
                             .files
                             .iter()
@@ -234,6 +236,10 @@ pub fn page_validation<'a>(
     list: &ProblemList,
     request: &PageRequest<'_>,
 ) -> ValidationPage<'a> {
+    let coverage = frame
+        .coverage
+        .as_ref()
+        .map(|measured| measured.page(request.offset));
     let total = list.problems.len();
     let start = request.offset.min(total);
     let limit = request.limit.unwrap_or(DEFAULT_PAGE_LIMIT);
@@ -255,7 +261,7 @@ pub fn page_validation<'a>(
     if request.limit.is_none() && !request.brief {
         let empty = Frame {
             scanned: frame.scanned,
-            coverage: &frame.coverage,
+            coverage,
             problems: &[],
             summary: &summary,
             summary_freshness: &frame.summary_freshness,
@@ -328,7 +334,7 @@ pub fn page_validation<'a>(
         },
         hint,
         scanned: frame.scanned,
-        coverage: &frame.coverage,
+        coverage,
         problems: rows,
         summary,
         summary_freshness: &frame.summary_freshness,

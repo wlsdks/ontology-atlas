@@ -12832,6 +12832,2790 @@
       "path": "result.content[0].text",
       "change": 52,
       "reason": "An outline signature is cut to 160 UTF-16 units without cutting through a surrogate pair: the script server keeps the first half of an emoji at the cut, a lone surrogate that its answer shows as U+FFFD, and the Rust server stops before that emoji (row 52). The trim (U+FEFF removed, U+0085 kept) and every other cut are equal."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/problems/2/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.problems[2].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-edge-bytes",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/10/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/11/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/13/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/15/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/16/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/17/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/18/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/6/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/7/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/8/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems/9/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problemsHint",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problemsPagination/nextOffset",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problemsPagination/returned",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[10].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[11].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[13].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[15].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[16].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[17].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[18].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[6].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[7].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[8].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems[9].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problemsHint",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problemsPagination.nextOffset",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problemsPagination.returned",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/problems/2/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.problems[2].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "meaning/validate-vault-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/validation/problems/0/issues/6/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.validation.problems[0].issues[6].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/health/validation/problems/0/issues/6/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.health.validation.problems[0].issues[6].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 58,
+      "path": "result.content[0].text#/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 58,
+      "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 58,
+      "path": "result.structuredContent.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 58,
+      "path": "result.structuredContent.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 59,
+      "path": "result.content[0].text#/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 59,
+      "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 59,
+      "path": "result.structuredContent.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 59,
+      "path": "result.structuredContent.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 60,
+      "path": "result.content[0].text#/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 60,
+      "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 60,
+      "path": "result.structuredContent.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 60,
+      "path": "result.structuredContent.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 61,
+      "path": "result.content[0].text#/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 61,
+      "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 61,
+      "path": "result.structuredContent.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 61,
+      "path": "result.structuredContent.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 62,
+      "path": "result.content[0].text#/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 62,
+      "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 62,
+      "path": "result.structuredContent.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 62,
+      "path": "result.structuredContent.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 63,
+      "path": "result.content[0].text#/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 63,
+      "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 63,
+      "path": "result.structuredContent.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 63,
+      "path": "result.structuredContent.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 64,
+      "path": "result.content[0].text#/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 64,
+      "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 64,
+      "path": "result.structuredContent.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 64,
+      "path": "result.structuredContent.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 83,
+      "path": "result.content[0].text#/health/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 83,
+      "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 83,
+      "path": "result.structuredContent.health.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 83,
+      "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 84,
+      "path": "result.content[0].text#/health/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 84,
+      "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 84,
+      "path": "result.structuredContent.health.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 84,
+      "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 85,
+      "path": "result.content[0].text#/health/validation/problems/4/issues/4/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 85,
+      "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 85,
+      "path": "result.structuredContent.health.validation.problems[4].issues[4].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 85,
+      "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/10/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/11/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/13/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/15/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/16/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/17/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/18/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/19/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/6/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/7/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/8/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/problems/9/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text#/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[10].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[11].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[13].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[15].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[16].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[17].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[18].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[19].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[6].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[7].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[8].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.problems[9].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/10/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/11/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/13/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/15/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/16/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/17/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/18/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/19/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/6/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/7/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/8/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/problems/9/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[10].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[11].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[13].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[15].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[16].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[17].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[18].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[19].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[6].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[7].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[8].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.problems[9].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/10/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/11/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/13/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/15/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/16/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/17/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/18/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/19/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/6/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/7/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/8/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/problems/9/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/health/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[10].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[11].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[13].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[15].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[16].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[17].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[18].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[19].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[6].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[7].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[8].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.problems[9].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.structuredContent.health.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/10/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/11/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/13/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/15/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/16/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/17/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/18/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/19/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/6/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/7/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/8/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/problems/9/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/health/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[10].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[11].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[13].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[15].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[16].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[17].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[18].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[19].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[6].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[7].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[8].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.problems[9].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.health.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/10/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/11/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/13/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/15/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/16/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/17/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/18/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/19/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/6/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/7/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/8/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/problems/9/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[10].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[11].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[13].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[15].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[16].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[17].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[18].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[19].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[6].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[7].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[8].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.problems[9].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/10/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/11/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/13/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/15/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/16/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/17/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/18/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/19/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/6/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/7/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/8/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/problems/9/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/health/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[10].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[11].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[13].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[15].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[16].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[17].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[18].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[19].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[6].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[7].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[8].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.problems[9].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.health.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/10/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/11/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/13/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/15/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/16/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/17/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/18/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/19/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/4/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/6/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/7/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/8/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/problems/9/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/health/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[10].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[11].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[13].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[15].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[16].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[17].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[18].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[19].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[4].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[6].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[7].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[8].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.problems[9].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.health.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.coverage",
+      "change": 65,
+      "reason": "The build-depth coverage is an object of counts: the first ten abilities not placed, paged by offset, the areas as numbers and the next files to map, and the Not mapped yet lines to keep written out in full. The script server sent one sentence of about 12,000 characters on a repository of this size, with every unplaced ability listed in every answer (about 7,000 tokens a call). An agent that wants the rest asks for the next page."
     }
   ]
 }

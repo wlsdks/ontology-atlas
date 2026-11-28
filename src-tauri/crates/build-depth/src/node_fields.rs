@@ -58,3 +58,46 @@ impl<'a> SlugResolver<'a> {
         self.by_tail.get(reference).copied().flatten()
     }
 }
+
+/// The text under the `## heading` of `body`, up to the next `## ` heading or the end; empty
+/// when there is none. The heading matches in any letter case.
+pub(crate) fn section_of<'a>(body: &'a str, heading: &str) -> &'a str {
+    let mut start: Option<usize> = None;
+    let mut offset = 0;
+    for line in body.split_inclusive('\n') {
+        let text = line.trim_end_matches(['\n', '\r']);
+        let opens_section = text
+            .strip_prefix("##")
+            .is_some_and(|rest| rest.chars().next().is_some_and(char::is_whitespace));
+        if let Some(from) = start {
+            if opens_section {
+                return body.get(from..offset).unwrap_or("");
+            }
+        } else if opens_section
+            && text
+                .strip_prefix("##")
+                .is_some_and(|rest| rest.trim().eq_ignore_ascii_case(heading))
+        {
+            start = Some(offset + text.len());
+        }
+        offset += line.len();
+    }
+    start.map_or("", |from| body.get(from..).unwrap_or(""))
+}
+
+/// Wording a node uses for a subject it only outlined; read under `## Uncertainty` alone.
+pub(crate) fn says_outlined_only(body: &str) -> bool {
+    static OUTLINED_ONLY: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+        crate::line_cites::pattern(
+            r"(?i-u)\b(?:outlined only|only outlined|outline only|outlined,? (?:but )?(?:the )?(?:body |bodies )?(?:not read|unread)|bod(?:y|ies) (?:was |were |is |are )?(?:not read|unread)|unread|not opened)\b",
+        )
+    });
+    OUTLINED_ONLY.is_match(section_of(body, "Uncertainty"))
+}
+
+/// The first node of kind `project`.
+pub(crate) fn project_of(documents: &[LoadedDocument]) -> Option<&LoadedDocument> {
+    documents
+        .iter()
+        .find(|document| kind_of(document) == "project")
+}

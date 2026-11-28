@@ -89,6 +89,8 @@ pub struct Session {
     graph: KeptGraph,
     /// The source lines served through `sourceReads` so far; the process is the session.
     source_reads: source_reads::SessionReads,
+    /// The surveys of the repositories asked about, kept until a repository changes.
+    survey: repository_survey::SurveyCache,
     /// Held by the one write in progress, from its approval to its audit line.
     write_lock: Mutex<()>,
     output: Mutex<Box<dyn Write + Send>>,
@@ -108,6 +110,7 @@ impl Session {
             documents: DocumentCache::new(),
             graph: KeptGraph::new(),
             source_reads: source_reads::SessionReads::new(),
+            survey: repository_survey::SurveyCache::default(),
             write_lock: Mutex::new(()),
             config,
             output: Mutex::new(output),
@@ -174,6 +177,10 @@ impl Session {
 
     pub fn source_reads(&self) -> &source_reads::SessionReads {
         &self.source_reads
+    }
+
+    pub fn survey_cache(&self) -> &repository_survey::SurveyCache {
+        &self.survey
     }
 
     pub fn is_closed(&self) -> bool {
