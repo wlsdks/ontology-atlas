@@ -124,10 +124,6 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
     let (_scene, root) = repository();
     for (arguments, words) in [
         (
-            r#"{"sourceReads":[{"path":"src/cli.ts","mode":"outline"}]}"#,
-            "sourceReads is not answered by this build",
-        ),
-        (
             r#"{"view":"analysis"}"#,
             "The structural analysis view is not answered by this build",
         ),
@@ -145,6 +141,23 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
         assert_eq!(result["isError"], true, "{arguments}");
         assert!(text_of(&result).contains(words), "{arguments}: {result}");
     }
+}
+
+#[test]
+fn source_reads_answer_an_outline_and_a_symbol_as_text_and_refuse_a_credential_file_by_name() {
+    let (_scene, root) = repository();
+    let result = survey(
+        &root,
+        r#"{"sourceReads":[{"path":"src/cli.ts","mode":"outline"},{"path":"src/cli.ts","symbol":"run"},{"path":".env","mode":"outline"}]}"#,
+    );
+    assert_ne!(result["isError"], true, "{result}");
+    let text = text_of(&result);
+    assert!(text.contains("== outline src/cli.ts (typescript"), "{text}");
+    assert!(text.contains("== read src/cli.ts run L"), "{text}");
+    assert!(
+        text.contains("== refused .env outline: sensitive_path"),
+        "{text}"
+    );
 }
 
 #[cfg(unix)]
