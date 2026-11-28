@@ -226,22 +226,32 @@ impl VaultRoot {
     /// Whether the real path of `file` is the vault's real path followed by `parts`, each part
     /// spelled as named or as the disk spells it with another letter case.
     fn real_parts_equal(&self, file: &std::path::Path, parts: &[String]) -> bool {
-        let (Ok(real_root), Ok(real_file)) = (real_path(self.path()), real_path(file)) else {
-            return false;
-        };
-        let Ok(below) = real_file.strip_prefix(&real_root) else {
-            return false;
-        };
-        let real_parts: Vec<String> = below
-            .components()
-            .map(|part| part.as_os_str().to_string_lossy().into_owned())
-            .collect();
-        real_parts.len() == parts.len()
-            && real_parts
-                .iter()
-                .zip(parts)
-                .all(|(real, named)| same_part(real, named))
+        spells_real_path(self.path(), file, parts)
     }
+}
+
+/// Whether the real path of `file` is the real path of `root` followed by `parts`, each part
+/// spelled as named or as the disk spells it.
+pub(crate) fn spells_real_path(
+    root: &std::path::Path,
+    file: &std::path::Path,
+    parts: &[String],
+) -> bool {
+    let (Ok(real_root), Ok(real_file)) = (real_path(root), real_path(file)) else {
+        return false;
+    };
+    let Ok(below) = real_file.strip_prefix(&real_root) else {
+        return false;
+    };
+    let real_parts: Vec<String> = below
+        .components()
+        .map(|part| part.as_os_str().to_string_lossy().into_owned())
+        .collect();
+    real_parts.len() == parts.len()
+        && real_parts
+            .iter()
+            .zip(parts)
+            .all(|(real, named)| same_part(real, named))
 }
 
 /// Whether the disk's spelling of a part is the name's: the same text, or the same text in another

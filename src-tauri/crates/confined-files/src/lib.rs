@@ -18,6 +18,7 @@ mod plain_file;
 mod private_names;
 mod raw_source_read;
 mod real_paths;
+mod repository_file_read;
 mod scan_root;
 mod slug_rules;
 mod source_access;
@@ -42,6 +43,7 @@ pub use raw_source_read::{
     RawSourcePath, RawSourcePathRefusal, RawSourceReadRefusal, RAW_SOURCE_PATH_MAX_BYTES,
 };
 pub use real_paths::{is_within_folding_case, real_path};
+pub use repository_file_read::RepositoryFileRefusal;
 pub use scan_root::{ScanRootRefused, ScanRoots, SourceRoot};
 pub use slug_rules::{
     is_vault_source_path, raw_source_file_for_slug, unwritable_slug_reason, UnwritableReason,
