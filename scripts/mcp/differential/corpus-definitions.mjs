@@ -737,6 +737,8 @@ const SELECTION_RICH = [
   { operation: 'match_nodes', hasIncoming: false, hasOutgoing: false }, { operation: 'match_nodes', minDegree: 2, maxDegree: 3 },
   { operation: 'match_nodes', minDegree: 99 }, { operation: 'match_nodes', domain: 'domains/nowhere' },
   { operation: 'match_nodes', kind: 'domain', limit: 1 }, { operation: 'match_nodes', kind: 'bogus' }, { operation: 'match_nodes', sort: 'bogus' },
+  { operation: 'domain_matrix' }, { operation: 'domain_matrix', limit: 1 }, { operation: 'domain_matrix', types: ['depends_on'] },
+  { operation: 'domain_matrix', project: 'alpha' }, { operation: 'domain_matrix', project: 'nowhere' }, { operation: 'domain_matrix', types: ['bogus'] },
   { operation: 'node_profile', slug: 'capabilities/invoice' }, { operation: 'node_profile', slug: 'capabilities/ship', limit: 1 },
   { operation: 'node_profile', slug: 'domains/billing' }, { operation: 'node_profile', slug: 'alpha' }, { operation: 'node_profile', slug: 'loose-capability' },
   { operation: 'node_profile', slug: 'capabilities/orphan-cap' }, { operation: 'node_profile', slug: 'capabilities/invoic' }, { operation: 'node_profile' },
@@ -883,7 +885,7 @@ add('graph', 'analysis-record-is-a-link', { vault: 'empty' }, [
 // Names the server stopped offering. Each is refused as `invalid_arguments` with the call that
 // answers the same question, so an agent whose notes predate the cut learns the current call.
 add('graph', 'retired-query-operations', { vault: 'storefront' }, [
-  ...['all_paths', 'centrality', 'builder_context', 'match_edges', 'domain_profile', 'domain_matrix',
+  ...['all_paths', 'centrality', 'builder_context', 'match_edges', 'domain_profile',
     'topological_order', 'meaning_repair_review', 'analysis_history'].map((operation) => query({ operation })),
   query({ operation: 'agent_brief', project: 'storefront', detail: 'compact', task: 'change how a card is charged' }),
   query({ operation: 'agent_brief', project: 'storefront', task: 'change how a card is charged' }),

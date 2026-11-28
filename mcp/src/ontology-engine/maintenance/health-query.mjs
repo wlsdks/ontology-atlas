@@ -174,6 +174,8 @@ export function createHealthQuery({
         acyclic: orderResult.acyclic,
         totalNodes: orderResult.totalNodes,
         orderedCount: orderResult.orderedCount,
+        limited: orderResult.limited,
+        order: orderResult.order.map(({ rank, slug }) => ({ rank, slug })),
         blocked: orderResult.blocked,
       },
     };

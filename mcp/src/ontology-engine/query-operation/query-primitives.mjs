@@ -178,6 +178,10 @@ export function edgeSortKey(edge) {
   return `${edge.from}:${edge.via}:${edge.to}:${edge.ref}`;
 }
 
+export function publicRelationTypes(typeSet) {
+  return typeSet ? [...typeSet].map(publicRelationType).sort() : null;
+}
+
 export function publicRelationCountObject(bucket) {
   const mapped = new Map();
   for (const [relation, count] of bucket.entries()) {

@@ -21,8 +21,7 @@ test('a retired operation is refused with the call that answers the same questio
     builder_context: /get_concepts/,
     match_edges: /neighbors/,
     domain_profile: /node_profile/,
-    domain_matrix: /project_map/,
-    topological_order: /cycles/,
+    topological_order: /dependencyOrder/,
     meaning_repair_review: /validate_vault/,
     analysis_history: /analysis_record/,
   };

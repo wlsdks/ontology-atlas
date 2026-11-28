@@ -63,10 +63,9 @@ const RETIRED_QUERY_OPERATIONS = new Map([
   ['builder_context', 'get_concepts({slugs, body:"full"}) for the node, then neighbors or subgraph for what surrounds it'],
   ['match_edges', 'neighbors lists a node\'s relations with the key each one is written under; relation_check judges one proposed relation'],
   ['domain_profile', 'node_profile with the domain\'s slug'],
-  ['domain_matrix', 'overview for the vault, or project_map for one project'],
-  ['topological_order', 'cycles reports dependency cycles; impact lists what depends on a node'],
+  ['topological_order', 'health: its dependencyOrder lists the nodes prerequisite first (rank, slug) and the nodes a cycle blocks; cycles reports the cycles; impact lists what depends on a node'],
   ['meaning_repair_review', 'validate_vault, then patch_concept on the nodes it names'],
-  ['analysis_history', 'the app lists saved analyses; analysis_record reads one by its id'],
+  ['analysis_history', 'the saved analyses are the files in .ontology-atlas/analyses/ of the vault; the UUID that ends a file name is its recordId, and analysis_record({recordId}) reads that record'],
 ]);
 
 /** `connection_info` guide topics no longer served, with where the text went. */

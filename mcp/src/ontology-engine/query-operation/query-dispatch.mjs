@@ -51,6 +51,9 @@ export function dispatchOntologyQuery(queries, query = {}, allowedOperations = [
   if (operation === 'node_profile') {
     return queries.nodeProfile(query.slug, query);
   }
+  if (operation === 'domain_matrix') {
+    return queries.domainMatrix(query);
+  }
   if (operation === 'project_scope') {
     return queries.projectScope(query.slug ?? query.project, query);
   }

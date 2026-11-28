@@ -337,7 +337,7 @@ export const QUERY_ONTOLOGY_TOOL = {
       title: nonBlankStringSchema('similar_nodes: title not yet written.'),
       from: NON_BLANK_STRING_SCHEMA,
       to: NON_BLANK_STRING_SCHEMA,
-      project: nonBlankStringSchema('Project for project_scope, project_map, agent_brief; optional with one project.'),
+      project: nonBlankStringSchema('Project for domain_matrix, project_scope, project_map, agent_brief; optional with one project.'),
       direction: {
         type: 'string',
         enum: ['incoming', 'outgoing', 'both', 'undirected'],

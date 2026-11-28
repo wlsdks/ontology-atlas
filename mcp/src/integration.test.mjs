@@ -1564,13 +1564,13 @@ await test("tools/list — each single-item tool description cross-references it
       [
         "neighbors", "path", "query_plan", "communities", "similar_nodes", "explain_relation", "reachability",
         "pattern_walk", "impact", "blast_radius", "subgraph", "overview", "schema", "facets", "match_nodes",
-        "node_profile", "project_scope", "project_map", "relation_check", "components", "lineage",
+        "node_profile", "domain_matrix", "project_scope", "project_map", "relation_check", "components", "lineage",
         "containment_tree", "cycles", "recommend_relations", "growth_plan", "maintenance_plan", "agent_brief",
         "analysis_record", "workspace_brief", "health",
       ],
       "query_ontology exposes the runtime operation enum",
     );
-    for (const retired of ["all_paths", "centrality", "match_edges", "domain_profile", "domain_matrix", "builder_context", "topological_order"]) {
+    for (const retired of ["all_paths", "centrality", "match_edges", "domain_profile", "builder_context", "topological_order"]) {
       assert.ok(!queryOperations.includes(retired), `${retired} is no longer an operation`);
     }
     assert.deepEqual(
