@@ -12,7 +12,8 @@ mod support;
 use std::path::Path;
 
 use hardened_git::{
-    clear_filter_cache, BlobAt, ChangeKind, CommitId, HeadState, RepoPath, Repository,
+    clear_filter_cache, BlobAt, ChangeKind, CommitId, GitReadError, GitRunError, HeadState,
+    RepoPath, Repository,
 };
 use support::{commit_note, isolated_environment, new_repository, plain_git, TempDir};
 
@@ -327,6 +328,13 @@ fn ignored_paths_name_a_folder_ignored_whole_once_and_never_a_tracked_file() {
     let mut listed = repository(&repo).ignored_paths().expect("ignored paths");
     listed.sort();
     assert_eq!(listed, ["debug.log", "out/"]);
+    assert!(
+        matches!(
+            repository(&repo).ignored_paths_within(8, std::time::Duration::from_secs(5)),
+            Err(GitReadError::Run(GitRunError::OutputTooLarge))
+        ),
+        "a list past its own bound is an error, not a truncated list"
+    );
 }
 
 #[test]
