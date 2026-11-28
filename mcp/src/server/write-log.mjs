@@ -29,9 +29,9 @@ function summarizeWrite(name, args, result) {
       return { target: args.from, summary: `${args.from} --${args.type}--> ${args.to}`, why: args.why ?? null };
     case 'remove_relation':
       if (result?.dryRun) return null;
-      // A replacement is logged as the one edit it is, with the reason it carries.
+      // A replacement is logged as the one edit it is, under the name it always had, with the reason it carries.
       return args.replaceWith
-        ? { target: args.from, summary: `replace ${args.from} --${args.type}--> ${args.to} with --${args.replaceWith.type}--> ${args.replaceWith.to}`, why: args.replaceWith.why ?? null }
+        ? { tool: 'replace_relation', target: args.from, summary: `replace ${args.from} --${args.type}--> ${args.to} with --${args.replaceWith.type}--> ${args.replaceWith.to}`, why: args.replaceWith.why ?? null }
         : { target: args.from, summary: `remove ${args.from} --${args.type}--> ${args.to}` };
     case 'add_concepts': {
       const okRows = (result?.concepts ?? []).filter((row) => row?.ok);
@@ -79,7 +79,7 @@ function summarizeWrite(name, args, result) {
       if (result?.dryRun) return null;
       return args.newKind === undefined
         ? { target: args.newSlug, summary: `rename ${args.oldSlug} → ${args.newSlug}` }
-        : { target: result?.newSlug ?? args.oldSlug, summary: `reclassify ${args.oldSlug} → ${args.newKind}` };
+        : { tool: 'reclassify_concept', target: result?.newSlug ?? args.oldSlug, summary: `reclassify ${args.oldSlug} → ${args.newKind}` };
     case 'merge_concepts':
       return result?.dryRun ? null : { target: args.intoSlug, summary: `merge ${args.fromSlug} → ${args.intoSlug}` };
     case 'delete_concept':
@@ -100,7 +100,7 @@ function logWrite(name, args, result) {
     const agent = resolveAgentName(VAULT_ROOT, server.getClientVersion?.());
     appendActivityEntry(
       VAULT_ROOT,
-      buildActivityEntry({ tool: name, target: summarized.target, summary: summarized.summary, why: summarized.why ?? null, agent }),
+      buildActivityEntry({ tool: summarized.tool ?? name, target: summarized.target, summary: summarized.summary, why: summarized.why ?? null, agent }),
     );
     recordWriteInMapAnalysis({
       recorder: mapAnalysis,
@@ -119,4 +119,5 @@ function logWrite(name, args, result) {
 
 export {
   logWrite,
+  summarizeWrite,
 };

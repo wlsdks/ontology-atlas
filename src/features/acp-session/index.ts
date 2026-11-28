@@ -28,7 +28,7 @@ export { withoutErrorEcho } from "./model/trouble/error-echo";
 export { linkSlugs } from "./model/map-presentation/link-slugs";
 export { readToolCommandArgument, readToolFallbackTarget, readToolPathArgument, readToolTargets } from "./model/tool-calls/tool-targets";
 export { readToolOutcome } from "./model/tool-calls/tool-outcome";
-export { parseAtlasToolCall } from './model/tool-calls/atlas-tool-call';
+export { atlasCallIntent, parseAtlasToolCall } from './model/tool-calls/atlas-tool-call';
 export { deriveAcpMapIntent } from "./model/map-presentation/map-intent";
 export type { AcpMapIntent } from "./model/map-presentation/map-intent";
 export {

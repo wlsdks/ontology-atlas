@@ -28,6 +28,18 @@ describe('tool line: translates only what it knows', () => {
     });
   });
 
+  it('two calls read as another when one argument says so, from the plain input or a Codex envelope', () => {
+    const replace = { from: 'a', to: 'b', type: 'depends_on', replaceWith: { to: 'c', type: 'depends_on' } };
+    expect(toolLabel('mcp__atlas-vault__remove_relation', OURS)).toEqual({ kind: 'known', text: 'removeRelation' });
+    expect(toolLabel('mcp__atlas-vault__remove_relation', OURS, { from: 'a', to: 'b', type: 'depends_on' })).toEqual({ kind: 'known', text: 'removeRelation' });
+    expect(toolLabel('mcp__atlas-vault__remove_relation', OURS, replace)).toEqual({ kind: 'known', text: 'replaceRelation' });
+    expect(toolLabel('mcp__atlas-vault__remove_relation', OURS, { server: 'atlas-vault', tool: 'remove_relation', arguments: replace })).toEqual({ kind: 'known', text: 'replaceRelation' });
+    expect(toolLabel('mcp__atlas-vault__rename_concept', OURS, { oldSlug: 'a', newSlug: 'b' })).toEqual({ kind: 'known', text: 'renameNode' });
+    expect(toolLabel('mcp__atlas-vault__rename_concept', OURS, { oldSlug: 'a', newKind: 'element' })).toEqual({ kind: 'known', text: 'reclassifyNode' });
+    expect(en.acpChat.tool.replaceRelation).toBeTruthy();
+    expect(ko.acpChat.tool.reclassifyNode).toBeTruthy();
+  });
+
   it('an unknown tool on our own server shows **only its name**, with nothing invented', () => {
     /*
      * It means the tool set grew. Fudging it as "did something" makes the line carry

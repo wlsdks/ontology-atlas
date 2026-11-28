@@ -3,6 +3,8 @@
  * meaning; other servers' tools show as is with only the prefix stripped, since a guess would lie.
  */
 
+import { atlasCallIntent } from '@/features/acp-session';
+
 /**
  * Every advertised tool must be listed: the inventory contract test reads `TOOLS_FOR_LIST`.
  * Tools may share a word, but the object (source, history, code) stays distinct.
@@ -47,9 +49,15 @@ const VAULT_TOOL_KEYS: Readonly<Record<string, string>> = {
   finalize_project_meaning: 'judgeMeaning',
 };
 
+/** Two calls read as another when one argument says so (see `atlasCallIntent`). */
+const INTENT_LABEL_KEYS: Readonly<Record<string, string>> = {
+  replace_relation: 'replaceRelation',
+  reclassify_concept: 'reclassifyNode',
+};
+
 /** The labels this table uses, for the contract that binds it to the server's own inventory. */
 export const VAULT_TOOL_LABEL_KEYS: readonly string[] = [
-  ...new Set(Object.values(VAULT_TOOL_KEYS)),
+  ...new Set([...Object.values(VAULT_TOOL_KEYS), ...Object.values(INTENT_LABEL_KEYS)]),
 ];
 
 export const LABELLED_VAULT_TOOLS: readonly string[] = Object.keys(VAULT_TOOL_KEYS);
@@ -111,7 +119,7 @@ export function isVaultTool(title: string, vaultServerName: string): boolean {
   return title.trim().startsWith(`mcp__${vaultServerName}__`);
 }
 
-export function toolLabel(title: string, vaultServerName: string): ToolLabel {
+export function toolLabel(title: string, vaultServerName: string, rawInput?: unknown): ToolLabel {
   const trimmed = title.trim();
   if (!trimmed) return { kind: 'raw', text: '' };
 
@@ -119,7 +127,10 @@ export function toolLabel(title: string, vaultServerName: string): ToolLabel {
   if (trimmed.startsWith(ourPrefix)) {
     const bare = trimmed.slice(ourPrefix.length);
     const known = VAULT_TOOL_KEYS[bare];
-    if (known) return { kind: 'known', text: known };
+    if (known) {
+      const intent = atlasCallIntent(bare, rawInput);
+      return { kind: 'known', text: INTENT_LABEL_KEYS[intent] ?? known };
+    }
     // Our server but not in this table — meaning the tool set grew. Nothing is
     // invented; only the name is shown (and we chose that name, so it still reads).
     return { kind: 'raw', text: bare };
