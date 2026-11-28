@@ -89,17 +89,13 @@ pub fn write_handler(tool: WriteTool) -> Option<WriteHandler> {
         | WriteTool::AddRelation
         | WriteTool::AddRelations
         | WriteTool::RemoveRelation
-        | WriteTool::ReplaceRelation
         | WriteTool::PatchConcept
         | WriteTool::RenameConcept
-        | WriteTool::ReclassifyConcept
         | WriteTool::MergeConcepts
         | WriteTool::DeleteConcept
         | WriteTool::AbsorbDocument
         | WriteTool::ConnectProjectSource
-        | WriteTool::DisconnectProjectSource
-        | WriteTool::FinalizeProjectMeaning
-        | WriteTool::GitSnapshot => None,
+        | WriteTool::FinalizeProjectMeaning => None,
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => Some(test_hooks::write_through_checkpoint),
     }

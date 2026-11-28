@@ -261,11 +261,11 @@ mod tests {
     }
 
     #[test]
-    fn the_full_surface_lists_thirty_three_tools_and_hides_the_retired_seven() {
+    fn the_full_surface_lists_twenty_three_tools_and_hides_the_retired_ones() {
         let listed = surface().tools_for_list(&Modes::FULL);
-        assert_eq!(listed.len(), 33);
+        assert_eq!(listed.len(), 23);
         let read = listed.iter().filter(|tool| tool.read_only).count();
-        assert_eq!((read, listed.len() - read), (19, 14));
+        assert_eq!((read, listed.len() - read), (13, 10));
         for retired in [
             "get_concept",
             "add_concept",
@@ -288,7 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn read_only_mode_shows_read_tools_only_and_the_construction_profile_sixteen() {
+    fn read_only_mode_shows_read_tools_only_and_the_construction_profile_fifteen() {
         let read_only = Modes {
             read_only: true,
             ..Modes::FULL
@@ -301,20 +301,20 @@ mod tests {
             profile: ToolProfile::Construction,
             ..Modes::FULL
         };
-        assert_eq!(surface().tools_for_list(&construction).len(), 16);
+        assert_eq!(surface().tools_for_list(&construction).len(), 15);
     }
 
     #[test]
     fn the_inventory_section_counts_what_is_listed() {
         let instructions = surface().instructions(&Modes::FULL);
-        assert!(instructions.contains("## Tool inventory (33 tools = read 19 + write 14)"));
+        assert!(instructions.contains("## Tool inventory (23 tools = read 13 + write 10)"));
         assert!(!instructions.contains("__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__"));
         let read_only = surface().instructions(&Modes {
             read_only: true,
             ..Modes::FULL
         });
         assert!(
-            read_only.contains("= read 19 + write 0)") && read_only.contains("**write** — none.")
+            read_only.contains("= read 13 + write 0)") && read_only.contains("**write** — none.")
         );
     }
 
@@ -324,12 +324,12 @@ mod tests {
         assert!(json.starts_with("{\"tools\":[{\"name\":\"connection_info\""));
         assert!(json.ends_with("}]}"));
         let parsed: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
-        assert_eq!(parsed["tools"].as_array().map(Vec::len), Some(33));
+        assert_eq!(parsed["tools"].as_array().map(Vec::len), Some(23));
         let advertised: Vec<&str> = TOOLS_JSON
             .lines()
             .filter(|line| line.starts_with('{'))
             .collect();
-        assert_eq!(advertised.len(), 33 + 7);
+        assert_eq!(advertised.len(), 23 + 7);
         assert!(json.contains(
             advertised
                 .first()
@@ -342,7 +342,7 @@ mod tests {
     #[test]
     fn an_unknown_tool_lists_every_registered_name_that_is_not_retired_in_utf16_order() {
         let names = surface().allowed_tool_names();
-        assert_eq!(names.len(), 33);
+        assert_eq!(names.len(), 23);
         assert!(names.windows(2).all(|pair| pair.first() < pair.get(1)));
     }
 
@@ -351,10 +351,10 @@ mod tests {
         let tool = surface().tool("list_concepts").expect("registered");
         assert_eq!(
             tool.argument_names,
-            ["kind", "domain", "since", "offset", "summary", "limit"]
+            ["kind", "domain", "since", "offset", "mentions", "filter", "summary", "limit"]
         );
         assert!(surface()
-            .tool("git_status")
+            .tool("list_kinds")
             .expect("registered")
             .argument_names
             .is_empty());

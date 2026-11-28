@@ -320,8 +320,8 @@ mod tests {
     fn unknown_arguments_are_listed_in_the_order_sent_and_received_ones_sorted() {
         let surface = Surface::embedded();
         assert_eq!(
-            message(normalize_tool_arguments(surface, arguments(r#"{"b":1,"2":2,"1":3}"#), "git_status")),
-            "Unknown arguments for git_status: \"b\", \"2\", \"1\". Allowed arguments: no arguments. Received arguments: 1, 2, b."
+            message(normalize_tool_arguments(surface, arguments(r#"{"b":1,"2":2,"1":3}"#), "list_kinds")),
+            "Unknown arguments for list_kinds: \"b\", \"2\", \"1\". Allowed arguments: no arguments. Received arguments: 1, 2, b."
         );
     }
 
@@ -332,7 +332,7 @@ mod tests {
             .map(|arguments| arguments.with_malformed(vec!["kind".to_string()]));
         assert_eq!(
             message(normalize_tool_arguments(surface, call, "list_concepts")),
-            "Unknown argument \"slug\" for list_concepts. Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: kind, slug."
+            "Unknown argument \"slug\" for list_concepts. Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: kind, slug."
         );
         let call = arguments(r#"{"kind":"x"}"#)
             .map(|arguments| arguments.with_malformed(vec!["kind".to_string()]));

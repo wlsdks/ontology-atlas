@@ -27,7 +27,7 @@ without treating either a stored claim or a code path as complete proof.
 - *"Who references X?"* (always before a rename, merge, or delete) → `find_backlinks({slug:X})`.
 - *"How are A and B related?"* → `query_ontology({operation:'path', from:A, to:B})` — each edge's `via` names the frontmatter key that linked them.
 - *"What breaks if I change X?"* → `query_ontology({operation:'impact'})`, then `blast_radius` for the same answer grouped by kind and domain.
-- *"Which nodes match a condition?"* → `query_concepts(filter)`.
+- *"Which nodes match a condition?"* → `list_concepts({filter})`; *"which nodes mention a word?"* → `list_concepts({mentions})`.
 - *"How big is the vault, and of which kinds?"* → `list_concepts({limit:1})` and read `census`.
 - *"Where do I start? Is this vault trustworthy?"* → `query_ontology({operation:'workspace_brief'})`, then `validate_vault({})`.
 

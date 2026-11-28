@@ -15,39 +15,31 @@ pub enum WriteTool {
     AddRelation,
     AddRelations,
     RemoveRelation,
-    ReplaceRelation,
     PatchConcept,
     RenameConcept,
-    ReclassifyConcept,
     MergeConcepts,
     DeleteConcept,
     AbsorbDocument,
     ConnectProjectSource,
-    DisconnectProjectSource,
     FinalizeProjectMeaning,
-    GitSnapshot,
     /// Only a test build has it: a tool that writes one file, to exercise the checkpoint.
     #[cfg(feature = "test-hooks")]
     TestWrite,
 }
 
-const SHIPPED: [WriteTool; 16] = [
+const SHIPPED: [WriteTool; 12] = [
     WriteTool::AddConcept,
     WriteTool::AddConcepts,
     WriteTool::AddRelation,
     WriteTool::AddRelations,
     WriteTool::RemoveRelation,
-    WriteTool::ReplaceRelation,
     WriteTool::PatchConcept,
     WriteTool::RenameConcept,
-    WriteTool::ReclassifyConcept,
     WriteTool::MergeConcepts,
     WriteTool::DeleteConcept,
     WriteTool::AbsorbDocument,
     WriteTool::ConnectProjectSource,
-    WriteTool::DisconnectProjectSource,
     WriteTool::FinalizeProjectMeaning,
-    WriteTool::GitSnapshot,
 ];
 
 impl WriteTool {
@@ -64,17 +56,13 @@ impl WriteTool {
             Self::AddRelation => "add_relation",
             Self::AddRelations => "add_relations",
             Self::RemoveRelation => "remove_relation",
-            Self::ReplaceRelation => "replace_relation",
             Self::PatchConcept => "patch_concept",
             Self::RenameConcept => "rename_concept",
-            Self::ReclassifyConcept => "reclassify_concept",
             Self::MergeConcepts => "merge_concepts",
             Self::DeleteConcept => "delete_concept",
             Self::AbsorbDocument => "absorb_document",
             Self::ConnectProjectSource => "connect_project_source",
-            Self::DisconnectProjectSource => "disconnect_project_source",
             Self::FinalizeProjectMeaning => "finalize_project_meaning",
-            Self::GitSnapshot => "git_snapshot",
             #[cfg(feature = "test-hooks")]
             Self::TestWrite => "__test_write",
         }

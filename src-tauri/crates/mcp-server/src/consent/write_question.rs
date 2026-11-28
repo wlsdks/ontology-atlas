@@ -53,14 +53,6 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
             (Some(from), Some(to)) => format!("Remove the link {from} \u{2192} {to}"),
             _ => "Remove one relation".to_string(),
         },
-        WriteTool::ReplaceRelation => {
-            match (sent.text("from"), sent.text("oldTo"), sent.text("newTo")) {
-                (Some(from), Some(old_to), Some(new_to)) => format!(
-                    "Replace the link {from} \u{2192} {old_to} with {from} \u{2192} {new_to}"
-                ),
-                _ => "Replace one relation".to_string(),
-            }
-        }
         WriteTool::PatchConcept => match sent.named("slug") {
             Some(slug) => format!("Edit concept {slug}"),
             None => "Edit one concept".to_string(),
@@ -68,10 +60,6 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
         WriteTool::RenameConcept => match (sent.text("oldSlug"), sent.text("newSlug")) {
             (Some(old), Some(new)) => format!("Rename {old} \u{2192} {new}"),
             _ => "Rename one concept".to_string(),
-        },
-        WriteTool::ReclassifyConcept => match sent.named("slug") {
-            Some(slug) => format!("Change the kind of {slug}"),
-            None => "Change one concept kind".to_string(),
         },
         WriteTool::MergeConcepts => match (sent.text("fromSlug"), sent.text("intoSlug")) {
             (Some(from), Some(into)) => format!("Merge {from} into {into}"),
@@ -86,10 +74,6 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
             None => "Absorb a document into typed nodes".to_string(),
         },
         WriteTool::ConnectProjectSource => connect_project_source(&sent),
-        WriteTool::DisconnectProjectSource => {
-            "Disconnect a source folder from this vault".to_string()
-        }
-        WriteTool::GitSnapshot => "Commit the vault".to_string(),
         WriteTool::FinalizeProjectMeaning => finalize_project_meaning(&sent),
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => "Write one test file".to_string(),
@@ -185,19 +169,14 @@ mod tests {
             (AddRelation, r#"{"from":"a"}"#, "Add one relation"),
             (RemoveRelation, r#"{"from":"a","to":"b"}"#, "Remove the link a \u{2192} b"),
             (RemoveRelation, r#"{"from":5,"to":"b"}"#, "Remove one relation"),
-            (ReplaceRelation, r#"{"from":"a","oldTo":"b","newTo":"c"}"#, "Replace the link a \u{2192} b with a \u{2192} c"),
-            (ReplaceRelation, r#"{"from":"a","oldTo":"b"}"#, "Replace one relation"),
             (PatchConcept, r#"{"slug":"s"}"#, "Edit concept s"),
             (RenameConcept, r#"{"oldSlug":"a","newSlug":"b"}"#, "Rename a \u{2192} b"),
-            (ReclassifyConcept, r#"{"slug":"s"}"#, "Change the kind of s"),
             (MergeConcepts, r#"{"fromSlug":"a","intoSlug":"b"}"#, "Merge a into b"),
             (DeleteConcept, r#"{}"#, "Delete one concept"),
             (AbsorbDocument, r#"{"filePath":"/tmp/a b.md"}"#, "Absorb \"/tmp/a b.md\" into typed nodes"),
             (ConnectProjectSource, r#"{}"#, "Connect a source folder to this vault"),
             (ConnectProjectSource, r#"{"projectSlug":"p"}"#, "Connect p to the source folder inferred from this vault's location"),
             (ConnectProjectSource, r#"{"projectSlug":"p","rootPath":"/r"}"#, "Connect p to the source folder \"/r\""),
-            (DisconnectProjectSource, r#"{}"#, "Disconnect a source folder from this vault"),
-            (GitSnapshot, r#"{}"#, "Commit the vault"),
             (FinalizeProjectMeaning, r#"{"projectSlug":"p"}"#, "Re-measure the source folder connected to p and write its project meaning receipt"),
             (FinalizeProjectMeaning, r#"{"answers":[]}"#, "Write the competency answers section of the project, re-measure the source folder connected to the project and write its project meaning receipt"),
             (FinalizeProjectMeaning, r#"{"projectSlug":"p","answers":[{}]}"#, "Write the competency answers section of p, re-measure the source folder connected to p and write its project meaning receipt"),

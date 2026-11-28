@@ -4,20 +4,14 @@
   "toolInventoryPlaceholder": "__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__",
   "readTools": [
     "connection_info",
-    "git_status",
-    "git_history",
     "list_concepts",
-    "list_constellations",
     "get_constellation",
     "get_concept",
     "get_concepts",
-    "find_evidence",
     "find_backlinks",
     "find_neighbors",
     "find_path",
     "list_kinds",
-    "find_orphans",
-    "query_concepts",
     "compile_ontology",
     "query_ontology",
     "validate_vault",
@@ -56,13 +50,52 @@
     {
       "name": "index_project",
       "replacement": "analyze_repo_structure, then infer_imports and validate_vault"
+    },
+    {
+      "name": "git_status",
+      "replacement": "your own git: `git -C <repoRoot> status -- <vault>` (`connection_info` names both paths)"
+    },
+    {
+      "name": "git_history",
+      "replacement": "your own git: `git -C <repoRoot> log -- <vault>`"
+    },
+    {
+      "name": "git_snapshot",
+      "replacement": "your own git: commit the vault yourself after `git -C <repoRoot> status -- <vault>`"
+    },
+    {
+      "name": "list_constellations",
+      "replacement": "get_constellation with no `id`"
+    },
+    {
+      "name": "find_evidence",
+      "replacement": "list_concepts({ mentions: \"text\" })"
+    },
+    {
+      "name": "find_orphans",
+      "replacement": "query_ontology({ operation: 'match_nodes', hasIncoming: false })"
+    },
+    {
+      "name": "query_concepts",
+      "replacement": "list_concepts({ filter })"
+    },
+    {
+      "name": "disconnect_project_source",
+      "replacement": "connect_project_source({ projectSlug, disconnect: true, confirm })"
+    },
+    {
+      "name": "replace_relation",
+      "replacement": "remove_relation({ from, to, type, replaceWith: { to, type, why }, confirm })"
+    },
+    {
+      "name": "reclassify_concept",
+      "replacement": "rename_concept({ oldSlug, newKind, domain, body, confirm })"
     }
   ],
   "constructionTools": [
     "connection_info",
     "list_concepts",
     "get_concepts",
-    "find_evidence",
     "finalize_project_meaning",
     "connect_project_source",
     "add_concepts",
@@ -77,17 +110,13 @@
     "analyze_repo_structure"
   ],
   "topLevelNonBlankArguments": {
-    "git_snapshot": [
-      "expectedHead"
-    ],
     "list_concepts": [
-      "domain"
+      "domain",
+      "mentions",
+      "filter"
     ],
     "get_concept": [
       "slug"
-    ],
-    "find_evidence": [
-      "title"
     ],
     "finalize_project_meaning": [
       "projectSlug"
@@ -95,9 +124,6 @@
     "connect_project_source": [
       "projectSlug",
       "rootPath"
-    ],
-    "disconnect_project_source": [
-      "projectSlug"
     ],
     "add_concept": [
       "slug",
@@ -113,11 +139,6 @@
       "from",
       "to"
     ],
-    "replace_relation": [
-      "from",
-      "oldTo",
-      "newTo"
-    ],
     "patch_concept": [
       "slug"
     ],
@@ -130,9 +151,6 @@
     "find_path": [
       "from",
       "to"
-    ],
-    "query_concepts": [
-      "filter"
     ],
     "query_ontology": [
       "recordId",
@@ -177,10 +195,6 @@
     ],
     "rename_concept": [
       "oldSlug",
-      "newSlug"
-    ],
-    "reclassify_concept": [
-      "slug",
       "newSlug"
     ],
     "merge_concepts": [
