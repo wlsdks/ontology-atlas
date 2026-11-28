@@ -52,10 +52,11 @@ export function exportedFileOf(url, outDir) {
 }
 
 /**
- * The sitemap pages whose visible text changed against the live site. A page the live site lacks
- * (404) is new and counts; one the live site could not answer is left out, never guessed.
+ * The sitemap pages whose visible text changed against the live site, and the pages the live site
+ * did not answer (or the deadline did not reach): neither changed nor unchanged, so never guessed.
+ * A page the live site lacks (404) is new and counts as changed.
  */
-export async function changedUrls({ outDir, fetchPage = fetch, log = console.error, deadlineMs = DEADLINE_MS }) {
+export async function comparePages({ outDir, fetchPage = fetch, log = console.error, deadlineMs = DEADLINE_MS }) {
   const urls = sitemapUrls(fs.readFileSync(path.join(outDir, 'sitemap.xml'), 'utf8'));
   const verdicts = new Map();
   const deadline = AbortSignal.timeout(deadlineMs);
@@ -76,7 +77,15 @@ export async function changedUrls({ outDir, fetchPage = fetch, log = console.err
   for (let start = 0; start < urls.length && !deadline.aborted; start += PARALLEL_FETCHES) {
     await Promise.all(urls.slice(start, start + PARALLEL_FETCHES).map(check));
   }
-  return urls.filter((url) => verdicts.get(url));
+  return {
+    changed: urls.filter((url) => verdicts.get(url)),
+    unanswered: urls.filter((url) => fs.existsSync(exportedFileOf(url, outDir)) && !verdicts.has(url)),
+  };
+}
+
+/** The sitemap pages whose visible text changed against the live site; one it could not answer is left out. */
+export async function changedUrls(options) {
+  return (await comparePages(options)).changed;
 }
 
 export function submissionOf(urls, base) {

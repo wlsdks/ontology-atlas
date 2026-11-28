@@ -37,7 +37,7 @@ function runBlocks(source: string): string[] {
 
 const blocks = runBlocks(action);
 const playwrightInstalls = blocks.filter((block) => /playwright\s+install/.test(block));
-const PLAYWRIGHT_JOB_IDS = ['surfaces', 'suite', 'quarantined', 'vite-app'];
+const PLAYWRIGHT_JOB_IDS = ['surfaces', 'suite', 'quarantined'];
 
 function jobBlock(source: string, id: string): string {
   const lines = source.split('\n');

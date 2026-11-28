@@ -117,7 +117,7 @@ test("the one static build gets a heap that four locales fit in on a 7 GB runner
   assert.equal(calls.find((call) => call.script === "desktop:smoke").env.NODE_OPTIONS, undefined);
 });
 
-test("the app bundle step packages the export the smoke checked instead of building a second one", () => {
+test("the app bundle step packages the app folder the smoke checked instead of building a second one", () => {
   const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
   const conf = JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json", "utf8"));
   const scripts = releaseArtifactSteps("build").map((step) => step.args[0]);
@@ -125,10 +125,10 @@ test("the app bundle step packages the export the smoke checked instead of build
   assert.ok(scripts.indexOf("build") < scripts.indexOf("desktop:smoke"));
   assert.ok(scripts.indexOf("desktop:smoke") < scripts.indexOf("desktop:build:app:prebuilt"));
 
-  const stage = "node scripts/desktop/stage-desktop-frontend.mjs";
-  assert.equal(conf.build.beforeBuildCommand, `pnpm build && ${stage}`, "a bare tauri build still builds its own export");
-  // The prebuilt step skips the second export but still stages the desktop copy of the smoked one.
-  const override = ` --config '${JSON.stringify({ build: { beforeBuildCommand: stage } })}'`;
+  const check = "node scripts/desktop/check-app-folder.mjs";
+  assert.equal(conf.build.beforeBuildCommand, "pnpm build:app", "a bare tauri build still builds its own app folder");
+  // The prebuilt step skips the second build but still checks the folder it embeds holds only what the app uses.
+  const override = ` --config '${JSON.stringify({ build: { beforeBuildCommand: check } })}'`;
   assert.equal(pkg.scripts["desktop:build:app:prebuilt"], `${pkg.scripts["desktop:build:app"]}${override}`);
 
   const rehearsed = pkg.scripts["desktop:release-artifact:unsigned"].split(" && ");

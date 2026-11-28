@@ -345,7 +345,7 @@ jobs:
         run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
 
       # `admit-release` accepts only the head of main, and the required Checks gate ran
-      # `pnpm typecheck` on that program when it merged (next.config.ts).
+      # `pnpm typecheck` on that program when it merged (the build script's type check).
       # The app embeds its commit, so the updater can offer the stable release promoted
       # from another beta of the same version (src-tauri/src/update_offer.rs).
       - name: Build release app bundle
@@ -634,7 +634,7 @@ jobs:
 
       # No updater key: the Windows beta ships no in-app update (latest.json lists macOS only),
       # so the build makes no updater signature for anything to publish.
-      # The admitted commit is the type-checked head of main (next.config.ts).
+      # The admitted commit is the type-checked head of main (the build script's type check).
       - name: Build Windows NSIS installer
         run: pnpm desktop:build:windows
         env:

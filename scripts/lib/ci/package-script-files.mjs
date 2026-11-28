@@ -20,3 +20,17 @@ export function packageScriptFiles(names, root = '.') {
   for (const name of names) visit(name);
   return [...files].sort();
 }
+
+/**
+ * The repository code files a script names by path, one level deep: a script that runs its steps by path (the
+ * build script runs data, bundle, prerender and gate scripts as child processes) names files no import reaches.
+ */
+export function filesNamedBy(files, root = '.') {
+  const named = new Set();
+  for (const file of files) {
+    const path = `${root}/${file}`;
+    if (!existsSync(path)) continue;
+    for (const match of readFileSync(path, 'utf8').matchAll(REPOSITORY_CODE)) named.add(match[1]);
+  }
+  return [...named].sort();
+}

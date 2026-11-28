@@ -7,7 +7,7 @@ name: Windows x64 Beta Check
 # installers. Nearly half of the recent 40 runs were of this type.
 #
 # Exclude `package.json` and `pnpm-lock.yaml`. **Nothing is lost by excluding them** — both are
-# included in the RUNTIME list of `scripts/ci/classify-change.mjs`, so if they change, the full unit suite and static export build (`pnpm build`) already run on Linux. The three Windows release contract tests are also within `pnpm test:desktop:check` and run on every PR on Linux.
+# included in the RUNTIME list of `scripts/ci/classify-change.mjs`, so if they change, the full unit suite and the app and site build (`pnpm build`) already run on Linux. The three Windows release contract tests are also within `pnpm test:desktop:check` and run on every PR on Linux.
 # Thus, what those two files triggered was not "something only known on Windows."
 #
 # The remaining list consists entirely of **items that go directly into native outputs**: Rust source,
@@ -48,7 +48,8 @@ on:
       - "scripts/packaging/build-mcp-binary.mjs"
       - "scripts/packaging/verify-mcp-binary.mjs"
       - "scripts/download/stage-windows-release-assets.mjs"
-      - "scripts/desktop/stage-desktop-frontend.mjs"
+      - "scripts/desktop/check-app-folder.mjs"
+      - "scripts/verify-windows/**"
       - "scripts/lib/packaging/mcp-binary.mjs"
       - "src-tauri/**"
       - "rust-toolchain.toml"
@@ -65,7 +66,8 @@ on:
       - "scripts/packaging/build-mcp-binary.mjs"
       - "scripts/packaging/verify-mcp-binary.mjs"
       - "scripts/download/stage-windows-release-assets.mjs"
-      - "scripts/desktop/stage-desktop-frontend.mjs"
+      - "scripts/desktop/check-app-folder.mjs"
+      - "scripts/verify-windows/**"
       - "scripts/lib/packaging/mcp-binary.mjs"
       - "src-tauri/**"
       - "rust-toolchain.toml"
@@ -189,7 +191,7 @@ jobs:
         run: pnpm --dir mcp install --frozen-lockfile
 
       - name: Windows release contract tests
-        run: node --test scripts/lib/packaging/mcp-binary.test.mjs scripts/download/stage-windows-release-assets.test.mjs scripts/desktop/stage-desktop-frontend.test.mjs scripts/packaging/verify-mcp-binary.test.mjs
+        run: node --test scripts/lib/packaging/mcp-binary.test.mjs scripts/download/stage-windows-release-assets.test.mjs scripts/desktop/check-app-folder.test.mjs scripts/verify-windows/verify-windows-app-launch.test.mjs scripts/packaging/verify-mcp-binary.test.mjs
 
       - name: Desktop readiness
         run: pnpm desktop:check
@@ -266,10 +268,11 @@ jobs:
           $vault = (Resolve-Path 'docs/ontology').Path
           node scripts/packaging/verify-mcp-binary.mjs "--binary=$sidecar" "--vault=$vault"
 
-          $process = Start-Process $app -PassThru
-          Start-Sleep -Seconds 10
-          if ($process.HasExited) { throw "The installed app exited during the 10-second launch smoke." }
-          Stop-Process -Id $process.Id -Force
+          # The app's own verifier opens the map under a fixture vault and prints what rendered; the script
+          # ends the app. It fails when the app exits early, reaches another route, or prints nothing over its
+          # pipes (a GUI-subsystem process inherits only the handles its parent names).
+          node scripts/verify-windows/verify-windows-app-launch.mjs "--app=$app" "--vault=$vault" --route=/en/topology/
+          if ($LASTEXITCODE -ne 0) { throw "The installed app did not render /en/topology/ (exit $LASTEXITCODE)." }
 
       - name: Stage Windows beta artifact
         if: github.event_name != 'pull_request'

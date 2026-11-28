@@ -105,10 +105,11 @@ jobs:
       - name: Build once
         run: pnpm build
         env:
-          # `pnpm typecheck` in Checks owns types for this tree (next.config.ts).
+          # `pnpm typecheck` in Checks owns types for this tree (the build script's type check).
           ATLAS_BUILD_SKIP_TYPECHECK: "1"
+      # Both folders one build writes: app specs read the app folder, website specs the site folder.
       - name: Pack static export
-        run: tar -czf "$RUNNER_TEMP/playwright-export.tgz" out
+        run: tar -czf "$RUNNER_TEMP/playwright-export.tgz" out src-tauri/target/desktop-frontend
       - name: Upload static export
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -273,47 +274,6 @@ jobs:
 
   # The files in tests/quarantine.json, which every other job leaves out. They run every whole night
   # and print passed or failed per file; the job never turns the run red.
-  # The app screens built by Vite beside Next's export, run through the whole app-shell folder: the
-  # folder the installed app will load. It builds its own folder, so it needs neither the Next
-  # artifact nor a plan assignment beyond "some browser evidence is wanted".
-  vite-app:
-    name: Browser run on the Vite app folder (macOS)
-    needs: changes
-    if: ${{ needs.changes.outputs.playwright != 'skip' }}
-    runs-on: macos-15
-    # budget: 600s (not yet measured: first run; the cold path adds the bounded browser install,
-    # whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
-    timeout-minutes: 30
-    env:
-      PLAYWRIGHT_PREBUILT: "1"
-      PLAYWRIGHT_STATIC: "1"
-      ATLAS_E2E_APP_FOLDER: src-tauri/target/desktop-frontend-vite
-    steps:
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-
-      - name: Build the app folder with Vite
-        run: pnpm app:build
-
-      - name: Run the app-shell specs on the Vite folder
-        run: pnpm exec playwright test tests/e2e/app-shell
-        env:
-          CI: true
-
-      - name: Upload failure evidence or retry traces
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: playwright-report-vite-app
-          path: |
-            playwright-report
-            test-results
-          if-no-files-found: ignore
-          retention-days: 7
-
   quarantined:
     name: Quarantined specs
     needs: [changes, build]
