@@ -516,6 +516,7 @@ mod tests {
             &PathFacts::new(&source),
             &IgnoredNames::defaults(),
             max_files,
+            None,
         )
         .expect("a module")
         .evidence
