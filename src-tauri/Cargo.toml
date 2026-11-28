@@ -19,6 +19,7 @@ members = [
   "crates/ontology-graph",
   "crates/source-scan",
   "crates/repository-survey",
+  "crates/meaning-findings",
   "crates/raw-source-text",
   "crates/mcp-server",
 ]

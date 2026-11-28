@@ -3040,6 +3040,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "meaning-findings"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "regex",
+ "serde_json",
+ "tempfile",
+ "vault-document",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
