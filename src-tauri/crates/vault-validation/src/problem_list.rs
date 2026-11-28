@@ -8,6 +8,8 @@ use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use vault_document::{Issue, Severity};
 
+use crate::code_remedy::code_remedy;
+
 /// One file and what is wrong with it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Problem {
@@ -20,6 +22,9 @@ pub struct Problem {
 pub struct CodeTally {
     pub severity: Severity,
     pub count: usize,
+    /// What to do about the code, stated once here and not in each file's message.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remedy: Option<&'static str>,
     pub files: Vec<String>,
     #[serde(rename = "filesOmitted", skip_serializing_if = "Option::is_none")]
     pub files_omitted: Option<usize>,
@@ -88,6 +93,7 @@ pub fn list_problems(files: &[String], mut issues: HashMap<String, Vec<Issue>>) 
                     CodeTally {
                         severity: issue.severity,
                         count: 0,
+                        remedy: code_remedy(issue.code),
                         files: Vec::new(),
                         files_omitted: None,
                     },

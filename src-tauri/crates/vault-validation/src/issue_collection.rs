@@ -40,6 +40,7 @@ pub fn collect_issues(
     index: &ReferenceIndex<'_>,
     source: Option<&dyn SourceFiles>,
     raw_sources: Vec<(String, Issue)>,
+    survey_findings: Vec<(String, Issue)>,
 ) -> IssueCollection {
     let mut by_slug: HashMap<String, Vec<Issue>> = HashMap::new();
     for document in documents {
@@ -80,7 +81,8 @@ pub fn collect_issues(
     let depth_findings = rule_cite_findings(documents, source)
         .into_iter()
         .chain(two_way_dependency_findings(documents))
-        .chain(slug_collision_findings(documents));
+        .chain(slug_collision_findings(documents))
+        .chain(survey_findings);
     for (slug, issue) in depth_findings {
         add(slug, issue);
     }

@@ -9,10 +9,17 @@ publish = false
 [dependencies]
 answer-format = { path = "../answer-format" }
 confined-files = { path = "../confined-files" }
+repository-survey = { path = "../repository-survey" }
+source-reads = { path = "../source-reads" }
 source-scan = { path = "../source-scan" }
 vault-document = { path = "../vault-document" }
+# Typed answers: the field order of a struct is the key order the agent reads.
+serde = { version = "1", features = ["derive"] }
 # Cites are found with patterns written in this crate; a path from a vault never becomes one.
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl"] }
+
+[dev-dependencies]
+serde_json = "1"
 
 [lints]
 workspace = true

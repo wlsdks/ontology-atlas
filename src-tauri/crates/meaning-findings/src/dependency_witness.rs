@@ -259,7 +259,7 @@ fn unjudged_message(slug: &str, target: &str, unread: &[String]) -> String {
         .collect::<Vec<_>>()
         .join(" and ");
     let verb = if unread.len() > 1 { "are" } else { "is" };
-    format!("\"{slug}\" declares a dependency on \"{target}\", but {named} {verb} larger than {mebibytes} MiB, so no witness was looked for there and the edge is not judged. Cite a smaller file in `path:`, or name the file that imports the target in this relation's `why`.")
+    format!("\"{slug}\" declares a dependency on \"{target}\", but {named} {verb} larger than {mebibytes} MiB, so the edge is not judged")
 }
 
 fn unwitnessed_message(
@@ -269,7 +269,7 @@ fn unwitnessed_message(
     target_path: &str,
     witness_name: &str,
 ) -> String {
-    format!("\"{slug}\" depends on \"{target}\", and `{source_path}` never imports `{target_path}` (nothing there names `{witness_name}`). Nothing is blocked: a missing import is not proof of independence (a record, an event or configuration needs none), and the edge stays listed here as unwitnessed. If a file does import it, name that repository-relative file in the edge's why with replace_relation (same from, to and type, confirm:true); remove_relation only an edge that came from look-alike names.")
+    format!("\"{slug}\" depends on \"{target}\", and `{source_path}` never imports `{target_path}` (nothing there names `{witness_name}`)")
 }
 
 /// One finding for each dependency of `document` that its file does not witness.

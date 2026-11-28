@@ -6,6 +6,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::ability_row::{AbilityKind, AbilityRow};
+use crate::breadth_map::AreaRow;
 use crate::folder_tree::{FolderTree, TreeFile, ROOT};
 
 /// Area rows one survey lists; at about 200 characters a row the section stays near 12 KB.
@@ -189,17 +190,36 @@ pub struct AreaLocator {
 
 impl AreaLocator {
     pub fn new(areas: &[Area]) -> Self {
+        Self::of_places(areas.iter().map(|area| {
+            (
+                area.path.as_str(),
+                area.own,
+                area.rest,
+                area.members.as_slice(),
+            )
+        }))
+    }
+
+    /// The locator of the area rows a survey listed, indexed as the rows are.
+    pub fn of_rows(rows: &[AreaRow]) -> Self {
+        Self::of_places(
+            rows.iter()
+                .map(|row| (row.path.as_str(), row.own, row.rest, row.members.as_slice())),
+        )
+    }
+
+    fn of_places<'a>(places: impl Iterator<Item = (&'a str, bool, bool, &'a [String])>) -> Self {
         let mut folders = HashMap::new();
         let mut owns = HashMap::new();
-        for (index, area) in areas.iter().enumerate() {
-            if area.rest {
-                for member in &area.members {
+        for (index, (path, own, rest, members)) in places.enumerate() {
+            if rest {
+                for member in members {
                     folders.insert(member.clone(), index);
                 }
-            } else if area.own {
-                owns.insert(area.path.clone(), index);
+            } else if own {
+                owns.insert(path.to_string(), index);
             } else {
-                folders.insert(area.path.clone(), index);
+                folders.insert(path.to_string(), index);
             }
         }
         Self { folders, owns }

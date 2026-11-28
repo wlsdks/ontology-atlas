@@ -4,7 +4,7 @@
 //! it. It proposes no node: a folder is evidence, and the agent names what the product does.
 //! Static text scans plus one read of Git's ignored paths; no repository code runs.
 
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 
 use indexmap::IndexMap;
@@ -21,7 +21,9 @@ use crate::source_class::SourceClass;
 use crate::survey_areas::{abilities_by_area, survey_areas, Area, AreaLocator};
 use crate::survey_files::SurveyFiles;
 use crate::survey_text::{format_count, repo_text};
-use crate::unit_collection::{collect_source_units, CollectOptions, Collection, UnitScope};
+use crate::unit_collection::{
+    collect_source_units, CollectOptions, Collection, SurveyedFile, UnitScope,
+};
 use crate::unit_exports::{exports_of_text, EXPORTS_PER_UNIT};
 use crate::unit_imports::{unit_imports, IMPORTS_PER_UNIT};
 
@@ -54,6 +56,14 @@ pub struct UnitRow {
     pub imports_omitted: usize,
 }
 
+/// A file that holds abilities, with how many. Every ability the survey found is counted, also
+/// those the listed rows cut, so a build is measured against the whole floor.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AbilityFile {
+    pub path: String,
+    pub abilities: usize,
+}
+
 #[derive(Debug, Clone)]
 pub struct AreaRow {
     pub path: String,
@@ -64,6 +74,9 @@ pub struct AreaRow {
     pub members: Vec<String>,
     pub main_files: Vec<MainFile>,
     pub abilities: usize,
+    /// The files of the area that hold abilities, in the order the abilities were found. The
+    /// survey's text never lists them; a build's coverage is measured by them.
+    pub ability_files: Vec<AbilityFile>,
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +111,8 @@ pub struct SurveyRequest<'a> {
     pub ignore: &'a [String],
     pub vault_exclusion: Option<String>,
     pub git_ignored: &'a HashSet<String>,
+    /// Files of an earlier survey that cannot have changed, by path; they are not read again.
+    pub kept_files: &'a HashMap<&'a str, &'a SurveyedFile>,
 }
 
 /// The built map and the text the agent reads.
@@ -536,13 +551,13 @@ fn area_map(
             held.push(file.clone());
         }
     }
-    let mut held_abilities: Vec<usize> = vec![0; areas.len()];
+    let mut held_abilities: Vec<IndexMap<&str, usize>> = vec![IndexMap::new(); areas.len()];
     for row in found {
-        if let Some(count) = locator
+        if let Some(files) = locator
             .locate(&row.path)
             .and_then(|at| held_abilities.get_mut(at))
         {
-            *count += 1;
+            *files.entry(row.path.as_str()).or_insert(0) += 1;
         }
     }
     let rows: Vec<AreaRow> = areas
@@ -566,6 +581,18 @@ fn area_map(
                     })
                     .collect()
             };
+            let ability_files: Vec<AbilityFile> = held_abilities
+                .get(index)
+                .map(|files| {
+                    files
+                        .iter()
+                        .map(|(path, abilities)| AbilityFile {
+                            path: (*path).to_string(),
+                            abilities: *abilities,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
             AreaRow {
                 path: area.path.clone(),
                 files: area.files,
@@ -574,7 +601,8 @@ fn area_map(
                 rest: area.rest,
                 members: area.members.clone(),
                 main_files,
-                abilities: held_abilities.get(index).copied().unwrap_or(0),
+                abilities: ability_files.iter().map(|file| file.abilities).sum(),
+                ability_files,
             }
         })
         .collect();
@@ -641,6 +669,7 @@ pub fn build_breadth_map(files: &SurveyFiles<'_>, request: &SurveyRequest<'_>) -
             ignore: request.ignore,
             vault_exclusion: request.vault_exclusion.clone(),
             git_ignored: request.git_ignored,
+            kept_files: request.kept_files,
         },
     );
     let ignore_set: HashSet<&str> = request.ignore.iter().map(String::as_str).collect();

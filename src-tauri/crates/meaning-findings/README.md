@@ -9,6 +9,7 @@ seen through `confined-files`; it writes nothing and runs no program. Every find
 | Does a node's `path:` name only a folder, so its drift can never be checked? | `src/folder_only_evidence.rs` |
 | Does a dependency's citing file never mention the other side? | `src/dependency_witness.rs` |
 | Is a starter example still in a vault that has real nodes of its kind? | `src/starter_example.rs` |
+| What is done about each code, stated once per answer instead of in every message? | `src/remedies.rs` |
 | Which repository place does a `path:` name, and does it escape the repository? | `src/repository_path.rs` |
 | Which file paths does a relation's note name? | `src/note_paths.rs` |
 | Which modules does a source file bring in, in every language a vault describes? | `src/module_specifiers.rs` |

@@ -96,7 +96,7 @@ fn has_ternary(line: &[char]) -> bool {
 }
 
 /// Whether one source line decides: a condition, a branch, a throw or a literal default.
-fn decides_line(line: &str) -> bool {
+pub(crate) fn decides_line(line: &str) -> bool {
     let line = line.trim_end_matches(['\n', '\r']);
     let head: String = line.chars().take(DECIDE_CHARS).collect();
     if COMMENT.is_match(&head) {
@@ -106,7 +106,7 @@ fn decides_line(line: &str) -> bool {
     CONDITION.is_match(&head) || has_ternary(&characters) || DEFAULT_VALUE.is_match(&head)
 }
 
-fn cited_lines_decide(
+pub(crate) fn cited_lines_decide(
     source: Option<&dyn SourceFiles>,
     texts: &mut CitedText,
     cite: &Cite,
@@ -122,19 +122,6 @@ fn cited_lines_decide(
                 .any(|line| decides_line(line.trim_end_matches('\r')))
         })
     })
-}
-
-/// The exact call that reads the entry file, by symbol where the body names one.
-fn read_call(path: &str, symbol: Option<&str>) -> String {
-    let quoted = answer_format::json::quote(path);
-    let selector = match symbol {
-        Some(symbol) => format!(
-            "{{\"path\":{quoted},\"symbol\":{}}}",
-            answer_format::json::quote(symbol)
-        ),
-        None => format!("{{\"path\":{quoted},\"startLine\":1,\"maxLines\":200}}"),
-    };
-    format!("analyze_repo_structure({{\"sourceOnly\":true,\"sourceReads\":[{selector}]}})")
 }
 
 /// One finding for each capability that states a rule and cites no lines that hold its condition.
@@ -165,10 +152,10 @@ pub fn rule_cite_findings(
         let slug = document.slug();
         let path = node_path(document);
         let symbol = path.as_deref().and_then(|path| cited_symbol(&body, path));
-        let read = path
-            .as_deref()
-            .map(|path| format!("{}, then ", read_call(path, symbol.as_deref())))
-            .unwrap_or_default();
+        let read = path.as_deref().map_or_else(String::new, |path| match symbol.as_deref() {
+            Some(symbol) => format!("; read `{path}` symbol `{symbol}`"),
+            None => format!("; read `{path}`"),
+        });
         let held = if cites.is_empty() {
             ""
         } else {
@@ -178,7 +165,7 @@ pub fn rule_cite_findings(
             slug.to_string(),
             Issue::warning(
                 "rule-without-read-lines",
-                format!("{slug} states a rule but cites no lines that hold its condition{held}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: {read}patch_concept each rule with the cite of the returned lines that hold its condition, as `path:L12-L30`."),
+                format!("{slug} states a rule but cites no lines that hold its condition{held}{read}"),
             ),
         ));
     }

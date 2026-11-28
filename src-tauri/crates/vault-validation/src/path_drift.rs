@@ -206,3 +206,44 @@ fn suggest_moves(drifts: &mut [Drift], source: &dyn SourceFiles) {
         }
     }
 }
+
+#[cfg(all(test, windows))]
+#[allow(
+    clippy::disallowed_methods,
+    reason = "a test plants the files the check reads, which the crate otherwise never writes"
+)]
+mod windows_tests {
+    use super::*;
+    use confined_files::{DiskSource, ScanRoots, VaultRoot};
+    use vault_document::{DocumentCache, LoadedVault};
+
+    /// NTFS keeps the case a name was created with and opens it by any case (Microsoft, "Naming
+    /// Files, Paths, and Namespaces": "Do not assume case sensitivity"), so a node that cites
+    /// `SRC/A.TS` of a file the disk holds as `src/a.ts` has not drifted.
+    #[test]
+    fn a_path_in_other_letters_than_the_disk_holds_is_not_drift_on_ntfs() {
+        let vault = tempfile::tempdir().expect("vault");
+        let repository = tempfile::tempdir().expect("repository");
+        std::fs::create_dir_all(vault.path().join("capabilities")).expect("capabilities");
+        std::fs::write(
+            vault.path().join("capabilities/place-order.md"),
+            "---\nkind: capability\ntitle: Place order\npath: SRC/A.TS\n---\nBody\n",
+        )
+        .expect("node");
+        std::fs::create_dir_all(repository.path().join("src")).expect("src");
+        std::fs::write(repository.path().join("src/a.ts"), "export const a = 1;\n").expect("a");
+        let real = std::fs::canonicalize(repository.path()).expect("real");
+        let root = ScanRoots::new(real.clone(), real.clone())
+            .expect("roots")
+            .allow(&real, "repoRoot")
+            .expect("allowed");
+        let source = DiskSource::new(&root, 1024 * 1024);
+        let loaded = LoadedVault::load(
+            &VaultRoot::open(vault.path()).expect("vault root"),
+            &DocumentCache::new(),
+        )
+        .expect("vault");
+        let drift = path_drift(loaded.documents(), &source, "repo");
+        assert_eq!((drift.paths_checked, drift.drifts.len()), (1, 0));
+    }
+}

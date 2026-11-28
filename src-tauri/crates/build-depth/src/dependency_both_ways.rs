@@ -8,7 +8,7 @@ use vault_document::{Issue, LoadedDocument};
 use crate::node_fields::{refs_of, SlugResolver};
 
 /// Every `depends_on` edge as consumer and provider slugs, in the order the nodes declare them.
-fn dependency_edges(documents: &[LoadedDocument]) -> Vec<(&str, &str)> {
+pub(crate) fn dependency_edges(documents: &[LoadedDocument]) -> Vec<(&str, &str)> {
     let resolver = SlugResolver::of(documents);
     let mut edges = Vec::new();
     for document in documents {
@@ -40,7 +40,7 @@ pub fn two_way_dependency_findings(documents: &[LoadedDocument]) -> Vec<(String,
             from.to_string(),
             Issue::warning(
                 "dependency-both-ways",
-                format!("{from} and {to} each depend on the other. A dependency runs from consumer to provider: a caller depends on the interface it calls, an implementation does not depend on its interface, and a composition root depends on what it wires. Keep the direction the code shows and remove_relation the other."),
+                format!("{from} and {to} each depend on the other"),
             ),
         ));
     }
