@@ -361,6 +361,11 @@ impl ReadBlock {
             self.diagnostics
                 .push(Diagnostic::relation_not_a_list(line_number, &key));
         }
+        let mut value = value;
+        if let Value::List(items) = &mut value {
+            // A list is kept for as long as its document is: without the room it grew into.
+            items.shrink_to_fit();
+        }
         self.entries.push(ReadEntry {
             key,
             first_line,
