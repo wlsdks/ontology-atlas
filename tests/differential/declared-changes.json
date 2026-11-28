@@ -12586,6 +12586,78 @@
       "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
     },
     {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 11,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 11,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 12,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 12,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 12,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 13,
+      "path": "result.structuredContent.errorCode",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
+      "case": "evidence/read-source-argument-bounds",
+      "where": "answer",
+      "id": 13,
+      "path": "result.structuredContent.error",
+      "change": 39,
+      "reason": "A read_source path part holding `:` or a NUL, or a Windows device name (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, any case, any extension) is invalid_arguments on every system, because Windows opens `plan.docx:stream` as a second file behind `plan.docx` and `CON.md` as the console; the script server looked the name up and said it was not in the folder (row 39)."
+    },
+    {
       "case": "evidence/read-source-bytes",
       "where": "answer",
       "id": 1,

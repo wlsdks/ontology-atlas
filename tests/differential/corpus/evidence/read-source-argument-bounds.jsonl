@@ -10,3 +10,6 @@
 {"id":8,"method":"tools/call","params":{"name":"read_source","arguments":{"path":"sources/notes.md","from":-1}}}
 {"id":9,"method":"tools/call","params":{"name":"read_source","arguments":{}}}
 {"id":10,"method":"tools/call","params":{"name":"read_source","arguments":{"path":5}}}
+{"id":11,"method":"tools/call","params":{"name":"read_source","arguments":{"path":"sources/notes.md:stream"}}}
+{"id":12,"method":"tools/call","params":{"name":"read_source","arguments":{"path":"sources/CON.md"}}}
+{"id":13,"method":"tools/call","params":{"name":"read_source","arguments":{"path":"sources/com1"}}}
