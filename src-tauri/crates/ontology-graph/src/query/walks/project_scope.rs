@@ -7,12 +7,11 @@ use super::row_page::RowPage;
 use crate::compiled_graph::CompiledGraph;
 use crate::query::name_counts::{domain_counts, kind_counts};
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::PROJECT_SCOPE_LIMIT;
 use crate::query::project_root::project_root;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use crate::query::scope::{EdgeCounts, Scope, ScopeEdgeGroup, ScopeEdges};
-
-const DEFAULT_LIMIT: usize = 200;
 
 #[derive(Serialize)]
 struct ScopeSummary {
@@ -47,7 +46,7 @@ pub fn project_scope<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<ProjectScopeAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(PROJECT_SCOPE_LIMIT);
     let project = project_root(graph, request, "project_scope")?;
     let scope = Scope::of(graph, project);
     let edges = ScopeEdges::of(graph, &scope);

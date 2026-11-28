@@ -12,11 +12,9 @@ use crate::compiled_graph::{CompiledGraph, NodeId, Target};
 use crate::query::edge_rows::name_reached;
 use crate::query::name_counts::{domain_counts, kind_counts, sorted_counts};
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::{OVERVIEW_LIMIT, SCHEMA_LIMIT};
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
-
-const DEFAULT_OVERVIEW_LIMIT: usize = 10;
-const DEFAULT_SCHEMA_LIMIT: usize = 50;
 
 /// A node as the hub lists and the node scans show it: the summary and its total degree.
 #[derive(Serialize)]
@@ -176,7 +174,7 @@ pub fn overview<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<OverviewAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_OVERVIEW_LIMIT);
+    let limit = request.limit.unwrap_or(OVERVIEW_LIMIT);
     let counts = graph.edge_counts();
     Ok(OverviewAnswer {
         operation: "overview",
@@ -213,7 +211,7 @@ pub fn schema<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<SchemaAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_SCHEMA_LIMIT);
+    let limit = request.limit.unwrap_or(SCHEMA_LIMIT);
     let mut patterns = schema_patterns(graph);
     let total = patterns.len();
     patterns.truncate(limit);
@@ -310,7 +308,7 @@ pub fn facets<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<FacetsAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_OVERVIEW_LIMIT);
+    let limit = request.limit.unwrap_or(OVERVIEW_LIMIT);
     let counts = graph.edge_counts();
     let mut patterns = schema_patterns(graph);
     patterns.truncate(limit);

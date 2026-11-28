@@ -3,7 +3,7 @@
 
 use serde::Serialize;
 
-use super::builder_focus::{encode_uri_component, focus_param, slug_of_focus};
+use super::builder_focus::{encode_uri_component, focus_param};
 use super::subgraph::Subgraph;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::edge_rows::PathEdge;
@@ -80,12 +80,7 @@ pub fn builder_context<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<BuilderContextAnswer<'a>, QueryError> {
-    let name = request
-        .slug
-        .as_deref()
-        .or(request.seed.as_deref())
-        .map(slug_of_focus);
-    let slice = Subgraph::of_call(graph, request, name.as_deref(), &BUILDER_CONTEXT)?;
+    let slice = Subgraph::of_call(graph, request, &BUILDER_CONTEXT)?;
     let focus = graph.node(slice.seed);
     let param = focus_param(focus);
     Ok(BuilderContextAnswer {

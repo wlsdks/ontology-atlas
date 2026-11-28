@@ -8,11 +8,10 @@ use serde::Serialize;
 
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::node_summary::{summaries, NodeSummary};
+use crate::query::operation_defaults::TOPOLOGICAL_ORDER_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
-
-const DEFAULT_ORDER_LIMIT: usize = 100;
 
 /// A node that waits on a cycle: prerequisites of it are still unordered when the layers end.
 pub struct Blocked {
@@ -199,7 +198,7 @@ pub fn topological_order<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<TopologicalOrderAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_ORDER_LIMIT);
+    let limit = request.limit.unwrap_or(TOPOLOGICAL_ORDER_LIMIT);
     let types = RelationSet::dependencies_unless_named(request.types.as_deref())?;
     let include_isolated = request.include_isolated.unwrap_or(false);
     let order = order_dependencies(graph, types.as_ref(), include_isolated);

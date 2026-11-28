@@ -26,7 +26,7 @@ from the whole graph.
 | `mod.rs` | `run`: the family an operation belongs to, and the `compiledSummary` that closes every answer |
 | `operation.rs` | `Operation`: every operation, its name, and whether a plan may target it |
 | `analysis_operation.rs` | `AnalysisOperation`: the two operations that read the analysis records |
-| `operation_defaults.rs` | `Expansion` and the defaults of every operation (direction, depth, limit), which an operation applies and a plan states, so the two cannot disagree |
+| `operation_defaults.rs` | `Expansion`, `StartName` and every default an operation applies to an argument a call leaves out (limit, depth, direction); `default_limit` names each operation, which the plan states and the operation applies, so the two cannot disagree |
 | `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer, and the defaults and caps a walk applies to `depth` and `direction` |
 | `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node, an operation not answered yet |
 | `relation_set.rs` | `RelationSet`: the relation names a call may select, with their aliases |
@@ -44,6 +44,7 @@ from the whole graph.
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
 | `walks/neighbors.rs`, `walks/paths.rs` | `neighbors`, `path`, `all_paths`: breadth-first, shortest and budgeted iterative search |
 | `walks/dependency_cycles.rs`, `walks/topological_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn); `find_cycles` and `order_dependencies` give selection the typed facts, so it never reads the written answer |
+| `walks/expansion_start.rs` | `expansion_start`: the node an expansion starts from, named as its operation reads the name (`slug`, `seed`, or a focus name); the operation and the plan both ask here |
 | `walks/neighborhood.rs`, `walks/hop.rs`, `walks/row_page.rs` | `Neighborhood`: the exact breadth-first search that `reachability`, `impact`, `blast_radius`, `subgraph` and `builder_context` cut; `Hop`; the page of rows an answer cuts at `limit` |
 | `walks/reachability.rs`, `walks/lineage.rs` | `reachability` and `lineage`: what a node reaches, and its containers and contents |
 | `walks/pattern_walk.rs` | `pattern_walk`: simple paths that follow a list of relations, a layer at a time |

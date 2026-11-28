@@ -12,6 +12,7 @@ mod builder_focus;
 mod containment_tree;
 pub(in crate::query) mod dependency_cycles;
 mod dependency_qualification;
+pub(in crate::query) mod expansion_start;
 mod explain_relation;
 pub(in crate::query) mod graph_walk;
 mod hop;

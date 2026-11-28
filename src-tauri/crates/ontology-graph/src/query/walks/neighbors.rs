@@ -7,10 +7,10 @@ use super::graph_walk::edge_order_key;
 use crate::compiled_graph::{CompiledGraph, EdgeId, Node, NodeId};
 use crate::query::edge_rows::DirectedEdge;
 use crate::query::node_resolution::resolve;
-use crate::query::operation_defaults::NEIGHBORS_LIMIT;
+use crate::query::operation_defaults::{neighbors_direction, NEIGHBORS_LIMIT};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
-use crate::query::request::{Direction, QueryRequest};
+use crate::query::request::QueryRequest;
 
 #[derive(Serialize)]
 pub struct NeighborsAnswer<'a> {
@@ -65,7 +65,7 @@ pub(in crate::query) fn count_filtered_edges(
     request: &QueryRequest,
     types: Option<&RelationSet>,
 ) -> usize {
-    let direction = request.direction_undirected_as_both(Direction::Both);
+    let direction = neighbors_direction(request);
     let filter = EdgeFilter::of_call(graph, request, types);
     let leaving = if direction.follows_outgoing() {
         graph
@@ -96,7 +96,7 @@ fn filtered_edges(
     request: &QueryRequest,
     types: Option<&RelationSet>,
 ) -> Vec<(&'static str, EdgeId)> {
-    let direction = request.direction_undirected_as_both(Direction::Both);
+    let direction = neighbors_direction(request);
     let filter = EdgeFilter::of_call(graph, request, types);
     let passes = |id: EdgeId| filter.passes(id);
     let mut keyed: Vec<(String, &'static str, EdgeId)> = Vec::new();

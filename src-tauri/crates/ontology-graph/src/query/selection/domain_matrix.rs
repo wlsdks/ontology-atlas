@@ -14,6 +14,7 @@ use crate::query::domain_lookup::DomainLookup;
 use crate::query::edge_rows::CompiledEdge;
 use crate::query::name_counts::sorted_counts;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::DOMAIN_MATRIX_LIMIT;
 use crate::query::project_root::project_named_or_only;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, public_relation_type, RelationSet};
@@ -21,7 +22,6 @@ use crate::query::request::QueryRequest;
 use crate::query::scope::Scope;
 use crate::query::walks::row_page::RowPage;
 
-const DEFAULT_LIMIT: usize = 100;
 const EXAMPLES_PER_PAIR: usize = 3;
 
 #[derive(Default)]
@@ -180,7 +180,7 @@ pub fn domain_matrix<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<DomainMatrixAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(DOMAIN_MATRIX_LIMIT);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let named = request
         .project

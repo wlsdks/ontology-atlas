@@ -25,13 +25,12 @@ use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::name_counts::sorted_counts;
 use crate::query::node_mask::NodeMask;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::MAINTENANCE_PLAN_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use vault_document::body_findings;
 use vault_document::meaning_wording::slug_outside_kind_folder;
 use vault_document::schema::folder_for_kind;
-
-const DEFAULT_LIMIT: usize = 25;
 
 const PHASES: [&str; 5] = ["validate", "repair", "link", "materialize", "review"];
 const SEVERITIES: [&str; 3] = ["fail", "warn", "info"];
@@ -483,7 +482,7 @@ pub fn maintenance_plan<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<MaintenancePlanAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(MAINTENANCE_PLAN_LIMIT);
     let arguments = &request.selection.arguments;
     let phase_filter = filter_of(arguments.phases.as_deref(), "phases", &PHASES)?;
     let severity_filter = filter_of(arguments.severities.as_deref(), "severities", &SEVERITIES)?;

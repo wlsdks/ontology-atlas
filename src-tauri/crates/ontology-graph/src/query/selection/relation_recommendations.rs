@@ -10,11 +10,10 @@ use super::proposed_action::ProposedAction;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::domain_lookup::named_domain;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::RECOMMEND_RELATIONS_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use vault_document::frontmatter::Value;
-
-const DEFAULT_LIMIT: usize = 50;
 
 #[derive(Serialize)]
 pub struct RecommendationNodes<'a> {
@@ -190,7 +189,7 @@ pub fn recommend_relations<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<RecommendRelationsAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(RECOMMEND_RELATIONS_LIMIT);
     let found = recommend(graph, request.selection.arguments.kind.as_deref(), limit);
     Ok(RecommendRelationsAnswer::of(found, limit))
 }

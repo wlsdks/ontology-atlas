@@ -14,11 +14,11 @@ use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::{summaries, NodeSummary};
+use crate::query::operation_defaults::PATTERN_WALK_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::{Direction, QueryRequest};
 
-const DEFAULT_LIMIT: usize = 100;
 /// The relations of a pattern a walk takes; the rest are not read.
 const MAX_STEPS: usize = 20;
 /// The edges one walk may look at in all. A walk that runs out says it was limited.
@@ -114,7 +114,7 @@ pub fn pattern_walk<'a>(
     let start = resolve(graph, request.slug.as_deref(), "slug")?;
     let pattern = read_pattern(request)?;
     let direction = request.direction_or(Direction::Outgoing);
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(PATTERN_WALK_LIMIT);
 
     let mut paths = vec![Walk {
         nodes: vec![start],

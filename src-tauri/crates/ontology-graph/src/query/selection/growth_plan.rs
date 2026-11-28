@@ -10,11 +10,10 @@ use super::growth_candidates::{
 use super::relation_recommendations::{recommend, RecommendRelationsAnswer};
 use super::selection_request::UncertaintyRead;
 use crate::compiled_graph::CompiledGraph;
+use crate::query::operation_defaults::GROWTH_PLAN_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use crate::query::walks::row_page::RowPage;
-
-const DEFAULT_LIMIT: usize = 25;
 
 /// The reads the vault's own uncertainty sections ask for. `no_bodies` says the vault holds no
 /// document, so an empty list is never taken for "nothing to read". The reads themselves come from
@@ -110,7 +109,7 @@ pub fn growth_plan<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<GrowthPlanAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(GROWTH_PLAN_LIMIT);
     growth_plan_with_limit(graph, request, limit)
 }
 

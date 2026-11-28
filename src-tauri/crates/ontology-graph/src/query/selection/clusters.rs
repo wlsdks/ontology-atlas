@@ -15,13 +15,10 @@ use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::name_counts::{domain_counts, kind_counts};
 use crate::query::node_summary::{summaries, NodeSummary};
+use crate::query::operation_defaults::{CLUSTER_GROUP_LIMIT, CLUSTER_NODE_LIMIT, ITERATIONS};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
-
-const DEFAULT_GROUP_LIMIT: usize = 20;
-const DEFAULT_NODE_LIMIT: usize = 25;
-pub(crate) const DEFAULT_ITERATIONS: usize = 20;
 
 /// The nodes each node shares an allowed resolved edge with, each once, in code unit order.
 pub(crate) fn undirected_adjacency(
@@ -148,8 +145,8 @@ pub fn components<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<ComponentsAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_GROUP_LIMIT);
-    let node_limit = request.node_limit.unwrap_or(DEFAULT_NODE_LIMIT);
+    let limit = request.limit.unwrap_or(CLUSTER_GROUP_LIMIT);
+    let node_limit = request.node_limit.unwrap_or(CLUSTER_NODE_LIMIT);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let groups = connected_components(graph, types.as_ref());
     Ok(describe_components(graph, &groups, limit, node_limit))
@@ -272,9 +269,9 @@ pub fn communities<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<CommunitiesAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_GROUP_LIMIT);
-    let node_limit = request.node_limit.unwrap_or(DEFAULT_NODE_LIMIT);
-    let iterations = request.iterations.unwrap_or(DEFAULT_ITERATIONS);
+    let limit = request.limit.unwrap_or(CLUSTER_GROUP_LIMIT);
+    let node_limit = request.node_limit.unwrap_or(CLUSTER_NODE_LIMIT);
+    let iterations = request.iterations.unwrap_or(ITERATIONS);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let adjacency = undirected_adjacency(graph, types.as_ref());
     let labels = propagate_labels(graph, &adjacency, iterations);
