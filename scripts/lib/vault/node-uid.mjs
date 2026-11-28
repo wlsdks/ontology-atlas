@@ -5,7 +5,7 @@
  */
 import { randomUUID } from 'node:crypto';
 
-export const NODE_UID_PATTERN =
+const NODE_UID_PATTERN =
   '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
 const NODE_UID_RE = new RegExp(NODE_UID_PATTERN);
 
