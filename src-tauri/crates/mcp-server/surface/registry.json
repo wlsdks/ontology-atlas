@@ -60,7 +60,7 @@
     },
     {
       "name": "git_snapshot",
-      "replacement": "your own git: commit the vault yourself after `git -C <repoRoot> status -- <vault>`"
+      "replacement": "your own git: `git -C <vaultRoot> add -- . && git -C <vaultRoot> commit -m \"<why>\" -- .`, not during a merge or rebase, and never push"
     },
     {
       "name": "list_constellations",

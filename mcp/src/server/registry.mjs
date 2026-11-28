@@ -160,7 +160,7 @@ const RETIRED_TOOL_REPLACEMENTS = new Map([
   ['index_project', 'analyze_repo_structure, then infer_imports and validate_vault'],
   ['git_status', 'your own git: `git -C <repoRoot> status -- <vault>` (`connection_info` names both paths)'],
   ['git_history', 'your own git: `git -C <repoRoot> log -- <vault>`'],
-  ['git_snapshot', 'your own git: commit the vault yourself after `git -C <repoRoot> status -- <vault>`'],
+  ['git_snapshot', 'your own git: `git -C <vaultRoot> add -- . && git -C <vaultRoot> commit -m "<why>" -- .`, not during a merge or rebase, and never push'],
   ['list_constellations', 'get_constellation with no `id`'],
   ['find_evidence', 'list_concepts({ mentions: "text" })'],
   ['find_orphans', "query_ontology({ operation: 'match_nodes', hasIncoming: false })"],

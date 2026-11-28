@@ -329,7 +329,7 @@ replacement in `replacement` and the name in `retiredTool`, and nothing is read 
 | `index_project(...)` | `analyze_repo_structure`, then `infer_imports` and `validate_vault` |
 | `git_status()` (answers `tool_retired`) | the agent's own `git -C <repoRoot> status -- <vault>`; `connection_info` names both paths |
 | `git_history({ limit })` (answers `tool_retired`) | the agent's own `git log -- <vault>` |
-| `git_snapshot({ confirm })` (answers `tool_retired`) | the agent's own `git add` and `git commit` of the vault folder |
+| `git_snapshot({ confirm })` (answers `tool_retired`) | the agent's own `git -C <vaultRoot> add -- . && git -C <vaultRoot> commit -m "<why>" -- .`, not during a merge or rebase, and never push |
 | `list_constellations()` (answers `tool_retired`) | `get_constellation()` with no `id` |
 | `find_evidence({ title })` (answers `tool_retired`) | `list_concepts({ mentions: title })` |
 | `find_orphans()` (answers `tool_retired`) | `query_ontology({ operation: 'match_nodes', hasIncoming: false })` |

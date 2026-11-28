@@ -1287,7 +1287,9 @@ so an agent can repair a misspelled `tools/call.params.name` without an extra
 clients do not need to parse the human-readable error text.
 A name the server used to advertise and has retired fails with its own code,
 `tool_retired`, and says what to do instead: `git_status`, `git_history` and
-`git_snapshot` name the agent's own `git` command, and the six folded names
+`git_snapshot` name the agent's own `git` command (for `git_snapshot`: `git -C <vaultRoot> add -- .
+&& git -C <vaultRoot> commit -m "<why>" -- .`, not during a merge or rebase, and never
+push), and the six folded names
 (`list_constellations`, `find_evidence`, `find_orphans`, `query_concepts`,
 `replace_relation`, `reclassify_concept`) name the
 call that replaced them. The structured repair fields are `retiredTool` and
