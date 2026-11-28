@@ -48,6 +48,9 @@ pub struct ImportScanOptions {
     /// Folder names to skip, besides the defaults.
     pub ignore: Vec<String>,
     pub max_files: Option<usize>,
+    /// The workspace packages to group files by, in place of discovering them: a caller that
+    /// admitted only some declared packages as elements scans against exactly those.
+    pub workspace_packages: Option<Vec<WorkspacePackage>>,
 }
 
 /// A group of file edges between two modules, summed up.
@@ -92,7 +95,14 @@ pub fn scan_imports(
             .map(|folder| (*folder).to_string())
             .collect()
     });
-    let discovery = discover_workspace_packages(&facts, &ignore);
+    let discovery = match &options.workspace_packages {
+        Some(packages) => WorkspaceDiscovery {
+            has_declaration: true,
+            packages: packages.clone(),
+            skipped: Vec::new(),
+        },
+        None => discover_workspace_packages(&facts, &ignore),
+    };
     let workspace_packages = discovery.packages.clone();
     let scan_folders = folders_to_scan(&source_folders, explicit_folders, &discovery);
     let (roots, configured_root_exists) = scan_roots(&facts, &ignore, &scan_folders, &discovery);

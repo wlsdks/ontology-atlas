@@ -20,6 +20,7 @@ members = [
   "crates/source-scan",
   "crates/repository-survey",
   "crates/repository-candidates",
+  "crates/construction-review",
   "crates/raw-source-text",
   "crates/mcp-server",
 ]

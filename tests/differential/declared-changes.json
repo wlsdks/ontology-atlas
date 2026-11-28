@@ -13311,7 +13311,7 @@
       "id": 11,
       "path": "result.content[0].text",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13319,7 +13319,7 @@
       "id": 11,
       "path": "result.structuredContent",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13327,7 +13327,7 @@
       "id": 11,
       "path": "result.isError",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13335,7 +13335,7 @@
       "id": 13,
       "path": "result.content[0].text",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13343,7 +13343,7 @@
       "id": 13,
       "path": "result.structuredContent",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13351,7 +13351,7 @@
       "id": 13,
       "path": "result.isError",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13359,7 +13359,7 @@
       "id": 14,
       "path": "result.content[0].text",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13367,7 +13367,7 @@
       "id": 14,
       "path": "result.structuredContent",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13375,7 +13375,7 @@
       "id": 15,
       "path": "result.content[0].text",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13383,31 +13383,7 @@
       "id": 15,
       "path": "result.structuredContent",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-polyglot",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-polyglot",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-polyglot",
-      "where": "answer",
-      "id": 6,
-      "path": "result.isError",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/index-project-retired",
@@ -13552,6 +13528,86 @@
       "path": "result.structuredContent.externalImports",
       "change": 48,
       "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-edge-hostile",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/skipped",
+      "change": 59,
+      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-edge-hostile",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.skipped",
+      "change": 59,
+      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/skipped/1/reason",
+      "change": 60,
+      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.skipped[1].reason",
+      "change": 60,
+      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/skipped/2/reason",
+      "change": 60,
+      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.skipped[2].reason",
+      "change": 60,
+      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/skipped",
+      "change": 61,
+      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.skipped",
+      "change": 61,
+      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/skipped",
+      "change": 61,
+      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.skipped",
+      "change": 61,
+      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
     }
   ]
 }

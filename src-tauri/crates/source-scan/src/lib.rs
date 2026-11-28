@@ -99,4 +99,7 @@ pub use source_outline::{
 pub use source_scan_error::{ScanErrorCode, SourceScanError};
 pub use source_stamp::{read_git_source_state, GitSourceState};
 pub use source_walk::{walk_sorted, Entry, Flow, WalkLimits, WalkReport, DEFAULT_IGNORE};
-pub use workspace_packages::{declared_workspace_members, DeclaredMember};
+pub use workspace_packages::{
+    declared_workspace_members, discover_declared_workspace, DeclaredMember, WorkspaceDiscovery,
+    WorkspacePackage,
+};

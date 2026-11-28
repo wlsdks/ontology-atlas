@@ -6,3 +6,6 @@
 {"id":4,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/cmd"}}}
 {"id":5,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/docs"}}}
 {"id":6,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","view":"analysis"}}}
+{"id":7,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","view":"analysis","ignore":["vendor","internal"]}}}
+{"id":8,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/src","view":"analysis"}}}
+{"id":9,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/cmd","view":"analysis"}}}

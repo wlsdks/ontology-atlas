@@ -1,10 +1,17 @@
 //! `analyze_repo_structure`: the breadth map of the repository, the first call of every
 //! construction. The map is read once on the shared pool by `repository-survey`; this file checks
 //! the arguments the way the JavaScript server does and refuses, by name, the parts of the tool
-//! this build does not answer yet (exact source reads, the structural analysis view, and a
-//! proposal or qualification to review).
+//! this build does not answer yet (exact source reads, and a proposal or qualification to review).
+//! `view: "analysis"` is answered by `repository-candidates`.
 
+use construction_review::proposal_validation::ProposalValidation;
+use repository_candidates::analysis_view::narrow_to_view;
+use repository_candidates::repository_analysis::{
+    analyze_repository, AnalysisRefusal, AnalysisRequest, RepositoryAnalysis,
+};
+use repository_candidates::repository_files::RepositoryFiles;
 use repository_survey::{build_breadth_map, git_ignored_paths, SurveyFiles, SurveyRequest};
+use serde::Serialize;
 
 use super::argument_checks::{
     optional_boolean, optional_non_blank_text, optional_non_negative_integer, optional_text_list,
@@ -17,6 +24,8 @@ use crate::error::ToolError;
 
 const IGNORE_MAX_ITEMS: usize = 200;
 const MAX_DEPTH_MAX: f64 = 10.0;
+/// The most a document or source file the analysis reads may weigh and still be opened.
+const ANALYSIS_FILE_BYTES: usize = 2 * 1024 * 1024;
 /// A source file over this many bytes is generated or data, never read as code.
 const SURVEY_FILE_BYTES: usize = 1024 * 1024;
 
@@ -82,7 +91,8 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         .read::<serde_json::Value>("view")?
         .is_some_and(|view| view.as_str() == Some("analysis"));
     if wants_analysis {
-        return Err(not_answered("The structural analysis view"));
+        let target = target.require_folder()?;
+        return analysis_answer(&target, &ignore);
     }
     let source = target.source_with_limit(SURVEY_FILE_BYTES);
     let files = SurveyFiles::new(&source);
@@ -97,4 +107,31 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         },
     );
     Ok(ToolOutput::text(survey.text))
+}
+
+/// The structural analysis with the validation of a proposal nobody sent, and the note a scan
+/// without a capability candidate carries.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AnalysisAnswer {
+    #[serde(flatten)]
+    analysis: RepositoryAnalysis,
+    proposal_validation: ProposalValidation,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    note: Option<String>,
+}
+
+fn analysis_answer(target: &ScanTarget, ignore: &[String]) -> Result<ToolOutput, ToolError> {
+    let source = target.source_with_limit(ANALYSIS_FILE_BYTES);
+    let files = RepositoryFiles::new(&source, &target.label);
+    let (mut analysis, _imports) = analyze_repository(&files, &AnalysisRequest { ignore })
+        .map_err(|AnalysisRefusal::RustFeatureConfiguration| {
+            not_answered("The structural analysis view of a repository with a root Cargo.toml")
+        })?;
+    let note = narrow_to_view(&mut analysis);
+    ToolOutput::json(&AnalysisAnswer {
+        analysis,
+        proposal_validation: ProposalValidation::not_provided(),
+        note,
+    })
 }

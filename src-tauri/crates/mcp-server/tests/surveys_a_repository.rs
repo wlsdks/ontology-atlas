@@ -114,8 +114,8 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
             "sourceReads is not answered by this build",
         ),
         (
-            r#"{"view":"analysis"}"#,
-            "The structural analysis view is not answered by this build",
+            r#"{"proposal":{"concepts":[]}}"#,
+            "Reviewing a proposal or a qualification is not answered by this build",
         ),
         (r#"{"view":"nonsense"}"#, "view must be \"breadth\" or \"analysis\"."),
         (r#"{"maxDepth":99}"#, "maxDepth must be <= 10."),
@@ -128,6 +128,21 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
         assert_eq!(result["isError"], true, "{arguments}");
         assert!(text_of(&result).contains(words), "{arguments}: {result}");
     }
+}
+
+#[test]
+fn the_analysis_names_what_the_scan_found_and_a_repository_with_cargo_is_refused_by_name() {
+    let (_scene, root) = repository();
+    let result = survey(&root, r#"{"view":"analysis"}"#);
+    assert_ne!(result["isError"], true, "{result}");
+    let answer = &result["structuredContent"];
+    assert_eq!(answer["proposalValidation"]["status"], "not-provided", "{answer}");
+    assert_eq!(answer["proposalValidation"]["canWrite"], false, "{answer}");
+    assert_eq!(answer["rootPath"], root.to_string_lossy().as_ref(), "{answer}");
+    write(&root, "Cargo.toml", "[package]\nname = \"shop\"\n");
+    let refused = survey(&root, r#"{"view":"analysis"}"#);
+    assert_eq!(refused["isError"], true, "{refused}");
+    assert!(text_of(&refused).contains("root Cargo.toml"), "{refused}");
 }
 
 #[cfg(unix)]

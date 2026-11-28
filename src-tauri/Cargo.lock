@@ -857,6 +857,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "construction-review"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "cookie"
 version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3021,12 +3028,14 @@ dependencies = [
  "analysis-archive-format",
  "answer-format",
  "confined-files",
+ "construction-review",
  "hardened-git",
  "indexmap 2.14.0",
  "mcp-server",
  "ontology-graph",
  "raw-source-text",
  "regex",
+ "repository-candidates",
  "repository-survey",
  "serde",
  "serde_json",

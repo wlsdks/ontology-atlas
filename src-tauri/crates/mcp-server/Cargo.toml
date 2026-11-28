@@ -27,6 +27,9 @@ ontology-graph = { path = "../ontology-graph" }
 source-scan = { path = "../source-scan" }
 # The breadth map `analyze_repo_structure` answers with.
 repository-survey = { path = "../repository-survey" }
+# The candidates `analyze_repo_structure` analyses a repository into, and the review of a proposal.
+repository-candidates = { path = "../repository-candidates" }
+construction-review = { path = "../construction-review" }
 raw-source-text = { path = "../raw-source-text" }
 # Answers are typed structs written as JSON. `raw_value` sends the tool list as the text the
 # generator wrote and keeps what an agent nests in its arguments unread until a handler wants it.

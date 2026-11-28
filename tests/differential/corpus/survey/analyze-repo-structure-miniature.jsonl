@@ -18,3 +18,7 @@
 {"id":16,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{}}}
 {"id":17,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/src"}}}
 {"id":18,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/does-not-exist"}}}
+{"id":19,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","view":"analysis"}}}
+{"id":20,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","view":"analysis","ignore":["src/billing"]}}}
+{"id":21,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/src","view":"analysis"}}}
+{"id":22,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/does-not-exist","view":"analysis"}}}

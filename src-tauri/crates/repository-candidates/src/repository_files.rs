@@ -46,6 +46,11 @@ impl<'a> RepositoryFiles<'a> {
         &self.label
     }
 
+    /// The files themselves, for a reader that asks its own questions of them.
+    pub fn source(&self) -> &dyn SourceFiles {
+        self.files
+    }
+
     fn absolute(&self, relative: &str) -> PathBuf {
         relative
             .split('/')

@@ -521,10 +521,10 @@ impl Walk {
                         format!("semantic-evidence-skip: {path} resolves outside repository root"),
                     );
                 }
-                Probe::Folder => {
-                    if !SEMANTIC_DISCOVERY_SKIP_DIRS.contains(&entry.to_lowercase().as_str()) {
-                        self.visit(files, skipped, &path, found);
-                    }
+                Probe::Folder
+                    if !SEMANTIC_DISCOVERY_SKIP_DIRS.contains(&entry.to_lowercase().as_str()) =>
+                {
+                    self.visit(files, skipped, &path, found);
                 }
                 Probe::File => {
                     if !entry.to_lowercase().ends_with(".md") {
