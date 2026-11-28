@@ -8,8 +8,6 @@ minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   # Seven days old at 2026-11-19 11:17.
   - icu-minify@4.15.2
-  - next-intl@4.15.1
-  - next-intl-swc-plugin-extractor@4.15.1
   - use-intl@4.15.1
   # Seven days old at 2026-11-22 14:13.
   - "@eloqnt/config@0.1.2"
