@@ -21,16 +21,7 @@ export function createBriefQueries({
   function workspaceBrief(options = {}) {
     const limit = normalizeLimit(options.limit, 10);
     const overviewResult = overview({ limit });
-    const healthResult = health({
-      limit,
-      componentLimit: options.componentLimit ?? limit,
-      cycleLimit: options.cycleLimit ?? limit,
-      recommendationLimit: options.recommendationLimit ?? limit,
-      orderLimit: options.orderLimit ?? limit,
-      nodeLimit: options.nodeLimit ?? limit,
-      dependencyTypes: options.dependencyTypes,
-      componentTypes: options.componentTypes ?? options.types,
-    });
+    const healthResult = health({ limit, types: options.types });
     const growthResult = growthPlan({ limit });
     const projectRoots = projectRootSlugs();
     const projectMaps = projectRoots.slice(0, limit).map((project) => {
@@ -83,16 +74,7 @@ export function createBriefQueries({
 
   function agentBrief(options = {}) {
     const limit = normalizeLimit(options.limit, 5);
-    const workspace = workspaceBrief({
-      limit,
-      componentLimit: options.componentLimit ?? limit,
-      cycleLimit: options.cycleLimit ?? limit,
-      recommendationLimit: options.recommendationLimit ?? limit,
-      orderLimit: options.orderLimit ?? limit,
-      nodeLimit: options.nodeLimit ?? limit,
-      dependencyTypes: options.dependencyTypes,
-      componentTypes: options.componentTypes ?? options.types,
-    });
+    const workspace = workspaceBrief({ limit, types: options.types });
     const overviewResult = overview({ limit });
     const topEntrypoint = overviewResult.hubs[0] ?? nodes.find((node) => ['domain', 'capability', 'element'].includes(node.kind));
     const secondEntrypoint = overviewResult.hubs.find((node) => node.slug !== topEntrypoint?.slug);

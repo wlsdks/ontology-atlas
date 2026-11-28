@@ -11,6 +11,35 @@ const ANALYSIS_ROUTE =
 const COMPACT_BRIEF =
   'agent_brief detail "compact" and task are retired: the compact task handoff no longer exists. Call query_ontology({operation:"agent_brief", project}) for the brief, then get_concepts({slugs, body:"full"}) for the nodes it names.';
 
+const DEGREE_FILTER = 'the degree filters are retired: match_nodes with sort:"degree" ranks nodes by their connections, and limit keeps the first rows.';
+const SECTION_LIMIT = (name) => `${name} is retired: limit sizes every section of the answer.`;
+const BY_TYPE = (name) => `${name} is retired: types scopes the component groups; cycles and the dependency order always follow the dependency relations.`;
+
+/** `query_ontology` arguments no longer in its input schema, with the sentence an agent that sends one is told. */
+const RETIRED_QUERY_ARGUMENTS = [
+  ['detail', COMPACT_BRIEF],
+  ['task', COMPACT_BRIEF],
+  ['iterations', 'iterations is retired with centrality: match_nodes with sort:"degree" ranks nodes by their connections.'],
+  ['nodeLimit', SECTION_LIMIT('nodeLimit')],
+  ['componentLimit', SECTION_LIMIT('componentLimit')],
+  ['cycleLimit', SECTION_LIMIT('cycleLimit')],
+  ['recommendationLimit', SECTION_LIMIT('recommendationLimit')],
+  ['orderLimit', SECTION_LIMIT('orderLimit')],
+  ['minDegree', DEGREE_FILTER],
+  ['maxDegree', DEGREE_FILTER],
+  ['minInDegree', DEGREE_FILTER],
+  ['minOutDegree', DEGREE_FILTER],
+  ['slugContains', 'slugContains is retired: list_concepts({mentions}) finds the nodes that name a word.'],
+  ['fromKind', 'fromKind is retired with match_edges: neighbors lists a node\'s relations with the key each one is written under.'],
+  ['toKind', 'toKind is retired with match_edges: neighbors lists a node\'s relations with the key each one is written under.'],
+  ['relation', 'relation is retired: send the relation as type.'],
+  ['includeIsolated', 'includeIsolated is retired with topological_order: health returns dependencyOrder, and unconnected nodes have no order.'],
+  ['dependencyTypes', BY_TYPE('dependencyTypes')],
+  ['componentTypes', BY_TYPE('componentTypes')],
+  ['seed', 'seed is retired: send the node as slug.'],
+  ['analysisMode', 'analysisMode is retired with analysis_history: the saved analyses are the files under .ontology-atlas/analyses/ in the vault.'],
+];
+
 /** Arguments no longer in a tool's input schema, with the sentence an agent that sends one is told. */
 const RETIRED_ARGUMENTS = new Map([
   ['analyze_repo_structure', new Map([
@@ -19,11 +48,13 @@ const RETIRED_ARGUMENTS = new Map([
     ['qualification', ANALYSIS_ROUTE],
     ['maxDepth', 'maxDepth is retired: the survey never used it. Send rootPath to survey one folder.'],
   ])],
-  ['query_ontology', new Map([
-    ['detail', COMPACT_BRIEF],
-    ['task', COMPACT_BRIEF],
-  ])],
+  ['query_ontology', new Map(RETIRED_QUERY_ARGUMENTS)],
 ]);
+
+/** `detail: "full"` was the only value the brief ever had besides the retired one, so it still means nothing. */
+function isNoOp(toolName, name, value) {
+  return value === null || (toolName === 'query_ontology' && name === 'detail' && value === 'full');
+}
 
 /** `query_ontology` operations no longer offered, each with the call that answers the same question. */
 const RETIRED_QUERY_OPERATIONS = new Map([
@@ -47,12 +78,23 @@ function refused(message) {
   return Object.assign(new Error(message), { errorCode: 'invalid_arguments' });
 }
 
+/**
+ * `args` without the retired arguments that say nothing: a `null` counts as absent, as it
+ * does in the Rust server, and `detail: "full"` is accepted and ignored.
+ */
+export function withoutNoOpRetiredArguments(toolName, args) {
+  const retired = RETIRED_ARGUMENTS.get(toolName);
+  if (!retired) return args;
+  const kept = Object.entries(args).filter(([name, value]) => !(retired.has(name) && isNoOp(toolName, name, value)));
+  return kept.length === Object.keys(args).length ? args : Object.fromEntries(kept);
+}
+
 /** The refusal for the first retired argument `args` sends with a value, or null. */
 export function retiredArgumentError(toolName, args) {
   const retired = RETIRED_ARGUMENTS.get(toolName);
   if (!retired) return null;
   for (const [name, message] of retired) {
-    if (args[name] !== undefined && args[name] !== null) return refused(message);
+    if (args[name] !== undefined) return refused(message);
   }
   return null;
 }

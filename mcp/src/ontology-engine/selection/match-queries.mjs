@@ -77,12 +77,11 @@ export function createMatchQueries({
   }
 
   function relationCheck(options = {}) {
-    const relationInput = options.type ?? options.relation;
-    if (typeof relationInput !== 'string' || !relationInput.trim()) {
+    if (typeof options.type !== 'string' || !options.type.trim()) {
       throw new Error('type (string) is required for relation_check.');
     }
-    const trimmedRelation = relationInput.trim();
-    requireRelationType(trimmedRelation, options.type === undefined ? 'relation' : 'type');
+    const trimmedRelation = options.type.trim();
+    requireRelationType(trimmedRelation, 'type');
     const relation = normalizeRelationType(trimmedRelation);
     const from = resolve(options.from, 'from');
     const to = resolve(options.to, 'to');

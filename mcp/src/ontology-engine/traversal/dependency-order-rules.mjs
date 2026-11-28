@@ -78,16 +78,12 @@ export function findDependencyCycles({ nodes, outgoing, typeSet, maxDepth, limit
  * deduplicated edge pairs (adjacency Map of Sets, indegree Map): O((V + E) log V), since each layer
  * and adjacency set is sorted for a stable order. `blocked` holds what a cycle keeps from any layer.
  */
-export function layerByPrerequisites({ nodes, edges, typeSet, includeIsolated }) {
+export function layerByPrerequisites({ edges, typeSet }) {
   const selectedEdges = edges.filter((edge) => edge.resolved && typeAllowed(edge.via, typeSet));
   const slugs = new Set();
   const adjacency = new Map();
   const indegree = new Map();
   const edgePairs = new Set();
-
-  if (includeIsolated) {
-    for (const node of nodes) slugs.add(node.slug);
-  }
 
   for (const edge of selectedEdges) {
     slugs.add(edge.from);

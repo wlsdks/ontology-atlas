@@ -595,8 +595,8 @@ describe('queryCompiledOntology', () => {
       /itemLimit must be a positive integer/,
     );
     assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'health', componentLimit: 501 }),
-      /componentLimit must be <= 500/,
+      () => queryCompiledOntology(artifact(), { operation: 'health', limit: 501 }),
+      /limit must be <= 500/,
     );
   });
 
@@ -1346,17 +1346,10 @@ describe('queryCompiledOntology', () => {
     );
     assert.throws(
       () => queryCompiledOntology(artifact(), {
-        operation: 'health',
-        dependencyTypes: ['depend_on'],
-      }),
-      /dependencyTypes items must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), {
         operation: 'workspace_brief',
-        componentTypes: ['capabilties'],
+        types: ['capabilties'],
       }),
-      /componentTypes items must be one of:[\s\S]*Received: "capabilties"\.[\s\S]*Did you mean "capabilities"\?/,
+      /types items must be one of:[\s\S]*Received: "capabilties"\.[\s\S]*Did you mean "capabilities"\?/,
     );
   });
 
@@ -3204,7 +3197,7 @@ describe('queryCompiledOntology', () => {
     const tuned = queryCompiledOntology(graph, {
       operation: 'workspace_brief',
       limit: 5,
-      componentTypes: ['dependencies'],
+      types: ['dependencies'],
     });
 
     assert.equal(tuned.operation, 'workspace_brief');
@@ -3238,9 +3231,9 @@ describe('queryCompiledOntology', () => {
       () =>
         queryCompiledOntology(graph, {
           operation: 'workspace_brief',
-          componentLimit: 501,
+          limit: 501,
         }),
-      /componentLimit must be <= 500/,
+      /limit must be <= 500/,
     );
   });
 
@@ -3369,7 +3362,7 @@ describe('queryCompiledOntology', () => {
 
     const health = queryCompiledOntology(graph, {
       operation: 'health',
-      componentTypes: ['dependencies'],
+      types: ['dependencies'],
     });
 
     assert.equal(health.operation, 'health');

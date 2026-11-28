@@ -89,7 +89,7 @@ test('a search that runs out of budget says so and stops expanding states', () =
 test('prerequisites come before the nodes that depend on them, layer by layer', () => {
   // a depends on b and c; b depends on d.
   const edges = [edge('a', 'b'), edge('a', 'c'), edge('b', 'd')];
-  const order = layerByPrerequisites({ nodes: nodesOf('a', 'b', 'c', 'd'), edges, typeSet: dependencies, includeIsolated: false });
+  const order = layerByPrerequisites({ edges, typeSet: dependencies });
   assert.deepEqual(order.layers, [
     { rank: 0, slugs: ['c', 'd'] },
     { rank: 1, slugs: ['b'] },
@@ -105,20 +105,20 @@ test('prerequisites come before the nodes that depend on them, layer by layer', 
 
 test('each layer is listed in slug order, not in the order its members became ready', () => {
   const edges = [edge('z', 'x'), edge('b', 'y')];
-  const order = layerByPrerequisites({ nodes: nodesOf('x', 'y', 'z', 'b'), edges, typeSet: dependencies, includeIsolated: false });
+  const order = layerByPrerequisites({ edges, typeSet: dependencies });
   assert.deepEqual(order.layers.map((layer) => layer.slugs), [['x', 'y'], ['b', 'z']]);
 });
 
 test('a duplicated edge does not add a second prerequisite', () => {
   const edges = [edge('a', 'b'), edge('a', 'b')];
-  const order = layerByPrerequisites({ nodes: nodesOf('a', 'b'), edges, typeSet: dependencies, includeIsolated: false });
+  const order = layerByPrerequisites({ edges, typeSet: dependencies });
   assert.deepEqual(order.layers.map((layer) => layer.slugs), [['b'], ['a']]);
   assert.deepEqual(order.blocked, []);
 });
 
 test('nodes in a cycle, and nodes that wait on one, stay blocked with how many prerequisites remain', () => {
   const edges = [edge('a', 'b'), edge('b', 'a'), edge('c', 'a'), edge('d', 'e')];
-  const order = layerByPrerequisites({ nodes: nodesOf('a', 'b', 'c', 'd', 'e'), edges, typeSet: dependencies, includeIsolated: false });
+  const order = layerByPrerequisites({ edges, typeSet: dependencies });
   assert.deepEqual(order.layers.map((layer) => layer.slugs), [['e'], ['d']]);
   assert.deepEqual(order.blocked, [
     { slug: 'a', remainingInDegree: 1 },
@@ -127,12 +127,10 @@ test('nodes in a cycle, and nodes that wait on one, stay blocked with how many p
   ]);
 });
 
-test('isolated nodes join the first layer only when asked, and unresolved or other-typed edges are not selected', () => {
+test('unresolved and other-typed edges are not selected, and unconnected nodes never join a layer', () => {
   const edges = [edge('a', 'b'), edge('a', 'z', 'dependencies', false), edge('b', 'c', 'capabilities')];
-  const without = layerByPrerequisites({ nodes: nodesOf('a', 'b', 'c', 'lonely'), edges, typeSet: dependencies, includeIsolated: false });
-  assert.deepEqual(without.layers.map((layer) => layer.slugs), [['b'], ['a']]);
-  assert.equal(without.selectedEdges.length, 1);
-  const withIsolated = layerByPrerequisites({ nodes: nodesOf('a', 'b', 'c', 'lonely'), edges, typeSet: dependencies, includeIsolated: true });
-  assert.deepEqual(withIsolated.layers[0].slugs, ['b', 'c', 'lonely']);
-  assert.equal(withIsolated.slugCount, 4);
+  const order = layerByPrerequisites({ edges, typeSet: dependencies });
+  assert.deepEqual(order.layers.map((layer) => layer.slugs), [['b'], ['a']]);
+  assert.equal(order.selectedEdges.length, 1);
+  assert.equal(order.slugCount, 2);
 });
