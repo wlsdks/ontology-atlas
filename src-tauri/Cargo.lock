@@ -6394,6 +6394,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "vault-validation"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "hardened-git",
+ "meaning-findings",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "source-scan",
+ "tempfile",
+ "vault-document",
+]
+
+[[package]]
 name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -19,6 +19,7 @@ mod architecture_profile;
 mod autotools_c;
 mod batch_reading;
 mod bounded_parse;
+mod comparable_code;
 mod config_json;
 mod evidence_texts;
 mod file_reading;
@@ -68,6 +69,7 @@ pub use architecture_conformance::{
 pub use architecture_profile::{
     find_architecture_profiles, parse_architecture_profile, ArchitectureProfile, ProfileDocument,
 };
+pub use comparable_code::comparable_code;
 pub use bounded_parse::{parse_bounded, walk, ParseLimits, ParseRefusal, ParsedSource, Visit};
 pub use go_imports::GoPackageEvidence;
 pub use import_coverage::ImportCoverage;
@@ -98,5 +100,8 @@ pub use source_outline::{
 };
 pub use source_scan_error::{ScanErrorCode, SourceScanError};
 pub use source_stamp::{read_git_source_state, GitSourceState};
-pub use source_walk::{walk_sorted, Entry, Flow, WalkLimits, WalkReport, DEFAULT_IGNORE};
+pub use source_walk::{
+    is_module_extension, list_source_files, walk_sorted, Entry, Flow, IgnoredNames, WalkLimits,
+    WalkReport, DEFAULT_IGNORE,
+};
 pub use workspace_packages::{declared_workspace_members, DeclaredMember};

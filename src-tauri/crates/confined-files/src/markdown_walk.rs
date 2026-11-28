@@ -46,6 +46,23 @@ pub(crate) fn list_markdown_files(root: &Path) -> Vec<ConfinedPath> {
     found.into_iter().map(ConfinedPath::new).collect()
 }
 
+/// The absolute path of every `.md` file below the vault's `sources/` folder, for a check that
+/// asks what a raw source claims to be. A name that starts with a dot is skipped, a link is
+/// neither followed nor listed, and a folder that cannot be read is skipped.
+pub(crate) fn list_raw_source_markdown(root: &Path) -> Vec<ConfinedPath> {
+    let mut found: Vec<PathBuf> = WalkDir::new(root.join(VAULT_SOURCES_DIR))
+        .follow_links(false)
+        .into_iter()
+        .filter_entry(|entry| entry.depth() == 0 || !entry.file_name().to_string_lossy().starts_with('.'))
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+        .filter(|entry| entry.file_name().to_string_lossy().ends_with(".md"))
+        .map(walkdir::DirEntry::into_path)
+        .collect();
+    sort_utf16(&mut found);
+    found.into_iter().map(ConfinedPath::new).collect()
+}
+
 /// Sorts `paths` by UTF-16 code unit. The byte order of UTF-8 is the same order unless a path holds
 /// a character from U+E000 up to U+FFFF (which UTF-16 puts after the astral characters that UTF-8
 /// puts after it), so the common listing is sorted as bytes; one that has such a character is
