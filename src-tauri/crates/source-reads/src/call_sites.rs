@@ -70,7 +70,7 @@ pub fn call_sites_of(products: &ProductIndex, name: &str, limit: usize) -> CallS
             .collect();
         let python = file.path.ends_with(".py") || file.path.ends_with(".pyi");
         let mut quote: Option<&'static str> = None;
-        for (index, raw) in split_lines(&text).into_iter().enumerate() {
+        for (index, raw) in js_lines_for_call_sites(&text).into_iter().enumerate() {
             let line = if python {
                 let (code, held) = code_outside_docstring(raw, quote);
                 quote = held;
@@ -93,8 +93,11 @@ pub fn call_sites_of(products: &ProductIndex, name: &str, limit: usize) -> CallS
     CallSites { sites, total }
 }
 
-/// `text.split(/\r?\n/)`: a lone carriage return does not end a line here.
-fn split_lines(text: &str) -> Vec<&str> {
+/// `text.split(/\r?\n/)`, the one place a line ends at `\n` or `\r\n` only. Every other reader
+/// here ends a line at a lone `\r` too (`source_lines::complete_lines`), as a read quotes lines;
+/// the script server finds call sites with this split, and a caller's line number must be the one
+/// it reports, so a file with lone `\r` ends is one long line here by parity.
+fn js_lines_for_call_sites(text: &str) -> Vec<&str> {
     text.split('\n')
         .map(|line| line.strip_suffix('\r').unwrap_or(line))
         .collect()

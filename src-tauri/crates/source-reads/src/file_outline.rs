@@ -8,6 +8,9 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 use repository_survey::{is_js_space, js_regex};
+
+use crate::posix_path::extname;
+use crate::source_lines::complete_lines;
 use source_scan::{
     outline_signature, outline_text, DeclarationKind, SourceLanguage, OUTLINE_DECLARATION_LIMIT,
 };
@@ -85,15 +88,6 @@ pub struct FileOutline {
     pub truncated: bool,
 }
 
-/// The extension of the last part with its dot, lower-cased.
-fn extension_of(path: &str) -> String {
-    let name = path.rsplit('/').next().unwrap_or(path);
-    match name.rfind('.') {
-        Some(dot) if dot > 0 => name.get(dot..).unwrap_or("").to_ascii_lowercase(),
-        _ => String::new(),
-    }
-}
-
 enum Scanner {
     Tree(SourceLanguage),
     Markdown,
@@ -102,7 +96,7 @@ enum Scanner {
 }
 
 fn language_of(path: &str) -> (&'static str, Option<Scanner>) {
-    match extension_of(path).as_str() {
+    match extname(path).to_ascii_lowercase().as_str() {
         ".ts" | ".mts" | ".cts" => (
             "typescript",
             Some(Scanner::Tree(SourceLanguage::TypeScript)),
@@ -178,27 +172,6 @@ pub fn outline_file(text: &str, path: &str) -> FileOutline {
     }
 }
 
-/// Lines split at `\r\n`, `\n` or `\r`.
-fn split_rows(text: &str) -> Vec<String> {
-    let mut lines: Vec<String> = Vec::new();
-    let mut current = String::new();
-    let mut characters = text.chars().peekable();
-    while let Some(character) = characters.next() {
-        match character {
-            '\r' => {
-                if characters.peek() == Some(&'\n') {
-                    characters.next();
-                }
-                lines.push(std::mem::take(&mut current));
-            }
-            '\n' => lines.push(std::mem::take(&mut current)),
-            other => current.push(other),
-        }
-    }
-    lines.push(current);
-    lines
-}
-
 /// Lines split at `\r\n`, `\n` or `\r`, a line over [`LINE_CHARACTERS`] blanked.
 fn scan_lines(
     text: &str,
@@ -206,7 +179,10 @@ fn scan_lines(
     scan: fn(&[String], &mut Collector),
 ) -> FileOutline {
     let mut skipped = false;
-    let mut lines = split_rows(text);
+    let mut lines: Vec<String> = complete_lines(text)
+        .into_iter()
+        .map(|line| line.trim_end_matches(['\r', '\n']).to_string())
+        .collect();
     for line in &mut lines {
         if answer_format::utf16::len(line) > LINE_CHARACTERS {
             skipped = true;
@@ -325,32 +301,34 @@ const NOT_A_DECLARATION: [&str; 20] = [
     "with",
 ];
 
-static JVM_TYPE: LazyLock<Regex> = LazyLock::new(|| {
+static CSHARP_TYPE: LazyLock<Regex> = LazyLock::new(|| {
     js_regex(r"(?:^|\s)(class|interface|enum\s+class|enum|object|struct|record)\s+([A-Za-z_]\w*)")
 });
-static KOTLIN_FUN: LazyLock<Regex> = LazyLock::new(|| {
+/// No C# line starts with `fun`; the branch stays because the script server's scanner for C# also
+/// reads the keyword, and an outline must list what that one lists.
+static CSHARP_FUN_KEYWORD: LazyLock<Regex> = LazyLock::new(|| {
     js_regex(
         r"^(?:(?:public|private|protected|internal|open|override|abstract|final|inline|suspend|operator|infix|tailrec|external|expect|actual|companion)\s+)*fun\s+(?:<[^>]*>\s*)?(?:[\w.<>?]+\.)?([A-Za-z_]\w*)\s*\(",
     )
 });
-static JVM_MEMBER_NAME: LazyLock<Regex> =
+static CSHARP_MEMBER_NAME: LazyLock<Regex> =
     LazyLock::new(|| js_regex(r"\b([A-Za-z_]\w*)\s*(?:<[^<>]*>\s*)?\("));
-static JVM_MEMBER_TAIL: LazyLock<Regex> = LazyLock::new(|| js_regex(r"^[\w\s,.<>\[\]:?]*$"));
+static CSHARP_MEMBER_TAIL: LazyLock<Regex> = LazyLock::new(|| js_regex(r"^[\w\s,.<>\[\]:?]*$"));
 
-fn jvm_member_name(trimmed: &str) -> Option<String> {
+fn csharp_member_name(trimmed: &str) -> Option<String> {
     let close = trimmed.rfind(')')?;
     if !trimmed.ends_with('{') {
         return None;
     }
     let tail = trimmed.get(close + 1..trimmed.len() - 1)?;
-    if !JVM_MEMBER_TAIL.is_match(tail) {
+    if !CSHARP_MEMBER_TAIL.is_match(tail) {
         return None;
     }
     let from = trimmed
         .get(..close)
         .and_then(|before| before.rfind(';'))
         .map_or(0, |at| at + 1);
-    JVM_MEMBER_NAME
+    CSHARP_MEMBER_NAME
         .captures(trimmed.get(from..close)?)
         .and_then(|found| found.get(1))
         .map(|name| name.as_str().to_string())
@@ -367,7 +345,7 @@ fn curly_brace_declarations(lines: &[String], out: &mut Collector) {
             continue;
         }
         let indent = indent_of(line);
-        if let Some(found) = JVM_TYPE.captures(trimmed) {
+        if let Some(found) = CSHARP_TYPE.captures(trimmed) {
             let word = found.get(1).map_or("", |word| word.as_str());
             let kind = match word
                 .split_whitespace()
@@ -385,7 +363,10 @@ fn curly_brace_declarations(lines: &[String], out: &mut Collector) {
             }
             continue;
         }
-        if let Some(name) = KOTLIN_FUN.captures(trimmed).and_then(|found| found.get(1)) {
+        if let Some(name) = CSHARP_FUN_KEYWORD
+            .captures(trimmed)
+            .and_then(|found| found.get(1))
+        {
             let kind = if indent == 0 {
                 OutlineKind::Function
             } else {
@@ -394,7 +375,7 @@ fn curly_brace_declarations(lines: &[String], out: &mut Collector) {
             out.add(index, kind, name.as_str(), line);
             continue;
         }
-        if let Some(member) = jvm_member_name(trimmed) {
+        if let Some(member) = csharp_member_name(trimmed) {
             if !NOT_A_DECLARATION.contains(&member.as_str()) {
                 out.add(index, OutlineKind::Method, &member, line);
             }

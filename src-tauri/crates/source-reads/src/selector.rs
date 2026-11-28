@@ -270,6 +270,13 @@ mod tests {
             let refusal = parse_source_reads(&call).expect_err(sentence);
             assert_eq!(refusal.message, sentence);
         }
+        assert!(matches!(
+            parse_source_reads(&json!([{"path":"a.ts","mode":"outline"}]))
+                .expect("selectors")
+                .first()
+                .map(|selector| &selector.target),
+            Some(ReadTarget::Outline)
+        ));
         assert_eq!(
             parse_source_reads(&json!([{"path":"a.ts","symbol":"Invoice.total","maxLines":5}])),
             Ok(vec![SourceReadSelector {

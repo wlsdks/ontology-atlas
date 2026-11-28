@@ -8,8 +8,8 @@
 
 use confined_files::{ScanRoots, SourceRoot};
 use source_reads::{
-    parse_source_reads, read_source_evidence, ReadTarget, RefusalReason, SessionReads,
-    SourceEvidence, SourceRow,
+    parse_source_reads, read_source_evidence, RefusalReason, SessionReads, SourceEvidence,
+    SourceRow,
 };
 
 fn repository(files: &[(&str, &str)]) -> (tempfile::TempDir, SourceRoot) {
@@ -146,13 +146,6 @@ fn a_range_counts_as_read_until_its_lines_change() {
         session.reads_under(&root).reads.is_empty(),
         "a range whose lines changed since no longer counts"
     );
-    assert!(matches!(
-        parse_source_reads(&serde_json::json!([{ "path": "x", "mode": "outline" }]))
-            .expect("selectors")
-            .first()
-            .map(|selector| &selector.target),
-        Some(ReadTarget::Outline)
-    ));
 }
 
 #[test]

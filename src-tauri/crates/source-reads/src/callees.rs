@@ -32,6 +32,7 @@ use crate::declaration_survey::DeclarationSurvey;
 use crate::file_outline::{OutlineDeclaration, OutlineKind};
 use crate::import_bindings::{child_spec, language_of, Spec};
 use crate::opened_file::{FileOpener, OpenedFile};
+use crate::posix_path::dirname;
 use crate::product_index::DeclarationRow;
 use crate::source_row::Callee;
 
@@ -208,11 +209,6 @@ fn calls_in(text: &str, self_names: &HashSet<String>) -> Vec<Call> {
         }
     }
     calls
-}
-
-fn folder_of(path: &str) -> &str {
-    path.rfind('/')
-        .map_or("", |slash| path.get(..slash).unwrap_or(""))
 }
 
 fn member_of<'a>(
@@ -522,7 +518,7 @@ pub fn callees_of(
                 && rows.len() <= MAX_IMPLEMENTATIONS
                 && rows
                     .iter()
-                    .map(|row| folder_of(&row.path))
+                    .map(|row| dirname(&row.path))
                     .collect::<HashSet<_>>()
                     .len()
                     == 1
