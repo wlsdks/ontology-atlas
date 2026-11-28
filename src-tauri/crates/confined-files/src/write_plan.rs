@@ -8,7 +8,6 @@
 //! parser knows. The caller forgets any cached parse of a file when
 //! [`WriteError::ChangedOnDisk`] or [`WriteError::Conflict`] names it.
 
-use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -17,8 +16,7 @@ use crate::atomic_write::{
 };
 use crate::modified_time::ModifiedTime;
 use crate::os_error::{IoFailure, OsErrorCode};
-use crate::plain_file::FileIdentity;
-use crate::real_paths::real_path;
+use crate::plain_file::{self, FileIdentity};
 use crate::vault_root::WritablePath;
 
 /// What one entry of a plan does.
@@ -248,26 +246,33 @@ pub fn apply_all_or_nothing(
 /// `auth.md`, delete `Auth.md`) names one file on macOS and Windows, so the delete would erase
 /// what was just written.
 fn without_deletes_of_written_files(plan: Vec<PlanEntry>) -> Vec<PlanEntry> {
-    let written: HashSet<String> = plan
+    let writes: Vec<PathBuf> = plan
         .iter()
         .filter(|entry| entry.is_write())
-        .map(|entry| same_file_key(entry.path()))
+        .map(|entry| entry.path().to_path_buf())
         .collect();
     plan.into_iter()
-        .filter(|entry| entry.is_write() || !written.contains(&same_file_key(entry.path())))
+        .filter(|entry| {
+            entry.is_write() || !writes.iter().any(|written| names_one_file(written, entry.path()))
+        })
         .collect()
 }
 
-/// A key for "do these paths name the same file": the real path when it exists, else the path as
-/// written, lower-cased for case-insensitive file systems. On a case-sensitive one a false match
-/// costs one skipped delete, never data.
-fn same_file_key(path: &Path) -> String {
-    let named = if path.exists() {
-        real_path(path).unwrap_or_else(|_| path.to_path_buf())
-    } else {
-        path.to_path_buf()
-    };
-    named.to_string_lossy().to_lowercase()
+/// Whether two paths of one plan name the same file. The same path always does. Another spelling
+/// does only when it differs by letter case and both paths exist as one file (device and inode on
+/// Unix, volume and file index on Windows): a case-insensitive disk opens `auth.md` as `Auth.md`,
+/// and a case-sensitive one holds two files, which stay two.
+fn names_one_file(first: &Path, second: &Path) -> bool {
+    if first == second {
+        return true;
+    }
+    if first.to_string_lossy().to_lowercase() != second.to_string_lossy().to_lowercase() {
+        return false;
+    }
+    match (plain_file::facts_at(first), plain_file::facts_at(second)) {
+        (Ok(first), Ok(second)) => first.identity == second.identity,
+        _ => false,
+    }
 }
 
 fn lacks_revision(entry: &PlanEntry) -> bool {

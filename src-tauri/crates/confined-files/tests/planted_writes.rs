@@ -523,6 +523,61 @@ fn a_plan_that_writes_a_file_and_deletes_its_other_spelling_keeps_what_it_wrote(
     );
 }
 
+/// Whether the disk holding `folder` opens `probe.md` as `PROBE.md`.
+fn disk_ignores_letter_case(folder: &Path) -> bool {
+    fs::write(folder.join("probe.md"), "x").expect("probe");
+    folder.join("PROBE.md").exists()
+}
+
+/// A case-only rename writes `auth.md` and deletes `Auth.md`. On a disk that ignores case that is one
+/// file and the delete is dropped; on one that does not, the two names are two files and both steps
+/// run. Which disk this runs on decides which half is checked (CI is Linux, a case-sensitive disk;
+/// a developer's Mac is not unless `TMPDIR` names a case-sensitive volume).
+#[test]
+fn a_case_only_rename_drops_the_delete_only_where_the_disk_ignores_case() {
+    let (_directory, root) = vault();
+    fs::write(root.path().join("Auth.md"), "old").expect("seed");
+    let plan = vec![
+        PlanEntry::write(target(&root, "auth"), "new".to_string()),
+        PlanEntry::delete(target(&root, "Auth")),
+    ];
+    let applied = apply_all_or_nothing(plan, &options()).expect("applied");
+    if disk_ignores_letter_case(root.path()) {
+        assert_eq!(applied.steps, 1, "one file: the delete would erase what was written");
+        assert_eq!(fs::read_to_string(root.path().join("Auth.md")).expect("read"), "new");
+    } else {
+        assert_eq!(applied.steps, 2, "two names, two files");
+        assert!(!root.path().join("Auth.md").exists(), "the old spelling is gone");
+        assert_eq!(fs::read_to_string(root.path().join("auth.md")).expect("read"), "new");
+    }
+}
+
+/// On a case-sensitive disk `Auth.md` and `auth.md` can both exist; deleting one never drops
+/// because the other is written. Skipped where the disk folds case, which cannot hold both.
+#[test]
+fn two_files_that_differ_only_by_case_stay_two_files() {
+    let (_directory, root) = vault();
+    if disk_ignores_letter_case(root.path()) {
+        return;
+    }
+    fs::write(root.path().join("Auth.md"), "upper").expect("seed");
+    fs::write(root.path().join("auth.md"), "lower").expect("seed");
+    let applied = apply_all_or_nothing(
+        vec![
+            PlanEntry::write(target(&root, "auth"), "lower, rewritten".to_string()),
+            PlanEntry::delete(target(&root, "Auth")),
+        ],
+        &options(),
+    )
+    .expect("applied");
+    assert_eq!(applied.steps, 2);
+    assert!(!root.path().join("Auth.md").exists(), "the other file was deleted as asked");
+    assert_eq!(
+        fs::read_to_string(root.path().join("auth.md")).expect("read"),
+        "lower, rewritten"
+    );
+}
+
 #[cfg(unix)]
 mod permissions {
     use super::*;
