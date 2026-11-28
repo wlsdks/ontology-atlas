@@ -477,7 +477,6 @@ export const AGENT_WRITE_TOOLS: readonly AgentToolDefinition[] = [
         },
         patches: {
           type: 'array',
-          minItems: 1,
           maxItems: 20,
           description: 'Instead of `slug`: up to 20 patches in one call, one per node, written all or none.',
           items: {
