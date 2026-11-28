@@ -92,4 +92,7 @@ test('the app screen is the entry plus its route module, and a chunk loaded late
 
   assert.equal(main(['--max-brotli-kb=0.001', `--manifest=${manifestPath}`, route, app], { log }), 1, 'over the brotli budget');
   assert.throws(() => main([`--manifest=${manifestPath}`, '--app-route=src/app/routes/nowhere', app], { log }), /holds no chunk of/);
+  for (const value of ['', 'big', 'NaN', '0']) {
+    assert.throws(() => main([`--max-brotli-kb=${value}`, `--manifest=${manifestPath}`, route, app], { log }), /--max-brotli-kb needs a positive number/, `"${value}" is not a budget`);
+  }
 });
