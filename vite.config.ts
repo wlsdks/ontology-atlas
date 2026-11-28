@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import tailwindcss from '@tailwindcss/vite';
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import { tanstackRouter, tanstackRouterGenerator } from '@tanstack/router-plugin/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
@@ -19,17 +19,20 @@ const APP_FOLDER = process.env.ATLAS_APP_FOLDER ?? DEFAULT_APP_FOLDER;
 /** Where the website's files are written: the same bundle with everything in `public/`, then the prerendered pages. */
 const SITE_FOLDER = DEFAULT_SITE_FOLDER;
 
+const ROUTES = { target: 'react', routesDirectory: './src/app/routes', quoteStyle: 'single', semicolons: true } as const;
+
+/**
+ * The route modules only the website serves. The installed app offers no download of itself and holds no
+ * sample map, so its route tree (`src/app/app-route-tree.gen.ts`) is generated without them and its folder holds
+ * none of their code. `/<language>/download/` there is an address no screen owns.
+ */
+const WEBSITE_ONLY_ROUTES = '^(download|sample)\\.tsx$';
+
 export default defineConfig(({ command, mode }) => ({
   root,
   plugins: [
-    tanstackRouter({
-      target: 'react',
-      routesDirectory: './src/app/routes',
-      generatedRouteTree: './src/app/route-tree.gen.ts',
-      autoCodeSplitting: true,
-      quoteStyle: 'single',
-      semicolons: true,
-    }),
+    tanstackRouter({ ...ROUTES, generatedRouteTree: './src/app/route-tree.gen.ts', autoCodeSplitting: true }),
+    tanstackRouterGenerator({ ...ROUTES, generatedRouteTree: './src/app/app-route-tree.gen.ts', routeFileIgnorePattern: WEBSITE_ONLY_ROUTES }),
     react(),
     tailwindcss(),
     atlasIndexHtml(root),
@@ -37,6 +40,8 @@ export default defineConfig(({ command, mode }) => ({
   ],
   resolve: {
     alias: [
+      // The installed app's build reads the route tree without the website's pages; every other run reads them all.
+      ...(command === 'build' && mode !== 'site' ? [{ find: /^\.\.\/route-tree\.gen$/, replacement: path.join(root, 'src/app/app-route-tree.gen') }] : []),
       { find: /^@\/app-providers/, replacement: path.join(root, 'src/app') },
       { find: /^@\/views/, replacement: path.join(root, 'src/views') },
       { find: /^@\/widgets/, replacement: path.join(root, 'src/widgets') },
