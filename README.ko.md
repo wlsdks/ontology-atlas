@@ -123,7 +123,7 @@ without opening every file.
 | 이름을 바꾸거나 지우기 전에, 무엇이 이걸 가리키나? | `find_backlinks` |
 | 이 두 개념은 어떻게 이어져 있나? | `query_ontology`의 `path` |
 | 이 변경이 무엇에 영향을 줄 수 있나? | `query_ontology`의 `impact` |
-| 이 내용은 어디에 적혀 있나? | `find_evidence` |
+| 이 내용은 어디에 적혀 있나? | `list_concepts({ mentions })` |
 | 방금 만들거나 바꾼 것을 기록하기 | `add_concepts`, `add_relations`, `patch_concept` |
 | 폴더가 아직 일관된가? | `validate_vault` |
 

@@ -68,7 +68,7 @@ MCPサーバは同じフロントマターからグラフについての問い�
 - `impact`または`blast_radius`を指定した`query_ontology`は、「これを変えると何に影響するか」に答えます。たどるのは宣言された`depends_on`関係だけです。構造は影響ではありません。
 - `domain_matrix`を指定した`query_ontology`は、ドメイン間の関係を数えます。`depends_on`に絞ると、マップの弧が描くのと同じ数になります。
 
-書き込むには、`add_relations`に関係のリストを渡し、関係ごとに`from`、`to`、`type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements`、`domain`のいずれか）、そして`why`を指定します。`remove_relation`と`replace_relation`は、デフォルトではプレビューだけを行い、`confirm: true`のときにだけ書き込みます。`broader`はまだ`add_relations`の型に含まれていません。エージェントは`patch_concept`に新しいリスト全体とファイルの`mtime`を渡して変更し、そのあと`validate_vault`を実行します。
+書き込むには、`add_relations`に関係のリストを渡し、関係ごとに`from`、`to`、`type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements`、`domain`のいずれか）、そして`why`を指定します。`remove_relation`は、デフォルトではプレビューだけを行い、`confirm: true`のときにだけ書き込みます。`replaceWith`を一緒に渡すと、関係を別の関係へ1回の書き込みで置き換えます。`broader`はまだ`add_relations`の型に含まれていません。エージェントは`patch_concept`に新しいリスト全体とファイルの`mtime`を渡して変更し、そのあと`validate_vault`を実行します。
 
 マップでは、**関係を編集**で、MCPツールと同じチェックを通して関係を1つずつ書き込めます。[概念と関係を編集する](/guide/studio)を参照してください。
 

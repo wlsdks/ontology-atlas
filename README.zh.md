@@ -113,7 +113,7 @@ without opening every file.
 | 改名或删除之前，有哪些地方指向它？ | `find_backlinks` |
 | 这两个概念是怎么连起来的？ | `query_ontology` 的 `path` |
 | 这次改动可能影响什么？ | `query_ontology` 的 `impact` |
-| 这件事写在哪里？ | `find_evidence` |
+| 这件事写在哪里？ | `list_concepts({ mentions })` |
 | 记录刚刚新建或修改的内容 | `add_concepts`、`add_relations`、`patch_concept` |
 | 文件夹是否仍然一致？ | `validate_vault` |
 

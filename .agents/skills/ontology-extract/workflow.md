@@ -21,7 +21,7 @@ requests, and prose already living inside the target vault node.
 
 ```text
 list_concepts({ limit: 1 })
-find_evidence(title)
+list_concepts({ mentions: title })
 query_ontology({ operation: "similar_nodes", candidateSlug, title })
 ```
 

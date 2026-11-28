@@ -68,7 +68,7 @@ MCP 서버는 같은 frontmatter를 읽어 그래프에 관한 질문에 답해�
 - `query_ontology`에 `impact`나 `blast_radius`를 주면 "이게 바뀌면 무엇이 영향을 받나요?"에 답해요. 선언된 `depends_on` 관계만 따라가요. 구조는 영향이 아니에요.
 - `query_ontology`에 `domain_matrix`를 주면 도메인 사이의 관계 수를 세요. `depends_on`으로 한정하면 지도의 호가 나타내는 숫자와 같아요.
 
-관계를 적을 때는 `add_relations`에 관계 목록을 넘기고, 관계마다 `from`, `to`, `type`(`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements`, `domain` 중 하나), `why`를 적어요. `remove_relation`과 `replace_relation`은 기본으로 미리 보기만 하고, `confirm: true`일 때만 써요. `broader`는 아직 `add_relations`의 유형이 아니에요. `broader`를 바꿀 때 에이전트는 `patch_concept`에 새 목록 전체와 파일의 `mtime`을 넘기고, 그다음 `validate_vault`를 실행해요.
+관계를 적을 때는 `add_relations`에 관계 목록을 넘기고, 관계마다 `from`, `to`, `type`(`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements`, `domain` 중 하나), `why`를 적어요. `remove_relation`은 기본으로 미리 보기만 하고, `confirm: true`일 때만 써요. `replaceWith`를 함께 넘기면 관계 하나를 다른 관계로 한 번에 바꿔요. `broader`는 아직 `add_relations`의 유형이 아니에요. `broader`를 바꿀 때 에이전트는 `patch_concept`에 새 목록 전체와 파일의 `mtime`을 넘기고, 그다음 `validate_vault`를 실행해요.
 
 지도에서는 **관계 편집**으로 MCP 도구와 같은 점검을 거쳐 관계를 하나씩 더하거나 지워요. [개념과 관계 편집하기](/guide/studio)를 보세요.
 

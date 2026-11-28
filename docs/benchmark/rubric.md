@@ -216,7 +216,7 @@ Count of confidently asserted items that don't exist in the repo.
 Examples:
 - "The validator detects `parse-fail-soft`" → no such code exists. **+1**
 - "It's defined in `src/shared/lib/foo.ts`" but that file doesn't exist. **+1**
-- "The `findOrphans` function returns…" but it's actually `find_orphans`. **0** — name typo, not invented behavior.
+- "The `getConcepts` function returns…" but it's actually `get_concepts`. **0** — name typo, not invented behavior.
 
 If unsure whether something's hallucinated, search for it. The cost of a wrong "+1" or "+0" is small; the cost of letting confident fabrication go uncounted is large.
 

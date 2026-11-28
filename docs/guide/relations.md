@@ -75,7 +75,7 @@ The MCP server answers graph questions from the same frontmatter, so your agent 
 - `query_ontology` with `impact` or `blast_radius` answers "what is affected if this changes?" It follows declared `depends_on` relations only; structure is not impact.
 - `query_ontology` with `domain_matrix` counts the relations between domains. Limited to `depends_on`, it gives the same numbers as the map's arcs.
 
-To write, `add_relations` takes a list of relations, each with `from`, `to`, a `type` (`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements` or `domain`) and a `why`. `remove_relation` and `replace_relation` preview by default and write only with `confirm: true`. `broader` is not one of the `add_relations` types yet. To change it, an agent calls `patch_concept` with the full new list and the file's `mtime`, then runs `validate_vault`.
+To write, `add_relations` takes a list of relations, each with `from`, `to`, a `type` (`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements` or `domain`) and a `why`. `remove_relation` previews by default and writes only with `confirm: true`; with `replaceWith` it swaps a relation for another in one write. `broader` is not one of the `add_relations` types yet. To change it, an agent calls `patch_concept` with the full new list and the file's `mtime`, then runs `validate_vault`.
 
 On the map, **Edit relations** writes one relation at a time, with the same checks as the MCP tools; see [Editing concepts and relations](/guide/studio).
 

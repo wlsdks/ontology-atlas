@@ -9,14 +9,9 @@ import { pathToFileURL } from 'node:url';
 export const EXIT = Object.freeze({ OK: 0, USAGE: 64, DATA: 65, SOFTWARE: 70, IO: 74 });
 
 export const READ_ONLY_TOOLS = Object.freeze([
-  'git_status',
-  'git_history',
   'list_concepts',
   'get_concepts',
-  'find_evidence',
   'find_backlinks',
-  'find_orphans',
-  'query_concepts',
   'query_ontology',
   'validate_vault',
   'infer_imports',

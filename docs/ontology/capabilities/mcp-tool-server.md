@@ -17,9 +17,10 @@ Serves canonical read and write tools over JSON-RPC and reports the discovery in
 
 ## Includes
 - The tool registry and schemas, with default full discovery and opt-in `OATLAS_TOOL_PROFILE=construction` discovery for first builds.
-- The construction profile advertises 20 existing tools, including source indexing, bounded analysis, small batch writes, validation, binding and finalization. It preserves the advertised schemas and composes with read-only mode to expose 15 reads.
+- The construction profile advertises 15 existing tools, including bounded source analysis, small batch writes, validation, binding and finalization. It preserves the advertised schemas and composes with read-only mode to expose 10 reads.
 - Discovery filtering is separate from permission: omitted known tools remain callable under the existing read-only and consent guards. Invalid profile values refuse startup.
 - Runtime proof of the bound vault/repository and the advertised names, count and hash.
+- A `tool_retired` answer for each name the server retired, naming the call that replaces it or the agent's own command.
 - The first-build survey, build-depth findings, paged whole-folder checks and build-write answers described under the constraints below.
 - Write-result warnings naming containment entries that reclassification or merging could not move.
 

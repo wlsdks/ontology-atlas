@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Changed — 33 tools become 23 (2026-11-28)
+
+- `tools/list` advertises 23 tools (13 read, 10 write), and its answer shrank from
+  76,282 to 65,710 bytes. Ten names no longer run: a call answers `tool_retired`
+  (`retiredTool`, `replacement`) with the call that replaces it.
+- Cut: `git_status`, `git_history`, `git_snapshot`. The answer names the agent's own
+  `git` command.
+- Folded: `list_constellations` into `get_constellation` (no `id`), `find_evidence` into
+  `list_concepts({mentions})`, `find_orphans` into
+  `query_ontology({operation:'match_nodes',hasIncoming:false})`, `query_concepts` into
+  `list_concepts({filter})`, `disconnect_project_source` into
+  `connect_project_source({disconnect:true})`, `replace_relation` into
+  `remove_relation({replaceWith})`, and `reclassify_concept` into
+  `rename_concept({newKind})`. Each folded write keeps its dry run, `expected_mtime`,
+  consent, write log and audit line; the output schema of a merged tool is the union of
+  both former schemas.
+- `list_concepts({mentions})` answers graph nodes only. `find_evidence` also answered
+  ordinary Markdown pages.
+- `OATLAS_TOOL_PROFILE=construction` advertises 15 tools instead of 16.
+
 ### Changed — `validate_wiki` pages the whole folder (2026-11-19)
 
 - Without `paths`, `validate_wiki` now returns failing pages only, one page at a time,
