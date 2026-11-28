@@ -5,6 +5,7 @@ import { statSync } from 'node:fs';
  * resolution that makes one edge one edge however it was authored.
  */
 
+import { requireSingleLine } from '../../server/advertised-input-schema.mjs';
 import { structuredRowErrorDetails } from '../../server/rpc.mjs';
 import { VAULT_ROOT } from '../../server/runtime.mjs';
 import {
@@ -264,6 +265,9 @@ function removeRelation({ from, to, type: requestedType, replaceWith, confirm = 
 
 function replaceRelation({ from, oldTo, oldType: requestedOldType, newTo, newType: requestedNewType, why, confirm = false, expected_mtime }) {
   for (const [value, name] of [[from, 'from'], [oldTo, 'to'], [requestedOldType, 'type'], [newTo, 'replaceWith.to'], [requestedNewType, 'replaceWith.type']]) requireNonBlankString(value, name);
+  // `replaceWith` is an object row, so neither field meets the top-level single-line check `newTo` and `newType` had.
+  requireSingleLine(newTo, 'replaceWith.to');
+  requireSingleLine(requestedNewType, 'replaceWith.type');
   if (why !== undefined && typeof why !== 'string') throw new Error('replaceWith.why must be a string.');
   requireOptionalBoolean(confirm, 'confirm');
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
