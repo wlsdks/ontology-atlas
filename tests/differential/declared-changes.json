@@ -6199,7 +6199,7 @@
       "id": 1,
       "path": "result.content[0].text#/coverage/limitations",
       "change": 36,
-      "reason": "The answer adds one coverage sentence saying how many source files named like a credential were not read; the JavaScript server left them out without a word (row 36). The harness names only the text of the answer; the edges are the same and the sentence is checked by `source-scan/tests/scans_imports.rs`."
+      "reason": "Row 36: the answer adds one coverage sentence saying how many source files named like a credential were not read; the JavaScript server, in a plain call, reads them. The count is checked by `source-scan/tests/scans_imports.rs`."
     },
     {
       "case": "imports/infer-imports-credential-named-source-files",
@@ -6207,7 +6207,71 @@
       "id": 1,
       "path": "result.structuredContent.coverage.limitations",
       "change": 36,
-      "reason": "The answer adds one coverage sentence saying how many source files named like a credential were not read; the JavaScript server left them out without a word (row 36). The harness names only the text of the answer; the edges are the same and the sentence is checked by `source-scan/tests/scans_imports.rs`."
+      "reason": "Row 36: the answer adds one coverage sentence saying how many source files named like a credential were not read; the JavaScript server, in a plain call, reads them. The count is checked by `source-scan/tests/scans_imports.rs`."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/filesScanned",
+      "change": 36,
+      "reason": "Row 36: filesScanned counts the source files read, without the credential-named ones (2, where the JavaScript server counted 4). The program never opens a source file named like a credential (`secrets.ts`, `credentials.py`), so it is in no count, edge or row; the JavaScript server reads it in a plain call. Checked on the planted case: the two files left out are exactly the two with credential names, and one coverage sentence says so."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.filesScanned",
+      "change": 36,
+      "reason": "Row 36: filesScanned counts the source files read, without the credential-named ones (2, where the JavaScript server counted 4). The program never opens a source file named like a credential (`secrets.ts`, `credentials.py`), so it is in no count, edge or row; the JavaScript server reads it in a plain call. Checked on the planted case: the two files left out are exactly the two with credential names, and one coverage sentence says so."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/edges",
+      "change": 36,
+      "reason": "Row 36: edges leaves out the import of the credential-named secrets.ts. The program never opens a source file named like a credential (`secrets.ts`, `credentials.py`), so it is in no count, edge or row; the JavaScript server reads it in a plain call. Checked on the planted case: the two files left out are exactly the two with credential names, and one coverage sentence says so."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.edges",
+      "change": 36,
+      "reason": "Row 36: edges leaves out the import of the credential-named secrets.ts. The program never opens a source file named like a credential (`secrets.ts`, `credentials.py`), so it is in no count, edge or row; the JavaScript server reads it in a plain call. Checked on the planted case: the two files left out are exactly the two with credential names, and one coverage sentence says so."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/moduleEdges",
+      "change": 36,
+      "reason": "Row 36: moduleEdges leaves out the module row that comes from the credential-named secrets.ts. The program never opens a source file named like a credential (`secrets.ts`, `credentials.py`), so it is in no count, edge or row; the JavaScript server reads it in a plain call. Checked on the planted case: the two files left out are exactly the two with credential names, and one coverage sentence says so."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.moduleEdges",
+      "change": 36,
+      "reason": "Row 36: moduleEdges leaves out the module row that comes from the credential-named secrets.ts. The program never opens a source file named like a credential (`secrets.ts`, `credentials.py`), so it is in no count, edge or row; the JavaScript server reads it in a plain call. Checked on the planted case: the two files left out are exactly the two with credential names, and one coverage sentence says so."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/externalImports",
+      "change": 36,
+      "reason": "Row 36: externalImports leaves out the import of the credential-named credentials.py. The program never opens a source file named like a credential (`secrets.ts`, `credentials.py`), so it is in no count, edge or row; the JavaScript server reads it in a plain call. Checked on the planted case: the two files left out are exactly the two with credential names, and one coverage sentence says so."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.externalImports",
+      "change": 36,
+      "reason": "Row 36: externalImports leaves out the import of the credential-named credentials.py. The program never opens a source file named like a credential (`secrets.ts`, `credentials.py`), so it is in no count, edge or row; the JavaScript server reads it in a plain call. Checked on the planted case: the two files left out are exactly the two with credential names, and one coverage sentence says so."
     },
     {
       "case": "graph/graph-selection-ambiguous-and-dangling",
@@ -9277,9 +9341,57 @@
       "case": "graph/analysis-records-with-line-separators",
       "where": "answer",
       "id": 1,
+      "path": "result.structuredContent.records",
+      "change": 42,
+      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.problems",
+      "change": 42,
+      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.returned",
+      "change": 42,
+      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/records",
+      "change": 42,
+      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/problems",
+      "change": 42,
+      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/returned",
+      "change": 42,
+      "reason": "Row 42: a record whose header holds U+2028 or U+2029 is read and listed, where the JavaScript server could not read it and listed a problem row instead."
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
       "path": "result.content[0].text",
       "change": 42,
-      "reason": "A record whose header holds U+2028 or U+2029, which the app's own writer can produce, is read and listed (row 42); the JavaScript reader refused it as not JSON."
+      "reason": "Row 42: a record with line separators in its header is read, so the text is the record's JSON, where the JavaScript server refused it with the plain sentence \"Analysis metadata must use the supported JSON flow values.\"; the structured answer is declared leaf by leaf beside it."
     },
     {
       "case": "graph/analysis-records-with-line-separators",
@@ -9290,68 +9402,324 @@
       "reason": "A record whose header holds U+2028 or U+2029, which the app's own writer can produce, is read and listed (row 42); the JavaScript reader refused it as not JSON."
     },
     {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.ok",
+      "change": 42,
+      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.error",
+      "change": 42,
+      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.contract",
+      "change": 42,
+      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.operation",
+      "change": 42,
+      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.fileName",
+      "change": 42,
+      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.record",
+      "change": 42,
+      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.meaningAuthority",
+      "change": 42,
+      "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
+    },
+    {
       "case": "graph/query-plan-containment-tangle",
       "where": "answer",
       "id": 1,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
     },
     {
       "case": "graph/query-plan-containment-tangle",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.estimate.resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/estimate/resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
     },
     {
       "case": "graph/query-plan-containment-tangle",
       "where": "answer",
       "id": 3,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.relationTypes",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/normalized/relationTypes",
+      "change": 43,
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
     },
     {
       "case": "graph/query-plan-empty",
       "where": "answer",
       "id": 1,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-empty",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-empty",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-empty",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
     },
     {
       "case": "graph/query-plan-empty",
       "where": "answer",
       "id": 3,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-empty",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-empty",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-empty",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
     },
     {
       "case": "graph/query-plan-one-node",
       "where": "answer",
       "id": 1,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-one-node",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-one-node",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-one-node",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
     },
     {
       "case": "graph/query-plan-one-node",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.relationTypes",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
+    },
+    {
+      "case": "graph/query-plan-one-node",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/normalized/relationTypes",
+      "change": 43,
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 11,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: explain_relation has a limit of its own (20) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 11,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: explain_relation has a limit of its own (20) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 11,
+      "path": "result.structuredContent.execution.saferQuery.limit",
+      "change": 43,
+      "reason": "Row 43: explain_relation has a limit of its own (20) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: explain_relation has a limit of its own (20) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: explain_relation has a limit of its own (20) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text#/execution/saferQuery/limit",
+      "change": 43,
+      "reason": "Row 43: explain_relation has a limit of its own (20) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
     },
     {
       "case": "graph/query-plan-storefront",
@@ -9365,17 +9733,65 @@
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 15,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.types[0]",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 15,
+      "path": "result.structuredContent.execution.suggestedQuery.types[0]",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text#/normalized/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text#/execution/suggestedQuery/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 16,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.types[0]",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 16,
+      "path": "result.structuredContent.execution.suggestedQuery.types[0]",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 16,
+      "path": "result.content[0].text#/normalized/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 16,
+      "path": "result.content[0].text#/execution/suggestedQuery/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
     },
     {
       "case": "graph/query-plan-storefront",
@@ -9389,113 +9805,849 @@
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 18,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.types[0]",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.structuredContent.execution.suggestedQuery.types[0]",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/normalized/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text#/execution/suggestedQuery/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 19,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.direction",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.indexesUsed[0]",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.indexesUsed",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.edgeScans",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.reachableWithinDepth",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.frontierByDepth[0].candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.frontierByDepth[0].newNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.frontierByDepth[1].frontierNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.frontierByDepth[1].candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.frontierByDepth[1].newNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier, the upper bound and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.estimate.costClass",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.execution.suggestedQuery.direction",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/normalized/direction",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/indexesUsed/0",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/indexesUsed",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/edgeScans",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/reachableWithinDepth",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/frontierByDepth/0/candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/frontierByDepth/0/newNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/frontierByDepth/1/frontierNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/frontierByDepth/1/candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/frontierByDepth/1/newNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier, the upper bound and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/estimate/costClass",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/execution/suggestedQuery/direction",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 25,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.relationTypes",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text#/normalized/relationTypes",
+      "change": 43,
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 26,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.relationTypes",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.normalized.types[0]",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.structuredContent.execution.suggestedQuery.types[0]",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/normalized/relationTypes",
+      "change": 43,
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/normalized/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text#/execution/suggestedQuery/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 27,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.relationTypes",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text#/normalized/relationTypes",
+      "change": 43,
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 29,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 29,
+      "path": "result.structuredContent.estimate.resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 29,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 29,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 29,
+      "path": "result.content[0].text#/estimate/resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 29,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 3,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.includeExternal",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: a neighbors plan keeps includeExternal and includeUnresolved, which the JavaScript plan dropped from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.normalized.includeUnresolved",
+      "change": 43,
+      "reason": "Row 43: a neighbors plan keeps includeExternal and includeUnresolved, which the JavaScript plan dropped from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.execution.suggestedQuery.includeExternal",
+      "change": 43,
+      "reason": "Row 43: a neighbors plan keeps includeExternal and includeUnresolved, which the JavaScript plan dropped from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.execution.suggestedQuery.includeUnresolved",
+      "change": 43,
+      "reason": "Row 43: a neighbors plan keeps includeExternal and includeUnresolved, which the JavaScript plan dropped from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/normalized/includeExternal",
+      "change": 43,
+      "reason": "Row 43: a neighbors plan keeps includeExternal and includeUnresolved, which the JavaScript plan dropped from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/normalized/includeUnresolved",
+      "change": 43,
+      "reason": "Row 43: a neighbors plan keeps includeExternal and includeUnresolved, which the JavaScript plan dropped from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/execution/suggestedQuery/includeExternal",
+      "change": 43,
+      "reason": "Row 43: a neighbors plan keeps includeExternal and includeUnresolved, which the JavaScript plan dropped from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/execution/suggestedQuery/includeUnresolved",
+      "change": 43,
+      "reason": "Row 43: a neighbors plan keeps includeExternal and includeUnresolved, which the JavaScript plan dropped from the call it suggested."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 30,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.types[0]",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 30,
+      "path": "result.structuredContent.execution.suggestedQuery.types[0]",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 30,
+      "path": "result.content[0].text#/normalized/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 30,
+      "path": "result.content[0].text#/execution/suggestedQuery/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 31,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 31,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 31,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 31,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 32,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.slug",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 32,
+      "path": "result.structuredContent.normalized.limit",
+      "change": 43,
+      "reason": "Row 43: node_profile has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 32,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: node_profile has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 32,
+      "path": "result.structuredContent.execution.suggestedQuery.slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 32,
+      "path": "result.content[0].text#/normalized/slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 32,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: node_profile has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 32,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: node_profile has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 32,
+      "path": "result.content[0].text#/execution/suggestedQuery/slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 33,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.domain",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan carries the domain the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 33,
+      "path": "result.structuredContent.execution.suggestedQuery.domain",
+      "change": 43,
+      "reason": "Row 43: the plan carries the domain the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 33,
+      "path": "result.content[0].text#/normalized/domain",
+      "change": 43,
+      "reason": "Row 43: the plan carries the domain the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 33,
+      "path": "result.content[0].text#/execution/suggestedQuery/domain",
+      "change": 43,
+      "reason": "Row 43: the plan carries the domain the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 34,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.project",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan carries the project the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.structuredContent.normalized.limit",
+      "change": 43,
+      "reason": "Row 43: project_scope has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: project_scope has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.structuredContent.execution.suggestedQuery.project",
+      "change": 43,
+      "reason": "Row 43: the plan carries the project the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.content[0].text#/normalized/project",
+      "change": 43,
+      "reason": "Row 43: the plan carries the project the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: project_scope has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: project_scope has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.content[0].text#/execution/suggestedQuery/project",
+      "change": 43,
+      "reason": "Row 43: the plan carries the project the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 35,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.slug",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.structuredContent.normalized.depth",
+      "change": 43,
+      "reason": "Row 43: the plan carries the depth the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.structuredContent.normalized.limit",
+      "change": 43,
+      "reason": "Row 43: lineage has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: lineage has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.structuredContent.execution.suggestedQuery.slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.structuredContent.execution.suggestedQuery.depth",
+      "change": 43,
+      "reason": "Row 43: the plan carries the depth the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.content[0].text#/normalized/slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.content[0].text#/normalized/depth",
+      "change": 43,
+      "reason": "Row 43: the plan carries the depth the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: lineage has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: lineage has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.content[0].text#/execution/suggestedQuery/slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.content[0].text#/execution/suggestedQuery/depth",
+      "change": 43,
+      "reason": "Row 43: the plan carries the depth the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 36,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.slug",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.structuredContent.normalized.pattern",
+      "change": 43,
+      "reason": "Row 43: the plan carries the pattern the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.structuredContent.normalized.limit",
+      "change": 43,
+      "reason": "Row 43: pattern_walk has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: pattern_walk has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.structuredContent.execution.suggestedQuery.slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.structuredContent.execution.suggestedQuery.pattern",
+      "change": 43,
+      "reason": "Row 43: the plan carries the pattern the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text#/normalized/slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text#/normalized/pattern",
+      "change": 43,
+      "reason": "Row 43: the plan carries the pattern the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: pattern_walk has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: pattern_walk has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text#/execution/suggestedQuery/slug",
+      "change": 43,
+      "reason": "Row 43: the plan carries the slug the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text#/execution/suggestedQuery/pattern",
+      "change": 43,
+      "reason": "Row 43: the plan carries the pattern the call sent, which the JavaScript plan dropped for an operation that reads the whole graph."
     },
     {
       "case": "graph/query-plan-storefront",
@@ -9517,65 +10669,513 @@
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 7,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.execution.saferQuery.limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/execution/saferQuery/limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
     },
     {
       "case": "graph/query-plan-storefront",
       "where": "answer",
       "id": 8,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.types[0]",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.normalized.limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.execution.suggestedQuery.types[0]",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/normalized/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text#/execution/suggestedQuery/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
     },
     {
       "case": "graph/query-plan-tangle",
       "where": "answer",
       "id": 1,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: overview has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
     },
     {
       "case": "graph/query-plan-tangle",
       "where": "answer",
       "id": 10,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.direction",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.indexesUsed[0]",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.indexesUsed",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.edgeScans",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.reachableWithinDepth",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.frontierByDepth[0].candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.frontierByDepth[0].newNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.frontierByDepth[1].frontierNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.frontierByDepth[1].candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.frontierByDepth[2].candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.frontierByDepth[2].newNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.frontierByDepth",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.estimate.resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier, the upper bound and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.execution.suggestedQuery.direction",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/normalized/direction",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/indexesUsed/0",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/indexesUsed",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/edgeScans",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/reachableWithinDepth",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/frontierByDepth/0/candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/frontierByDepth/0/newNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/frontierByDepth/1/frontierNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/frontierByDepth/1/candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/frontierByDepth/2/candidateEdges",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/frontierByDepth/2/newNodes",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/frontierByDepth",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/estimate/resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier, the upper bound and the cost class follow from the direction."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text#/execution/suggestedQuery/direction",
+      "change": 43,
+      "reason": "Row 43: subgraph without a direction uses both, as the operation does, where the JavaScript plan assumed outgoing; the index used, the edge scans, the frontier and the cost class follow from the direction."
     },
     {
       "case": "graph/query-plan-tangle",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.estimate.resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/estimate/resultUpperBound",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: centrality has a limit of its own (10) and the plan states it, where the JavaScript plan stated 100; the upper bound follows from it."
     },
     {
       "case": "graph/query-plan-tangle",
       "where": "answer",
       "id": 3,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.relationTypes",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/normalized/relationTypes",
+      "change": 43,
+      "reason": "Row 43: a match_edges plan no longer repeats types as relationTypes."
     },
     {
       "case": "graph/query-plan-tangle",
       "where": "answer",
       "id": 7,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.limit",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.execution.suggestedQuery.limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.execution.saferQuery.limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/normalized/limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/execution/suggestedQuery/limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/execution/saferQuery/limit",
+      "change": 43,
+      "reason": "Row 43: path has no limit of its own and the call sent none, so the plan states null (and leaves it out of the suggested call), where the JavaScript plan stated 100."
     },
     {
       "case": "graph/query-plan-tangle",
       "where": "answer",
       "id": 9,
-      "path": "result.content[0].text",
+      "path": "result.structuredContent.normalized.types[0]",
       "change": 43,
-      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.execution.suggestedQuery.types[0]",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text#/normalized/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text#/execution/suggestedQuery/types/0",
+      "change": 43,
+      "reason": "Row 43: the plan writes the public relation name depends_on, where the JavaScript plan wrote the internal name dependencies."
     }
   ]
 }

@@ -71,7 +71,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let profile_slug = optional_non_blank_text(arguments, "profileSlug")?;
     let max_files =
         optional_positive_integer(arguments, "maxFiles", Some(MAX_FILES_MAX))?.map(count);
-    let target = ScanTarget::open(context, root_path.as_deref())?;
+    let target = ScanTarget::allow(context, root_path.as_deref())?;
 
     let read = read_vault(context)?;
     let documents: Vec<ProfileDocument<'_>> = read
@@ -86,6 +86,9 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let profiles = find_architecture_profiles(&documents)?;
     let profile = select_profile(&profiles, profile_slug.as_deref())?;
 
+    // The script server reads the profiles before it scans, so a vault without one is named before
+    // a root that is not a folder.
+    let target = target.require_folder()?;
     let scan = target.scan(&ImportScanOptions {
         max_files,
         ..ImportScanOptions::default()
