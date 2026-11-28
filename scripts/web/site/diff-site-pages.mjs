@@ -7,11 +7,12 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
+import { routing } from '../../../src/i18n/routing.ts';
 
 /** What Next writes and Vite does not, or the other way round, and why neither side's own file counts as a difference. */
 export const ALLOWED_DIFFERENCES = [
-  { rule: 'head scripts', reason: "Next's /_next/ chunk scripts and Vite's entry module are each side's own scripts" },
-  { rule: 'head stylesheets and preloads', reason: "each side links its own bundle's stylesheets, module preloads and font and script preloads" },
+  { rule: 'bundle scripts', reason: "Next's scripts under /_next/ and its streaming scripts, and Vite's module scripts under /assets/ and the JSON record its page carries, are each side's own; the boot script is compared by its presence, JSON-LD by its content, and any other script is a difference" },
+  { rule: 'bundle stylesheets and preloads', reason: "each side links its own bundle's files, under /_next/ on Next's side and under /assets/ on Vite's; a stylesheet or preload from anywhere else is compared like any other head element" },
   { rule: 'next-size-adjust', reason: 'Next adds this marker to every page; Vite has no counterpart' },
   { rule: 'icon query strings', reason: "Next appends a content hash to the icon links; Vite links the files plainly, compared without the query" },
   { rule: '404 robots', reason: "Next adds its own `noindex` beside the page's `noindex, follow`; Vite writes the page's one tag" },
@@ -55,17 +56,65 @@ const attributesOf = (element) =>
 
 const signature = (element) => `<${element.localName} ${attributesOf(element)}>${element.localName === 'title' ? element.textContent.trim() : ''}`;
 
+const bundleFolder = (side) => (side === 'next' ? '/_next/' : '/assets/');
+const isBundleFile = (address, side) => (address ?? '').includes(bundleFolder(side));
+
 function isAllowedHeadElement(element, side) {
   const name = element.localName;
+  // Left out of the head's elements because `scriptFindings` judges every script of the document, head or body.
   if (name === 'script') return true;
   if (name === 'meta' && element.getAttribute('name') === 'next-size-adjust') return true;
   if (name === 'meta' && element.getAttribute('name') === 'robots' && element.getAttribute('content') === 'noindex' && side === 'next') return true;
-  if (name === 'link') {
+  if (name === 'link' && isBundleFile(element.getAttribute('href'), side)) {
     const rel = element.getAttribute('rel');
     if (rel === 'stylesheet' || rel === 'modulepreload') return true;
     if (rel === 'preload' && CSS_OR_SCRIPT_PRELOAD_AS.has(element.getAttribute('as') ?? '')) return true;
   }
   return false;
+}
+
+/** Keys sorted all the way down, so two blocks that say the same thing in another order compare equal. */
+const canonicalJson = (value) =>
+  JSON.stringify(value, (_key, inner) =>
+    inner && typeof inner === 'object' && !Array.isArray(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => (a < b ? -1 : 1))) : inner,
+  );
+
+/** The framework's own inline scripts on Next's side: its flight data, its bundler runtime and its streaming boundaries. */
+const NEXT_INLINE_SCRIPT = /^\s*(?:\(self\.__next_f|self\.__next_f|\(globalThis\["TURBOPACK"\]|requestAnimationFrame\(function\(\)\{\$RT|\$R[A-Z]|\$R\[)/;
+const BOOT_SCRIPT_MARK = 'data-shell';
+
+/**
+ * What a document's scripts say, sorted into what the diff may ignore and what it must compare:
+ * the parsed JSON-LD blocks, whether the boot script that sets the language and marks the app is there,
+ * and every script that is neither a side's bundle file nor its own known inline script.
+ */
+export function scriptFindings(document, side) {
+  const found = { jsonLd: [], boot: false, unexplained: [] };
+  for (const script of document.querySelectorAll('script')) {
+    const source = script.getAttribute('src');
+    const text = script.textContent ?? '';
+    if (script.getAttribute('type') === 'application/ld+json') {
+      try {
+        found.jsonLd.push(canonicalJson(JSON.parse(text)));
+      } catch {
+        found.unexplained.push('JSON-LD that does not parse');
+      }
+    } else if (source !== null) {
+      const own = side === 'vite' ? script.getAttribute('type') === 'module' && isBundleFile(source, side) : isBundleFile(source, side);
+      if (!own) found.unexplained.push(`script src=${source}`);
+    } else if (text.includes(BOOT_SCRIPT_MARK)) {
+      found.boot = true;
+    } else if (side === 'next' && (NEXT_INLINE_SCRIPT.test(text) || (text.startsWith('try{') && text.includes('location.replace')))) {
+      // Next's own: its framework scripts, and its hand-over of a language root to the download page.
+    } else if (side === 'vite' && script.id === 'atlas-page' && script.getAttribute('type') === 'application/json') {
+      // The record of what the build knew, which the page carries for its first browser render.
+    } else if (side === 'vite' && text.startsWith('try{') && text.includes('location.replace')) {
+      // The one script at `/` that sends a visitor to a language.
+    } else {
+      found.unexplained.push(`inline script ${JSON.stringify(text.slice(0, 60))}`);
+    }
+  }
+  return found;
 }
 
 /** The head as a sorted list of elements with sorted attributes, minus what each side owns. */
@@ -118,12 +167,23 @@ export function compareSites({ nextFolder, viteFolder }) {
     for (const element of nextHead) if (!viteHead.includes(element)) differ(page, 'head element missing in Vite', element, '');
     for (const element of viteHead) if (!nextHead.includes(element)) differ(page, 'head element only in Vite', '', element);
 
+    const nextScripts = scriptFindings(next, 'next');
+    const viteScripts = scriptFindings(vite, 'vite');
+    for (const script of nextScripts.unexplained) differ(page, 'script only in Next', script, '');
+    for (const script of viteScripts.unexplained) differ(page, 'script only in Vite', '', script);
+    if (!viteScripts.boot) differ(page, 'boot script', 'present', 'absent');
+    if (JSON.stringify([...nextScripts.jsonLd].sort()) !== JSON.stringify([...viteScripts.jsonLd].sort())) {
+      const missing = nextScripts.jsonLd.filter((block) => !viteScripts.jsonLd.includes(block));
+      const extra = viteScripts.jsonLd.filter((block) => !nextScripts.jsonLd.includes(block));
+      differ(page, 'JSON-LD', (missing[0] ?? `(${nextScripts.jsonLd.length} blocks)`).slice(0, 300), (extra[0] ?? `(${viteScripts.jsonLd.length} blocks)`).slice(0, 300));
+    }
+
     if (next.documentElement.lang !== vite.documentElement.lang) differ(page, 'html lang', next.documentElement.lang, vite.documentElement.lang);
 
     const region = isAppAddress(next) && isAppAddress(vite) ? '[data-face="app-only"]' : null;
     const nextRoot = readableRoot(next, region);
     const viteRoot = readableRoot(vite, region);
-    const isLocaleEntry = /^(en|ko|ja|zh)\/index\.html$/.test(page);
+    const isLocaleEntry = new RegExp(`^(${routing.locales.join('|')})/index\\.html$`).test(page);
     if (!isLocaleEntry && visibleText(nextRoot) !== visibleText(viteRoot)) differ(page, 'visible text', visibleText(nextRoot)?.slice(0, 160) ?? null, visibleText(viteRoot)?.slice(0, 160) ?? null);
     for (const selector of isLocaleEntry ? [] : ['a[href]', 'img']) {
       const nextSets = attributeSets(nextRoot, selector);
