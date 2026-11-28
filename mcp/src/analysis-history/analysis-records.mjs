@@ -1,7 +1,6 @@
 import { constants } from 'node:fs';
 import { lstat, open, opendir, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import { createNamePage } from './name-page.mts';
 
 import {
   ANALYSIS_DIRECTORY,
@@ -61,67 +60,6 @@ async function readRecord(directory, fileName) {
     }
     return { fileName, record };
   } finally { await file.close(); }
-}
-
-function summary({ fileName, record }) {
-  return {
-    id: record.id,
-    recordType: record.recordType,
-    fileName,
-    createdAt: record.createdAt,
-    ...(record.recordType === 'run' ? {
-      mode: record.mode,
-      scope: record.scope,
-      question: record.request.text,
-      outcome: record.origin.outcome,
-      qualification: record.qualification,
-      findings: record.findings.length,
-      parentRunId: record.request.parentRunId,
-    } : {
-      runId: record.runId,
-      findingId: record.findingId,
-      disposition: record.disposition,
-    }),
-  };
-}
-
-export async function listAnalysisRecords(vaultRoot, { limit = 30, cursor = null, mode = null, project = null } = {}) {
-  if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error('Analysis history limit must be between 1 and 100.');
-  if (cursor !== null && !isAnalysisRecordFileName(cursor)) throw new Error('Invalid analysis history cursor.');
-  if (mode !== null && !['meaning', 'architecture'].includes(mode)) throw new Error('Invalid analysis history mode.');
-  const directory = await archiveDirectory(vaultRoot);
-  const selection = createNamePage(limit, cursor);
-  if (directory) {
-    for await (const entry of await opendir(directory)) {
-      if (isAnalysisRecordFileName(entry.name)) selection.add(entry.name);
-    }
-  }
-  const { names: page, totalFiles, nextCursor } = selection.page();
-  const records = [];
-  const problems = [];
-  for (const fileName of page) {
-    try {
-      const result = await readRecord(directory, fileName);
-      const record = result.record;
-      // A review keeps its run id: it never approves another scope or run.
-      if (record.recordType === 'run' && ((mode && record.mode !== mode) || (project && record.scope.projectSlug !== project))) continue;
-      records.push(summary(result));
-    } catch (error) {
-      problems.push({ fileName, reason: error.message });
-    }
-  }
-  const hasMore = nextCursor !== null;
-  return {
-    contract: 'analysisHistory:v1',
-    operation: 'analysis_history',
-    records,
-    problems,
-    totalFiles,
-    scanned: page.length,
-    returned: records.length,
-    pagination: { hasMore, nextCursor },
-    meaningAuthority: 'diagnostic-records-only',
-  };
 }
 
 export async function readAnalysisRecord(vaultRoot, recordId) {

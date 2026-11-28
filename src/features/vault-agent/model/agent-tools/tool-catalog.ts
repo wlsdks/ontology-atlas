@@ -296,7 +296,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   },
   {
     name: 'find_orphans',
-    description: 'Nodes with no edges at all — the usual starting point for "what is unfinished here". The MCP server answers the same question as `query_ontology` `match_nodes` with `hasIncoming: false`.',
+    description: 'Nodes no other node points at (a node may still point at others) — the usual starting point for "what is unfinished here". The MCP server answers the same question as `query_ontology` `match_nodes` with `hasIncoming: false`.',
     effect: 'read',
     parameters: {
       type: 'object',

@@ -50,71 +50,66 @@ export function listKinds(rootPath) {
 
 const DEFAULT_ORPHAN_EXCLUDED_KINDS = Object.freeze(['project', 'vault-readme']);
 
-const ORPHAN_ROW_ORDER = {
-  degree: (a, b) => b.degree - a.degree,
-  inDegree: () => 0,
-  outDegree: (a, b) => b.outDegree - a.outDegree,
-  slug: () => 0,
-};
-
 /**
- * Nodes no other node points at from a frontmatter graph key, read from the
- * files: a vault whose compile fails closed (an invalid `uid:`) still answers.
- * An ambiguous short reference counts as a reference to every candidate, so no
- * node the vault plainly names is reported as an orphan. `excludeKinds`
- * defaults to the project and the vault README unless a `kind` is asked for.
- * Every orphan is returned; the caller pages.
+ * Every node with the relations it holds, read from the files, so a vault whose
+ * compile fails closed (an invalid `uid:`) still answers. This is the one engine
+ * behind `match_nodes`: `hasIncoming: true` and `false` split exactly the nodes
+ * an unfiltered call returns. A short reference that several nodes share counts
+ * as a reference to each candidate, so no node the vault plainly names is
+ * reported as one nothing points at. `inDegree` counts the other nodes' distinct
+ * references to a node (a node naming itself is not referenced), `outDegree` the
+ * distinct references a node writes. `excludeKinds` defaults to the project and
+ * the vault README only for `hasIncoming: false` without a `kind`. Every match is
+ * returned unsorted; the caller orders and pages.
  */
-export function findOrphans(rootPath, options = {}) {
+export function matchNodesFromFiles(rootPath, options = {}) {
   const docs = loadVaultDocs(rootPath);
   const kind = typeof options.kind === 'string' ? options.kind : null;
   const domain = typeof options.domain === 'string' ? options.domain : null;
+  const hasIncoming = typeof options.hasIncoming === 'boolean' ? options.hasIncoming : null;
+  const hasOutgoing = typeof options.hasOutgoing === 'boolean' ? options.hasOutgoing : null;
   const excludeKinds = new Set(
     Array.isArray(options.excludeKinds)
       ? options.excludeKinds
-      : kind ? [] : DEFAULT_ORPHAN_EXCLUDED_KINDS,
+      : hasIncoming === false && !kind ? DEFAULT_ORPHAN_EXCLUDED_KINDS : [],
   );
-  const hasOutgoing = typeof options.hasOutgoing === 'boolean' ? options.hasOutgoing : null;
-  const sort = Object.hasOwn(ORPHAN_ROW_ORDER, options.sort) ? options.sort : 'degree';
   const { resolveCandidates } = buildRefIndex(docs);
-  const referenced = new Set();
-  const referencing = new Map();
+  const inDegree = new Map();
+  const outDegree = new Map();
   for (const doc of docs) {
-    const targets = new Set();
-    for (const { ref } of collectNeighborRefs(doc)) {
+    const written = new Set();
+    for (const { key, ref } of collectNeighborRefs(doc)) {
+      written.add(`${key}\0${ref}`);
       for (const candidate of resolveCandidates(ref)) {
         if (candidate === doc.slug) continue;
-        referenced.add(candidate);
-        targets.add(candidate);
+        inDegree.set(candidate, (inDegree.get(candidate) ?? 0) + 1);
       }
     }
-    referencing.set(doc.slug, targets.size);
+    outDegree.set(doc.slug, written.size);
   }
-  const orphans = [];
+  const rows = [];
   for (const doc of docs) {
     const docKind = doc.frontmatter.kind;
     if (typeof docKind !== 'string' || !docKind) continue;
     if (excludeKinds.has(docKind)) continue;
     if (kind && docKind !== kind) continue;
     if (domain && doc.frontmatter.domain !== domain) continue;
-    if (referenced.has(doc.slug)) continue;
-    const outDegree = referencing.get(doc.slug) ?? 0;
-    if (hasOutgoing !== null && (outDegree > 0) !== hasOutgoing) continue;
-    orphans.push({
+    const incoming = inDegree.get(doc.slug) ?? 0;
+    const outgoing = outDegree.get(doc.slug) ?? 0;
+    if (hasIncoming !== null && (incoming > 0) !== hasIncoming) continue;
+    if (hasOutgoing !== null && (outgoing > 0) !== hasOutgoing) continue;
+    rows.push({
       uid: doc.frontmatter.uid,
       slug: doc.slug,
       kind: docKind,
       title: docTitle(doc),
       domain: doc.frontmatter.domain,
-      mtime: doc.mtime,
-      inDegree: 0,
-      outDegree,
-      degree: outDegree,
+      inDegree: incoming,
+      outDegree: outgoing,
+      degree: incoming + outgoing,
     });
   }
-  const byField = ORPHAN_ROW_ORDER[sort];
-  orphans.sort((a, b) => byField(a, b) || compareText(a.slug, b.slug));
-  return { total: orphans.length, orphans, sort, excludeKinds: [...excludeKinds] };
+  return { rows, excludeKinds: [...excludeKinds] };
 }
 
 /**
