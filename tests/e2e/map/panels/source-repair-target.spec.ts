@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { buildProjectSourceGraphHash } from "../../../../mcp/src/project-source/project-source-graph-hash.mjs";
-import { buildProjectSourceReceipt } from "../../../../mcp/src/project-source/project-source-mint.mjs";
+import sidecars from "../../../fixtures/project-source-sidecars.json";
 import { installDesktopRailRuntime, mountDesktopVault } from "../../desktop-rail-arrival-harness";
 
 const documents = [
@@ -18,22 +17,18 @@ const files = Object.fromEntries([...documents, ...otherDocuments].map((doc, ind
   `${doc.slug}.md`,
   `---\nuid: 11111111-1111-4111-8111-${String(index + 1).padStart(12, "0")}\nslug: ${doc.slug}\n${Object.entries(doc.frontmatter).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join("\n")}\n---\n\n${doc.frontmatter.title} responsibility.\n`,
 ]));
-const probe = { sourceId: "repair-source", kind: "git", revision: "abc", fingerprint: "git:abc:clean", dirty: false, truncated: false, files: [] };
-function sidecar(target: string, sourcePath = "src/missing-checkout.ts") {
-  const receipt = buildProjectSourceReceipt({
-    projectSlug: "storefront",
-    graphHash: buildProjectSourceGraphHash("storefront", documents.map((doc) => doc.slug === "elements/checkout" ? { ...doc, frontmatter: { ...doc.frontmatter, path: sourcePath } } : doc)),
-    probe,
-    witnesses: [{ id: `${target}:path`, nodeSlug: target, role: "implementation", path: sourcePath }],
-    measuredAt: "2026-10-11T00:00:00.000Z",
-  });
-  return JSON.stringify({ contractVersion: 1, bindings: [{ projectSlug: "storefront", sourceId: probe.sourceId, rootPath: "/private/source-repair-fixture", kind: "git", boundAt: receipt.measuredAt, receipt }] });
+/**
+ * The project-sources sidecar for one repair case, a recorded file: its receipt carries hashes of the
+ * documents above (with `path:` set to the missing file), measured at a fixed time.
+ */
+function sidecar(caseName: keyof typeof sidecars.repair) {
+  return JSON.stringify(sidecars.repair[caseName]);
 }
 
 for (const target of ["elements/checkout", "elements/deleted", "capabilities/foreign"]) {
   test(`source repair ${target === "elements/checkout" ? "opens its affected concept" : `recovers from ${target}`}`, async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 949 });
-    await installDesktopRailRuntime(page, { ...files, ".ontology-atlas/project-sources.json": sidecar(target) }, undefined, { replaceFixture: true });
+    await installDesktopRailRuntime(page, { ...files, ".ontology-atlas/project-sources.json": sidecar(target as keyof typeof sidecars.repair) }, undefined, { replaceFixture: true });
     await mountDesktopVault(page);
     await page.goto("/en/topology/?e2e=1&guides=off&p=project%3Astorefront", { waitUntil: "domcontentloaded" });
     const receipt = page.getByTestId("map-project-source-receipt");
@@ -79,7 +74,7 @@ test("keeps a long missing filename readable inside the repair panel", async ({ 
   await installDesktopRailRuntime(page, {
     ...files,
     "elements/checkout.md": files["elements/checkout.md"].replace("src/missing-checkout.ts", sourcePath),
-    ".ontology-atlas/project-sources.json": sidecar("elements/checkout", sourcePath),
+    ".ontology-atlas/project-sources.json": sidecar("long-missing-filename"),
   }, undefined, { replaceFixture: true });
   await mountDesktopVault(page);
   await page.goto("/en/topology/?e2e=1&guides=off&p=project%3Astorefront", { waitUntil: "domcontentloaded" });

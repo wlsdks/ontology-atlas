@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { buildProjectSourceGraphHash } from "../../../../mcp/src/project-source/project-source-graph-hash.mjs";
-import { buildProjectSourceReceipt } from "../../../../mcp/src/project-source/project-source-mint.mjs";
+import sidecars from "../../../fixtures/project-source-sidecars.json";
 import { installDesktopRailRuntime, mountDesktopVault } from "../../desktop-rail-arrival-harness";
 
 const documents = [
@@ -13,16 +12,9 @@ const files = Object.fromEntries(documents.map((doc, index) => [
   `${doc.slug}.md`,
   `---\nuid: 11111111-1111-4111-8111-${String(index + 1).padStart(12, "0")}\nslug: ${doc.slug}\n${Object.entries(doc.frontmatter).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join("\n")}\n---\n\n${doc.frontmatter.title} body.\n`,
 ]));
-const probe = { sourceId: "role-source", kind: "git", revision: "abc", fingerprint: "git:abc:clean", dirty: false, truncated: false, files: ["src/checkout.ts"] };
-// No document names a `path`, so the receipt asks for code locations.
-const receipt = buildProjectSourceReceipt({
-  projectSlug: "storefront",
-  graphHash: buildProjectSourceGraphHash("storefront", documents),
-  probe,
-  witnesses: [],
-  measuredAt: "2026-10-11T00:00:00.000Z",
-});
-const sidecar = JSON.stringify({ contractVersion: 1, bindings: [{ projectSlug: "storefront", sourceId: probe.sourceId, rootPath: "/private/source-role-fixture", kind: "git", boundAt: receipt.measuredAt, receipt }] });
+// No document names a `path`, so the receipt asks for code locations. The sidecar is a recorded file:
+// its receipt carries hashes of the four documents above, measured at a fixed time.
+const sidecar = JSON.stringify(sidecars.roleRequest);
 const vault = { ...files, ".ontology-atlas/project-sources.json": sidecar };
 const RUNTIME = { id: "codex-acp", label: "Codex", verified: true, isolated: true, icon: null, brandInk: null, description: "", website: null, license: null, launchKind: "npx", cliPath: "/fixture/cli", adapterPath: null, adapterPackage: "@agentclientprotocol/codex-acp", state: "ready" };
 const REQUEST_OPENING = "Find the capabilities and elements in this folder whose `path` is empty.";
