@@ -93,9 +93,24 @@ export function loadStaticVaultSource(source: LoadableSample): Promise<StaticVau
   return pending;
 }
 
-export function retryStaticVaultSource(source: LoadableSample): Promise<StaticVaultSource | null> {
-  failed.delete(source);
-  return loadStaticVaultSource(source);
+function reloadThisDocument(): void {
+  if (typeof window !== 'undefined') window.location.reload();
+}
+
+/**
+ * The person's third try. A browser keeps a module whose fetch failed as failed for as long as the document
+ * lives, and answers a second `import()` of the same file with the same failure without asking the network,
+ * so asking again here could only fail, whatever the connection now is. A new document starts with an empty
+ * module map, and the sample is a page with nothing to lose, so the try is a reload. The promise stays
+ * pending: the page is leaving. A sample that is not in the failed state is simply asked for.
+ */
+export function retryStaticVaultSource(
+  source: LoadableSample,
+  reloadDocument: () => void = reloadThisDocument,
+): Promise<StaticVaultSource | null> {
+  if (!failed.has(source)) return loadStaticVaultSource(source);
+  reloadDocument();
+  return new Promise(() => undefined);
 }
 
 export const bundledSamples = {
