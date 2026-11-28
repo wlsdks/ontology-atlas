@@ -1784,6 +1784,31 @@ add('survey', 'analyze-repo-structure-jvm-abilities', { vault: 'miniature-repo' 
   ) },
   call('analyze_repo_structure', { rootPath: '$PARENT' }),
 ]);
+// Hangul inside annotation arguments and signature windows: the script server counts UTF-16
+// units of the original, so the text before `value`, a comment between an annotation and its
+// parenthesis, and a comment inside a `main` signature all weigh one unit per letter.
+const hangulOrder = '주문 조회';
+add('survey', 'analyze-repo-structure-jvm-hangul-annotations', { vault: 'miniature-repo' }, [
+  { $: 'write-file', path: '../service/src/main/java/shop/api/HangulController.java', text: operatorSource(
+    'package shop.api;',
+    'import org.springframework.web.bind.annotation.*;',
+    '@RestController',
+    'public class HangulController {',
+    `  @GetMapping(name = "${hangulOrder}", // ${hangulOrder}`,
+    '      value = "/orders/{id}")',
+    '  public void read() {}',
+    `  @PutMapping /* ${'가'.repeat(30)} */ ("/long")`,
+    '  public void change() {}',
+    '}',
+  ) },
+  { $: 'write-file', path: '../service/src/main/java/shop/HangulBoot.java', text: operatorSource(
+    'package shop;',
+    'public class HangulBoot {',
+    `  public static void /* ${'가'.repeat(100)} */ main(String[] args) {}`,
+    '}',
+  ) },
+  call('analyze_repo_structure', { rootPath: '$PARENT' }),
+]);
 // A Python task decorator below the first line: the script server asks the whole file for a
 // pattern anchored at its first line, so it never sees one (row 47).
 add('survey', 'analyze-repo-structure-celery-task', { vault: 'miniature-repo' }, [

@@ -38,6 +38,7 @@ mod tooling_path;
 mod unit_collection;
 mod unit_exports;
 mod unit_imports;
+mod utf16_window;
 mod worker_rows;
 
 pub use ability_row::{ability_row_text, AbilityKind, AbilityRow};
