@@ -10,8 +10,8 @@
 {"id":8,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"cycles","searchBudget":5}}}
 {"id":9,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"cycles","types":["depends_on"]}}}
 {"id":10,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"communities"}}}
-{"id":11,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"communities","iterations":1}}}
-{"id":12,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"communities","limit":1,"nodeLimit":2}}}
+{"id":11,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"communities","types":["depends_on"]}}}
+{"id":12,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"communities","limit":2}}}
 {"id":13,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"neighbors","slug":"capabilities/b"}}}
 {"id":14,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"neighbors","slug":"capabilities/b","direction":"in","depth":3}}}
 {"id":15,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"neighbors","slug":"capabilities/b","direction":"both","depth":20,"limit":3}}}

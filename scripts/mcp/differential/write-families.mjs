@@ -71,7 +71,7 @@ const RULES = [
   [/^library\//, 'library'],
   [/^project-source\//, 'library'],
   [/^project-meaning\//, 'library'],
-  [/^tools\/(project-source|constellations|absorb)/, 'library'],
+  [/^tools\/(project-source|connect-consent|constellations|absorb)/, 'library'],
   [/^vault\/absorb/, 'library'],
   // vault writes
   [/^tools\/lifecycle/, 'writes'],

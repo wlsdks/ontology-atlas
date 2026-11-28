@@ -29,7 +29,7 @@
 {"id":27,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"blast_radius","slug":"capabilities/checkout","direction":"both","depth":3}}}
 {"id":28,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"blast_radius","slug":"capabilities/checkout","types":["elements"]}}}
 {"id":29,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","slug":"domains/order","depth":1}}}
-{"id":30,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","seed":"capabilities/cart"}}}
+{"id":30,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","slug":"capabilities/cart"}}}
 {"id":31,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","slug":"capabilities/cart","direction":"incoming","depth":3,"limit":5}}}
 {"id":32,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","slug":"capabilities/cart","types":["depends_on"],"direction":"outgoing"}}}
 {"id":33,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","slug":"capabilities/cart","limit":1}}}
@@ -45,7 +45,7 @@
 {"id":43,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/checkout","to":"capabilities/cart","type":"depends_on"}}}
 {"id":44,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/cart","to":"capabilities/checkout","type":"depends_on"}}}
 {"id":45,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/cart","to":"capabilities/order-lookup","type":"relates"}}}
-{"id":46,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/cart","to":"capabilities/order-lookup","relation":"contains"}}}
+{"id":46,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/cart","to":"capabilities/order-lookup","type":"contains"}}}
 {"id":47,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"domains/order","to":"capabilities/cart","type":"capabilities"}}}
 {"id":48,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/cart","to":"capabilities/order-lookup","type":"bogus"}}}
 {"id":49,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/cart","to":"capabilities/order-lookup"}}}

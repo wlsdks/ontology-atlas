@@ -3,7 +3,7 @@
 {"id":1,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","sort":"degree"}}}
 {"id":2,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health"}}}
 {"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health","limit":1}}}
-{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health","cycleLimit":1,"orderLimit":2}}}
+{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health","limit":2}}}
 {"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health","maxHops":3}}}
 {"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"growth_plan"}}}
 {"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"maintenance_plan"}}}
