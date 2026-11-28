@@ -8,7 +8,7 @@ import { waitForPageSettled } from '../settle';
  * What the router owes every screen, whichever router it is: an address keeps its bytes when a screen
  * opens on it, moving between screens loads no document, the title and a live region follow each move,
  * Back returns to the screen before, and the language switch changes only the first path segment.
- * Written against the router, not the framework, so it holds for the Next build and the Vite build.
+ * Written against the router's behaviour, not its implementation, so a change of router cannot hide a regression.
  */
 
 const HANGUL = '%ED%95%9C%EA%B8%80';

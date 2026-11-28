@@ -11,7 +11,7 @@ import "./atlas-map-probe";
  */
 
 /**
- * `next dev` compiles a route on first entry. When suites run back to back, hydration can finish late
+ * The dev server compiles a route on first entry. When suites run back to back, hydration can finish late
  * and a testid attaches one frame later; waiting for networkidle absorbs that variance.
  */
 async function gotoSettled(page: Page, url: string) {

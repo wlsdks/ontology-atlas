@@ -35,9 +35,9 @@ const REAL_CAPABILITY_SLUG = (() => {
   return `capability:${slugs[0]}`;
 })();
 
-// `next dev` can transiently double-render a page's client tree under load
-// (streaming/hydration artifact — not present in a production static
-// export). It doesn't show up running one spec alone, only when the whole
+// The dev server can transiently show a page's client tree twice under load
+// (a double render, not present in a production build). It doesn't show up
+// running one spec alone, only when the whole
 // suite runs back-to-back and the dev server is under sustained pressure.
 // Letting the network settle before querying a testid gives the duplicate
 // time to collapse to one before a Playwright strict-mode locator can trip
@@ -73,11 +73,11 @@ test.describe("ontology-map smoke", () => {
     await expect(detailPanel).toBeVisible({ timeout: 15_000 });
 
     // Retry the keypress rather than a single press-then-assert: right after
-    // a fresh navigation, `next dev`'s React StrictMode double-invokes the
+    // a fresh navigation, the dev build's React StrictMode double-invokes the
     // window keydown effect (mount → unmount → mount), so the very first
     // Escape can land on a listener mid-resubscription and no-op (confirmed
     // live — 1st Escape leaves the panel, 2nd closes it + drops `?p=`).
-    // Production static export has no StrictMode double-invoke, so a real
+    // The production build has no StrictMode double-invoke, so a real
     // user's single Escape works.
     //
     // The inner assertion MUST use a short timeout: `toHaveCount` defaults to

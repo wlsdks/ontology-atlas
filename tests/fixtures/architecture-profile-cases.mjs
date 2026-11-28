@@ -15,7 +15,7 @@ export const FSD_PROFILE_FRONTMATTER = Object.freeze({
   role_features: ['src/features/**'],
   role_entities: ['src/entities/**'],
   role_shared: ['src/shared/**'],
-  summary_routing: 'Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.',
+  summary_routing: 'Locale-prefixed route entry wrappers. Metadata and routing only, never logic.',
   summary_views: 'One module per route-level screen, assembled from the layers beneath it.',
   /* One locale line, on one of the two roles that declare a sentence, so the fixture also proves
      the untranslated role and the role with no sentence at all keep behaving as before. */
