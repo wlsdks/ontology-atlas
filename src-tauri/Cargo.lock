@@ -59,6 +59,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
+name = "analysis-archive-format"
+version = "0.1.0"
+
+[[package]]
 name = "android_log-sys"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3014,6 +3018,7 @@ dependencies = [
 name = "mcp-server"
 version = "0.1.0"
 dependencies = [
+ "analysis-archive-format",
  "answer-format",
  "confined-files",
  "hardened-git",
@@ -3550,6 +3555,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 name = "ontology-atlas"
 version = "2.7.15"
 dependencies = [
+ "analysis-archive-format",
  "candle-core",
  "candle-nn",
  "candle-transformers",

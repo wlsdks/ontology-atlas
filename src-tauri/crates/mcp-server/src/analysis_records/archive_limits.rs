@@ -1,10 +1,5 @@
-//! Where the archive lives and how much of it one call may read.
-
-/// The folder of the archive, directly below `.ontology-atlas`.
-pub const ARCHIVE_FOLDER: &str = "analyses";
-
-/// The most bytes one record file may hold; a larger file is refused unread.
-pub const MAX_RECORD_BYTES: usize = 2_000_000;
+//! How much of the archive one `analysis_history` call may read. The folder, the byte limit of a
+//! record and the name of a record file are `analysis-archive-format`'s.
 
 /// The most record files one `analysis_history` call reads, and the most it may be asked for.
 pub const HISTORY_LIMIT_MAX: usize = 100;

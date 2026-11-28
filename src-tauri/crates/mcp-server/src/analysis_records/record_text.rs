@@ -3,8 +3,9 @@
 //! and keeps line breaks inside the text, so no YAML reader is needed and the file still opens in
 //! any editor.
 
+use analysis_archive_format::MAX_RECORD_BYTES;
+
 use super::analysis_record::{validate, AnalysisRecord};
-use super::archive_limits::MAX_RECORD_BYTES;
 use super::record_fault::RecordFault;
 use super::record_value::RecordValue;
 

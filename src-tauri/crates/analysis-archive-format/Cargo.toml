@@ -1,0 +1,12 @@
+[package]
+name = "analysis-archive-format"
+version = "0.1.0"
+description = "Where the analysis records of a vault are kept and what a record file is called, for the app that writes them and the server that reads them"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

@@ -18,6 +18,7 @@ name = "ontology-atlas-mcp-rust"
 path = "src/main.rs"
 
 [dependencies]
+analysis-archive-format = { path = "../analysis-archive-format" }
 answer-format = { path = "../answer-format" }
 confined-files = { path = "../confined-files" }
 hardened-git = { path = "../hardened-git" }
