@@ -473,7 +473,9 @@ lines and returns one row each — `slug`, `kind` (`unread-range`, `unread-file`
 `unopened-area`, `not-executed`, `unverified-claim`, `other`), the author's own
 `statement`, the `paths` it names, the line `ranges` still unread, the
 `readRanges` it says were already read, and a one-sentence `proposedAction`
-naming the file to read and the `patch_concept` that closes the question.
+naming the file to read and the `patch_concept` that closes the question. `nextReads` is that array of rows alone: `summary.nextReads` counts every row, and
+`summary.nextReadsReason` is `no_bodies` when the caller handed over no node bodies, so an
+empty array is never mistaken for a clean vault.
 Bounded partial reads come first because they are the cheapest to finish. A span
 the author read ("lines 1–110 of 2790 were read") becomes the lines after it
 when the file's end is known and "beyond lines 1–110" when it is not; until

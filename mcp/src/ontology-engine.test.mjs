@@ -2897,6 +2897,7 @@ describe('queryCompiledOntology', () => {
       // No `sourceDocs`, so the uncertainty reader says it got no bodies instead of
       // reporting a clean vault.
       nextReads: 0,
+      nextReadsReason: 'no_bodies',
       totalActions: 3,
     });
     assert.deepEqual(
@@ -3063,6 +3064,7 @@ describe('queryCompiledOntology', () => {
       unassignedNodes: 0,
       emptyDomains: 0,
       nextReads: 0,
+      nextReadsReason: 'no_bodies',
       totalActions: 3,
     });
     assert.equal(result.nextActions.some((action) => action.kind === 'health_check'), true);
@@ -3870,7 +3872,8 @@ describe('query_ontology growth_plan — the reads a vault asks for', () => {
     const result = queryCompiledOntology(graph, { operation: 'growth_plan', limit: 10 });
 
     assert.equal(result.summary.nextReads, 0);
-    assert.deepEqual(result.nextReads, { total: 0, limited: false, rows: [], reason: 'no_bodies' });
+    assert.deepEqual(result.nextReads, []);
+    assert.equal(result.summary.nextReadsReason, 'no_bodies');
     // A read changes no write queue.
     assert.equal(
       result.summary.totalActions,
@@ -3957,10 +3960,10 @@ describe('query_ontology growth_plan — the reads a vault asks for', () => {
 
       const plan = responses.find((response) => response.id === 2)?.result?.structuredContent;
       assert.ok(plan, `no growth_plan payload: ${JSON.stringify(responses)}`);
-      assert.equal(plan.nextReads.reason, null);
+      assert.equal(plan.summary.nextReadsReason, undefined);
       assert.equal(plan.summary.nextReads, 2);
-      assert.deepEqual(plan.nextReads.rows.map((row) => row.kind), ['unread-range', 'unopened-area']);
-      const [bounded, unopened] = plan.nextReads.rows;
+      assert.deepEqual(plan.nextReads.map((row) => row.kind), ['unread-range', 'unopened-area']);
+      const [bounded, unopened] = plan.nextReads;
       // Lines 1-110 were read, so the next read is the rest of the file.
       assert.deepEqual(bounded.ranges, [{ path: 'mcp/src/index.js', from: 111, to: 2790 }]);
       assert.deepEqual(bounded.readRanges, [{ path: 'mcp/src/index.js', from: 1, to: 110 }]);
