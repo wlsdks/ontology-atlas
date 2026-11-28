@@ -14,6 +14,7 @@ use crate::error::ToolError;
 use crate::write_checkpoint::Permit;
 use crate::write_tool::WriteTool;
 
+mod analyze_repo_structure;
 mod argument_checks;
 mod compile_ontology;
 mod compiled_graph;
@@ -71,6 +72,7 @@ pub fn call(
         "git_history" => Some(git_history::call(context, arguments)),
         "infer_imports" => Some(infer_imports::call(context, arguments)),
         "inspect_architecture" => Some(inspect_architecture::call(context, arguments)),
+        "analyze_repo_structure" => Some(analyze_repo_structure::call(context, arguments)),
         _ => None,
     }
 }

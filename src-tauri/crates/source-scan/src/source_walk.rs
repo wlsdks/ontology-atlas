@@ -11,8 +11,11 @@ use confined_files::{EntryKind, SourceFiles};
 
 use crate::source_language::{extension_of, extension_of_file};
 
-/// Folders that hold what a build made or a tool cached, never what a person wrote.
-pub const DEFAULT_IGNORE: [&str; 10] = [
+/// Folders that hold what a build made, a tool cached, an editor kept or a virtual environment
+/// installed, never what a person wrote. One list for every scan of a repository: the import
+/// scan, the survey and the exact reads. A Python virtual environment holds thousands of
+/// third-party files that would otherwise pass for the product's own modules and edges.
+pub const DEFAULT_IGNORE: [&str; 16] = [
     "node_modules",
     ".git",
     "out",
@@ -22,7 +25,13 @@ pub const DEFAULT_IGNORE: [&str; 10] = [
     ".expo",
     ".turbo",
     ".cache",
+    ".idea",
+    ".vscode",
     "coverage",
+    "__pycache__",
+    ".pytest_cache",
+    ".venv",
+    "venv",
 ];
 
 /// Extensions whose files yield module edges (grouped into modules and reconciled with a vault).

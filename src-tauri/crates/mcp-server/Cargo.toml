@@ -25,6 +25,8 @@ hardened-git = { path = "../hardened-git" }
 vault-document = { path = "../vault-document" }
 ontology-graph = { path = "../ontology-graph" }
 source-scan = { path = "../source-scan" }
+# The breadth map `analyze_repo_structure` answers with.
+repository-survey = { path = "../repository-survey" }
 raw-source-text = { path = "../raw-source-text" }
 # Answers are typed structs written as JSON. `raw_value` sends the tool list as the text the
 # generator wrote and keeps what an agent nests in its arguments unread until a handler wants it.
