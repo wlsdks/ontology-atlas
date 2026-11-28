@@ -54,33 +54,31 @@ pub fn javascript_oracle_available() -> bool {
 }
 
 fn command(program: Program, environment: &[(&str, &str)]) -> Command {
-    command_with_census(program, environment, None)
-}
-
-/// The server with the census file open on descriptor 198 for the whole of its life, as the app
-/// starts it. `bash` opens the file: a descriptor number above 9 is not POSIX `sh`, and the std
-/// library cannot place a child's descriptor at a number of its choosing.
-fn command_with_census(
-    program: Program,
-    environment: &[(&str, &str)],
-    census: Option<&Path>,
-) -> Command {
-    let mut command = match (program, census) {
-        (Program::Rust, Some(file)) => {
-            let mut bash = Command::new("bash");
-            bash.args(["-c", "exec \"$0\" 198<\"$1\""])
-                .arg(env!("CARGO_BIN_EXE_ontology-atlas-mcp-rust"))
-                .arg(file);
-            bash
-        }
-        (_, Some(_)) => panic!("only the Rust program takes a census"),
-        (Program::Rust, None) => Command::new(env!("CARGO_BIN_EXE_ontology-atlas-mcp-rust")),
-        (Program::JavaScript, None) => {
+    let mut command = match program {
+        Program::Rust => Command::new(env!("CARGO_BIN_EXE_ontology-atlas-mcp-rust")),
+        Program::JavaScript => {
             let mut node = Command::new("node");
             node.arg(repository_root().join("mcp/src/index.js"));
             node
         }
     };
+    configure(&mut command, environment);
+    command
+}
+
+/// The Rust server with the census file open on descriptor 198 for the whole of its life, as the
+/// app starts it. `bash` opens the file: a descriptor number above 9 is not POSIX `sh`, and the
+/// std library cannot place a child's descriptor at a number of its choosing.
+fn command_with_census(environment: &[(&str, &str)], census: &Path) -> Command {
+    let mut bash = Command::new("bash");
+    bash.args(["-c", "exec \"$0\" 198<\"$1\""])
+        .arg(env!("CARGO_BIN_EXE_ontology-atlas-mcp-rust"))
+        .arg(census);
+    configure(&mut bash, environment);
+    bash
+}
+
+fn configure(command: &mut Command, environment: &[(&str, &str)]) {
     for name in SERVER_VARIABLES {
         command.env_remove(name);
     }
@@ -93,7 +91,6 @@ fn command_with_census(
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    command
 }
 
 /// What a finished session wrote.
@@ -106,19 +103,25 @@ pub struct Run {
 
 /// Writes `input` in one piece, closes standard input, and reads everything to the end.
 pub fn run_to_end(program: Program, environment: &[(&str, &str)], input: &[u8]) -> Run {
-    run_to_end_with_census(program, environment, None, input)
+    run_command(command(program, environment), input)
 }
 
-/// [`run_to_end`] with the census in `census` open on descriptor 198.
-pub fn run_to_end_with_census(
-    program: Program,
+/// [`run_to_end`] for the Rust server, with the census in `census` open on descriptor 198 (none
+/// when `census` is `None`, though the environment may still name the descriptor).
+pub fn run_rust_with_census(
     environment: &[(&str, &str)],
     census: Option<&Path>,
     input: &[u8],
 ) -> Run {
-    let mut child = command_with_census(program, environment, census)
-        .spawn()
-        .expect("spawn the server");
+    let command = match census {
+        Some(file) => command_with_census(environment, file),
+        None => command(Program::Rust, environment),
+    };
+    run_command(command, input)
+}
+
+fn run_command(mut command: Command, input: &[u8]) -> Run {
+    let mut child = command.spawn().expect("spawn the server");
     let mut stdin = child.stdin.take().expect("stdin");
     let stdout = child.stdout.take().expect("stdout");
     let mut stderr = child.stderr.take().expect("stderr");

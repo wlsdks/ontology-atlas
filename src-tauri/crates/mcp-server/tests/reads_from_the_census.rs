@@ -18,7 +18,7 @@ mod support;
 use std::path::{Path, PathBuf};
 
 use serde_json::{json, Value};
-use support::{call, run_to_end_with_census, Program};
+use support::{call, run_rust_with_census};
 
 const SENTINEL: &str = "DISK_ONLY_SENTINEL";
 
@@ -83,8 +83,7 @@ fn ask(scene: &Scene, census: Option<&Value>, tool: &str, arguments: &str) -> (b
     });
     let vault = scene.vault.to_string_lossy().into_owned();
     let repository = scene.repository.to_string_lossy().into_owned();
-    let run = run_to_end_with_census(
-        Program::Rust,
+    let run = run_rust_with_census(
         &[
             ("OATLAS_VAULT", &vault),
             ("OATLAS_REPO_ROOT", &repository),
@@ -284,7 +283,10 @@ fn vault_citing(scene: &Scene, path: &str) {
 fn validating_a_vault_measures_its_paths_against_the_census_and_not_the_disk() {
     let scene = scene();
     vault_citing(&scene, "src/planted.ts");
-    write(&scene.repository.join("src/planted.ts"), &format!("// {SENTINEL}\n"));
+    write(
+        &scene.repository.join("src/planted.ts"),
+        &format!("// {SENTINEL}\n"),
+    );
     let listed = census(
         &scene,
         &[
@@ -298,7 +300,9 @@ fn validating_a_vault_measures_its_paths_against_the_census_and_not_the_disk() {
     let answer: Value = serde_json::from_str(&text).expect("json");
     assert_eq!(answer["pathDrift"]["checked"], true, "{text}");
     assert!(
-        answer["pathDrift"]["drifts"].to_string().contains("src/planted.ts"),
+        answer["pathDrift"]["drifts"]
+            .to_string()
+            .contains("src/planted.ts"),
         "the file lies on the disk but the census does not list it, so it is missing: {text}"
     );
     assert_eq!(
@@ -311,8 +315,14 @@ fn validating_a_vault_measures_its_paths_against_the_census_and_not_the_disk() {
 fn validating_a_vault_without_a_usable_census_refuses_instead_of_reading_the_disk() {
     let scene = scene();
     vault_citing(&scene, "src/planted.ts");
-    write(&scene.repository.join("src/planted.ts"), &format!("// {SENTINEL}\n"));
+    write(
+        &scene.repository.join("src/planted.ts"),
+        &format!("// {SENTINEL}\n"),
+    );
     let (refused, text) = ask(&scene, None, "validate_vault", "{}");
     assert!(refused, "{text}");
-    assert_eq!(text, "Error: Confined source snapshot descriptor is unavailable");
+    assert_eq!(
+        text,
+        "Error: Confined source snapshot descriptor is unavailable"
+    );
 }
