@@ -153,7 +153,7 @@ export function commandsForLane({
   const build = prebuilt ? '' : 'pnpm build && ';
   if (lane === 'static') return [prebuilt
     ? 'PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts'
-    : 'pnpm test:e2e:static'];
+    : 'pnpm test:e2e:meaning-editor-built'];
   if (lane === 'web') return [
     `${build}PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts`,
   ];

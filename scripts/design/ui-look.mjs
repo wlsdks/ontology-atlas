@@ -121,7 +121,7 @@ async function main() {
 
   let server = null;
   if (!options.url) {
-    const built = await run("pnpm", ["build:static"]);
+    const built = await run("pnpm", ["build:unless-built"]);
     if (built !== 0) return built;
     server = await serveStaticExport();
   }

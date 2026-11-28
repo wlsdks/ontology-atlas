@@ -45,13 +45,13 @@ export function builtFrom(digest, { cwd = process.cwd() } = {}) {
   return existsSync(join(cwd, SITE_FOLDER, 'index.html')) && existsSync(join(cwd, APP_FOLDER, 'index.html')) && existsSync(stamp) && readFileSync(stamp, 'utf8').trim() === digest;
 }
 
-export function runStaticBuild({
+export function runBuildUnlessBuilt({
   cwd = process.cwd(), env = process.env, log = console.log,
   build = () => spawnSync('pnpm', ['build'], { cwd, env, stdio: 'inherit' }).status ?? 1,
 } = {}) {
   const digest = buildInputsDigest({ cwd, env });
   if (builtFrom(digest, { cwd })) {
-    log('[build:static] the app and site folders are already built from these exact inputs; skipping the build.');
+    log('[build:unless-built] the app and site folders are already built from these exact inputs; skipping the build.');
     return 0;
   }
   const stamp = join(cwd, STAMP);
@@ -59,11 +59,11 @@ export function runStaticBuild({
   const status = build();
   if (status !== 0) return status;
   if (buildInputsDigest({ cwd, env }) !== digest) {
-    log('[build:static] inputs changed during the build; output is not certified. Run again after edits settle.');
+    log('[build:unless-built] inputs changed during the build; output is not certified. Run again after edits settle.');
     return 1;
   }
   writeFileSync(stamp, `${digest}\n`);
   return 0;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) process.exit(runStaticBuild());
+if (process.argv[1] === fileURLToPath(import.meta.url)) process.exit(runBuildUnlessBuilt());
