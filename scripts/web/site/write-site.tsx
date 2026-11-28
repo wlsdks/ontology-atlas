@@ -25,6 +25,11 @@ import { sitemapEntries, sitemapXml } from './sitemap';
 
 export type { SiteAssets } from '../../../src/app/document/SiteDocument';
 
+/** The files every page links, and what a page adds for the routes it renders (`read-site-assets.mjs`). */
+export interface SiteAssetsReader extends SiteAssets {
+  forRoutes(routeIds: string[]): SiteAssets;
+}
+
 /** One written file: its path inside the site folder, with `/` on every platform, and its text. */
 export interface SiteFile {
   path: string;
@@ -42,16 +47,19 @@ async function renderToHtml(element: ReactElement): Promise<string> {
 
 interface WriterContext {
   root: string;
-  assets: SiteAssets;
+  assets: SiteAssetsReader;
   bootScript: string;
   loadingPicture: string;
 }
+
+const matchedRoutes = (router: ReturnType<typeof createAtlasRouter>) => router.state.matches.map((match) => match.routeId as string);
 
 const documentPage = (
   locale: AppLocale,
   context: WriterContext,
   entry?: SiteDocumentPage['entry'],
-): SiteDocumentPage => ({ locale, assets: context.assets, bootScript: context.bootScript, ...(entry ? { entry } : {}) });
+  routeIds: string[] = [],
+): SiteDocumentPage => ({ locale, assets: context.assets.forRoutes(routeIds), bootScript: context.bootScript, ...(entry ? { entry } : {}) });
 
 /** A page of the public site: loaded through the router, written with the record of what the build knew, hydrated in the browser. */
 async function writeRouterPage(page: Extract<SitePage, { kind: 'router' }>, context: WriterContext): Promise<string> {
@@ -61,7 +69,7 @@ async function writeRouterPage(page: Extract<SitePage, { kind: 'router' }>, cont
   const failed = router.state.matches.find((match) => match.status !== 'success');
   if (failed) throw new Error(`${page.path} did not load: ${failed.routeId} is ${failed.status}${failed.error ? ` (${String(failed.error)})` : ''}`);
   return renderToHtml(
-    <SiteDocument page={documentPage(page.locale, context, { recordedFacts: recorded, hydratesPath: page.path })}>
+    <SiteDocument page={documentPage(page.locale, context, { recordedFacts: recorded, hydratesPath: page.path }, matchedRoutes(router))}>
       <RouterProvider router={router} />
     </SiteDocument>,
   );
@@ -125,7 +133,7 @@ async function writeNotFound(context: WriterContext): Promise<string> {
   const metadata = { ...siteMetadata(), robots: { index: false, follow: true } };
   return renderToHtml(
     <SiteDocument
-      page={documentPage(defaultLocale, context, { recordedFacts: recorded })}
+      page={documentPage(defaultLocale, context, { recordedFacts: recorded }, matchedRoutes(router))}
       head={<MetadataTags resolved={{ metadata, title: 'Ontology Atlas' }} />}
     >
       <RouterProvider router={router} />
@@ -139,7 +147,7 @@ const pagePath = (path: string) => (path === '/' ? 'index.html' : `${path.slice(
  * The whole website as files: one HTML page for every address the router holds, the root and the 404 page,
  * and the four text files crawlers read. Nothing here touches the disk, so a test can read any page.
  */
-export async function writeSite({ root, assets }: { root: string; assets: SiteAssets }): Promise<SiteFile[]> {
+export async function writeSite({ root, assets }: { root: string; assets: SiteAssetsReader }): Promise<SiteFile[]> {
   const context: WriterContext = {
     root,
     assets,
