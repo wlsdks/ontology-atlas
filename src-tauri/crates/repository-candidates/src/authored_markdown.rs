@@ -245,10 +245,25 @@ fn note_inline(
     }
 }
 
-fn line_of(source: &str, offset: usize) -> usize {
-    source
-        .get(..offset.min(source.len()))
-        .map_or(0, |before| before.matches('\n').count())
+/// Where each line of a text starts, found once so the line of an offset is a search, not a scan.
+struct LineStarts(Vec<usize>);
+
+impl LineStarts {
+    fn of(source: &str) -> Self {
+        Self(
+            source
+                .bytes()
+                .enumerate()
+                .filter(|(_, byte)| *byte == b'\n')
+                .map(|(at, _)| at)
+                .collect(),
+        )
+    }
+
+    /// The zero-based line holding `offset`: how many line feeds lie before it.
+    fn line_of(&self, offset: usize) -> usize {
+        self.0.partition_point(|newline| *newline < offset)
+    }
 }
 
 /// The end of the line that holds the last character of a block ending at `end`.
@@ -293,6 +308,7 @@ pub fn authored_markdown_lines(text: &str) -> Vec<String> {
     }
     let source = content.join("\n");
     let (blocks, html_lines) = blocks_of(&source);
+    let line_starts = LineStarts::of(&source);
     for block in blocks {
         let end = line_end_after(&source, block.end);
         let mut value = String::new();
@@ -308,7 +324,7 @@ pub fn authored_markdown_lines(text: &str) -> Vec<String> {
             offset = to;
         }
         value.push_str(source.get(offset..end.max(offset)).unwrap_or_default());
-        let first_line = line_of(&source, block.start);
+        let first_line = line_starts.line_of(block.start);
         let authored: Vec<&str> = value.split('\n').collect();
         if let Some(depth) = block.heading_depth {
             let first = authored.first().copied().unwrap_or_default();
@@ -328,7 +344,7 @@ pub fn authored_markdown_lines(text: &str) -> Vec<String> {
     for (start, html) in html_lines {
         let value = html.strip_suffix('\n').unwrap_or(&html);
         if HEADING_HTML_BLOCK.is_match(value) {
-            if let Some(slot) = lines.get_mut(line_of(&source, start)) {
+            if let Some(slot) = lines.get_mut(line_starts.line_of(start)) {
                 *slot = value.to_string();
             }
         }
@@ -339,6 +355,19 @@ pub fn authored_markdown_lines(text: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_readme_of_one_hundred_thousand_paragraphs_is_read_in_well_under_a_second() {
+        let readme = "a\n\n".repeat(128 * 1024);
+        let started = std::time::Instant::now();
+        let lines = authored_markdown_lines(&readme);
+        assert_eq!(lines.first().map(String::as_str), Some("a"));
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(2),
+            "took {:?}",
+            started.elapsed()
+        );
+    }
 
     #[test]
     fn headings_and_paragraphs_keep_their_lines_and_code_is_blanked() {
