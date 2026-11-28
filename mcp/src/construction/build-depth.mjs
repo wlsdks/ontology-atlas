@@ -23,19 +23,14 @@ import { dependencyEdges, kindOf } from './build-depth/node-fields.mjs';
 import { measureRoles, roleLabel, ROLE_REPAIR } from './build-depth/role-placement.mjs';
 import {
   areaCoverage,
-  areaLabel,
-  batchAbilityRows,
-  batchFilesLabel,
-  keepsNotMappedLines,
-  mappedPercent,
   mappingBatch,
   notMappedLineGap,
   notMappedLines,
-  openAreaCall,
 } from './build-depth/unmapped-areas.mjs';
 
 export { buildDepthFindings } from './build-depth/findings.mjs';
 export { saysOutlinedOnly } from './build-depth/node-fields.mjs';
+export { coverageChange, coverageReport, finalizeGate } from './build-depth/coverage-report.mjs';
 
 /**
  * The survey of a grounded repository (`cachedSurvey`: every unit with its main
@@ -73,66 +68,11 @@ function listed(rows, render) {
 }
 
 /**
- * The abilities on the map by evidence, the areas not mapped yet largest gap
- * first, the files with no node one request maps with the calls that open their
- * areas, and the exact lines the project keeps under `## Uncertainty`, so the
- * share the project holds is the server's.
+ * Placement against the survey's abilities, reads and cites against this session, and
+ * ability-to-ability edges, as the measures `coverageReport` counts and the refusals of
+ * `finalize_project_meaning` name row by row.
  */
-function areasSentence(docs, repoRoot, coverage, batch, { abilityRows = false } = {}) {
-  const { notMapped, counted, abilities, uncovered } = coverage;
-  if (notMapped.length === 0) {
-    return keepsNotMappedLines(docs)
-      ? `Areas: all ${counted} areas are mapped. Remove the Not mapped yet lines from the project's ## Uncertainty; finalize_project_meaning refuses while they stay (not-mapped-line-mismatch).`
-      : null;
-  }
-  const lead = abilities === 0
-    ? `Areas: ${notMapped.length} of ${counted} areas are not mapped yet and hold no abilities, so the project keeps no Not mapped yet line. `
-    : `Areas: ${abilities - uncovered} of ${abilities} abilities the survey found, ${mappedPercent(coverage)} percent, are on the map (a node's path: or cited lines point at their file); ${notMapped.length} of ${counted} areas are not mapped yet, largest gap first in the lines to keep below. `;
-  const keep = abilities === 0
-    ? ''
-    : `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${notMappedLines(coverage).join('\n')}\n`;
-  const files = batch.reduce((sum, area) => sum + area.batchFiles.length, 0);
-  const rows = abilityRows ? batchAbilityRows(batch) : [];
-  const openCalls = batch.map((area) => openAreaCall(repoRoot, area)).join('; ');
-  const next = files > 0
-    ? `Map next, in one request, the ${files} ${files === 1 ? 'file' : 'files'} with no node, ${batch.map(batchFilesLabel).join('; ')}. `
-      + (rows.length > 0
-        ? `What the survey lists in them, kind name evidence symbol: ${rows.join('; ')}. Outline a file before reading it by symbol; open an area only when these rows do not show what its file holds: ${openCalls}. `
-        : `Open their areas: ${openCalls}. `)
-    : `Map next, in one request: ${batch.map(areaLabel).join(', ')}. Open it: ${openCalls}. `;
-  const project = docs.find((doc) => kindOf(doc) === 'project');
-  const gap = project ? notMappedLineGap(project.body, coverage) : null;
-  return `${lead}${next}`
-    + 'Then write one capability per thing a user, an operator or another system gets there, with its entry file in path: and its rule\'s cited lines; one capability may stand for several files when it cites lines in each. '
-    + 'What is not product (generated code, test tooling, samples) goes on one line of the project\'s ## Excludes with its path and why.'
-    + (gap ? ` The project ${gap} (not-mapped-line-mismatch); finalize_project_meaning refuses until that line matches.` : '')
-    + (keep ? ` ${keep}` : '');
-}
-
-/**
- * Which capabilities still need a read. A process that served nothing cannot tell
- * an earlier session's cite from none, so it lists only bodies citing no lines
- * that exist and counts the rest as recorded earlier.
- */
-function depthSentence(depth) {
-  const fresh = depth.served === 0;
-  const pending = fresh ? depth.uncited : depth.unread;
-  if (pending.length === 0 && !(fresh && depth.citedEarlier > 0)) return null;
-  const lead = fresh
-    ? `Depth: this server process has served no reads (a restarted server keeps none); ${depth.citedEarlier} of ${depth.capabilities} capabilities cite lines an earlier session recorded that this process has not re-read.`
-    : `Depth: ${depth.read} of ${depth.capabilities} capabilities cite lines this session read that hold a condition.`;
-  if (pending.length === 0) return lead;
-  return `${lead} Not yet${fresh ? ', citing no lines' : ''}: ${listed(pending, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(pending)}.`;
-}
-
-/**
- * Placement against the survey's abilities, reads and cites against this
- * session, and ability-to-ability edges, with the line a write and validate_vault
- * report. Each list names what to do next. `abilityRows` writes the survey's rows
- * for the files the next request maps, so it needs no area survey; validate_vault
- * asks for them, a write's answer does not repeat them.
- */
-export function measureBuildDepth(docs, repo, reads, { abilityRows = false } = {}) {
+export function measureBuildDepth(docs, repo, reads) {
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability');
   const dependsOn = dependencyEdges(docs).length;
   const breadth = repo ? measureAbilities(docs, repo.survey) : null;
@@ -142,32 +82,6 @@ export function measureBuildDepth(docs, repo, reads, { abilityRows = false } = {
   const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
   const coverage = repo ? areaCoverage(docs, repo.survey, { collection: repo.collection, repoRoot: repo.repoRoot, reads }) : null;
   const unmapped = coverage?.notMapped ?? [];
-  const batch = mappingBatch(unmapped);
-  const parts = [];
-  if (breadth && breadth.abilities > 0) {
-    parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
-    if (breadth.unplaced.length > 0) {
-      parts.push(`Not placed: ${listed(breadth.unplaced, abilityLabel)}. Place each: add_concepts a capability for it, name it in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why.`);
-    }
-  }
-  if (coverage) {
-    const areas = areasSentence(docs, repo.repoRoot, coverage, batch, { abilityRows });
-    if (areas) parts.push(areas);
-  }
-  if (depth) {
-    const sentence = depthSentence(depth);
-    if (sentence) parts.push(sentence);
-  }
-  // The rule and edge lists name slugs across the vault; they speak only for a grounded build.
-  if (repo && rules.uncited.length > 0) {
-    parts.push(`Rules: ${rules.uncited.length} of ${rules.capabilities} capabilities state a rule without citing ${rules.judgedAgainstReads ? 'read ' : ''}lines that hold its condition: ${listed(rules.uncited, (row) => row.slug)}. Next: ${citeRepair(rules.uncited)}.`);
-  }
-  if (repo && roles && roles.unplaced.length > 0) {
-    parts.push(`Roles: ${roles.unplaced.length} of the ${roles.candidates} implementation roles that two or more capabilities' reads pass through have no element: ${listedAll(roles.unplaced, roleLabel)}. Next: ${ROLE_REPAIR}.`);
-  }
-  if (repo && capabilities.length > 1 && abilityEdges.alone.length > 0) {
-    parts.push(`Abilities: ${abilityEdges.edges} depends_on edges run from one capability to another; none touch ${listed(abilityEdges.alone, (slug) => slug)}. For each, ask which other ability must have run, be configured or be present first, and add_relations that edge with a why citing the read lines that show it.`);
-  }
   return {
     breadth,
     reads: depth,
@@ -176,10 +90,11 @@ export function measureBuildDepth(docs, repo, reads, { abilityRows = false } = {
     roles,
     unmappedAreas: unmapped,
     areaCoverage: coverage,
-    areaBatch: batch,
+    areaBatch: mappingBatch(unmapped),
     capabilities: capabilities.length,
     dependsOn,
-    line: parts.length > 0 ? parts.join(' ') : null,
+    grounded: Boolean(repo),
+    repoRoot: repo?.repoRoot ?? null,
   };
 }
 

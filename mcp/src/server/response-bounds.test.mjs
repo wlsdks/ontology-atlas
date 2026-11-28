@@ -94,7 +94,7 @@ function areaRepositoryWithVault() {
   return { root, vault };
 }
 
-test('validate_vault and a write keep an area survey\'s coverage within their bounds and write the lines to keep once', () => {
+test('validate_vault and a write keep an area survey\'s coverage within their bounds and give the same next call', () => {
   const { root, vault } = areaRepositoryWithVault();
   try {
     const result = inServer(root, `
@@ -103,23 +103,24 @@ test('validate_vault and a write keep an area survey\'s coverage within their bo
       console.log(JSON.stringify({ written, validation, writtenText: ok(written).content[0].text.length, validationText: ok(validation).content[0].text.length }));
     `, { vault });
     const { coverage } = result.validation;
-    assert.match(coverage, /Areas: 0 of \d+ abilities the survey found/);
-    const linesToKeep = (line) => line.slice(line.indexOf('Keep exactly these lines'));
-    assert.equal(linesToKeep(result.written.coverage), linesToKeep(coverage), 'a write gives the lines to keep that validate_vault does');
-    assert.match(coverage, /What the survey lists in them/, 'validate_vault lists the next files\' ability rows');
+    assert.equal(coverage.areas.mappedPercent, 0);
+    assert.ok(coverage.areas.notMapped > 0 && coverage.areas.counted >= coverage.areas.notMapped);
+    assert.ok(coverage.unplaced === undefined || coverage.unplaced.length <= 10, 'at most ten unplaced rows a page');
+    assert.equal(result.written.coverage.nextAction, coverage.nextAction, 'a write gives the next call that validate_vault does');
+    assert.equal(result.written.coverage.unplaced, undefined, 'a write repeats no rows');
     assert.ok(result.validationText <= 40_000, `validate_vault answered ${result.validationText} characters`);
     assert.ok(result.writtenText <= 40_000, `the write answered ${result.writtenText} characters`);
-    assert.ok(coverage.split('\n').filter((line) => line.startsWith('- Not mapped yet:')).length <= 12, 'at most twelve area bullets');
+    assert.ok(result.validation.finalizeGate.some((block) => block.row === 'not-mapped-lines'), 'the gate shows the project without its line');
     const mismatch = result.validation.problems.flatMap((row) => row.issues).find((issue) => issue.code === 'not-mapped-line-mismatch');
     assert.ok(mismatch, 'the project without its line is flagged');
-    assert.doesNotMatch(mismatch.message, /\n/, 'the lines to keep are written once, in the coverage');
-    assert.match(mismatch.message, /the lines the Areas sentence of this answer's coverage gives/);
+    assert.doesNotMatch(mismatch.message, /\n/, 'the lines to keep are written once, in the refusal');
+    assert.match(mismatch.message, /call finalize_project_meaning, whose refusal names the exact lines/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('a brief carries at most 20 problem files and the validate_vault call for the rest', () => {
+test('a brief carries the first 3 problem files, the counts and the validate_vault call for the rest', () => {
   const root = vaultWithProblems();
   try {
     const result = inServer(root, `
@@ -133,14 +134,14 @@ test('a brief carries at most 20 problem files and the validate_vault call for t
       }));
     `);
     for (const [index, validation] of result.briefs.entries()) {
-      assert.equal(validation.problems.length, 20, `brief ${index} carries 20 rows`);
+      assert.equal(validation.problems.length, 3, `brief ${index} carries 3 rows`);
       assert.equal(validation.summary.problemFiles, 32, 'the counts stay whole-vault');
       assert.equal(validation.summary.errorFiles, 2);
-      assert.deepEqual(validation.problemsPagination, { offset: 0, limit: 20, total: 32, returned: 20, hasMore: true, nextOffset: 20 });
-      assert.deepEqual(validation.nextCall, { tool: 'validate_vault', arguments: { offset: 20 } });
-      assert.deepEqual(Object.keys(validation).slice(0, 3), ['nextCall', 'problemsPagination', 'problemsHint'], 'the way on comes first');
+      assert.deepEqual(validation.problemsPagination, { offset: 0, limit: 3, total: 32, returned: 3, hasMore: true, nextOffset: 3 });
+      assert.deepEqual(validation.nextCall, { tool: 'validate_vault', arguments: { offset: 3 } });
+      assert.deepEqual(Object.keys(validation).slice(0, 3), ['nextCall', 'scanned', 'problemsPagination'], 'the way on comes first');
       assert.deepEqual(validation.problems.slice(0, 2).map((row) => row.slug), ['broken-a', 'broken-b'], 'files with errors come first');
-      assert.ok(Object.values(validation.summary.byCode).every((entry) => entry.files.length <= 20));
+      assert.ok(Object.values(validation.summary.byCode).every((entry) => entry.files === undefined), 'a brief names the files of no code');
     }
     for (const check of result.checks) {
       assert.equal(check.status, 'fail', 'the check is judged on the whole vault');
@@ -151,7 +152,7 @@ test('a brief carries at most 20 problem files and the validate_vault call for t
   }
 });
 
-test('a brief and validate_vault list every path drift', () => {
+test('a brief counts every path drift and validate_vault lists them', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-drift-bounds-')));
   try {
     mkdirSync(join(root, 'domains'));
@@ -170,13 +171,13 @@ test('a brief and validate_vault list every path drift', () => {
       console.log(JSON.stringify({
         drift: health.validation.pathDrift,
         check: health.checks.find((check) => check.id === 'vault_validation'),
-        briefDrifts: brief.health.validation.pathDrift.drifts.length,
+        briefDrifts: brief.health.validation.pathDrift.drifts,
         tool: validateVaultTool({}).pathDrift,
       }));
     `);
-    assert.equal(result.drift.drifts.length, 25);
+    assert.equal(result.drift.drifts, 25);
     assert.match(result.check.message, /source paths 25;/, 'the check counts every drift');
-    assert.equal(result.briefDrifts, 25, 'the brief lists every drift');
+    assert.equal(result.briefDrifts, 25, 'the brief counts every drift');
     assert.equal(result.tool.drifts.length, 25);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -215,8 +216,13 @@ test('validate_vault pages every problem file once, errors first, and each page 
     assert.equal(result.pages.at(-1).problemsPagination.nextOffset, null);
     const warningCode = Object.entries(result.whole.summary.byCode).find(([, entry]) => entry.count === 30);
     assert.ok(warningCode, 'a code every capability has');
-    assert.equal(warningCode[1].files.length, 20);
-    assert.equal(warningCode[1].filesOmitted, 10);
+    assert.equal(warningCode[1].files, undefined, 'a page that holds every file of a code does not repeat them');
+    const firstPage = result.pages[0].summary.byCode[warningCode[0]];
+    assert.equal(firstPage.files.length, 20, 'a page names only the files of the code that are not on it');
+    assert.equal(firstPage.filesOmitted, undefined);
+    assert.ok(firstPage.remedy, 'the repair is stated once, with the code');
+    const issue = result.pages[0].problems.flatMap((row) => row.issues).find((row) => row.code === warningCode[0]);
+    assert.ok(!issue.message.includes(firstPage.remedy.replace('<slug>', '')) || firstPage.remedy.length < 20, 'an issue does not repeat the remedy');
     for (const page of [...result.pages, result.whole]) assertConforms('validate_vault', page);
   } finally {
     rmSync(root, { recursive: true, force: true });

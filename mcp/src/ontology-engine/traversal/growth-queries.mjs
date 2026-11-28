@@ -338,6 +338,7 @@ export function createGrowthQueries({
         unassignedNodes: unassignedNodes.total,
         emptyDomains: emptyDomains.total,
         nextReads: nextReads.total,
+        ...(nextReads.reason ? { nextReadsReason: nextReads.reason } : {}),
         // Unchanged on purpose: `totalActions` counts pending writes, which other
         // surfaces read as "writes waiting"; a next read is not a write.
         totalActions:
@@ -350,7 +351,9 @@ export function createGrowthQueries({
       danglingReferences,
       unassignedNodes,
       emptyDomains,
-      nextReads,
+      // Rows only: `summary.nextReads` counts them all, and `summary.nextReadsReason`
+      // says why none were offered, so no handed-over list is mistaken for an empty one.
+      nextReads: nextReads.rows,
     };
   }
 

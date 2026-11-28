@@ -31,8 +31,8 @@ const AGENT_MCP_CONNECTED_PROOF_LINES = [
   '1. query_ontology({"operation":"workspace_brief","limit":5})',
   '2. query_ontology({"operation":"agent_brief","limit":5})',
   '3. query_ontology({"operation":"health","limit":5})',
-  '4. query_ontology({"operation":"query_plan","targetOperation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
-  '5. query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
+  '4. query_ontology({"operation":"query_plan","targetOperation":"match_nodes","kind":"capability","sort":"degree","limit":10})',
+  '5. query_ontology({"operation":"match_nodes","kind":"capability","sort":"degree","limit":10})',
   'If these tools are missing, the agent is not connected yet: put the config in place, then restart the agent from the codebase root.',
 ];
 

@@ -14,11 +14,13 @@ export function createHealthQuery({
   function health(options = {}) {
     const limit = normalizeLimit(options.limit, 10);
     const overviewResult = overview({ limit });
-    const componentTypeSet = normalizeTypes(options.componentTypes ?? options.types, options.componentTypes !== undefined ? 'componentTypes' : 'types');
+    // One `limit` sizes every section; without it each keeps its own default.
+    const sectionLimit = (fallback) => (options.limit === undefined ? fallback : limit);
+    const componentTypeSet = normalizeTypes(options.types, 'types');
     const componentResult = components({
-      limit: normalizeLimit(options.componentLimit, 5, 'componentLimit'),
-      nodeLimit: normalizeLimit(options.nodeLimit, 10, 'nodeLimit'),
-      types: options.componentTypes ?? options.types,
+      limit: sectionLimit(5),
+      nodeLimit: sectionLimit(10),
+      types: options.types,
     });
     const allComponentGroups = connectedComponentGroups(componentTypeSet);
     const actionableComponentGroups = allComponentGroups.filter(
@@ -27,18 +29,16 @@ export function createHealthQuery({
     const actionableComponentCount = actionableComponentGroups.length;
     const ignoredComponentCount = allComponentGroups.length - actionableComponentCount;
     const cycleResult = cycles({
-      limit: normalizeLimit(options.cycleLimit, 5, 'cycleLimit'),
+      limit: sectionLimit(5),
       maxHops: options.maxHops ?? options.depth,
-      types: options.dependencyTypes ?? ['dependencies'],
-      typeName: options.dependencyTypes !== undefined ? 'dependencyTypes' : 'types',
+      types: ['dependencies'],
     });
     const recommendationResult = recommendRelations({
-      limit: normalizeLimit(options.recommendationLimit, 20, 'recommendationLimit'),
+      limit: sectionLimit(20),
     });
     const orderResult = topologicalOrder({
-      limit: normalizeLimit(options.orderLimit, 20, 'orderLimit'),
-      types: options.dependencyTypes ?? ['dependencies'],
-      typeName: options.dependencyTypes !== undefined ? 'dependencyTypes' : 'types',
+      limit: sectionLimit(20),
+      types: ['dependencies'],
     });
     const issueCount = Array.isArray(artifact?.issues) ? artifact.issues.length : 0;
     const graph = overviewResult.graph;
@@ -174,19 +174,21 @@ export function createHealthQuery({
         acyclic: orderResult.acyclic,
         totalNodes: orderResult.totalNodes,
         orderedCount: orderResult.orderedCount,
+        limited: orderResult.limited,
+        order: orderResult.order.map(({ rank, slug }) => ({ rank, slug })),
         blocked: orderResult.blocked,
       },
     };
   }
 
   function componentHealthSubject(options = {}) {
-    return options.componentTypes !== undefined || options.types !== undefined
+    return options.types !== undefined
       ? 'The scoped ontology graph'
       : 'The resolved ontology graph';
   }
 
   function componentHealthConnectedSubject(options = {}, ignored = false) {
-    if (options.componentTypes !== undefined || options.types !== undefined) return 'The scoped ontology graph';
+    if (options.types !== undefined) return 'The scoped ontology graph';
     return ignored ? 'The actionable ontology graph' : 'The resolved ontology graph';
   }
 

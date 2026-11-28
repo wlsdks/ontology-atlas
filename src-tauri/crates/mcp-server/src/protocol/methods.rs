@@ -84,7 +84,7 @@ pub fn handle_request(
                     name: &surface.server_name,
                     version: &surface.server_version,
                 },
-                instructions: surface.instructions(&session.config().modes),
+                instructions: surface.instructions().to_string(),
             })
         }
         "tools/list" => {

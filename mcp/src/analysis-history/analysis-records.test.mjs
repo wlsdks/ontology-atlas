@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { analysisDigest, analysisRecordFileName, serializeAnalysisRecord } from './analysis-record.mts';
-import { listAnalysisRecords, readAnalysisRecord } from './analysis-records.mjs';
+import { readAnalysisRecord } from './analysis-records.mjs';
 
 function fixture(id, at = '2026-09-05T08:00:00.000Z') {
   return {
@@ -19,41 +19,31 @@ function fixture(id, at = '2026-09-05T08:00:00.000Z') {
   };
 }
 
-test('analysis history pages and reads exact immutable Markdown without a graph', async () => {
+test('an analysis record reads back as exact immutable Markdown without a graph', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'atlas-record-read-'));
   try {
     const directory = path.join(root, '.ontology-atlas/analyses');
     await mkdir(directory, { recursive: true });
     const records = [fixture('95f4ba81-41f7-483b-a617-2a4be815be32'), fixture('24e7bc39-013c-46e7-86b2-ff2f3aeab58c', '2026-09-05T08:01:00.000Z')];
     for (const record of records) await writeFile(path.join(directory, analysisRecordFileName(record)), serializeAnalysisRecord(record));
-    const first = await listAnalysisRecords(root, { limit: 1 });
-    assert.equal(first.totalFiles, 2);
-    assert.equal(first.records[0].id, records[1].id);
-    assert.equal(first.pagination.hasMore, true);
-    const older = await listAnalysisRecords(root, { limit: 1, cursor: first.pagination.nextCursor });
-    assert.equal(older.records[0].id, records[0].id);
-    assert.equal(older.pagination.hasMore, false);
     assert.deepEqual((await readAnalysisRecord(root, records[0].id)).record, records[0]);
     assert.equal(await readFile(path.join(directory, analysisRecordFileName(records[0])), 'utf8'), serializeAnalysisRecord(records[0]));
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
-test('analysis readers refuse unsafe identities and symlinked archive/record paths', async () => {
+test('analysis readers refuse unsafe identities and symlinked record paths', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'atlas-record-boundary-'));
   const outside = await mkdtemp(path.join(tmpdir(), 'atlas-record-outside-'));
   try {
     await assert.rejects(readAnalysisRecord(root, '../secret'), /UUID/);
     await mkdir(path.join(root, '.ontology-atlas'));
     await symlink(outside, path.join(root, '.ontology-atlas/analyses'));
-    await assert.rejects(listAnalysisRecords(root), /real directory/);
+    await assert.rejects(readAnalysisRecord(root, '95f4ba81-41f7-483b-a617-2a4be815be32'), /real directory/);
     await rm(path.join(root, '.ontology-atlas/analyses'));
     await mkdir(path.join(root, '.ontology-atlas/analyses'));
     const record = fixture('95f4ba81-41f7-483b-a617-2a4be815be32');
     await writeFile(path.join(outside, 'record.md'), serializeAnalysisRecord(record));
     await symlink(path.join(outside, 'record.md'), path.join(root, '.ontology-atlas/analyses', analysisRecordFileName(record)));
-    const history = await listAnalysisRecords(root);
-    assert.equal(history.records.length, 0);
-    assert.equal(history.problems.length, 1);
     await assert.rejects(readAnalysisRecord(root, record.id), /regular file/);
   } finally { await rm(root, { recursive: true, force: true }); await rm(outside, { recursive: true, force: true }); }
 });
@@ -76,9 +66,6 @@ test('analysis readers reject altered evidence even when metadata still claims g
     assert.equal((await readAnalysisRecord(root, record.id)).record.qualification.status, 'grounded');
     record.evidence[0].body = 'Refund at any time.';
     await writeFile(file, serializeAnalysisRecord(record));
-    const page = await listAnalysisRecords(root);
-    assert.equal(page.records.length, 0);
-    assert.match(page.problems[0].reason, /evidence_digest_mismatch/);
     await assert.rejects(readAnalysisRecord(root, record.id), /evidence_digest_mismatch/);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

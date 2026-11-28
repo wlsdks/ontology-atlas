@@ -387,55 +387,6 @@ function assertDestructivePreview(
   assert.equal(result.blockedReasons.length, blocked, `${label} blocker count`);
 }
 
-function parseInstructionToolInventory(instructions) {
-  assert.equal(typeof instructions, "string", "initialize instructions are present");
-  const section = instructions.match(
-    /## Tool inventory \((\d+) tools = read (\d+) \+ write (\d+)\)\s+([\s\S]*?)(?=\n## )/,
-  );
-  assert.ok(section, "initialize instructions expose a structured tool inventory");
-
-  const namesFrom = (label) => {
-    const line = section[4].match(new RegExp(`^\\*\\*${label}\\*\\*\\s+—\\s+(.+)$`, "m"));
-    assert.ok(line, `tool inventory exposes ${label} line`);
-    return [...line[1].matchAll(/`([a-z][a-z0-9_]*)`/g)].map((match) => match[1]);
-  };
-
-  return {
-    total: Number(section[1]),
-    readCount: Number(section[2]),
-    writeCount: Number(section[3]),
-    readNames: namesFrom("read"),
-    writeNames: namesFrom("write"),
-  };
-}
-
-function assertInstructionToolInventoryMatches(initializeResponse, tools) {
-  assert.ok(initializeResponse, "initialize response is present");
-  assert.ok(Array.isArray(tools), "tools/list returns an array");
-  assert.ok(tools.length > 0, "tools/list target is non-empty");
-
-  const names = tools.map((tool) => tool.name);
-  assert.equal(new Set(names).size, names.length, "tools/list names are unique");
-  const expectedRead = tools
-    .filter((tool) => tool.annotations?.readOnlyHint === true)
-    .map((tool) => tool.name)
-    .sort();
-  const expectedWrite = tools
-    .filter((tool) => tool.annotations?.readOnlyHint !== true)
-    .map((tool) => tool.name)
-    .sort();
-  const inventory = parseInstructionToolInventory(initializeResponse.result?.instructions);
-
-  assert.equal(inventory.total, tools.length, "inventory total matches tools/list");
-  assert.equal(inventory.readCount, expectedRead.length, "inventory read count matches tools/list");
-  assert.equal(inventory.writeCount, expectedWrite.length, "inventory write count matches tools/list");
-  assert.equal(inventory.total, inventory.readCount + inventory.writeCount, "inventory header adds up");
-  assert.equal(inventory.readCount, inventory.readNames.length, "inventory read count matches its names");
-  assert.equal(inventory.writeCount, inventory.writeNames.length, "inventory write count matches its names");
-  assert.deepEqual([...inventory.readNames].sort(), expectedRead, "inventory read names match tools/list");
-  assert.deepEqual([...inventory.writeNames].sort(), expectedWrite, "inventory write names match tools/list");
-}
-
 // Single tools name their batch twins so an agent reading only the list knows
 // the one-call alternative exists.
 await test("tools/list — a retired tool stays out of the list and answers with its replacement", async () => {
@@ -490,10 +441,6 @@ await test("tools/list — each single-item tool description cross-references it
       tools.map((tool) => tool.name).sort(),
       [...EXPECTED_TOOLS].sort(),
       "tools/list registry must match verify inventory",
-    );
-    assertInstructionToolInventoryMatches(
-      responses.find((response) => response.id === 1),
-      tools,
     );
     for (const tool of tools) {
       assert.equal(
@@ -935,7 +882,7 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.mtime?.type, "number");
     assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.filePath, undefined);
     assert.equal(addConcepts?.outputSchema?.properties?.findings?.items?.type, "string");
-    assert.equal(addConcepts?.outputSchema?.properties?.coverage?.type, "string");
+    assert.equal(addConcepts?.outputSchema?.properties?.coverage?.type, "object");
     assert.equal(addConcepts?.outputSchema?.properties?.postWriteMaintenance, undefined);
     const addConcept = findTool("add_concept");
     assert.equal(addConcept?.outputSchema?.type, "object");
@@ -977,7 +924,9 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(addRelation?.outputSchema?.properties?.postWriteMaintenance, undefined);
     const patchConcept = findTool("patch_concept");
     assert.equal(patchConcept?.outputSchema?.type, "object");
-    assert.deepEqual(patchConcept?.outputSchema?.required, ["ok", "slug", "changed", "mtime"]);
+    assert.deepEqual(patchConcept?.outputSchema?.required, ["ok"]);
+    assert.equal(patchConcept?.inputSchema?.properties?.patches?.maxItems, 20);
+    assert.deepEqual(patchConcept?.outputSchema?.properties?.patches?.items?.required, ["ok", "slug", "changed", "mtime"]);
     assert.equal(patchConcept?.outputSchema?.additionalProperties, false);
     assert.equal(patchConcept?.outputSchema?.properties?.ok?.type, "boolean");
     assert.equal(patchConcept?.outputSchema?.properties?.slug?.type, "string");
@@ -1617,13 +1566,13 @@ await test("tools/list — each single-item tool description cross-references it
       [
         "neighbors", "path", "query_plan", "communities", "similar_nodes", "explain_relation", "reachability",
         "pattern_walk", "impact", "blast_radius", "subgraph", "overview", "schema", "facets", "match_nodes",
-        "node_profile", "project_scope", "project_map", "relation_check", "components", "lineage",
+        "node_profile", "domain_matrix", "project_scope", "project_map", "relation_check", "components", "lineage",
         "containment_tree", "cycles", "recommend_relations", "growth_plan", "maintenance_plan", "agent_brief",
         "analysis_record", "workspace_brief", "health",
       ],
       "query_ontology exposes the runtime operation enum",
     );
-    for (const retired of ["all_paths", "centrality", "match_edges", "domain_profile", "domain_matrix", "builder_context", "topological_order"]) {
+    for (const retired of ["all_paths", "centrality", "match_edges", "domain_profile", "builder_context", "topological_order"]) {
       assert.ok(!queryOperations.includes(retired), `${retired} is no longer an operation`);
     }
     assert.deepEqual(
@@ -1776,18 +1725,13 @@ await test("initialize — exposes agent guidance in the instructions field", as
     const instructions = init.result?.instructions;
     assert.equal(typeof instructions, "string");
     assert.ok(
-      instructions.length > 200,
-      `instructions must have a meaningful length (got ${instructions.length})`,
+      instructions.length > 200 && instructions.length <= 2048,
+      `instructions must be meaningful and fit the 2,048 characters a host may keep (got ${instructions.length})`,
     );
-    for (const toolName of EXPECTED_TOOLS) {
-      assert.match(instructions, new RegExp(`\\b${toolName}\\b`), `instructions mention ${toolName}`);
-    }
     assert.match(instructions, /## Construction card/);
     assert.match(instructions, /add_concepts[\s\S]*add_relations[\s\S]*validate_vault[\s\S]*connect_project_source[\s\S]*finalize_project_meaning/);
-    assert.match(instructions, /connection_info\(\{guide:"construction"\}\)/);
-    assert.match(instructions, /find_backlinks/);
-    assert.match(instructions, /workspace_brief/);
-    assert.doesNotMatch(instructions, /qualification|writePlan|independent evaluator/);
+    assert.match(instructions, /connection_info\(\{guide\}\)/);
+    assert.doesNotMatch(instructions, /## Tool inventory|qualification|writePlan|independent evaluator/);
 
     const writeSafety = getCallParsed(responses, 2).guideText;
     assert.match(writeSafety, /expected_mtime/);
@@ -2706,8 +2650,8 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
     assert.equal(result.nextReview.decision.questionEligibility, "blocked_missing_vault_endpoints");
     assert.equal(result.nextReview.endpointModelling.analysisCall.tool, "analyze_repo_structure");
     assert.deepEqual(result.nextReview.endpointModelling.analysisCall.arguments, { rootPath: repoRoot });
-    assert.deepEqual(result.nextReview.endpointModelling.proposalValidation.requiredArguments, ["rootPath", "proposal"]);
-    assert.deepEqual(result.nextReview.endpointModelling.proposalValidation.fieldsAfterKindDecision, {
+    assert.equal(result.nextReview.endpointModelling.addConceptsStep.tool, "add_concepts");
+    assert.deepEqual(result.nextReview.endpointModelling.addConceptsStep.fieldsAfterKindDecision, {
       common: ["slug", "title", "definition", "evidence", "confidence"],
       byKind: {
         project: [],
@@ -2716,9 +2660,9 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
         element: ["domain", "path"],
       },
     });
-    assert.equal(result.nextReview.endpointModelling.proposalValidation.endpointDrafts.length, 2);
+    assert.equal(result.nextReview.endpointModelling.addConceptsStep.endpointDrafts.length, 2);
     assert.deepEqual(
-      result.nextReview.endpointModelling.proposalValidation.endpointDrafts.map((draft) => ({
+      result.nextReview.endpointModelling.addConceptsStep.endpointDrafts.map((draft) => ({
         endpoint: draft.endpoint,
         slugCandidate: draft.slugCandidate,
       })),
@@ -2727,7 +2671,7 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
         { endpoint: "capabilities/beta", slugCandidate: "capabilities/beta" },
       ],
     );
-    assert.ok(result.nextReview.endpointModelling.proposalValidation.endpointDrafts.every(
+    assert.ok(result.nextReview.endpointModelling.addConceptsStep.endpointDrafts.every(
       (draft) => draft.kindDecision === "human_meaning_required",
     ));
     assert.equal(result.nextReview.endpointModelling.resumeCall.tool, "infer_imports");
@@ -3363,7 +3307,6 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
     assert.equal(agentBrief.graph.nodes, 3);
     assert.equal(agentBrief.graph.projects, 1);
     assert.doesNotMatch(JSON.stringify(agentBrief.entrypoints), /capabilities\/session/);
-    assert.doesNotMatch(JSON.stringify(agentBrief.businessOntologyLens), /capabilities\/session/);
     const briefValidation = agentBrief.health.validation;
     assert.ok(
       briefValidation.problems.some((problem) => problem.slug === "capabilities/session"),
@@ -3375,10 +3318,10 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
         limit: briefValidation.problemsPagination.limit,
         total: briefValidation.problemsPagination.total,
       },
-      { offset: 0, limit: 20, total: briefValidation.summary.problemFiles },
+      { offset: 0, limit: 3, total: briefValidation.summary.problemFiles },
     );
-    assert.equal(briefValidation.problems.length, Math.min(20, briefValidation.summary.problemFiles));
-    assert.equal(briefValidation.nextCall, undefined);
+    assert.equal(briefValidation.problems.length, Math.min(3, briefValidation.summary.problemFiles));
+    assert.equal(briefValidation.nextCall.tool, "validate_vault");
     assert.equal(agentBrief.projectSlug, "project");
     assert.equal(agentBrief.projectSource.status, "review_required");
     assert.equal(agentBrief.projectSource.currentness, "stale");
@@ -3395,20 +3338,6 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
     assert.equal(agentBrief.firstCalls[4].arguments.from, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.to, "capabilities/login");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
-    assert.equal(agentBrief.businessOntologyLens.policy, "business-first");
-    assert.deepEqual(agentBrief.businessOntologyLens.readOrder, ["outcome", "domain", "capability", "element"]);
-    assert.ok(agentBrief.businessOntologyLens.businessDomains.includes("domains/auth"));
-    assert.ok(agentBrief.businessOntologyLens.capabilityOutcomes.includes("capabilities/login"));
-    assert.deepEqual(agentBrief.businessOntologyLens.decisionQuestions, [
-      "What business outcome should this ontology explain or improve?",
-      "Which business/product domain boundary does this code change?",
-      "What capability claim can a planner, marketer, or leader discuss?",
-      "Which implementation evidence proves or disproves that capability?",
-    ]);
-    assert.match(
-      agentBrief.businessOntologyLens.guidance.join("\n"),
-      /do not treat paths, APIs, routes, or commands as the ontology root/i,
-    );
     assert.equal(Object.hasOwn(agentBrief, "cliFallbackCommands"), false);
     assert.ok(agentBrief.entrypoints.some((entrypoint) => entrypoint.slug === "domains/auth"));
     assert.deepEqual(agentBrief.writeGuardrails.map((guardrail) => guardrail.id), [
@@ -3428,18 +3357,11 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
       "maintenance_plan",
       "validate_vault",
     ]);
-    assert.deepEqual(agentBrief.relationDecisionGuide.map((row) => row.decision), [
-      "skip_existing",
-      "review_inverse",
-      "safe_to_add",
-      "review_new_schema",
-    ]);
-    assert.match(agentBrief.writePolicy.join("\n"), /Run read tools first/);
-    assert.match(agentBrief.writePolicy.join("\n"), /relationDecisionGuide/);
-    assert.match(agentBrief.writePolicy.join("\n"), /find_backlinks before rename_concept/);
-    assert.match(agentBrief.writePolicy.join("\n"), /Definition\/Includes.*not exhaustive.*only\/all\/every\/exactly/);
-    assert.match(agentBrief.writePolicy.join("\n"), /bounded packet.*same atomic claim.*measurement qualifier/);
-    assert.match(agentBrief.handoffPrompt, /Definition\/Includes.*not exhaustive.*only\/all\/every\/exactly/s);
+    assert.match(agentBrief.handoffPrompt, /bounded claims, not inventories: never say only, all, every or exactly/);
+    assert.match(agentBrief.handoffPrompt, /relation_check before add_relations and find_backlinks before rename_concept/);
+    for (const cut of ["businessOntologyLens", "relationDecisionGuide", "writePolicy"]) {
+      assert.equal(Object.hasOwn(agentBrief, cut), false, `${cut} is in the guides, not in every brief`);
+    }
     for (const cut of ["graphDbQueryPack", "playbooks", "traversalStrategy", "resultContracts", "navigation"]) {
       assert.equal(Object.hasOwn(agentBrief, cut), false, `${cut} is cut from the brief`);
     }
@@ -3545,10 +3467,7 @@ await test("query_ontology health/workspace_brief/agent_brief — summary histor
       ["agent_brief", agentBrief.health?.validation],
     ]) {
       assert.equal(validation?.summaryFreshness?.checked, true, `${label} keeps summaryFreshness`);
-      assert.ok(
-        validation.summaryFreshness.stale.some((row) => row.slug === "domains/core"),
-        `${label} keeps the stale-summary verdict`,
-      );
+      assert.ok(validation.summaryFreshness.stale >= 1, `${label} keeps the stale-summary count`);
     }
     assert.equal(
       gitCalls(wrapper.tracePath, "log").length,
@@ -6863,6 +6782,63 @@ await test("patch_concept — a stale expected_mtime returns a conflict error re
   }
 });
 
+await test("patch_concept patches — one call writes every node and leaves one audit line per node", async () => {
+  const root = makeVault([
+    { slug: "capabilities/foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
+    { slug: "capabilities/bar", content: "---\nkind: capability\ntitle: Bar\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "patch_concept", {
+        patches: [
+          { slug: "capabilities/foo", frontmatter: { title: "Foo renamed" } },
+          { slug: "capabilities/bar", body: "Replaced body.\n" },
+        ],
+      }),
+    ]);
+    const answer = getCallStructured(responses, 2);
+    assert.equal(answer.ok, true);
+    assert.deepEqual(answer.patches.map((row) => [row.slug, row.ok, row.changed]), [
+      ["capabilities/foo", true, true],
+      ["capabilities/bar", true, true],
+    ]);
+    assert.match(readFileSync(join(root, "capabilities/foo.md"), "utf-8"), /title: Foo renamed/);
+    assert.match(readFileSync(join(root, "capabilities/bar.md"), "utf-8"), /Replaced body/);
+    const entries = readFileSync(join(root, ".ontology-atlas", "activity.jsonl"), "utf-8").trim().split("\n").map((line) => JSON.parse(line));
+    assert.deepEqual(entries.filter((entry) => entry.tool === "patch_concept").map((entry) => entry.target).sort(), ["capabilities/bar", "capabilities/foo"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("patch_concept patches — a patch that fails puts the earlier nodes back and a mixed call is refused", async () => {
+  const root = makeVault([
+    { slug: "capabilities/foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
+    { slug: "capabilities/bar", content: "---\nkind: capability\ntitle: Bar\n---\n" },
+  ]);
+  try {
+    const fooBefore = readFileSync(join(root, "capabilities/foo.md"), "utf-8");
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "patch_concept", {
+        patches: [
+          { slug: "capabilities/foo", frontmatter: { title: "Never kept" } },
+          { slug: "capabilities/bar", frontmatter: { title: "Stale" }, expected_mtime: 1 },
+        ],
+      }),
+      callTool(3, "patch_concept", { slug: "capabilities/foo", patches: [{ slug: "capabilities/bar", body: "x" }] }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(responses.find((r) => r.id === 2).result.content[0].text, /patches\[1\] \(capabilities\/bar\).*No node was changed/s);
+    assert.equal(readFileSync(join(root, "capabilities/foo.md"), "utf-8"), fooBefore);
+    assert.equal(isErrorResponse(responses, 3), true);
+    assert.match(responses.find((r) => r.id === 3).result.content[0].text, /either `patches` or `slug`/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — a graph array patch is stored as a canonical set", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: project\ntitle: Foo\n---\n" },
@@ -7930,7 +7906,7 @@ await test("connection_info — repository root auto-discovers from a nested Git
   }
 });
 
-await test("initialize — read-only inventory matches the actually advertised toolset", async () => {
+await test("connection_info — a read-only server names exactly the advertised toolset", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7939,10 +7915,6 @@ await test("initialize — read-only inventory matches the actually advertised t
       callTool(3, "connection_info"),
     ], { OATLAS_READ_ONLY: "1" });
     const listed = responses.find((row) => row.id === 2)?.result?.tools ?? [];
-    assertInstructionToolInventoryMatches(
-      responses.find((response) => response.id === 1),
-      listed,
-    );
     const connectionInfo = getCallParsed(responses, 3);
     assert.equal(connectionInfo.server.readOnly, true);
     assert.equal(connectionInfo.server.toolCount, EXPECTED_READ_TOOLS.length);
@@ -7955,7 +7927,7 @@ await test("initialize — read-only inventory matches the actually advertised t
   }
 });
 
-await test("construction profile — advertised inventories agree and retain cold-start tools", async () => {
+await test("construction profile — connection_info and tools/list agree and retain cold-start tools", async () => {
   const root = makeVault();
   try {
     const expected = ['connection_info', 'list_concepts', 'get_concepts',
@@ -7970,7 +7942,6 @@ await test("construction profile — advertised inventories agree and retain col
       const listed = responses.find((row) => row.id === 2).result.tools;
       const names = expected.filter((name) => readOnly === '0' || EXPECTED_READ_TOOLS.includes(name));
       assert.deepEqual(listed.map((tool) => tool.name).sort(), names.sort());
-      assertInstructionToolInventoryMatches(responses.find((row) => row.id === 1), listed);
       const connectionInfo = getCallParsed(responses, 3);
       assert.deepEqual(connectionInfo.server.toolNames, listed.map((tool) => tool.name));
       assert.equal(connectionInfo.server.toolCount, readOnly === '0' ? 15 : 10);

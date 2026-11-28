@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { findOrphans } from './graph-queries.mjs';
+import { matchNodesFromFiles } from './graph-queries.mjs';
 
 const roots = [];
 after(() => {
@@ -33,22 +33,39 @@ const SHOP = {
   'capabilities/refund': 'kind: capability\ntitle: Refund a payment\ndomain: domains/billing\n',
 };
 
-describe('findOrphans', () => {
+const slugs = (found) => found.rows.map((row) => row.slug).sort();
+
+describe('matchNodesFromFiles', () => {
   it('reports the one node nothing points at, counts an ambiguous short reference for each candidate, and answers a vault with an invalid uid', () => {
-    const { total, orphans } = findOrphans(vaultOf(SHOP));
-    assert.equal(total, 1);
-    assert.deepEqual(orphans.map((row) => row.slug), ['capabilities/refund']);
+    const found = matchNodesFromFiles(vaultOf(SHOP), { hasIncoming: false });
+    assert.deepEqual(slugs(found), ['capabilities/refund']);
+    const [refund] = found.rows;
     assert.deepEqual(
-      { inDegree: orphans[0].inDegree, outDegree: orphans[0].outDegree, kind: orphans[0].kind },
+      { inDegree: refund.inDegree, outDegree: refund.outDegree, kind: refund.kind },
       { inDegree: 0, outDegree: 1, kind: 'capability' },
     );
+    const ledgers = matchNodesFromFiles(vaultOf(SHOP), { hasIncoming: true }).rows.filter((row) => row.slug.endsWith('ledger'));
+    assert.deepEqual(ledgers.map((row) => [row.slug, row.inDegree]).sort(), [['elements/archive/ledger', 1], ['elements/ledger', 1]]);
   });
 
-  it('leaves out the project and the vault README unless a kind or an exclusion list says otherwise', () => {
+  it('splits an unfiltered answer exactly into hasIncoming true and false, with every filter combination', () => {
     const root = vaultOf({ ...SHOP, README: 'kind: vault-readme\ntitle: Readme\n' });
-    assert.deepEqual(findOrphans(root).excludeKinds, ['project', 'vault-readme']);
-    assert.deepEqual(findOrphans(root, { excludeKinds: [] }).orphans.map((row) => row.slug).sort(), ['README', 'capabilities/refund', 'projects/shop']);
-    assert.deepEqual(findOrphans(root, { kind: 'project' }).orphans.map((row) => row.slug), ['projects/shop']);
-    assert.deepEqual(findOrphans(root, { excludeKinds: ['capability'] }).orphans.map((row) => row.slug).sort(), ['README', 'projects/shop']);
+    for (const filter of [{}, { kind: 'capability' }, { domain: 'domains/billing' }, { hasOutgoing: true }, { hasOutgoing: false }]) {
+      const open = { ...filter, excludeKinds: [] };
+      const all = slugs(matchNodesFromFiles(root, open));
+      const referenced = slugs(matchNodesFromFiles(root, { ...open, hasIncoming: true }));
+      const orphans = slugs(matchNodesFromFiles(root, { ...open, hasIncoming: false }));
+      assert.deepEqual([...referenced, ...orphans].sort(), all, JSON.stringify(filter));
+      assert.deepEqual(referenced.filter((slug) => orphans.includes(slug)), []);
+    }
+  });
+
+  it('leaves out the project and the vault README only for hasIncoming false, unless a kind or an exclusion list says otherwise', () => {
+    const root = vaultOf({ ...SHOP, README: 'kind: vault-readme\ntitle: Readme\n' });
+    assert.deepEqual(matchNodesFromFiles(root, { hasIncoming: false }).excludeKinds, ['project', 'vault-readme']);
+    assert.deepEqual(matchNodesFromFiles(root, {}).excludeKinds, []);
+    assert.deepEqual(slugs(matchNodesFromFiles(root, { hasIncoming: false, excludeKinds: [] })), ['README', 'capabilities/refund', 'projects/shop']);
+    assert.deepEqual(slugs(matchNodesFromFiles(root, { hasIncoming: false, kind: 'project' })), ['projects/shop']);
+    assert.deepEqual(slugs(matchNodesFromFiles(root, { hasIncoming: false, excludeKinds: ['capability'] })), ['README', 'projects/shop']);
   });
 });

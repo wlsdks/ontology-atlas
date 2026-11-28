@@ -5,9 +5,7 @@ import {
   numericFieldsFailure,
 } from '../value-checks.mjs';
 import {
-  agentBusinessOntologyLensFailure,
   agentGuardrailCallsFailure,
-  agentRelationDecisionGuideFailure,
   agentToolCallsFailure,
   agentToolCallsIncludeOperation,
 } from './agent-brief-guidance.mjs';
@@ -98,21 +96,8 @@ export function agentBriefFailure(parsed) {
     !/ontology-atlas MCP server/.test(parsed.handoffPrompt) ||
     !/first-contact MCP calls/i.test(parsed.handoffPrompt) ||
     !/When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault/.test(parsed.handoffPrompt) ||
-    !/Kind classification contract before writing frontmatter/.test(parsed.handoffPrompt) ||
-    !/Do not classify from the label alone/.test(parsed.handoffPrompt) ||
-    !/domain: shared vocabulary boundary/.test(parsed.handoffPrompt) ||
-    !/capability: user-visible behavior/.test(parsed.handoffPrompt) ||
-    !/element: concrete implementation part/.test(parsed.handoffPrompt) ||
-    !/unknown: temporary review signal/.test(parsed.handoffPrompt) ||
-    !/High-confidence gate/.test(parsed.handoffPrompt) ||
-    !/Containment spine/.test(parsed.handoffPrompt) ||
-    !/Color contract/.test(parsed.handoffPrompt) ||
-    !/source path, symbol, route, command, or MCP tool evidence/.test(parsed.handoffPrompt) ||
-    !/why not the nearest adjacent kind/.test(parsed.handoffPrompt) ||
-    !/similar_nodes/.test(parsed.handoffPrompt) ||
-    !/Write guardrails/.test(parsed.handoffPrompt) ||
-    !/relation_check/.test(parsed.handoffPrompt) ||
-    !/add_relations/.test(parsed.handoffPrompt)
+    !/relation_check before add_relations/.test(parsed.handoffPrompt) ||
+    !/connection_info\(\{guide:"construction"\}\)/.test(parsed.handoffPrompt)
   ) {
     return 'agent_brief response missing copyable handoffPrompt';
   }
@@ -141,8 +126,6 @@ export function agentBriefFailure(parsed) {
   if (blockingActions.length > 0) {
     return `agent_brief has actionable nextActions: ${blockingActions.join(', ')}. Inspect agent_brief.nextActions before writing.`;
   }
-  const businessLensFailure = agentBusinessOntologyLensFailure(parsed.businessOntologyLens);
-  if (businessLensFailure) return businessLensFailure;
   if (!Array.isArray(parsed.entrypoints)) {
     return 'agent_brief response missing entrypoints array';
   }
@@ -186,13 +169,5 @@ export function agentBriefFailure(parsed) {
       return `agent_brief writeGuardrails missing post_change_sync ${operation}`;
     }
   }
-  if (!Array.isArray(parsed.writePolicy) || parsed.writePolicy.some((row) => typeof row !== 'string' || row.trim() === '')) {
-    return 'agent_brief response missing writePolicy guidance';
-  }
-  if (!parsed.writePolicy.some((row) => /relation_check/.test(row) && /add_relations/.test(row))) {
-    return 'agent_brief writePolicy missing relation_check add_relations guidance';
-  }
-  const decisionGuideFailure = agentRelationDecisionGuideFailure(parsed.relationDecisionGuide);
-  if (decisionGuideFailure) return decisionGuideFailure;
   return null;
 }

@@ -98,7 +98,7 @@ export function vaultQueryToolsSchemaFailure(tools) {
   if (!sameArray(byCodeSchema.propertyNames?.enum, VAULT_ISSUE_CODE_VALUES)) {
     return 'validate_vault outputSchema byCode key drift';
   }
-  if (!sameArray(byCodeSchema.additionalProperties?.required, ['severity', 'count', 'files'])) {
+  if (!sameArray(byCodeSchema.additionalProperties?.required, ['severity', 'count'])) {
     return 'validate_vault outputSchema byCode entry required drift';
   }
   if (byCodeSchema.additionalProperties?.additionalProperties !== false) {

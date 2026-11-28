@@ -5,7 +5,10 @@ export { compileOntologyTool, queryOntologyTool };
 import { readOntologyAtlasIgnore } from '../vault/sidecar/ontology-atlas-ignore.mjs';
 import { buildMatchNodesFollowUp } from '../ontology-engine/briefs/agent-responses.mjs';
 import { pageMatchedRows } from '../ontology-engine/selection/match-rules.mjs';
-import { findOrphans } from '../vault/graph/graph-queries.mjs';
+import { matchNodesFromFiles } from '../vault/graph/graph-queries.mjs';
+import { compareNodeRows } from '../ontology-engine/selection/node-ranking.mjs';
+import { normalizeNodeKind, normalizeNodeSort, normalizeNonNegativeInteger, normalizeOptionalString } from '../ontology-engine/query-operation/query-arguments.mjs';
+import { normalizeLimit, normalizeOptionalBoolean } from '../ontology-engine/query-operation/query-primitives.mjs';
 import { queryCompiledOntology, refreshAgentBriefHandoffPrompt } from '../ontology-engine.mjs';
 import { COMPILED_ONTOLOGY_CACHE, REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../server/runtime.mjs';
 import {
@@ -84,29 +87,29 @@ function analysisRecords() {
 }
 
 /**
- * `match_nodes` with `hasIncoming: false` is the orphan question, answered from
- * the files: a vault whose compile fails closed (an invalid `uid:`) still gets
- * its answer, and a short reference that several nodes share counts as a
- * reference to each of them, as the graph keys are read everywhere else.
+ * `match_nodes` runs on the files for every filter, so `hasIncoming: true` and
+ * `false` split exactly what an unfiltered call returns and a vault whose compile
+ * fails closed (an invalid `uid:`) still answers the orphan question. A short
+ * reference that several nodes share counts as a reference to each of them, as
+ * the graph keys are read everywhere else.
  */
-function orphanNodes(args) {
-  const limit = args.limit ?? 100;
-  const offset = args.offset ?? 0;
-  const found = findOrphans(VAULT_ROOT, args);
-  const { page, pagination } = pageMatchedRows(found.orphans, { limit, offset });
+function matchNodes(args) {
+  const limit = normalizeLimit(args.limit);
+  const offset = normalizeNonNegativeInteger(args.offset, 'offset') ?? 0;
+  const kind = normalizeNodeKind(args.kind, 'kind');
+  const domain = normalizeOptionalString(args.domain, 'domain');
+  const hasIncoming = normalizeOptionalBoolean(args.hasIncoming, 'hasIncoming', null);
+  const hasOutgoing = normalizeOptionalBoolean(args.hasOutgoing, 'hasOutgoing', null);
+  const sort = normalizeNodeSort(args.sort);
+  const found = matchNodesFromFiles(VAULT_ROOT, { kind, domain, hasIncoming, hasOutgoing, excludeKinds: args.excludeKinds });
+  const rows = found.rows.sort((left, right) => compareNodeRows(left, right, sort));
+  const { page, pagination } = pageMatchedRows(rows, { limit, offset });
   const followUp = buildMatchNodesFollowUp(page[0]);
   return {
     operation: 'match_nodes',
     source: 'vault_files',
-    filters: {
-      kind: args.kind ?? null,
-      domain: args.domain ?? null,
-      hasIncoming: false,
-      hasOutgoing: args.hasOutgoing ?? null,
-      excludeKinds: found.excludeKinds,
-      sort: found.sort,
-    },
-    totalMatches: found.total,
+    filters: { kind, domain, hasIncoming, hasOutgoing, excludeKinds: found.excludeKinds, sort },
+    totalMatches: rows.length,
     limited: pagination.hasMore,
     pagination,
     nodes: page,
@@ -116,7 +119,7 @@ function orphanNodes(args) {
 
 async function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
-  if (args.operation === 'match_nodes' && args.hasIncoming === false) return orphanNodes(args);
+  if (args.operation === 'match_nodes') return matchNodes(args);
   if (args.operation === 'analysis_record') {
     const { readAnalysisRecord } = await analysisRecords();
     return readAnalysisRecord(VAULT_ROOT, args.recordId);

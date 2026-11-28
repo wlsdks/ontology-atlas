@@ -275,7 +275,7 @@ export function verifyUsage() {
     'It also checks node census, vault validation, workspace health, compile_ontology summary + paginated full-artifact + indexed full-artifact smoke, overview, query plans, and graph-query smoke.\n' +
     'Successful output prints read census consistency after cross-checking the list_concepts census/list_concepts/compile_ontology/overview.\n' +
     'Also checks strict unknown-tool / unknown-argument / invalid-enum rejection, list_concepts.kind, list_concepts filter kind/has-key, retired-tool answers, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
-    'tools/list inventory names, initialize-instruction tool inventory, schema strictness, and annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
+    'tools/list inventory names, schema strictness, and annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
     'batch reader/writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection,\n' +
     'destructive writer dry-runs for rename_concept/merge_concepts/delete_concept with every planned response present and no changed/postWriteMaintenance,\n' +
     'an absorb_document dry-run against a temp fixture file (Slice 0: never the vault under test) covering both the policy-absorb and architecture-suggest classification branches,\n' +
@@ -289,7 +289,7 @@ export function verifyUsage() {
     'Focused checks:\n' +
     '  pnpm test:mcp:verify            MCP verify helper contract without the full integration suite.\n' +
     '  pnpm test:mcp:verify:first-contact\n' +
-    '                                  Narrow first-contact initialize-tool-inventory/initialize-safety-recovery/unknown-tool/write-safety/health-summary/advisory/read/sample-shape helper gates.\n' +
+    '                                  Narrow first-contact initialize-instructions/initialize-safety-recovery/unknown-tool/write-safety/health-summary/advisory/read/sample-shape helper gates.\n' +
     '  pnpm test:mcp:maintenance       Narrow maintenance_plan filter/cursor/resume/work-queue formatter gates.\n' +
     '  pnpm test:mcp:verify:timeout    Narrow MCP verify timeout/startup/help/empty-vault diagnostics.\n' +
     '  pnpm test:dogfood:args          Narrow dogfood shortcut argument helper contract.\n' +

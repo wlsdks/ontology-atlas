@@ -160,6 +160,8 @@ test('a dry run changes nothing, so it asks nothing', async () => {
   assert.equal(result.allowed, true);
   assert.equal(server.asked.length, 0);
   assert.equal(isDryRun({ dry_run: true }), true, 'both spellings count');
+  assert.equal(isDryRun({ confirm: false }), true, 'confirm false is a preview');
+  assert.equal(isDryRun({ confirm: true }), false);
 });
 
 test('the question names the vault-visible effect', () => {

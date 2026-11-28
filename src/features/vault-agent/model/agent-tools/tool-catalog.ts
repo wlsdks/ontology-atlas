@@ -296,7 +296,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   },
   {
     name: 'find_orphans',
-    description: 'Nodes with no edges at all — the usual starting point for "what is unfinished here". The MCP server answers the same question as `query_ontology` `match_nodes` with `hasIncoming: false`.',
+    description: 'Nodes no other node points at (a node may still point at others) — the usual starting point for "what is unfinished here". The MCP server answers the same question as `query_ontology` `match_nodes` with `hasIncoming: false`.',
     effect: 'read',
     parameters: {
       type: 'object',
@@ -336,6 +336,11 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           minimum: 1,
           maximum: 500,
           description: 'Max names referenced without a document. Defaults to 100, max 500.',
+        },
+        unplacedOffset: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Zero-based offset into the unplaced abilities of the coverage; pass its nextOffset.',
         },
       },
     },
@@ -470,8 +475,22 @@ export const AGENT_WRITE_TOOLS: readonly AgentToolDefinition[] = [
           minimum: 0,
           description: 'Conflict guard. Pass the `mtime` field from the most recent get_concept response.',
         },
+        patches: {
+          type: 'array',
+          maxItems: 20,
+          description: 'Instead of `slug`: up to 20 patches in one call, one per node, written all or none.',
+          items: {
+            type: 'object',
+            properties: {
+              slug: { type: 'string', description: 'Vault-relative slug (omit the .md extension).' },
+              frontmatter: { type: 'object', description: 'Frontmatter key/value patches. null removes the key.' },
+              body: { type: 'string', description: 'Full replacement markdown body. Preserved when omitted.' },
+              expected_mtime: { type: 'number', minimum: 0, description: 'Conflict guard for this node.' },
+            },
+            required: ['slug'],
+          },
+        },
       },
-      required: ['slug'],
     },
   },
 ];

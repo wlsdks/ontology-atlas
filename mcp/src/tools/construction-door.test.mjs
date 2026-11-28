@@ -120,7 +120,8 @@ test('a build on an empty vault inside its repository reaches finalize without e
   assert.equal(typeof related.mtimes['domains/payments'], 'number');
 
   const bound = await call('connect_project_source', { projectSlug: 'ledger', rootPath: root, confirm: true });
-  assert.equal(bound.projectSource.currentness, 'current', 'the vault folder is not the code it describes');
+  assert.equal(bound.status, 'verified_current', 'the vault folder is not the code it describes');
+  assert.equal(bound.nextAction.id, 'use_current_evidence');
   assert.equal(bound.binding.dirty, false);
 
   const staleHash = `source:src/charge.mjs#L1-L3@sha256:${'0'.repeat(64)}`;
@@ -400,10 +401,10 @@ test('validate names the capabilities that cite no lines this server process rea
     ],
   });
   const result = (id) => responses.find((response) => response.id === id)?.result;
-  assert.match(result(2).structuredContent.coverage, /Depth: this server process has served no reads \(a restarted server keeps none\); 1 of 2 capabilities cite lines an earlier session recorded that this process has not re-read\. Not yet, citing no lines: capabilities\/refund \(src\/refund\.mjs\)\./);
+  assert.match(result(2).structuredContent.coverage.nextAction, /analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/refund\.mjs","symbol":"refund"\}\]\}\)/);
   assert.equal(result(3).structuredContent, undefined);
   assert.match(result(3).content[0].text, /^== read src\/charge\.mjs charge L1-L4 of 4 lines$/m);
-  const coverage = result(4).structuredContent.coverage;
-  assert.match(coverage, /Depth: 1 of 2 capabilities cite lines this session read that hold a condition\. Not yet: capabilities\/refund \(src\/refund\.mjs\)/);
-  assert.match(coverage, /analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/refund\.mjs","symbol":"refund"\}\]\}\)/);
+  const { coverage } = result(4).structuredContent;
+  assert.deepEqual(coverage.reads, { capabilities: 2, read: 1, unread: 1 });
+  assert.match(coverage.nextAction, /analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/refund\.mjs","symbol":"refund"\}\]\}\)/);
 });

@@ -26,6 +26,31 @@ interface CompilerDoc {
   mtime: number;
 }
 
+interface MatrixRow {
+  from: string;
+  to: string;
+  count: number;
+}
+
+function matrixRows(compiled: unknown, types: string[]): MatrixRow[] {
+  const result = queryCompiledOntology(compiled as never, { operation: "domain_matrix", types, limit: 500 }) as {
+    connections: { rows: MatrixRow[]; limited: boolean };
+  };
+  expect(result.connections.limited).toBe(false);
+  return result.connections.rows;
+}
+
+function mcpRelatesOnly(dependsRows: MatrixRow[], relatesRows: MatrixRow[]): string[] {
+  const dependent = new Set(dependsRows.map((r) => unordered(r.from, r.to)));
+  return [...new Set(relatesRows.map((r) => unordered(r.from, r.to)))].filter((p) => !dependent.has(p)).sort();
+}
+
+function mcpDependents(dependsRows: MatrixRow[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const r of dependsRows) if (r.from !== r.to) out.set(r.to, (out.get(r.to) ?? 0) + 1);
+  return out;
+}
+
 const MAP_KINDS = new Set(["project", "domain", "capability", "element"]);
 
 function loadDocs(dir: string, base = dir): CompilerDoc[] {
@@ -97,7 +122,7 @@ const VAULTS = [
   { source: "storefront" as const, root: "samples/storefront" },
 ];
 
-describe.each(VAULTS)("$source vault: dial roll-ups equal blast_radius", ({ source, root }) => {
+describe.each(VAULTS)("$source vault: dial roll-ups equal domain_matrix and blast_radius", ({ source, root }) => {
   const compiled = compileOntology(loadDocs(join(process.cwd(), root)), { includeIndexes: true });
   const vault = resolveStaticVaultSource(source);
   const insight = derivationToInsight(deriveOntologyFromVault(vault.manifest), "en", {
@@ -112,9 +137,27 @@ describe.each(VAULTS)("$source vault: dial roll-ups equal blast_radius", ({ sour
   const graph = buildOntologyMapGraph(insight.nodes, insight.edges);
   const model = dialOf(graph.nodes, graph.edges);
 
+  const depends = matrixRows(compiled, ["depends_on"]);
+  const relates = matrixRows(compiled, ["relates"]);
+
   it("reads a vault with cross-domain dependencies", () => {
-    expect(model.flows.length).toBeGreaterThan(0);
+    expect(depends.length).toBeGreaterThan(0);
     expect(model.capabilityById.size).toBeGreaterThan(0);
+  });
+
+  it("every directed count equals the domain_matrix depends_on row", () => {
+    expect(directedCounts(model, name)).toEqual(new Map(depends.map((r) => [`${r.from} > ${r.to}`, r.count] as const)));
+  });
+
+  it("relates-only pairs equal relates rows minus every pair with a dependency", () => {
+    expect(relatesOnlyPairs(model, name)).toEqual(mcpRelatesOnly(depends, relates));
+  });
+
+  it("every dependents count equals the depends_on rows into that domain", () => {
+    const mcp = mcpDependents(depends);
+    const web = new Map([...model.dependents].map(([id, n]) => [name(id), n] as const));
+    for (const ref of mcp.keys()) expect(web.has(ref)).toBe(true);
+    for (const [ref, n] of web) expect([ref, n]).toEqual([ref, mcp.get(ref) ?? 0]);
   });
 
   function blastCaps(capabilityId: string, direction: "incoming" | "outgoing"): string[] {

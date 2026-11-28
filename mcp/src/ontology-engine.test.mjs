@@ -320,7 +320,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(brief.projectUid, projectUid);
     assert.ok(brief.entrypoints.every((entrypoint) => entrypoint.uid));
     assert.match(brief.handoffPrompt, /uid is the permanent identity/i);
-    assert.match(brief.handoffPrompt, new RegExp(`${domainUid}.*domains/auth`));
+    assert.ok(brief.entrypoints.some((entrypoint) => entrypoint.uid === domainUid && entrypoint.slug === 'domains/auth'));
   });
 
   it('reports neighbors total and limited from the unsliced edge set', () => {
@@ -595,8 +595,8 @@ describe('queryCompiledOntology', () => {
       /itemLimit must be a positive integer/,
     );
     assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'health', componentLimit: 501 }),
-      /componentLimit must be <= 500/,
+      () => queryCompiledOntology(artifact(), { operation: 'health', limit: 501 }),
+      /limit must be <= 500/,
     );
   });
 
@@ -1346,17 +1346,10 @@ describe('queryCompiledOntology', () => {
     );
     assert.throws(
       () => queryCompiledOntology(artifact(), {
-        operation: 'health',
-        dependencyTypes: ['depend_on'],
-      }),
-      /dependencyTypes items must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), {
         operation: 'workspace_brief',
-        componentTypes: ['capabilties'],
+        types: ['capabilties'],
       }),
-      /componentTypes items must be one of:[\s\S]*Received: "capabilties"\.[\s\S]*Did you mean "capabilities"\?/,
+      /types items must be one of:[\s\S]*Received: "capabilties"\.[\s\S]*Did you mean "capabilities"\?/,
     );
   });
 
@@ -1901,16 +1894,12 @@ describe('queryCompiledOntology', () => {
       assert.equal(Object.hasOwn(result, retired), false, `${retired} is no longer in the brief`);
     }
     assert.match(result.handoffPrompt, /ontology-atlas MCP server/);
-    assert.match(result.handoffPrompt, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);
-    assert.match(result.handoffPrompt, /Kind classification contract before writing frontmatter/);
-    assert.match(result.handoffPrompt, /Do not classify from the label alone/);
-    assert.match(result.handoffPrompt, /Containment spine/);
-    assert.match(result.handoffPrompt, /source path, symbol, route, command, or MCP tool evidence/);
-    assert.match(result.handoffPrompt, /similar_nodes/);
-    assert.match(result.handoffPrompt, /Write guardrails/);
-    assert.match(result.handoffPrompt, /relation_check/);
+    assert.match(result.handoffPrompt, /relation_check before add_relations and find_backlinks before rename_concept or merge_concepts/);
+    assert.match(result.handoffPrompt, /connection_info\(\{guide:"construction"\}\)/);
     assert.match(result.handoffPrompt, /When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault/);
+    assert.match(result.handoffPrompt, /bounded claims, not inventories: never say only, all, every or exactly/);
+    assert.ok(result.handoffPrompt.length < 2500, `the handoff prompt is ${result.handoffPrompt.length} characters`);
     assert.doesNotMatch(result.handoffPrompt, /Graph DB query pack|Investigation playbooks|Traversal strategy|Result contracts/);
     assert.doesNotMatch(result.handoffPrompt, /all_paths|match_edges|domain_matrix|centrality/);
     assert.doesNotMatch(result.handoffPrompt, /cli\/src\/index\.mjs/);
@@ -1946,34 +1935,9 @@ describe('queryCompiledOntology', () => {
       tool: 'validate_vault',
       arguments: {},
     });
-    assert.deepEqual(result.relationDecisionGuide.map((row) => row.decision), [
-      'skip_existing',
-      'review_inverse',
-      'safe_to_add',
-      'review_new_schema',
-    ]);
-    assert.ok(result.relationDecisionGuide.some((row) => row.decision === 'review_inverse' && row.severity === 'warn'));
-    assert.ok(result.writePolicy.some((line) => line.includes('relation_check before add_relations')));
-    assert.ok(result.writePolicy.some((line) => line.includes('match_nodes') && line.includes('followUp')));
-    assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
-    assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
-    assert.ok(result.writePolicy.some((line) => (
-      line.includes('bounded packet')
-      && line.includes('same atomic claim')
-      && line.includes('measurement qualifier')
-    )));
-    assert.ok(
-      result.writePolicy.some((line) =>
-        line.includes('Includes')
-        && line.includes('exhaustive')
-        && line.includes('only/all/every/exactly')),
-      'agent_brief must stop bounded Includes lists from becoming exhaustive handoff claims',
-    );
-    assert.match(
-      result.handoffPrompt,
-      /Includes.*exhaustive.*only\/all\/every\/exactly/s,
-      'the copyable handoff prompt must carry the same quantifier boundary',
-    );
+    for (const cut of ['relationDecisionGuide', 'writePolicy', 'businessOntologyLens']) {
+      assert.equal(Object.hasOwn(result, cut), false, `${cut} is in the guides, not in every brief`);
+    }
   });
 
   it('does not recommend a redundant domain edge for an element already owned by a capability', () => {
@@ -2933,6 +2897,7 @@ describe('queryCompiledOntology', () => {
       // No `sourceDocs`, so the uncertainty reader says it got no bodies instead of
       // reporting a clean vault.
       nextReads: 0,
+      nextReadsReason: 'no_bodies',
       totalActions: 3,
     });
     assert.deepEqual(
@@ -3099,6 +3064,7 @@ describe('queryCompiledOntology', () => {
       unassignedNodes: 0,
       emptyDomains: 0,
       nextReads: 0,
+      nextReadsReason: 'no_bodies',
       totalActions: 3,
     });
     assert.equal(result.nextActions.some((action) => action.kind === 'health_check'), true);
@@ -3204,7 +3170,7 @@ describe('queryCompiledOntology', () => {
     const tuned = queryCompiledOntology(graph, {
       operation: 'workspace_brief',
       limit: 5,
-      componentTypes: ['dependencies'],
+      types: ['dependencies'],
     });
 
     assert.equal(tuned.operation, 'workspace_brief');
@@ -3238,9 +3204,9 @@ describe('queryCompiledOntology', () => {
       () =>
         queryCompiledOntology(graph, {
           operation: 'workspace_brief',
-          componentLimit: 501,
+          limit: 501,
         }),
-      /componentLimit must be <= 500/,
+      /limit must be <= 500/,
     );
   });
 
@@ -3369,7 +3335,7 @@ describe('queryCompiledOntology', () => {
 
     const health = queryCompiledOntology(graph, {
       operation: 'health',
-      componentTypes: ['dependencies'],
+      types: ['dependencies'],
     });
 
     assert.equal(health.operation, 'health');
@@ -3906,7 +3872,8 @@ describe('query_ontology growth_plan — the reads a vault asks for', () => {
     const result = queryCompiledOntology(graph, { operation: 'growth_plan', limit: 10 });
 
     assert.equal(result.summary.nextReads, 0);
-    assert.deepEqual(result.nextReads, { total: 0, limited: false, rows: [], reason: 'no_bodies' });
+    assert.deepEqual(result.nextReads, []);
+    assert.equal(result.summary.nextReadsReason, 'no_bodies');
     // A read changes no write queue.
     assert.equal(
       result.summary.totalActions,
@@ -3993,10 +3960,10 @@ describe('query_ontology growth_plan — the reads a vault asks for', () => {
 
       const plan = responses.find((response) => response.id === 2)?.result?.structuredContent;
       assert.ok(plan, `no growth_plan payload: ${JSON.stringify(responses)}`);
-      assert.equal(plan.nextReads.reason, null);
+      assert.equal(plan.summary.nextReadsReason, undefined);
       assert.equal(plan.summary.nextReads, 2);
-      assert.deepEqual(plan.nextReads.rows.map((row) => row.kind), ['unread-range', 'unopened-area']);
-      const [bounded, unopened] = plan.nextReads.rows;
+      assert.deepEqual(plan.nextReads.map((row) => row.kind), ['unread-range', 'unopened-area']);
+      const [bounded, unopened] = plan.nextReads;
       // Lines 1-110 were read, so the next read is the rest of the file.
       assert.deepEqual(bounded.ranges, [{ path: 'mcp/src/index.js', from: 111, to: 2790 }]);
       assert.deepEqual(bounded.readRanges, [{ path: 'mcp/src/index.js', from: 1, to: 110 }]);

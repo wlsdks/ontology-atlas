@@ -11,15 +11,16 @@ import {
   formatAllowedValueError,
 } from '../suggestions.mjs';
 import { requireTopLevelNonBlankStrings } from './advertised-input-schema.mjs';
-import { retiredArgumentError } from './retired-arguments.mjs';
+import { retiredArgumentError, withoutNoOpRetiredArguments } from './retired-arguments.mjs';
 import { TOOL_BY_NAME, TOOL_INPUT_CONTRACT_BY_NAME } from './registry.mjs';
 import { BODY_DELIVERY_MODES } from './tool-schemas/vault-node-shapes.mjs';
 
-function normalizeToolArguments(args, toolName) {
-  if (args === undefined) return {};
-  if (args === null || Array.isArray(args) || typeof args !== 'object') {
+function normalizeToolArguments(given, toolName) {
+  if (given === undefined) return {};
+  if (given === null || Array.isArray(given) || typeof given !== 'object') {
     throw new Error('tool arguments must be an object.');
   }
+  const args = withoutNoOpRetiredArguments(toolName, given);
   const tool = TOOL_BY_NAME.get(toolName);
   if (tool) {
     const retired = retiredArgumentError(toolName, args);

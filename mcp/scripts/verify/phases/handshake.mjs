@@ -1,7 +1,4 @@
-import {
-  initializeInstructionsFailure,
-  initializeToolInventoryFailure,
-} from '../checks/initialize.mjs';
+import { initializeInstructionsFailure } from '../checks/initialize.mjs';
 import { log } from '../output.mjs';
 import {
   EXPECTED_TOOLS,
@@ -21,7 +18,7 @@ export function verifyHandshake(responses, { initRes }) {
     log('fail', instructionFailure);
     return false;
   }
-  log('ok', 'initialize instructions: tool inventory, construction card, write sequence and guide pointer present');
+  log('ok', 'initialize instructions: construction card, write sequence and guide pointer present within 2,048 characters');
 
   if (!listRes || !listRes.result?.tools) {
     log('fail', 'no tools/list response');
@@ -32,15 +29,9 @@ export function verifyHandshake(responses, { initRes }) {
     log('fail', inventoryFailure);
     return false;
   }
-  const initializeInventoryFailure = initializeToolInventoryFailure(initRes, listRes.result.tools);
-  if (initializeInventoryFailure) {
-    log('fail', initializeInventoryFailure);
-    return false;
-  }
   const toolNames = listRes.result.tools.map((t) => t.name).sort();
   log('ok', `tools/list ${toolNames.length}/${EXPECTED_TOOLS.length} (${toolsListAnnotationSummary(listRes.result.tools)}): ${toolNames.join(' · ')}`);
   log('ok', 'tools/list inventory names: missing/extra/duplicate/invalid checks passed');
-  log('ok', 'initialize tool inventory: counts and read/write names match tools/list exactly');
   const advertisedFailure = advertisedOutputSchemaFailure(listRes.result.tools);
   if (advertisedFailure) {
     log('fail', advertisedFailure);

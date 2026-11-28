@@ -259,11 +259,11 @@ export function inferImportsToolSchemaFailure(tools) {
   const importReviewCandidateSchema = importNextReviewSchema?.properties?.candidate;
   const importReviewQualificationSchema = importReviewCandidateSchema?.properties?.evidenceQualification;
   const importEndpointModellingSchema = importNextReviewSchema?.properties?.endpointModelling;
-  const importProposalValidationSchema = importEndpointModellingSchema?.properties?.proposalValidation;
-  const importFieldsAfterKindSchema = importProposalValidationSchema?.properties?.fieldsAfterKindDecision;
+  const importAddConceptsStepSchema = importEndpointModellingSchema?.properties?.addConceptsStep;
+  const importFieldsAfterKindSchema = importAddConceptsStepSchema?.properties?.fieldsAfterKindDecision;
   const importFieldsByKindSchema = importFieldsAfterKindSchema?.properties?.byKind;
-  const importEndpointDraftsSchema = importProposalValidationSchema?.properties?.endpointDrafts;
-  const importEndpointDraftSchema = importProposalValidationSchema?.properties?.endpointDrafts?.items;
+  const importEndpointDraftsSchema = importAddConceptsStepSchema?.properties?.endpointDrafts;
+  const importEndpointDraftSchema = importAddConceptsStepSchema?.properties?.endpointDrafts?.items;
   const importReviewDecisionSchema = importNextReviewSchema?.properties?.decision;
   if (
     !sameArray(importReviewContractSchema?.enum, ['inferImportsReview:v1', 'inferImportsFocus:v1']) ||
@@ -335,7 +335,7 @@ export function inferImportsToolSchemaFailure(tools) {
       'absentEndpoints',
       'observedPathsByEndpoint',
       'analysisCall',
-      'proposalValidation',
+      'addConceptsStep',
       'resumeCall',
     ]) ||
     !sameArray(importEndpointModellingSchema?.properties?.status?.enum, [
@@ -345,22 +345,16 @@ export function inferImportsToolSchemaFailure(tools) {
     !sameArray(importEndpointModellingSchema?.properties?.analysisCall?.properties?.tool?.enum, [
       'analyze_repo_structure',
     ]) ||
-    !sameArray(importEndpointModellingSchema?.properties?.proposalValidation?.properties?.tool?.enum, [
-      'analyze_repo_structure',
+    !sameArray(importEndpointModellingSchema?.properties?.addConceptsStep?.properties?.tool?.enum, [
+      'add_concepts',
     ]) ||
-    !sameArray(importEndpointModellingSchema?.properties?.proposalValidation?.properties?.requiredArguments?.items?.enum, [
-      'rootPath',
-      'proposal',
-    ]) ||
-    !sameArray(importProposalValidationSchema?.required, [
+    !sameArray(importAddConceptsStepSchema?.required, [
       'tool',
-      'requiredArguments',
-      'requiredProposalFields',
       'fieldsAfterKindDecision',
       'endpointDrafts',
       'purpose',
     ]) ||
-    importProposalValidationSchema?.additionalProperties !== false ||
+    importAddConceptsStepSchema?.additionalProperties !== false ||
     !sameArray(importFieldsAfterKindSchema?.required, ['common', 'byKind']) ||
     importFieldsAfterKindSchema?.additionalProperties !== false ||
     importFieldsAfterKindSchema?.properties?.common?.type !== 'array' ||

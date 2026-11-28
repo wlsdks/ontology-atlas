@@ -5,4 +5,4 @@
 {"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"containment_tree"}}}
 {"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"reachability","slug":"capabilities/a"}}}
 {"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"a","to":"b","type":"depends_on"}}}
-{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","seed":"x"}}}
+{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","slug":"x"}}}

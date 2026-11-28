@@ -50,7 +50,13 @@ then call \`validate_vault\`. Do not invent an \`add_relations\` row with
 Atlas performs no automatic inverse or transitive inference. Missing relations
 are unknown/visible gaps, not falsehoods or proof of completeness. Atlas Markdown
 is not an RDF serialization, OWL reasoner, SKOS implementation, or SHACL processor;
-the product makes no RDF, OWL, SKOS, or SHACL conformance claim.`;
+the product makes no RDF, OWL, SKOS, or SHACL conformance claim.
+
+Every valid node has two identities: the immutable \`uid\` is its permanent
+machine identity and the \`slug\` is its current address. Reads return both. Use
+\`get_concepts({uids:[...]})\` for continuity across renames and the slug for
+frontmatter relations and every graph-operation input. A slug change never makes
+a new uid.`;
 
 /**
  * The procedure a model follows before adding a child to a parent, written as
@@ -114,10 +120,10 @@ export const ELEMENT_NAMING_RULE_EN = `When \`kind\` is \`element\`: an element 
 
 /**
  * The scope rule, said where a claim is written: a sentence speaks only for the
- * members it read. A symbol read of a family member carries `family`, the
- * member count and how many this session read.
+ * members it read. The member count comes from the outline of the file that
+ * declares the family.
  */
-export const FAMILY_SCOPE_RULE_EN = 'A sentence about a family (plugins, transforms, brokers, handlers) says how many members were read against the count found ("2 of at least 16 read") or speaks only for the member read: never "every", "each", "all" or "they" unless every member was read. A symbol read of a member carries `family` with that count, a floor: a member written in a way the server cannot follow is not in it. What the unread members do is an `## Uncertainty` line, not part of the definition.';
+export const FAMILY_SCOPE_RULE_EN = 'A sentence about a family (plugins, transforms, brokers, handlers) says how many members were read against the count found ("2 of at least 16 read") or speaks only for the member read: never "every", "each", "all" or "they" unless every member was read. Count the members from the `mode:"outline"` read of the declaring file in `analyze_repo_structure.sourceReads`; the count is a floor, since a member the outline does not list is not in it. What the unread members do is an `## Uncertainty` line, not part of the definition.';
 
 /**
  * Chat-only delta for the in-app agent: the chat talks to a person, so a warning

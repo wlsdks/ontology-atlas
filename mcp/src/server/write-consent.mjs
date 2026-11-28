@@ -56,8 +56,11 @@ export function describeWrite(toolName, args) {
           : 'Replace one relation';
       }
       return from && to ? `Remove the link ${from} → ${to}` : 'Remove one relation';
-    case 'patch_concept':
+    case 'patch_concept': {
+      const n = count('patches');
+      if (n !== null) return n === 1 && typeof a.patches[0]?.slug === 'string' ? `Edit concept ${shown(a.patches[0].slug)}` : `Edit ${n} concept(s)`;
       return slug ? `Edit concept ${slug}` : 'Edit one concept';
+    }
     case 'rename_concept':
       if (a.newKind !== undefined) {
         return named('oldSlug') ? `Change the kind of ${text('oldSlug')}` : 'Change one concept kind';
@@ -92,11 +95,12 @@ export function describeWrite(toolName, args) {
 
 /**
  * A dry run changes nothing, so it asks nothing: pausing it would train people
- * to click through the card that matters. Both flag spellings are honoured.
+ * to click through the card that matters. Both flag spellings are honoured, and
+ * so is `confirm: false`, which every confirm-gated tool reads as "preview only".
  */
 export function isDryRun(args) {
   if (!args || typeof args !== 'object') return false;
-  return args.dryRun === true || args.dry_run === true;
+  return args.dryRun === true || args.dry_run === true || args.confirm === false;
 }
 
 export const CONSENT_DECLINED = 'consent-declined';

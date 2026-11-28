@@ -5,10 +5,9 @@
 {"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"builder_context"}}}
 {"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_edges"}}}
 {"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"domain_profile"}}}
-{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"domain_matrix"}}}
-{"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"topological_order"}}}
-{"id":8,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"meaning_repair_review"}}}
-{"id":9,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"analysis_history"}}}
-{"id":10,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"agent_brief","project":"storefront","detail":"compact","task":"change how a card is charged"}}}
-{"id":11,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"agent_brief","project":"storefront","task":"change how a card is charged"}}}
-{"id":12,"method":"tools/call","params":{"name":"connection_info","arguments":{"guide":"competency"}}}
+{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"topological_order"}}}
+{"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"meaning_repair_review"}}}
+{"id":8,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"analysis_history"}}}
+{"id":9,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"agent_brief","project":"storefront","detail":"compact","task":"change how a card is charged"}}}
+{"id":10,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"agent_brief","project":"storefront","task":"change how a card is charged"}}}
+{"id":11,"method":"tools/call","params":{"name":"connection_info","arguments":{"guide":"competency"}}}

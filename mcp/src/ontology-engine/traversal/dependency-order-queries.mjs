@@ -1,7 +1,6 @@
 import {
   normalizeDepth,
   normalizeLimit,
-  normalizeOptionalBoolean,
   normalizeSearchBudget,
   normalizeTypes,
   summarizeNode,
@@ -71,9 +70,8 @@ export function createDependencyOrderQueries({
   function topologicalOrder(options = {}) {
     const limit = normalizeLimit(options.limit, 100);
     const typeSet = normalizeTypes(options.types ?? ['dependencies'], options.typeName || 'types');
-    const includeIsolated = normalizeOptionalBoolean(options.includeIsolated, 'includeIsolated', false);
     const { selectedEdges, slugCount, ordered: orderedSlugs, layers: layerSlugs, blocked: blockedSlugs } =
-      layerByPrerequisites({ nodes, edges, typeSet, includeIsolated });
+      layerByPrerequisites({ edges, typeSet });
     const ordered = orderedSlugs.map(({ rank, slug }) => ({ rank, slug, node: summarizeNode(nodeBySlug.get(slug)) }));
     const layers = layerSlugs.map(({ rank, slugs }) => ({
       rank,
@@ -89,7 +87,6 @@ export function createDependencyOrderQueries({
       operation: 'topological_order',
       relationTypes: typeSet ? [...typeSet].sort() : null,
       prerequisiteFirst: true,
-      includeIsolated,
       acyclic: blocked.length === 0,
       totalNodes: slugCount,
       orderedCount: ordered.length,

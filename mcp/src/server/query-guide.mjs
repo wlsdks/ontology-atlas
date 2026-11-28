@@ -17,7 +17,7 @@ Required arguments:
 - \`pattern\` (relation keys in order): pattern_walk.
 - \`targetOperation\`: query_plan.
 - \`recordId\`: analysis_record.
-- \`project\`: project_scope, project_map, agent_brief; omit it when the vault has one project.
+- \`project\`: domain_matrix, project_scope, project_map, agent_brief; omit it when the vault has one project.
 
 Filters and limits:
 - match_nodes: \`kind\`, \`excludeKinds\`, \`domain\`, \`hasIncoming\`, \`hasOutgoing\`, \`sort\` (degree, inDegree, outDegree, slug), \`limit\`, \`offset\` (pass \`pagination.nextOffset\` while \`pagination.hasMore\`). \`hasIncoming:false\` lists the orphans, read from the files so it answers even when the vault does not compile; a short reference several nodes share counts for each; the project and vault-readme are left out unless \`kind\` or \`excludeKinds\` says otherwise. The most connected nodes are \`sort:"degree"\`.
@@ -32,4 +32,4 @@ Rules:
 - A \`depends_on\` that relation_check finds missing is schema-only: its \`proposedAction\` is null and its \`approvalGate\` writes nothing until the agent explains the observable ability and the owner approves.
 - \`cycles\` with \`truncatedByBudget\` reports lower bounds: zero cycles then does NOT mean acyclic.
 - analysis_record returns a saved record, not an approved fact.
-- Retired: all_paths (use path), centrality (match_nodes sort), builder_context (get_concepts, neighbors), match_edges (neighbors), domain_profile (node_profile), domain_matrix (overview), topological_order (cycles, impact), meaning_repair_review (validate_vault), analysis_history, agent_brief detail:"compact" and task.`;
+- Retired: all_paths (use path), centrality (match_nodes sort), builder_context (get_concepts, neighbors), match_edges (neighbors), domain_profile (node_profile), topological_order (health dependencyOrder, cycles, impact), meaning_repair_review (validate_vault), analysis_history, agent_brief detail:"compact" and task.`;

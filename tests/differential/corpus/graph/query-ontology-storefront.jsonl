@@ -23,8 +23,8 @@
 {"id":21,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"subgraph","slug":"domains/order","depth":1}}}
 {"id":22,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"similar_nodes","slug":"capabilities/cart"}}}
 {"id":23,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"explain_relation","from":"capabilities/cart","to":"capabilities/checkout"}}}
-{"id":24,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree"}}}
-{"id":25,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","domain":"domains/order","slugContains":"order"}}}
+{"id":24,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","kind":"capability","sort":"degree","limit":5}}}
+{"id":25,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","domain":"domains/order","hasIncoming":false}}}
 {"id":26,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"node_profile","slug":"capabilities/cart"}}}
 {"id":27,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"project_scope","project":"storefront"}}}
 {"id":28,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"project_map","project":"storefront"}}}

@@ -3,6 +3,7 @@ import { createArtifactContext } from './ontology-engine/graph-context/artifact-
 import { createContextOperations } from './ontology-engine/graph-context/context-operations.mjs';
 import { createQueryPlanner } from './ontology-engine/query-operation/query-planner.mjs';
 import { createClusterQueries } from './ontology-engine/selection/cluster-queries.mjs';
+import { createDomainMatrixQueries } from './ontology-engine/selection/domain-matrix-queries.mjs';
 import { createGraphSummaryQueries } from './ontology-engine/selection/graph-summary-queries.mjs';
 import { createMatchQueries } from './ontology-engine/selection/match-queries.mjs';
 import { createProfileQueries } from './ontology-engine/selection/profile-queries.mjs';
@@ -45,6 +46,7 @@ import {
   countEdges,
   formatCompiledEdge,
   publicRelationCountObject,
+  publicRelationTypes,
   uniqueEdges,
 } from './ontology-engine/query-operation/query-primitives.mjs';
 import { findNearMatchSlug, suggestedSlugForReference, titleFromReference } from './ontology-engine/maintenance/reference-repair.mjs';
@@ -146,6 +148,7 @@ export const QUERY_ONTOLOGY_OPERATIONS = Object.freeze([
   'facets',
   'match_nodes',
   'node_profile',
+  'domain_matrix',
   'project_scope',
   'project_map',
   'relation_check',
@@ -312,6 +315,10 @@ export function createOntologyEngine(artifact, options = {}) {
     domainMapRow, intersectSlugSets, partitionScopeEdges, profileEdgeGroup,
     resolveProjectRoot, scopeEdgeGroup, sortedNodesInScope, topHubs,
   });
+  const { domainMatrix } = createDomainMatrixQueries({
+    nodes, edges, nodeBySlug, collectContainmentScope, nearestDomainFor, normalizeOptionalString,
+    publicRelationCountObject, publicRelationTypes, resolveProjectRoot, sortedNodesInScope,
+  });
   const { components, communities, connectedComponentGroups, componentGroupOnlyHasKinds } =
     createClusterQueries({
       nodes, edges, nodeBySlug, traversalEdges, countBy: countEdges,
@@ -357,6 +364,7 @@ export function createOntologyEngine(artifact, options = {}) {
     facets,
     matchNodes,
     nodeProfile,
+    domainMatrix,
     projectScope,
     projectMap,
     relationCheck,

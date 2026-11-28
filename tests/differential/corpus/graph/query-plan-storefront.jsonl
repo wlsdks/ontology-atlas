@@ -17,9 +17,9 @@
 {"id":15,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"impact","slug":"capabilities/order-placement","types":["contains"]}}}
 {"id":16,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"blast_radius","slug":"capabilities/order-placement","depth":2}}}
 {"id":17,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"subgraph","slug":"domains/order"}}}
-{"id":18,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"subgraph","seed":"capabilities/cart","direction":"incoming","depth":3,"limit":5}}}
+{"id":18,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"subgraph","slug":"capabilities/cart","direction":"incoming","depth":3,"limit":5}}}
 {"id":19,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"match_nodes"}}}
-{"id":20,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"match_nodes","kind":"capability","domain":"domains/order","slugContains":"Order","minDegree":2,"sort":"degree","limit":5}}}
+{"id":20,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"match_nodes","kind":"capability","domain":"domains/order","hasIncoming":false,"sort":"degree","limit":5}}}
 {"id":21,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"match_nodes","kind":"nonsense"}}}
 {"id":22,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"overview"}}}
 {"id":23,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"node_profile","slug":"capabilities/cart"}}}

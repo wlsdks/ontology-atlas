@@ -337,7 +337,7 @@ export const QUERY_ONTOLOGY_TOOL = {
       title: nonBlankStringSchema('similar_nodes: title not yet written.'),
       from: NON_BLANK_STRING_SCHEMA,
       to: NON_BLANK_STRING_SCHEMA,
-      project: nonBlankStringSchema('Project for project_scope, project_map, agent_brief; optional with one project.'),
+      project: nonBlankStringSchema('Project for domain_matrix, project_scope, project_map, agent_brief; optional with one project.'),
       direction: {
         type: 'string',
         enum: ['incoming', 'outgoing', 'both', 'undirected'],
@@ -372,9 +372,9 @@ export const QUERY_ONTOLOGY_TOOL = {
       },
       hasIncoming: {
         type: 'boolean',
-        description: 'match_nodes. false lists the orphans no node points at, read from the files, so it answers even when the vault does not compile.',
+        description: 'match_nodes. true keeps the nodes another node points at, false the orphans no node points at; together they are every node, and a short reference several nodes share counts for each of them. Read from the files, so it answers even when the vault does not compile.',
       },
-      hasOutgoing: { type: 'boolean', description: 'match_nodes.' },
+      hasOutgoing: { type: 'boolean', description: 'match_nodes. Whether the node writes a relation.' },
       sort: {
         type: 'string',
         enum: ['degree', 'inDegree', 'outDegree', 'slug'],

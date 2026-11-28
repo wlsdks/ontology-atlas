@@ -1196,3 +1196,5 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   `reclassify_concept` for a removal with `replaceWith` and a rename with `newKind`, as the script
   server's log does (an `ActivityContent` may carry `logged_as`). Not declared, because a gap is no
   change: every answer that needs `absorb_document` or `validate_wiki`, which slice 11 ports.
+- 2026-11-28: the Node server cut `analysis_history`, the compact brief (`detail:"compact"` and `task`) and `view:"analysis"` with the proposal route (`docs/records/decisions/2026-11-28-mcp-lean-cuts-*.md`). The Rust port does not carry them: each answers `invalid_arguments` naming its replacement, and `agent_brief` is the small brief with counts, first rows and the `validate_vault` call. `domain_matrix` stays, because the app's Flat dial shows its counts.
+
