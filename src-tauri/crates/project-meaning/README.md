@@ -12,4 +12,5 @@ assessment.
 | `meaning_inventory.rs` | The concepts, relations, source paths and pinned citations an answer may cite |
 | `meaning_assessment.rs` | The categorical assessment and the reasons a row's witnesses fail |
 | `meaning_receipt.rs` | `.ontology-atlas/project-meaning.json`: written once per project, read strictly |
+| `structure_readiness.rs` | Whether the graph is shaped, linked, healthy and valid enough for the assessment to call its structure ready |
 | `stored_name_shapes.rs` | The spellings a stored slug, hash, time or path must have |

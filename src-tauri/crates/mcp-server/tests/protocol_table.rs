@@ -446,19 +446,6 @@ fn an_unknown_argument_is_refused_by_name_before_the_handler_runs() {
 }
 
 #[test]
-fn a_known_tool_this_build_has_not_ported_answers_not_ported_only_in_a_test_build() {
-    let run = rust(&[], &call(2, "finalize_project_meaning", "{}"));
-    assert_eq!(
-        run.lines,
-        [concat!(
-            r#"{"result":{"content":[{"type":"text","text":"Error: Tool \"finalize_project_meaning\" is not ported to the Rust server yet."}],"#,
-            r#""structuredContent":{"ok":false,"errorCode":"not_ported","#,
-            r#""error":"Tool \"finalize_project_meaning\" is not ported to the Rust server yet."},"isError":true},"jsonrpc":"2.0","id":2}"#
-        )]
-    );
-}
-
-#[test]
 fn a_write_under_read_only_mode_is_refused_before_its_arguments_are_read() {
     let run = rust(
         &[("OATLAS_READ_ONLY", "1")],
