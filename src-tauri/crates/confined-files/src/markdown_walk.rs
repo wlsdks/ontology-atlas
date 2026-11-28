@@ -55,6 +55,31 @@ pub(crate) fn list_markdown_files(root: &Path) -> Vec<ConfinedPath> {
 /// to `../..`) lists nothing, because the walk would otherwise leave the vault and the caller would
 /// read every Markdown file it met. The script server walks only a real directory too.
 pub(crate) fn list_raw_source_markdown(root: &Path) -> Vec<ConfinedPath> {
+    list_raw_source_files(root, |name| name.ends_with(".md"))
+        .into_iter()
+        .map(ConfinedPath::new)
+        .collect()
+}
+
+/// The vault-relative path (`sources/...`, `/` separators) of every file under `sources/`, in
+/// UTF-16 order, by the same walk: dot names skipped, links neither followed nor listed.
+pub(crate) fn list_raw_source_paths(root: &Path) -> Vec<String> {
+    let mut paths: Vec<String> = list_raw_source_files(root, |_| true)
+        .into_iter()
+        .filter_map(|path| {
+            let below = path.strip_prefix(root).ok()?;
+            let parts: Vec<String> = below
+                .components()
+                .map(|part| part.as_os_str().to_string_lossy().into_owned())
+                .collect();
+            Some(parts.join("/"))
+        })
+        .collect();
+    paths.sort_by(|left, right| utf16_order(left, right));
+    paths
+}
+
+fn list_raw_source_files(root: &Path, keeps_name: impl Fn(&str) -> bool) -> Vec<PathBuf> {
     let sources = root.join(VAULT_SOURCES_DIR);
     if !is_real_folder_of(root, &sources) {
         return Vec::new();
@@ -68,11 +93,11 @@ pub(crate) fn list_raw_source_markdown(root: &Path) -> Vec<ConfinedPath> {
         })
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_file())
-        .filter(|entry| entry.file_name().to_string_lossy().ends_with(".md"))
+        .filter(|entry| keeps_name(&entry.file_name().to_string_lossy()))
         .map(walkdir::DirEntry::into_path)
         .collect();
     sort_utf16(&mut found);
-    found.into_iter().map(ConfinedPath::new).collect()
+    found
 }
 
 /// Whether `folder` is a folder that is not a link and sits directly in `root` as spelled: its own

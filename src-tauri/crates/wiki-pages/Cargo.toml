@@ -1,0 +1,19 @@
+[package]
+name = "wiki-pages"
+version = "0.1.0"
+description = "The wiki page contract: judge one page against its template, and a folder of pages for the links and shared sources only the whole folder shows"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+# A page's frontmatter and body, parsed as the vault parses every file.
+vault-document = { path = "../vault-document" }
+# Slugs and `describes:` entries are compared composed (NFC); the same pin as `vault-document`.
+icu_normalizer = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+regex = { version = "1", default-features = false, features = ["std", "unicode-gencat"] }
+serde = { version = "1", features = ["derive"] }
+
+[lints]
+workspace = true

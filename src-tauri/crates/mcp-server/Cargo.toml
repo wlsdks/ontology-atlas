@@ -36,6 +36,10 @@ vault-validation = { path = "../vault-validation" }
 vault-edit = { path = "../vault-edit" }
 # The constellations a person saved, which `get_constellation` lists.
 saved-constellations = { path = "../saved-constellations" }
+# What an absorbed rules document becomes: the sections, their classes and the slim pointer.
+document-absorption = { path = "../document-absorption" }
+# The wiki page contract `validate_wiki` judges pages against.
+wiki-pages = { path = "../wiki-pages" }
 meaning-findings = { path = "../meaning-findings" }
 raw-source-text = { path = "../raw-source-text" }
 # Answers are typed structs written as JSON. `raw_value` sends the tool list as the text the

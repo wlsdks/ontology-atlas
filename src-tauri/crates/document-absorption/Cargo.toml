@@ -1,0 +1,18 @@
+[package]
+name = "document-absorption"
+version = "0.1.0"
+description = "The plan for absorbing a rules document into typed vault nodes: split at headings, classify, flag instruction hijacks, and write the slim pointer that replaces the source"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+# Which folder a suggested node would live in.
+vault-document = { path = "../vault-document" }
+# Heading and injection patterns. Word boundaries and letter case are ASCII, as the script
+# server's patterns are, so no Unicode tables beyond the general categories are built in.
+regex = { version = "1", default-features = false, features = ["std", "unicode-gencat"] }
+
+[lints]
+workspace = true

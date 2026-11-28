@@ -21,7 +21,7 @@
 use std::sync::MutexGuard;
 
 use confined_files::{
-    apply_all_or_nothing, Applied, ApplyOptions, ConfinedPath, PlanEntry, Reservations, SlugError,
+    apply_all_or_nothing, AbsorbedFile, Applied, ApplyOptions, ConfinedPath, PlanEntry, Reservations, SlugError,
     VaultRoot, WritablePath, WriteError, WriteErrorClass,
 };
 
@@ -147,6 +147,17 @@ impl<'a> WritePermit<'a> {
     /// A file already read from the vault, as a path this write may change.
     pub fn writable(&self, file: &ConfinedPath) -> Result<WritablePath, SlugError> {
         self.vault.writable(file)
+    }
+
+    /// The document `absorb_document` rewrites, which lies outside the vault: the opened file has
+    /// already refused every name and text a rewrite may not touch.
+    pub fn absorbed_source(&self, file: &AbsorbedFile) -> WritablePath {
+        file.writable_source()
+    }
+
+    /// The copy of that document kept beside it.
+    pub fn absorbed_backup(&self, file: &AbsorbedFile) -> WritablePath {
+        file.writable_backup()
     }
 
     /// Applies `plan` all or nothing. `reservations` is the tool's statement of how a file reserved

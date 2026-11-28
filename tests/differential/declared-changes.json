@@ -33308,6 +33308,1934 @@
       "path": "result.structuredContent.pathDrift.hint",
       "change": 76,
       "reason": "Row 76: validate_vault does not look outside the repository for a path: a path that leaves the folder is not counted as missing."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.isError",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.backupPath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.canConfirm",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.changed",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.dryRun",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.error",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.errorCode",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.filePath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.message",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.ok",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.postWriteMaintenance",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.previewReady",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.sections",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.summary",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.title",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.wouldChange",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.written",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/actions",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/byKind",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/cursor",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/filters",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/limited",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/operation",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/postWriteMaintenance/summary",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.actions",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.byKind",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.byPhase",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.cursor",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.filters",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.graphHash",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.limited",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.nextAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.operation",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.postWriteMaintenance.summary",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/actions",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/byKind",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/cursor",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/filters",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/limited",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/operation",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text#/postWriteMaintenance/summary",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.actions",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.byKind",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.byPhase",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.cursor",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.filters",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.graphHash",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.limited",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.nextAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.operation",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.postWriteMaintenance.summary",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.isError",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.canConfirm",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.dryRun",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.error",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.errorCode",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.filePath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.message",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.previewReady",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.sections",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.summary",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.title",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "answer",
+      "id": 8,
+      "path": "result.structuredContent.wouldChange",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/activity.jsonl",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "folder",
+      "path": "vault/sources/data.csv",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document",
+      "where": "folder",
+      "path": "vault/sources/data.csv.pre-absorb.bak",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.backupPath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.canConfirm",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.changed",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.dryRun",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.error",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.filePath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.message",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.ok",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.postWriteMaintenance",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.previewReady",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.sections",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.summary",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.title",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.wouldChange",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.written",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.error",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.isError",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.backupPath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.canConfirm",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.changed",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.dryRun",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.filePath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.message",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.ok",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.postWriteMaintenance",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.previewReady",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.sections",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.summary",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.title",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.wouldChange",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.written",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.canConfirm",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.dryRun",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.error",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.filePath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.message",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.previewReady",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.sections",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.summary",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.title",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.wouldChange",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/actions",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/byKind",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/cursor",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/filters",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/limited",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/operation",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text#/postWriteMaintenance/summary",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.actions",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.byKind",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.byPhase",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.cursor",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.filters",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.graphHash",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.limited",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.nextAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.operation",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.postWriteMaintenance.summary",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.isError",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.blockedReasons",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.canConfirm",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.dryRun",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.error",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.errorCode",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.filePath",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.message",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.outsideRepo",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.previewReady",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.sections",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.sourceLabel",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.summary",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.title",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.wouldChange",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "folder",
+      "path": "outside/secret.md",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "folder",
+      "path": "outside/secret.md.pre-absorb.bak",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "folder",
+      "path": "vault/.env",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "folder",
+      "path": "vault/.env.pre-absorb.bak",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "library/absorb-document-hostile-paths",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/activity.jsonl",
+      "change": 86,
+      "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/actions",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/byKind",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/cursor",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/filters",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/limited",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/operation",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text#/postWriteMaintenance/summary",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.actions",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.byKind",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.byPhase",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.cursor",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.filters",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.graphHash",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.limited",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.nextAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.operation",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
+    },
+    {
+      "case": "safety/write-guards-on-every-writer",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.postWriteMaintenance.summary",
+      "change": 85,
+      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
     }
   ]
 }

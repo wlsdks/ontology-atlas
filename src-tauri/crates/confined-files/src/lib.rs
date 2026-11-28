@@ -7,6 +7,7 @@
 //! [`WritablePath`] is one a write tool may change; a [`SourceRoot`] only comes from
 //! [`ScanRoots::allow`]. A function that takes one needs no check of its own.
 
+mod absorbed_file;
 mod atomic_write;
 mod confined_file_read;
 // Public only because `mcp-server` imports `confined_files::confined_root::...` by this path;
@@ -33,6 +34,9 @@ mod vault_root;
 mod vault_sidecar;
 mod write_plan;
 
+pub use absorbed_file::{
+    AbsorbedFile, AbsorbedFileRefusal, ABSORBED_FILE_MAX_BYTES, ABSORB_BACKUP_SUFFIX,
+};
 pub use atomic_write::{
     check_current_text, check_modified_time, write_atomically, AtomicWrite, ConflictReport,
     Expectation, VaultConflict, WriteError, WriteErrorClass,

@@ -137,6 +137,12 @@ pub struct WritablePath {
 }
 
 impl WritablePath {
+    /// For the one writer whose file is not a vault slug (`absorbed_file.rs`), which has made its
+    /// own checks.
+    pub(crate) fn from_confined(path: ConfinedPath) -> Self {
+        Self { path }
+    }
+
     pub fn as_confined(&self) -> &ConfinedPath {
         &self.path
     }
@@ -227,6 +233,12 @@ impl VaultRoot {
     /// Every Markdown file under `sources/`, which the vault never reads as a node.
     pub fn raw_source_markdown_files(&self) -> Vec<ConfinedPath> {
         crate::markdown_walk::list_raw_source_markdown(&self.root)
+    }
+
+    /// Every file under `sources/` as `sources/<path>`, for a check that asks whether a cited raw
+    /// source is there. Nothing is opened.
+    pub fn raw_source_paths(&self) -> Vec<String> {
+        crate::markdown_walk::list_raw_source_paths(&self.root)
     }
 
     /// The slug of a file below the vault: its path with `/` separators and no `.md`, in NFC.
