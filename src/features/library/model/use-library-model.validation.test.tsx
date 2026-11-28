@@ -2,11 +2,8 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
-import { validateWikiFolder as validateFolderMcp } from "../../../../mcp/src/library/wiki-folder.mjs";
-import {
-  buildWikiNodeIndex as buildNodesMcp,
-  validateWikiPage as validatePageMcp,
-} from "../../../../mcp/src/library/wiki-schema.mjs";
+import { validateWikiFolder } from "@/shared/lib/library/wiki-folder";
+import { buildWikiNodeIndex, validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
 import { useLibraryModel } from "./use-library-model";
 
 type ModelInput = Parameters<typeof useLibraryModel>[0];
@@ -128,14 +125,14 @@ describe("Library validation follows the current folder", () => {
 
     rerender(props);
     await waitFor(() => expect(result.current.verdicts.get("wiki/plan")?.ok).toBe(false));
-    // validate_wiki runs the MCP module over the same folder.
-    const nodes = buildNodesMcp(props.docs.map((entry) => ({ slug: entry.slug, kind: entry.frontmatter.kind })));
-    const cli = [
-      ...validatePageMcp(linked, { knownSources: new Set(["sources/plan.md"]), nodes }).problems,
-      ...validateFolderMcp([{ path: "wiki/plan.md", raw: linked }])[0]!.problems,
+    // The page validator and the folder validator, run over the same folder, give the same codes.
+    const nodes = buildWikiNodeIndex(props.docs.map((entry) => ({ slug: entry.slug, kind: entry.frontmatter.kind })));
+    const codes = [
+      ...validateWikiPage(linked, { knownSources: new Set(["sources/plan.md"]), nodes }).problems,
+      ...validateWikiFolder([{ path: "wiki/plan.md", raw: linked }])[0]!.problems,
     ].map((problem) => problem.code);
-    expect(result.current.verdicts.get("wiki/plan")?.problems.map((problem) => problem.code)).toEqual(cli);
-    expect(cli).toEqual(["describes-target-missing"]);
+    expect(result.current.verdicts.get("wiki/plan")?.problems.map((problem) => problem.code)).toEqual(codes);
+    expect(codes).toEqual(["describes-target-missing"]);
     expect(result.current.structural.blockingPageCount).toBe(1);
   });
 });

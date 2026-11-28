@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { FSD_PROFILE_FRONTMATTER } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
-import { buildArchitectureBrief, parseArchitectureProfile } from '../../../../mcp/src/architecture/architecture-profile.mjs';
+import GOLDEN from '../../../../tests/fixtures/architecture-golden.json';
 import { analysisDigest, analysisTextDigest, type AnalysisRun } from '@/entities/analysis-record';
+import type { ArchitectureRecord } from '@/entities/architecture-record';
 import { architectureRecordFromAnalysis } from './analysis-architecture-record';
 
 async function fixture(): Promise<AnalysisRun> {
   const markdown = `---\n${Object.entries(FSD_PROFILE_FRONTMATTER).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n')}\n---\nThe responsibility contract.\n`;
   const digest = await analysisTextDigest(markdown);
-  const result = buildArchitectureBrief(parseArchitectureProfile(FSD_PROFILE_FRONTMATTER), { filesScanned: 12, moduleEdges: [] }, { measured: { at: '2026-09-05T08:00:00.000Z', tool: { name: 'ontology-atlas', version: '1.0.6' }, source: { kind: 'git', revision: 'abc1234', dirty: false } } });
+  // The brief the script server built for the FSD profile, recorded 2026-11-28.
+  const result = structuredClone(GOLDEN.fsdBrief) as unknown as ArchitectureRecord['brief'];
   // The persistence boundary omits machine-local roots from actual tool output.
   if (result.conformance.source) delete result.conformance.source.rootPath;
   return {

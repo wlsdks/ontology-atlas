@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildWikiNodeIndex, validateWikiPage } from '@/shared/lib/library/wiki-page-schema';
-import { wikiPageFacts } from '@/shared/lib/library/wiki-folder';
-import { validateWikiFolder as validateFolderMcp } from '../../../../mcp/src/library/wiki-folder.mjs';
+import { validateWikiFolder, wikiPageFacts } from '@/shared/lib/library/wiki-folder';
 import { generatedWikiFolder } from '../../../../tests/fixtures/wiki-page-cases.mjs';
 import { judgeLibraryWiki, libraryWikiReport } from './library-wiki-judgement';
 import { mergeWikiVerdict } from './merge-wiki-verdict';
@@ -13,7 +12,7 @@ const nodes = buildWikiNodeIndex(folder.nodes);
 
 /** The verdicts as the Library drew them while it kept every page's text. */
 function verdictsFromTexts(pages: typeof folder.pages, knownSources: ReadonlySet<string>) {
-  const folderProblems = new Map(validateFolderMcp(pages).map((entry) => [entry.path, entry.problems] as const));
+  const folderProblems = new Map(validateWikiFolder(pages).map((entry) => [entry.path, entry.problems] as const));
   return new Map(pages.map(({ path, raw }) => {
     const { ok, problems } = validateWikiPage(raw, { knownSources, nodes });
     return [slugOf(path), mergeWikiVerdict({
