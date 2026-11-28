@@ -14,8 +14,8 @@ export const SCOPE_CONFIGS = Object.freeze({
   frontend: Object.freeze({
     cwd: '.',
     runtime: source(
-      ['app/**/{page,layout,template,error,loading,not-found,global-error,default,route}.{ts,tsx}', 'app/**/{icon,apple-icon,opengraph-image,twitter-image,sitemap,robots}.{ts,tsx}', 'app/styles/*.css', 'vitest.config.ts', 'vitest.setup.ts', 'playwright.config.ts', 'src/app/next-shims/*.{ts,tsx}', 'src/app/old-folder-cleanup.ts'],
-      ['app/**/*.{ts,tsx,css}', 'src/**/*.{ts,tsx}', '!**/*.{test,spec}.{ts,tsx}', '!src/entities/docs-vault/data/**'],
+      ['app/**/{page,layout,template,error,loading,not-found,global-error,default,route}.{ts,tsx}', 'app/**/{icon,apple-icon,opengraph-image,twitter-image,sitemap,robots}.{ts,tsx}', 'app/styles/*.css', 'vitest.config.ts', 'vitest.setup.ts', 'playwright.config.ts', 'src/app/next-shims/*.{ts,tsx}', 'src/app/old-folder-cleanup.ts', 'scripts/web/site/*.{ts,tsx}'],
+      ['app/**/*.{ts,tsx,css}', 'src/**/*.{ts,tsx}', 'scripts/web/site/*.{ts,tsx}', '!**/*.{test,spec}.{ts,tsx}', '!src/entities/docs-vault/data/**'],
       ALL_ISSUES,
       { vitest: false, playwright: false, ignoreExportsUsedInFile: true },
     ),

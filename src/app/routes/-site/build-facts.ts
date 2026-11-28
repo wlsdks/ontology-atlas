@@ -2,6 +2,7 @@ import { loadWorkbenchCatalog } from '@/i18n/workbench-catalog';
 import { GATEWAY_MESSAGE_PATHS, pickMessagePaths } from '@/i18n/gateway-messages';
 import type { AppLocale } from '@/i18n/locales';
 import type { GatewayDocument } from '@/views/gateway-doc';
+import type { SampleCensus } from '@/views/sample-map';
 
 import type { MessageTree } from './screen-metadata';
 
@@ -9,11 +10,6 @@ import type { MessageTree } from './screen-metadata';
 export interface SourceDates {
   modified?: string;
   published?: string;
-}
-
-export interface SampleCensus {
-  conceptCount: number;
-  relationCount: number;
 }
 
 /**

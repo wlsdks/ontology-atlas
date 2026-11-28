@@ -79,6 +79,8 @@ const corepackPrepare = new RegExp(`corepack prepare ${pinnedPnpm.replace(/[.*+?
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
+// The site metadata both builds share; the root layout spreads it (`siteMetadata()`).
+const siteMetadataSource = readText("src/shared/lib/public-pages/site-metadata.ts");
 // The site Organization and WebSite JSON-LD the root layout renders (`siteEntityGraph`).
 const siteEntity = readText("src/shared/config/site/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
@@ -1341,9 +1343,11 @@ if (missingBundleIcons.length === 0) {
 }
 
 if (
-  rootLayout.includes("title: 'Ontology Atlas'") &&
+  rootLayout.includes("siteMetadata()") &&
+  siteMetadataSource.includes("title: SITE_NAME") &&
+  siteEntity.includes("SITE_NAME = 'Ontology Atlas'") &&
   // Forks that deploy beneath a base path need the manifest helper.
-  rootLayout.includes("manifest: withBasePath('/manifest.webmanifest')") &&
+  siteMetadataSource.includes("manifest: withBasePath('/manifest.webmanifest')") &&
   rootLayout.includes("siteEntityGraph(") &&
   siteEntity.includes("alternateName: 'ontology-atlas'") &&
   webManifest.name === "Ontology Atlas" &&
