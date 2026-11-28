@@ -129,8 +129,7 @@ test('confirmed writes answer with a post-write maintenance summary that matches
     assert.deepEqual(answers.map(({ name, mode }) => `${name}:${mode}`), ['remove_relation:remove', 'remove_relation:replace', 'rename_concept:reclassify', 'rename_concept:rename']);
     for (const { name, answer } of answers) {
       assert.equal(answer.changed, true, `${name} wrote`);
-      assert.equal(answer.postWriteMaintenance?.operation, 'maintenance_plan', `${name} answers with the maintenance summary`);
-      assert.ok(answer.postWriteMaintenance.actions.length > 0, `${name} maintenance summary lists actions`);
+      assert.deepEqual(Object.keys(answer.postWriteMaintenance ?? {}), ['nextAction', 'stepsAboutTouched'], `${name} answers with the next step`);
     }
   } finally {
     rmSync(vault, { recursive: true, force: true });

@@ -11,6 +11,14 @@ export function compareMaintenanceActions(left, right) {
   return compareText(`${left.kind}:${left.reason}`, `${right.kind}:${right.reason}`);
 }
 
+/** Every node a step is about: its own node, the two ends of a link, a cycle's members, a compile issue's node. */
+export function maintenanceActionSlugs(action) {
+  const nodes = Array.isArray(action.nodes) ? action.nodes : Object.values(action.nodes ?? {});
+  const cycle = Array.isArray(action.cycle) ? action.cycle : [];
+  return [action.node?.slug, ...nodes.map((node) => node?.slug), ...cycle, action.issue?.slug]
+    .filter((slug) => typeof slug === 'string');
+}
+
 export function annotateMaintenanceAction(action) {
   return {
     id: maintenanceActionId(action),

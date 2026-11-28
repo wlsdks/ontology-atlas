@@ -16,141 +16,38 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
   if (schema?.type !== 'object') {
     return `${toolName} outputSchema postWriteMaintenance drift`;
   }
-  const compactActionRequired = ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason'];
-  const compactProposedActionTools = ['add_concepts', 'add_relations', 'patch_concept'];
-  const proposedArgsSchemas = schema.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf;
-  const postWriteRequired = [
-    'operation',
-    'sideEffect',
-    'graphHash',
-    'summary',
-    'filters',
-    'cursor',
-    'byPhase',
-    'bySeverity',
-    'byKind',
-    'limited',
-    'nextExecutableAction',
-    'nextReviewAction',
-    'actions',
-  ];
-  if (!sameArray(schema.required, postWriteRequired) || schema.additionalProperties !== false) {
+  if (!sameArray(schema.required, ['nextAction', 'stepsAboutTouched']) || schema.additionalProperties !== false) {
     return `${toolName} outputSchema postWriteMaintenance required drift`;
   }
-  const summarySchema = schema.properties?.summary;
-  const summaryRequired = [
-    'totalActions',
-    'filteredActions',
-    'remainingActions',
-    'executableActions',
-    'reviewActions',
-    'compileIssues',
-    'dependencyCycles',
-    'canonicalizationActions',
-    'danglingReferences',
-    'relationRecommendations',
-    'externalElementRefs',
-    'externalElementRefsIgnored',
-    'unassignedNodes',
-    'emptyDomains',
-    'capabilitiesWithoutEvidence',
-  ];
-  if (
-    summarySchema?.type !== 'object' ||
-    !sameArray(summarySchema.required, summaryRequired) ||
-    summarySchema.additionalProperties !== false ||
-    summaryRequired.some((key) => (
-      summarySchema.properties?.[key]?.type !== 'integer' ||
-      summarySchema.properties?.[key]?.minimum !== 0
-    ))
-  ) {
-    return `${toolName} outputSchema postWriteMaintenance summary drift`;
+  const steps = schema.properties?.stepsAboutTouched;
+  if (steps?.type !== 'integer' || steps.minimum !== 0) {
+    return `${toolName} outputSchema postWriteMaintenance stepsAboutTouched drift`;
   }
-  const filtersSchema = schema.properties?.filters;
+  const next = schema.properties?.nextAction;
+  const proposedArgsSchemas = next?.properties?.proposedAction?.properties?.args?.oneOf;
   if (
-    filtersSchema?.type !== 'object' ||
-    !sameArray(filtersSchema.required, ['executableOnly', 'phases', 'severities', 'kinds']) ||
-    filtersSchema.additionalProperties !== false ||
-    filtersSchema.properties?.executableOnly?.type !== 'boolean' ||
-    !sameArray(filtersSchema.properties?.phases?.items?.enum, MAINTENANCE_PHASE_VALUES) ||
-    !sameArray(filtersSchema.properties?.severities?.items?.enum, MAINTENANCE_SEVERITY_VALUES) ||
-    !sameArray(filtersSchema.properties?.kinds?.items?.enum, MAINTENANCE_KIND_VALUES)
-  ) {
-    return `${toolName} outputSchema postWriteMaintenance filters drift`;
-  }
-  const cursorSchema = schema.properties?.cursor;
-  if (
-    cursorSchema?.type !== 'object' ||
-    !sameArray(cursorSchema.required, ['afterActionId', 'found', 'reason', 'startIndex', 'nextAfterActionId', 'hasMore']) ||
-    cursorSchema.additionalProperties !== false ||
-    cursorSchema.properties?.found?.type !== 'boolean' ||
-    cursorSchema.properties?.hasMore?.type !== 'boolean'
-  ) {
-    return `${toolName} outputSchema postWriteMaintenance cursor drift`;
-  }
-  for (const key of ['byPhase', 'bySeverity', 'byKind']) {
-    const bucketSchema = schema.properties?.[key];
-    if (
-      bucketSchema?.type !== 'object' ||
-      bucketSchema.additionalProperties?.type !== 'integer' ||
-      bucketSchema.additionalProperties?.minimum !== 0
-    ) {
-      return `${toolName} outputSchema postWriteMaintenance ${key} bucket drift`;
-    }
-  }
-  if (
-    schema.properties?.actions?.type !== 'array' ||
-    schema.properties.actions.items?.type !== 'object' ||
-    !sameArray(schema.properties.actions.items?.required, compactActionRequired) ||
-    schema.properties.actions.items?.properties?.score?.minimum !== 0 ||
-    schema.properties.actions.items?.properties?.executable?.type !== 'boolean' ||
-    !sameArray(schema.properties.actions.items?.properties?.proposedAction?.type, ['object', 'null']) ||
-    !sameArray(schema.properties.actions.items?.properties?.proposedAction?.required, ['tool', 'args']) ||
-    schema.properties.actions.items?.properties?.proposedAction?.additionalProperties !== false ||
-    schema.properties.actions.items?.properties?.proposedAction?.properties?.tool?.type !== 'string' ||
-    !sameArray(schema.properties.actions.items?.properties?.proposedAction?.properties?.tool?.enum, compactProposedActionTools) ||
+    !sameArray(next?.type, ['object', 'null']) ||
+    !sameArray(next?.required, ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason']) ||
+    next.additionalProperties !== false ||
+    next.properties?.score?.minimum !== 0 ||
+    next.properties?.executable?.type !== 'boolean' ||
+    !sameArray(next.properties?.phase?.enum, MAINTENANCE_PHASE_VALUES) ||
+    !sameArray(next.properties?.severity?.enum, MAINTENANCE_SEVERITY_VALUES) ||
+    !sameArray(next.properties?.kind?.enum, MAINTENANCE_KIND_VALUES) ||
+    !sameArray(next.properties?.proposedAction?.type, ['object', 'null']) ||
+    !sameArray(next.properties?.proposedAction?.required, ['tool', 'args']) ||
+    next.properties?.proposedAction?.additionalProperties !== false ||
+    !sameArray(next.properties?.proposedAction?.properties?.tool?.enum, LEAN_BUILD_WRITE_TOOLS) ||
     !Array.isArray(proposedArgsSchemas) ||
     proposedArgsSchemas.length !== 3 ||
     !sameArray(proposedArgsSchemas[0]?.required, ['concepts']) ||
-    !sameArray(proposedArgsSchemas[0]?.properties?.concepts?.items?.required, ['slug', 'kind', 'title']) ||
     !sameArray(proposedArgsSchemas[1]?.required, ['relations']) ||
-    !sameArray(proposedArgsSchemas[1]?.properties?.relations?.items?.required, ['from', 'to', 'type']) ||
     !sameArray(proposedArgsSchemas[1]?.properties?.relations?.items?.properties?.type?.enum, WRITE_RELATION_TYPE_VALUES) ||
     !sameArray(proposedArgsSchemas[2]?.required, ['slug', 'frontmatter', 'expected_mtime']) ||
-    proposedArgsSchemas[2]?.properties?.frontmatter?.additionalProperties !== false ||
-    schema.properties.actions.items?.additionalProperties !== false ||
-    schema.properties.actions.items?.properties?.node?.additionalProperties !== false ||
-    schema.properties.actions.items?.properties?.node?.properties?.slug?.type !== 'string' ||
-    !sameArray(schema.properties.actions.items?.properties?.nodes?.type, ['array', 'object']) ||
-    schema.properties.actions.items?.properties?.nodes?.items?.additionalProperties !== false ||
-    schema.properties.actions.items?.properties?.nodes?.items?.properties?.slug?.type !== 'string' ||
-    schema.properties.actions.items?.properties?.nodes?.additionalProperties?.additionalProperties !== false ||
-    schema.properties.actions.items?.properties?.nodes?.additionalProperties?.properties?.slug?.type !== 'string' ||
-    schema.properties.actions.items?.allOf?.[0]?.if?.properties?.executable?.const !== true ||
-    !sameArray(schema.properties.actions.items?.allOf?.[0]?.then?.required, ['proposedAction']) ||
-    schema.properties.actions.items?.allOf?.[0]?.then?.properties?.proposedAction?.type !== 'object'
+    next.allOf?.[0]?.if?.properties?.executable?.const !== true ||
+    !sameArray(next.allOf?.[0]?.then?.required, ['proposedAction'])
   ) {
-    return `${toolName} outputSchema postWriteMaintenance actions drift`;
-  }
-  for (const key of ['nextExecutableAction', 'nextReviewAction']) {
-    const actionSchema = schema.properties?.[key];
-    if (
-      !sameArray(actionSchema?.type, ['object', 'null']) ||
-      !sameArray(actionSchema?.required, compactActionRequired) ||
-      actionSchema.properties?.score?.minimum !== 0 ||
-      actionSchema.properties?.executable?.type !== 'boolean' ||
-      !sameArray(actionSchema.properties?.proposedAction?.type, ['object', 'null']) ||
-      !sameArray(actionSchema.properties?.proposedAction?.required, ['tool', 'args']) ||
-      actionSchema.additionalProperties !== false ||
-      actionSchema.properties?.proposedAction?.additionalProperties !== false ||
-      !sameArray(actionSchema.properties?.proposedAction?.properties?.tool?.enum, compactProposedActionTools) ||
-      actionSchema.properties?.proposedAction?.properties?.args?.oneOf?.length !== 3
-      || actionSchema.allOf?.[0]?.if?.properties?.executable?.const !== true
-      || !sameArray(actionSchema.allOf?.[0]?.then?.required, ['proposedAction'])
-      || actionSchema.allOf?.[0]?.then?.properties?.proposedAction?.type !== 'object'
-    ) {
-      return `${toolName} outputSchema postWriteMaintenance ${key} drift`;
-    }
+    return `${toolName} outputSchema postWriteMaintenance nextAction drift`;
   }
   return null;
 }
@@ -279,17 +176,8 @@ export function writeGuardsSchemaFailure(tools) {
     if (!/postWriteMaintenance/.test(description)) {
       return `${toolName} description missing postWriteMaintenance guidance`;
     }
-    if (!/score/.test(description)) {
-      return `${toolName} description missing maintenance action score guidance`;
-    }
-    if (!/proposedAction/.test(description)) {
-      return `${toolName} description missing executable maintenance proposedAction guidance`;
-    }
-    if (!/nextExecutableAction/.test(description) || !/nextReviewAction/.test(description)) {
-      return `${toolName} description missing maintenance next action pointer guidance`;
-    }
-    if (!/byPhase/.test(description) || !/bySeverity/.test(description) || !/byKind/.test(description)) {
-      return `${toolName} description missing maintenance bucket guidance`;
+    if (!/nextAction/.test(description) || !/stepsAboutTouched/.test(description)) {
+      return `${toolName} description missing next action guidance`;
     }
     const schemaFailure = postWriteMaintenanceSchemaFailure(
       outputPropertyAt(tool, ['properties', 'postWriteMaintenance']),

@@ -4,6 +4,14 @@ import { starterExampleFindings } from '../../meaning/meaning-findings.mjs';
 import { docBodyMeaningFindings, docHasBody } from '../../vault/documents/doc-facts.mjs';
 import { slugOutsideKindFolderMessage } from '../../construction/construction-rules.mjs';
 import { compareText } from '../../compare-text.mjs';
+import { maintenanceActionSlugs } from './maintenance-actions.mjs';
+
+/**
+ * How far each check scans when a plan is asked only about some nodes. The nodes are chosen
+ * after the scan, so a scan cut at the page size would drop a step about a touched node
+ * behind steps about nodes nobody asked about. 500 is the most `limit` may be.
+ */
+const TOUCHED_SCAN_LIMIT = 500;
 
 const MEANING_GAP_KIND_BY_CODE = Object.freeze({
   'definition-missing': 'definition_missing',
@@ -26,6 +34,14 @@ const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
   // is a single delete.
   'starter-example-node': 0.65,
 });
+
+function normalizeTouching(value) {
+  if (value === undefined) return null;
+  if (!Array.isArray(value) || value.some((slug) => typeof slug !== 'string')) {
+    throw new Error('touching must be an array of slugs.');
+  }
+  return new Set(value);
+}
 
 export function createMaintenanceQueries({
   artifact,
@@ -163,20 +179,22 @@ export function createMaintenanceQueries({
 
   function maintenancePlan(options = {}) {
     const limit = normalizeLimit(options.limit, 25);
+    const touching = normalizeTouching(options.touching);
+    const scanLimit = touching ? TOUCHED_SCAN_LIMIT : limit;
     const phaseFilter = normalizeStringSet(options.phases, 'phases', maintenancePhases);
     const severityFilter = normalizeStringSet(options.severities, 'severities', maintenanceSeverities);
     const kindFilter = normalizeStringSet(options.kinds, 'kinds', maintenanceKinds);
-    const cycleResult = cycles({ limit, types: options.dependencyTypes ?? ['dependencies'] });
-    const relationRecommendations = recommendRelations({ limit });
-    const externalElementRefs = externalElementCandidates(limit);
-    const danglingReferences = danglingReferenceCandidates(limit);
-    const unassignedNodes = unassignedNodeCandidates(limit);
-    const emptyDomains = emptyDomainCandidates(limit);
-    const unearnedNodes = unearnedNodeCandidates(limit);
-    const capabilitiesWithoutEvidence = capabilityWithoutEvidenceCandidates(limit);
-    const meaningGaps = meaningGapCandidates(limit);
-    const flatSlugs = slugOutsideKindFolderCandidates(limit);
-    const starterExamples = starterExampleCandidates(limit);
+    const cycleResult = cycles({ limit: scanLimit, types: options.dependencyTypes ?? ['dependencies'] });
+    const relationRecommendations = recommendRelations({ limit: scanLimit });
+    const externalElementRefs = externalElementCandidates(scanLimit);
+    const danglingReferences = danglingReferenceCandidates(scanLimit);
+    const unassignedNodes = unassignedNodeCandidates(scanLimit);
+    const emptyDomains = emptyDomainCandidates(scanLimit);
+    const unearnedNodes = unearnedNodeCandidates(scanLimit);
+    const capabilitiesWithoutEvidence = capabilityWithoutEvidenceCandidates(scanLimit);
+    const meaningGaps = meaningGapCandidates(scanLimit);
+    const flatSlugs = slugOutsideKindFolderCandidates(scanLimit);
+    const starterExamples = starterExampleCandidates(scanLimit);
     const canonicalizationActions = Array.isArray(artifact?.canonicalizationActions)
       ? artifact.canonicalizationActions
       : [];
@@ -317,7 +335,9 @@ export function createMaintenanceQueries({
     }
 
     actions.sort(compareMaintenanceActions);
-    const annotatedActions = actions.map(annotateMaintenanceAction);
+    const annotatedActions = actions
+      .map(annotateMaintenanceAction)
+      .filter((action) => !touching || maintenanceActionSlugs(action).some((slug) => touching.has(slug)));
     const executableOnly = normalizeOptionalBoolean(options.executableOnly, 'executableOnly', false);
     const filteredActions = annotatedActions.filter((action) => {
       if (executableOnly && !action.executable) return false;
@@ -343,7 +363,7 @@ export function createMaintenanceQueries({
       sideEffect: false,
       graphHash: artifact?.graphHash,
       summary: {
-        totalActions: actions.length,
+        totalActions: annotatedActions.length,
         filteredActions: filteredActions.length,
         remainingActions: cursorActions.length,
         executableActions: annotatedActions.filter((action) => action.executable).length,

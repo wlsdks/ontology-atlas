@@ -237,7 +237,7 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     backupPath,
     changed: true,
     message: `absorbed ${written.length} section(s) into the vault; source rewritten as a slim pointer (backup at ${backupPath}).`,
-    postWriteMaintenance: compactPostWriteMaintenance(),
+    postWriteMaintenance: compactPostWriteMaintenance(written.map((entry) => entry.slug)),
   };
 }
 

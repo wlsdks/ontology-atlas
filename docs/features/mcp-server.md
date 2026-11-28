@@ -148,7 +148,7 @@ contract: `previewReady`, `canConfirm`, `wouldChange`, and
     - **Validation**: both `from` AND `to` slug must exist in vault (`vaultSlugExists`)
     - Unique tail aliases and frontmatter `slug:` aliases are resolved to canonical file slugs before write
     - Idempotent: duplicate returns `{ alreadyExists: true }`
-4. **delete_concept** `{ slug, confirm?, force?, expected_mtime? }` — permanent delete; confirmed deletes return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers
+4. **delete_concept** `{ slug, confirm?, force?, expected_mtime? }` — permanent delete; confirmed deletes return `postWriteMaintenance` as `{ nextAction, stepsAboutTouched }`: the one step that comes next for the nodes the write touched (a call that settles one, else the first judgement left; `null` when none) and how many steps there are about them
     - `confirm: false` (dry-run with backlinks preview) / `true` (actual)
     - `force: false` (throw if backlinks exist) / `true` (delete anyway)
     - **Conflict guard**: optional `expected_mtime`
@@ -156,7 +156,7 @@ contract: `previewReady`, `canConfirm`, `wouldChange`, and
     - Moves the .md file, updates the moved file's `slug:` key, rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`)
     - Tail-only references (`mcp-server` for `capabilities/mcp-server`) also redirected to the new tail
     - `confirm: false` (dry-run with full update preview) / `true` (actual)
-    - Confirmed renames return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers
+    - Confirmed renames return `postWriteMaintenance` as `{ nextAction, stepsAboutTouched }`: the one step that comes next for the nodes the write touched (a call that settles one, else the first judgement left; `null` when none) and how many steps there are about them
     - Replaces the manual `find_backlinks` + N `patch_concept` loop
     - Preserves the node UID; only the readable address and backlinks change
     - `newKind` changes the node's kind in the same call (the retired `reclassify_concept`): `newSlug` becomes optional, `domain` is required for a capability or element, `body` is optional, `overwrite` is refused; each referrer's entry moves to the new kind's list, and entries a referrer cannot keep are named in `warnings`
@@ -165,7 +165,7 @@ contract: `previewReady`, `canConfirm`, `wouldChange`, and
     - Preserves `intoSlug` UID and records source identity history in canonical `merged_uids`; prose is not auto-combined
     - For confirmed writes, pass both source and survivor mtimes so neither concurrent edit is overwritten
     - `confirm: false` (dry-run) / `true` (actual)
-    - Confirmed merges return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers
+    - Confirmed merges return `postWriteMaintenance` as `{ nextAction, stepsAboutTouched }`: the one step that comes next for the nodes the write touched (a call that settles one, else the first judgement left; `null` when none) and how many steps there are about them
 7. **remove_relation** `{ from, to, type, replaceWith?, confirm?, expected_mtime? }` — one exact typed relation and its rationale, dry-run first; an absent relation is an explicit no-op blocker. With `replaceWith: { to, type, why? }` the relation is replaced in one source-file write, its rationale moving with it (the retired `replace_relation`)
 8. **absorb_document** `{ filePath, confirm?, allowOutsideRepo? }` — classifies a local agent-instruction document, writes accepted policy nodes, backs up the source, then rewrites it as a slim pointer. Canonical paths outside `repoRoot`, including symlink escapes, are blocked until a reviewed dry-run is repeated with `allowOutsideRepo:true`
 9. **finalize_project_meaning** `{ projectSlug, expected_mtime, answers? }` — post-write finalization for one explicit project. With `answers` (five rows, one per fixed competency question) the server writes the project body's `## Competency answers` section from them and finalizes in one call; without, it reads the section already in the project Markdown. After current vault validation and a complete project scope, it resolves every typed witness against the current graph/source inventory, measuring a cited file the stored source receipt does not cover inside the already connected folder, and stores a versioned receipt with optimistic-concurrency protection. The receipt stores no raw answers or private source coordinates; the answers themselves live in the project Markdown. `ok: true` means the writes succeeded, not that the ontology or source is verified; callers read the returned categorical `meaningAssessment` or a fresh explicit-project `agent_brief`.
