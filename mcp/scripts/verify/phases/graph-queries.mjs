@@ -1,5 +1,4 @@
 import {
-  allPathsQueryFailure,
   neighborsFailure,
   pathQueryFailure,
   projectScopeFailure,
@@ -10,9 +9,7 @@ import { formatCount, formatHopCount, log } from '../output.mjs';
 export function verifyGraphQueries(responses, { graphSmokeArgs }) {
   const neighborsRes = responses.find((r) => r.id === 13);
   const pathRes = responses.find((r) => r.id === 14);
-  const allPathsRes = responses.find((r) => r.id === 67);
   const projectScopeRes = responses.find((r) => r.id === 15);
-  let allPathsVerified = false;
   if (graphSmokeArgs?.hasNode) {
     if (!neighborsRes || !neighborsRes.result) {
       log('fail', 'no query_ontology neighbors response');
@@ -61,37 +58,8 @@ export function verifyGraphQueries(responses, { graphSmokeArgs }) {
       log('fail', `failed to parse path response: ${err.message}`);
       return false;
     }
-
-    if (!allPathsRes || !allPathsRes.result) {
-      log('fail', 'no query_ontology all_paths response');
-      return false;
-    }
-    try {
-      const text = allPathsRes.result.content?.[0]?.text || '';
-      const parsed = JSON.parse(text);
-      const expectedSlug = graphSmokeArgs.slug;
-      const expectedTarget = graphSmokeArgs.pathTarget || expectedSlug;
-      const failure = allPathsQueryFailure(parsed, expectedSlug, expectedTarget);
-      if (failure) {
-        log('fail', failure);
-        return false;
-      }
-      const structuredFailure = structuredContentFailure(allPathsRes, parsed, 'all_paths');
-      if (structuredFailure) {
-        log('fail', structuredFailure);
-        return false;
-      }
-      allPathsVerified = true;
-      log(
-        'ok',
-        `all_paths: ${parsed.from} → ${parsed.to} (${parsed.paths.length}/${parsed.totalPaths} paths, budget ${parsed.searchBudget}, expanded ${parsed.expandedStates}, exhaustive ${parsed.exhaustive}, evidence ${parsed.evidence.status})`,
-      );
-    } catch (err) {
-      log('fail', `failed to parse all_paths response: ${err.message}`);
-      return false;
-    }
   } else {
-    log('info', 'neighbors/path/all_paths: skipped (vault has no nodes)');
+    log('info', 'neighbors/path: skipped (vault has no nodes)');
   }
 
   if (graphSmokeArgs?.hasProject) {
@@ -121,5 +89,5 @@ export function verifyGraphQueries(responses, { graphSmokeArgs }) {
   } else {
     log('info', 'project_scope: skipped (no project node in vault)');
   }
-  return { allPathsVerified };
+  return true;
 }

@@ -1,5 +1,4 @@
 import {
-  EDGE_TARGET_KIND_VALUES,
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
@@ -201,17 +200,17 @@ export function strictRelationFilterFailure(response) {
     return 'strict relation filter response was not rejected';
   }
   const text = response.result.content?.[0]?.text || '';
-  if (!/dependencyTypes items must be one of/i.test(text)) {
-    return 'strict relation filter response did not report the invalid dependencyTypes filter';
+  if (!/types items must be one of/i.test(text)) {
+    return 'strict relation filter response did not report the invalid types filter';
   }
   if (!/Received: "depend_on"/i.test(text)) {
-    return 'strict relation filter response did not report the invalid dependencyTypes value';
+    return 'strict relation filter response did not report the invalid types value';
   }
   if (!/Did you mean "depends_on"\?/i.test(text)) {
-    return 'strict relation filter response did not suggest the closest dependencyTypes value';
+    return 'strict relation filter response did not suggest the closest types value';
   }
   return structuredValueRepairFailure(response, 'strict relation filter', {
-    valueName: 'dependencyTypes items',
+    valueName: 'types items',
     received: 'depend_on',
     suggestion: 'depends_on',
     allowedValues: RELATION_TYPE_VALUES,
@@ -289,7 +288,7 @@ export function strictGraphKindFilterFailure(
     valueName: field,
     received,
     suggestion,
-    allowedValues: field === 'toKind' ? EDGE_TARGET_KIND_VALUES : NODE_KIND_VALUES,
+    allowedValues: NODE_KIND_VALUES,
   });
 }
 
@@ -366,28 +365,6 @@ export function strictRelationCheckFailure(response) {
     return 'strict relation_check response did not suggest the closest type value';
   }
   return structuredValueRepairFailure(response, 'strict relation_check', {
-    valueName: 'type',
-    received: 'depend_on',
-    suggestion: 'depends_on',
-    allowedValues: RELATION_TYPE_VALUES,
-  });
-}
-
-export function strictMatchEdgesTypeFailure(response) {
-  if (response?.result?.isError !== true) {
-    return 'strict match_edges type response was not rejected';
-  }
-  const text = response.result.content?.[0]?.text || '';
-  if (!/type must be one of/i.test(text)) {
-    return 'strict match_edges type response did not report the invalid type filter';
-  }
-  if (!/Received: "depend_on"/i.test(text)) {
-    return 'strict match_edges type response did not report the invalid type value';
-  }
-  if (!/Did you mean "depends_on"\?/i.test(text)) {
-    return 'strict match_edges type response did not suggest the closest type value';
-  }
-  return structuredValueRepairFailure(response, 'strict match_edges type', {
     valueName: 'type',
     received: 'depend_on',
     suggestion: 'depends_on',

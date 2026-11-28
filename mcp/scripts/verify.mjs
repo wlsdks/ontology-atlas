@@ -160,15 +160,6 @@ async function step2BootAndCall() {
     let sentGraphQuerySmoke = false;
     let sentDestructiveDryRunSmoke = false;
     let sentMaintenanceResumeSmoke = false;
-    let startedMeaningRepairReview = false;
-    let meaningRepairReviewRequired = false;
-    let meaningRepairReviewChainEnded = false;
-    let meaningRepairReviewFailed = false;
-    let nextMeaningRepairReviewId = 74;
-    let nextMeaningRepairReadId = 1000;
-    const meaningRepairReviewRequests = [];
-    const meaningRepairReadRequests = [];
-    const processedMeaningRepairReviewIds = new Set();
     let destructiveDryRunExpectedResponses = [];
     let earlyEmptyVaultPayload = null;
     const expectedFirstContactIds = initialExpectedFirstContactIds();
@@ -321,99 +312,8 @@ async function step2BootAndCall() {
         }
       }
       const liveResponses = parseJsonRpcResponses(stdout);
-      if (!startedMeaningRepairReview) {
-        const agentBriefResponse = liveResponses.find((response) => response?.id === 66);
-        if (agentBriefResponse) {
-          startedMeaningRepairReview = true;
-          let firstArguments = null;
-          try {
-            if (!agentBriefResponse.result) throw new TypeError('agent_brief response failed');
-            const payload = JSON.parse(agentBriefResponse.result.content?.[0]?.text || '{}');
-            if (payload?.meaningRepair?.status === 'human_review_required') {
-              meaningRepairReviewRequired = true;
-              firstArguments = payload.meaningRepair.workflow?.[0]?.calls?.[0]?.arguments ?? null;
-            }
-          } catch {
-            meaningRepairReviewFailed = true;
-            firstArguments = null;
-          }
-          if (meaningRepairReviewRequired && !firstArguments) {
-            meaningRepairReviewFailed = true;
-          }
-          if (firstArguments) {
-            const id = nextMeaningRepairReviewId++;
-            expectedFirstContactIds.add(id);
-            meaningRepairReviewRequests.push({ id, arguments: firstArguments });
-            proc.stdin.write(JSON.stringify({
-              jsonrpc: '2.0',
-              id,
-              method: 'tools/call',
-              params: { name: 'query_ontology', arguments: firstArguments },
-            }) + '\n');
-          }
-        }
-      }
-      for (const request of meaningRepairReviewRequests) {
-        if (processedMeaningRepairReviewIds.has(request.id)) continue;
-        const response = liveResponses.find((row) => row?.id === request.id);
-        if (!response) continue;
-        processedMeaningRepairReviewIds.add(request.id);
-        let nextArguments = null;
-        try {
-          const payload = JSON.parse(response.result?.content?.[0]?.text || '{}');
-          if (payload?.status === 'ready') {
-            const readArguments = payload.readCall?.arguments ?? null;
-            if (readArguments) {
-              const id = nextMeaningRepairReadId++;
-              expectedFirstContactIds.add(id);
-              meaningRepairReadRequests.push({
-                id,
-                reviewRequestId: request.id,
-                arguments: readArguments,
-              });
-              proc.stdin.write(JSON.stringify({
-                jsonrpc: '2.0',
-                id,
-                method: 'tools/call',
-                params: { name: 'get_concepts', arguments: readArguments },
-              }) + '\n');
-            }
-            if (payload.pagination?.hasMore === true) {
-              nextArguments = payload.nextCall?.arguments ?? null;
-            } else {
-              meaningRepairReviewChainEnded = true;
-            }
-          } else {
-            meaningRepairReviewFailed = true;
-          }
-        } catch {
-          meaningRepairReviewFailed = true;
-          nextArguments = null;
-        }
-        if (nextArguments) {
-          const id = nextMeaningRepairReviewId++;
-          expectedFirstContactIds.add(id);
-          meaningRepairReviewRequests.push({ id, arguments: nextArguments });
-          proc.stdin.write(JSON.stringify({
-            jsonrpc: '2.0',
-            id,
-            method: 'tools/call',
-            params: { name: 'query_ontology', arguments: nextArguments },
-          }) + '\n');
-        }
-      }
-      const meaningRepairReviewSettled = startedMeaningRepairReview && (
-        !meaningRepairReviewRequired
-        || meaningRepairReviewFailed
-        || (
-          meaningRepairReviewChainEnded
-          && meaningRepairReadRequests.length === meaningRepairReviewRequests.length
-          && meaningRepairReadRequests.every(({ id }) => liveResponses.some((row) => row?.id === id))
-        )
-      );
       if (
         !completed
-        && meaningRepairReviewSettled
         && (hasAllFirstContactResponses(stdout, expectedFirstContactIds)
           || hasFirstContactErrorResponse(stdout, expectedFirstContactIds))
       ) {
@@ -528,10 +428,7 @@ async function step2BootAndCall() {
       const vaultCensus = verifyVaultCensus(responses, { projectProbeRes });
       if (!vaultCensus) return res(false);
       const { kindsPayload, validationPayload } = vaultCensus;
-      if (!verifyBriefs(responses, {
-        meaningRepairReviewRequests,
-        meaningRepairReadRequests,
-      })) return res(false);
+      if (!verifyBriefs(responses)) return res(false);
       if (!verifyDiagnosis(responses)) return res(false);
       const compile = verifyCompile(responses);
       if (!compile) return res(false);
@@ -541,7 +438,6 @@ async function step2BootAndCall() {
       const { overviewPayload } = queryPlans;
       const graphQueries = verifyGraphQueries(responses, { graphSmokeArgs });
       if (!graphQueries) return res(false);
-      const { allPathsVerified } = graphQueries;
 
       const countFailure = verifyCountConsistencyFailure({
         kinds: kindsPayload,
@@ -572,7 +468,6 @@ async function step2BootAndCall() {
           hasFindBacklinks: findBacklinksVerified,
           hasLimitedQueryConcepts: limitedQueryConceptsVerified,
           hasCompileIndexes: true,
-          hasAllPaths: allPathsVerified,
           hasMaintenanceResume: maintenanceResumeVerified,
           hasMaintenanceResumeSkipped: maintenanceResumeSkipped,
           destructiveDryRunCount,

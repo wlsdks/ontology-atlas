@@ -6,13 +6,10 @@ import {
 } from '../value-checks.mjs';
 import {
   agentBusinessOntologyLensFailure,
-  agentGraphDbQueryPackFailure,
   agentGuardrailCallsFailure,
   agentRelationDecisionGuideFailure,
-  agentResultContractsFailure,
   agentToolCallsFailure,
   agentToolCallsIncludeOperation,
-  agentTraversalStrategyFailure,
 } from './agent-brief-guidance.mjs';
 import {
   agentBriefPlainObject,
@@ -27,24 +24,14 @@ import {
   diagnosisNextActionFailure,
   healthChecksSummary,
 } from './diagnosis.mjs';
-import { validAgentBriefMeaningRepair } from './meaning-repair.mjs';
 
 export function agentBriefSummary(parsed) {
   return `${parsed?.readiness?.status || 'unknown'} ${parsed?.readiness?.score ?? 'n/a'}/100, ${formatCount(
     (parsed?.entrypoints || []).length,
     'entrypoint',
   )}, ${formatCount((parsed?.firstCalls || []).length, 'first call')}, ${formatCount(
-    (parsed?.graphDbQueryPack || []).length,
-    'graph DB pack item',
-  )}, ${formatCount(
-    (parsed?.playbooks || []).length,
-    'playbook',
-  )}, ${formatCount(
     (parsed?.writeGuardrails || []).length,
     'write guardrail',
-  )}, ${formatCount(
-    (parsed?.resultContracts || []).length,
-    'result contract',
   )}`;
 }
 
@@ -93,19 +80,6 @@ export function agentBriefFailure(parsed) {
   if (!validAgentBriefMeaningAssessment(parsed.meaningAssessment, parsed.projectSlug)) {
     return 'agent_brief response malformed categorical meaningAssessment';
   }
-  if (!agentBriefPlainObject(parsed.meaningRepair)) {
-    return 'agent_brief response missing meaningRepair review packet';
-  }
-  if (agentBriefPrivateSourceCoordinate(parsed.meaningRepair)) {
-    return 'agent_brief meaningRepair exposes private source coordinates';
-  }
-  if (!validAgentBriefMeaningRepair(parsed.meaningRepair, parsed.projectSlug)) {
-    return 'agent_brief response malformed meaningRepair review packet';
-  }
-  if (parsed.meaningRepair.status === 'human_review_required' && (
-    parsed.nextActions?.[0]?.id !== 'review_competency_repair'
-    || parsed.nextActions[0].detailContract !== parsed.meaningRepair.contract
-  )) return 'agent_brief meaningRepair action must be first in nextActions';
   const readinessCountFailure = numericFieldsFailure('agent_brief readiness', parsed.readiness, [
     'meaningfulNodes',
     'relationCount',
@@ -124,7 +98,6 @@ export function agentBriefFailure(parsed) {
     !/ontology-atlas MCP server/.test(parsed.handoffPrompt) ||
     !/first-contact MCP calls/i.test(parsed.handoffPrompt) ||
     !/When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault/.test(parsed.handoffPrompt) ||
-    !/Graph DB query pack/.test(parsed.handoffPrompt) ||
     !/Kind classification contract before writing frontmatter/.test(parsed.handoffPrompt) ||
     !/Do not classify from the label alone/.test(parsed.handoffPrompt) ||
     !/domain: shared vocabulary boundary/.test(parsed.handoffPrompt) ||
@@ -137,12 +110,7 @@ export function agentBriefFailure(parsed) {
     !/source path, symbol, route, command, or MCP tool evidence/.test(parsed.handoffPrompt) ||
     !/why not the nearest adjacent kind/.test(parsed.handoffPrompt) ||
     !/similar_nodes/.test(parsed.handoffPrompt) ||
-    !/Investigation playbooks/.test(parsed.handoffPrompt) ||
-    !/Traversal strategy/.test(parsed.handoffPrompt) ||
-    !/plan_before_enumeration/.test(parsed.handoffPrompt) ||
     !/Write guardrails/.test(parsed.handoffPrompt) ||
-    !/Result contracts/.test(parsed.handoffPrompt) ||
-    !/totalPathsExact/.test(parsed.handoffPrompt) ||
     !/relation_check/.test(parsed.handoffPrompt) ||
     !/add_relations/.test(parsed.handoffPrompt)
   ) {
@@ -191,50 +159,6 @@ export function agentBriefFailure(parsed) {
   if (!agentToolCallsIncludeOperation(parsed.firstCalls, 'relation_check')) {
     return 'agent_brief firstCalls missing relation_check preflight';
   }
-  const graphDbQueryPackFailure = agentGraphDbQueryPackFailure(parsed.graphDbQueryPack);
-  if (graphDbQueryPackFailure) return graphDbQueryPackFailure;
-  if (!Array.isArray(parsed.playbooks) || parsed.playbooks.length === 0) {
-    return 'agent_brief response missing playbooks';
-  }
-  for (const [index, playbook] of parsed.playbooks.entries()) {
-    if (!hasNonEmptyString(playbook?.id, playbook?.goal)) {
-      return `agent_brief response malformed playbook at index ${index}`;
-    }
-    if (
-      !Array.isArray(playbook.evidence) ||
-      playbook.evidence.length === 0 ||
-      playbook.evidence.some((item) => !hasNonEmptyString(item))
-    ) {
-      return `agent_brief playbook ${playbook.id} missing evidence checklist`;
-    }
-    if (
-      !Array.isArray(playbook.stopWhen) ||
-      playbook.stopWhen.length === 0 ||
-      playbook.stopWhen.some((item) => !hasNonEmptyString(item))
-    ) {
-      return `agent_brief playbook ${playbook.id} missing stopWhen checklist`;
-    }
-    const callFailure = agentToolCallsFailure(`agent_brief playbook ${playbook.id}`, playbook.calls);
-    if (callFailure) return callFailure;
-  }
-  const refactorPlaybook = parsed.playbooks.find((playbook) => playbook?.id === 'refactor_impact');
-  if (!refactorPlaybook) {
-    return 'agent_brief missing refactor_impact playbook';
-  }
-  if (!agentToolCallsIncludeOperation(refactorPlaybook.calls, 'relation_check')) {
-    return 'agent_brief refactor_impact playbook missing relation_check preflight';
-  }
-  const traversalPlaybook = parsed.playbooks.find((playbook) => playbook?.id === 'graph_traversal');
-  if (!traversalPlaybook) {
-    return 'agent_brief missing graph_traversal playbook';
-  }
-  for (const operation of ['schema', 'all_paths', 'pattern_walk', 'project_map']) {
-    if (!agentToolCallsIncludeOperation(traversalPlaybook.calls, operation)) {
-      return `agent_brief graph_traversal playbook missing ${operation}`;
-    }
-  }
-  const traversalStrategyFailure = agentTraversalStrategyFailure(parsed.traversalStrategy);
-  if (traversalStrategyFailure) return traversalStrategyFailure;
   if (!Array.isArray(parsed.writeGuardrails) || parsed.writeGuardrails.length === 0) {
     return 'agent_brief response missing writeGuardrails';
   }
@@ -268,8 +192,6 @@ export function agentBriefFailure(parsed) {
   if (!parsed.writePolicy.some((row) => /relation_check/.test(row) && /add_relations/.test(row))) {
     return 'agent_brief writePolicy missing relation_check add_relations guidance';
   }
-  const resultContractsFailure = agentResultContractsFailure(parsed.resultContracts);
-  if (resultContractsFailure) return resultContractsFailure;
   const decisionGuideFailure = agentRelationDecisionGuideFailure(parsed.relationDecisionGuide);
   if (decisionGuideFailure) return decisionGuideFailure;
   return null;

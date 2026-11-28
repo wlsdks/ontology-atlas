@@ -1,5 +1,4 @@
 import {
-  EDGE_TARGET_KIND_VALUES,
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
@@ -132,13 +131,13 @@ export function vaultQueryToolsSchemaFailure(tools) {
       return `query_ontology ${propertyName} relation enum schema drift`;
     }
   }
-  for (const propertyName of ['type', 'relation']) {
+  for (const propertyName of ['type']) {
     const option = propertyAt(queryTool, ['properties', propertyName]);
     if (option?.type !== 'string' || !sameArray(option.enum, RELATION_TYPE_VALUES)) {
       return `query_ontology ${propertyName} relation enum schema drift`;
     }
   }
-  for (const propertyName of ['kind', 'fromKind']) {
+  for (const propertyName of ['kind']) {
     const option = propertyAt(queryTool, ['properties', propertyName]);
     if (option?.type !== 'string' || !sameArray(option.enum, NODE_KIND_VALUES)) {
       return `query_ontology ${propertyName} graph kind enum schema drift`;
@@ -148,32 +147,18 @@ export function vaultQueryToolsSchemaFailure(tools) {
   if (!/recommend_relations takes capability or element/.test(kindDescription)) {
     return 'query_ontology kind description drift';
   }
-  const fromKindDescription = propertyAt(queryTool, ['properties', 'fromKind'])?.description ?? '';
-  if (!/always a real node/.test(fromKindDescription)) {
-    return 'query_ontology fromKind description drift';
-  }
-  const toKind = propertyAt(queryTool, ['properties', 'toKind']);
-  if (toKind?.type !== 'string' || !sameArray(toKind.enum, EDGE_TARGET_KIND_VALUES)) {
-    return 'query_ontology toKind graph kind enum schema drift';
-  }
-  if (!/external and unresolved select refs that are not nodes/.test(toKind?.description ?? '')) {
-    return 'query_ontology toKind description drift';
-  }
   const queryDescription = queryTool.description || '';
-  if (!/impact and blast_radius follow declared `depends_on` only/.test(queryDescription)) {
+  if (!/impact \(what depends on a node, declared `depends_on` only\)/.test(queryDescription)) {
     return 'query_ontology description missing the declared depends_on impact rule';
   }
-  if (!/`approvalGate` writes nothing until[\s\S]*the human explicitly approves/.test(queryDescription)) {
-    return 'query_ontology description missing the relation_check approval gate';
+  if (!/relation_check \(preflight before add_relations/.test(queryDescription)) {
+    return 'query_ontology description missing the relation_check preflight';
   }
-  if (!/agent_brief with detail:"compact" and `task` right after connection_info/.test(queryDescription)) {
-    return 'query_ontology description missing the compact agent_brief order';
+  if (!/connection_info\(\{guide:"query"\}\)/.test(queryDescription)) {
+    return 'query_ontology description missing the pointer to the query guide';
   }
-  if (!/never searches the repository, never proves source behavior, never persists the task, never approves meaning and never writes/.test(queryDescription)) {
-    return 'query_ontology description missing the task evidence limit';
-  }
-  if (!/Required: `slug` for neighbors[\s\S]*`from` and `to` for path/.test(queryDescription)) {
-    return 'query_ontology description missing the per-operation required arguments';
+  if (!/nodes with no incoming relation are `match_nodes` with `hasIncoming: false`/.test(queryDescription)) {
+    return 'query_ontology description missing the orphan question';
   }
 
   const phases = propertyAt(queryTool, ['properties', 'phases']);
@@ -191,24 +176,6 @@ export function vaultQueryToolsSchemaFailure(tools) {
   const afterActionId = propertyAt(queryTool, ['properties', 'afterActionId']);
   if (!/cursor\.nextAfterActionId while cursor\.hasMore/.test(afterActionId?.description || '')) {
     return 'query_ontology afterActionId description missing cursor pagination guidance';
-  }
-  for (const propertyName of ['componentLimit', 'cycleLimit', 'recommendationLimit', 'orderLimit', 'nodeLimit']) {
-    const option = propertyAt(queryTool, ['properties', propertyName]);
-    if (option?.type !== 'integer' || option.minimum !== 1 || option.maximum !== 500) {
-      return `query_ontology ${propertyName} health tuning schema drift`;
-    }
-    if (!/health\/workspace_brief/.test(option.description || '')) {
-      return `query_ontology ${propertyName} health tuning description drift`;
-    }
-  }
-  for (const propertyName of ['dependencyTypes', 'componentTypes']) {
-    const option = propertyAt(queryTool, ['properties', propertyName]);
-    if (option?.type !== 'array' || option.items?.type !== 'string' || !sameArray(option.items?.enum, RELATION_TYPE_VALUES)) {
-      return `query_ontology ${propertyName} health tuning schema drift`;
-    }
-    if (!/health\/workspace_brief/.test(option.description || '')) {
-      return `query_ontology ${propertyName} health tuning description drift`;
-    }
   }
   return null;
 }

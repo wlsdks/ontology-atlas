@@ -1,8 +1,4 @@
 import { formatCount } from '../output.mjs';
-import {
-  VERIFY_TUNED_HEALTH_ARGS,
-  VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
-} from '../requests/first-contact.mjs';
 import { hasNonEmptyString, hasOptionalNonNegativeInteger } from '../value-checks.mjs';
 
 export const DIAGNOSIS_STATUSES = new Set(['healthy', 'needs_attention']);
@@ -257,23 +253,6 @@ export function advisoryHealthChecksSummary(checks, limit = 3) {
   const shown = advisory.slice(0, limit);
   const suffix = advisory.length > shown.length ? `, +${advisory.length - shown.length} more` : '';
   return `${shown.join(', ')}${suffix}`;
-}
-
-export function tunedHealthScopeOutputSummary(args = VERIFY_TUNED_HEALTH_ARGS) {
-  const dependencyTypes = Array.isArray(args.dependencyTypes) && args.dependencyTypes.length > 0
-    ? args.dependencyTypes.join('/')
-    : 'all';
-  const componentTypes = Array.isArray(args.componentTypes) && args.componentTypes.length > 0
-    ? args.componentTypes.join('/')
-    : 'all';
-  return `dependencyTypes=${dependencyTypes}; componentTypes=${componentTypes}`;
-}
-
-export function tunedWorkspaceBriefScopeOutputSummary(
-  args = VERIFY_TUNED_HEALTH_ARGS,
-  nodeLimit = VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
-) {
-  return `${tunedHealthScopeOutputSummary(args)}; nodeLimit=${nodeLimit}`;
 }
 
 export function advisoryNextActionsSummary(actions, limit = 3) {

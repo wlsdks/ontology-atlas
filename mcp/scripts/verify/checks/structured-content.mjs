@@ -71,7 +71,6 @@ export function structuredContentVerifySummary({
   hasFindBacklinks = false,
   hasLimitedQueryConcepts = false,
   hasCompileIndexes = false,
-  hasAllPaths = false,
   hasMaintenanceResume = false,
   hasMaintenanceResumeSkipped = false,
   destructiveDryRunCount = 0,
@@ -83,6 +82,6 @@ export function structuredContentVerifySummary({
   const write = 2 + destructiveDryRunCount;
   const maintenance = 2 + (hasMaintenanceResume ? 1 : 0);
   const maintenanceSuffix = hasMaintenanceResumeSkipped ? ' (resume skipped: no actions)' : '';
-  const graph = 8 + (hasNode ? 2 : 0) + (hasProject ? 1 : 0) + (hasCompileIndexes ? 1 : 0) + (hasAllPaths ? 1 : 0);
+  const graph = 8 + (hasNode ? 2 : 0) + (hasProject ? 1 : 0) + (hasCompileIndexes ? 1 : 0);
   return `direct ${direct}/${direct}, write ${write}/${write} (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run ${destructiveDryRunCount}/${destructiveDryRunCount}), maintenance ${maintenance}/${maintenance}${maintenanceSuffix}, graph ${graph}/${graph}`;
 }
