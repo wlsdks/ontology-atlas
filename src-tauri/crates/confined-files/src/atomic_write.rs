@@ -180,9 +180,12 @@ pub struct ConflictReport<'a> {
 #[derive(Default)]
 pub struct AtomicWrite<'a> {
     pub expectation: Expectation<'a>,
-    /// The permission bits of a file this write creates (see `permission_bits_of`). A file that
-    /// is already there keeps its own, so a write never widens either.
+    /// The permission bits of the file this write copies (see `permission_bits_of`). A file that
+    /// is already there is given the bits both have, so a write never widens either.
     pub new_file_bits: Option<u32>,
+    /// The bits a file put back must have exactly: those the write being undone found, which it
+    /// may have narrowed.
+    pub restored_bits: Option<u32>,
     /// With a report, a changed file is a [`WriteError::Conflict`]; without one it is
     /// [`WriteError::ChangedOnDisk`].
     pub conflict: Option<ConflictReport<'a>>,
@@ -261,7 +264,8 @@ impl Drop for CreatedFile<'_> {
 /// Writes `text` over `target` without a torn state: a new file in the same folder opened with
 /// `create_new`, the text written, flushed to the disk, then renamed over the target. A failed
 /// write leaves the target as it was and removes the new file. A private original's mode is
-/// given to the new file before any text is written. After the rename the folder is flushed
+/// given to the new file before any text is written; over a file that is already there the new
+/// file gets the bits both have. After the rename the folder is flushed
 /// where the platform allows, best effort: a failure there cannot undo the rename.
 pub fn write_atomically(
     target: &WritablePath,
@@ -271,7 +275,15 @@ pub fn write_atomically(
     let path = target.as_path();
     let temporary = temporary_beside(path);
     #[cfg(unix)]
-    let existing_mode = existing_regular_file_mode(path)?.or(options.new_file_bits);
+    let existing_mode = match (
+        options.restored_bits,
+        existing_regular_file_mode(path)?,
+        options.new_file_bits,
+    ) {
+        (Some(restored), _, _) => Some(restored),
+        (None, Some(existing), Some(copied)) => Some(existing & copied),
+        (None, existing, copied) => existing.or(copied),
+    };
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)

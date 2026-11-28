@@ -520,7 +520,7 @@ fn put_back(
         text,
         &AtomicWrite {
             expectation,
-            new_file_bits: bits,
+            restored_bits: bits,
             ..AtomicWrite::default()
         },
     )

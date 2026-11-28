@@ -212,6 +212,54 @@ fn a_copy_made_by_a_plan_is_no_more_open_than_the_file_it_copies() {
     );
 }
 
+/// A rename that overwrites copies the source's text over the target: the result must be as
+/// closed as the more private of the two, and a rollback gives the target back exactly its own.
+#[cfg(unix)]
+#[test]
+fn a_copy_over_an_existing_file_is_as_closed_as_the_more_private_of_the_two() {
+    use std::os::unix::fs::PermissionsExt;
+    let (_directory, root) = vault();
+    let open_file = |name: &str| {
+        let path = root.path().join(name);
+        fs::write(&path, "open").expect("seed");
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).expect("chmod");
+        path
+    };
+    let private = root.path().join("private.md");
+    made_private(&private, "secret");
+    let wide_target = open_file("wide.md");
+    apply_all_or_nothing(
+        vec![PlanEntry::write(target(&root, "wide"), "secret".to_string()).as_open_as(&private)],
+        &options(),
+    )
+    .expect("a private file copied over an open one");
+    assert_eq!(mode_of(&wide_target), 0o600, "the open target is not left open");
+
+    let open_source = open_file("source.md");
+    let private_target = root.path().join("closed.md");
+    made_private(&private_target, "secret");
+    apply_all_or_nothing(
+        vec![PlanEntry::write(target(&root, "closed"), "open".to_string()).as_open_as(&open_source)],
+        &options(),
+    )
+    .expect("an open file copied over a private one");
+    assert_eq!(mode_of(&private_target), 0o600, "the private target is not opened");
+
+    let trap = root.path().join("trap.md");
+    fs::create_dir(&trap).expect("trap");
+    let again = open_file("again.md");
+    apply_all_or_nothing(
+        vec![
+            PlanEntry::write(target(&root, "again"), "secret".to_string()).as_open_as(&private),
+            PlanEntry::write(target(&root, "trap"), "x".to_string()),
+        ],
+        &options(),
+    )
+    .expect_err("the trap fails the second step");
+    assert_eq!(fs::read_to_string(&again).expect("read"), "open");
+    assert_eq!(mode_of(&again), 0o644, "a rollback gives back the bits the file had");
+}
+
 #[cfg(unix)]
 #[test]
 fn a_private_file_deleted_and_put_back_by_a_rollback_is_private_again() {
