@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
-import { HomePage, homeSearch } from '@/views/home';
+import { homeSearch } from '@/shared/lib/navigation/screen-searches';
+import { HomePage } from '@/views/home';
 import { MapEntryPending } from '@/app-providers/router/MapEntryPending';
 import { ScreenTitle } from '../../-site/ScreenTitle';
 import type { ScreenHead } from '../../-site/screen-metadata';

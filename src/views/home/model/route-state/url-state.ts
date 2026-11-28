@@ -3,9 +3,9 @@ import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 import { BUSINESS_FLOW_ASK_VALUE } from "@/entities/knowledge-graph";
 import { firstSearchText } from "@/shared/lib/navigation/search-text";
-import { HOME_QUERY_KEYS, type HomeQueryKey, type HomeSearch } from "./home-search";
+import { HOME_QUERY_KEYS, type HomeQueryKey, type HomeSearch } from "@/shared/lib/navigation/screen-searches";
 
-export { HOME_QUERY_KEYS, homeSearch, type HomeSearch } from "./home-search";
+export { HOME_QUERY_KEYS, homeSearch, type HomeSearch } from "@/shared/lib/navigation/screen-searches";
 import {
   parseNodeIntentKind,
   type FirstWordsNodeIntentKind,

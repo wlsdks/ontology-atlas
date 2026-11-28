@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { ScreenTitle } from '../../-site/ScreenTitle';
 import type { ScreenHead } from '../../-site/screen-metadata';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { homeSearch } from '@/views/home';
+import { homeSearch } from '@/shared/lib/navigation/screen-searches';
 import { RootEntryPage } from '@/views/root-entry';
 
 const head: ScreenHead = {

@@ -1,7 +1,8 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { parseSearch } from '@/shared/lib/navigation/atlas-search';
-import { HarnessPage, harnessSearch } from '@/views/architecture';
+import { harnessSearch } from '@/shared/lib/navigation/screen-searches';
+import { HarnessPage } from '@/views/architecture';
 import { RouteLoadingFallback } from '@/shared/ui';
 import { ScreenTitle } from '../../-site/ScreenTitle';
 import type { ScreenHead } from '../../-site/screen-metadata';

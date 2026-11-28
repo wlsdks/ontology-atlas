@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { AgentsWorkspace } from '@/app-providers/agents-workspace';
-import { agentsSearch } from '@/views/agents';
+import { agentsSearch } from '@/shared/lib/navigation/screen-searches';
 import { RouteLoadingFallback } from '@/shared/ui';
 import { ScreenTitle } from '../../-site/ScreenTitle';
 import type { ScreenHead } from '../../-site/screen-metadata';

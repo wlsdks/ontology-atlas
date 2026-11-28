@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { automationsSearch } from '@/views/automations';
+import { automationsSearch } from '@/shared/lib/navigation/screen-searches';
 import { Suspense } from 'react';
 import { AutomationsWorkspace } from '@/app-providers/automations-workspace';
 import { RouteLoadingFallback } from '@/shared/ui';

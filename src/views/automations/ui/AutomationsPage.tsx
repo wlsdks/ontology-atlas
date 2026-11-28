@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "use-intl";
 import { stringifySearch } from "@/shared/lib/navigation/atlas-search";
 import { firstSearchText } from "@/shared/lib/navigation/search-text";
-import { type AutomationsSearch } from "../lib/automations-search";
+import type { AutomationsSearch } from "@/shared/lib/navigation/screen-searches";
 import { useEffect, useMemo, useRef, useState, useTransition, type CSSProperties } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";

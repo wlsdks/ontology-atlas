@@ -1,2 +1,2 @@
 export { HomePage } from './ui/HomePage';
-export { homeSearch, type HomeSearch } from './model/route-state/home-search';
+export { homeSearch, type HomeSearch } from '@/shared/lib/navigation/screen-searches';

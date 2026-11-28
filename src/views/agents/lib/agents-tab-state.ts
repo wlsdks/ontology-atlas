@@ -1,4 +1,3 @@
-import { screenSearch, type ScreenSearch } from '@/shared/lib/navigation/search-text';
 
 /**
  * The `?tab=` query is the source of truth: a refresh, a shared link and the app's deep link
@@ -13,10 +12,7 @@ const DEFAULT_AGENTS_TAB: AgentsTab = 'agents';
 
 export const AGENTS_TAB_PARAM = 'tab';
 
-/** Beside the tab, the page reads `returnTo`, and its MCP tab reads `mcp` and `install`. */
-export const agentsSearch = screenSearch([AGENTS_TAB_PARAM, 'returnTo', 'mcp', 'install'] as const);
-
-export type AgentsSearch = ScreenSearch<readonly [typeof AGENTS_TAB_PARAM, 'returnTo', 'mcp', 'install']>;
+export { agentsSearch, type AgentsSearch } from '@/shared/lib/navigation/screen-searches';
 
 function isAgentsTab(value: string): value is AgentsTab {
   return (AGENTS_TABS as readonly string[]).includes(value);

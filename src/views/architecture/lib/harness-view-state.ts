@@ -1,4 +1,5 @@
-import { firstSearchText, screenSearch, type ScreenSearch } from '@/shared/lib/navigation/search-text';
+import type { HarnessSearch } from '@/shared/lib/navigation/screen-searches';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
 
 const HARNESS_VIEWS = ['overview', 'architecture'] as const;
 
@@ -29,10 +30,7 @@ export function parseHarnessView(raw: string | null | undefined): HarnessView {
  */
 const BLUEPRINT_ONLY_PARAMS = ['role', 'stage'] as const;
 
-/** The Harness route's query: the keys it reads are typed text, any other key passes through. */
-export const harnessSearch = screenSearch(['view', ...BLUEPRINT_ONLY_PARAMS] as const);
-
-export type HarnessSearch = ScreenSearch<readonly ['view', ...typeof BLUEPRINT_ONLY_PARAMS]>;
+export { harnessSearch, type HarnessSearch } from '@/shared/lib/navigation/screen-searches';
 
 export function resolveAddressView(search: HarnessSearch): HarnessView {
   const raw = firstSearchText(search.view);
