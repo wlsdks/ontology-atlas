@@ -146,12 +146,6 @@
       "witness": "normalizeMeaningStructureStatus"
     },
     {
-      "key": "mcp:runtime:exports:src/meaning/golden-corpus-scoring.mjs:candidateProposalFromAnalysis",
-      "reason": "The meaning-corpus evaluator script builds candidate proposals with it; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "scripts/benchmark/evaluate-meaning-corpus.mjs",
-      "witness": "candidateProposalFromAnalysis"
-    },
-    {
       "key": "mcp:runtime:exports:src/ontology-engine.mjs:createOntologyEngine",
       "reason": "The graph-truth parity contract test drives the engine directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "tests/contract/analysis/graph-truth-parity.contract.test.ts",

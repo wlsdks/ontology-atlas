@@ -143,8 +143,6 @@
     "test:contracts": "vitest run tests/contract",
     "test:architecture": "vitest run src/entities/architecture-profile/model/architecture-profile.test.ts src/views/architecture/ui/ArchitectureWorkbench.test.tsx tests/contract/harness/architecture-profile.contract.test.ts && node --test mcp/src/architecture/architecture-profile.test.mjs && node scripts/ci/run-focused-node-test.mjs --test-name-pattern '^inspect_architecture' mcp/src/integration.test.mjs",
     "test:mcp:unit": "node --test $(find mcp/src -name '*.test.mjs' ! -name integration.test.mjs | sort)",
-    "eval:meaning-extraction": "node scripts/benchmark/evaluate-meaning-corpus.mjs",
-    "test:meaning-corpus": "node --test scripts/benchmark/evaluate-meaning-corpus.test.mjs && pnpm eval:meaning-extraction",
     "test:benchmark": "node --test scripts/benchmark/benchmark-lifecycle.test.mjs scripts/benchmark/benchmark-change-flow.test.mjs scripts/benchmark/benchmark-blind-set.test.mjs scripts/benchmark/benchmark-grade.test.mjs scripts/benchmark/benchmark-construction.test.mjs scripts/lib/benchmark/construction-prompts.test.mjs",
     "integration:mcp": "node --test mcp/src/integration.test.mjs",
     "integration:mcp:surface": "node scripts/ci/run-focused-node-test.mjs --test-name-pattern \"^(tools/list|initialize|tools/call)\" mcp/src/integration.test.mjs",
