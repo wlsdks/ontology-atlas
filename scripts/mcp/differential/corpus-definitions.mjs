@@ -10,6 +10,8 @@
 // has, so what the client sends back is what the server reported. Every case of the `vault-read` and
 // `writes` families also runs a second time under a clock far in the future (`-late-clock`), because
 // the document cache trusts a file only when it was written long before "now".
+import { readFileSync } from 'node:fs';
+
 import { docxCutShort, docxOf, docxPastTheUnpackBudget, xlsxOf } from './office-fixtures.mjs';
 import { LATE_CLOCK_MS } from './servers.mjs';
 
@@ -876,6 +878,157 @@ add('graph', 'graph-selection-hub', { vault: 'selection-hub' }, [
   { operation: 'recommend_relations', slug: 'capabilities/hub-core' }, { operation: 'health', limit: 5 }, { operation: 'growth_plan', limit: 5 },
   { operation: 'maintenance_plan', limit: 5 }, { operation: 'workspace_brief', limit: 5 },
 ].map(query));
+
+// The analysis records the app writes under `.ontology-atlas/analyses`, planted as the app's own
+// writer made them (the fixtures of the archive's tests in the Rust program), and the damaged and
+// linked files a vault from Git or a sync client can hold. `analysis_history` and `analysis_record`
+// answer from those files and never compile the graph.
+const ARCHIVE_FIXTURES = new URL('../../../src-tauri/crates/mcp-server/src/analysis_records/fixtures/', import.meta.url);
+const fixture = (name) => readFileSync(new URL(name, ARCHIVE_FIXTURES), 'utf8');
+const RUN_ID = '3f2b7c1e-9d4a-4e8b-a1c6-5d0e7f8a9b10';
+const REVIEW_ID = '8a6e1d2c-7b3f-4c9a-b5d4-1e2f3a4b5c6d';
+const RUN_FILE = `2026-11-27T09-15-30-123Z-${RUN_ID}.md`;
+const REVIEW_FILE = `2026-11-27T10-00-00-000Z-${REVIEW_ID}.md`;
+const archived = (name, text) => ({ $: 'write-file', path: `.ontology-atlas/analyses/${name}`, text });
+const archiveCall = (args) => call('query_ontology', args);
+const APP_RECORDS = [archived(RUN_FILE, fixture('run-written-by-the-app.txt')), archived(REVIEW_FILE, fixture('review-written-by-the-app.txt'))];
+add('graph', 'analysis-records-written-by-the-app', { vault: 'storefront' }, [
+  archiveCall({ operation: 'analysis_history' }),
+  ...APP_RECORDS,
+  archiveCall({ operation: 'analysis_history' }),
+  archiveCall({ operation: 'analysis_history', limit: 1 }),
+  archiveCall({ operation: 'analysis_history', limit: 1, analysisCursor: REVIEW_FILE }),
+  archiveCall({ operation: 'analysis_history', analysisMode: 'meaning' }),
+  archiveCall({ operation: 'analysis_history', analysisMode: 'structure' }),
+  archiveCall({ operation: 'analysis_history', project: 'projects/storefront' }),
+  archiveCall({ operation: 'analysis_history', project: 'projects/other' }),
+  archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
+  archiveCall({ operation: 'analysis_record', recordId: REVIEW_ID }),
+  archiveCall({ operation: 'analysis_record', recordId: '11111111-1111-4111-8111-111111111111' }),
+  archiveCall({ operation: 'analysis_record', recordId: RUN_ID.toUpperCase() }),
+  archiveCall({ operation: 'analysis_record' }),
+  archiveCall({ operation: 'analysis_history', limit: 0 }),
+  archiveCall({ operation: 'analysis_history', limit: 101 }),
+  archiveCall({ operation: 'analysis_history', limit: 100 }),
+]);
+add('graph', 'analysis-records-damaged', { vault: 'storefront' }, [
+  ...APP_RECORDS,
+  archived('2026-11-26T09-00-00-000Z-11111111-2222-4333-8444-555555555555.md', fixture('run-written-by-the-app.txt').slice(0, 500)),
+  archived('2026-11-25T09-00-00-000Z-11111111-2222-4333-8444-666666666666.md', fixture('run-written-by-the-app.txt').replace('A cart.', 'A cart!')),
+  archived('2026-11-24T09-00-00-000Z-11111111-2222-4333-8444-777777777777.md', '---\nanalysis_schema: "atlas-analysis/v1"\n---\nno more\n'),
+  archived('2026-11-23T09-00-00-000Z-11111111-2222-4333-8444-888888888888.md', ''),
+  archived('notes.txt', 'not a record'),
+  archived('2026-11-22T09-00-00-000Z-not-an-id.md', 'x'),
+  archiveCall({ operation: 'analysis_history' }),
+  archiveCall({ operation: 'analysis_history', limit: 2 }),
+  archiveCall({ operation: 'analysis_record', recordId: '11111111-2222-4333-8444-555555555555' }),
+  archiveCall({ operation: 'analysis_record', recordId: '11111111-2222-4333-8444-666666666666' }),
+  archived(`2026-11-29T09-15-30-123Z-${RUN_ID}.md`, fixture('run-written-by-the-app.txt')),
+  archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
+]);
+add('graph', 'analysis-records-over-a-hundred-files-paged-by-cursor', { vault: 'empty' }, [
+  ...Array.from({ length: 105 }, (_, index) => archived(`2026-01-01T00-00-00-${String(index).padStart(3, '0')}Z-11111111-2222-4333-8444-${String(index).padStart(12, '0')}.md`, 'not a record\n')),
+  archiveCall({ operation: 'analysis_history', limit: 100 }),
+  archiveCall({ operation: 'analysis_history', limit: 100, analysisCursor: '2026-01-01T00-00-00-005Z-11111111-2222-4333-8444-000000000005.md' }),
+  archiveCall({ operation: 'analysis_history', limit: 7, analysisCursor: '2026-01-01T00-00-00-100Z-11111111-2222-4333-8444-000000000100.md' }),
+  archiveCall({ operation: 'analysis_history', analysisCursor: '../outside.md' }),
+  archiveCall({ operation: 'analysis_history', analysisCursor: 'nothing' }),
+]);
+add('graph', 'analysis-records-with-line-separators', { vault: 'empty' }, [
+  archived(RUN_FILE, fixture('run-with-line-separators.txt')),
+  archiveCall({ operation: 'analysis_history' }),
+  archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
+]);
+add('graph', 'analysis-folder-is-a-link', { vault: 'empty' }, [
+  { $: 'mkdir', path: '.ontology-atlas' },
+  { $: 'symlink', path: '.ontology-atlas/analyses', target: '..' },
+  archiveCall({ operation: 'analysis_history' }),
+  archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
+]);
+add('graph', 'analysis-record-is-a-link', { vault: 'empty' }, [
+  archived('plain.txt', fixture('run-written-by-the-app.txt')),
+  { $: 'symlink', path: `.ontology-atlas/analyses/${RUN_FILE}`, target: 'plain.txt' },
+  archiveCall({ operation: 'analysis_history' }),
+  archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
+]);
+
+// `query_plan`: what each family of operations would cost, on graphs that are plain, empty and
+// full of cycles, with the arguments left out, sent, and wrong.
+const planCase = (name, vault, queries) => add('graph', `query-plan-${name}`, { vault }, queries.map((args) => call('query_ontology', { operation: 'query_plan', ...args })));
+planCase('storefront', 'storefront', [
+  { targetOperation: 'neighbors', slug: 'capabilities/checkout' },
+  { targetOperation: 'neighbors', slug: 'capabilities/checkout', direction: 'in', types: ['depends_on'], limit: 3 },
+  { targetOperation: 'neighbors', slug: 'capabilities/checkout', includeExternal: true, includeUnresolved: true },
+  { targetOperation: 'neighbors', slug: 'capabilities/checkout', direction: 'undirected' },
+  { targetOperation: 'neighbors', slug: 'capabilities/does-not-exist' },
+  { targetOperation: 'neighbors' },
+  { targetOperation: 'path', from: 'capabilities/cart', to: 'capabilities/order-cancel' },
+  { targetOperation: 'path', from: 'capabilities/cart', to: 'capabilities/order-cancel', maxHops: 2, types: ['depends_on', 'relates'], direction: 'both' },
+  { targetOperation: 'all_paths', from: 'capabilities/cart', to: 'capabilities/order-cancel' },
+  { targetOperation: 'all_paths', from: 'capabilities/cart', to: 'capabilities/order-cancel', maxHops: 6, limit: 5, searchBudget: 50 },
+  { targetOperation: 'explain_relation', from: 'capabilities/cart', to: 'capabilities/checkout' },
+  { targetOperation: 'explain_relation', from: 'capabilities/cart', to: 'capabilities/checkout', limit: 2, maxHops: 1 },
+  { targetOperation: 'reachability', slug: 'capabilities/checkout' },
+  { targetOperation: 'reachability', from: 'capabilities/checkout' },
+  { targetOperation: 'reachability', slug: 'capabilities/checkout', direction: 'both', depth: 4, limit: 7, types: ['depends_on'] },
+  { targetOperation: 'impact', slug: 'capabilities/order-placement' },
+  { targetOperation: 'impact', slug: 'capabilities/order-placement', types: ['contains'] },
+  { targetOperation: 'blast_radius', slug: 'capabilities/order-placement', depth: 2 },
+  { targetOperation: 'subgraph', slug: 'domains/order' },
+  { targetOperation: 'subgraph', seed: 'capabilities/cart', direction: 'incoming', depth: 3, limit: 5 },
+  { targetOperation: 'builder_context', slug: 'capabilities/cart' },
+  { targetOperation: 'match_nodes' },
+  { targetOperation: 'match_nodes', kind: 'capability', domain: 'domains/order', slugContains: 'Order', minDegree: 2, sort: 'degree', limit: 5 },
+  { targetOperation: 'match_nodes', kind: 'nonsense' },
+  { targetOperation: 'match_edges' },
+  { targetOperation: 'match_edges', type: 'depends_on', fromKind: 'capability', toKind: 'capability', includeExternal: true },
+  { targetOperation: 'match_edges', from: 'capabilities/cart', to: 'capabilities/checkout' },
+  { targetOperation: 'match_edges', fromKind: 'nonsense' },
+  { targetOperation: 'centrality' },
+  { targetOperation: 'centrality', iterations: 3, limit: 3, types: ['depends_on'] },
+  { targetOperation: 'overview' },
+  { targetOperation: 'node_profile', slug: 'capabilities/cart' },
+  { targetOperation: 'domain_profile', domain: 'domains/order', limit: 3 },
+  { targetOperation: 'project_scope', project: 'storefront' },
+  { targetOperation: 'lineage', slug: 'capabilities/cart', depth: 2 },
+  { targetOperation: 'pattern_walk', slug: 'capabilities/checkout', pattern: ['depends_on', 'depends_on'] },
+  { targetOperation: 'query_plan' },
+  { targetOperation: 'analysis_history' },
+  { targetOperation: 'bogus' },
+  {},
+]);
+// Cycle-heavy graphs: a plan counts them level by level, and warns before an enumeration that
+// would not finish.
+planCase('tangle', 'tangle', [
+  { targetOperation: 'overview' },
+  { targetOperation: 'centrality' },
+  { targetOperation: 'match_edges' },
+  { targetOperation: 'all_paths', from: 'capabilities/a', to: 'capabilities/g' },
+  { targetOperation: 'all_paths', from: 'capabilities/a', to: 'capabilities/g', maxHops: 20 },
+  { targetOperation: 'all_paths', from: 'capabilities/a', to: 'capabilities/e', maxHops: 20, limit: 3, searchBudget: 4 },
+  { targetOperation: 'path', from: 'capabilities/a', to: 'capabilities/g', maxHops: 20, direction: 'both' },
+  { targetOperation: 'reachability', slug: 'capabilities/b', direction: 'both', depth: 20 },
+  { targetOperation: 'impact', slug: 'capabilities/b', depth: 20 },
+  { targetOperation: 'subgraph', slug: 'capabilities/b', depth: 20 },
+  { targetOperation: 'neighbors', slug: 'capabilities/b', direction: 'both' },
+]);
+planCase('containment-tangle', 'containment-tangle', [
+  { targetOperation: 'overview' },
+  { targetOperation: 'centrality' },
+  { targetOperation: 'match_edges' },
+  { targetOperation: 'match_nodes' },
+]);
+planCase('empty', 'empty', [
+  { targetOperation: 'overview' },
+  { targetOperation: 'match_nodes' },
+  { targetOperation: 'centrality' },
+  { targetOperation: 'neighbors', slug: 'capabilities/a' },
+]);
+planCase('one-node', 'one-node', [
+  { targetOperation: 'centrality' },
+  { targetOperation: 'match_edges' },
+  { targetOperation: 'subgraph', slug: 'capabilities/a' },
+]);
 
 // ---------------------------------------------------------------------------------------------
 // git: reads and staleness

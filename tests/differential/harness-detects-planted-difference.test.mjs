@@ -11,6 +11,9 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { compareRuns } from '../../scripts/mcp/differential/compare-runs.mjs';
+import { describeWholeAnswerEntries, entryExcuses } from '../../scripts/mcp/differential/declared-entries.mjs';
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const harness = path.join(repoRoot, 'scripts', 'mcp', 'differential', 'differential.mjs');
@@ -111,3 +114,79 @@ for (const entry of PLANTED) {
     assert.match(run.output, entry.where, run.output);
   });
 }
+
+// The cases below plant differences in recorded runs, without a server, to prove which of them a
+// declared entry excuses. Most answers are JSON in `result.content[0].text`, so the harness must
+// name leaves inside that text and an entry must excuse only the leaf it names.
+const CASE = 'graph/planted';
+const TEXT = 'result.content[0].text';
+
+function runWithPayloads(payloads, { ownTimes = new Set() } = {}) {
+  return {
+    answers: payloads.map((payload, index) => ({
+      step: index + 1,
+      request: { jsonrpc: '2.0', id: index + 1, method: 'tools/call', params: { name: 'compile_ontology' } },
+      response: JSON.stringify({
+        jsonrpc: '2.0',
+        id: index + 1,
+        result: { content: [{ type: 'text', text: typeof payload === 'string' ? payload : JSON.stringify(payload) }] },
+      }),
+    })),
+    ownTimes,
+    serverMessages: [],
+    folder: new Map(),
+    git: null,
+    stderr: '',
+    exit: { code: 0, signal: null, spawnError: undefined },
+    problems: [],
+  };
+}
+
+const checks = (...statuses) => ({ ok: true, checks: statuses.map((status, index) => ({ name: `check-${index}`, status })) });
+const undeclared = (entries, differences) =>
+  differences.filter((difference) => !entries.some((declared) => entryExcuses(declared, CASE, difference)));
+const entry = (path, id = 1) => ({ case: CASE, where: 'answer', id, path, change: 1, reason: 'planted' });
+const paths = (differences) => differences.map((difference) => difference.path);
+
+test('two leaves differ and one is declared: the other is named', () => {
+  const differences = compareRuns(runWithPayloads([checks('pass', 'pass', 'pass')]), runWithPayloads([checks('fail', 'pass', 'warn')]));
+  assert.deepEqual(paths(differences), [`${TEXT}#/checks/0/status`, `${TEXT}#/checks/2/status`]);
+  assert.deepEqual(paths(undeclared([entry(`${TEXT}#/checks/0/status`)], differences)), [`${TEXT}#/checks/2/status`]);
+});
+
+test('a declared leaf passes, and an entry stops at its path boundary and its request', () => {
+  const differences = compareRuns(runWithPayloads([checks('pass', 'pass', 'pass')]), runWithPayloads([checks('fail', 'pass', 'warn')]));
+  assert.deepEqual(undeclared([entry(`${TEXT}#/checks`)], differences), []);
+  assert.deepEqual(undeclared([entry(`${TEXT}#/checks/2/status`), entry(`${TEXT}#/checks/0`)], differences), []);
+  assert.equal(undeclared([entry(`${TEXT}#/checks/0/status`, 2), entry(`${TEXT}#/checks/2/status`)], differences).length, 1);
+  const eleven = compareRuns(
+    runWithPayloads([checks(...Array(11).fill('pass'))]),
+    runWithPayloads([checks(...Array(10).fill('pass'), 'fail')]),
+  );
+  assert.equal(undeclared([entry(`${TEXT}#/checks/1`)], eleven).length, 1);
+});
+
+test('a difference in key order alone is caught inside the text', () => {
+  const differences = compareRuns(runWithPayloads([{ ok: true, count: 2 }]), runWithPayloads([{ count: 2, ok: true }]));
+  assert.deepEqual(differences.map(({ kind, path }) => [kind, path]), [['key-order', `${TEXT}#`]]);
+});
+
+test('the same JSON in other text is caught at the text', () => {
+  const differences = compareRuns(runWithPayloads(['{"ok":true}']), runWithPayloads(['{ "ok": true }']));
+  assert.deepEqual(differences.map(({ kind, path }) => [kind, path]), [['bytes', TEXT]]);
+  assert.deepEqual(undeclared([entry(TEXT)], differences), []);
+});
+
+test('an entry for the whole text excuses every leaf and the check counts it', () => {
+  const differences = compareRuns(runWithPayloads([checks('pass', 'pass')]), runWithPayloads([checks('fail', 'warn')]));
+  assert.equal(differences.length, 2);
+  assert.deepEqual(undeclared([entry(TEXT)], differences), []);
+  const line = describeWholeAnswerEntries([entry(TEXT), entry(`${TEXT}#/checks/0/status`), entry('result.isError')]);
+  assert.match(line, /^1 of 3 declared entries are whole-answer entries/);
+});
+
+test('the time of a file the run wrote is masked inside the text, not compared', () => {
+  const a = runWithPayloads([{ ok: true, mtime: 1795820594938.561 }], { ownTimes: new Set([1795820594938.561]) });
+  const b = runWithPayloads([{ ok: true, mtime: 1795820595014.9258 }], { ownTimes: new Set([1795820595014.9258]) });
+  assert.deepEqual(compareRuns(a, b), []);
+});

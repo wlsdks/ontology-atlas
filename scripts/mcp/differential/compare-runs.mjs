@@ -6,7 +6,8 @@
 import { Buffer } from 'node:buffer';
 
 import { diffSnapshots } from './folder-snapshot.mjs';
-import { firstTreeDifference, parseOrdered } from './ordered-json.mjs';
+import { leafDifferences } from './leaf-differences.mjs';
+import { parseOrdered, withJsonTexts } from './ordered-json.mjs';
 
 const NUMBER = /-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
 const OWN_TIME = '<own-file-time>';
@@ -24,7 +25,10 @@ function maskOwnTimesInTree(node, ownTimes) {
   if (ownTimes.size === 0) return node;
   const rewrite = (current) => {
     if (current.t === 'num') return ownTimes.has(Number(current.text)) ? { t: 'str', v: OWN_TIME } : current;
-    if (current.t === 'str') return { t: 'str', v: maskOwnTimesInText(current.v, ownTimes) };
+    if (current.t === 'str') {
+      const v = maskOwnTimesInText(current.v, ownTimes);
+      return current.json ? { t: 'str', v, json: rewrite(current.json) } : { t: 'str', v };
+    }
     if (current.t === 'arr') return { t: 'arr', items: current.items.map(rewrite) };
     if (current.t === 'obj') return { t: 'obj', entries: current.entries.map(([k, v]) => [k, rewrite(v)]) };
     return current;
@@ -66,7 +70,7 @@ function around(text, byteOffset, width = 40, encoding = 'utf8') {
 }
 
 function describeValueDifference(difference) {
-  if (difference.kind !== 'value' || !difference.a?.startsWith('"') || !difference.b?.startsWith('"')) return difference;
+  if ((difference.kind !== 'value' && difference.kind !== 'bytes') || !difference.a?.startsWith('"') || !difference.b?.startsWith('"')) return difference;
   const a = JSON.parse(difference.a);
   const b = JSON.parse(difference.b);
   const byte = firstDifferingByte(a, b);
@@ -75,7 +79,7 @@ function describeValueDifference(difference) {
 
 function parseAnswer(raw) {
   try {
-    return parseOrdered(raw);
+    return withJsonTexts(parseOrdered(raw));
   } catch {
     return null;
   }
@@ -87,25 +91,26 @@ function bytesOf(text, bytes) {
 }
 
 /**
- * First difference between two raw answer lines for one request, or null. The whole JSON-RPC
- * response is compared, `jsonrpc`, `id` as written and the exclusive `result` or `error` included,
- * and when nothing but the bytes differ (an escape, a space) that is a difference too.
- * `except` are the family's named fields (`{ tool, path }`, the path from the response root).
+ * Every difference between two raw answer lines for one request, empty when they match. The whole
+ * JSON-RPC response is compared, `jsonrpc`, `id` as written and the exclusive `result` or `error`
+ * included, and when nothing but the bytes differ (an escape, a space) that is a difference too.
+ * A text that holds JSON is compared as that tree (`leaf-differences.mjs`). `except` are the family's
+ * named fields (`{ tool, path }`, the path from the response root).
  */
 function compareAnswerLines({ request, a, b, bytesA, bytesB, ownTimesA, ownTimesB, except = [] }) {
   if (a === null || b === null) {
-    if (a === b) return null;
-    return { kind: 'no-answer', path: '', a: a === null ? 'no answer' : 'answered', b: b === null ? 'no answer' : 'answered' };
+    if (a === b) return [];
+    return [{ kind: 'no-answer', path: '', a: a === null ? 'no answer' : 'answered', b: b === null ? 'no answer' : 'answered' }];
   }
   const toolName = request?.params?.name;
   const rules = except.filter((rule) => rule.tool === toolName).map((rule) => rule.path);
   const rawA = maskOwnTimesInText(bytesOf(a, bytesA), ownTimesA);
   const rawB = maskOwnTimesInText(bytesOf(b, bytesB), ownTimesB);
-  if (rules.length === 0 && rawA === rawB) return null;
+  if (rules.length === 0 && rawA === rawB) return [];
   const treeA = parseAnswer(a);
   const treeB = parseAnswer(b);
   if (!treeA || !treeB) {
-    return { kind: 'unparsed', path: '', a, b, byte: firstDifferingByte(rawA, rawB, 'latin1') };
+    return [{ kind: 'unparsed', path: '', a, b, byte: firstDifferingByte(rawA, rawB, 'latin1') }];
   }
   let left = maskOwnTimesInTree(treeA, ownTimesA);
   let right = maskOwnTimesInTree(treeB, ownTimesB);
@@ -113,19 +118,21 @@ function compareAnswerLines({ request, a, b, bytesA, bytesB, ownTimesA, ownTimes
     left = maskPath(left, pattern);
     right = maskPath(right, pattern);
   }
-  const found = firstTreeDifference(left, right, '');
-  if (found) return describeValueDifference(found);
-  if (rules.length > 0 || rawA === rawB) return null;
+  const found = leafDifferences(left, right);
+  if (found.length > 0) return found.map(describeValueDifference);
+  if (rules.length > 0 || rawA === rawB) return [];
   const byte = firstDifferingByte(rawA, rawB, 'latin1');
-  return {
-    kind: 'bytes',
-    path: '',
-    a: 'same JSON, other bytes',
-    b: 'same JSON, other bytes',
-    byte,
-    aAround: around(rawA, byte, 40, 'latin1'),
-    bAround: around(rawB, byte, 40, 'latin1'),
-  };
+  return [
+    {
+      kind: 'bytes',
+      path: '',
+      a: 'same JSON, other bytes',
+      b: 'same JSON, other bytes',
+      byte,
+      aAround: around(rawA, byte, 40, 'latin1'),
+      bAround: around(rawB, byte, 40, 'latin1'),
+    },
+  ];
 }
 
 function messageList(run) {
@@ -154,17 +161,7 @@ export function compareRuns(a, b, { except = [], folderIgnore = () => false } = 
       ownTimesB: b.ownTimes,
       except,
     });
-    if (found) {
-      differences.push({
-        where: 'answer',
-        step,
-        id: request.id,
-        request,
-        answerA: left?.response ?? null,
-        answerB: right?.response ?? null,
-        ...found,
-      });
-    }
+    for (const difference of found) differences.push({ where: 'answer', step, id: request.id, request, ...difference });
   }
   const ownA = a.ownTimes;
   const ownB = b.ownTimes;
@@ -218,13 +215,13 @@ function clip(text, length = 700) {
 export function formatDifference(difference, { family, caseName, labelA, labelB }) {
   const lines = [`DIFFERENCE  ${family}/${caseName}  ${difference.where}  ${difference.kind}  ${difference.path ?? ''}`];
   if (difference.where === 'answer') {
-    lines.push(`  request id ${JSON.stringify(difference.id)}: ${clip(JSON.stringify(difference.request), 400)}`);
-    lines.push(`  ${labelA}: ${clip(difference.answerA)}`);
-    lines.push(`  ${labelB}: ${clip(difference.answerB)}`);
-    if (difference.byte !== undefined && difference.byte >= 0) {
+    lines.push(`  request id ${JSON.stringify(difference.id)}: ${clip(JSON.stringify(difference.request), 200)}`);
+    lines.push(`  ${labelA}: ${clip(String(difference.a), 300)}`);
+    lines.push(`  ${labelB}: ${clip(String(difference.b), 300)}`);
+    if (difference.aAround !== undefined) {
       lines.push(`  first differing byte ${difference.byte}: ${labelA} ${difference.aAround}  ${labelB} ${difference.bAround}`);
-    } else {
-      lines.push(`  ${labelA} ${clip(String(difference.a), 200)}  |  ${labelB} ${clip(String(difference.b), 200)}`);
+    } else if (difference.byte !== undefined && difference.byte >= 0) {
+      lines.push(`  first differing byte ${difference.byte}`);
     }
   } else if (difference.where === 'folder') {
     lines.push(`  ${labelA}: ${difference.folderA ? clip(difference.folderA.text ?? JSON.stringify(difference.folderA), 300) : 'absent'}`);

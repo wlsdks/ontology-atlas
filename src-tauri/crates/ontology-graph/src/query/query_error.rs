@@ -22,6 +22,11 @@ pub enum QueryError {
         name: String,
         similar: Vec<String>,
     },
+    /// An operation that reads something other than the graph, put to the graph.
+    #[error(
+        "The query_ontology operation \"{0}\" reads the analysis records, not the compiled graph."
+    )]
+    NotAGraphOperation(&'static str),
     /// An operation no module answers yet.
     #[error("The query_ontology operation \"{0}\" is not answered by this server yet.")]
     NotAnsweredYet(&'static str),

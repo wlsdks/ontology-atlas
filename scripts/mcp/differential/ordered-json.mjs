@@ -2,7 +2,7 @@
 // integer-like keys first) and each number as the exact text the server wrote. The harness compares
 // these trees, so a reordered key or `1e21` against `1000000000000000000000` is a difference.
 
-/** @typedef {{ t: 'null' } | { t: 'bool', v: boolean } | { t: 'num', text: string } | { t: 'str', v: string } | { t: 'arr', items: Node[] } | { t: 'obj', entries: [string, Node][] }} Node */
+/** @typedef {{ t: 'null' } | { t: 'bool', v: boolean } | { t: 'num', text: string } | { t: 'str', v: string, json?: Node } | { t: 'arr', items: Node[] } | { t: 'obj', entries: [string, Node][] }} Node */
 
 export function parseOrdered(text) {
   let index = 0;
@@ -100,7 +100,7 @@ export function parseOrdered(text) {
   return root;
 }
 
-function serializeOrdered(node) {
+export function serializeOrdered(node) {
   switch (node.t) {
     case 'null':
       return 'null';
@@ -134,73 +134,30 @@ export function nodeAtPath(node, pathText) {
 }
 
 /**
- * First difference between two trees, or null. `kind` is one of `value`, `number-format`,
- * `key-order`, `missing-field`, `extra-field`, `type`, `length`.
+ * The same tree with, on every string that holds a JSON object or array (`result.content[0].text`
+ * is one), the tree of that text under `json`. A string that only starts with a bracket stays plain.
  */
-export function firstTreeDifference(a, b, pathText = '') {
-  if (a.t !== b.t) return { kind: 'type', path: pathText, a: serializeOrdered(a), b: serializeOrdered(b) };
-  switch (a.t) {
-    case 'null':
-      return null;
-    case 'bool':
-      return a.v === b.v ? null : { kind: 'value', path: pathText, a: String(a.v), b: String(b.v) };
-    case 'str':
-      return a.v === b.v ? null : { kind: 'value', path: pathText, a: JSON.stringify(a.v), b: JSON.stringify(b.v) };
-    case 'num':
-      if (a.text === b.text) return null;
-      return {
-        kind: Number(a.text) === Number(b.text) ? 'number-format' : 'value',
-        path: pathText,
-        a: a.text,
-        b: b.text,
-      };
-    case 'arr': {
-      const common = Math.min(a.items.length, b.items.length);
-      for (let i = 0; i < common; i += 1) {
-        const found = firstTreeDifference(a.items[i], b.items[i], `${pathText}[${i}]`);
-        if (found) return found;
-      }
-      if (a.items.length !== b.items.length) {
-        return {
-          kind: 'length',
-          path: pathText,
-          a: `${a.items.length} items`,
-          b: `${b.items.length} items`,
-        };
-      }
-      return null;
+export function withJsonTexts(node) {
+  switch (node.t) {
+    case 'arr':
+      return { t: 'arr', items: node.items.map(withJsonTexts) };
+    case 'obj':
+      return { t: 'obj', entries: node.entries.map(([key, value]) => [key, withJsonTexts(value)]) };
+    case 'str': {
+      const json = parseJsonText(node.v);
+      return json ? { t: 'str', v: node.v, json: withJsonTexts(json) } : node;
     }
-    default: {
-      const namesA = a.entries.map(([k]) => k);
-      const namesB = b.entries.map(([k]) => k);
-      for (const name of namesA) {
-        if (!namesB.includes(name)) {
-          return { kind: 'missing-field', path: join(pathText, name), a: 'present', b: 'absent' };
-        }
-      }
-      for (const name of namesB) {
-        if (!namesA.includes(name)) {
-          return { kind: 'extra-field', path: join(pathText, name), a: 'absent', b: 'present' };
-        }
-      }
-      if (namesA.join('\0') !== namesB.join('\0')) {
-        return {
-          kind: 'key-order',
-          path: pathText,
-          a: namesA.join(','),
-          b: namesB.join(','),
-        };
-      }
-      for (const [name, child] of a.entries) {
-        const other = getEntry(b, name);
-        const found = firstTreeDifference(child, other, join(pathText, name));
-        if (found) return found;
-      }
-      return null;
-    }
+    default:
+      return node;
   }
 }
 
-function join(base, name) {
-  return base ? `${base}.${name}` : name;
+function parseJsonText(text) {
+  const first = text.trimStart()[0];
+  if (first !== '{' && first !== '[') return null;
+  try {
+    return parseOrdered(text);
+  } catch {
+    return null;
+  }
 }

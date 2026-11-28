@@ -31,6 +31,10 @@ mod similar_nodes;
 mod starter_examples;
 mod workspace_brief;
 
+pub(in crate::query) use clusters::DEFAULT_ITERATIONS;
+pub(in crate::query) use match_edges::scan_edges;
+pub(in crate::query) use match_nodes::count_matching_nodes;
+
 pub use ignored_references::parse_patterns as parse_ignore_patterns;
 pub use selection_request::{
     LineSpan, MeaningReviewFacts, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest,

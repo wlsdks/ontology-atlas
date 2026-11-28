@@ -14,12 +14,10 @@ use crate::query::name_counts::{kind_counts, sorted_counts};
 use crate::query::node_mask::NodeMask;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::{summaries, NodeSummary};
+use crate::query::operation_defaults::REACHABILITY;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::{Direction, QueryRequest};
-
-const DEFAULT_DEPTH: usize = 3;
-const DEFAULT_LIMIT: usize = 100;
 
 #[derive(Serialize)]
 struct ReachabilitySummary {
@@ -77,9 +75,9 @@ pub fn reachability<'a>(
     request: &QueryRequest,
 ) -> Result<ReachabilityAnswer<'a>, QueryError> {
     let start = resolve(graph, request.slug.as_deref(), "slug")?;
-    let direction = request.direction_or(Direction::Outgoing);
-    let depth = request.depth_or(DEFAULT_DEPTH);
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let direction = REACHABILITY.direction(request);
+    let depth = REACHABILITY.depth(request);
+    let limit = REACHABILITY.limit(request);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
 
     let neighborhood = Neighborhood::explore(graph, start, direction, depth, types.as_ref());

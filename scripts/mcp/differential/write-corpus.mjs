@@ -5,14 +5,16 @@
  *   node scripts/mcp/differential/write-corpus.mjs           # write
  *   node scripts/mcp/differential/write-corpus.mjs --check   # fail when the files are stale
  *
- * Also checks that every case belongs to a family named in `tests/differential/manifest.json`.
+ * Also checks that every case belongs to a family named in `tests/differential/manifest.json`, and with
+ * `--check` says how many declared entries name a whole answer.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildCorpus } from './corpus-definitions.mjs';
-import { loadManifest } from './manifest.mjs';
+import { describeWholeAnswerEntries } from './declared-entries.mjs';
+import { loadExpectedDifferences, loadManifest } from './manifest.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const corpusRoot = path.join(repoRoot, 'tests', 'differential', 'corpus');
@@ -56,6 +58,9 @@ function main() {
       process.exit(1);
     }
     console.log(`corpus current: ${files.size} cases`);
+    for (const [list, file] of [['node-vs-rust', 'declared-changes.json'], ['locale', 'expect-locale-diff.json'], ['node-vs-bun', 'node-vs-bun-differences.json']]) {
+      console.log(`${file}: ${describeWholeAnswerEntries(loadExpectedDifferences(repoRoot, list, { everyPlatform: true }))}`);
+    }
     return;
   }
   rmSync(corpusRoot, { recursive: true, force: true });

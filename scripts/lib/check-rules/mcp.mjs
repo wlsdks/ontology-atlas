@@ -27,6 +27,17 @@ export const rules = [
     ],
   },
   {
+    order: 135,
+    // The gate measures the release program, so the build comes first in the same command.
+    command: 'cargo build --release -p mcp-server --manifest-path src-tauri/Cargo.toml && pnpm mcp:program-size:check',
+    reason: 'the Rust MCP program or its program-size gate changed; the Rust program must stay smaller than the Bun program',
+    matches: [
+      /^scripts\/mcp\/program-size\//,
+      /^scripts\/lib\/packaging\/mcp-binary\.mjs$/,
+      /^src-tauri\/crates\/(?:mcp-server|answer-format|confined-files|hardened-git|vault-document|ontology-graph|source-scan)\/(?:Cargo\.toml|src\/)/,
+    ],
+  },
+  {
     order: 320,
     /*
      * The catalogue is committed data with a `--check` mode, exactly like the ACP registry beside
