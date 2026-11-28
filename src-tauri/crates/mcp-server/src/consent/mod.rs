@@ -83,6 +83,9 @@ fn ask_within(
     if !context.config().modes.write_consent {
         return Ok(());
     }
+    if arguments.asks_for_preview() {
+        return Ok(());
+    }
     if !context.can_ask_client() {
         return Err(ConsentRefusal::NoWayToAsk.into());
     }

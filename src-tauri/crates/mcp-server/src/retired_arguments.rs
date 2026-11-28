@@ -13,6 +13,20 @@ const ANALYSIS_ROUTE: &str = "view \"analysis\", proposal and qualification are 
 
 const COMPACT_BRIEF: &str = "agent_brief detail \"compact\" and task are retired: the compact task handoff no longer exists. Call query_ontology({operation:\"agent_brief\", project}) for the brief, then get_concepts({slugs, body:\"full\"}) for the nodes it names.";
 
+const DEGREE_FILTER: &str = "the degree filters are retired: match_nodes with sort:\"degree\" ranks nodes by their connections, and limit keeps the first rows.";
+
+const NODE_LIMIT: &str = "nodeLimit is retired: limit sizes every section of the answer.";
+const COMPONENT_LIMIT: &str = "componentLimit is retired: limit sizes every section of the answer.";
+const CYCLE_LIMIT: &str = "cycleLimit is retired: limit sizes every section of the answer.";
+const RECOMMENDATION_LIMIT: &str = "recommendationLimit is retired: limit sizes every section of the answer.";
+const ORDER_LIMIT: &str = "orderLimit is retired: limit sizes every section of the answer.";
+
+const DEPENDENCY_TYPES: &str = "dependencyTypes is retired: types scopes the component groups; cycles and the dependency order always follow the dependency relations.";
+const COMPONENT_TYPES: &str = "componentTypes is retired: types scopes the component groups; cycles and the dependency order always follow the dependency relations.";
+
+const FROM_KIND: &str = "fromKind is retired with match_edges: neighbors lists a node's relations with the key each one is written under.";
+const TO_KIND: &str = "toKind is retired with match_edges: neighbors lists a node's relations with the key each one is written under.";
+
 /// Arguments no longer in a tool's input schema, in the order they are looked for, with the
 /// sentence an agent that sends one is told.
 const RETIRED_ARGUMENTS: [(&str, &[(&str, &str)]); 2] = [
@@ -30,7 +44,41 @@ const RETIRED_ARGUMENTS: [(&str, &[(&str, &str)]); 2] = [
     ),
     (
         "query_ontology",
-        &[("detail", COMPACT_BRIEF), ("task", COMPACT_BRIEF)],
+        &[
+            ("detail", COMPACT_BRIEF),
+            ("task", COMPACT_BRIEF),
+            (
+                "iterations",
+                "iterations is retired with centrality: match_nodes with sort:\"degree\" ranks nodes by their connections.",
+            ),
+            ("nodeLimit", NODE_LIMIT),
+            ("componentLimit", COMPONENT_LIMIT),
+            ("cycleLimit", CYCLE_LIMIT),
+            ("recommendationLimit", RECOMMENDATION_LIMIT),
+            ("orderLimit", ORDER_LIMIT),
+            ("minDegree", DEGREE_FILTER),
+            ("maxDegree", DEGREE_FILTER),
+            ("minInDegree", DEGREE_FILTER),
+            ("minOutDegree", DEGREE_FILTER),
+            (
+                "slugContains",
+                "slugContains is retired: list_concepts({mentions}) finds the nodes that name a word.",
+            ),
+            ("fromKind", FROM_KIND),
+            ("toKind", TO_KIND),
+            ("relation", "relation is retired: send the relation as type."),
+            (
+                "includeIsolated",
+                "includeIsolated is retired with topological_order: health returns dependencyOrder, and unconnected nodes have no order.",
+            ),
+            ("dependencyTypes", DEPENDENCY_TYPES),
+            ("componentTypes", COMPONENT_TYPES),
+            ("seed", "seed is retired: send the node as slug."),
+            (
+                "analysisMode",
+                "analysisMode is retired with analysis_history: the saved analyses are the files under .ontology-atlas/analyses/ in the vault.",
+            ),
+        ],
     ),
 ];
 
@@ -56,7 +104,7 @@ const RETIRED_QUERY_OPERATIONS: [(&str, &str); 8] = [
     ("domain_profile", "node_profile with the domain's slug"),
     (
         "topological_order",
-        "cycles reports dependency cycles; impact lists what depends on a node",
+        "health: its dependencyOrder lists the nodes prerequisite first (rank, slug) and the nodes a cycle blocks; cycles reports the cycles; impact lists what depends on a node",
     ),
     (
         "meaning_repair_review",
@@ -64,14 +112,14 @@ const RETIRED_QUERY_OPERATIONS: [(&str, &str); 8] = [
     ),
     (
         "analysis_history",
-        "the app lists saved analyses; analysis_record reads one by its id",
+        "the saved analyses are the files in .ontology-atlas/analyses/ of the vault; the UUID that ends a file name is its recordId, and analysis_record({recordId}) reads that record",
     ),
 ];
 
 /// `connection_info` guide topics no longer served, with where the text went.
 const RETIRED_GUIDES: [(&str, &str); 1] = [(
     "competency",
-    "The answer layout is in the refusal of finalize_project_meaning: call it without `answers` and read the refusal.",
+    "The answer layout is the `answers` item schema of finalize_project_meaning in tools/list: one row per fixed question with id, status, answer and the witness lists the question names.",
 )];
 
 /// `null` is no value, and `detail: "full"` asks for what a brief is anyway.

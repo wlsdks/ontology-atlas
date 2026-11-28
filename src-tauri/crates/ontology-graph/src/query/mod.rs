@@ -35,7 +35,7 @@ pub use query_error::QueryError;
 pub use relation_set::RELATION_TYPE_VALUES;
 pub use request::{Direction, QueryRequest, SEARCH_BUDGET_MAX};
 pub use selection::{
-    asks_for_orphans, orphan_nodes, parse_ignore_patterns, LineSpan, NodeSort, OutsideFacts,
+    is_match_nodes, match_nodes, parse_ignore_patterns, LineSpan, NodeSort, OutsideFacts,
     SelectionArguments, SelectionOperation, SelectionRequest, StaleSummary, UncertaintyRead,
     VaultValidationFacts,
 };

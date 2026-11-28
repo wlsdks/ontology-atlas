@@ -7,7 +7,7 @@ use answer_format::json::RawJson;
 use serde::Serialize;
 
 use super::clusters::{connected_components, describe_components, ComponentRow};
-use super::dependency_view::{self, default_types};
+use super::dependency_view::{self, default_types, OrderedRow};
 use super::outside_checks::OutsideChecks;
 use super::relation_recommendations::{recommend, Recommendation};
 use crate::compiled_graph::{CompiledGraph, NodeId};
@@ -204,6 +204,8 @@ struct HealthOrder<'a> {
     total_nodes: usize,
     #[serde(rename = "orderedCount")]
     ordered_count: usize,
+    limited: bool,
+    order: Vec<OrderedRow<'a>>,
     blocked: Vec<BlockedRow<'a>>,
 }
 
@@ -261,12 +263,14 @@ impl HealthQuestion {
     /// The question a `health` call asks.
     pub fn from_request(request: &QueryRequest) -> Self {
         let component_types = request.types.clone();
+        // One `limit` sizes every section; without it each keeps its own default.
+        let section = |fallback: usize| request.limit.unwrap_or(fallback);
         Self {
-            component_limit: HEALTH_COMPONENT_LIMIT,
-            node_limit: HEALTH_NODE_LIMIT,
-            cycle_limit: HEALTH_CYCLE_LIMIT,
-            recommendation_limit: HEALTH_RECOMMENDATION_LIMIT,
-            order_limit: HEALTH_ORDER_LIMIT,
+            component_limit: section(HEALTH_COMPONENT_LIMIT),
+            node_limit: section(HEALTH_NODE_LIMIT),
+            cycle_limit: section(HEALTH_CYCLE_LIMIT),
+            recommendation_limit: section(HEALTH_RECOMMENDATION_LIMIT),
+            order_limit: section(HEALTH_ORDER_LIMIT),
             max_hops: request.max_hops.or(request.depth),
             scoped: component_types.is_some(),
             component_types_argument: "types",
@@ -472,6 +476,8 @@ pub fn health<'a>(
             acyclic: order.acyclic,
             total_nodes: order.total_nodes,
             ordered_count: order.ordered_count,
+            limited: order.limited,
+            order: order.order,
             blocked: order.blocked,
         },
         validation: None,

@@ -20,8 +20,8 @@ use crate::write_tool::WriteTool;
 
 pub use map_analysis_record::{MapAnalysisRecorder, Recorded, RecorderInputs};
 pub use write_record::{
-    AbilityShare, ActivityContent, AreaShare, ConceptEffect, ShareCounts, ShareMeasure, WriteDone,
-    WriteRecord,
+    AbilityShare, ActivityContent, AreaShare, ConceptEffect, NodeWrite, ShareCounts, ShareMeasure,
+    WriteDone, WriteRecord,
 };
 
 /// Why an audit line was not written.
@@ -77,28 +77,37 @@ impl AuditLog {
         client_name: &str,
         record: WriteRecord,
     ) -> Result<(), AuditError> {
-        let WriteRecord::Wrote {
-            activity,
-            concepts,
-            share,
-        } = record
-        else {
-            return Ok(());
+        let writes = match record {
+            WriteRecord::Nothing => return Ok(()),
+            WriteRecord::Wrote {
+                activity,
+                concepts,
+                share,
+            } => vec![NodeWrite {
+                activity,
+                concepts,
+                share,
+            }],
+            WriteRecord::WroteEach(writes) => writes,
         };
         let agent = agent_heartbeat::agent_name(&self.sidecar, client_name);
-        let activity_result = activity_log::append(
-            &self.sidecar,
-            activity.logged_as.unwrap_or(tool.name()),
-            &activity,
-            agent.as_deref(),
-            now_ms(),
-        );
-        let analysis_result = self
-            .recorder
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .record(&concepts, agent.as_deref(), share)
-            .map(|_| ());
-        activity_result.and(analysis_result)
+        let mut first_failure = Ok(());
+        for write in writes {
+            let activity_result = activity_log::append(
+                &self.sidecar,
+                write.activity.logged_as.unwrap_or(tool.name()),
+                &write.activity,
+                agent.as_deref(),
+                now_ms(),
+            );
+            let analysis_result = self
+                .recorder
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .record(&write.concepts, agent.as_deref(), write.share)
+                .map(|_| ());
+            first_failure = first_failure.and(activity_result).and(analysis_result);
+        }
+        first_failure
     }
 }

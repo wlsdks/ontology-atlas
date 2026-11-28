@@ -22,9 +22,9 @@ pub enum QueryError {
         name: String,
         similar: Vec<String>,
     },
-    /// An operation that reads something other than the graph, put to the graph.
+    /// An operation that reads the vault's files, not the graph, put to the graph.
     #[error(
-        "The query_ontology operation \"{0}\" reads the analysis records, not the compiled graph."
+        "The query_ontology operation \"{0}\" reads the vault's files, not the compiled graph."
     )]
     NotAGraphOperation(&'static str),
     /// An operation no module answers yet.

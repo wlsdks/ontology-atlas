@@ -1,5 +1,5 @@
 //! The operations that pick nodes out of the graph or summarize it: `overview`, `schema`,
-//! `facets`, `components`, `communities`, `similar_nodes`, `match_nodes`, `recommend_relations`,
+//! `facets`, `components`, `communities`, `similar_nodes`, `recommend_relations`,
 //! `node_profile`, `domain_matrix`, `growth_plan`, `maintenance_plan`, `health` and
 //! `workspace_brief`. What they read about the
 //! world beside the graph (the vault's validation, its ignore file, the reads its bodies ask for)
@@ -17,8 +17,8 @@ mod ignored_references;
 mod maintenance_action;
 mod maintenance_plan;
 mod match_nodes;
+mod match_nodes_from_files;
 mod node_profile;
-mod orphan_nodes;
 mod outside_checks;
 mod proposed_action;
 mod reference_repair;
@@ -32,7 +32,7 @@ mod workspace_brief;
 pub(in crate::query) use match_nodes::count_matching_nodes;
 
 pub use ignored_references::parse_patterns as parse_ignore_patterns;
-pub use orphan_nodes::{asks_for_orphans, orphan_nodes};
+pub use match_nodes_from_files::{is_match_nodes, match_nodes};
 pub use selection_request::{
     LineSpan, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest, StaleSummary,
     UncertaintyRead, VaultValidationFacts,
@@ -96,7 +96,6 @@ pub enum SelectionAnswer<'a> {
     Components(clusters::ComponentsAnswer<'a>),
     Communities(clusters::CommunitiesAnswer<'a>),
     SimilarNodes(similar_nodes::SimilarNodesAnswer<'a>),
-    MatchNodes(match_nodes::MatchNodesAnswer<'a>),
     RecommendRelations(relation_recommendations::RecommendRelationsAnswer<'a>),
     NodeProfile(node_profile::NodeProfileAnswer<'a>),
     DomainMatrix(domain_matrix::DomainMatrixAnswer<'a>),
@@ -131,7 +130,9 @@ pub fn run<'a>(
             SelectionAnswer::SimilarNodes(similar_nodes::similar_nodes(graph, request)?)
         }
         SelectionOperation::MatchNodes => {
-            SelectionAnswer::MatchNodes(match_nodes::match_nodes(graph, request)?)
+            return Err(QueryError::NotAGraphOperation(
+                SelectionOperation::MatchNodes.name(),
+            ));
         }
         SelectionOperation::RecommendRelations => SelectionAnswer::RecommendRelations(
             relation_recommendations::recommend_relations(graph, request)?,
