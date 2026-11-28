@@ -113,7 +113,13 @@ export function authoringToolsSchemaFailure(tools) {
       return `add_concepts outputSchema row ${propertyName} drift`;
     }
   }
-  if (outputPropertyAt(addConceptsTool, ['properties', 'coverage'])?.type !== 'string') {
+  const addConceptsCoverage = outputPropertyAt(addConceptsTool, ['properties', 'coverage']);
+  if (
+    addConceptsCoverage?.type !== 'object'
+    || addConceptsCoverage.additionalProperties !== false
+    || addConceptsCoverage.properties?.changed?.type !== 'object'
+    || addConceptsCoverage.properties?.nextAction?.type !== 'string'
+  ) {
     return 'add_concepts outputSchema coverage drift';
   }
 
@@ -198,7 +204,7 @@ export function authoringToolsSchemaFailure(tools) {
   if (patchConceptTool.outputSchema?.type !== 'object') {
     return 'patch_concept outputSchema root drift';
   }
-  if (!sameArray(patchConceptTool.outputSchema?.required, ['ok', 'slug', 'changed', 'mtime'])) {
+  if (!sameArray(patchConceptTool.outputSchema?.required, ['ok'])) {
     return 'patch_concept outputSchema required drift';
   }
   if (patchConceptTool.outputSchema?.additionalProperties !== false) {

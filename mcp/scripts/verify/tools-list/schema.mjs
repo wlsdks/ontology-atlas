@@ -67,6 +67,7 @@ const TOOLS_LIST_OPEN_OBJECT_PATHS = new Set([
   'connect_project_source.outputSchema.properties.nextCall.properties.arguments',
   'disconnect_project_source.outputSchema.properties.nextCall.properties.arguments',
   'patch_concept.inputSchema.properties.frontmatter',
+  'patch_concept.inputSchema.properties.patches.items.properties.frontmatter',
   'merge_concepts.outputSchema.properties.capturedFrom.properties.frontmatter',
   'delete_concept.outputSchema.properties.captured.properties.frontmatter',
 ]);

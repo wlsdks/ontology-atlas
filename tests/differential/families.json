@@ -9,7 +9,7 @@
     "git": 14,
     "imports": 35,
     "evidence": 19,
-    "survey": 26,
+    "survey": 27,
     "meaning": 39,
     "writes": 13,
     "library": 46
@@ -18,6 +18,7 @@
     "mcp/src/analysis-history/analysis-record.mts": "survey",
     "mcp/src/analysis-history/analysis-records.mjs": "survey",
     "mcp/src/analysis-history/analysis-records.test.mjs": "survey",
+    "mcp/src/analysis-history/name-page.mts": "survey",
     "mcp/src/analyze/abilities/abilities.mjs": "survey",
     "mcp/src/analyze/abilities/abilities.test.mjs": "survey",
     "mcp/src/analyze/abilities/documented-abilities.mjs": "survey",
