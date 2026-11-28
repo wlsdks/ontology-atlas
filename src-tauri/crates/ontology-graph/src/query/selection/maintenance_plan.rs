@@ -190,7 +190,9 @@ fn read_bodies<'a>(
 ) -> BodyReading<'a> {
     let nodes: Vec<NodeId> = graph
         .node_ids()
-        .filter(|id| touching.is_none_or(|slugs| slugs.iter().any(|slug| slug == graph.node(*id).slug())))
+        .filter(|id| {
+            touching.is_none_or(|slugs| slugs.iter().any(|slug| slug == graph.node(*id).slug()))
+        })
         .collect();
     let run = nodes
         .len()
@@ -485,6 +487,9 @@ fn stale_summary_steps<'a>(
     }
 }
 
+/// How many candidates each generator scans when the plan is narrowed to touched nodes.
+const TOUCHED_SCAN_LIMIT: usize = 500;
+
 pub fn maintenance_plan<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
@@ -494,17 +499,25 @@ pub fn maintenance_plan<'a>(
     let phase_filter = filter_of(arguments.phases.as_deref(), "phases", &PHASES)?;
     let severity_filter = filter_of(arguments.severities.as_deref(), "severities", &SEVERITIES)?;
     let kind_filter = filter_of(arguments.kinds.as_deref(), "kinds", &KINDS)?;
-    let cycle_report = dependency_view::cycles(graph, limit, None, &default_types(), "types")?;
-    let recommendations = recommend(graph, None, limit);
-    let external = external_elements(graph, &request.selection.outside.ignore_patterns, limit);
-    let dangling = dangling_references(graph, limit);
-    let unassigned = unassigned_nodes(graph, limit);
-    let empty = empty_domains(graph, limit);
-    let bodies = read_bodies(graph, limit, arguments.touching.as_deref());
-    let unearned = unearned_nodes(graph, &bodies.starter_bodies, limit);
-    let without_evidence = capabilities_without_evidence(graph, limit);
-    let flat = flat_slugs(graph, limit);
-    let starters = starter_gaps(graph, limit);
+    // A plan narrowed to the nodes a write touched must still see every candidate about them, so
+    // each generator scans up to `TOUCHED_SCAN_LIMIT` before the narrowing and the page cuts at
+    // `limit`. Without `touching`, a generator never builds more than the page can show.
+    let scan = if arguments.touching.is_some() {
+        TOUCHED_SCAN_LIMIT
+    } else {
+        limit
+    };
+    let cycle_report = dependency_view::cycles(graph, scan, None, &default_types(), "types")?;
+    let recommendations = recommend(graph, None, scan);
+    let external = external_elements(graph, &request.selection.outside.ignore_patterns, scan);
+    let dangling = dangling_references(graph, scan);
+    let unassigned = unassigned_nodes(graph, scan);
+    let empty = empty_domains(graph, scan);
+    let bodies = read_bodies(graph, scan, arguments.touching.as_deref());
+    let unearned = unearned_nodes(graph, &bodies.starter_bodies, scan);
+    let without_evidence = capabilities_without_evidence(graph, scan);
+    let flat = flat_slugs(graph, scan);
+    let starters = starter_gaps(graph, scan);
 
     let (total_cycles, cycle_rows) = (cycle_report.total, cycle_report.cycles);
     let totals = (
