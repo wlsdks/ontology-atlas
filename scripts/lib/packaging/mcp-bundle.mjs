@@ -1,101 +1,63 @@
 /**
- * The pure part of the `.mcpb` build: a zip holding one MCP server plus a `manifest.json`. It
- * carries exactly `mcp/package.json`'s `files` list. Each `.mts` module is compiled to `.mjs`
- * because Node type stripping is unflagged only from Node 23.6.
+ * The pure part of the `.mcpb` build: a zip holding the compiled Rust program `ontology-atlas-mcp`
+ * for each platform it is given, plus a `manifest.json`. A host picks a program by operating
+ * system alone (`platform_overrides` is keyed `darwin`, `win32`, `linux`), so a bundle holds one
+ * program per system: a second architecture of the same system cannot be chosen between and is
+ * refused. The image carries both Linux architectures; the bundle carries the macOS arm64,
+ * Windows x64 and static Linux x64 programs.
  */
 
 export const BUNDLE_SERVER_DIR = 'server';
-export const BUNDLE_ENTRY_POINT = `${BUNDLE_SERVER_DIR}/src/index.js`;
+export const MCP_PROGRAM_NAME = 'ontology-atlas-mcp';
 
-export const isTypedModule = (file) => file.endsWith('.mts');
-export const strippedName = (file) => file.replace(/\.mts$/, '.mjs');
+const PLATFORM_OF_TRIPLE = Object.freeze({
+  'aarch64-apple-darwin': 'darwin',
+  'x86_64-apple-darwin': 'darwin',
+  'x86_64-pc-windows-msvc': 'win32',
+  'x86_64-unknown-linux-gnu': 'linux',
+  'x86_64-unknown-linux-musl': 'linux',
+  'aarch64-unknown-linux-gnu': 'linux',
+  'aarch64-unknown-linux-musl': 'linux',
+});
 
-const TYPED_SPECIFIER = /((?:\bfrom|\bimport)\s*\(?\s*)(['"])(\.{1,2}\/[^'"]+)\.mts\2/g;
-
-export function pointAtStrippedModules(source) {
-  return source.replace(TYPED_SPECIFIER, '$1$2$3.mjs$2');
+/** Where the program of `triple` sits inside the bundle. */
+export function bundleProgramPath(triple) {
+  return `${BUNDLE_SERVER_DIR}/${MCP_PROGRAM_NAME}-${triple}${triple.includes('-windows-') ? '.exe' : ''}`;
 }
 
-export const importsTypedModule = (source) => new RegExp(TYPED_SPECIFIER.source).test(source);
+/** The operating system a host calls `triple`'s program for; null for a target the bundle does not know. */
+export const bundlePlatformOfTriple = (triple) => PLATFORM_OF_TRIPLE[triple] ?? null;
 
-/**
- * A test fixture is not a shipping surface. `mcp/package.json` lists it because
- * `npm test` inside a published package runs the parser smoke test
- * (`check-package-contracts` holds that contract), but a bundle a host installs
- * has no test runner and no reason to carry one.
- */
-export const EXCLUDED_FROM_BUNDLE = Object.freeze(['src/parser.test.mjs']);
-
-/**
- * Runtime dependencies are vendored, so the closure is walked the way Node resolves it: each package
- * is looked up from the directory of the package that depends on it. A flat lookup in
- * `mcp/node_modules` misses `zod`, which pnpm links only under the SDK.
- * `resolvePackageDir(name, fromDir)` returns the real directory or null.
- */
-export function dependencyClosure({ rootDependencies, rootDir, resolvePackageDir, readManifest }) {
-  const pending = Object.keys(rootDependencies ?? {}).map((name) => ({ name, fromDir: rootDir }));
-  const found = new Map();
-  const missing = [];
-  while (pending.length > 0) {
-    const { name, fromDir } = pending.shift();
-    if (found.has(name)) continue;
-    const directory = resolvePackageDir(name, fromDir);
-    if (!directory) {
-      missing.push(name);
+/** What stops a set of targets from being one bundle: an unknown target, or two programs for one system. */
+export function bundleProgramProblems(triples) {
+  const problems = [];
+  const byPlatform = new Map();
+  for (const triple of triples) {
+    const platform = bundlePlatformOfTriple(triple);
+    if (!platform) {
+      problems.push(`${triple} is not a target the bundle knows`);
       continue;
     }
-    found.set(name, directory);
-    for (const next of Object.keys(readManifest(directory)?.dependencies ?? {})) {
-      if (!found.has(next)) pending.push({ name: next, fromDir: directory });
+    byPlatform.set(platform, [...(byPlatform.get(platform) ?? []), triple]);
+  }
+  for (const [platform, found] of byPlatform) {
+    if (found.length > 1) {
+      problems.push(`${found.join(' and ')} are both ${platform} programs; a host picks by system alone, so the bundle holds one`);
     }
   }
-  return {
-    packages: [...found.entries()].map(([name, directory]) => ({ name, dir: directory })).sort((a, b) => a.name.localeCompare(b.name)),
-    missing: missing.sort(),
-  };
-}
-
-/** The bundle gets its own manifest rather than a copy of the repository's, whose `engines` pin, `files` list and maintainer note contradict what the bundle ships. Node needs `type: "module"` here and nothing else. */
-export function bundlePackageJson({ version }) {
-  return {
-    name: 'ontology-atlas-mcp',
-    version,
-    description: REGISTRY_DESCRIPTION,
-    type: 'module',
-    license: 'MIT',
-    private: true,
-  };
-}
-
-/** A vendored dependency ships its licence and its code, not its test suite or source maps, which a host does not need to start a server. */
-export function isBundleBallast(relativePath) {
-  const normalized = relativePath.split('\\').join('/');
-  return (
-    // Matches the directory itself as well as its contents, or the copy leaves
-    // four empty `tests/` folders behind.
-    /(?:^|\/)(?:tests?|__tests__|\.github)(?:\/|$)/.test(normalized) ||
-    /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(normalized) ||
-    normalized.endsWith('.map') ||
-    /(?:^|\/)(?:CHANGELOG|CONTRIBUTING)\.md$/i.test(normalized)
-  );
-}
-
-export function bundleFileList(declaredFiles) {
-  return declaredFiles
-    .filter((file) => !EXCLUDED_FROM_BUNDLE.includes(file))
-    .map((file) => (isTypedModule(file) ? strippedName(file) : file))
-    .sort();
+  if (triples.length === 0) problems.push('no program was given; build one with `pnpm mcp:build-binary`');
+  return problems;
 }
 
 /**
  * The MCPB manifest. `user_config.vault` is a directory prompt rather than a
  * free-text path because the host renders it as a folder picker, and the server
  * reads exactly one environment variable (`OATLAS_VAULT`) to find the vault.
- *
- * `compatibility.runtimes.node` states the SDK's real floor rather than this
- * repository's `engines` pin — see the note at the top of this file.
+ * The program is native, so the manifest states no runtime.
  */
-export function bundleManifest({ version, description }) {
+export function bundleManifest({ version, description, triples }) {
+  const platforms = triples.map((triple) => bundlePlatformOfTriple(triple));
+  const command = (triple) => `\${__dirname}/${bundleProgramPath(triple)}`;
   return {
     manifest_version: '0.3',
     name: 'ontology-atlas-mcp',
@@ -117,12 +79,15 @@ export function bundleManifest({ version, description }) {
     license: 'MIT',
     keywords: ['ontology', 'codebase', 'markdown', 'knowledge-graph', 'local-first'],
     server: {
-      type: 'node',
-      entry_point: BUNDLE_ENTRY_POINT,
+      type: 'binary',
+      entry_point: bundleProgramPath(triples[0]),
       mcp_config: {
-        command: 'node',
-        args: [`\${__dirname}/${BUNDLE_ENTRY_POINT}`],
+        command: command(triples[0]),
+        args: [],
         env: { OATLAS_VAULT: '${user_config.vault}' },
+        platform_overrides: Object.fromEntries(
+          triples.map((triple, index) => [platforms[index], { command: command(triple) }]),
+        ),
       },
     },
     user_config: {
@@ -135,10 +100,7 @@ export function bundleManifest({ version, description }) {
         multiple: false,
       },
     },
-    compatibility: {
-      platforms: ['darwin', 'win32', 'linux'],
-      runtimes: { node: '>=20' },
-    },
+    compatibility: { platforms },
   };
 }
 
@@ -189,10 +151,9 @@ export function serverJsonProblems(document) {
 
 /**
  * What a person holding the file can check: two releases can carry the same server version with
- * different bytes, so the artifact states the commit it was built from. The server's own `package.json`
- * `engines` is the repository's toolchain pin, while the manifest states the floor the bundle was measured on.
+ * different bytes, so the artifact states the commit it was built from and the programs it holds.
  */
-export function bundleProvenance({ version, commit, tag, builtAt, witnessedRuntimes }) {
+export function bundleProvenance({ version, commit, tag, builtAt, triples, bootedTriple }) {
   return [
     'Ontology Atlas MCP server — MCP Bundle provenance',
     '',
@@ -200,13 +161,10 @@ export function bundleProvenance({ version, commit, tag, builtAt, witnessedRunti
     `built from       ${commit}`,
     `release tag      ${tag ?? '(none: local build)'}`,
     `built at         ${builtAt}`,
-    `booted under     ${witnessedRuntimes.join(', ')}`,
+    `programs         ${triples.join(', ')}`,
+    `booted           ${bootedTriple} (the others cannot run on the machine that built this file)`,
     '',
-    'server/package.json here is written for this bundle rather than copied from',
-    'the repository: the repository pins its own toolchain to Node 24, while the',
-    'one TypeScript module the server imports is compiled during this build, so',
-    'the bundle runs on the floor manifest.json states and was booted on above.',
-    '',
+    'Each program is the compiled Rust server, not a script: there is no runtime to install.',
     'The vault is an ordinary folder of Markdown on your disk. This server reads',
     'and writes only the folder you point OATLAS_VAULT at, opens no port, and',
     'sends nothing anywhere.',

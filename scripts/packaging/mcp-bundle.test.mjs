@@ -1,168 +1,59 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
-  EXCLUDED_FROM_BUNDLE,
   OWNERSHIP_LABEL,
   REGISTRY_DESCRIPTION_LIMIT,
   REGISTRY_SERVER_NAME,
   artifactUrlProblems,
   bundleArtifactName,
   bundleDownloadUrl,
-  bundleFileList,
   bundleManifest,
-  bundlePackageJson,
+  bundleProgramPath,
+  bundleProgramProblems,
   bundleProvenance,
-  dependencyClosure,
-  importsTypedModule,
-  isBundleBallast,
-  isTypedModule,
-  pointAtStrippedModules,
   registryInvariantProblems,
   serverJson,
   serverJsonProblems,
-  strippedName,
 } from '../lib/packaging/mcp-bundle.mjs';
 import { parseArgs, tagProblems, usage } from './build-server-json.mjs';
-import { stage } from './build-mcp-bundle.mjs';
 
 const MCP_PACKAGE = JSON.parse(readFileSync('mcp/package.json', 'utf8'));
 const DOCKERFILE = readFileSync('mcp/Dockerfile', 'utf8');
 const WORKFLOW = readFileSync('.github/workflows/release-macos.yml', 'utf8');
 
-describe('bundle contents', () => {
-  it('stages nested verification modules declared as a package directory', () => {
-    const { stageDir } = stage({ ...MCP_PACKAGE, dependencies: {} });
-    try {
-      const nested = 'scripts/verify/cli.mjs';
-      assert.equal(
-        readFileSync(join(stageDir, 'server', nested), 'utf8'),
-        readFileSync(join('mcp', nested), 'utf8'),
-      );
-    } finally {
-      rmSync(stageDir, { recursive: true, force: true });
-    }
-  });
-
-  /**
-   * The bundle ships what the server itself declares. If these two lists were
-   * maintained separately, a new module would reach npm's `files` and silently
-   * miss the bundle, which fails only at a user's install.
-   */
-  it('carries every declared shipping file, with each typed module renamed', () => {
-    const bundled = bundleFileList(MCP_PACKAGE.files);
-    const typed = MCP_PACKAGE.files.filter(isTypedModule);
-
-    assert.ok(typed.length > 0, 'mcp/package.json declares no typed module, so this proves nothing');
-    for (const file of typed) assert.ok(bundled.includes(strippedName(file)), `the bundle must carry ${strippedName(file)}`);
-    assert.deepEqual(bundled.filter(isTypedModule), [], 'the bundle must not carry a .mts source');
-    assert.equal(bundled.length, MCP_PACKAGE.files.length - EXCLUDED_FROM_BUNDLE.length);
-  });
-
-  it('stages every typed module as JavaScript and points its importers at it', () => {
-    const { stageDir } = stage({ ...MCP_PACKAGE, dependencies: {} });
-    try {
-      const server = join(stageDir, 'server');
-      const modules = readdirSync(server, { recursive: true }).filter((file) => /\.(?:mjs|js|mts)$/.test(file));
-      assert.deepEqual(modules.filter(isTypedModule), []);
-      assert.deepEqual(modules.filter((file) => importsTypedModule(readFileSync(join(server, file), 'utf8'))), []);
-      for (const file of MCP_PACKAGE.files.filter(isTypedModule)) assert.ok(modules.includes(strippedName(file)), strippedName(file));
-    } finally {
-      rmSync(stageDir, { recursive: true, force: true });
-    }
-  });
-
-  it('points static, re-export and dynamic imports of a typed module at its twin', () => {
-    const source = [
-      "import { a } from './a.mts';",
-      'export * from "../b/c.mts";',
-      "const d = await import('./d.mts');",
-      "import { e } from './e.mjs';",
-      "import { f } from 'pkg/f.mts';",
-    ].join('\n');
-    const pointed = pointAtStrippedModules(source);
-
-    assert.equal(pointed, [
-      "import { a } from './a.mjs';",
-      'export * from "../b/c.mjs";',
-      "const d = await import('./d.mjs');",
-      "import { e } from './e.mjs';",
-      "import { f } from 'pkg/f.mts';",
-    ].join('\n'));
-    assert.equal(importsTypedModule(source), true);
-    assert.equal(importsTypedModule(pointed), false);
-  });
-
-  it('leaves the test fixture behind, because a host has no test runner', () => {
-    for (const excluded of EXCLUDED_FROM_BUNDLE) {
-      assert.ok(MCP_PACKAGE.files.includes(excluded), `mcp/package.json should still declare ${excluded} for npm test`);
-      assert.ok(!bundleFileList(MCP_PACKAGE.files).includes(excluded), `${excluded} must not ship in the bundle`);
-    }
-  });
-
-  /**
-   * pnpm links `zod` only under the SDK, so a flat lookup in `mcp/node_modules`
-   * finds the two direct dependencies and stops. The walk therefore resolves each
-   * package from the directory of the package that depends on it.
-   */
-  it('walks a transitive dependency that lives only under its dependent', () => {
-    const tree = {
-      '/mcp': { dependencies: { '@scope/server': '1' } },
-      '/store/server': { name: '@scope/server', dependencies: { zod: '4' } },
-      '/store/server/node_modules/zod': { name: 'zod' },
-    };
-    const { packages, missing } = dependencyClosure({
-      rootDependencies: tree['/mcp'].dependencies,
-      rootDir: '/mcp',
-      resolvePackageDir: (name, fromDir) => {
-        if (name === '@scope/server' && fromDir === '/mcp') return '/store/server';
-        if (name === 'zod' && fromDir === '/store/server') return '/store/server/node_modules/zod';
-        return null;
-      },
-      readManifest: (directory) => tree[directory] ?? null,
-    });
-
-    assert.deepEqual(missing, []);
-    assert.deepEqual(packages.map(({ name }) => name), ['@scope/server', 'zod']);
-  });
-
-  it('reports a dependency it cannot resolve instead of shipping a bundle without it', () => {
-    const { packages, missing } = dependencyClosure({
-      rootDependencies: { absent: '1' },
-      rootDir: '/mcp',
-      resolvePackageDir: () => null,
-      readManifest: () => null,
-    });
-
-    assert.deepEqual(packages, []);
-    assert.deepEqual(missing, ['absent']);
-  });
-});
+const TRIPLES = ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-musl'];
 
 describe('bundle manifest', () => {
-  it('starts the server the way a host does, and asks for the vault as a folder', () => {
-    const manifest = bundleManifest({ version: '9.9.9', description: 'd' });
+  it('starts the compiled program the way a host does, one per system, and asks for the vault as a folder', () => {
+    const manifest = bundleManifest({ version: '9.9.9', description: 'd', triples: TRIPLES });
 
-    assert.equal(manifest.server.type, 'node');
-    assert.equal(manifest.server.mcp_config.command, 'node');
-    assert.equal(manifest.server.mcp_config.args[0], '${__dirname}/server/src/index.js');
+    assert.equal(manifest.server.type, 'binary');
+    assert.equal(manifest.server.entry_point, 'server/ontology-atlas-mcp-aarch64-apple-darwin');
+    assert.deepEqual(manifest.server.mcp_config.platform_overrides, {
+      darwin: { command: '${__dirname}/server/ontology-atlas-mcp-aarch64-apple-darwin' },
+      win32: { command: '${__dirname}/server/ontology-atlas-mcp-x86_64-pc-windows-msvc.exe' },
+      linux: { command: '${__dirname}/server/ontology-atlas-mcp-x86_64-unknown-linux-musl' },
+    });
+    assert.deepEqual(manifest.compatibility, { platforms: ['darwin', 'win32', 'linux'] });
     assert.equal(manifest.server.mcp_config.env.OATLAS_VAULT, '${user_config.vault}');
     assert.equal(manifest.user_config.vault.type, 'directory');
     assert.equal(manifest.user_config.vault.required, true);
+    assert.ok(!('runtimes' in manifest.compatibility), 'a native program needs no runtime');
   });
 
   /**
-   * The `engines` pin in `mcp/package.json` is this repository's toolchain
-   * choice. A host supplies its own Node, and the bundle answered `tools/list`
-   * with every tool on Node 20, 22, 24 and 25 once the one typed module was
-   * stripped — so the manifest states the SDK's floor, not the pin.
+   * A host chooses a program by operating system alone, so a second architecture of one system
+   * would be silently ignored, or started on a machine that cannot run it.
    */
-  it('claims the runtime floor the stripped bundle actually runs on', () => {
-    assert.equal(bundleManifest({ version: '1', description: 'd' }).compatibility.runtimes.node, '>=20');
-    assert.match(MCP_PACKAGE.engines.node, /^>=24/);
+  it('refuses two programs for one system, an unknown target and an empty set', () => {
+    assert.deepEqual(bundleProgramProblems(TRIPLES), []);
+    assert.match(bundleProgramProblems(['aarch64-apple-darwin', 'x86_64-apple-darwin']).join(' '), /both darwin programs/);
+    assert.match(bundleProgramProblems(['riscv64-unknown-linux-gnu']).join(' '), /not a target the bundle knows/);
+    assert.match(bundleProgramProblems([]).join(' '), /no program was given/);
+    assert.equal(bundleProgramPath('x86_64-pc-windows-msvc'), 'server/ontology-atlas-mcp-x86_64-pc-windows-msvc.exe');
   });
 });
 
@@ -220,47 +111,26 @@ describe('server.json CLI', () => {
   });
 });
 
-describe('what the artifact must not carry, and what it must', () => {
-  /**
-   * Copying `mcp/package.json` shipped three contradictions to end users: an
-   * `engines` pin of `>=24 <25` beside a bundle measured on Node 20, a `files`
-   * list naming two modules the bundle deliberately drops, and a Korean
-   * maintainer note in the most public copy of that file.
-   */
-  it('writes its own manifest instead of copying the repository one', () => {
-    const manifest = bundlePackageJson({ version: MCP_PACKAGE.version });
-
-    assert.equal(manifest.type, 'module', 'Node needs this to load the server as ESM');
-    assert.equal(manifest.license, 'MIT');
-    assert.ok(!('engines' in manifest), 'the repository toolchain pin is not this bundle requirement');
-    assert.ok(!('files' in manifest), 'a files list would name modules the bundle does not carry');
-    assert.ok(!('pnpm' in manifest));
-  });
-
-  it('drops a vendored package tests, fixtures and source maps, and keeps its licence', () => {
-    assert.equal(isBundleBallast('src/v3/tests/string.test.ts'), true);
-    assert.equal(isBundleBallast('src/v4/core/tests'), true, 'the directory itself, or four empty folders remain');
-    assert.equal(isBundleBallast('dist/index.js.map'), true);
-    assert.equal(isBundleBallast('CHANGELOG.md'), true);
-    assert.equal(isBundleBallast('LICENSE'), false, 'the licence is the one file a vendored package owes');
-    assert.equal(isBundleBallast('dist/index.js'), false);
-    assert.equal(isBundleBallast('src/latest.ts'), false);
-  });
-
-  it('states which commit produced the file, since two releases can share a version', () => {
+describe('what the artifact must say', () => {
+  it('states which commit and which programs produced the file, since two releases can share a version', () => {
     const text = bundleProvenance({
       version: MCP_PACKAGE.version,
       commit: 'abc1234',
       tag: 'v1.1.0',
       builtAt: '2026-09-11T00:00:00.000Z',
-      witnessedRuntimes: ['node 24.16.0', 'node 20.20.0'],
+      triples: TRIPLES,
+      bootedTriple: 'aarch64-apple-darwin',
     });
 
     assert.match(text, /built from\s+abc1234/);
     assert.match(text, /release tag\s+v1\.1\.0/);
-    assert.match(text, /booted under\s+node 24\.16\.0, node 20\.20\.0/);
+    assert.match(text, /programs\s+aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-musl/);
+    assert.match(text, /booted\s+aarch64-apple-darwin/);
     assert.match(text, /opens no port/);
-    assert.match(bundleProvenance({ version: '1', commit: 'c', tag: null, builtAt: 'b', witnessedRuntimes: [] }), /\(none: local build\)/);
+    assert.match(
+      bundleProvenance({ version: '1', commit: 'c', tag: null, builtAt: 'b', triples: ['t'], bootedTriple: 't' }),
+      /\(none: local build\)/,
+    );
   });
 });
 
@@ -315,36 +185,45 @@ describe('what the registry would actually accept', () => {
 
 describe('the image', () => {
   it('does not run as root, since a write lands in the mounted folder', () => {
-    assert.match(DOCKERFILE, /^USER node$/m);
+    assert.match(DOCKERFILE, /^USER atlas$/m);
+  });
+
+  it('runs the Rust program built from the crate, with no Node in it', () => {
+    assert.match(DOCKERFILE, /cargo build --release --locked -p mcp-server/);
+    assert.match(DOCKERFILE, /^ENTRYPOINT \["\/usr\/local\/bin\/ontology-atlas-mcp"\]$/m);
+    assert.doesNotMatch(DOCKERFILE.split('\n').filter((row) => /^(?:FROM|RUN|COPY|ENTRYPOINT)\b/.test(row)).join('\n'), /node|pnpm|npm/i);
   });
 
   /**
    * An outside builder starts at the repository root. The awesome-list bot's
    * Glama requirement is what exposed this: a directory that builds a server
-   * from its Dockerfile would have taken the app's `package.json` and died on a
-   * missing `CHANGELOG.md`. Every COPY is repository-relative now, so the same
-   * file serves us and them.
+   * from its Dockerfile would have taken the app's `package.json`. Every COPY
+   * from the build context is repository-relative, so the same file serves us and them.
    */
   it('copies from the repository root, since that is the context a directory uses', () => {
     assert.match(DOCKERFILE, /build context is the repository root/);
-    for (const line of DOCKERFILE.split('\n').filter((row) => row.startsWith('COPY '))) {
-      assert.match(line, /^COPY (?:mcp\/|LICENSE)/, `a root-context build needs a repository-relative source: ${line}`);
+    for (const line of DOCKERFILE.split('\n').filter((row) => row.startsWith('COPY ') && !row.startsWith('COPY --from='))) {
+      assert.match(line, /^COPY (?:src-tauri\/|LICENSE)/, `a root-context build needs a repository-relative source: ${line}`);
     }
     assert.match(DOCKERFILE, /docker build -f mcp\/Dockerfile -t ontology-atlas-mcp \./);
   });
 
-  it('states the multi-architecture push and the uid override, both measured', () => {
+  it('states the multi-architecture push and the uid override', () => {
     assert.match(DOCKERFILE, /docker buildx build --platform linux\/amd64,linux\/arm64 -f mcp\/Dockerfile/);
     assert.match(DOCKERFILE, /--user "\$\(id -u\):\$\(id -g\)"/);
   });
 
-  it('carries the licence its own labels claim', () => {
-    assert.match(DOCKERFILE, /^COPY LICENSE \.\/$/m);
-    assert.match(DOCKERFILE, /org\.opencontainers\.image\.licenses="MIT"/);
+  it('pins both stages by digest and builds with the Rust the repository pins', () => {
+    const channel = /^\s*channel\s*=\s*"([^"]+)"/m.exec(readFileSync('rust-toolchain.toml', 'utf8'))[1];
+    const froms = DOCKERFILE.split('\n').filter((row) => row.startsWith('FROM '));
+    assert.equal(froms.length, 2);
+    for (const from of froms) assert.match(from, /@sha256:[0-9a-f]{64}/, `a moved tag would change the image: ${from}`);
+    assert.ok(froms[0].startsWith(`FROM rust:${channel}-alpine@`), `the build stage uses Rust ${channel}`);
   });
 
-  it('carries no test suite, because it has no runner for one', () => {
-    assert.match(DOCKERFILE, /rm -f src\/\*\.test\.mjs/);
+  it('carries the licence its own labels claim', () => {
+    assert.match(DOCKERFILE, /^COPY LICENSE \/usr\/share\/licenses\/ontology-atlas-mcp\/LICENSE$/m);
+    assert.match(DOCKERFILE, /org\.opencontainers\.image\.licenses="MIT"/);
   });
 });
 

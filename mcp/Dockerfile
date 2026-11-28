@@ -1,4 +1,5 @@
-# The MCP server as a container image — the second npm-free distribution channel.
+# The MCP server as a container image — the second npm-free distribution channel. It carries the
+# Rust program `ontology-atlas-mcp`, built here from the `mcp-server` crate; there is no Node in it.
 #
 # Two consumers, one file:
 #
@@ -13,21 +14,20 @@
 # assumes. It was `mcp/` until 2026-09-11, and that is the shape the awesome-list
 # bot's Glama requirement exposed: a directory that builds a server from its
 # Dockerfile starts at the root, where `COPY package.json` would take the app's
-# manifest and the build would die on a missing `CHANGELOG.md`. Paths here are
-# therefore repository-relative:
+# manifest. Paths here are therefore repository-relative:
 #
 #   docker build -f mcp/Dockerfile -t ontology-atlas-mcp .
 #
-# A plain build produces one architecture — measured arm64 on Apple silicon, which
-# an amd64 client cannot run. The published image must be built for both:
+# A plain build produces one architecture — whichever the builder runs on, which an
+# client on the other one cannot run. The published image must be built for both:
 #
 #   docker buildx build --platform linux/amd64,linux/arm64 -f mcp/Dockerfile \
 #     -t ghcr.io/wlsdks/ontology-atlas-mcp:<version> --push .
 #
 # The server speaks stdio, so a client runs it with the vault mounted. Pass your
-# own uid: the image runs as root, and on a Linux bind mount that would leave the
-# Markdown an agent writes root-owned inside your repository (measured `uid=0`;
-# macOS remaps ownership and hides this).
+# own uid: the image runs as uid 1000, and on a Linux bind mount owned by another
+# user a write would fail, or leave Markdown an agent writes owned by the wrong
+# user inside your repository.
 #
 #   docker run --rm -i --user "$(id -u):$(id -g)" \
 #     -v /path/to/atlas:/vault ghcr.io/wlsdks/ontology-atlas-mcp:latest
@@ -35,9 +35,22 @@
 # `OATLAS_VAULT` defaults to /vault, and the server treats a folder with no nodes
 # as empty rather than failing — an inspector with nothing mounted still gets a
 # complete `tools/list`.
-# By digest, so a moved tag cannot change what the published image runs on. The
-# multi-arch index resolved 2026-09-27 (linux/amd64, linux/arm64/v8); bump it on purpose.
-FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+#
+# Both stages are pinned by digest, so a moved tag cannot change what the published image is built
+# from or runs on. Each index resolved 2026-11-28 (linux/amd64, linux/arm64); bump it on purpose,
+# and the Rust tag together with `rust-toolchain.toml`.
+FROM rust:1.100.0-alpine@sha256:8d0e82abfdf9a38071e07cabc5afba4ddbe077631a80e4e742a760c38beadc33 AS build
+
+WORKDIR /src
+# Alpine's Rust targets musl, so the program is one static file with no libc to match at run time.
+COPY src-tauri/Cargo.toml src-tauri/Cargo.lock ./src-tauri/
+COPY src-tauri/crates ./src-tauri/crates
+COPY src-tauri/src ./src-tauri/src
+COPY src-tauri/build.rs ./src-tauri/
+RUN cargo build --release --locked -p mcp-server --manifest-path src-tauri/Cargo.toml \
+ && install -D src-tauri/target/release/ontology-atlas-mcp-rust /out/ontology-atlas-mcp
+
+FROM alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2
 
 LABEL io.modelcontextprotocol.server.name="io.github.wlsdks/ontology-atlas"
 LABEL org.opencontainers.image.title="Ontology Atlas MCP server"
@@ -46,29 +59,19 @@ LABEL org.opencontainers.image.source="https://github.com/wlsdks/ontology-atlas"
 LABEL org.opencontainers.image.url="https://ontologyatlas.com"
 LABEL org.opencontainers.image.licenses="MIT"
 
-WORKDIR /app
-
-# The lockfile is copied first so a source-only change reuses the install layer.
-COPY mcp/package.json mcp/pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile --prod
-
-COPY mcp/src ./src
-COPY mcp/scripts ./scripts
-COPY mcp/README.md mcp/CHANGELOG.md ./
+COPY --from=build /out/ontology-atlas-mcp /usr/local/bin/ontology-atlas-mcp
 # The licence the labels and manifest both claim travels with the image.
-COPY LICENSE ./
-
-# The server's own test suites are 60 files the image has no runner for.
-RUN rm -f src/*.test.mjs scripts/*.test.mjs
+COPY LICENSE /usr/share/licenses/ontology-atlas-mcp/LICENSE
 
 ENV OATLAS_VAULT=/vault
 VOLUME ["/vault"]
 
 # Not root. A write tool creates Markdown and .ontology-atlas/activity.jsonl
 # inside the mounted folder, and as root on a Linux bind mount those land
-# root-owned in the user's repository. `node:24-alpine` ships this user; a host
-# whose folder belongs to a different uid passes --user (see the header).
-USER node
+# root-owned in the user's repository. A host whose folder belongs to a
+# different uid passes --user (see the header).
+RUN adduser -D -u 1000 atlas
+USER atlas
 
 # stdio, not a port: the client owns the process lifetime. No EXPOSE, no daemon.
-ENTRYPOINT ["node", "/app/src/index.js"]
+ENTRYPOINT ["/usr/local/bin/ontology-atlas-mcp"]

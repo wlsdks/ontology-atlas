@@ -67,14 +67,10 @@ describe("GitHub Actions supply chain pinning", () => {
     const latestDownloads = files.filter(({ source }) => /\/releases\/latest\//.test(source)).map(({ path }) => path);
     expect([...floating, ...latestDownloads], "a moving channel ships whatever was newest that day").toEqual([]);
 
-    const bunSteps = files.flatMap(({ path, source }) =>
-      source.split(/(?=^\s+- (?:name|uses):)/m).filter((step) => step.includes("oven-sh/setup-bun@")).map((step) => ({ path, step })),
-    );
-    expect(bunSteps.length).toBeGreaterThanOrEqual(3);
-    for (const { path, step } of bunSteps) {
-      expect(step, `${path}: setup-bun must read .bun-version`).toMatch(/^\s+bun-version-file: \.bun-version$/m);
-      expect(step, `${path}: an inline bun-version outranks the file`).not.toMatch(/^\s+bun-version:/m);
-    }
+    // The server is a Rust program: no workflow installs Bun. `.bun-version` stays only for the
+    // comparison build `pnpm perf:mcp:baseline` makes until the JavaScript server is deleted.
+    const bunSteps = files.filter(({ source }) => source.includes("oven-sh/setup-bun@")).map(({ path }) => path);
+    expect(bunSteps, "a workflow installs Bun for a server that no longer needs it").toEqual([]);
     expect(readFileSync(join(ROOT, ".bun-version"), "utf8")).toMatch(/^\d+\.\d+\.\d+\n$/);
   });
 
