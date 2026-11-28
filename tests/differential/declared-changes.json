@@ -21070,166 +21070,6 @@
       "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
     },
     {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 23,
@@ -22057,14 +21897,6 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 68,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
       "path": "result.content[0].text#/nextActions/0/id",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -22796,14 +22628,6 @@
       "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -23545,14 +23369,6 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 69,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
       "path": "result.content[0].text#/nextActions/0/id",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -23601,14 +23417,6 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 69,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
       "path": "result.structuredContent.nextActions[0].id",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -23652,14 +23460,6 @@
       "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -23769,14 +23569,6 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 70,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
       "path": "result.structuredContent.nextActions[0].id",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -23862,38 +23654,6 @@
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 19,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 19,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 20,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 20,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
       "case": "graph/graph-selection-tangle",
       "where": "answer",
       "id": 4,
@@ -23908,38 +23668,6 @@
       "path": "result.structuredContent.checks",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
     },
     {
       "case": "graph/graph-walks-storefront",
@@ -28292,54 +28020,6 @@
       "path": "result.structuredContent.edges",
       "change": 28,
       "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
     },
     {
       "case": "meaning/validate-vault-hostile-git",

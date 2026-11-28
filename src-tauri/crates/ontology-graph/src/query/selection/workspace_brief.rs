@@ -11,7 +11,7 @@ use serde::Serialize;
 
 use super::graph_summary::{top_hubs, DegreeRow};
 use super::growth_candidates::DanglingReferenceRow;
-use super::growth_plan::{growth_plan_with_limit, GrowthPlanAnswer, GrowthSummary};
+use super::growth_plan::{growth_plan_with_limit, BodiesLookedAt, GrowthPlanAnswer, GrowthSummary};
 use super::health::{health, HealthAnswer, HealthCheck, HealthQuestion};
 use super::outside_checks::{AttentionAction, OutsideChecks};
 use super::proposed_action::ProposedAction;
@@ -211,7 +211,7 @@ pub fn workspace_brief<'a>(
     question.max_hops = None;
     question.component_types_argument = "componentTypes";
     let HealthAnswer { status, checks, .. } = health(graph, &question)?;
-    let growth = growth_plan_with_limit(graph, request, limit)?;
+    let growth = growth_plan_with_limit(graph, request, limit, BodiesLookedAt::No)?;
 
     let counts = graph.edge_counts();
     let by_kind = kind_counts(graph, graph.node_ids());
