@@ -74,7 +74,13 @@ impl<'a> CallContext<'a> {
 
     /// Whether the client cancelled this request or ended the session.
     pub fn is_cancelled(&self) -> bool {
-        self.cancelled.load(Ordering::SeqCst) || self.session.is_closed()
+        self.was_cancelled() || self.session.is_closed()
+    }
+
+    /// Whether the client cancelled this request. A client that sent it and closed its input (a
+    /// pipe) still waits for the answer, so this one does not count the end of the session.
+    pub fn was_cancelled(&self) -> bool {
+        self.cancelled.load(Ordering::SeqCst)
     }
 
     /// Whether the client announced it can put a question to a person, as it did at `initialize`.
