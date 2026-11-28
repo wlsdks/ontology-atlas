@@ -6,7 +6,8 @@ import type { AppLocale } from "@/i18n/locales";
 import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import { useWorkbenchCatalog } from "@/i18n/workbench-catalog";
-import { requestRootWorkbench, useRootWorkbenchViews, type MapQuery } from "../model/root-workbench";
+import type { HomeSearch } from "@/shared/lib/navigation/screen-searches";
+import { requestRootWorkbench, useRootWorkbenchViews } from "../model/root-workbench";
 
 /**
  * The installed app's `/`: the map when a folder is open, the first-run screen when none is. A plain
@@ -15,7 +16,7 @@ import { requestRootWorkbench, useRootWorkbenchViews, type MapQuery } from "../m
  * way (`root-workbench.ts`); until they arrive the neutral frame stays up, and the shell keeps its
  * rail hidden on the same signal.
  */
-export function RootEntryPage({ search }: { search: MapQuery }) {
+export function RootEntryPage({ search }: { search: HomeSearch }) {
   const vault = useLocalVault();
   const locale = useLocale() as AppLocale;
   const views = useRootWorkbenchViews(locale);
