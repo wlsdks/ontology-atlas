@@ -13308,58 +13308,10 @@
     {
       "case": "survey/analyze-repo-structure-miniature",
       "where": "answer",
-      "id": 11,
-      "path": "result.content[0].text",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 11,
-      "path": "result.structuredContent",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 11,
-      "path": "result.isError",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 13,
-      "path": "result.content[0].text",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 13,
-      "path": "result.structuredContent",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 13,
-      "path": "result.isError",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
       "id": 14,
       "path": "result.content[0].text",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13367,7 +13319,7 @@
       "id": 14,
       "path": "result.structuredContent",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13375,7 +13327,7 @@
       "id": 15,
       "path": "result.content[0].text",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-miniature",
@@ -13383,7 +13335,7 @@
       "id": 15,
       "path": "result.structuredContent",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-polyglot",
@@ -13391,7 +13343,7 @@
       "id": 6,
       "path": "result.content[0].text",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-polyglot",
@@ -13399,7 +13351,7 @@
       "id": 6,
       "path": "result.structuredContent",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/analyze-repo-structure-polyglot",
@@ -13407,7 +13359,7 @@
       "id": 6,
       "path": "result.isError",
       "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
     },
     {
       "case": "survey/index-project-retired",
@@ -13552,6 +13504,22 @@
       "path": "result.structuredContent.externalImports",
       "change": 48,
       "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-source-reads-code-around",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text",
+      "change": 49,
+      "reason": "A method whose body is on the line that declares it (`open(): void {}`, `public String label() { return x; }`) is outlined and can be read by its name. The script server's line patterns need the opening brace to end the line, so it listed neither, and it counted the declaration itself as a call of that name, naming the class around it as a caller (row 49)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-source-reads-hostile-files",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 49,
+      "reason": "A method whose body is on the line that declares it (`open(): void {}`, `public String label() { return x; }`) is outlined and can be read by its name. The script server's line patterns need the opening brace to end the line, so it listed neither, and it counted the declaration itself as a call of that name, naming the class around it as a caller (row 49)."
     }
   ]
 }

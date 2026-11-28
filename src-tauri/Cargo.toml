@@ -19,6 +19,7 @@ members = [
   "crates/ontology-graph",
   "crates/source-scan",
   "crates/repository-survey",
+  "crates/source-reads",
   "crates/raw-source-text",
   "crates/mcp-server",
 ]
@@ -95,8 +96,6 @@ vault-index = { path = "crates/vault-index" }
 # paths and files (`src/git/evidence/`). Neither depends on tauri or an async runtime.
 hardened-git = { path = "crates/hardened-git" }
 source-scan = { path = "crates/source-scan" }
-# The breadth map `analyze_repo_structure` returns: one parallel read of the source files.
-repository-survey = { path = "crates/repository-survey" }
 confined-files = { path = "crates/confined-files" }
 # Where the analysis records are kept and what a record file is called, which `mcp-server` reads by too.
 analysis-archive-format = { path = "crates/analysis-archive-format" }

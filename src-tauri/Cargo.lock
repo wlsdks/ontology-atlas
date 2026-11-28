@@ -3031,6 +3031,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "source-reads",
  "source-scan",
  "strsim",
  "tempfile",
@@ -3573,7 +3574,6 @@ dependencies = [
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",
- "repository-survey",
  "rfd",
  "safetensors",
  "semver",
@@ -5023,6 +5023,20 @@ dependencies = [
  "gobject-sys",
  "libc",
  "system-deps",
+]
+
+[[package]]
+name = "source-reads"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "regex",
+ "repository-survey",
+ "serde_json",
+ "source-scan",
+ "tempfile",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

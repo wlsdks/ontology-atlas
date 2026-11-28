@@ -61,6 +61,11 @@ impl ScanTarget {
         &self.root
     }
 
+    /// The same folder as the root a confined read opens files below.
+    pub fn source_root(&self) -> &SourceRoot {
+        &self.allowed
+    }
+
     /// The same folder read with its own file size cap, for a reader that treats a larger file as
     /// data rather than code.
     pub fn source_with_limit(&self, max_file_bytes: usize) -> DiskSource {

@@ -17,13 +17,16 @@ use regex::Regex;
 use crate::ability_row::{AbilityKind, AbilityRow};
 use crate::js_pattern::{is_js_space, js_regex};
 use crate::jvm_masking::mask_jvm_source;
+use crate::utf16_window::{window_end, window_start};
 
 /// Classes nested deeper than this are not read.
 const NESTING_LIMIT: usize = 4;
-/// A `main` signature is read this far on either side of its name.
-const MAIN_HEAD_CHARS: usize = 256;
-/// An annotation's opening parenthesis is looked for this far after its name.
-const PAREN_LOOKAHEAD: usize = 64;
+/// A `main` signature is read this far, in UTF-16 units of the original, on either side of its
+/// name.
+const MAIN_HEAD_UNITS: usize = 256;
+/// An annotation's opening parenthesis is looked for this far, in UTF-16 units of the original,
+/// after its name.
+const PAREN_LOOKAHEAD_UNITS: usize = 64;
 
 static CLASS_HEAD: LazyLock<Regex> = LazyLock::new(|| {
     js_regex(
@@ -252,7 +255,7 @@ struct RawAnnotation {
 
 /// Annotations in `masked` between `from` and `to`: name, offset, and the range inside their
 /// parentheses.
-fn annotations_in(masked: &str, from: usize, to: usize) -> Vec<RawAnnotation> {
+fn annotations_in(masked: &str, original: &str, from: usize, to: usize) -> Vec<RawAnnotation> {
     let mut found = Vec::new();
     let segment = slice(masked, from, to);
     let from = boundary_ceil(masked, from);
@@ -271,7 +274,11 @@ fn annotations_in(masked: &str, from: usize, to: usize) -> Vec<RawAnnotation> {
             .to_string();
         let mut end = start + matched.as_str().len();
         let mut args = None;
-        let window = slice(masked, end, to.min(end + PAREN_LOOKAHEAD));
+        let window = slice(
+            masked,
+            end,
+            to.min(window_end(original, end, PAREN_LOOKAHEAD_UNITS)),
+        );
         if let Some(paren) = PAREN_OPENING.find(window) {
             let open = end + paren.end() - 1;
             let close = closing_paren(masked, open, to);
@@ -497,15 +504,11 @@ fn method_names(
             .is_some_and(|character| {
                 character.is_ascii_alphanumeric() || character == '_' || character == '$'
             });
-        if preceded_by_word {
-            // The pattern does not start inside a name: try from the next character on.
-            at = boundary_ceil(&head, whole.start() + 1);
-            if at >= head.len() {
-                break;
-            }
-            continue;
+        if !preceded_by_word {
+            names.push((member.head_start + whole.start(), name.as_str().to_string()));
         }
-        names.push((member.head_start + whole.start(), name.as_str().to_string()));
+        // A name inside a longer word is skipped whole: every later start within it is also
+        // preceded by a word character, so resuming one byte on rescans it once per byte.
         at = whole.end();
         if at >= head.len() {
             break;
@@ -636,7 +639,7 @@ fn annotation_paths(masked: &str, text: &str, args: Option<(usize, usize)>) -> O
     else {
         return Some(vec![String::new()]);
     };
-    let chars_before = masked_args
+    let chars_before = slice(text, start, end)
         .get(..*after)
         .map_or(0, |before| before.chars().count());
     literal_list(&original, chars_before)
@@ -733,13 +736,17 @@ fn member_at(members: &[RawMember], offset: usize) -> Option<usize> {
 }
 
 /// Whether the method named at `offset` is `static void main(String[] args)` (or `String...`).
-fn is_java_main(masked: &str, head_start: usize, offset: usize) -> bool {
+fn is_java_main(masked: &str, original: &str, head_start: usize, offset: usize) -> bool {
     let before = slice(
         masked,
-        head_start.max(offset.saturating_sub(MAIN_HEAD_CHARS)),
+        head_start.max(window_start(original, offset, MAIN_HEAD_UNITS)),
         offset,
     );
-    let after = slice(masked, offset, offset + MAIN_HEAD_CHARS);
+    let after = slice(
+        masked,
+        offset,
+        window_end(original, offset, MAIN_HEAD_UNITS),
+    );
     VOID_BEFORE.is_match(before)
         && STATIC_BEFORE.is_match(before)
         && JAVA_MAIN_PARAMETERS.is_match(after)
@@ -853,7 +860,7 @@ pub fn read_jvm_file(path: &str, text: &str) -> JvmFileFacts {
             .map_or(masked.len(), |next| next.start());
         let body_open = body_open_after(&masked, name_end, limit, kotlin);
         let prefix_start = declaration_start(&masked, whole.start(), floor);
-        let annotations = annotations_in(&masked, prefix_start, whole.start());
+        let annotations = annotations_in(&masked, text, prefix_start, whole.start());
         let modifiers = slice(&masked, prefix_start, whole.start());
         let head_end = body_open.unwrap_or(limit);
         let outer = open.last().copied();
@@ -900,7 +907,7 @@ pub fn read_jvm_file(path: &str, text: &str) -> JvmFileFacts {
         let members: Vec<JvmMember> = raw_members
             .iter()
             .map(|member| {
-                let annotations = annotations_in(&masked, member.head_start, member.head_end);
+                let annotations = annotations_in(&masked, text, member.head_start, member.head_end);
                 JvmMember {
                     names: method_names(&masked, member, &annotations, kotlin),
                     annotations: annotations
@@ -938,6 +945,7 @@ pub fn read_jvm_file(path: &str, text: &str) -> JvmFileFacts {
         path,
         kotlin,
         &masked,
+        text,
         &starts,
         &classes,
         &members_of_class,
@@ -977,10 +985,13 @@ pub fn read_jvm_file(path: &str, text: &str) -> JvmFileFacts {
 
 /// Java: a class member `static void main(String[] args)`. Kotlin: a top-level `fun main`, named
 /// for its file, or a `@JvmStatic fun main` in an object.
+// Each argument is a view of the one file already read; a struct would only rename them.
+#[allow(clippy::too_many_arguments)]
 fn executables_of(
     path: &str,
     kotlin: bool,
     masked: &str,
+    original: &str,
     starts: &[usize],
     classes: &[RawClass],
     members: &[Vec<RawMember>],
@@ -1026,7 +1037,7 @@ fn executables_of(
                     .names
                     .iter()
                     .filter(|(_, name)| name == "main")
-                    .find(|(offset, _)| is_java_main(masked, raw.head_start, *offset))
+                    .find(|(offset, _)| is_java_main(masked, original, raw.head_start, *offset))
                     .map(|(offset, _)| *offset)
             });
         if let Some(offset) = main {
@@ -1136,5 +1147,69 @@ mod tests {
         assert_eq!(call.class, Some(0));
         assert_eq!(call.method.as_deref(), Some("start"));
         assert_eq!(call.line, 4);
+    }
+
+    #[test]
+    fn a_name_inside_a_longer_word_is_skipped_once_not_once_per_byte() {
+        let head = format!("9{}( void run()", "a".repeat(100_000));
+        let member = RawMember {
+            head_start: 0,
+            head_end: head.len(),
+            body_close: head.len(),
+        };
+        let started = std::time::Instant::now();
+        let names = method_names(&head, &member, &[], false);
+        assert_eq!(
+            names
+                .iter()
+                .map(|(_, name)| name.as_str())
+                .collect::<Vec<_>>(),
+            ["run"],
+            "the digit-led word is no method name, the later one is"
+        );
+        assert!(
+            started.elapsed().as_millis() < 100,
+            "took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn korean_text_in_an_annotation_or_a_signature_moves_no_offset_and_fills_no_window() {
+        let korean = "\u{C8FC}\u{BB38} \u{C870}\u{D68C}";
+        let long_comment = "\u{AC00}".repeat(100);
+        let controller = read_jvm_file(
+            "api/OrderController.java",
+            &format!(
+                "package shop.api;\npublic class OrderController {{\n  @GetMapping(name = \"{korean}\", // {korean}\n      value = \"/orders/{{id}}\")\n  public void read() {{}}\n  @PutMapping /* {} */ (\"/long\")\n  public void change() {{}}\n}}\n",
+                "\u{AC00}".repeat(30)
+            ),
+        );
+        let paths: Vec<_> = controller
+            .classes
+            .iter()
+            .flat_map(|class| &class.members)
+            .flat_map(|member| &member.annotations)
+            .map(|annotation| annotation.paths.clone())
+            .collect();
+        assert_eq!(
+            paths,
+            [
+                Some(vec!["/orders/{id}".to_string()]),
+                Some(vec!["/long".to_string()])
+            ],
+            "the text before `value` is counted in the original's characters, and a comment of 30 Hangul letters is 30 units of the 64 looked at"
+        );
+        let boot = read_jvm_file(
+            "app/Boot.java",
+            &format!(
+                "package app;\npublic class Boot {{\n  public static void /* {long_comment} */ main(String[] args) {{}}\n}}\n"
+            ),
+        );
+        assert_eq!(
+            boot.executables.len(),
+            1,
+            "100 Hangul letters are 100 of the 256 units read before `main`, not 300 bytes of them"
+        );
     }
 }

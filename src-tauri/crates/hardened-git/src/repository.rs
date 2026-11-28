@@ -22,6 +22,10 @@ const MAX_BATCH_OUTPUT: usize = 64 * 1024 * 1024;
 const MAX_TOUCH_HISTORY_OUTPUT: usize = 64 * 1024 * 1024;
 /// A read that has not finished by now is killed.
 const READ_TIMEOUT: Duration = Duration::from_secs(120);
+/// The list of ignored paths decides only which files a survey leaves out, so a repository too big
+/// to list in this time or space is surveyed as if nothing were ignored rather than waited for.
+const IGNORED_PATHS_TIMEOUT: Duration = Duration::from_secs(5);
+const MAX_IGNORED_PATHS_OUTPUT: usize = 16 * 1024 * 1024;
 /// Paths named in one `status`, so a command line stays under Windows's 32,767 characters.
 const STATUS_PATHS_PER_RUN: usize = 256;
 
@@ -150,22 +154,36 @@ impl Repository {
         &self.folder
     }
 
-    fn run(&self, args: &[String], max_output: usize) -> Result<GitOutput, GitReadError> {
+    fn run(
+        &self,
+        args: &[String],
+        max_output: usize,
+        timeout: Duration,
+    ) -> Result<GitOutput, GitReadError> {
         let mut invocation = GitInvocation::new(&self.folder, args);
         invocation.max_output = max_output;
-        invocation.timeout = Some(READ_TIMEOUT);
+        invocation.timeout = Some(timeout);
         invocation.environment = self.environment.clone();
         Ok(run_git(invocation)?)
     }
 
     fn read(&self, args: &[&str]) -> Result<GitOutput, GitReadError> {
         let owned: Vec<String> = args.iter().map(|arg| (*arg).to_string()).collect();
-        self.run(&owned, MAX_READ_OUTPUT)
+        self.run(&owned, MAX_READ_OUTPUT, READ_TIMEOUT)
     }
 
     /// Output that must have succeeded.
     fn succeeded(&self, args: &[String]) -> Result<GitOutput, GitReadError> {
-        let output = self.run(args, MAX_READ_OUTPUT)?;
+        self.succeeded_within(args, MAX_READ_OUTPUT, READ_TIMEOUT)
+    }
+
+    fn succeeded_within(
+        &self,
+        args: &[String],
+        max_output: usize,
+        timeout: Duration,
+    ) -> Result<GitOutput, GitReadError> {
+        let output = self.run(args, max_output, timeout)?;
         if output.success() {
             return Ok(output);
         }
@@ -396,7 +414,7 @@ impl Repository {
     /// read bound is an error.
     pub fn show_blob(&self, blob: &BlobAt) -> Result<Option<Vec<u8>>, GitReadError> {
         let args = ["show".to_string(), blob.spec()];
-        let output = self.run(&args, MAX_READ_OUTPUT)?;
+        let output = self.run(&args, MAX_READ_OUTPUT, READ_TIMEOUT)?;
         Ok(output.success().then_some(output.stdout))
     }
 
@@ -447,6 +465,17 @@ impl Repository {
     /// a file (`ls-files --others --ignored --exclude-standard --directory -z`). A tracked file is
     /// not listed even where a pattern would ignore it.
     pub fn ignored_paths(&self) -> Result<Vec<String>, GitReadError> {
+        self.ignored_paths_within(MAX_IGNORED_PATHS_OUTPUT, IGNORED_PATHS_TIMEOUT)
+    }
+
+    /// [`Self::ignored_paths`] with its own bound: the list, or an error when it is longer than
+    /// `max_output` bytes or `git` takes longer than `timeout`. [`Self::ignored_paths`] allows 5
+    /// seconds and 16 MiB, far less than another read, because a survey can do without the list.
+    pub fn ignored_paths_within(
+        &self,
+        max_output: usize,
+        timeout: Duration,
+    ) -> Result<Vec<String>, GitReadError> {
         let args = [
             "ls-files".to_string(),
             "--others".to_string(),
@@ -455,7 +484,7 @@ impl Repository {
             "--directory".to_string(),
             "-z".to_string(),
         ];
-        let output = self.succeeded(&args)?;
+        let output = self.succeeded_within(&args, max_output, timeout)?;
         Ok(output
             .stdout_text()
             .split('\0')

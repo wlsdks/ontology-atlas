@@ -87,6 +87,8 @@ pub struct Session {
     documents: DocumentCache,
     /// The compiled graph of the documents as they were last read.
     graph: KeptGraph,
+    /// The source lines served through `sourceReads` so far; the process is the session.
+    source_reads: source_reads::SessionReads,
     /// Held by the one write in progress, from its approval to its audit line.
     write_lock: Mutex<()>,
     output: Mutex<Box<dyn Write + Send>>,
@@ -105,6 +107,7 @@ impl Session {
             audit: AuditLog::new(config.vault_root.clone()),
             documents: DocumentCache::new(),
             graph: KeptGraph::new(),
+            source_reads: source_reads::SessionReads::new(),
             write_lock: Mutex::new(()),
             config,
             output: Mutex::new(output),
@@ -167,6 +170,10 @@ impl Session {
 
     pub fn graph(&self) -> &KeptGraph {
         &self.graph
+    }
+
+    pub fn source_reads(&self) -> &source_reads::SessionReads {
+        &self.source_reads
     }
 
     pub fn is_closed(&self) -> bool {

@@ -67,6 +67,11 @@ impl<'a> CallContext<'a> {
         self.session.config()
     }
 
+    /// The source lines served so far through `sourceReads`.
+    pub fn source_reads(&self) -> &source_reads::SessionReads {
+        self.session.source_reads()
+    }
+
     /// Whether the client cancelled this request or ended the session.
     pub fn is_cancelled(&self) -> bool {
         self.cancelled.load(Ordering::SeqCst) || self.session.is_closed()

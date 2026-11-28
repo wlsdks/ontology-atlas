@@ -129,7 +129,9 @@ fn every_plan_the_script_server_could_not_give_is_stated_in_full() {
                 .unwrap_or_else(|| panic!("{case} {id}: no answer"));
             let result = &answer["result"];
             assert_eq!(
-                result["structuredContent"]["errorCode"].as_str().unwrap_or("-"),
+                result["structuredContent"]["errorCode"]
+                    .as_str()
+                    .unwrap_or("-"),
                 code,
                 "{case} {id}: the error code"
             );

@@ -25,6 +25,7 @@ one thing it asks of the vault is a `VaultFacts` the caller builds.
 | `src/rust_dependencies.rs` | Rust `mod` and `use` declarations, `#[cfg]` and split paths included, macro bodies not |
 | `src/jvm_declarations.rs` | Java and Kotlin package, imports, declared types and the types a file names, in any script |
 | `src/go_imports.rs` | Go packages: the imports of every file of a package, read as one |
+| `src/source_outline.rs` | A file's declarations with line numbers, read from its tree: the table of contents the survey's outline reads and its symbol reads start from |
 | `src/file_reading.rs` | What reading one file gives, by language, from its text alone |
 | `src/batch_reading.rs` | A batch of files parsed on a pool of eight threads (`rayon`), the readings in the order given |
 
@@ -46,6 +47,7 @@ one thing it asks of the vault is a `VaultFacts` the caller builds.
 | `src/module_grouping.rs` | Which module a file belongs to, and the edges between modules |
 | `src/import_coverage.rs` | What the scan does not read, as a sentence an agent can quote |
 | `src/autotools_c.rs` | An autotools C project, which the scan names and does not read |
+| `src/planted_tree.rs` | Test only: files planted in a temporary folder and read back through the confined source a scan uses |
 
 ## Judging imports against the vault
 
@@ -75,8 +77,8 @@ Start with `scan_imports`, `reconcile_import_edges`, `build_next_relation_review
 `build_import_impact_focus`, `evaluate_architecture_conformance` and the dating and evidence
 functions. The app's `git_paths_last_change`, `git_bound_evidence_dates` and
 `git_evidence_text_pairs` call the last group; the MCP server's `infer_imports` and
-`inspect_architecture` call the rest. Outlines, declarations and evidence search join as their
-tools are ported.
+`inspect_architecture` call the rest; `repository-survey` reads the walk (`walk_sorted`,
+`DEFAULT_IGNORE`), the outlines, the declarations and the workspace members.
 
 ## Program size
 

@@ -1,0 +1,24 @@
+[package]
+name = "source-reads"
+version = "0.1.0"
+description = "Exact reads of a repository's source for the survey: line ranges, outlines and symbols with their callers, callees and the code that decides them"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+confined-files = { path = "../confined-files" }
+repository-survey = { path = "../repository-survey" }
+source-scan = { path = "../source-scan" }
+# The patterns the readers match lines with; the engine runs in linear time, so a hostile line
+# cannot make one run long.
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-gencat", "unicode-perl"] }
+serde_json = "1"
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

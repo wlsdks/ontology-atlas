@@ -7,6 +7,7 @@ mod ability_rows;
 mod bounded_lines;
 mod breadth_map;
 mod declaration_index;
+mod declaring_line;
 mod dispatched_operations;
 mod doc_pages;
 mod documented_abilities;
@@ -37,6 +38,7 @@ mod tooling_path;
 mod unit_collection;
 mod unit_exports;
 mod unit_imports;
+mod utf16_window;
 mod worker_rows;
 
 pub use ability_row::{ability_row_text, AbilityKind, AbilityRow};
@@ -46,7 +48,10 @@ pub use breadth_map::{
     UnitRow, SURVEY_RESPONSE_CHARS,
 };
 pub use git_ignored_paths::git_ignored_paths;
+pub use js_pattern::{is_js_space, js_regex, js_trim_end};
 pub use source_class::SourceClass;
 pub use survey_files::SurveyFiles;
 pub use survey_text::{format_count, repo_line, repo_text};
-pub use unit_collection::MAX_FILES;
+pub use unit_collection::{
+    collect_source_units, CollectOptions, Collection, ProductReading, SurveyedFile, MAX_FILES,
+};
