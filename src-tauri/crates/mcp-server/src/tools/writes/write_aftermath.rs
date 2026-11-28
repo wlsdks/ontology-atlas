@@ -178,10 +178,22 @@ pub fn findings_on_written(context: &CallContext<'_>, written: &[String]) -> Vec
         return Vec::new();
     }
     let steps = steps_about(context, written, FINDING_STEPS_MAX).page;
+    let is_executable =
+        |action: &Setting| matches!(action.member("executable"), Some(Setting::Bool(true)));
+    // A dangling reference is both a compile issue and a call that resolves it, in the same
+    // words; the call says the same and also names the repair, so the issue adds only noise.
+    let with_call: Vec<&str> = steps
+        .iter()
+        .filter(|action| is_executable(action))
+        .map(|action| text_of(action, "reason"))
+        .collect();
     let mut kinds: Vec<(&str, Vec<&Setting>)> = Vec::new();
     for action in &steps {
         let kind = text_of(action, "kind");
         if SETTLED_MAP_REVIEW_KINDS.contains(&kind) {
+            continue;
+        }
+        if !is_executable(action) && with_call.contains(&text_of(action, "reason")) {
             continue;
         }
         match kinds.iter_mut().find(|(held, _)| *held == kind) {

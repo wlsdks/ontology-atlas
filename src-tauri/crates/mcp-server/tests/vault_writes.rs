@@ -87,6 +87,23 @@ fn a_patch_changes_the_lines_it_names_and_keeps_every_other_byte() {
 }
 
 #[test]
+fn a_dangling_reference_on_a_written_node_is_one_findings_line_the_call_that_resolves_it() {
+    let mut vault = Vault::start();
+    let answer = vault.call(
+        "add_concepts",
+        r#"{"concepts":[{"slug":"domains/ghost","kind":"domain","title":"Ghost","capabilities":["capabilities/missing"]}]}"#,
+    );
+    let findings = answer["findings"].as_array().expect("findings");
+    let about_it: Vec<&str> = findings
+        .iter()
+        .filter_map(Value::as_str)
+        .filter(|line| line.contains("capabilities/missing"))
+        .collect();
+    assert_eq!(about_it.len(), 1, "{about_it:?}");
+    assert!(about_it[0].contains(" Next: add_concepts("), "{}", about_it[0]);
+}
+
+#[test]
 fn a_rename_moves_the_file_and_every_reference_to_it_and_answers_with_the_keys_that_moved() {
     let mut vault = Vault::start();
     let answer = vault.call(
