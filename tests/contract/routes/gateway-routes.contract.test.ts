@@ -70,7 +70,7 @@ describe('guide table of contents', () => {
     'every chapter of the table of contents has real body text in the vault',
     async () => {
       const { GUIDE_PAGES } = await import('@/views/gateway-doc');
-      const { readVaultDoc } = await import('@/views/gateway-doc');
+      const { readVaultDoc } = await import('@/views/build-time-readers');
       for (const page of GUIDE_PAGES) {
         const body = readVaultDoc(page.slug);
         expect(body, `the body of ${page.slug} is not in the vault`).toBeTruthy();
@@ -81,7 +81,8 @@ describe('guide table of contents', () => {
   );
 
   it('every chapter has a body in each reader language with the English source\'s sections', async () => {
-    const { GUIDE_PAGES, GUIDE_TRANSLATIONS_DIR, readVaultDoc } = await import('@/views/gateway-doc');
+    const { GUIDE_PAGES, GUIDE_TRANSLATIONS_DIR } = await import('@/views/gateway-doc');
+    const { readVaultDoc } = await import('@/views/build-time-readers');
     const sections = (body: string) => body.match(/^## /gm)?.length ?? 0;
     for (const locale of ['ko', 'ja', 'zh'] as const) {
       for (const page of GUIDE_PAGES) {

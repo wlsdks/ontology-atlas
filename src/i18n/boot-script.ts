@@ -29,7 +29,7 @@ export function buildBootScript({ htmlLang, defaultLocale, storageKey }: BootScr
     `d.lang=m[c===null?${JSON.stringify(defaultLocale)}:c];`,
     'try{var z=localStorage.getItem("atlas.appearance.text-size");if(z==="large"||z==="larger")d.setAttribute("data-text-size",z);}catch(e){}',
     'if(window.isTauri){d.setAttribute("data-shell","desktop");}',
-    `else{var r=/\\/(${codes.join('|')})\\/?$/.exec(location.pathname);if(r)location.replace(location.pathname.slice(0,r.index)+"/"+r[1]+"/download/");}`,
+    `else{var r=/\\/(${codes.join('|')})\\/?$/.exec(location.pathname);if(r)location.replace(location.pathname.slice(0,r.index).replace(/^\\/+/,"/")+"/"+r[1]+"/download/");}`,
     '}catch(e){}',
   ].join('');
 }

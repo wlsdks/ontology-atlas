@@ -85,7 +85,7 @@ function bootPictureCss(codes: readonly string[]): string {
   return `[data-boot-lang]{display:none}${shown}{display:inline}`;
 }
 
-function listLocaleCodes(root: string): string[] {
+export function listLocaleCodes(root: string): string[] {
   const declared = new Set<string>(routing.locales);
   const codes = fs
     .readdirSync(path.join(root, 'messages'), { withFileTypes: true })
@@ -93,6 +93,20 @@ function listLocaleCodes(root: string): string[] {
     .map((entry) => entry.name);
   if (codes.length === 0) throw new Error('no language folder under messages/');
   return codes;
+}
+
+/** The loading picture in every language the project has, for a document that is not `index.html`. */
+export function loadingPictureFor(root: string): string {
+  return loadingPicture(Object.fromEntries(listLocaleCodes(root).map((code) => [code, readLoadingWords(root, code)])));
+}
+
+/** The one inline script of a document: the window's language, the installed app and the text size, before first paint. */
+export function bootScriptFor(codes: readonly string[]): string {
+  return buildBootScript({
+    htmlLang: Object.fromEntries(codes.map((code) => [code, LOCALE_META[code as LocaleCode].htmlLang])),
+    defaultLocale: routing.defaultLocale,
+    storageKey: STORAGE_KEY,
+  });
 }
 
 /**
@@ -109,11 +123,7 @@ export function atlasIndexHtml(root: string): Plugin {
     transformIndexHtml: {
       order: 'pre',
       handler(html, context) {
-        const script = buildBootScript({
-          htmlLang: Object.fromEntries(codes.map((code) => [code, LOCALE_META[code as LocaleCode].htmlLang])),
-          defaultLocale: routing.defaultLocale,
-          storageKey: STORAGE_KEY,
-        });
+        const script = bootScriptFor(codes);
         const words = Object.fromEntries(codes.map((code) => [code, readLoadingWords(root, code)]));
         const page = html
           .replace(BOOT_SCRIPT_MARK, `<script>${script}</script>`)

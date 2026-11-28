@@ -2,14 +2,22 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { DocsVaultPage } from '@/views/docs-vault';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { PageTitle } from '@/app-providers/router/PageTitle';
+import { ScreenTitle } from '../../-site/ScreenTitle';
+import type { ScreenHead } from '../../-site/screen-metadata';
 
-export const Route = createFileRoute('/$locale/_app/docs')({ component: DocsRoute });
+const head: ScreenHead = {
+  kind: 'card',
+  path: 'library',
+  title: { namespace: 'metadata', key: 'pages.docs' },
+  description: { namespace: 'metadata', key: 'descriptions.docs' },
+};
+
+export const Route = createFileRoute('/$locale/_app/docs')({ staticData: { head }, component: DocsRoute });
 
 function DocsRoute() {
   return (
     <>
-      <PageTitle namespace="metadata" messageKey="pages.docs" />
+      <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}><DocsVaultPage initialCollection="ontology" documentScope="ontology" legacyEntry /></Suspense>
     </>
   );

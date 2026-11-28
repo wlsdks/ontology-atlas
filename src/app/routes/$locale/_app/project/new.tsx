@@ -2,14 +2,21 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { ProjectNewClientPage } from '@/app/[locale]/project/new/ProjectNewClientPage';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { PageTitle } from '@/app-providers/router/PageTitle';
+import { ScreenTitle } from '../../../-site/ScreenTitle';
+import type { ScreenHead } from '../../../-site/screen-metadata';
 
-export const Route = createFileRoute('/$locale/_app/project/new')({ component: ProjectNewRoute });
+const head: ScreenHead = {
+  kind: 'title-only',
+  title: { namespace: 'metadata', key: 'pages.projectNew' },
+  follow: false,
+};
+
+export const Route = createFileRoute('/$locale/_app/project/new')({ staticData: { head }, component: ProjectNewRoute });
 
 function ProjectNewRoute() {
   return (
     <>
-      <PageTitle namespace="metadata" messageKey="pages.projectNew" />
+      <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}><ProjectNewClientPage /></Suspense>
     </>
   );

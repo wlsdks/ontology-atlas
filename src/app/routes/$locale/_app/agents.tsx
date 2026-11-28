@@ -2,14 +2,22 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { AgentsWorkspace } from '@/app-providers/agents-workspace';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { PageTitle } from '@/app-providers/router/PageTitle';
+import { ScreenTitle } from '../../-site/ScreenTitle';
+import type { ScreenHead } from '../../-site/screen-metadata';
 
-export const Route = createFileRoute('/$locale/_app/agents')({ component: AgentsRoute });
+const head: ScreenHead = {
+  kind: 'card',
+  path: 'agents',
+  title: { namespace: 'agents', key: 'title' },
+  description: { namespace: 'metadata', key: 'descriptions.agents' },
+};
+
+export const Route = createFileRoute('/$locale/_app/agents')({ staticData: { head }, component: AgentsRoute });
 
 function AgentsRoute() {
   return (
     <>
-      <PageTitle namespace="agents" messageKey="title" />
+      <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}><AgentsWorkspace /></Suspense>
     </>
   );

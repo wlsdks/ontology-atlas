@@ -248,7 +248,8 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
             />
           ) : null}
         </div>
-        <style jsx>{`
+        {/* A plain element: `jsx` was styled-jsx's mark, which the Vite build does not read, so React reported it as an attribute. Keyframe names were global there too. */}
+        <style>{`
                 @keyframes topologyFade {
                   from { opacity: 0.5; transform: scale(0.995); }
                   to { opacity: 1; transform: scale(1); }

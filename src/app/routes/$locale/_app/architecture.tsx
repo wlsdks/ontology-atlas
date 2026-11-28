@@ -2,14 +2,22 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { HarnessPage } from '@/views/architecture';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { PageTitle } from '@/app-providers/router/PageTitle';
+import { ScreenTitle } from '../../-site/ScreenTitle';
+import type { ScreenHead } from '../../-site/screen-metadata';
 
-export const Route = createFileRoute('/$locale/_app/architecture')({ component: ArchitectureRoute });
+const head: ScreenHead = {
+  kind: 'card',
+  path: 'architecture',
+  title: { namespace: 'harness', key: 'title' },
+  description: { namespace: 'harness', key: 'explainer' },
+};
+
+export const Route = createFileRoute('/$locale/_app/architecture')({ staticData: { head }, component: ArchitectureRoute });
 
 function ArchitectureRoute() {
   return (
     <>
-      <PageTitle namespace="harness" messageKey="title" />
+      <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}><HarnessPage /></Suspense>
     </>
   );

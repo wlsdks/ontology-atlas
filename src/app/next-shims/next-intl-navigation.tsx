@@ -2,6 +2,9 @@ import { useRouter as useTanStackRouter } from '@tanstack/react-router';
 import { forwardRef, useMemo, type AnchorHTMLAttributes, type MouseEvent } from 'react';
 import { useLocale } from 'use-intl';
 
+import { withTrailingSlash } from '@/shared/lib/public-pages/trailing-slash';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+
 import { navigateToAddress, type AddressNavigation } from '../router/navigate-to-address';
 import { useCommittedAddress } from '../router/use-committed-address';
 
@@ -25,6 +28,13 @@ function withLocale(address: string, locale: string): string {
   return address === '/' ? `/${locale}/` : `/${locale}${address}`;
 }
 
+/** An in-app address ends its path with a slash, as Next's `trailingSlash` wrote every link; query and hash stay as written. */
+function addressWithSlash(address: string): string {
+  if (!isInternal(address)) return address;
+  const [, path = '', rest = ''] = /^([^?#]*)(.*)$/.exec(address) ?? [];
+  return `${withTrailingSlash(path)}${rest}`;
+}
+
 function withoutLocale(pathname: string, locales: readonly string[]): string {
   const [, first = '', ...rest] = pathname.split('/');
   if (!locales.includes(first)) return pathname;
@@ -41,8 +51,18 @@ export function createNavigation(routing: Routing) {
     const router = useTanStackRouter();
     const current = useLocale();
     return useMemo(() => {
-      const go = (address: string, options: AddressNavigation & { locale?: string } = {}, replace = false) =>
-        navigateToAddress(router, withLocale(address, options.locale ?? current), { ...options, replace });
+      const go = (address: string, options: AddressNavigation & { locale?: string } = {}, replace = false) => {
+        const located = withLocale(address, options.locale ?? current);
+        // The same rule as `Link`: in a plain browser a move to another page is a page load, because each public
+        // page is its own prerendered document and carries what only its own document holds.
+        if (!isTauriVaultRuntime() && isInternal(located)) {
+          const target = addressWithSlash(located);
+          if (replace) window.location.replace(target);
+          else window.location.assign(target);
+          return;
+        }
+        navigateToAddress(router, located, { ...options, replace });
+      };
       return {
         push: (address: string, options?: AddressNavigation & { locale?: string }) => go(address, options),
         replace: (address: string, options?: AddressNavigation & { locale?: string }) => go(address, options, true),
@@ -60,11 +80,13 @@ export function createNavigation(routing: Routing) {
   ) {
     const router = useTanStackRouter();
     const current = useLocale();
-    const address = withLocale(href, locale ?? current);
+    const address = addressWithSlash(withLocale(href, locale ?? current));
     const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
       onClick?.(event);
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      // In a plain browser a link between pages is a page load: each public page is its own prerendered document.
+      if (!isTauriVaultRuntime()) return;
       if (!isInternal(address) || (rest.target !== undefined && rest.target !== '_self') || rest.download !== undefined) return;
       event.preventDefault();
       navigateToAddress(router, address, { ...(replace === undefined ? {} : { replace }), ...(scroll === undefined ? {} : { scroll }) });

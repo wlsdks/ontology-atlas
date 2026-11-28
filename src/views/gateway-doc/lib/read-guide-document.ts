@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { GuidePage } from '../model/guide-pages';
+import { guideSourcePath, type GuidePage } from '../model/guide-pages';
 import { readGatewayDocument, type GatewayDocument } from './read-vault-doc';
 
 /**
@@ -9,10 +9,6 @@ import { readGatewayDocument, type GatewayDocument } from './read-vault-doc';
  * localized data kept outside the vault, so the Library and MCP see one guide, read at build time
  * by the route's server component only.
  */
-export const GUIDE_TRANSLATIONS_DIR = 'docs-i18n/guide';
-
-export const guideSourcePath = (page: GuidePage, locale: string) =>
-  locale === 'en' ? `docs/${page.slug}.md` : `${GUIDE_TRANSLATIONS_DIR}/${locale}/${page.segment}.md`;
 
 export function readGuideDocument(page: GuidePage, locale: string): GatewayDocument & { sourcePath: string } {
   const translated = join(process.cwd(), guideSourcePath(page, locale));

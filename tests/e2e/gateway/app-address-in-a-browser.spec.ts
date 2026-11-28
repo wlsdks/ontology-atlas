@@ -51,10 +51,14 @@ test.describe("an app address in a plain browser", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page.getByTestId("app-only-page")).toBeVisible();
-    // The workbench's HTML is in the document, inert: React gave none of its nodes a fiber.
-    const rail = page.getByTestId("app-nav-rail");
-    await expect(rail).toBeHidden();
-    expect(await rail.evaluate((node) => Object.keys(node).some((key) => key.startsWith("__reactFiber")))).toBe(false);
+    await expect(page.getByTestId("app-nav-rail")).toBeHidden();
+    // Whatever the workbench face holds is inert HTML: React gave none of its nodes a fiber, on either build.
+    const mounted = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-face="workbench"], [data-face="workbench"] *')].some((node) =>
+        Object.keys(node).some((key) => key.startsWith("__reactFiber")),
+      ),
+    );
+    expect(mounted, "a node under the workbench face is owned by React").toBe(false);
   });
 
   test("forgets the folder a browser's earlier website remembered, and only that", async ({ page }) => {

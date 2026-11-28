@@ -27,13 +27,17 @@ import { Route as LocaleAppPlanningRouteImport } from './routes/$locale/_app/pla
 import { Route as LocaleAppProjectsRouteImport } from './routes/$locale/_app/projects';
 import { Route as LocaleAppTopologyRouteImport } from './routes/$locale/_app/topology';
 import { Route as LocaleAppWorkStatusRouteImport } from './routes/$locale/_app/work-status';
+import { Route as LocaleSiteChangelogRouteImport } from './routes/$locale/_site/changelog';
 import { Route as LocaleSiteDownloadRouteImport } from './routes/$locale/_site/download';
+import { Route as LocaleSiteSampleRouteImport } from './routes/$locale/_site/sample';
 import { Route as LocaleAppOntologyIndexRouteImport } from './routes/$locale/_app/ontology/index';
 import { Route as LocaleAppOntologyEditRouteImport } from './routes/$locale/_app/ontology/edit';
 import { Route as LocaleAppOntologyInsightsRouteImport } from './routes/$locale/_app/ontology/insights';
 import { Route as LocaleAppOntologyStudioRouteImport } from './routes/$locale/_app/ontology/studio';
 import { Route as LocaleAppProjectFallbackRouteImport } from './routes/$locale/_app/project/fallback';
 import { Route as LocaleAppProjectNewRouteImport } from './routes/$locale/_app/project/new';
+import { Route as LocaleSiteGuideIndexRouteImport } from './routes/$locale/_site/guide/index';
+import { Route as LocaleSiteGuideSegmentRouteImport } from './routes/$locale/_site/guide/$segment';
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -123,9 +127,19 @@ const LocaleAppWorkStatusRoute = LocaleAppWorkStatusRouteImport.update({
   path: '/work-status',
   getParentRoute: () => LocaleAppRouteRoute,
 } as any);
+const LocaleSiteChangelogRoute = LocaleSiteChangelogRouteImport.update({
+  id: '/changelog',
+  path: '/changelog',
+  getParentRoute: () => LocaleSiteRouteRoute,
+} as any);
 const LocaleSiteDownloadRoute = LocaleSiteDownloadRouteImport.update({
   id: '/download',
   path: '/download',
+  getParentRoute: () => LocaleSiteRouteRoute,
+} as any);
+const LocaleSiteSampleRoute = LocaleSiteSampleRouteImport.update({
+  id: '/sample',
+  path: '/sample',
   getParentRoute: () => LocaleSiteRouteRoute,
 } as any);
 const LocaleAppOntologyIndexRoute = LocaleAppOntologyIndexRouteImport.update({
@@ -160,6 +174,16 @@ const LocaleAppProjectNewRoute = LocaleAppProjectNewRouteImport.update({
   path: '/project/new',
   getParentRoute: () => LocaleAppRouteRoute,
 } as any);
+const LocaleSiteGuideIndexRoute = LocaleSiteGuideIndexRouteImport.update({
+  id: '/guide/',
+  path: '/guide/',
+  getParentRoute: () => LocaleSiteRouteRoute,
+} as any);
+const LocaleSiteGuideSegmentRoute = LocaleSiteGuideSegmentRouteImport.update({
+  id: '/guide/$segment',
+  path: '/guide/$segment',
+  getParentRoute: () => LocaleSiteRouteRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
@@ -177,14 +201,18 @@ export interface FileRoutesByFullPath {
   '/$locale/projects': typeof LocaleAppProjectsRoute;
   '/$locale/topology': typeof LocaleAppTopologyRoute;
   '/$locale/work-status': typeof LocaleAppWorkStatusRoute;
+  '/$locale/changelog': typeof LocaleSiteChangelogRoute;
   '/$locale/download': typeof LocaleSiteDownloadRoute;
+  '/$locale/sample': typeof LocaleSiteSampleRoute;
   '/$locale/': typeof LocaleAppIndexRoute;
   '/$locale/ontology/edit': typeof LocaleAppOntologyEditRoute;
   '/$locale/ontology/insights': typeof LocaleAppOntologyInsightsRoute;
   '/$locale/ontology/studio': typeof LocaleAppOntologyStudioRoute;
   '/$locale/project/fallback': typeof LocaleAppProjectFallbackRoute;
   '/$locale/project/new': typeof LocaleAppProjectNewRoute;
+  '/$locale/guide/$segment': typeof LocaleSiteGuideSegmentRoute;
   '/$locale/ontology/': typeof LocaleAppOntologyIndexRoute;
+  '/$locale/guide/': typeof LocaleSiteGuideIndexRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
@@ -202,13 +230,17 @@ export interface FileRoutesByTo {
   '/$locale/projects': typeof LocaleAppProjectsRoute;
   '/$locale/topology': typeof LocaleAppTopologyRoute;
   '/$locale/work-status': typeof LocaleAppWorkStatusRoute;
+  '/$locale/changelog': typeof LocaleSiteChangelogRoute;
   '/$locale/download': typeof LocaleSiteDownloadRoute;
+  '/$locale/sample': typeof LocaleSiteSampleRoute;
   '/$locale/ontology/edit': typeof LocaleAppOntologyEditRoute;
   '/$locale/ontology/insights': typeof LocaleAppOntologyInsightsRoute;
   '/$locale/ontology/studio': typeof LocaleAppOntologyStudioRoute;
   '/$locale/project/fallback': typeof LocaleAppProjectFallbackRoute;
   '/$locale/project/new': typeof LocaleAppProjectNewRoute;
+  '/$locale/guide/$segment': typeof LocaleSiteGuideSegmentRoute;
   '/$locale/ontology': typeof LocaleAppOntologyIndexRoute;
+  '/$locale/guide': typeof LocaleSiteGuideIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -229,14 +261,18 @@ export interface FileRoutesById {
   '/$locale/_app/projects': typeof LocaleAppProjectsRoute;
   '/$locale/_app/topology': typeof LocaleAppTopologyRoute;
   '/$locale/_app/work-status': typeof LocaleAppWorkStatusRoute;
+  '/$locale/_site/changelog': typeof LocaleSiteChangelogRoute;
   '/$locale/_site/download': typeof LocaleSiteDownloadRoute;
+  '/$locale/_site/sample': typeof LocaleSiteSampleRoute;
   '/$locale/_app/': typeof LocaleAppIndexRoute;
   '/$locale/_app/ontology/edit': typeof LocaleAppOntologyEditRoute;
   '/$locale/_app/ontology/insights': typeof LocaleAppOntologyInsightsRoute;
   '/$locale/_app/ontology/studio': typeof LocaleAppOntologyStudioRoute;
   '/$locale/_app/project/fallback': typeof LocaleAppProjectFallbackRoute;
   '/$locale/_app/project/new': typeof LocaleAppProjectNewRoute;
+  '/$locale/_site/guide/$segment': typeof LocaleSiteGuideSegmentRoute;
   '/$locale/_app/ontology/': typeof LocaleAppOntologyIndexRoute;
+  '/$locale/_site/guide/': typeof LocaleSiteGuideIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -256,14 +292,18 @@ export interface FileRouteTypes {
     | '/$locale/projects'
     | '/$locale/topology'
     | '/$locale/work-status'
+    | '/$locale/changelog'
     | '/$locale/download'
+    | '/$locale/sample'
     | '/$locale/'
     | '/$locale/ontology/edit'
     | '/$locale/ontology/insights'
     | '/$locale/ontology/studio'
     | '/$locale/project/fallback'
     | '/$locale/project/new'
-    | '/$locale/ontology/';
+    | '/$locale/guide/$segment'
+    | '/$locale/ontology/'
+    | '/$locale/guide/';
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
@@ -281,13 +321,17 @@ export interface FileRouteTypes {
     | '/$locale/projects'
     | '/$locale/topology'
     | '/$locale/work-status'
+    | '/$locale/changelog'
     | '/$locale/download'
+    | '/$locale/sample'
     | '/$locale/ontology/edit'
     | '/$locale/ontology/insights'
     | '/$locale/ontology/studio'
     | '/$locale/project/fallback'
     | '/$locale/project/new'
-    | '/$locale/ontology';
+    | '/$locale/guide/$segment'
+    | '/$locale/ontology'
+    | '/$locale/guide';
   id:
     | '__root__'
     | '/'
@@ -307,14 +351,18 @@ export interface FileRouteTypes {
     | '/$locale/_app/projects'
     | '/$locale/_app/topology'
     | '/$locale/_app/work-status'
+    | '/$locale/_site/changelog'
     | '/$locale/_site/download'
+    | '/$locale/_site/sample'
     | '/$locale/_app/'
     | '/$locale/_app/ontology/edit'
     | '/$locale/_app/ontology/insights'
     | '/$locale/_app/ontology/studio'
     | '/$locale/_app/project/fallback'
     | '/$locale/_app/project/new'
-    | '/$locale/_app/ontology/';
+    | '/$locale/_site/guide/$segment'
+    | '/$locale/_app/ontology/'
+    | '/$locale/_site/guide/';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -450,11 +498,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleAppWorkStatusRouteImport;
       parentRoute: typeof LocaleAppRouteRoute;
     };
+    '/$locale/_site/changelog': {
+      id: '/$locale/_site/changelog';
+      path: '/changelog';
+      fullPath: '/$locale/changelog';
+      preLoaderRoute: typeof LocaleSiteChangelogRouteImport;
+      parentRoute: typeof LocaleSiteRouteRoute;
+    };
     '/$locale/_site/download': {
       id: '/$locale/_site/download';
       path: '/download';
       fullPath: '/$locale/download';
       preLoaderRoute: typeof LocaleSiteDownloadRouteImport;
+      parentRoute: typeof LocaleSiteRouteRoute;
+    };
+    '/$locale/_site/sample': {
+      id: '/$locale/_site/sample';
+      path: '/sample';
+      fullPath: '/$locale/sample';
+      preLoaderRoute: typeof LocaleSiteSampleRouteImport;
       parentRoute: typeof LocaleSiteRouteRoute;
     };
     '/$locale/_app/ontology/': {
@@ -498,6 +560,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/$locale/project/new';
       preLoaderRoute: typeof LocaleAppProjectNewRouteImport;
       parentRoute: typeof LocaleAppRouteRoute;
+    };
+    '/$locale/_site/guide/': {
+      id: '/$locale/_site/guide/';
+      path: '/guide';
+      fullPath: '/$locale/guide/';
+      preLoaderRoute: typeof LocaleSiteGuideIndexRouteImport;
+      parentRoute: typeof LocaleSiteRouteRoute;
+    };
+    '/$locale/_site/guide/$segment': {
+      id: '/$locale/_site/guide/$segment';
+      path: '/guide/$segment';
+      fullPath: '/$locale/guide/$segment';
+      preLoaderRoute: typeof LocaleSiteGuideSegmentRouteImport;
+      parentRoute: typeof LocaleSiteRouteRoute;
     };
   }
 }
@@ -553,11 +629,19 @@ const LocaleAppRouteRouteWithChildren = LocaleAppRouteRoute._addFileChildren(
 );
 
 interface LocaleSiteRouteRouteChildren {
+  LocaleSiteChangelogRoute: typeof LocaleSiteChangelogRoute;
   LocaleSiteDownloadRoute: typeof LocaleSiteDownloadRoute;
+  LocaleSiteSampleRoute: typeof LocaleSiteSampleRoute;
+  LocaleSiteGuideSegmentRoute: typeof LocaleSiteGuideSegmentRoute;
+  LocaleSiteGuideIndexRoute: typeof LocaleSiteGuideIndexRoute;
 }
 
 const LocaleSiteRouteRouteChildren: LocaleSiteRouteRouteChildren = {
+  LocaleSiteChangelogRoute: LocaleSiteChangelogRoute,
   LocaleSiteDownloadRoute: LocaleSiteDownloadRoute,
+  LocaleSiteSampleRoute: LocaleSiteSampleRoute,
+  LocaleSiteGuideSegmentRoute: LocaleSiteGuideSegmentRoute,
+  LocaleSiteGuideIndexRoute: LocaleSiteGuideIndexRoute,
 };
 
 const LocaleSiteRouteRouteWithChildren = LocaleSiteRouteRoute._addFileChildren(

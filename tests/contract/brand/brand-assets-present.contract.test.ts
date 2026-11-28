@@ -81,9 +81,9 @@ describe('pixel mascot brand outputs', () => {
   });
 
   it('keeps Open Graph and PWA declarations equal to their files', () => {
-    const layout = readText('app/layout.tsx');
-    const width = Number(layout.match(/url: '\/og-image\.png',\s*\n\s*width: (\d+)/)![1]);
-    const height = Number(layout.match(/url: '\/og-image\.png',[\s\S]{0,80}?height: (\d+)/)![1]);
+    const declaration = readText('src/shared/lib/public-pages/site-metadata.ts');
+    const width = Number(declaration.match(/url: '\/og-image\.png', width: (\d+)/)![1]);
+    const height = Number(declaration.match(/url: '\/og-image\.png', width: \d+, height: (\d+)/)![1]);
     expect(pngSize('public/og-image.png')).toEqual({ width, height });
 
     const manifest = JSON.parse(readText('public/manifest.webmanifest')) as {

@@ -59,4 +59,10 @@ describe('boot script', () => {
     expect(run({ pathname: '/ko/' }).replaced).toEqual(['/ko/download/']);
     expect(run({ pathname: '/ko/topology/' }).replaced).toEqual([]);
   });
+
+  it('keeps the redirect on this site when the path begins with two slashes', () => {
+    // `//host/ko/` followed as written would leave for `host`; the address stays a path of this site.
+    expect(run({ pathname: '//evil.example/ko/' }).replaced).toEqual(['/evil.example/ko/download/']);
+    expect(run({ pathname: '///evil.example/sub/ko' }).replaced).toEqual(['/evil.example/sub/ko/download/']);
+  });
 });

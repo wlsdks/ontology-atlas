@@ -1,20 +1,24 @@
-import { getTranslations } from 'next-intl/server';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { buttonVariants } from '@/shared/ui/controls/button';
 import { GatewayNav } from '@/widgets/gateway-chrome';
-import { readSampleCensus } from '../lib/read-sample-census';
 import { SampleMapStage } from './SampleMapStage';
 
+export interface SampleCensus {
+  conceptCount: number;
+  relationCount: number;
+}
+
 /**
- * The words around the sample map are server markup, so they read before any script runs; the map
- * itself is the client's. The counts come from the same sample file the map loads, read at build time:
- * a sample that holds no concept fails the build instead of publishing an empty map.
+ * The words around the sample map are prerendered markup, so they read before any script runs; the map
+ * itself is the client's. The counts come from the same sample file the map loads, read at build time
+ * (`readSampleCensus`): a sample that holds no concept fails the build instead of publishing an empty map.
+ * Without them, as in the dev server, the size line is left out.
  */
-export async function SampleMapPage({ locale }: { locale: string }) {
-  const t = await getTranslations({ locale, namespace: 'sampleMap' });
-  const { conceptCount, relationCount } = readSampleCensus(locale);
+export function SampleMapPage({ locale, census }: { locale: string; census?: SampleCensus | undefined }) {
+  const t = useTranslations('sampleMap');
 
   return (
     <div className="flex min-h-full w-full flex-col bg-[color:var(--color-canvas)]">
@@ -28,12 +32,14 @@ export async function SampleMapPage({ locale }: { locale: string }) {
               </h1>
               <p className="mt-3 text-body-lg leading-prose text-[color:var(--color-text-secondary)]">{t('lead')}</p>
               <p className="mt-2 text-body leading-prose text-[color:var(--color-text-tertiary)]">{t('readOnly')}</p>
-              <p
-                data-testid="sample-map-size"
-                className="mt-3 font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]"
-              >
-                {t('size', { concepts: conceptCount, relations: relationCount })}
-              </p>
+              {census ? (
+                <p
+                  data-testid="sample-map-size"
+                  className="mt-3 font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]"
+                >
+                  {t('size', { concepts: census.conceptCount, relations: census.relationCount })}
+                </p>
+              ) : null}
             </div>
             <a
               href={withBasePath(`/${locale}/download/`)}

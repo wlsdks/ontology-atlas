@@ -4,6 +4,7 @@ import { Suspense, use, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { stripLocalePrefix } from "@/shared/lib/navigation/nav-destination";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
+import { APP_ONLY_FACE_CLASS, workbenchFaceClass } from "./app-address-face-class";
 import { OldBrowserFolderCleanup } from "./OldBrowserFolderCleanup";
 
 /** A promise that never settles: a component that reads it keeps the server's HTML and never mounts. */
@@ -41,14 +42,11 @@ export function AppAddressFaces({ appOnly, children }: { appOnly: ReactNode; chi
     <>
       <OldBrowserFolderCleanup />
       {atEntry || !showAppOnly ? null : (
-        <div data-face="app-only" className="flex min-h-full flex-1 flex-col [html[data-shell=desktop]_&]:hidden">
+        <div data-face="app-only" className={APP_ONLY_FACE_CLASS}>
           {appOnly}
         </div>
       )}
-      <div
-        data-face="workbench"
-        className={atEntry ? "contents" : "contents [html:not([data-shell=desktop])_&]:hidden"}
-      >
+      <div data-face="workbench" className={workbenchFaceClass(atEntry)}>
         <Suspense fallback={null}>
           <InstalledAppOnly>{children}</InstalledAppOnly>
         </Suspense>

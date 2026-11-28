@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { routing } from '@/i18n/routing';
 import type { AppLocale } from '@/i18n/locales';
+import { documentTitle } from '@/shared/lib/public-pages/document-title';
+import { localeWords } from '@/shared/lib/public-pages/site-metadata';
 import { LocaleHtmlLang } from '@/shared/ui/document/locale-html-lang';
 
 export function localeStaticParams() {
@@ -12,15 +14,16 @@ export function localeStaticParams() {
 
 export async function localeLayoutMetadata(locale: string): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'metadata' });
+  const { siteName, description, keywords } = localeWords((word) => t(word));
   return {
     title: {
-      default: t('siteName'),
+      default: siteName,
       // The root layout's template is not prepended; the locale layout owns the title template.
-      template: `%s · ${t('siteName')}`,
+      template: documentTitle('%s', siteName),
     },
-    description: t('siteTagline'),
+    description,
     // Words people type in this language; Google ignores the tag, Bing, Naver and Baidu read it.
-    keywords: t('keywords').split(/\s*[,，、]\s*/),
+    keywords,
     // hreflang is a per-path fact, so each page sets it through `buildPageMetadata`.
   };
 }

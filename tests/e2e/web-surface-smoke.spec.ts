@@ -91,7 +91,7 @@ test.describe("web smoke 2: the sample map", () => {
   }) => {
     // The sample's data is the only chunk that names its concepts, so only it is cut.
     let networkDown = true;
-    await page.route(/\/_next\/static\/chunks\//, async (route) => {
+    await page.route(/\/(?:_next\/static\/chunks|assets)\//, async (route) => {
       if (!networkDown) return route.continue();
       const response = await route.fetch();
       const body = await response.text();

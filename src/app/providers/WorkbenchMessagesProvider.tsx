@@ -32,10 +32,11 @@ export function WorkbenchMessagesProvider({
   // Null on the server and while hydrating, so `/` hydrates with the subset its HTML was built from.
   const loaded = useWorkbenchCatalog(locale);
 
-  let messages: MessageCatalog;
-  if (loaded) messages = loaded;
-  else if (atRoot && !isDesktopShell()) messages = rootMessages;
-  else messages = use(loadWorkbenchCatalog(locale));
+  // Past the subset this always reads through `use`, loaded or not: a component that suspended in `use` and then
+  // finished a retry without calling it makes React log a misuse. The loader hands out a promise that is already
+  // settled once the catalog is there, so the read then returns at once.
+  const messages: MessageCatalog =
+    atRoot && !loaded && !isDesktopShell() ? rootMessages : use(loadWorkbenchCatalog(locale));
 
   return (
     <NextIntlClientProvider

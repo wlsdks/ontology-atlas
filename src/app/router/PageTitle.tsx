@@ -1,5 +1,7 @@
 import { useTranslations } from 'use-intl';
 
+import { documentTitle } from '@/shared/lib/public-pages/document-title';
+
 interface PageTitleProps {
   namespace: string;
   messageKey: string;
@@ -11,6 +13,5 @@ interface PageTitleProps {
 export function PageTitle({ namespace, messageKey, absolute = false }: PageTitleProps) {
   const t = useTranslations(namespace);
   const tMetadata = useTranslations('metadata');
-  const title = t(messageKey);
-  return <title>{absolute ? title : `${title} · ${tMetadata('siteName')}`}</title>;
+  return <title>{documentTitle(t(messageKey), tMetadata('siteName'), absolute)}</title>;
 }

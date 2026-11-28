@@ -1,7 +1,8 @@
-import { createRouter } from '@tanstack/react-router';
+import { createRouter, type RouterHistory } from '@tanstack/react-router';
 
 import { setRouterHistory } from '@/shared/lib/navigation/history-write-guard';
 
+import { replayBuildFacts, type BuildFacts } from '../routes/-site/build-facts';
 import { routeTree } from '../route-tree.gen';
 import { parseSearch, stringifySearch } from './atlas-search';
 
@@ -10,9 +11,11 @@ import { parseSearch, stringifySearch } from './atlas-search';
  * slash always, a query that is text only, and the router the only writer of history (direct writes in
  * product code go through `guardedHistoryWrite`, which hands them to this router's history).
  */
-export function createAtlasRouter() {
+export function createAtlasRouter({ history, buildFacts }: { history?: RouterHistory; buildFacts?: BuildFacts } = {}) {
   const router = createRouter({
     routeTree,
+    ...(history ? { history } : {}),
+    context: { buildFacts: buildFacts ?? replayBuildFacts({}) },
     parseSearch,
     stringifySearch,
     trailingSlash: 'always',

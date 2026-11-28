@@ -1,1 +1,1 @@
-export { SampleMapPage } from './ui/SampleMapPage';
+export { SampleMapPage, type SampleCensus } from './ui/SampleMapPage';

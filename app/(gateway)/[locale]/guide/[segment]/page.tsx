@@ -5,10 +5,9 @@ import {
   GUIDE_PAGES,
   GUIDE_ENTRY_PAGE,
   guideCanonicalPath,
-  guideChapterMeta,
-  readGuideDocument,
   resolveGuidePage,
 } from '@/views/gateway-doc';
+import { guideChapterMeta, readGuideDocument } from '@/views/build-time-readers';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { routing } from '@/i18n/routing';
 import { JsonLd } from '@/shared/ui';

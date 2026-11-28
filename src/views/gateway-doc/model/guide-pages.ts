@@ -49,3 +49,9 @@ export function resolveGuidePage(segment: string | undefined): GuidePageResoluti
   const page = GUIDE_PAGES.find((candidate) => candidate.segment === segment);
   return page ? { page, matched: true } : { page: GUIDE_ENTRY_PAGE, matched: false };
 }
+
+/** Where a chapter's body is kept: English is the vault document, another language is localized data beside it. */
+export const GUIDE_TRANSLATIONS_DIR = 'docs-i18n/guide';
+
+export const guideSourcePath = (page: GuidePage, locale: string) =>
+  locale === 'en' ? `docs/${page.slug}.md` : `${GUIDE_TRANSLATIONS_DIR}/${locale}/${page.segment}.md`;
