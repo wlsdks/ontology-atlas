@@ -10,7 +10,7 @@ export const MCP_BINARY_NAME = 'ontology-atlas-mcp';
 /** Where compile output lands (gitignored — build output). */
 export const MCP_BINARY_OUTPUT_DIR = 'src-tauri/binaries';
 
-export const MCP_SERVER_ENTRY = 'mcp/src/index.js';
+export const MCP_SERVER_ENTRY = 'mcp/src/javascript-server.mjs';
 
 /** CI installs bun from this file too; the sidecar embeds that runtime. */
 export const BUN_VERSION_FILE = '.bun-version';

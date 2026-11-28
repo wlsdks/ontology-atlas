@@ -3,21 +3,21 @@
 // Usage: pnpm perf:mcp:scale -- --files=50000 --flow=a --flow=b [--server=<path>] [--dir=<path>] [--check] [--tool=<name>]
 //   flow a: every page is a node. flow b: a few thousand nodes over many plain documents.
 //   flow library: half the files are sources, half wiki pages citing them (`gen-scale-vault.mjs`).
-//   --server: an entry script (run with node) or a compiled binary; default the source server.
+//   --server: an entry script (run with node) or a compiled binary; default the program `pnpm mcp:build-binary` placed.
 //   --dir: where generated vaults are kept and reused; default the OS temp folder.
-//   --check: at 50,000 files and both flows unless given, gates the compiled binary the app ships (--server, or the one `pnpm mcp:build-binary`
+//   --check: at 50,000 files and both flows unless given, gates the compiled program the app ships (--server, or the one `pnpm mcp:build-binary`
 //     placed): exit 1 when a second call exceeds --max-cpu-ms (600) or, on macOS, the physical
 //     footprint after 20 calls exceeds --max-footprint-mb (185) or its peak --max-peak-footprint-mb
 //     (470): the most two runs measured on either flow (159 and 410 MB) with about 15% added, so a
 //     regression of a few dozen MB fails. The footprint is what Activity Monitor shows and what the user pays. RSS is printed,
 //     never gated: on macOS it keeps counting freed pages the allocator holds for reuse, and
-//     elsewhere the footprint is not read, so memory is not gated there. The source server is
+//     elsewhere the footprint is not read, so memory is not gated there. The JavaScript server is
 //     measured after it and printed, not gated.
 //   --tool: measure one tool with no arguments instead of the read table, after one read call
 //     has loaded the vault: a first call, a repeat with nothing changed, and a call after one wiki
 //     page is edited when the vault has `wiki/page-7.md`, each with its response size, wall time and
-//     CPU. A source server (a script) also reports the heap: its peak during the call, from the
-//     collector's own records, and what is left after a full collection.
+//     CPU. A script (pass --server=mcp/src/javascript-server.mjs) also reports the heap: its peak
+//     during the call, from the collector's own records, and what is left after a full collection.
 // CPU is the server process's user+system time across one call, read from the OS, so it
 // includes everything the call cost and nothing the harness did.
 
@@ -35,12 +35,13 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const flag = (name, fallback) => args.find((arg) => arg.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const flows = args.filter((arg) => arg.startsWith('--flow=')).map((arg) => arg.slice(7));
-const SOURCE_SERVER = join(ROOT, 'mcp/src/index.js');
+// The JavaScript server, for the printed comparison and the heap reads only a Node process can give.
+const SOURCE_SERVER = join(ROOT, 'mcp/src/javascript-server.mjs');
 const check = args.includes('--check');
 // The gate measures the scale the budgets were set for; a smaller default would pass by size alone.
 const files = Number(flag('files', check ? '50000' : '10000'));
 const explicitServer = flag('server', null);
-const server = explicitServer ? resolve(explicitServer) : check ? builtBinary() : SOURCE_SERVER;
+const server = explicitServer ? resolve(explicitServer) : builtBinary();
 const isScript = (path) => /\.(?:c|m)?js$/.test(path);
 const baseDir = resolve(flag('dir', join(tmpdir(), 'atlas-mcp-scale')));
 const maxCpuMs = Number(flag('max-cpu-ms', '600'));

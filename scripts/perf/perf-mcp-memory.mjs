@@ -11,7 +11,7 @@ const KB = 1024;
 const MB = 1024 * 1024;
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const SERVER = resolve(args.find((arg) => arg.startsWith('--server='))?.slice('--server='.length) ?? join(ROOT, 'mcp', 'src', 'index.js'));
+const SERVER = resolve(args.find((arg) => arg.startsWith('--server='))?.slice('--server='.length) ?? join(ROOT, 'mcp', 'src', 'javascript-server.mjs'));
 const check = args.includes('--check');
 const json = args.includes('--json');
 const calls = integerFlag('--calls=', 50, { min: 10, max: 500 });
