@@ -28,6 +28,7 @@ members = [
   "crates/saved-constellations",
   "crates/document-absorption",
   "crates/wiki-pages",
+  "crates/project-source",
   "crates/mcp-server",
 ]
 

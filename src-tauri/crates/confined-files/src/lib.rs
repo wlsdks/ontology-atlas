@@ -18,6 +18,7 @@ mod modified_time;
 mod os_error;
 mod plain_file;
 mod plain_parts;
+mod probe_folder;
 mod private_names;
 mod raw_source_read;
 mod real_paths;
@@ -46,6 +47,7 @@ pub use markdown_walk::utf16_order;
 pub use modified_time::ModifiedTime;
 pub use os_error::{IoFailure, OsErrorCode};
 pub use plain_parts::{PlainParts, PlainPartsRefusal};
+pub use probe_folder::{ProbeEntry, ProbeFacts, ProbeFolder};
 pub use private_names::{is_credential_name, is_hidden_name, names_hidden_or_credential_file};
 pub use raw_source_read::{
     RawSourcePath, RawSourcePathRefusal, RawSourceReadRefusal, RAW_SOURCE_PATH_MAX_BYTES,

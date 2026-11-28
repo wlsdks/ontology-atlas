@@ -4036,6 +4036,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "project-source"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "hardened-git",
+ "icu_normalizer",
+ "indexmap 2.14.0",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "tempfile",
+ "thiserror 2.0.21",
+ "vault-document",
+]
+
+[[package]]
 name = "proptest"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
