@@ -1,4 +1,4 @@
-import { NODE_UID_PATTERN } from '../../src/schema.mjs';
+import { NODE_UID_PATTERN } from './server-vocabularies.mjs';
 
 export const NODE_UID_RE = new RegExp(NODE_UID_PATTERN);
 

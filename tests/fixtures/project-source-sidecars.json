@@ -1,0 +1,244 @@
+{
+  "roleRequest": {
+    "contractVersion": 1,
+    "bindings": [
+      {
+        "projectSlug": "storefront",
+        "sourceId": "role-source",
+        "rootPath": "/private/source-role-fixture",
+        "kind": "git",
+        "boundAt": "2026-10-11T00:00:00.000Z",
+        "receipt": {
+          "contractVersion": 1,
+          "projectSlug": "storefront",
+          "sourceId": "role-source",
+          "sourceKind": "git",
+          "sourceRevision": "abc",
+          "sourceFingerprint": "git:abc:clean",
+          "graphHash": "project-graph-v1:114ac726",
+          "measuredAt": "2026-10-11T00:00:00.000Z",
+          "status": "needs_evidence",
+          "currentness": "current",
+          "topGap": {
+            "id": "source_role_evidence_missing"
+          },
+          "nextAction": {
+            "id": "record_source_role"
+          },
+          "witnessSummary": {
+            "total": 0,
+            "supported": 0,
+            "missing": 0
+          },
+          "witnesses": [],
+          "diagnostics": {
+            "dirty": false,
+            "truncated": false
+          }
+        }
+      }
+    ]
+  },
+  "repair": {
+    "elements/checkout": {
+      "contractVersion": 1,
+      "bindings": [
+        {
+          "projectSlug": "storefront",
+          "sourceId": "repair-source",
+          "rootPath": "/private/source-repair-fixture",
+          "kind": "git",
+          "boundAt": "2026-10-11T00:00:00.000Z",
+          "receipt": {
+            "contractVersion": 1,
+            "projectSlug": "storefront",
+            "sourceId": "repair-source",
+            "sourceKind": "git",
+            "sourceRevision": "abc",
+            "sourceFingerprint": "git:abc:clean",
+            "graphHash": "project-graph-v1:a4033d92",
+            "measuredAt": "2026-10-11T00:00:00.000Z",
+            "status": "review_required",
+            "currentness": "current",
+            "topGap": {
+              "id": "declared_source_path_missing",
+              "nodeSlug": "elements/checkout"
+            },
+            "nextAction": {
+              "id": "repair_source_path",
+              "target": "elements/checkout"
+            },
+            "witnessSummary": {
+              "total": 1,
+              "supported": 0,
+              "missing": 1
+            },
+            "witnesses": [
+              {
+                "id": "elements/checkout:path",
+                "nodeSlug": "elements/checkout",
+                "role": "implementation",
+                "path": "src/missing-checkout.ts",
+                "supported": false
+              }
+            ],
+            "diagnostics": {
+              "dirty": false,
+              "truncated": false
+            }
+          }
+        }
+      ]
+    },
+    "elements/deleted": {
+      "contractVersion": 1,
+      "bindings": [
+        {
+          "projectSlug": "storefront",
+          "sourceId": "repair-source",
+          "rootPath": "/private/source-repair-fixture",
+          "kind": "git",
+          "boundAt": "2026-10-11T00:00:00.000Z",
+          "receipt": {
+            "contractVersion": 1,
+            "projectSlug": "storefront",
+            "sourceId": "repair-source",
+            "sourceKind": "git",
+            "sourceRevision": "abc",
+            "sourceFingerprint": "git:abc:clean",
+            "graphHash": "project-graph-v1:a4033d92",
+            "measuredAt": "2026-10-11T00:00:00.000Z",
+            "status": "review_required",
+            "currentness": "current",
+            "topGap": {
+              "id": "declared_source_path_missing",
+              "nodeSlug": "elements/deleted"
+            },
+            "nextAction": {
+              "id": "repair_source_path",
+              "target": "elements/deleted"
+            },
+            "witnessSummary": {
+              "total": 1,
+              "supported": 0,
+              "missing": 1
+            },
+            "witnesses": [
+              {
+                "id": "elements/deleted:path",
+                "nodeSlug": "elements/deleted",
+                "role": "implementation",
+                "path": "src/missing-checkout.ts",
+                "supported": false
+              }
+            ],
+            "diagnostics": {
+              "dirty": false,
+              "truncated": false
+            }
+          }
+        }
+      ]
+    },
+    "capabilities/foreign": {
+      "contractVersion": 1,
+      "bindings": [
+        {
+          "projectSlug": "storefront",
+          "sourceId": "repair-source",
+          "rootPath": "/private/source-repair-fixture",
+          "kind": "git",
+          "boundAt": "2026-10-11T00:00:00.000Z",
+          "receipt": {
+            "contractVersion": 1,
+            "projectSlug": "storefront",
+            "sourceId": "repair-source",
+            "sourceKind": "git",
+            "sourceRevision": "abc",
+            "sourceFingerprint": "git:abc:clean",
+            "graphHash": "project-graph-v1:a4033d92",
+            "measuredAt": "2026-10-11T00:00:00.000Z",
+            "status": "review_required",
+            "currentness": "current",
+            "topGap": {
+              "id": "declared_source_path_missing",
+              "nodeSlug": "capabilities/foreign"
+            },
+            "nextAction": {
+              "id": "repair_source_path",
+              "target": "capabilities/foreign"
+            },
+            "witnessSummary": {
+              "total": 1,
+              "supported": 0,
+              "missing": 1
+            },
+            "witnesses": [
+              {
+                "id": "capabilities/foreign:path",
+                "nodeSlug": "capabilities/foreign",
+                "role": "implementation",
+                "path": "src/missing-checkout.ts",
+                "supported": false
+              }
+            ],
+            "diagnostics": {
+              "dirty": false,
+              "truncated": false
+            }
+          }
+        }
+      ]
+    },
+    "long-missing-filename": {
+      "contractVersion": 1,
+      "bindings": [
+        {
+          "projectSlug": "storefront",
+          "sourceId": "repair-source",
+          "rootPath": "/private/source-repair-fixture",
+          "kind": "git",
+          "boundAt": "2026-10-11T00:00:00.000Z",
+          "receipt": {
+            "contractVersion": 1,
+            "projectSlug": "storefront",
+            "sourceId": "repair-source",
+            "sourceKind": "git",
+            "sourceRevision": "abc",
+            "sourceFingerprint": "git:abc:clean",
+            "graphHash": "project-graph-v1:c886738b",
+            "measuredAt": "2026-10-11T00:00:00.000Z",
+            "status": "review_required",
+            "currentness": "current",
+            "topGap": {
+              "id": "declared_source_path_missing",
+              "nodeSlug": "elements/checkout"
+            },
+            "nextAction": {
+              "id": "repair_source_path",
+              "target": "elements/checkout"
+            },
+            "witnessSummary": {
+              "total": 1,
+              "supported": 0,
+              "missing": 1
+            },
+            "witnesses": [
+              {
+                "id": "elements/checkout:path",
+                "nodeSlug": "elements/checkout",
+                "role": "implementation",
+                "path": "src/missingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissingmissing.ts",
+                "supported": false
+              }
+            ],
+            "diagnostics": {
+              "dirty": false,
+              "truncated": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

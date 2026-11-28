@@ -1,5 +1,4 @@
-import { GRAPH_ARRAY_KEYS } from '../../../src/vault/graph/relation-refs.mjs';
-import { NODE_UID_PATTERN } from '../../../src/schema.mjs';
+import { GRAPH_ARRAY_KEYS, NODE_UID_PATTERN } from '../server-vocabularies.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 import { outputPropertyAt, propertyAt } from './schema-primitives.mjs';

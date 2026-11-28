@@ -1,6 +1,4 @@
-import { NODE_KIND_VALUES } from '../../../src/ontology-engine.mjs';
-import { VAULT_ISSUE_CODE_VALUES } from '../../../src/validate.mjs';
-import { NODE_UID_PATTERN } from '../../../src/schema.mjs';
+import { NODE_KIND_VALUES, VAULT_ISSUE_CODE_VALUES, NODE_UID_PATTERN } from '../server-vocabularies.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 import { outputPropertyAt, propertyAt } from './schema-primitives.mjs';

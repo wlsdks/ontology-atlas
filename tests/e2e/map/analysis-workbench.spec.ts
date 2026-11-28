@@ -6,7 +6,7 @@ import { seedFirstRunSeen } from '../first-run-seed';
 import { waitForAnimationsDone, waitForMapSettled } from '../settle';
 import { FIXTURE_VAULT } from '../fixture-vault';
 import { stubDirectoryPicker } from '../vault-picker-stub';
-import { analysisDigest, analysisRecordFileName, serializeAnalysisRecord, type AnalysisRun } from '../../../mcp/src/analysis-history/analysis-record.mts';
+import reviewRecord from '../../fixtures/review-record-four-findings.json';
 
 type CaptionBox = { edgeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number };
 
@@ -95,35 +95,20 @@ test('Architecture exposes version history without requiring an agent process', 
   await expect(page.getByTestId('architecture-inspector')).toBeHidden();
 });
 
-/** One saved review run with `count` findings, written where the folder keeps review results. */
-async function reviewRecordFiles(count: number): Promise<Record<string, string>> {
-  const frontmatter = { kind: 'capability', title: 'Checkout' };
-  const body = '\nThe checkout approves a payment before the order is placed.\n';
-  const digest = await analysisDigest({ frontmatter, body });
-  const run = {
-    schema: 'atlas-analysis/v1', recordType: 'run', id: '95f4ba81-41f7-483b-a617-2a4be815be32', createdAt: '2026-11-15T08:00:00.000Z', mode: 'meaning',
-    scope: { projectSlug: 'storefront', projectUid: null, targetSlugs: [], profileSlug: null },
-    request: { id: 'u-1', text: 'Review meaning.', parentRunId: null },
-    origin: { surface: 'map', runtimeId: 'test', sessionId: 's-1', userEventId: 'u-1', answerEventId: 'a-1', startedAt: '2026-11-15T07:59:00.000Z', stopReason: 'end_turn', outcome: 'completed' },
-    // A graph hash no folder produces: the review reads as older than the documents.
-    basis: { graphHash: `sha256:${'a'.repeat(64)}`, profileHash: null, sourceFingerprint: null, documents: [{ slug: 'capabilities/checkout', digest }] },
-    evidence: [{ slug: 'capabilities/checkout', uid: null, title: 'Checkout', kind: 'capability', body, frontmatter, digest, toolCallId: 'r-1' }],
-    observations: [], profileSnapshot: null, toolReads: [{ id: 'r-1', name: 'get_concepts', status: 'completed' }], sourceAccess: 'atlas-only',
-    qualification: { status: 'grounded', reasons: [] }, answer: 'The original answer from the agent.',
-    findings: Array.from({ length: count }, (_, index) => ({
-      id: `f-${index + 1}`, category: 'boundary', title: `Question ${index + 1}: does checkout own the payment approval boundary it describes?`,
-      detail: `Finding ${index + 1} explains why the recorded boundary may not match what the product does.\n\nIt cites the checkout document and suggests reading the policy before changing anything.`,
-      targetSlugs: ['capabilities/checkout'], evidenceSlugs: ['capabilities/checkout'], roleIds: [], relation: null, suggestedAction: 'Read the policy.',
-    })),
-  } as unknown as AnalysisRun;
-  return { [`.ontology-atlas/analyses/${analysisRecordFileName(run)}`]: serializeAnalysisRecord(run) };
+/**
+ * One saved review run with four findings, written where the folder keeps review results. It is a
+ * recorded file: its document digest and graph hash are fixed (a hash no folder produces, so the
+ * review reads as older than the documents).
+ */
+function reviewRecordFiles(): Record<string, string> {
+  return { [`.ontology-atlas/analyses/${reviewRecord.fileName}`]: reviewRecord.text };
 }
 
 test.describe('review results as a short list', () => {
   test.use({ viewport: { width: 1410, height: 840 } });
   test('four findings fit as rows; a row drills in, Escape returns to it, and the record details hold the answer', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await stubDirectoryPicker(page, { ...FIXTURE_VAULT, ...await reviewRecordFiles(4) });
+    await stubDirectoryPicker(page, { ...FIXTURE_VAULT, ...reviewRecordFiles() });
     await page.goto('/en/topology/?guides=off&e2e=1', { waitUntil: 'domcontentloaded' });
     await page.getByTestId('first-run-starter-open').click();
     await page.getByTestId('vault-guide-pick-existing').click();

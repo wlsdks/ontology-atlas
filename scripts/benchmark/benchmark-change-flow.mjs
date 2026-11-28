@@ -16,7 +16,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildMarkdown } from '../../mcp/src/parser.mjs';
+import { buildNodeMarkdown } from '../lib/vault/node-markdown.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const MCP_SERVER = join(REPO_ROOT, 'mcp/src/index.js');
@@ -328,7 +328,7 @@ function runGit(root, args, { allowFailure = false } = {}) {
 function writeNode(vaultRoot, entry) {
   const target = join(vaultRoot, `${entry.slug}.md`);
   mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, buildMarkdown({
+  writeFileSync(target, buildNodeMarkdown({
     frontmatter: {
       uid: randomUUID(),
       slug: entry.slug,

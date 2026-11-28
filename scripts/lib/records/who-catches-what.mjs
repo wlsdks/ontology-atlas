@@ -265,7 +265,7 @@ export function quantile(sorted, fraction) {
 }
 
 /**
- * The spec's states from the four evidence verdicts of `mcp/src/drift/evidence-verdict.mjs`:
+ * The spec's states from the four evidence verdicts of `src-tauri/crates/vault-validation/src/evidence_verdict.rs`:
  * `current` is checked, `stale` and `missing` (the cited file is gone) are stale, `unknown`
  * could not be dated.
  */

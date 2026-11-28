@@ -6,7 +6,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 
-import { buildMarkdown } from '../../../mcp/src/parser.mjs';
+import { buildNodeMarkdown } from '../../lib/vault/node-markdown.mjs';
 import { validateDefinitions } from './definition-checks.mjs';
 import { OUTPUT_SCHEMA, benchmarkPlan } from './definitions.mjs';
 import { FIXTURE_ROOT, MCP_SERVER, REPO_ROOT } from './paths.mjs';
@@ -47,7 +47,7 @@ function prepareSubject(caseDefinition, mode, scratchRoot) {
     for (const entry of caseDefinition.nodes) {
       const target = join(vaultRoot, `${entry.slug}.md`);
       mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, buildMarkdown({
+      writeFileSync(target, buildNodeMarkdown({
         frontmatter: {
           uid: randomUUID(),
           slug: entry.slug,

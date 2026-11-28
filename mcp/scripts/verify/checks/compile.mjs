@@ -1,4 +1,4 @@
-import { GRAPH_ARRAY_KEYS } from '../../../src/vault/graph/relation-refs.mjs';
+import { GRAPH_ARRAY_KEYS } from '../server-vocabularies.mjs';
 
 import { NODE_UID_RE, countMapFailure, numericFieldsFailure } from '../value-checks.mjs';
 

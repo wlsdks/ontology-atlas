@@ -1,4 +1,4 @@
-import { WRITE_RELATION_TYPE_VALUES } from '../../../src/ontology-engine.mjs';
+import { WRITE_RELATION_TYPE_VALUES } from '../server-vocabularies.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 import { outputPropertyAt, propertyAt } from './schema-primitives.mjs';

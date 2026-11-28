@@ -28,7 +28,7 @@ const PILOT = `---\nstarted: 2026-09-01\ndecision_target: 20\ndecision_deadline:
 function seed(root) {
   for (const path of [
     'scripts/docs-vault/build-docs-vault.mjs', 'scripts/docs-vault/generator', 'scripts/i18n/build-messages.mjs', 'scripts/records/new-record.mjs', 'scripts/prepare-worktree.mjs',
-    'scripts/lib/parse-frontmatter.mjs', 'scripts/lib/records/record-ledgers.mjs',
+    'scripts/lib/parse-frontmatter.mjs', 'scripts/lib/import-typescript-module.mjs', 'scripts/lib/records/record-ledgers.mjs',
     'scripts/lib/records/po-pilot-records.mjs', 'scripts/lib/records/po-pilot.mjs',
     'scripts/lib/records/po-risk-router.mjs', 'scripts/lib/records/decision-record-template.mjs',
   ]) copy(root, path);

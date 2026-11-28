@@ -3,7 +3,7 @@ import {
   IMPORT_SOURCE_ROLE_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
   IMPORT_USAGE_VALUES,
-} from '../../../src/infer-imports.mjs';
+} from '../server-vocabularies.mjs';
 
 import { sameArray } from '../value-checks.mjs';
 import {

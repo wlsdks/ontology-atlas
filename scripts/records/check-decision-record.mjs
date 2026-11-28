@@ -43,15 +43,19 @@ const ROUTE_PATTERN = /^app\/\[locale\]\/.*\/page\.tsx$/;
 
 /**
  * Single sources of truth for the two public contracts. The MCP tool table is
- * `server/registry.mjs` plus `server/tool-definitions/`; the entry point stays
- * listed because it still decides the dispatch and the read-only guard.
+ * `server/registry.mjs` plus `server/tool-definitions/` while the script server exists, and the
+ * surface the Rust server embeds, which becomes the one source when it is deleted; the entry point
+ * stays listed because it still decides the dispatch and the read-only guard.
  */
 const CONTRACT_FILES = [
   "cli/src/commands.mjs",
   "mcp/src/index.js",
   "mcp/src/server/registry.mjs",
 ];
-const CONTRACT_PREFIXES = ["mcp/src/server/tool-definitions/"];
+const CONTRACT_PREFIXES = [
+  "mcp/src/server/tool-definitions/",
+  "src-tauri/crates/mcp-server/surface/",
+];
 
 function isContractFile(path) {
   return CONTRACT_FILES.includes(path) || CONTRACT_PREFIXES.some((prefix) => path.startsWith(prefix));

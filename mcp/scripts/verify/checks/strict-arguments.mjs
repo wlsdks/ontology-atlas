@@ -5,8 +5,8 @@ import {
   NODE_KIND_VALUES,
   QUERY_ONTOLOGY_OPERATIONS,
   RELATION_TYPE_VALUES,
-} from '../../../src/ontology-engine.mjs';
-import { GRAPH_ARRAY_KEYS } from '../../../src/vault/graph/relation-refs.mjs';
+  GRAPH_ARRAY_KEYS,
+} from '../server-vocabularies.mjs';
 
 import { EXPECTED_TOOLS } from '../tools-list/inventory.mjs';
 import { sameArray } from '../value-checks.mjs';

@@ -1,8 +1,4 @@
-import {
-  generateNodeUid,
-  inspectMergedUids,
-  nodeUidIssue,
-} from "../../mcp/src/schema.mjs";
+import { generateNodeUid, inspectMergedUids, nodeUidIssue } from "../lib/vault/node-uid.mjs";
 import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
 
 export const id = "2026-08-02-add-node-uids";

@@ -1,4 +1,3 @@
-import { isBacklinkKeyValue } from '../../../src/vault/graph/backlink-key-shape.mjs';
 
 import { structuredErrorFailure } from './strict-arguments.mjs';
 import { structuredContentFailure } from './structured-content.mjs';
@@ -269,16 +268,22 @@ function backlinkKeyChangeFailure(row) {
   return null;
 }
 
-/**
- * Shape validation, including the `relation_notes` map, lives in `mcp/src/vault/graph/backlink-key-shape.mjs`;
- * do not re-implement it here.
- */
-function isBacklinkRewriteValue(value) {
-  return isBacklinkKeyValue(value);
-}
-
 function isCleanNonBlankString(value) {
   return typeof value === 'string' && value.length > 0 && value.trim() === value && !value.includes('\u0000');
+}
+
+/**
+ * What a backlink update may report for a relation slot: a string, an array of strings, or a flat
+ * string map (`relation_notes`, whose rationale follows a rename). A nested value is rejected.
+ */
+function isBacklinkRewriteValue(value) {
+  if (isCleanNonBlankString(value)) return true;
+  if (Array.isArray(value)) return value.length > 0 && value.every(isCleanNonBlankString);
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value);
+    return entries.length > 0 && entries.every(([key, entry]) => isCleanNonBlankString(key) && isCleanNonBlankString(entry));
+  }
+  return false;
 }
 
 export function destructiveDryRunSmokeFailure(expectedResponses) {

@@ -1,4 +1,4 @@
-import { QUERY_ONTOLOGY_OPERATIONS } from '../../../src/ontology-engine.mjs';
+import { QUERY_ONTOLOGY_OPERATIONS } from '../server-vocabularies.mjs';
 
 export function agentToolCallsIncludeOperation(calls, operation) {
   return Array.isArray(calls) && calls.some((call) => call?.tool === 'query_ontology' && call?.arguments?.operation === operation);

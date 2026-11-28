@@ -12,17 +12,20 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { importTypeScriptModule } from "../lib/import-typescript-module.mjs";
 import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
-import { inspectMergedUids, nodeUidIssue } from "../../mcp/src/schema.mjs";
+import { inspectMergedUids, nodeUidIssue } from "../lib/vault/node-uid.mjs";
 /*
- * The body half is imported from the canonical module, not reimplemented: this lane reads the
- * repository's own vault, and a second implementation could report a different number than
- * `validate_vault` for the same folder. `meaning-findings.mjs` and `parser.mjs` import only sibling
- * `mcp/src` modules and `node:` builtins, so plain `node` resolves them with no install.
+ * The body half is the app's own `meaningFindings`, imported rather than reimplemented: this lane
+ * reads the repository's own vault, and a second implementation could report a different number
+ * than the app does for the same folder. The file imports nothing and Node strips its types, so
+ * plain `node` runs it with no install, which the install-free CI job relies on.
  */
-import { bodyMeaningFindings } from "../../mcp/src/meaning/meaning-findings.mjs";
-import { parseFrontmatter as parseMcpFrontmatter } from "../../mcp/src/parser.mjs";
-import { VAULT_SOURCES_DIR, folderForKind } from "../../mcp/src/schema.mjs";
+const { folderForKind, meaningFindings } = await importTypeScriptModule(
+  new URL("../../src/shared/lib/vault-document/meaning-findings.ts", import.meta.url),
+);
+
+const VAULT_SOURCES_DIR = "sources";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
@@ -149,29 +152,39 @@ const MEANING_CODES = [
   "slug-outside-kind-folder",
 ];
 
+/** What a reader of this lane's output is told for each finding; the code is the app's. */
+function meaningMessage(finding, { kind, slug }) {
+  switch (finding.code) {
+    case "definition-missing":
+      return `"${slug}" is a ${kind} whose body carries no definition: it is still the starter scaffold, it opens straight into headings, or it only restates the title.`;
+    case "boundary-missing":
+      return finding.key === "includes"
+        ? `"${slug}" (${kind}) has no \`## Includes\` section with anything in it, so the body never states what this covers.`
+        : `"${slug}" (${kind}) has no \`## Excludes\` section with anything in it, so the body never states what this is often confused with and is not.`;
+    case "uncertainty-missing":
+      return `"${slug}" (${kind}) records no uncertainty, so the body reads as complete, and nothing in a vault is.`;
+    case "epistemic-exclusion":
+      return `${finding.refs.length} exclusion bullet(s) on "${slug}" state an evidence limit rather than a product boundary: ${finding.refs.map((ref) => `"${ref}"`).join(", ")}.`;
+    case "slug-outside-kind-folder": {
+      const folder = folderForKind(kind);
+      return `\`${slug}\` is a ${kind} at the vault root rather than inside \`${folder}\`. Valid, and it groups with nothing: every reader that shows a vault by kind groups on that folder.`;
+    }
+    default:
+      return finding.code;
+  }
+}
+
 /** Warnings only, and the exit code does not move: a thin body is not a broken vault. */
 function meaningIssues(raw, slug) {
-  const { frontmatter, body = "" } = parseMcpFrontmatter(raw);
+  const { frontmatter, body = "" } = parseFrontmatter(raw);
   const kind = typeof frontmatter?.kind === "string" ? frontmatter.kind.trim() : "";
   if (!kind || !KNOWN_VAULT_KINDS.includes(kind)) return [];
   const title = typeof frontmatter?.title === "string" ? frontmatter.title : "";
-  const input = { kind, slug, title, body };
-  const issues = bodyMeaningFindings(input).map((finding) => ({
+  return meaningFindings({ kind, slug, title, body }).map((finding) => ({
     code: finding.code,
     severity: "warning",
-    message: finding.message,
+    message: meaningMessage(finding, { kind, slug }),
   }));
-  const folder = folderForKind(kind);
-  if (slug && folder && !slug.startsWith(folder)) {
-    issues.push({
-      code: "slug-outside-kind-folder",
-      severity: "warning",
-      message:
-        `\`${slug}\` is a ${kind} at the vault root rather than inside \`${folder}\`. ` +
-        `Valid, and it groups with nothing: every reader that shows a vault by kind groups on that folder.`,
-    });
-  }
-  return issues;
 }
 
 function validate(raw) {

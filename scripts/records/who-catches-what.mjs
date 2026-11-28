@@ -10,6 +10,7 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
+import { callMcpTool } from '../../mcp/scripts/call-tool.mjs';
 import {
   blameLineCounts,
   bodyBeforeTestPlan,
@@ -228,10 +229,7 @@ function printSample(rows) {
 }
 
 async function printConceptStates() {
-  process.env.OATLAS_VAULT = resolve(repoRoot, VAULT);
-  process.env.OATLAS_REPO_ROOT = repoRoot;
-  const { validateVaultReport } = await import('../../mcp/src/tools/validate-vault.mjs');
-  const { evidenceDrift } = validateVaultReport({ repoRoot });
+  const { evidenceDrift } = await callMcpTool(resolve(repoRoot, VAULT), 'validate_vault', {}, { repoRoot });
   console.log(`\n## The noise count: ${VAULT} at ${git(['rev-parse', '--short', 'HEAD']).trim()}\n`);
   if (!evidenceDrift.checked) {
     console.log(`Not measured: ${evidenceDrift.reason}. Every concept is unknown, none checked.`);
