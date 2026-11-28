@@ -697,7 +697,8 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             {
-              group: ['@/views/*/*', '@/widgets/*/*', '@/features/*/*', '@/entities/*/*'],
+              // `browser` is a slice's second entry for what runs in a browser when `index.ts` also holds Node-only readers.
+              group: ['@/views/*/*', '!@/views/*/browser', '@/widgets/*/*', '@/features/*/*', '@/entities/*/*'],
               message:
                 'Import a slice through its public API (`@/<layer>/<slice>`), not a file inside it. Add the export to that slice\'s index.ts if it is missing; a slice with no index.ts has no public API yet — create one. Tests may still reach inside.',
             },

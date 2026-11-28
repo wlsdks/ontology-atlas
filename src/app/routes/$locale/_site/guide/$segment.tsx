@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import type { AppLocale } from '@/i18n/locales';
-import { GUIDE_PAGES } from '@/views/gateway-doc';
+import { GUIDE_PAGES } from '@/views/gateway-doc/browser';
 
 import { GuideChapterView } from '../../../-site/GuideChapterView';
 import { loadGuideChapter } from '../../../-site/guide-chapter';

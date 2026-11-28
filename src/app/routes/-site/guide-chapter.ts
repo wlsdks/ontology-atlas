@@ -9,7 +9,7 @@ import {
   guideStructuredData,
   resolveGuidePage,
   type GatewayDocument,
-} from '@/views/gateway-doc';
+} from '@/views/gateway-doc/browser';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 
 import type { BuildFacts } from './build-facts';
