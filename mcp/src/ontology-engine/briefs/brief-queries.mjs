@@ -1,7 +1,6 @@
 import {
   agentToolCall,
   buildAgentBriefHandoffPrompt,
-  buildAgentBusinessOntologyLens,
 } from './agent-responses.mjs';
 import { normalizeLimit } from '../query-operation/query-primitives.mjs';
 
@@ -131,28 +130,6 @@ export function createBriefQueries({
     });
     const healthGateCall = agentToolCall('query_ontology', { operation: 'health', limit });
     const validateVaultGateCall = agentToolCall('validate_vault', {});
-    const relationDecisionGuide = [
-      {
-        decision: 'skip_existing',
-        severity: 'info',
-        meaning: 'Exact edge already exists; do not call add_relations for the same edge.',
-      },
-      {
-        decision: 'review_inverse',
-        severity: 'warn',
-        meaning: 'Reverse edge exists; inspect direction and explain before writing.',
-      },
-      {
-        decision: 'safe_to_add',
-        severity: 'info',
-        meaning: 'Schema pattern is familiar, not semantically approved; depends_on still requires observable ability, rationale, explicit human approval, and why.',
-      },
-      {
-        decision: 'review_new_schema',
-        severity: 'warn',
-        meaning: 'This creates a new schema pattern; explain why the relation type belongs before writing.',
-      },
-    ];
     const entrypoints = overviewResult.hubs.slice(0, limit).map((node) => ({
       uid: node.uid,
       slug: node.slug,
@@ -162,7 +139,6 @@ export function createBriefQueries({
       inDegree: node.inDegree,
       outDegree: node.outDegree,
     }));
-    const businessOntologyLens = buildAgentBusinessOntologyLens(entrypoints);
 
     const brief = {
       operation: 'agent_brief',
@@ -187,7 +163,6 @@ export function createBriefQueries({
       graph: workspace.summary,
       health: workspace.health,
       nextActions: workspace.nextActions,
-      businessOntologyLens,
       entrypoints,
       firstCalls: [
         agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
@@ -235,24 +210,6 @@ export function createBriefQueries({
           ],
         },
       ],
-      writePolicy: [
-        'Use uid as the permanent node identity and slug as its current human-readable address; graph relations and graph-operation inputs remain slug-based.',
-        'Run read tools first and cite returned slugs/edges before editing.',
-        'Run relation_check before add_relations to confirm matchingEdges, inverseEdges, and schema pattern. For a new depends_on, require approvalGate.writeAllowed=false until observable ability, rationale, explicit human approval, and why are present; do not expect proposedAction args.',
-        'For match_nodes, report totalMatches/limited plus followUp details, then run the followUp calls before treating scan rows as evidence.',
-        'Follow relationDecisionGuide: skip_existing blocks duplicate writes; safe_to_add is schema-only; review_inverse and review_new_schema require explicit justification before writing.',
-        'Run find_backlinks before rename_concept or merge_concepts so backlink rewrites are intentional.',
-        'Run health, cycles, growth_plan, maintenance_plan, and validate_vault after code changes or vault writes before handing the graph to another agent.',
-        'Use add_concepts/add_relations/patch_concept/merge_concepts only after the intended ontology change is clear.',
-        'Treat Definition/Includes lists as bounded positive claims, not exhaustive inventories. Never say only/all/every/exactly unless the full node body explicitly states completeness and cites a source-backed product boundary; otherwise say "the vault names/models these items" and preserve Excludes/Uncertainty limits.',
-        'When a source body says bounded packet, static packet, bounded excerpt, or selected evidence, preserve it in the same atomic claim as a measurement qualifier; never detach only/one/none/unmeasured/absent from it.',
-        'Structural readiness is not semantic qualification: inspect projectSource.currentness, meaningAssessment.status and competency question witnesses before claiming a project is ontology-ready.',
-        'The nested project-source receipt is the last measured snapshot; the outer projectSource.currentness is the current graph comparison. Treat ontology_changed, stale, unavailable, or review_required as unresolved.',
-        'Ordinary synchronization must not call delete_concept, merge_concepts, rename_concept, absorb_document, or a git commit of the vault. These require an explicit human request plus dry-run or preflight review and conflict guards.',
-        'Never finalize project meaning or repair competency answers without the owner reading them: finalize_project_meaning needs expected_mtime, a passing validate_vault and a complete compile.',
-        'After code changes introduce or rename a domain, capability, element, or relation, sync the vault before finishing.',
-      ],
-      relationDecisionGuide,
       docs: {
         workflowGuide: agentWorkflowGuide,
       },

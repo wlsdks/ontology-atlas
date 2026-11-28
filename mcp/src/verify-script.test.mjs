@@ -364,7 +364,6 @@ describe('verify.mjs first-contact gates', () => {
     assert.ok(MCP_PKG.files.includes('src/project-source/project-source-inspection.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning/project-meaning-inventory.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning/project-meaning-receipt.mjs'));
-    assert.ok(MCP_PKG.files.includes('src/server/tool-inventory.mjs'));
 
     const fullTestCommand = MCP_PKG.scripts['test:all'];
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning\/project-meaning-inventory\.test\.mjs(?:\s|$)/);
@@ -4347,7 +4346,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /Successful output prints read census consistency after cross-checking the list_concepts census\/list_concepts\/compile_ontology\/overview/);
     assert.match(verifyUsage(), /strict unknown-tool \/ unknown-argument \/ invalid-enum rejection/);
     assert.match(verifyUsage(), /list_concepts filter kind\/has-key, retired-tool answers, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
-    assert.match(verifyUsage(), /tools\/list inventory names, initialize-instruction tool inventory, schema strictness, and annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
+    assert.match(verifyUsage(), /tools\/list inventory names, schema strictness, and annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
     assert.match(verifyUsage(), /batch reader\/writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection/);
     assert.match(verifyUsage(), /structuredContent coverage summary splits direct reads, batch row-isolation writes with no write metadata, destructive dry-runs, maintenance cursor checks, and graph queries/);
     assert.match(verifyUsage(), /maintenance_plan filter enums/);
@@ -8657,42 +8656,12 @@ describe('verify.mjs first-contact gates', () => {
         'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
         "When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault, and tell the person the Atlas connection is missing; the app's Connect a coding agent dialog restores it.",
-        'Kind classification contract before writing frontmatter:',
-        '- Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization.',
-        '- classify from evidence in this order: project scope -> domain boundary -> capability behavior -> implementation element; use unknown only as a temporary review state.',
-        '- project: top-level product or system scope root. Use sparingly; most repositories should have one project node.',
-        '- domain: shared vocabulary boundary or product/business area that owns capabilities.',
-        '- capability: user-visible behavior, workflow, or coherent system ability.',
-        '- element: concrete implementation part such as UI component, API, CLI command, script, module, schema, or file-level unit.',
-        '- unknown: temporary review signal; use similar_nodes and relation_check evidence before leaving it permanent.',
-        '- High-confidence gate: write a new or changed kind only when another agent could repeat the same choice from the cited evidence; otherwise keep the node unknown/reviewed and ask for more evidence.',
-        '- Containment spine: project contains domains, domains contain capabilities, and capabilities realize through elements; use depends_on/relates only after that ownership path is clear.',
-        '- Color contract: kind hue communicates ontology layer, while domain tint communicates ownership; a wrong color is evidence that kind/domain should be rechecked.',
-        '- Before writing, report source path, symbol, route, command, or MCP tool evidence; then state why not the nearest adjacent kind.',
-        'Write guardrails:',
-        'Run relation_check before add_relations.',
+        'Run relation_check before add_relations and find_backlinks before rename_concept; connection_info({guide:"construction"}) has the rules.',
       ].join('\n'),
       health: {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
       },
       nextActions: [],
-      businessOntologyLens: {
-        policy: 'business-first',
-        readOrder: ['outcome', 'domain', 'capability', 'element'],
-        businessDomains: ['domain:ai-agent-partner'],
-        capabilityOutcomes: ['capability:mcp-server'],
-        implementationEvidence: ['element:mcp-query-ontology'],
-        decisionQuestions: [
-          'What business outcome should this ontology explain or improve?',
-          'Which business/product domain boundary does this code change?',
-          'What capability claim can a planner, marketer, or leader discuss?',
-          'Which implementation evidence proves or disproves that capability?',
-        ],
-        guidance: [
-          'Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
-          'Do not treat paths, APIs, routes, or commands as the ontology root.',
-        ],
-      },
       entrypoints: [{ slug: 'capability:mcp-server', title: 'MCP Server', kind: 'capability', degree: 3 }],
       firstCalls: [
         { tool: 'query_ontology', arguments: { operation: 'workspace_brief' } },
@@ -8727,16 +8696,6 @@ describe('verify.mjs first-contact gates', () => {
             { tool: 'validate_vault', arguments: {} },
           ],
         },
-      ],
-      writePolicy: [
-        'Run read tools first.',
-        'Run relation_check before add_relations.',
-      ],
-      relationDecisionGuide: [
-        { decision: 'skip_existing', severity: 'info', meaning: 'Do not add duplicate edge.' },
-        { decision: 'review_inverse', severity: 'warn', meaning: 'Review reverse edge direction.' },
-        { decision: 'safe_to_add', severity: 'info', meaning: 'Schema is familiar.' },
-        { decision: 'review_new_schema', severity: 'warn', meaning: 'Explain new schema pattern.' },
       ],
     };
 
@@ -8803,10 +8762,6 @@ describe('verify.mjs first-contact gates', () => {
       'agent_brief response malformed readiness score',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, businessOntologyLens: undefined }),
-      'agent_brief response missing business-first ontology lens',
-    );
-    assert.equal(
       agentBriefFailure({ ...payload, handoffPrompt: 'missing useful handoff content' }),
       'agent_brief response missing copyable handoffPrompt',
     );
@@ -8831,17 +8786,6 @@ describe('verify.mjs first-contact gates', () => {
         firstCalls: payload.firstCalls.filter((call) => call.arguments.operation !== 'relation_check'),
       }),
       'agent_brief firstCalls missing relation_check preflight',
-    );
-    assert.equal(
-      agentBriefFailure({ ...payload, writePolicy: ['Run read tools first.'] }),
-      'agent_brief writePolicy missing relation_check add_relations guidance',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        relationDecisionGuide: payload.relationDecisionGuide.filter((row) => row.decision !== 'review_new_schema'),
-      }),
-      'agent_brief relationDecisionGuide missing decisions: review_new_schema',
     );
     assert.equal(
       agentBriefFailure({ ...payload, writeGuardrails: [] }),

@@ -30,7 +30,7 @@ import {
   folderOnlyEvidenceFinding,
   starterExampleFindings,
 } from '../meaning/meaning-findings.mjs';
-import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
+import { buildDepthFindings, coverageReport, finalizeGate, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
 import { validateLoadedVaultDocument } from '../vault/documents/doc-facts.mjs';
 import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
@@ -39,7 +39,7 @@ import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/eviden
 import { EVIDENCE_TEXT_CHUNK, movedEvidencePairs, unchangedEvidencePairs } from '../drift/evidence-verdict.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
-import { foldRepeatedGuidance } from './validate-page-fold.mjs';
+import { splitRepeatedRemedies } from './validate-page-fold.mjs';
 import { WIKI_ADVISORY_CODES } from '../library/wiki-schema.mjs';
 import { judgeLoadedWikiPages } from '../library/wiki-judgement.mjs';
 import {
@@ -253,22 +253,39 @@ const VALIDATION_PAGE_LIMIT = 100;
 const WIKI_VALIDATION_PAGE_TEXT_BYTES = 128 * 1024;
 /** A host stops forwarding a tool answer near 56,000 characters; 43,935 was delivered. */
 const VALIDATION_PAGE_TEXT_BYTES = 40_000;
-const BRIEF_PROBLEM_LIMIT = 20;
+const BRIEF_PROBLEM_LIMIT = 3;
 const BY_CODE_FILE_SAMPLE = 20;
+/** Dated rows a report lists per group; `counts` and `omitted` carry the rest. */
+const EVIDENCE_ROWS = 10;
 
-function validateVaultTool({ repoRoot, offset, limit } = {}, loadedDocs = null) {
+function validateVaultTool({ repoRoot, offset, limit, unplacedOffset } = {}, loadedDocs = null) {
   requireOptionalNonNegativeInteger(offset, 'offset');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
-  return pageVaultValidation(validateVaultReport({ repoRoot }, loadedDocs), {
+  requireOptionalNonNegativeInteger(unplacedOffset, 'unplacedOffset');
+  return pageVaultValidation(validateVaultReport({ repoRoot, unplacedOffset }, loadedDocs), {
     offset: offset ?? 0,
     limit: limit ?? VALIDATION_PAGE_LIMIT,
     textBudget: limit === undefined ? VALIDATION_PAGE_TEXT_BYTES : null,
-    callerArguments: { ...(repoRoot === undefined ? {} : { repoRoot }), ...(limit === undefined ? {} : { limit }) },
+    callerArguments: { ...(repoRoot === undefined ? {} : { repoRoot }), ...(limit === undefined ? {} : { limit }), ...(unplacedOffset === undefined ? {} : { unplacedOffset }) },
   });
 }
 
 const PAGE_HINT_AND_ENVELOPE_BYTES = 4096;
 const PROBLEM_ROW_INDENT_BYTES = 4;
+
+/** The dated rows `evidenceDrift` lists, each group cut to `EVIDENCE_ROWS`, with how many more `counts` holds. */
+function cappedEvidenceDrift(drift) {
+  if (!drift) return drift;
+  const omitted = {};
+  const capped = { ...drift };
+  for (const group of ['stale', 'missing', 'folderOnly']) {
+    if (Array.isArray(drift[group]) && drift[group].length > EVIDENCE_ROWS) {
+      omitted[group] = drift[group].length - EVIDENCE_ROWS;
+      capped[group] = drift[group].slice(0, EVIDENCE_ROWS);
+    }
+  }
+  return Object.keys(omitted).length > 0 ? { ...capped, omitted } : capped;
+}
 
 const prettyBytes = (value) => Buffer.byteLength(JSON.stringify(value, null, 2), 'utf8');
 
@@ -280,14 +297,22 @@ function problemRowBytes(row) {
 function pageVaultValidation(report, { offset, limit, textBudget = null, callerArguments = {} }) {
   const total = report.problems.length;
   const start = Math.min(offset, total);
-  const byCode = Object.fromEntries(Object.entries(report.summary.byCode).map(([code, entry]) => [code, {
-    severity: entry.severity,
-    count: entry.count,
-    files: entry.files.slice(0, BY_CODE_FILE_SAMPLE),
-    ...(entry.files.length > BY_CODE_FILE_SAMPLE ? { filesOmitted: entry.files.length - BY_CODE_FILE_SAMPLE } : {}),
-  }]));
-  const frame = { ...report, problems: [], summary: { ...report.summary, byCode } };
-  let problems = foldRepeatedGuidance(report.problems.slice(start, start + limit));
+  const { problems: shortened, remedies } = splitRepeatedRemedies(report.problems);
+  const onPage = new Set(shortened.slice(start, start + limit).map((row) => row.slug));
+  // `problems` names the files of this page; a code lists only the files that are elsewhere.
+  const byCode = Object.fromEntries(Object.entries(report.summary.byCode).map(([code, entry]) => {
+    const elsewhere = entry.files.filter((slug) => !onPage.has(slug));
+    return [code, {
+      severity: entry.severity,
+      count: entry.count,
+      ...(remedies[code] === undefined ? {} : { remedy: remedies[code] }),
+      ...(elsewhere.length > 0 ? { files: elsewhere.slice(0, BY_CODE_FILE_SAMPLE) } : {}),
+      ...(elsewhere.length > BY_CODE_FILE_SAMPLE ? { filesOmitted: elsewhere.length - BY_CODE_FILE_SAMPLE } : {}),
+    }];
+  }));
+  const evidenceDrift = cappedEvidenceDrift(report.evidenceDrift);
+  const frame = { ...report, ...(evidenceDrift ? { evidenceDrift } : {}), problems: [], summary: { ...report.summary, byCode } };
+  let problems = shortened.slice(start, start + limit);
   let stoppedForSize = false;
   if (textBudget !== null) {
     let room = textBudget - prettyBytes(frame) - PAGE_HINT_AND_ENVELOPE_BYTES;
@@ -321,16 +346,31 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, callerA
   };
 }
 
+/**
+ * The validation a brief, `health` or `workspace_brief` embeds: the counts, the first problem
+ * files and the next call. The rows behind a count (stale evidence, unplaced abilities, the
+ * files of a code, drifted paths) are `validate_vault`'s.
+ */
 function briefVaultValidation(report) {
   const page = pageVaultValidation(report, { offset: 0, limit: BRIEF_PROBLEM_LIMIT });
   const { hasMore, nextOffset } = page.problemsPagination;
+  const { unplaced: _rows, unplacedOffset: _cursor, nextAction: _next, ...coverage } = page.coverage ?? {};
+  const byCode = Object.fromEntries(Object.entries(page.summary.byCode).map(([code, { files: _files, filesOmitted: _more, ...entry }]) => [code, entry]));
   return {
-    ...(hasMore ? { nextCall: { tool: 'validate_vault', arguments: { offset: nextOffset } } } : {}),
-    ...page,
+    nextCall: { tool: 'validate_vault', arguments: hasMore ? { offset: nextOffset } : {} },
+    scanned: page.scanned,
+    problemsPagination: page.problemsPagination,
+    summary: { ...page.summary, byCode },
+    problems: page.problems,
+    ...(page.coverage ? { coverage } : {}),
+    ...(page.finalizeGate ? { finalizeGate: page.finalizeGate } : {}),
+    evidenceDrift: { checked: page.evidenceDrift.checked, counts: page.evidenceDrift.counts },
+    summaryFreshness: { checked: page.summaryFreshness.checked, summaryNodes: page.summaryFreshness.summaryNodes, stale: page.summaryFreshness.stale.length },
+    pathDrift: { checked: page.pathDrift.checked, pathsChecked: page.pathDrift.pathsChecked, drifts: page.pathDrift.drifts.length },
   };
 }
 
-function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
+function validateVaultReport({ repoRoot, unplacedOffset } = {}, loadedDocs = null) {
   requireOptionalNonBlankString(repoRoot, 'repoRoot');
   // A directory walk lists files in whatever order the runtime returns them.
   const docs = [...(loadedDocs ?? loadVaultDocs(VAULT_ROOT))].sort((left, right) => (left.slug < right.slug ? -1 : 1));
@@ -364,13 +404,14 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   const depthRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : (REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null);
   const repo = repositorySurvey(depthRoot, VAULT_ROOT);
   const reads = depthRoot ? sessionReads(depthRoot) : null;
-  const depth = measureBuildDepth(docs, repo, reads, { abilityRows: true });
+  const depth = measureBuildDepth(docs, repo, reads);
   for (const finding of buildDepthFindings(docs, { repoRoot: depthRoot, collection: repo?.collection ?? null, reads, coverage: depth.areaCoverage })) {
     const issues = docIssues.get(finding.slug) || [];
     issues.push({ code: finding.code, severity: 'warning', message: finding.message });
     docIssues.set(finding.slug, issues);
   }
-  const coverage = depth.line;
+  const coverage = coverageReport(depth, { repoRoot: depthRoot, unplacedOffset });
+  const gate = depthRoot ? finalizeGate(docs, depth) : null;
   // A single-file check cannot see a parent; this pass holds the whole vault, so it
   // never tells a node that has a parent that it has none.
   suppressParentedExpectedFieldIssues(docIssues, docs);
@@ -442,6 +483,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
     return {
       scanned: docs.length,
       ...(coverage ? { coverage } : {}),
+      ...(gate ? { finalizeGate: gate } : {}),
       problems,
       summary: { problemFiles: problems.length, errorFiles, warningFiles, byCode },
       summaryFreshness: buildSummaryFreshness(docs),
@@ -480,6 +522,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   return {
     scanned: docs.length,
     ...(coverage ? { coverage } : {}),
+    ...(gate ? { finalizeGate: gate } : {}),
     problems,
     summary: {
       problemFiles: problems.length,

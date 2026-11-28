@@ -320,7 +320,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(brief.projectUid, projectUid);
     assert.ok(brief.entrypoints.every((entrypoint) => entrypoint.uid));
     assert.match(brief.handoffPrompt, /uid is the permanent identity/i);
-    assert.match(brief.handoffPrompt, new RegExp(`${domainUid}.*domains/auth`));
+    assert.ok(brief.entrypoints.some((entrypoint) => entrypoint.uid === domainUid && entrypoint.slug === 'domains/auth'));
   });
 
   it('reports neighbors total and limited from the unsliced edge set', () => {
@@ -1894,16 +1894,12 @@ describe('queryCompiledOntology', () => {
       assert.equal(Object.hasOwn(result, retired), false, `${retired} is no longer in the brief`);
     }
     assert.match(result.handoffPrompt, /ontology-atlas MCP server/);
-    assert.match(result.handoffPrompt, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);
-    assert.match(result.handoffPrompt, /Kind classification contract before writing frontmatter/);
-    assert.match(result.handoffPrompt, /Do not classify from the label alone/);
-    assert.match(result.handoffPrompt, /Containment spine/);
-    assert.match(result.handoffPrompt, /source path, symbol, route, command, or MCP tool evidence/);
-    assert.match(result.handoffPrompt, /similar_nodes/);
-    assert.match(result.handoffPrompt, /Write guardrails/);
-    assert.match(result.handoffPrompt, /relation_check/);
+    assert.match(result.handoffPrompt, /relation_check before add_relations and find_backlinks before rename_concept or merge_concepts/);
+    assert.match(result.handoffPrompt, /connection_info\(\{guide:"construction"\}\)/);
     assert.match(result.handoffPrompt, /When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault/);
+    assert.match(result.handoffPrompt, /bounded claims, not inventories: never say only, all, every or exactly/);
+    assert.ok(result.handoffPrompt.length < 2500, `the handoff prompt is ${result.handoffPrompt.length} characters`);
     assert.doesNotMatch(result.handoffPrompt, /Graph DB query pack|Investigation playbooks|Traversal strategy|Result contracts/);
     assert.doesNotMatch(result.handoffPrompt, /all_paths|match_edges|domain_matrix|centrality/);
     assert.doesNotMatch(result.handoffPrompt, /cli\/src\/index\.mjs/);
@@ -1939,34 +1935,9 @@ describe('queryCompiledOntology', () => {
       tool: 'validate_vault',
       arguments: {},
     });
-    assert.deepEqual(result.relationDecisionGuide.map((row) => row.decision), [
-      'skip_existing',
-      'review_inverse',
-      'safe_to_add',
-      'review_new_schema',
-    ]);
-    assert.ok(result.relationDecisionGuide.some((row) => row.decision === 'review_inverse' && row.severity === 'warn'));
-    assert.ok(result.writePolicy.some((line) => line.includes('relation_check before add_relations')));
-    assert.ok(result.writePolicy.some((line) => line.includes('match_nodes') && line.includes('followUp')));
-    assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
-    assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
-    assert.ok(result.writePolicy.some((line) => (
-      line.includes('bounded packet')
-      && line.includes('same atomic claim')
-      && line.includes('measurement qualifier')
-    )));
-    assert.ok(
-      result.writePolicy.some((line) =>
-        line.includes('Includes')
-        && line.includes('exhaustive')
-        && line.includes('only/all/every/exactly')),
-      'agent_brief must stop bounded Includes lists from becoming exhaustive handoff claims',
-    );
-    assert.match(
-      result.handoffPrompt,
-      /Includes.*exhaustive.*only\/all\/every\/exactly/s,
-      'the copyable handoff prompt must carry the same quantifier boundary',
-    );
+    for (const cut of ['relationDecisionGuide', 'writePolicy', 'businessOntologyLens']) {
+      assert.equal(Object.hasOwn(result, cut), false, `${cut} is in the guides, not in every brief`);
+    }
   });
 
   it('does not recommend a redundant domain edge for an element already owned by a capability', () => {

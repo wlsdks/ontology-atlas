@@ -882,7 +882,7 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.mtime?.type, "number");
     assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.filePath, undefined);
     assert.equal(addConcepts?.outputSchema?.properties?.findings?.items?.type, "string");
-    assert.equal(addConcepts?.outputSchema?.properties?.coverage?.type, "string");
+    assert.equal(addConcepts?.outputSchema?.properties?.coverage?.type, "object");
     assert.equal(addConcepts?.outputSchema?.properties?.postWriteMaintenance, undefined);
     const addConcept = findTool("add_concept");
     assert.equal(addConcept?.outputSchema?.type, "object");
@@ -3305,7 +3305,6 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
     assert.equal(agentBrief.graph.nodes, 3);
     assert.equal(agentBrief.graph.projects, 1);
     assert.doesNotMatch(JSON.stringify(agentBrief.entrypoints), /capabilities\/session/);
-    assert.doesNotMatch(JSON.stringify(agentBrief.businessOntologyLens), /capabilities\/session/);
     const briefValidation = agentBrief.health.validation;
     assert.ok(
       briefValidation.problems.some((problem) => problem.slug === "capabilities/session"),
@@ -3317,9 +3316,9 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
         limit: briefValidation.problemsPagination.limit,
         total: briefValidation.problemsPagination.total,
       },
-      { offset: 0, limit: 20, total: briefValidation.summary.problemFiles },
+      { offset: 0, limit: 3, total: briefValidation.summary.problemFiles },
     );
-    assert.equal(briefValidation.problems.length, Math.min(20, briefValidation.summary.problemFiles));
+    assert.equal(briefValidation.problems.length, Math.min(3, briefValidation.summary.problemFiles));
     assert.equal(briefValidation.nextCall, undefined);
     assert.equal(agentBrief.projectSlug, "project");
     assert.equal(agentBrief.projectSource.status, "review_required");
@@ -3337,20 +3336,6 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
     assert.equal(agentBrief.firstCalls[4].arguments.from, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.to, "capabilities/login");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
-    assert.equal(agentBrief.businessOntologyLens.policy, "business-first");
-    assert.deepEqual(agentBrief.businessOntologyLens.readOrder, ["outcome", "domain", "capability", "element"]);
-    assert.ok(agentBrief.businessOntologyLens.businessDomains.includes("domains/auth"));
-    assert.ok(agentBrief.businessOntologyLens.capabilityOutcomes.includes("capabilities/login"));
-    assert.deepEqual(agentBrief.businessOntologyLens.decisionQuestions, [
-      "What business outcome should this ontology explain or improve?",
-      "Which business/product domain boundary does this code change?",
-      "What capability claim can a planner, marketer, or leader discuss?",
-      "Which implementation evidence proves or disproves that capability?",
-    ]);
-    assert.match(
-      agentBrief.businessOntologyLens.guidance.join("\n"),
-      /do not treat paths, APIs, routes, or commands as the ontology root/i,
-    );
     assert.equal(Object.hasOwn(agentBrief, "cliFallbackCommands"), false);
     assert.ok(agentBrief.entrypoints.some((entrypoint) => entrypoint.slug === "domains/auth"));
     assert.deepEqual(agentBrief.writeGuardrails.map((guardrail) => guardrail.id), [
@@ -3370,18 +3355,11 @@ await test("query_ontology — compiled graph engine neighbors/path/query_plan/c
       "maintenance_plan",
       "validate_vault",
     ]);
-    assert.deepEqual(agentBrief.relationDecisionGuide.map((row) => row.decision), [
-      "skip_existing",
-      "review_inverse",
-      "safe_to_add",
-      "review_new_schema",
-    ]);
-    assert.match(agentBrief.writePolicy.join("\n"), /Run read tools first/);
-    assert.match(agentBrief.writePolicy.join("\n"), /relationDecisionGuide/);
-    assert.match(agentBrief.writePolicy.join("\n"), /find_backlinks before rename_concept/);
-    assert.match(agentBrief.writePolicy.join("\n"), /Definition\/Includes.*not exhaustive.*only\/all\/every\/exactly/);
-    assert.match(agentBrief.writePolicy.join("\n"), /bounded packet.*same atomic claim.*measurement qualifier/);
-    assert.match(agentBrief.handoffPrompt, /Definition\/Includes.*not exhaustive.*only\/all\/every\/exactly/s);
+    assert.match(agentBrief.handoffPrompt, /bounded claims, not inventories: never say only, all, every or exactly/);
+    assert.match(agentBrief.handoffPrompt, /relation_check before add_relations and find_backlinks before rename_concept/);
+    for (const cut of ["businessOntologyLens", "relationDecisionGuide", "writePolicy"]) {
+      assert.equal(Object.hasOwn(agentBrief, cut), false, `${cut} is in the guides, not in every brief`);
+    }
     for (const cut of ["graphDbQueryPack", "playbooks", "traversalStrategy", "resultContracts", "navigation"]) {
       assert.equal(Object.hasOwn(agentBrief, cut), false, `${cut} is cut from the brief`);
     }
@@ -3487,10 +3465,7 @@ await test("query_ontology health/workspace_brief/agent_brief — summary histor
       ["agent_brief", agentBrief.health?.validation],
     ]) {
       assert.equal(validation?.summaryFreshness?.checked, true, `${label} keeps summaryFreshness`);
-      assert.ok(
-        validation.summaryFreshness.stale.some((row) => row.slug === "domains/core"),
-        `${label} keeps the stale-summary verdict`,
-      );
+      assert.ok(validation.summaryFreshness.stale >= 1, `${label} keeps the stale-summary count`);
     }
     assert.equal(
       gitCalls(wrapper.tracePath, "log").length,

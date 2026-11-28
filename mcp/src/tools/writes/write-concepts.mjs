@@ -25,7 +25,7 @@ import { loadVaultDocs } from '../../vault/documents/document-cache.mjs';
 import { configureNodeEligibilityRepoRoot } from '../../vault/writes/eligibility-gate.mjs';
 import { updateDoc, writeDoc } from '../../vault/writes/doc-writes.mjs';
 import { detectDuplicateTitle } from '../../vault/graph/graph-queries.mjs';
-import { measureBuildDepth, repositorySurvey } from '../../construction/build-depth.mjs';
+import { coverageChange, measureBuildDepth, repositorySurvey } from '../../construction/build-depth.mjs';
 import { sessionReads } from '../../construction/session-reads.mjs';
 import { findingsOnWrittenNodes } from '../result-attachments.mjs';
 import { agentProvenance, readDocIfPresent } from '../vault-nodes.mjs';
@@ -155,6 +155,8 @@ function addConceptsBatch({ concepts }) {
   // The vault as it stood before the batch plus the rows landed so far: one load
   // serves the title check for every row, including a one-row call.
   const vaultDocs = loadVaultDocs(VAULT_ROOT);
+  // The build depth before the batch, so the answer reports only the counts the batch moved.
+  const depthBefore = measureBatchDepth(vaultDocs)?.depth ?? null;
   const landed = [];
   // Every locale the vault or this batch names, read once for the whole batch.
   const vaultLocales = new Set([
@@ -217,7 +219,7 @@ function addConceptsBatch({ concepts }) {
   const written = results.filter((row) => row.ok && row.changed !== false).map((row) => row.slug);
   const findings = written.length > 0 ? findingsOnWrittenNodes(written) : [];
   const depth = written.length > 0 ? measureBatchDepth() : null;
-  const coverage = depth?.line ?? null;
+  const coverage = depth ? coverageChange(depthBefore, depth.depth) : null;
   const answer = {
     concepts: results,
     ...(findings.length > 0 ? { findings } : {}),
@@ -229,17 +231,15 @@ function addConceptsBatch({ concepts }) {
 }
 
 /**
- * The coverage line after a batch: which abilities nothing places yet, which entry
- * files were never read, which rules cite no read lines, and which capabilities no
- * ability-to-ability edge touches, with the share it measured. A measurement
- * failure never fails the write.
+ * The build depth after a batch, for the counts it moved (`coverageChange`) and for the map
+ * analysis record. A measurement failure never fails the write.
  */
-function measureBatchDepth() {
+function measureBatchDepth(docs = loadVaultDocs(VAULT_ROOT)) {
   if (!REPO_ROOT_IS_GROUNDED) return null;
   try {
     const repo = repositorySurvey(REPO_ROOT, VAULT_ROOT);
-    const depth = measureBuildDepth(loadVaultDocs(VAULT_ROOT), repo, sessionReads(REPO_ROOT));
-    return { line: depth.line, measured: { coverage: depth.areaCoverage, collection: repo?.collection ?? null } };
+    const depth = measureBuildDepth(docs, repo, sessionReads(REPO_ROOT));
+    return { depth, measured: { coverage: depth.areaCoverage, collection: repo?.collection ?? null } };
   } catch {
     return null;
   }

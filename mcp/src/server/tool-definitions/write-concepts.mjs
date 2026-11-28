@@ -93,7 +93,7 @@ export const ADD_CONCEPTS_TOOL = {
     'A row whose slug exists fails: use patch_concept then. Frontmatter is normalized per kind; a capability or element without `domain:` comes back as a `warning`, not an error. ' +
     'Rows are independent and there is no rollback: a bad row (existing slug, invalid kind, missing or unknown field, duplicate input slug) returns `{slug, ok: false, error}` labelled `concepts[n]` with repair fields, and the rest still land, in input order. ' +
     'A title matching an existing node or an earlier row lands with a near-duplicate `warning`: patch_concept that node instead. ' +
-    'A written row is `{ok, slug, changed, mtime, warnings?}`. Invalid-only batches return no row-level write metadata, no `findings` and no `coverage`; otherwise the response adds ' + WRITE_FINDINGS_GUIDANCE + ', and `coverage`. ' +
+    'A written row is `{ok, slug, changed, mtime, warnings?}`. Invalid-only batches return no row-level write metadata, no `findings` and no `coverage`; otherwise the response adds ' + WRITE_FINDINGS_GUIDANCE + ', and `coverage`: the build-depth counts the batch moved, with the next call. ' +
     FAMILY_SCOPE_RULE_EN + ' ' + ELEMENT_NAMING_RULE_EN,
   inputSchema: {
     type: 'object',
@@ -178,8 +178,13 @@ export const ADD_CONCEPTS_TOOL = {
       },
       findings: WRITE_FINDINGS_SCHEMA,
       coverage: {
-        type: 'string',
-        description: 'One line: of the abilities the survey lists (entry points, dispatched operations, library exports, families), how many have their own node, are named inside a capability or element or are excluded with a reason, and each unplaced ability by name; the capabilities that cite no lines this server process read holding a condition, with the exact analyze_repo_structure call that reads them; the capabilities stating a rule without citing read lines that hold its condition, with the read and patch; and the capabilities no ability-to-ability depends_on touches. Absent when the repository root is not grounded or has no product source.',
+        type: 'object',
+        description: 'Only what the batch changed in the build depth: `changed` maps a count (`abilities.unplaced`, `areas.notMapped`, `reads.unread`, `rules.uncited`, `roles.unplaced`, `abilityEdges.capabilitiesWithoutEdge`) to `[before, after]`, and `nextAction` is the one call that moves the first count that is not zero. `validate_vault` lists the unplaced abilities.',
+        properties: {
+          changed: { type: 'object', additionalProperties: { type: 'array', items: { type: 'integer' }, minItems: 2, maxItems: 2 } },
+          nextAction: { type: 'string' },
+        },
+        additionalProperties: false,
       },
     },
     required: ['concepts'],

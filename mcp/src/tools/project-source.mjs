@@ -193,7 +193,7 @@ function sourceState(view) {
  * call is the confirmation and a second `confirm: true` call would only ask again.
  */
 function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {}, { consented = false } = {}) {
-  const { canonicalSlug, docs, graphHash, bound, sidecarStatus, selectedRoot, mode, inferredFrom } = selectSourceFolder({ projectSlug, rootPath });
+  const { canonicalSlug, docs, graphHash, sidecarStatus, selectedRoot, mode, inferredFrom } = selectSourceFolder({ projectSlug, rootPath });
   if (sidecarStatus === 'malformed' && repair !== true) {
     throw new Error(
       `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it, then re-run with repair: true to discard and rewrite it.`,

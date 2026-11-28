@@ -7,7 +7,7 @@ import {
 export const VALIDATE_VAULT_TOOL = {
   name: 'validate_vault',
   description:
-    'Validate every doc in the vault in one call and return a per-doc + per-code aggregate: the whole-vault health view for first-contact before writes and before / after a batch write. side effect 0. `problems` is one page, errors first: follow `problemsPagination.nextOffset` until `hasMore` is false before calling the vault clean; `summary` counts the whole vault. `pathDrift` lists source paths gone from disk (fix with patch_concept). `evidenceDrift` marks `stale` concepts whose cited file changed after them: read it before trusting the meaning. `coverage` names unplaced abilities, unread entry files, rules that cite no read lines and capabilities no ability edge touches, each with its next call.',
+    'Validate every doc in the vault in one call and return a per-doc + per-code aggregate: the whole-vault health view for first-contact before writes and before / after a batch write. side effect 0. `problems` is one page, errors first: follow `problemsPagination.nextOffset` until `hasMore` is false before calling the vault clean; `summary` counts the whole vault. `pathDrift` lists source paths gone from disk (fix with patch_concept). `evidenceDrift` marks `stale` concepts whose cited file changed after them: read it before trusting the meaning. `coverage` counts the unplaced abilities, unmapped areas, unread entry files, rules that cite no read lines and capabilities no ability edge touches, lists the first 10 unplaced abilities (`unplacedOffset.nextOffset` for the next 10) and gives one `nextAction`. `finalizeGate` lists what `finalize_project_meaning` would refuse for a row answered `answered`; empty means none. `summary.byCode[code].remedy` states the repair once for every issue of that code.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -27,14 +27,36 @@ export const VALIDATE_VAULT_TOOL = {
         maximum: 500,
         description: 'Problem files per page. Defaults 100.',
       },
+      unplacedOffset: {
+        type: 'integer',
+        minimum: 0,
+        description: 'Resume the unplaced abilities of `coverage` at `coverage.unplacedOffset.nextOffset`.',
+      },
     },
   },
   outputSchema: {
     type: 'object',
     properties: {
       coverage: {
-        type: 'string',
-        description: 'One line: of the abilities the survey lists (entry points, dispatched operations, library exports, families), how many have their own node, are named inside a capability or element or are excluded with a reason, and each unplaced ability by name; the capabilities that cite no lines this server process read holding a condition, with the exact analyze_repo_structure call that reads them; the capabilities stating a rule without citing read lines that hold its condition, with the read and patch; and the capabilities no ability-to-ability depends_on touches. Absent when no repository root is grounded or it has no product source.',
+        type: 'object',
+        description: 'Build depth as counts: `abilities` the survey lists by where each sits, `areas` mapped, `reads` of capability entry files, `rules` citing no read lines, `roles` with no element, `abilityEdges`; the page of `unplaced` abilities from `unplacedOffset`; and one `nextAction`.',
+        properties: {
+          abilities: { type: 'object' },
+          areas: { type: 'object' },
+          reads: { type: 'object' },
+          rules: { type: 'object' },
+          roles: { type: 'object' },
+          abilityEdges: { type: 'object' },
+          unplaced: { type: 'array', items: { type: 'object' }, description: 'Up to 10 abilities no node covers, from `unplacedOffset.offset`.' },
+          unplacedOffset: { ...paginationOutputSchema(), description: 'The cursor over `unplaced`; pass `nextOffset` as `unplacedOffset` until `hasMore` is false. It is not `problemsPagination`.' },
+          nextAction: { type: 'string', description: 'The one call that moves the first count that is not zero.' },
+        },
+        additionalProperties: false,
+      },
+      finalizeGate: {
+        type: 'array',
+        description: 'What `finalize_project_meaning` refuses for a row answered `answered` and for the Not mapped yet lines, one entry per block with its count; empty when it would refuse nothing. Present when the repository is grounded.',
+        items: { type: 'object', properties: { row: { type: 'string', enum: ['abilities', 'evidence', 'impact', 'not-mapped-lines'] } }, required: ['row'] },
       },
       scanned: {
         type: 'integer',
@@ -93,10 +115,11 @@ export const VALIDATE_VAULT_TOOL = {
                   enum: ['error', 'warning'],
                 },
                 count: { type: 'integer', minimum: 0 },
+                remedy: { type: 'string', description: 'What to do about every issue of this code, with `<slug>` for the node. An issue without it carries its own repair.' },
                 files: {
                   type: 'array',
                   items: NON_BLANK_STRING_SCHEMA,
-                  description: 'At most 20 of the `count` files with this code, in page order.',
+                  description: 'At most 20 files with this code that are not on this page of `problems`, in page order.',
                 },
                 filesOmitted: {
                   type: 'integer',
@@ -104,7 +127,7 @@ export const VALIDATE_VAULT_TOOL = {
                   description: 'Present when `files` names fewer than `count`: how many more. Page through `problems` for them.',
                 },
               },
-              required: ['severity', 'count', 'files'],
+              required: ['severity', 'count'],
               additionalProperties: false,
             },
           },
@@ -181,7 +204,7 @@ export const VALIDATE_VAULT_TOOL = {
       evidenceDrift: {
         type: 'object',
         description:
-          'Whether each concept still stands on the code it cites, dated by one Git walk: current / stale / missing / unknown per concept, with the stale and missing rows named (bounded to 50 each).',
+          'Whether each concept still stands on the code it cites, dated by one Git walk: current / stale / missing / unknown per concept, with the first 10 stale, missing and folder-only rows named; `omitted` counts the rest.',
         properties: {
           checked: { type: 'boolean' },
           reason: { type: 'string', description: 'Why nothing was dated, when `checked` is false.' },
@@ -256,6 +279,7 @@ export const VALIDATE_VAULT_TOOL = {
               additionalProperties: false,
             },
           },
+          omitted: { type: 'object', description: 'How many rows were cut from `stale`, `missing` and `folderOnly`, by group.' },
           hint: { type: 'string' },
         },
         required: ['checked', 'counts', 'stale', 'missing', 'folderOnly', 'hint'],
