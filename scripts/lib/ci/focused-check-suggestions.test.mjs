@@ -469,6 +469,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
+      'pnpm exec node --test mcp/src/index.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:write',
@@ -592,6 +593,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
       'pnpm exec node --test mcp/src/vault/vault.test.mjs',
+      'pnpm exec node --test mcp/src/index.test.mjs',
       'pnpm exec node --test mcp/src/vault/writes/redirect-backlinks.test.mjs',
       'pnpm exec node --test mcp/src/vault/writes/conflict-detection.test.mjs',
       'pnpm test:mcp:unit',
@@ -1280,12 +1282,11 @@ describe('focused check suggestions', () => {
     assert.ok(script[1].command.split(' ').includes('tests/contract/release/release-preflight.contract.test.ts'));
     assert.deepEqual(script[1].paths, ['scripts/lib/desktop-release/release-secret-env.mjs']);
 
-    // No src suite imports the script server now; only contracts that start it reach it, so no related row is named.
-    const mcp = suggestFocusedChecks(['mcp/src/architecture/architecture-profile.mjs']).commands.filter((item) => item.importGraph);
-    assert.equal(mcp.length, 1);
-    assert.ok(!mcp[0].command.startsWith('pnpm exec vitest related '));
-    assert.ok(mcp[0].command.split(' ').includes('tests/contract/security/mcp-vault-safety.contract.test.ts'));
-    assert.deepEqual(mcp[0].paths, ['mcp/src/architecture/architecture-profile.mjs']);
+    // Contracts start the launcher, which runs the compiled program, so no Vitest suite or contract
+    // reaches the script server's modules; its own node tests cover them.
+    const mcp = suggestFocusedChecks(['mcp/src/architecture/architecture-profile.mjs']).commands;
+    assert.equal(mcp.filter((item) => item.importGraph).length, 0);
+    assert.ok(mcp.some((item) => item.command.includes('mcp/src/architecture/architecture-profile.test.mjs')));
 
     // A deleted file is gone from Vitest's graph; the suites still importing it run by name.
     const deleted = suggestFocusedChecks([], { deletedPaths: ['scripts/lib/desktop-release/release-secret-env.mjs'] }).commands;
