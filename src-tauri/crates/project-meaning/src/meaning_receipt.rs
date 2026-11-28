@@ -313,6 +313,10 @@ pub fn read_meaning_assessment(vault: &Path, project: &AssessedProject<'_>) -> A
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::disallowed_methods,
+    reason = "a test builds its folders with the standard library"
+)]
 mod tests {
     use super::*;
 

@@ -268,8 +268,8 @@ fn heading_status<'a>(text: &'a str, id: &str) -> Option<&'a str> {
     (!status.is_empty() && !status.chars().any(is_line_terminator)).then_some(status)
 }
 
-fn backtick_values<'a>(
-    value: &'a str,
+fn backtick_values(
+    value: &str,
     label: &str,
     valid: impl Fn(&str) -> bool,
 ) -> Result<Vec<String>, MarkdownFault> {

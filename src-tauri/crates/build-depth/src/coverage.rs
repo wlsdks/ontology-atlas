@@ -302,7 +302,7 @@ fn unplaced_row(row: &AbilityRow) -> UnplacedRow {
 
 fn ability_edges(documents: &[LoadedDocument]) -> Option<AbilityEdgeSummary> {
     let links = capability_links(documents);
-    (links.capabilities >= 2).then(|| AbilityEdgeSummary {
+    (links.capabilities >= 2).then_some(AbilityEdgeSummary {
         edges: links.edges,
         capabilities_without_edge: links.alone.len(),
     })
