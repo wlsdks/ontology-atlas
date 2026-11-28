@@ -197,7 +197,7 @@ describe('rooted MCP read runner', () => {
   });
 
   test('inventory is non-empty and excludes every write-capable bootstrap operation', () => {
-    assert.ok(READ_ONLY_TOOLS.length > 8, 'read-only inventory must not become an idle gate');
+    assert.ok(READ_ONLY_TOOLS.length > 5, 'read-only inventory must not become an idle gate');
     for (const name of [
       'add_concept', 'add_concepts', 'add_relation', 'add_relations',
       'patch_concept', 'connect_project_source', 'finalize_project_meaning',

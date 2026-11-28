@@ -93,7 +93,6 @@ export function lifecycleToolsSchemaFailure(tools) {
     'newSlug',
     'sourcePath',
     'targetPath',
-    'moved',
     'backlinkUpdates',
   ])) {
     return 'rename_concept outputSchema required drift';

@@ -1,7 +1,7 @@
 import { statSync } from 'node:fs';
 /**
  * Edge writes and the frontmatter keys they land in: `add_relation`,
- * `add_relations`, `remove_relation`, `replace_relation`, with the alias-key
+ * `add_relations`, `remove_relation` (which also replaces, with `replaceWith`), with the alias-key
  * resolution that makes one edge one edge however it was authored.
  */
 
@@ -188,7 +188,21 @@ function relationFindings(from, options) {
   return findings.length > 0 ? { findings } : {};
 }
 
-function removeRelation({ from, to, type: requestedType, confirm = false, expected_mtime }) {
+function removeRelation({ from, to, type: requestedType, replaceWith, confirm = false, expected_mtime }) {
+  if (replaceWith !== undefined) {
+    requirePlainObject(replaceWith, 'replaceWith');
+    requireAllowedObjectKeys(replaceWith, 'replaceWith', ['to', 'type', 'why']);
+    return replaceRelation({
+      from,
+      oldTo: to,
+      oldType: requestedType,
+      newTo: replaceWith.to,
+      newType: replaceWith.type,
+      why: replaceWith.why,
+      confirm,
+      expected_mtime,
+    });
+  }
   requireNonBlankString(from, 'from');
   requireNonBlankString(to, 'to');
   requireNonBlankString(requestedType, 'type');
@@ -249,15 +263,16 @@ function removeRelation({ from, to, type: requestedType, confirm = false, expect
 }
 
 function replaceRelation({ from, oldTo, oldType: requestedOldType, newTo, newType: requestedNewType, why, confirm = false, expected_mtime }) {
-  for (const [value, name] of [[from, 'from'], [oldTo, 'oldTo'], [requestedOldType, 'oldType'], [newTo, 'newTo'], [requestedNewType, 'newType']]) requireNonBlankString(value, name);
+  for (const [value, name] of [[from, 'from'], [oldTo, 'to'], [requestedOldType, 'type'], [newTo, 'replaceWith.to'], [requestedNewType, 'replaceWith.type']]) requireNonBlankString(value, name);
+  if (why !== undefined && typeof why !== 'string') throw new Error('replaceWith.why must be a string.');
   requireOptionalBoolean(confirm, 'confirm');
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
-  if (!RELATION_KEY[requestedOldType]) throw new Error(formatAllowedValueError('oldType', requestedOldType, RELATION_TYPES));
-  if (!RELATION_KEY[requestedNewType]) throw new Error(formatAllowedValueError('newType', requestedNewType, RELATION_TYPES));
+  if (!RELATION_KEY[requestedOldType]) throw new Error(formatAllowedValueError('type', requestedOldType, RELATION_TYPES));
+  if (!RELATION_KEY[requestedNewType]) throw new Error(formatAllowedValueError('replaceWith.type', requestedNewType, RELATION_TYPES));
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalOldTo = resolveExistingVaultSlug(oldTo);
   const canonicalNewTo = resolveExistingVaultSlug(newTo);
-  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'replace_relation');
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'remove_relation');
   if (!canonicalFrom) throw new Error(missingSlugMessage('Source slug does not exist in vault', from));
   if (!canonicalOldTo) throw new Error(missingSlugMessage('Old target slug does not exist in vault', oldTo));
   if (!canonicalNewTo) throw new Error(missingSlugMessage('New target slug does not exist in vault', newTo));
@@ -394,6 +409,5 @@ function addRelationsBatch({ relations }) {
 export {
   addRelation,
   removeRelation,
-  replaceRelation,
   addRelationsBatch,
 };

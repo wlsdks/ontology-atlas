@@ -62,7 +62,7 @@ export type AnalysisSaveState = {
   rawAnswer?: string;
 };
 
-const READ_TOOLS = new Set(['connection_info', 'list_kinds', 'list_concepts', 'get_concept', 'get_concepts', 'find_evidence', 'find_backlinks', 'find_neighbors', 'find_path', 'find_orphans', 'query_concepts', 'query_ontology', 'compile_ontology', 'validate_vault', 'inspect_architecture']);
+const READ_TOOLS = new Set(['connection_info', 'list_kinds', 'list_concepts', 'get_concept', 'get_concepts', 'find_backlinks', 'find_neighbors', 'find_path', 'query_ontology', 'compile_ontology', 'validate_vault', 'inspect_architecture']);
 const CATEGORIES = new Set(['definition', 'boundary', 'relation', 'evidence', 'architecture']);
 const MAX_EVIDENCE = 200;
 

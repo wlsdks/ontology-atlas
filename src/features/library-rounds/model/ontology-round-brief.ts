@@ -28,7 +28,7 @@ export function buildOntologyRoundBrief({ vaultRoot, locale, focus }: OntologyRo
     '6. When a proposed change answers one of the write-door findings, name which one: definition-missing, boundary-missing, uncertainty-missing, epistemic-exclusion, folder-only-evidence, or slug-outside-kind-folder. A proposal that answers none of them says so; do not attach a finding name to a change that does not repair it.',
     '',
     'Hard boundary:',
-    '- Do not call add_concept, add_concepts, add_relation, add_relations, patch_concept, rename_concept, merge_concepts, delete_concept, reclassify_concept, or finalize_project_meaning.',
+    '- Do not call add_concept, add_concepts, add_relation, add_relations, patch_concept, rename_concept, merge_concepts, delete_concept, or finalize_project_meaning.',
     '- Do not edit, create, rename, delete, or snapshot any file.',
     '- Use no shell, Python, grep, cat, filesystem API, or ACP tool-result/transcript path. If an MCP response is truncated or unavailable, use another atlas-vault read or report Unknown.',
     '- Do not claim that a proposal is accepted, qualified, executable, or finalized.',

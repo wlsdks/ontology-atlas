@@ -50,17 +50,19 @@ export function describeWrite(toolName, args) {
       return n === null ? 'Add relations' : `Add ${n} relation(s)`;
     }
     case 'remove_relation':
+      if (a.replaceWith && typeof a.replaceWith === 'object') {
+        return from && to && typeof a.replaceWith.to === 'string'
+          ? `Replace the link ${from} → ${to} with ${from} → ${shown(a.replaceWith.to)}`
+          : 'Replace one relation';
+      }
       return from && to ? `Remove the link ${from} → ${to}` : 'Remove one relation';
-    case 'replace_relation':
-      return named('from', 'oldTo', 'newTo')
-        ? `Replace the link ${from} → ${text('oldTo')} with ${from} → ${text('newTo')}`
-        : 'Replace one relation';
     case 'patch_concept':
       return slug ? `Edit concept ${slug}` : 'Edit one concept';
     case 'rename_concept':
+      if (a.newKind !== undefined) {
+        return named('oldSlug') ? `Change the kind of ${text('oldSlug')}` : 'Change one concept kind';
+      }
       return named('oldSlug', 'newSlug') ? `Rename ${text('oldSlug')} → ${text('newSlug')}` : 'Rename one concept';
-    case 'reclassify_concept':
-      return slug ? `Change the kind of ${slug}` : 'Change one concept kind';
     case 'merge_concepts':
       return named('fromSlug', 'intoSlug') ? `Merge ${text('fromSlug')} into ${text('intoSlug')}` : 'Merge concepts';
     case 'delete_concept':
@@ -68,14 +70,11 @@ export function describeWrite(toolName, args) {
     case 'absorb_document':
       return named('filePath') ? `Absorb ${path('filePath')} into typed nodes` : 'Absorb a document into typed nodes';
     case 'connect_project_source':
+      if (a.disconnect === true) return 'Disconnect a source folder from this vault';
       if (!named('projectSlug')) return 'Connect a source folder to this vault';
       return named('rootPath')
         ? `Connect ${text('projectSlug')} to the source folder ${path('rootPath')}`
         : `Connect ${text('projectSlug')} to the source folder inferred from this vault's location`;
-    case 'disconnect_project_source':
-      return 'Disconnect a source folder from this vault';
-    case 'git_snapshot':
-      return 'Commit the vault';
     case 'finalize_project_meaning': {
       const project = named('projectSlug') ? text('projectSlug') : 'the project';
       const receipt = `re-measure the source folder connected to ${project} and write its project meaning receipt`;

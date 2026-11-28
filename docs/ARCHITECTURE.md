@@ -76,9 +76,9 @@ area: architecture
 │ │                  inspect_architecture                 │
 │ └─ write tools    add_concepts · add_relations ·        │
 │                    remove/replace relation · patch ·    │
-│                    reclassify · delete/rename/merge ·   │
-│                    absorb_document · git_snapshot ·     │
-│                    finalize_project_meaning             │
+│                    delete/rename/reclassify/merge ·     │
+│                    absorb_document · connect/disconnect │
+│                    project source · finalize meaning    │
 │                                                         │
 │ AI agent (Claude Code, Cursor, …) reads/writes the     │
 │ same vault directory the user picked in /docs.         │

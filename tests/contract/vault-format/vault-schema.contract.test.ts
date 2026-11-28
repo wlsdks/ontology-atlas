@@ -86,7 +86,7 @@ describe("vault kind schema contract", () => {
   });
 
   /*
-   * Which list a kind change moves an entry into: the app reclassify and MCP `reclassify_concept` /
+   * Which list a kind change moves an entry into: the app reclassify and MCP `rename_concept` with `newKind` /
    * `merge_concepts` use two copies of one table, so a drift would move an entry on one surface only.
    */
   describe("containment lists — app and MCP place an entry in the same list", () => {

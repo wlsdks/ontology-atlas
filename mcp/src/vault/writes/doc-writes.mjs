@@ -41,7 +41,7 @@ function normalizeFrontmatterValue(key, value) {
 function notFoundSuffix(rootPath, slug) {
   const suggestions = suggestSimilarSlugs(rootPath, slug);
   const lines = [
-    `Use list_concepts() to see all slugs, or find_evidence({title:${JSON.stringify(slug)}}) to search by title.`,
+    `Use list_concepts() to see all slugs, or list_concepts({mentions:${JSON.stringify(slug)}}) to search by title.`,
   ];
   if (suggestions.length > 0) {
     lines.push(`Similar slugs in this vault: ${suggestions.map((s) => `"${s}"`).join(', ')}.`);

@@ -1,7 +1,6 @@
 /**
- * The side-effect-free vault reads: connection facts, listing and fetching
- * concepts, prose evidence, backlinks, neighbors, paths, kinds, orphans,
- * filtered queries, and source passages.
+ * The side-effect-free vault reads: connection facts, listing, searching and
+ * fetching concepts, backlinks, neighbors, paths, kinds, and source passages.
  */
 
 import {
@@ -13,9 +12,9 @@ import {
 import { META_MODEL_RULES_EN } from '../construction/construction-rules.mjs';
 import { scoreEvidence } from '../evidence-search/evidence-score.mjs';
 import {
-  buildFindEvidenceZeroHitsGrowthHint,
+  buildFilterZeroRowsGrowthHint,
   buildFindPathGrowthHint,
-  buildQueryConceptsZeroRowsGrowthHint,
+  buildMentionsZeroHitsGrowthHint,
   findNearTitleMatches,
 } from '../ontology-engine/growth-hint.mjs';
 import { NODE_KIND_VALUES } from '../ontology-engine.mjs';
@@ -43,7 +42,6 @@ import {
   requireOptionalBoolean,
   requireOptionalDirection,
   requireOptionalEnum,
-  requireOptionalNodeKindArray,
   requireOptionalNonBlankString,
   requireOptionalNonNegativeInteger,
   requireOptionalNonNegativeNumber,
@@ -69,9 +67,8 @@ import { FULL_BODY_MAX_CHARS, GET_CONCEPTS_FULL_BODY_MAX, describeBodyDelivery }
 import {
   loadVaultDocs,
   readDoc,
-  readVaultDocText,
 } from '../vault/documents/document-cache.mjs';
-import { findBacklinks, findOrphans, findPath, listKinds } from '../vault/graph/graph-queries.mjs';
+import { findBacklinks, findPath, listKinds } from '../vault/graph/graph-queries.mjs';
 import {
   normalizeGraphRelationKey,
   relationRefsFor,
@@ -88,14 +85,17 @@ import {
 import { createHash } from 'node:crypto';
 import { compareText } from '../compare-text.mjs';
 
-function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 }) {
+function listConcepts({ kind, domain, since, summary, mentions, filter, offset = 0, limit = 100 }) {
   requireOptionalNonBlankString(kind, 'kind');
   requireOptionalEnum(kind, 'kind', NODE_KIND_VALUES);
   requireOptionalNonBlankString(domain, 'domain');
   requireOptionalNonNegativeNumber(since, 'since');
   requireOptionalBoolean(summary, 'summary');
+  requireOptionalNonBlankString(mentions, 'mentions');
+  requireOptionalNonBlankString(filter, 'filter');
   requireOptionalNonNegativeInteger(offset, 'offset');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
+  const parsedFilter = filter === undefined ? null : parseFilter(filter);
   const docs = loadVaultDocs(VAULT_ROOT);
 
   // Vault-wide validation counts. Every raw doc is validated so silent
@@ -128,27 +128,33 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   // sync from the previous response's maximum mtime. Equal mtimes are excluded, so
   // resending the max never double-fetches.
   const sinceMs = typeof since === 'number' && Number.isFinite(since) ? since : null;
-  const filtered = docs.filter((doc) => {
+  const narrowed = docs.filter((doc) => {
     const docKind = doc.frontmatter.kind;
     if (kind && docKind !== kind) return false;
     if (!docKind) return false; // A frontmatter `kind:` is what makes it an ontology node.
     // Domain filter on frontmatter `domain:`, applied across kinds, so "every
-    // capability in the auth domain" needs no query_concepts DSL.
+    // capability in the auth domain" needs no filter expression.
     if (domain && doc.frontmatter.domain !== domain) return false;
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
-  }).sort((a, b) => compareText(a.slug, b.slug));
+  });
+  const selected = parsedFilter ? narrowed.filter((doc) => parsedFilter.match(doc)) : narrowed;
+  // Best mention first (score desc, then slug asc); without `mentions`, slug order alone.
+  const ranked = mentions === undefined
+    ? selected.map((doc) => ({ doc })).sort((a, b) => compareText(a.doc.slug, b.doc.slug))
+    : rankByMentions(selected, mentions);
+  const filtered = ranked.map(({ doc }) => doc);
   if (offset > filtered.length) {
     throw new Error(
       `offset must be less than or equal to the total matching nodes (${filtered.length}); Received: ${offset}.`,
     );
   }
-  const page = filtered.slice(offset, offset + limit);
+  const page = ranked.slice(offset, offset + limit);
   const summaryTruncatedSlugs = [];
-  const nodes = page.map((doc) => {
+  const nodes = page.map(({ doc, matchedIn, score }) => {
     // Opt-in summary, so one list call answers "what is each node about?".
-    // Capped at 200 chars to keep the payload from ballooning (same cap as
-    // find_evidence). Off unless the caller passes summary:true.
+    // Capped at 200 chars to keep the payload from ballooning. Off unless the
+    // caller passes summary:true.
     let summaryFields = {};
     if (summary === true) {
       const delivery = describeBodyDelivery(doc.body, { maxLen: 200 });
@@ -167,9 +173,10 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
       capabilities: doc.frontmatter.capabilities,
       elements: doc.frontmatter.elements,
       // Per-node mtime (ms), so a list response alone answers "which nodes
-      // changed recently". Same meaning as get_concept's mtime field: sortable,
+      // changed recently". Same meaning as get_concepts' mtime field: sortable,
       // and usable for external-change detection.
       mtime: doc.mtime,
+      ...(matchedIn === undefined ? {} : { matchedIn, score }),
       ...summaryFields,
     };
   });
@@ -177,6 +184,8 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
     total: filtered.length,
     census: vaultCensus(),
     vaultRoot: VAULT_ROOT,
+    ...(filter === undefined ? {} : { filter, parsedAs: parsedFilter.repr }),
+    ...(mentions === undefined ? {} : { query: mentions }),
     nodes,
     returned: nodes.length,
     limited: offset + nodes.length < filtered.length,
@@ -198,7 +207,60 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
       errorCount + warningCount > 0
         ? { errorCount, warningCount }
         : undefined,
+    ...(filtered.length === 0
+      ? zeroRowsGrowthHint({ docs, narrowed, selected, mentions, filter })
+      : {}),
   };
+}
+
+/**
+ * Nodes that mention `text`, best first. Relevance: title > frontmatter ref > body plus
+ * title token overlap; a score above 0 exactly when a substring matched. The body counts
+ * only when title and frontmatter did not match, and is read only when its fingerprint
+ * allows the text and no earlier call answered it (`docBodyIncluder`).
+ */
+function rankByMentions(docs, text) {
+  const needle = String(text).toLowerCase().trim();
+  const bodyIncludes = docBodyIncluder(needle);
+  const scored = [];
+  for (const doc of docs) {
+    const docTitle = String(doc.frontmatter.title || doc.frontmatter.name || '');
+    // capabilities/elements joined with \n so a needle can't false-match across the field boundary.
+    const frontmatterHaystack = `${String(doc.frontmatter.capabilities ?? '')}\n${String(doc.frontmatter.elements ?? '')}`;
+    let { score, matchedIn } = scoreEvidence(text, { title: docTitle, frontmatterHaystack, body: '' });
+    if (score <= 0) {
+      if (!bodyIncludes(doc)) continue;
+      ({ score, matchedIn } = scoreEvidence(text, { title: docTitle, frontmatterHaystack, bodyIncludes: true }));
+    }
+    if (score <= 0) continue;
+    scored.push({ doc, matchedIn, score });
+  }
+  return scored.sort((a, b) => b.score - a.score || compareText(a.doc.slug, b.doc.slug));
+}
+
+/**
+ * Zero rows is an unanswered question, so the answer says which part of it matched
+ * nothing: a `filter` aimed at a kind or domain the vault does not have, or a mention no
+ * title says. Plain `kind` / `domain` / `since` narrowing carries no hint.
+ */
+function zeroRowsGrowthHint({ docs, narrowed, selected, mentions, filter }) {
+  if (mentions !== undefined && (filter === undefined || selected.length > 0)) {
+    const candidates = narrowed.map((doc) => ({
+      slug: doc.slug,
+      title: String(doc.frontmatter.title || doc.frontmatter.name || doc.slug),
+    }));
+    return { growthHint: buildMentionsZeroHitsGrowthHint({ text: mentions, nearMatches: findNearTitleMatches(mentions, candidates) }) };
+  }
+  if (filter === undefined) return {};
+  const byKind = Object.create(null);
+  const byDomain = Object.create(null);
+  for (const doc of docs) {
+    const kind = doc.frontmatter?.kind;
+    if (kind) byKind[kind] = (byKind[kind] ?? 0) + 1;
+    const domain = doc.frontmatter?.domain;
+    if (typeof domain === 'string' && domain) byDomain[domain] = (byDomain[domain] ?? 0) + 1;
+  }
+  return { growthHint: buildFilterZeroRowsGrowthHint({ filter, byKind, byDomain }) };
 }
 
 function getConcept({ slug, uid, body }, context = {}) {
@@ -360,117 +422,6 @@ function getConceptsBatch({ slugs, uids, body }) {
     }
   });
   return { concepts };
-}
-
-const FIND_EVIDENCE_DEFAULT_LIMIT = 50;
-function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = false } = {}) {
-  requireNonBlankString(title, 'title');
-  requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
-  requireOptionalBoolean(nodesOnly, 'nodesOnly');
-  const docs = loadVaultDocs(VAULT_ROOT);
-  const needle = String(title).toLowerCase().trim();
-  const bodyIncludes = docBodyIncluder(needle);
-  const scored = [];
-  for (const doc of docs) {
-    const docTitle = String(doc.frontmatter.title || doc.frontmatter.name || '');
-    // capabilities/elements joined with \n so a needle can't false-match across
-    // the field boundary — keeps inclusion identical to the prior per-field sweep.
-    const frontmatterHaystack = `${String(doc.frontmatter.capabilities ?? '')}\n${String(doc.frontmatter.elements ?? '')}`;
-    // Relevance score: title > frontmatter ref > body + title token overlap; score > 0
-    // exactly when a substring matched. The body counts only when title and
-    // frontmatter did not match, and is read only when its fingerprint allows the
-    // needle and no earlier call answered it (`docBodyIncluder`).
-    let { score, matchedIn } = scoreEvidence(title, { title: docTitle, frontmatterHaystack, body: '' });
-    if (score <= 0) {
-      if (!bodyIncludes(doc)) continue;
-      ({ score, matchedIn } = scoreEvidence(title, { title: docTitle, frontmatterHaystack, bodyIncludes: true }));
-    }
-    if (score <= 0) continue;
-    // The row states whether it is a node, because an absent `kind` key vanishes from
-    // JSON and agents would cite memos as nodes.
-    const isNode = typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
-    if (nodesOnly && !isNode) continue;
-    scored.push({ doc, isNode, matchedIn, score });
-  }
-  // Best match first: score desc, then nodes before non-nodes, then slug asc. Body
-  // matches tie at 0.3, so without the middle key loose memos crowd out nodes; it
-  // never beats score, so a memo whose title matches still ranks high.
-  scored.sort(
-    (a, b) =>
-      b.score - a.score ||
-      Number(b.isNode) - Number(a.isNode) ||
-      compareText(a.doc.slug, b.doc.slug),
-  );
-  // Only the rows returned carry an excerpt, so only their bodies are read for it.
-  const matches = scored.map(({ doc, isNode, matchedIn, score }, index) => {
-    const row = {
-      uid: doc.frontmatter.uid,
-      slug: doc.slug,
-      kind: doc.frontmatter.kind,
-      isNode,
-      title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-      // Same shape as list_concepts / find_backlinks / find_orphans /
-      // query_concepts, so an agent reuses one sort/filter path across every
-      // read tool.
-      domain: doc.frontmatter.domain,
-      mtime: doc.mtime,
-      matchedIn,
-      score,
-    };
-    if (index >= limit) return row;
-    // Match excerpts get truncated too — and find_evidence can match *inside* the
-    // body, so without saying it was cut, the very sentence that matched can be
-    // absent from the response. The two fields appear only when truncated.
-    // One-line prose summary of the matched doc (max 200 chars) so an agent
-    // knows what a match is about without a follow-up get_concept. Same
-    // prose-aware extraction as get_concept's 800-char helper, shorter cap.
-    const evidenceDelivery = describeBodyDelivery(readVaultDocText(doc).body, { maxLen: 200 });
-    row.excerpt = evidenceDelivery.text;
-    if (evidenceDelivery.info.truncated) {
-      row.excerptTruncated = true;
-      row.bodyChars = evidenceDelivery.info.totalChars;
-    }
-    return row;
-  });
-  const limited = matches.slice(0, limit);
-  const moreMatched = limited.length < matches.length;
-  const result = {
-    ...(moreMatched
-      ? { limitHint: `The ${limited.length} best of ${matches.length} matches. Narrow the title, pass nodesOnly: true, or raise limit (at most 500).` }
-      : {}),
-    query: title,
-    total: matches.length,
-    limited: moreMatched,
-    matches: limited,
-  };
-  // When loose documents came back in the results, say so and give the way to
-  // narrow it — rather than filtering silently, hand the reader what they need to
-  // judge for themselves.
-  const nonNodeCount = limited.filter((m) => !m.isNode).length;
-  if (nonNodeCount > 0) {
-    result.nonNodeHint =
-      `${nonNodeCount} of ${limited.length} match(es) are not graph nodes (no \`kind:\` — meeting notes, memos, drafts ` +
-      `live in the same folder by design). They are ranked below nodes of equal relevance. ` +
-      `Pass nodesOnly: true to see only graph nodes.`;
-  }
-  const truncatedSlugs = limited.filter((m) => m.excerptTruncated).map((m) => m.slug);
-  if (truncatedSlugs.length > 0) {
-    result.bodyHint = `${truncatedSlugs.length} of ${limited.length} match(es) returned a partial excerpt — the matched text may sit past it. Read the whole body with get_concepts({ slugs: [${truncatedSlugs
-      .slice(0, 3)
-      .map((s) => `"${s}"`)
-      .join(', ')}${truncatedSlugs.length > 3 ? ', …' : ''}], body: "full" }).`;
-  }
-  // Zero hits is an unanswered question. Substring matching already failed (every
-  // score <= 0), so near-miss titles are found by token overlap alone.
-  if (matches.length === 0) {
-    const candidates = docs.map((doc) => ({
-      slug: doc.slug,
-      title: String(doc.frontmatter.title || doc.frontmatter.name || doc.slug),
-    }));
-    const nearMatches = findNearTitleMatches(title, candidates);
-    result.growthHint = buildFindEvidenceZeroHitsGrowthHint({ title, nearMatches });
-  }
-  return result;
 }
 
 /**
@@ -681,66 +632,6 @@ function vaultCensus() {
   return { total, byKind, referencedOnlyTotal };
 }
 
-function findOrphansTool({ kind, excludeKinds } = {}) {
-  requireOptionalNonBlankString(kind, 'kind');
-  requireOptionalEnum(kind, 'kind', NODE_KIND_VALUES);
-  requireOptionalNodeKindArray(excludeKinds, 'excludeKinds');
-  return findOrphans(VAULT_ROOT, {
-    kind: typeof kind === 'string' ? kind : undefined,
-    excludeKinds: Array.isArray(excludeKinds) ? excludeKinds : undefined,
-  });
-}
-
-function queryConceptsTool({ filter, limit }) {
-  requireNonBlankString(filter, 'filter');
-  requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
-  const parsed = parseFilter(filter);
-  const cap = limit ?? 100;
-  const docs = loadVaultDocs(VAULT_ROOT).filter((d) => Boolean(d.frontmatter?.kind));
-  const matches = [];
-  let total = 0;
-  for (const doc of docs) {
-    if (!parsed.match(doc)) continue;
-    total += 1;
-    if (matches.length < cap) {
-      matches.push({
-        uid: doc.frontmatter.uid,
-        slug: doc.slug,
-        kind: doc.frontmatter.kind,
-        title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-        domain: doc.frontmatter.domain,
-        capabilities: doc.frontmatter.capabilities,
-        elements: doc.frontmatter.elements,
-        // Same shape as list_concepts / find_backlinks / find_orphans, so an agent
-        // can sort or filter query results by staleness with no follow-up call.
-        mtime: doc.mtime,
-      });
-    }
-  }
-  const result = {
-    filter,
-    parsedAs: parsed.repr,
-    total,
-    matches,
-    limited: total > matches.length,
-  };
-  // Zero rows is an unanswered question. Check the real vault inventory
-  // (byKind/byDomain) for whether the filter aimed at a kind or domain that does
-  // not exist.
-  if (total === 0) {
-    const byKind = Object.create(null);
-    const byDomain = Object.create(null);
-    for (const doc of docs) {
-      const kind = doc.frontmatter?.kind;
-      if (kind) byKind[kind] = (byKind[kind] ?? 0) + 1;
-      const domain = doc.frontmatter?.domain;
-      if (typeof domain === 'string' && domain) byDomain[domain] = (byDomain[domain] ?? 0) + 1;
-    }
-    result.growthHint = buildQueryConceptsZeroRowsGrowthHint({ filter, byKind, byDomain });
-  }
-  return result;
-}
-
 const READ_SOURCE_REFUSALS = {
   symlink_path: 'is a symbolic link or sits under one. read_source reads only regular files inside the vault\'s `sources/` folder, so a link cannot hand it a file from elsewhere on the disk. Copy the document into `sources/` instead of linking it.',
   non_regular_file: 'is not a regular file. Name one document file under `sources/`.',
@@ -787,13 +678,10 @@ export {
   listConcepts,
   getConcept,
   getConceptsBatch,
-  findEvidence,
   connectionInfoTool,
   findBacklinksTool,
   findNeighborsTool,
   findPathTool,
   listKindsTool,
-  findOrphansTool,
-  queryConceptsTool,
   readSourceTool,
 };

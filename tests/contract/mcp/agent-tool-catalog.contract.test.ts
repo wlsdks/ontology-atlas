@@ -208,7 +208,6 @@ describe('agent tool catalog matches the MCP server definition', () => {
       'analyze_repo_structure',
       'infer_imports',
       'index_project',
-      'git_snapshot',
       'delete_concept',
       'rename_concept',
       'merge_concepts',

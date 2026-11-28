@@ -250,12 +250,12 @@ describe('saved constellation reads', () => {
     }
   });
 
-  it('serves both tools through the public JSON-RPC registry in read-only mode', async () => {
+  it('serves the list and one constellation through get_constellation in read-only mode', async () => {
     const vault = makeVault();
     try {
       const { responses } = await rpc(vault, [
         { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
-        callTool(3, 'list_constellations', { limit: 1 }),
+        callTool(3, 'get_constellation', { limit: 1 }),
         callTool(4, 'get_constellation', {
           id: '33333333-3333-4333-8333-333333333333',
           limit: 2,
@@ -264,11 +264,10 @@ describe('saved constellation reads', () => {
         }),
       ]);
       const tools = responses.find((response) => response.id === 2)?.result?.tools ?? [];
-      for (const name of ['list_constellations', 'get_constellation']) {
-        const tool = tools.find((candidate) => candidate.name === name);
-        assert.equal(tool?.annotations?.readOnlyHint, true);
-        assert.equal(tool?.annotations?.openWorldHint, false);
-      }
+      const tool = tools.find((candidate) => candidate.name === 'get_constellation');
+      assert.equal(tool?.annotations?.readOnlyHint, true);
+      assert.equal(tool?.annotations?.openWorldHint, false);
+      assert.equal(tools.some((candidate) => candidate.name === 'list_constellations'), false);
       const listed = responses.find((response) => response.id === 3)?.result?.structuredContent;
       assert.equal(listed.contract, 'savedConstellationList:v1');
       assert.equal(listed.pagination.hasMore, true);

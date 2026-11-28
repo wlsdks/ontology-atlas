@@ -293,7 +293,7 @@ test('a relation write never hands out an mtime that would let a body write pass
   assert.match(readFileSync(ledger, 'utf8'), /A note the person added\./);
 });
 
-test('remove_relation and replace_relation read "contains" as the typed key add_relation wrote', async (t) => {
+test('remove_relation, alone and with replaceWith, reads "contains" as the typed key add_relation wrote', async (t) => {
   const root = repository();
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const call = server(root);
@@ -305,8 +305,8 @@ test('remove_relation and replace_relation read "contains" as the typed key add_
   const ledger = join(root, 'atlas', 'ledger.md');
   await call('add_relation', { from: 'ledger', to: 'domains/payments', type: 'contains', why: 'Payments is one area.' });
 
-  const replaced = await call('replace_relation', {
-    from: 'ledger', oldTo: 'domains/payments', oldType: 'contains', newTo: 'domains/billing', newType: 'contains', confirm: true,
+  const replaced = await call('remove_relation', {
+    from: 'ledger', to: 'domains/payments', type: 'contains', replaceWith: { to: 'domains/billing', type: 'contains' }, confirm: true,
   });
   assert.equal(replaced.error, undefined, replaced.error);
   assert.deepEqual([replaced.oldRelation.type, replaced.newRelation.type], ['domains', 'domains']);

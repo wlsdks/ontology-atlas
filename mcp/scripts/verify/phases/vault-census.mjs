@@ -1,6 +1,6 @@
 import { structuredContentFailure } from '../checks/structured-content.mjs';
 import {
-  findOrphansFailure,
+  orphanNodesFailure,
   censusFailure,
   projectProbeFailure,
   validateVaultFailure,
@@ -15,25 +15,25 @@ export function verifyVaultCensus(responses, { projectProbeRes }) {
   let kindsPayload = null;
   let validationPayload = null;
   if (!orphansRes || !orphansRes.result) {
-    log('fail', 'no find_orphans response');
+    log('fail', 'no orphan match_nodes response');
     return false;
   }
   try {
     const text = orphansRes.result.content?.[0]?.text || '';
     const parsed = JSON.parse(text);
-    const failure = findOrphansFailure(parsed);
+    const failure = orphanNodesFailure(parsed);
     if (failure) {
       log('fail', failure);
       return false;
     }
-    const structuredFailure = structuredContentFailure(orphansRes, parsed, 'find_orphans');
+    const structuredFailure = structuredContentFailure(orphansRes, parsed, 'orphan match_nodes');
     if (structuredFailure) {
       log('fail', structuredFailure);
       return false;
     }
-    log('ok', `find_orphans: ${formatCount(parsed.total, 'orphan')} (root/sentinel defaults excluded)`);
+    log('ok', `match_nodes hasIncoming:false: ${formatCount(parsed.totalMatches, 'orphan')}`);
   } catch (err) {
-    log('fail', `failed to parse find_orphans response: ${err.message}`);
+    log('fail', `failed to parse orphan match_nodes response: ${err.message}`);
     return false;
   }
 

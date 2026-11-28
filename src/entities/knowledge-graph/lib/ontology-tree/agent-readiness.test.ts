@@ -103,9 +103,8 @@ describe("buildAgentReadinessSummary", () => {
     expect(prompt).toContain('"operation": "cycles"');
     expect(prompt).toContain('"operation": "growth_plan"');
     expect(prompt).toContain('"operation": "maintenance_plan"');
-    expect(prompt).toContain('"tool": "find_orphans"');
-    expect(prompt).toContain('"excludeKinds"');
-    expect(prompt).not.toContain('"kinds"');
+    expect(prompt).toContain('"hasIncoming": false');
+    expect(prompt).not.toContain("find_orphans");
     expect(prompt).toContain("connect this agent in the Ontology Atlas app (Agents > MCP)");
     expect(prompt).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs|dogfood/);
     expect(prompt).toContain("Only write after confirming");
@@ -146,8 +145,8 @@ describe("buildAgentReadinessSummary", () => {
     ).toEqual([]);
     expect(
       validateAgentReadinessToolCall({
-        tool: "find_orphans",
-        arguments: { excludeKinds: ["project", "vault-readme"] },
+        tool: "list_concepts",
+        arguments: { mentions: "<unknown-title-or-slug>" },
       }),
     ).toEqual([]);
   });
@@ -155,10 +154,16 @@ describe("buildAgentReadinessSummary", () => {
   it("rejects readiness repair payload drift", () => {
     expect(
       validateAgentReadinessToolCall({
-        tool: "find_orphans",
-        arguments: { kinds: ["domain"] },
+        tool: "list_concepts",
+        arguments: { mentions: " " },
       }),
-    ).toEqual(["find_orphans uses excludeKinds or kind; kinds is not a supported argument"]);
+    ).toEqual(["list_concepts.mentions must be a non-empty string"]);
+    expect(
+      validateAgentReadinessToolCall({
+        tool: "find_orphans",
+        arguments: {},
+      }),
+    ).toEqual(["unsupported readiness MCP tool: find_orphans"]);
     expect(
       validateAgentReadinessToolCall({
         tool: "query_ontology",

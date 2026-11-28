@@ -57,7 +57,7 @@ import {
   buildGetConceptsSmokeSlugs,
   buildDestructiveDryRunSmokeRequests,
   buildPatchConflictGuardSmokeRequest,
-  buildLimitedQueryConceptsSmokeRequest,
+  buildLimitedListConceptsFilterSmokeRequest,
   buildGraphQuerySmokeArgs,
   buildGraphQuerySmokeRequests,
 } from '../scripts/verify/requests/follow-ups.mjs';
@@ -91,17 +91,17 @@ import {
 import { firstContactLocalProbeFailure } from '../scripts/verify/checks/connection-scope.mjs';
 import {
   findBacklinksFailure,
-  findEvidenceFailure,
+  listConceptsMentionsFailure,
   conceptRowFailure,
   getConceptsFailure,
   listConceptsFailure,
-  limitedQueryConceptsFailure,
-  queryConceptsFailure,
+  limitedListConceptsFilterFailure,
+  listConceptsFilterFailure,
   vaultWarningsFailure,
   vaultWarningsNotice,
 } from '../scripts/verify/checks/concept-reads.mjs';
 import {
-  findOrphansFailure,
+  orphanNodesFailure,
   censusFailure,
   projectProbeFailure,
   validationCodeSummary,
@@ -171,8 +171,8 @@ import {
   strictMatchEdgesTypeFailure,
   strictMaintenanceFilterFailure,
   strictRelationFilterFailure,
-  strictFindOrphansKindFailure,
-  strictQueryConceptsFilterFailure,
+  retiredToolFailure,
+  strictListConceptsFilterFailure,
   strictListConceptsKindFailure,
   strictRelationCheckFailure,
 } from '../scripts/verify/checks/strict-arguments.mjs';
@@ -198,33 +198,14 @@ describe('live local first-contact probes', () => {
     },
   });
 
-  it('requires scope and bounded-history metadata for the three local probes', () => {
+  it('requires the active roots and a matching structuredContent in the connection probe', () => {
     const responses = [
       response(73, {
         vaultRoot: '/vault',
         repoRoot: '/repo',
         sameRoot: false,
         restartRequiredForRootChange: true,
-        server: { toolCount: 35, toolNames: [] },
-      }),
-      response(71, {
-        operation: 'git_status',
-        ok: true,
-        repoRoot: '/repo',
-        vaultRoot: '/vault',
-        counts: {},
-        files: [],
-        stagedOutsideVault: [],
-      }),
-      response(72, {
-        operation: 'git_history',
-        repoRoot: '/repo',
-        vaultRoot: '/vault',
-        count: 0,
-        limited: false,
-        hasMore: false,
-        shallow: false,
-        historyComplete: true,
+        server: { toolCount: 23, toolNames: [] },
       }),
     ];
 
@@ -234,7 +215,7 @@ describe('live local first-contact probes', () => {
     );
     assert.match(
       firstContactLocalProbeFailure(
-        responses.map((item) => item.id === 72 ? { ...item, result: { ...item.result, structuredContent: { ...item.result.structuredContent, historyComplete: false } } } : item),
+        responses.map((item) => ({ ...item, result: { ...item.result, structuredContent: { ...item.result.structuredContent, sameRoot: true } } })),
         { repoRoot: '/repo', vaultRoot: '/vault' },
       ) ?? '',
       /structuredContent mismatch/,
@@ -254,26 +235,7 @@ describe('live local first-contact probes', () => {
         repoRoot: '/repo',
         sameRoot: false,
         restartRequiredForRootChange: true,
-        server: { toolCount: 35, toolNames: [] },
-      }),
-      response(71, {
-        operation: 'git_status',
-        ok: true,
-        repoRoot: '/repo',
-        vaultRoot: '/vault',
-        counts: {},
-        files: [],
-        stagedOutsideVault: [],
-      }),
-      response(72, {
-        operation: 'git_history',
-        repoRoot: '/repo',
-        vaultRoot: '/vault',
-        count: 0,
-        limited: false,
-        hasMore: false,
-        shallow: false,
-        historyComplete: true,
+        server: { toolCount: 23, toolNames: [] },
       }),
     ];
 
@@ -472,9 +434,9 @@ function structuredValueRepairDetails(text) {
 
 describe('verify.mjs first-contact gates', () => {
   it('publishes finalize_project_meaning as a non-destructive non-idempotent write tool', () => {
-    assert.equal(EXPECTED_TOOLS.length, 33);
-    assert.equal(EXPECTED_READ_TOOLS.length, 19);
-    assert.equal(EXPECTED_WRITE_TOOLS.length, 14);
+    assert.equal(EXPECTED_TOOLS.length, 23);
+    assert.equal(EXPECTED_READ_TOOLS.length, 13);
+    assert.equal(EXPECTED_WRITE_TOOLS.length, 10);
     assert.ok(EXPECTED_WRITE_TOOLS.includes('finalize_project_meaning'));
     assert.equal(EXPECTED_READ_TOOLS.includes('finalize_project_meaning'), false);
     assert.equal(EXPECTED_DESTRUCTIVE_TOOLS.includes('finalize_project_meaning'), false);
@@ -1053,7 +1015,7 @@ describe('verify.mjs first-contact gates', () => {
     const tools = [
       {
         name: 'list_concepts',
-        description: 'List every ontology node. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault.',
+        description: 'List every ontology node. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault. Narrow by a predicate with `filter`, or by text with `mentions`, which ranks nodes whose title, relations or body say it and adds `matchedIn` and `score` to each row.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1065,6 +1027,16 @@ describe('verify.mjs first-contact gates', () => {
                 'Filter to one canonical ontology kind (project, domain, capability, element, document, vault-readme). Omit to return all. Invalid kind typos fail closed with nearest-value hints instead of returning an empty list.',
             },
             domain: { type: 'string' },
+            mentions: {
+              type: 'string',
+              minLength: 1,
+              description: 'Text to find, case-insensitive. Keeps the nodes whose title, relations or body contain it, best match first.',
+            },
+            filter: {
+              type: 'string',
+              minLength: 1,
+              description: 'Predicate over frontmatter: `key=value`, `key!=value` and `has(key)` for a relation key, joined with AND, OR, NOT.',
+            },
             since: {
               type: 'number',
               minimum: 0,
@@ -1074,7 +1046,7 @@ describe('verify.mjs first-contact gates', () => {
             summary: {
               type: 'boolean',
               description:
-                'When true, each node row includes a `summary` (max 200 chars, prose-only: heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concepts` / `find_evidence`). Useful for "scan + overview" without a follow-up `get_concepts` call. Default false to keep payload small.',
+                'When true, each node row includes a `summary` (max 200 chars, prose-only: heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concepts`). Useful for "scan + overview" without a follow-up `get_concepts` call. Default false to keep payload small.',
             },
             offset: {
               type: 'integer',
@@ -1120,6 +1092,10 @@ describe('verify.mjs first-contact gates', () => {
               },
               additionalProperties: false,
             },
+            filter: { type: 'string' },
+            parsedAs: { type: 'string' },
+            query: { type: 'string' },
+            growthHint: { type: 'object' },
             nodes: {
               type: 'array',
               items: {
@@ -1192,51 +1168,6 @@ describe('verify.mjs first-contact gates', () => {
                   review: conceptReviewSchema,
                   mtime: { type: 'number', minimum: 0 },
                   warnings: vaultWarningsSchema,
-                },
-                additionalProperties: false,
-              },
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-      {
-        name: 'find_orphans',
-        description:
-          'List orphan nodes: docs that no other node references via any frontmatter array key. Useful as a cleanup starting point or to answer "which nodes are unused?". Same matching policy as find_backlinks (full slug or final segment). Root/sentinel kinds like project and vault-readme are excluded by default.',
-        inputSchema: {
-          additionalProperties: false,
-          properties: {
-            kind: {
-              type: 'string',
-              minLength: 1,
-              enum: NODE_KIND_VALUES,
-              description: 'Restrict to one kind (e.g. capability). Omit for all kinds.',
-            },
-            excludeKinds: {
-              type: 'array',
-              maxItems: NODE_KIND_VALUES.length,
-              items: { type: 'string', enum: NODE_KIND_VALUES },
-              description: "Defaults to ['project', 'vault-readme']. Pass [] to include every kind. Typos fail with nearest-value hints.",
-            },
-          },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['total', 'orphans'],
-          properties: {
-            total: { type: 'integer', minimum: 0 },
-            orphans: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
-                properties: {
-                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
-                  slug: { type: 'string' },
-                  kind: { type: 'string' },
-                  title: { type: 'string' },
-                  mtime: { type: 'number', minimum: 0 },
                 },
                 additionalProperties: false,
               },
@@ -1419,7 +1350,7 @@ describe('verify.mjs first-contact gates', () => {
           type: 'object',
           required: [
             'ok', 'dryRun', 'previewReady', 'canConfirm', 'wouldChange', 'blockedReasons',
-            'uid', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates',
+            'uid', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'backlinkUpdates',
           ],
           properties: {
             ok: { type: 'boolean' },
@@ -1605,59 +1536,6 @@ describe('verify.mjs first-contact gates', () => {
           },
           required: ['operation'],
           additionalProperties: true,
-        },
-      },
-      {
-        name: 'query_concepts',
-        description:
-          'Typed filter DSL: search vault nodes by predicate.\n\n' +
-          'Grammar (case-insensitive keywords, whitespace-tolerant):\n' +
-          '  filter    := atom (AND|OR atom)*\n' +
-          '  atom      := NOT? predicate\n' +
-          '  predicate := key=value | key!=value | has(key)\n\n' +
-          'Example: `kind=capability AND domain=auth AND NOT has(elements)`.',
-        inputSchema: {
-          additionalProperties: false,
-          required: ['filter'],
-          properties: {
-            filter: {
-              type: 'string',
-              description:
-                'Filter expression. Example: kind=capability AND has(elements). Supports NOT / AND / OR. Wrap values containing whitespace or special characters with "..." or \'...\'.',
-            },
-            limit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 500,
-              description: 'Positive integer max rows to return. Defaults to 100, max 500.',
-            },
-          },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['filter', 'parsedAs', 'total', 'matches', 'limited'],
-          properties: {
-            filter: { type: 'string' },
-            parsedAs: { type: 'string' },
-            total: { type: 'integer', minimum: 0 },
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
-                properties: {
-                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
-                  slug: { type: 'string' },
-                  kind: { type: 'string' },
-                  title: { type: 'string' },
-                  mtime: { type: 'number', minimum: 0 },
-                },
-                additionalProperties: false,
-              },
-            },
-            limited: { type: 'boolean' },
-          },
-          additionalProperties: false,
         },
       },
       {
@@ -2420,59 +2298,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       },
       {
-        name: 'find_evidence',
-        description:
-          'Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concepts call.',
-        inputSchema: {
-          additionalProperties: false,
-          required: ['title'],
-          properties: {
-            title: {
-              type: 'string',
-              minLength: 1,
-              description: 'Concept title to search for (case-insensitive substring match).',
-            },
-          },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['query', 'matches'],
-          properties: {
-            query: { type: 'string' },
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['slug', 'isNode', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
-                properties: {
-                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
-                  slug: { type: 'string' },
-                  kind: { type: 'string' },
-                  isNode: { type: 'boolean' },
-                  title: { type: 'string' },
-                  mtime: { type: 'number', minimum: 0 },
-                  matchedIn: { enum: ['frontmatter', 'body'] },
-                  score: { type: 'number', minimum: 0 },
-                  excerpt: { type: 'string' },
-                },
-                oneOf: [
-                  {
-                    properties: { isNode: { const: true } },
-                    required: ['uid', 'kind'],
-                  },
-                  {
-                    properties: { isNode: { const: false } },
-                    not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
-                  },
-                ],
-                additionalProperties: false,
-              },
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-      {
         name: 'find_backlinks',
         description:
           'Return every node that points to the target slug. Scans both frontmatter array keys (capabilities / elements / dependencies / relates / contains / describes etc.) and the wikilinks / markdown links in the body. Used by AI agents to walk the graph from a node to its dependents.',
@@ -2554,21 +2379,6 @@ describe('verify.mjs first-contact gates', () => {
     const validateVaultTool = tools.find((tool) => tool.name === 'validate_vault');
     const withValidateVaultTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'validate_vault'),
-      tool,
-    ];
-    const findOrphansTool = tools.find((tool) => tool.name === 'find_orphans');
-    const withFindOrphansTool = (tool) => [
-      ...tools.filter((candidate) => candidate.name !== 'find_orphans'),
-      tool,
-    ];
-    const queryConceptsTool = tools.find((tool) => tool.name === 'query_concepts');
-    const withQueryConceptsTool = (tool) => [
-      ...tools.filter((candidate) => candidate.name !== 'query_concepts'),
-      tool,
-    ];
-    const findEvidenceTool = tools.find((tool) => tool.name === 'find_evidence');
-    const withFindEvidenceTool = (tool) => [
-      ...tools.filter((candidate) => candidate.name !== 'find_evidence'),
       tool,
     ];
     const findBacklinksTool = tools.find((tool) => tool.name === 'find_backlinks');
@@ -3115,71 +2925,6 @@ describe('verify.mjs first-contact gates', () => {
       'query_ontology componentTypes health tuning description drift',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.filter((tool) => tool.name !== 'find_orphans')),
-      'tools/list response missing find_orphans tool',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindOrphansTool({
-        ...findOrphansTool,
-        description: 'List orphan nodes.',
-      })),
-      'find_orphans description missing cleanup guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindOrphansTool({
-        ...findOrphansTool,
-        inputSchema: {
-          ...findOrphansTool.inputSchema,
-          properties: {
-            ...findOrphansTool.inputSchema.properties,
-            kind: {
-              type: 'string',
-              minLength: 1,
-              enum: NODE_KIND_VALUES,
-              description: 'Kind filter.',
-            },
-          },
-        },
-      })),
-      'find_orphans.kind schema guidance drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindOrphansTool({
-        ...findOrphansTool,
-        inputSchema: {
-          ...findOrphansTool.inputSchema,
-          properties: {
-            ...findOrphansTool.inputSchema.properties,
-            excludeKinds: {
-              type: 'array',
-              maxItems: NODE_KIND_VALUES.length,
-              items: { type: 'number' },
-              description: "Defaults to ['project', 'vault-readme'].",
-            },
-          },
-        },
-      })),
-      'find_orphans.excludeKinds schema drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindOrphansTool({
-        ...findOrphansTool,
-        inputSchema: {
-          ...findOrphansTool.inputSchema,
-          properties: {
-            ...findOrphansTool.inputSchema.properties,
-            excludeKinds: {
-              type: 'array',
-              maxItems: NODE_KIND_VALUES.length,
-              items: { type: 'string', enum: NODE_KIND_VALUES },
-              description: 'Pass [] to include every kind.',
-            },
-          },
-        },
-      })),
-      'find_orphans.excludeKinds default description drift',
-    );
-    assert.equal(
       toolsListSchemaFailure(withQueryTool(
         {
           ...queryOntologyTool,
@@ -3190,91 +2935,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       )),
       'query_ontology required schema drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryConceptsTool(
-        {
-          ...queryConceptsTool,
-          description: 'Typed filter DSL.',
-        },
-      )),
-      'query_concepts description missing typed filter DSL guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryConceptsTool(
-        {
-          ...queryConceptsTool,
-          inputSchema: {
-            ...queryConceptsTool.inputSchema,
-            properties: {
-              ...queryConceptsTool.inputSchema.properties,
-              filter: {
-                type: 'string',
-                description: 'Filter expression.',
-              },
-            },
-          },
-        },
-      )),
-      'query_concepts inputSchema filter DSL guidance drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryConceptsTool(
-        {
-          ...queryConceptsTool,
-          inputSchema: {
-            ...queryConceptsTool.inputSchema,
-            properties: {
-              ...queryConceptsTool.inputSchema.properties,
-              limit: {
-                type: 'integer',
-                minimum: 1,
-                maximum: 500,
-                description: 'Positive integer max rows to return.',
-              },
-            },
-          },
-        },
-      )),
-      'query_concepts inputSchema limit default description drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'query_concepts'),
-        {
-          ...tools.find((tool) => tool.name === 'query_concepts'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'query_concepts').outputSchema,
-            required: ['filter', 'parsedAs', 'matches', 'total', 'limited'],
-          },
-        },
-      ]),
-      'query_concepts outputSchema required drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'query_concepts'),
-        {
-          ...tools.find((tool) => tool.name === 'query_concepts'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'query_concepts').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'query_concepts').outputSchema.properties,
-              matches: {
-                ...tools.find((tool) => tool.name === 'query_concepts').outputSchema.properties.matches,
-                items: {
-                  ...tools.find((tool) => tool.name === 'query_concepts').outputSchema.properties.matches.items,
-                  properties: {
-                    ...tools.find((tool) => tool.name === 'query_concepts').outputSchema.properties.matches.items.properties,
-                    mtime: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'query_concepts outputSchema row mtime drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -3988,90 +3648,6 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_evidence'),
-        {
-          ...tools.find((tool) => tool.name === 'find_evidence'),
-          outputSchema: { ...tools.find((tool) => tool.name === 'find_evidence').outputSchema, required: ['matches', 'query'] },
-        },
-      ]),
-      'find_evidence outputSchema required drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindEvidenceTool(
-        {
-          ...findEvidenceTool,
-          description: 'Find vault docs.',
-        },
-      )),
-      'find_evidence description missing excerpt guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindEvidenceTool(
-        {
-          ...findEvidenceTool,
-          inputSchema: {
-            ...findEvidenceTool.inputSchema,
-            properties: {
-              ...findEvidenceTool.inputSchema.properties,
-              title: {
-                type: 'string',
-                minLength: 1,
-                description: 'Concept title to search for.',
-              },
-            },
-          },
-        },
-      )),
-      'find_evidence inputSchema title guidance drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_evidence'),
-        {
-          ...tools.find((tool) => tool.name === 'find_evidence'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'find_evidence').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'find_evidence').outputSchema.properties,
-              matches: {
-                ...tools.find((tool) => tool.name === 'find_evidence').outputSchema.properties.matches,
-                items: {
-                  ...tools.find((tool) => tool.name === 'find_evidence').outputSchema.properties.matches.items,
-                  properties: {
-                    ...tools.find((tool) => tool.name === 'find_evidence').outputSchema.properties.matches.items.properties,
-                    matchedIn: { enum: ['frontmatter'] },
-                  },
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'find_evidence outputSchema match matchedIn drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindEvidenceTool(
-        {
-          ...findEvidenceTool,
-          outputSchema: {
-            ...findEvidenceTool.outputSchema,
-            properties: {
-              ...findEvidenceTool.outputSchema.properties,
-              matches: {
-                ...findEvidenceTool.outputSchema.properties.matches,
-                items: {
-                  ...findEvidenceTool.outputSchema.properties.matches.items,
-                  oneOf: [],
-                },
-              },
-            },
-          },
-        },
-      )),
-      'find_evidence outputSchema match identity drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
         ...tools.filter((tool) => tool.name !== 'find_backlinks'),
         {
           ...tools.find((tool) => tool.name === 'find_backlinks'),
@@ -4156,39 +3732,42 @@ describe('verify.mjs first-contact gates', () => {
       'find_backlinks outputSchema matches drift',
     );
     assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_orphans'),
-        {
-          ...tools.find((tool) => tool.name === 'find_orphans'),
-          outputSchema: { ...tools.find((tool) => tool.name === 'find_orphans').outputSchema, required: ['orphans', 'total'] },
-        },
-      ]),
-      'find_orphans outputSchema required drift',
+      toolsListSchemaFailure(tools.filter((tool) => tool.name !== 'list_concepts')),
+      'tools/list response missing list_concepts tool',
     );
     assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_orphans'),
-        {
-          ...tools.find((tool) => tool.name === 'find_orphans'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'find_orphans').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'find_orphans').outputSchema.properties,
-              orphans: {
-                ...tools.find((tool) => tool.name === 'find_orphans').outputSchema.properties.orphans,
-                items: {
-                  ...tools.find((tool) => tool.name === 'find_orphans').outputSchema.properties.orphans.items,
-                  properties: {
-                    ...tools.find((tool) => tool.name === 'find_orphans').outputSchema.properties.orphans.items.properties,
-                    mtime: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
+      toolsListSchemaFailure(withListConceptsTool({ ...listConceptsTool, description: 'List nodes.' })),
+      'list_concepts description missing mentions and filter guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withListConceptsTool({
+        ...listConceptsTool,
+        inputSchema: {
+          ...listConceptsTool.inputSchema,
+          properties: { ...listConceptsTool.inputSchema.properties, mentions: { type: 'string', description: 'Text.' } },
         },
-      ]),
-      'find_orphans outputSchema row mtime drift',
+      })),
+      'list_concepts inputSchema mentions guidance drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withListConceptsTool({
+        ...listConceptsTool,
+        inputSchema: {
+          ...listConceptsTool.inputSchema,
+          properties: { ...listConceptsTool.inputSchema.properties, filter: { type: 'string', description: 'A filter.' } },
+        },
+      })),
+      'list_concepts inputSchema filter DSL guidance drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withListConceptsTool({
+        ...listConceptsTool,
+        outputSchema: {
+          ...listConceptsTool.outputSchema,
+          properties: { ...listConceptsTool.outputSchema.properties, parsedAs: { type: 'integer' } },
+        },
+      })),
+      'list_concepts outputSchema parsedAs drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -4817,7 +4396,7 @@ describe('verify.mjs first-contact gates', () => {
       assert.doesNotMatch(result.stdout, /verify timed out/);
       assert.doesNotMatch(result.stdout, /tools\/list \d+\/\d+/);
       assert.doesNotMatch(result.stdout, /strict arguments —/);
-      assert.doesNotMatch(result.stdout, /find_evidence response missing match kind/);
+      assert.doesNotMatch(result.stdout, /list_concepts mentions response missing match kind/);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -5020,11 +4599,11 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /OATLAS_VERIFY_KILL_GRACE_MS=N/);
     assert.match(verifyUsage(), /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
     assert.match(verifyUsage(), /project probe/);
-    assert.match(verifyUsage(), /list\/project probe\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/find_orphans/);
+    assert.match(verifyUsage(), /list\/project probe\/get_concepts\/list_concepts mentions\/find_backlinks\/list_concepts filter\/limited list_concepts filter\/analyze_repo_structure\/infer_imports\/match_nodes hasIncoming:false/);
     assert.match(verifyUsage(), /compile_ontology summary \+ paginated full-artifact \+ indexed full-artifact smoke/);
     assert.match(verifyUsage(), /Successful output prints read census consistency after cross-checking the list_concepts census\/list_concepts\/compile_ontology\/overview/);
     assert.match(verifyUsage(), /strict unknown-tool \/ unknown-argument \/ invalid-enum rejection/);
-    assert.match(verifyUsage(), /query_concepts\.kind\/has-key, find_orphans\.kind\/excludeKinds, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
+    assert.match(verifyUsage(), /list_concepts filter kind\/has-key, retired-tool answers, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
     assert.match(verifyUsage(), /tools\/list inventory names, initialize-instruction tool inventory, schema strictness, and annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
     assert.match(verifyUsage(), /batch reader\/writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection/);
     assert.match(verifyUsage(), /structuredContent coverage summary splits direct reads, batch row-isolation writes with no write metadata, destructive dry-runs, maintenance cursor checks, and graph queries/);
@@ -5084,7 +4663,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails malformed strict argument smoke responses', () => {
-    const error = 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: lmit.';
+    const error = 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: lmit.';
     assert.equal(
       strictArgsFailure({
         result: {
@@ -5098,7 +4677,7 @@ describe('verify.mjs first-contact gates', () => {
             receivedArgument: 'lmit',
             suggestion: 'limit',
             unknownArguments: [{ name: 'lmit', suggestion: 'limit' }],
-            allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
+            allowedArguments: ['domain', 'filter', 'kind', 'limit', 'mentions', 'offset', 'since', 'summary'],
             receivedArguments: ['lmit'],
           },
         },
@@ -5149,7 +4728,7 @@ describe('verify.mjs first-contact gates', () => {
           error,
           receivedArgument: 'lmit',
           suggestion: 'limit',
-          allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
+          allowedArguments: ['domain', 'filter', 'kind', 'limit', 'mentions', 'offset', 'since', 'summary'],
         },
       })),
       'strict arguments structured error missing unknown argument hint',
@@ -5163,7 +4742,7 @@ describe('verify.mjs first-contact gates', () => {
           receivedArgument: 'lmit',
           suggestion: 'limit',
           unknownArguments: [{ name: 'limit' }],
-          allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
+          allowedArguments: ['domain', 'filter', 'kind', 'limit', 'mentions', 'offset', 'since', 'summary'],
         },
       })),
       'strict arguments structured error missing canonical unknown argument hint',
@@ -5171,7 +4750,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails malformed strict multi-argument smoke responses', () => {
-    const error = 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, offset, since, summary. Received arguments: lmit, summry.';
+    const error = 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary. Received arguments: lmit, summry.';
     assert.equal(
       strictMultiArgsFailure({
         result: {
@@ -5187,7 +4766,7 @@ describe('verify.mjs first-contact gates', () => {
               { name: 'lmit', suggestion: 'limit' },
               { name: 'summry', suggestion: 'summary' },
             ],
-            allowedArguments: ['domain', 'kind', 'limit', 'offset', 'since', 'summary'],
+            allowedArguments: ['domain', 'filter', 'kind', 'limit', 'mentions', 'offset', 'since', 'summary'],
           },
         },
       }),
@@ -6391,57 +5970,53 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
-  it('fails malformed strict find_orphans kind smoke responses', () => {
+  it('fails a retired-tool answer that does not name the call that replaces it', () => {
+    const answer = {
+      error: 'find_orphans is retired and no longer runs; use query_ontology({ operation: \'match_nodes\', hasIncoming: false }).',
+      errorCode: 'tool_retired',
+      retiredTool: 'find_orphans',
+      replacement: 'query_ontology({ operation: \'match_nodes\', hasIncoming: false })',
+    };
+    const response = (structured, isError = true) => ({
+      result: { isError, content: [{ text: structured.error }], structuredContent: { ok: false, ...structured } },
+    });
+    const expected = { retiredTool: 'find_orphans', replacementIncludes: 'match_nodes' };
+    assert.equal(retiredToolFailure(response(answer), expected), null);
+    assert.equal(retiredToolFailure(response(answer, false), expected), 'retired find_orphans response was not rejected');
     assert.equal(
-      strictFindOrphansKindFailure(strictErrorResponse('kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?')),
-      null,
+      retiredToolFailure(response({ ...answer, errorCode: 'invalid_arguments' }), expected),
+      'retired find_orphans structured error code mismatch: expected tool_retired, got invalid_arguments',
     );
     assert.equal(
-      strictFindOrphansKindFailure(strictErrorResponse('excludeKinds items must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?'), { field: 'excludeKinds items' }),
-      null,
-    );
-    assert.equal(
-      strictFindOrphansKindFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
-      'strict find_orphans kind response was not rejected',
-    );
-    assert.equal(
-      strictFindOrphansKindFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
-      'strict find_orphans kind response did not report the invalid kind filter',
-    );
-    assert.equal(
-      strictFindOrphansKindFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Did you mean "capability"?' }] } }),
-      'strict find_orphans kind response did not report the invalid kind value',
-    );
-    assert.equal(
-      strictFindOrphansKindFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }] } }),
-      'strict find_orphans kind response did not suggest the closest kind value',
+      retiredToolFailure(response({ ...answer, replacement: 'something else' }), expected),
+      'retired find_orphans structured error missing the replacement',
     );
   });
 
-  it('fails malformed strict query_concepts filter smoke responses', () => {
+  it('fails malformed strict list_concepts filter smoke responses', () => {
     assert.equal(
-      strictQueryConceptsFilterFailure(strictErrorResponse('kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?')),
+      strictListConceptsFilterFailure(strictErrorResponse('kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?')),
       null,
     );
     assert.equal(
-      strictQueryConceptsFilterFailure(strictErrorResponse('has key must be one of: domains, capabilities, elements, dependencies, relates, contains, describes, broader, depends_on. Received: "capabilties". Did you mean "capabilities"?'), { field: 'has key', received: 'capabilties', suggestion: 'capabilities' }),
+      strictListConceptsFilterFailure(strictErrorResponse('has key must be one of: domains, capabilities, elements, dependencies, relates, contains, describes, broader, depends_on. Received: "capabilties". Did you mean "capabilities"?'), { field: 'has key', received: 'capabilties', suggestion: 'capabilities' }),
       null,
     );
     assert.equal(
-      strictQueryConceptsFilterFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
-      'strict query_concepts filter response was not rejected',
+      strictListConceptsFilterFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
+      'strict list_concepts filter response was not rejected',
     );
     assert.equal(
-      strictQueryConceptsFilterFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
-      'strict query_concepts filter response did not report the invalid kind',
+      strictListConceptsFilterFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
+      'strict list_concepts filter response did not report the invalid kind',
     );
     assert.equal(
-      strictQueryConceptsFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Did you mean "capability"?' }] } }),
-      'strict query_concepts filter response did not report the invalid kind value',
+      strictListConceptsFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Did you mean "capability"?' }] } }),
+      'strict list_concepts filter response did not report the invalid kind value',
     );
     assert.equal(
-      strictQueryConceptsFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }] } }),
-      'strict query_concepts filter response did not suggest the closest kind value',
+      strictListConceptsFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }] } }),
+      'strict list_concepts filter response did not suggest the closest kind value',
     );
   });
 
@@ -7233,7 +6808,7 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(15), 'project_scope');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(16), 'strict_args');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(18), 'project_probe');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(19), 'find_orphans');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(19), 'orphan_match_nodes');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(20), 'health_tuned');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(21), 'workspace_brief_tuned');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(22), 'strict_maintenance_phase_filter');
@@ -7244,10 +6819,10 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(27), 'strict_multi_args');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(30), 'maintenance_resume_cursor');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(31), 'get_concepts_single');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(32), 'find_evidence');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(32), 'list_concepts_mentions');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(33), 'find_backlinks');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(34), 'query_concepts');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(37), 'query_concepts_limited');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(34), 'list_concepts_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(37), 'list_concepts_filter_limited');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(38), 'analyze_repo_structure');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(39), 'infer_imports');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(40), 'strict_relation_filter');
@@ -7264,10 +6839,11 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(52), 'strict_recommend_relations_unsupported_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(53), 'strict_match_nodes_sort_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(54), 'strict_match_edges_type_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(56), 'strict_find_orphans_kind_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(57), 'strict_find_orphans_exclude_kind_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(58), 'strict_query_concepts_kind_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(59), 'strict_query_concepts_has_key_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.has(56), false);
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.has(57), false);
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(71), 'retired_tool');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(58), 'strict_list_concepts_filter_kind');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(59), 'strict_list_concepts_filter_has_key');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(60), 'strict_list_concepts_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(61), 'patch_concept_conflict_guard');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(62), 'add_concepts_batch_cap');
@@ -7336,10 +6912,10 @@ Continue.`;
     });
   });
 
-  it('builds limited query_concepts smoke request for non-trivial vaults', () => {
-    assert.equal(buildLimitedQueryConceptsSmokeRequest({ total: 2, nodes: [{ slug: 'project' }] }), null);
+  it('builds limited list_concepts filter smoke request for non-trivial vaults', () => {
+    assert.equal(buildLimitedListConceptsFilterSmokeRequest({ total: 2, nodes: [{ slug: 'project' }] }), null);
     assert.deepEqual(
-      buildLimitedQueryConceptsSmokeRequest({
+      buildLimitedListConceptsFilterSmokeRequest({
         total: 3,
         nodes: [{ slug: 'project' }, { slug: 'domains/core' }, { slug: 'capabilities/search' }],
       }),
@@ -7348,7 +6924,7 @@ Continue.`;
           jsonrpc: '2.0',
           id: 37,
           method: 'tools/call',
-          params: { name: 'query_concepts', arguments: { filter: 'slug!=project', limit: 1 } },
+          params: { name: 'list_concepts', arguments: { filter: 'slug!=project', limit: 1 } },
         },
         excludedSlug: 'project',
         expectedTotal: 2,
@@ -7520,7 +7096,7 @@ Continue.`;
     });
   });
 
-  it('accepts clean find_evidence, find_backlinks, and query_concepts payloads', () => {
+  it('accepts clean list_concepts mentions, find_backlinks, and list_concepts filter payloads', () => {
     const match = {
       slug: 'project',
       kind: 'project',
@@ -7528,28 +7104,13 @@ Continue.`;
       mtime: 1,
     };
     assert.equal(
-      findEvidenceFailure({
+      listConceptsMentionsFailure({
         query: 'project',
-        matches: [{
+        nodes: [{
           ...match,
           uid: '11111111-1111-4111-8111-111111111111',
-          isNode: true,
           matchedIn: 'frontmatter',
-          excerpt: 'Project overview.',
-        }],
-      }),
-      null,
-    );
-    assert.equal(
-      findEvidenceFailure({
-        query: 'project',
-        matches: [{
-          slug: 'AGENTS',
-          isNode: false,
-          title: 'AGENTS',
-          mtime: 1,
-          matchedIn: 'body',
-          excerpt: 'Project instructions.',
+          score: 1,
         }],
       }),
       null,
@@ -7567,21 +7128,21 @@ Continue.`;
       null,
     );
     assert.equal(
-      queryConceptsFailure({
+      listConceptsFilterFailure({
         filter: 'kind=project',
         parsedAs: 'kind = project',
         total: 1,
-        matches: [match],
+        nodes: [match],
         limited: false,
       }),
       null,
     );
     assert.equal(
-      limitedQueryConceptsFailure({
+      limitedListConceptsFilterFailure({
         filter: 'slug!=project',
         parsedAs: 'slug != project',
         total: 2,
-        matches: [{ ...match, slug: 'domains/core', kind: 'domain' }],
+        nodes: [{ ...match, slug: 'domains/core', kind: 'domain' }],
         limited: true,
       }, 'project', 2),
       null,
@@ -7786,40 +7347,23 @@ Continue.`;
     );
   });
 
-  it('fails malformed find_orphans payloads and root default-exclusion drift', () => {
+  it('fails malformed orphan match_nodes payloads', () => {
+    const orphan = { slug: 'capabilities/orphan', kind: 'capability', title: 'Orphan', inDegree: 0 };
+    const answer = { operation: 'match_nodes', filters: { hasIncoming: false }, totalMatches: 1, nodes: [orphan] };
+    assert.equal(orphanNodesFailure(answer), null);
     assert.equal(
-      findOrphansFailure({
-        total: 1,
-        orphans: [
-          {
-            slug: 'capabilities/orphan',
-            kind: 'capability',
-            title: 'Orphan',
-            mtime: 1,
-          },
-        ],
-      }),
-      null,
+      orphanNodesFailure({ ...answer, filters: { hasIncoming: null } }),
+      'orphan match_nodes response did not answer hasIncoming:false',
     );
-    assert.equal(findOrphansFailure({ orphans: [] }), 'find_orphans response missing total count');
-    assert.equal(findOrphansFailure({ total: 0 }), 'find_orphans response missing orphans array');
+    assert.equal(orphanNodesFailure({ ...answer, totalMatches: undefined }), 'orphan match_nodes response missing totalMatches');
+    assert.equal(orphanNodesFailure({ ...answer, nodes: undefined }), 'orphan match_nodes response missing nodes array');
     assert.equal(
-      findOrphansFailure({ total: 0, orphans: [{ slug: 'capabilities/orphan' }] }),
-      'find_orphans response orphan count exceeds total: orphans 1, total 0',
+      orphanNodesFailure({ ...answer, totalMatches: 0 }),
+      'orphan match_nodes node count exceeds totalMatches: nodes 1, totalMatches 0',
     );
     assert.equal(
-      findOrphansFailure({
-        total: 1,
-        orphans: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
-      }),
-      'find_orphans default exclusions returned root/sentinel kind: project',
-    );
-    assert.equal(
-      findOrphansFailure({
-        total: 1,
-        orphans: [{ slug: 'README', kind: 'vault-readme', title: 'README', mtime: 1 }],
-      }),
-      'find_orphans default exclusions returned root/sentinel kind: README',
+      orphanNodesFailure({ ...answer, nodes: [{ ...orphan, inDegree: 2 }] }),
+      'orphan match_nodes response returned a node with incoming relations: capabilities/orphan',
     );
   });
 
@@ -8044,66 +7588,26 @@ Continue.`;
     );
   });
 
-  it('fails malformed find_evidence, find_backlinks, and query_concepts payloads', () => {
+  it('fails malformed list_concepts mentions, find_backlinks, and list_concepts filter payloads', () => {
     const match = {
       slug: 'project',
       kind: 'project',
       title: 'Project',
       mtime: 1,
     };
-    assert.equal(findEvidenceFailure({ matches: [] }), 'find_evidence response missing query');
+    assert.equal(listConceptsMentionsFailure({ nodes: [] }), 'list_concepts mentions response missing query');
+    const uid = '11111111-1111-4111-8111-111111111111';
     assert.equal(
-      findEvidenceFailure({ query: 'project', matches: [{ ...match, matchedIn: 'frontmatter', excerpt: '' }] }),
-      'find_evidence response missing isNode: project',
+      listConceptsMentionsFailure({ query: 'project', nodes: [{ ...match, matchedIn: 'frontmatter', score: 1 }] }),
+      'list_concepts mentions response missing node uid: project',
     );
     assert.equal(
-      findEvidenceFailure({
-        query: 'project',
-        matches: [{ ...match, isNode: true, matchedIn: 'frontmatter', excerpt: '' }],
-      }),
-      'find_evidence response missing node uid: project',
+      listConceptsMentionsFailure({ query: 'project', nodes: [{ ...match, uid, matchedIn: 'unknown', score: 1 }] }),
+      'list_concepts mentions response missing matchedIn: project',
     );
     assert.equal(
-      findEvidenceFailure({
-        query: 'project',
-        matches: [{
-          ...match,
-          uid: '11111111-1111-4111-8111-111111111111',
-          isNode: true,
-          kind: undefined,
-          matchedIn: 'frontmatter',
-          excerpt: '',
-        }],
-      }),
-      'find_evidence response missing node kind: project',
-    );
-    assert.equal(
-      findEvidenceFailure({
-        query: 'project',
-        matches: [{
-          slug: 'AGENTS',
-          uid: '11111111-1111-4111-8111-111111111111',
-          isNode: false,
-          title: 'AGENTS',
-          mtime: 1,
-          matchedIn: 'body',
-          excerpt: '',
-        }],
-      }),
-      'find_evidence response non-node exposes graph identity: AGENTS',
-    );
-    assert.equal(
-      findEvidenceFailure({
-        query: 'project',
-        matches: [{
-          ...match,
-          uid: '11111111-1111-4111-8111-111111111111',
-          isNode: true,
-          matchedIn: 'unknown',
-          excerpt: '',
-        }],
-      }),
-      'find_evidence response missing matchedIn: project',
+      listConceptsMentionsFailure({ query: 'project', nodes: [{ ...match, uid, matchedIn: 'body' }] }),
+      'list_concepts mentions response missing score: project',
     );
     assert.equal(
       findBacklinksFailure({ target: 'other', total: 0, matches: [] }, 'project'),
@@ -8125,18 +7629,18 @@ Continue.`;
       findBacklinksFailure({ target: 'project', total: 1, matches: [{ slug: 'project', isNode: true, title: 'Project', mtime: 1, matchedInBody: true }] }, 'project'),
       'find_backlinks response missing node kind: project',
     );
-    assert.equal(queryConceptsFailure({ matches: [] }), 'query_concepts response missing filter');
+    assert.equal(listConceptsFilterFailure({ nodes: [] }), 'list_concepts filter response missing filter');
     assert.equal(
-      queryConceptsFailure({ filter: 'kind=project', parsedAs: 'kind = project', total: 0, matches: [match], limited: false }),
-      'query_concepts response match count exceeds total: matches 1, total 0',
+      listConceptsFilterFailure({ filter: 'kind=project', parsedAs: 'kind = project', total: 0, nodes: [match], limited: false }),
+      'list_concepts filter response row count exceeds total: rows 1, total 0',
     );
     assert.equal(
-      limitedQueryConceptsFailure({ filter: 'slug!=project', parsedAs: 'slug != project', total: 2, matches: [match], limited: true }, 'project', 2),
-      'query_concepts limited response included excluded slug: project',
+      limitedListConceptsFilterFailure({ filter: 'slug!=project', parsedAs: 'slug != project', total: 2, nodes: [match], limited: true }, 'project', 2),
+      'list_concepts filter limited response included excluded slug: project',
     );
     assert.equal(
-      limitedQueryConceptsFailure({ filter: 'slug!=project', parsedAs: 'slug != project', total: 1, matches: [{ ...match, slug: 'domains/core', kind: 'domain' }], limited: false }, 'project', 1),
-      'query_concepts limited response did not set limited=true',
+      limitedListConceptsFilterFailure({ filter: 'slug!=project', parsedAs: 'slug != project', total: 1, nodes: [{ ...match, slug: 'domains/core', kind: 'domain' }], limited: false }, 'project', 1),
+      'list_concepts filter limited response did not set limited=true',
     );
   });
 

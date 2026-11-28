@@ -189,10 +189,10 @@ describe('agent read executor ↔ MCP vault reads (the real dogfood vault)', () 
       (doc) => typeof doc.frontmatter.title === 'string' && doc.frontmatter.title.trim(),
     );
     expect(sample).toBeTruthy();
-    const ours = await run<{ matches: Array<{ slug: string }> }>('find_evidence', {
-      title: sample?.frontmatter.title as string,
+    const ours = await run<{ rows: Array<{ slug: string }> }>('list_concepts', {
+      mentions: sample?.frontmatter.title as string,
     });
-    expect(ours.matches.some((match) => match.slug === sample?.slug)).toBe(true);
+    expect(ours.rows.some((row) => row.slug === sample?.slug)).toBe(true);
   });
 
   it('the vault body goes out wrapped as untrusted data', async () => {

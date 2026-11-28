@@ -125,11 +125,11 @@ export function buildSlugNotFoundGrowthHint({
 }
 
 /**
- * query_concepts matched 0 rows. `kind=` and `domain=` equalities in the filter
+ * list_concepts `filter` matched 0 rows. `kind=` and `domain=` equalities in the filter
  * are checked against the census, so the hint can say the kind or domain does
  * not exist at all.
  */
-export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDomain = {} }) {
+export function buildFilterZeroRowsGrowthHint({ filter, byKind = {}, byDomain = {} }) {
   const filterText = String(filter ?? '');
   const kindRefs = [...filterText.matchAll(/\bkind\s*=\s*"?([a-z][a-z0-9_-]*)"?/gi)].map((m) =>
     m[1].toLowerCase(),
@@ -147,7 +147,7 @@ export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDo
       ...missingDomains.map((domain) => `domain="${domain}" has 0 nodes in this vault`),
     ];
     return {
-      reason: `query_concepts matched 0 rows: ${facts.join('; ')}.`,
+      reason: `list_concepts filter matched 0 rows: ${facts.join('; ')}.`,
       suggestion:
         'Check the census list_concepts returns for the real kind counts, and its domain filter for a domain, before retrying, or add the missing nodes.',
       exampleCall: { tool: 'list_concepts', args: { limit: 1 } },
@@ -155,34 +155,34 @@ export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDo
   }
 
   return {
-    reason: `query_concepts matched 0 rows for filter: ${filterText}`,
+    reason: `list_concepts filter matched 0 rows for filter: ${filterText}`,
     suggestion: 'Loosen the filter: drop an AND clause or widen an equality: and retry.',
     exampleCall: { tool: 'list_concepts', args: { limit: 1 } },
   };
 }
 
-/** find_evidence matched 0 titles; `nearMatches` come from `findNearTitleMatches`. */
-export function buildFindEvidenceZeroHitsGrowthHint({ title, nearMatches = [] }) {
+/** list_concepts `mentions` matched 0 nodes; `nearMatches` come from `findNearTitleMatches`. */
+export function buildMentionsZeroHitsGrowthHint({ text, nearMatches = [] }) {
   if (nearMatches.length > 0) {
     const names = nearMatches.map((match) => `${match.title} (${match.slug})`);
     return {
-      reason: `No vault doc mentions "${title}".`,
+      reason: `No vault node mentions "${text}".`,
       suggestion: `Closest existing node(s) by title: ${names.join(', ')}: confirm this isn't the same concept under a different name before adding a new one.`,
       exampleCall: { tool: 'get_concepts', args: { slugs: [nearMatches[0].slug] } },
     };
   }
   return {
-    reason: `No vault doc mentions "${title}", and no similarly-titled node exists.`,
+    reason: `No vault node mentions "${text}", and no similarly-titled node exists.`,
     suggestion: 'This concept may not be captured in the vault yet: add it if it describes a real capability/element/domain.',
     exampleCall: {
       tool: 'add_concepts',
-      args: { concepts: [{ slug: slugify(title), kind: 'element', title: String(title ?? '') }] },
+      args: { concepts: [{ slug: slugify(text), kind: 'element', title: String(text ?? '') }] },
     },
   };
 }
 
 /**
- * Near titles for find_evidence's 0-hit case by token Jaccard (every substring
+ * Near titles for the `mentions` 0-hit case by token Jaccard (every substring
  * match already failed): local, no embeddings. `minScore` keeps unrelated titles
  * out rather than inventing a closest match.
  */

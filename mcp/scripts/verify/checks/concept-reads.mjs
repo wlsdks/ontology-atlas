@@ -195,21 +195,18 @@ export function conceptRowFailure(parsed, expectedSlug) {
   return null;
 }
 
-function readMatchRowFailure(label, row, index, { evidence = false, backlinks = false } = {}) {
+function readMatchRowFailure(label, row, index, { mentions = false, backlinks = false } = {}) {
   if (!row || typeof row !== 'object' || Array.isArray(row)) {
     return `${label} response malformed match at index ${index}`;
   }
   if (typeof row.slug !== 'string' || row.slug.length === 0) {
     return `${label} response missing match slug at index ${index}`;
   }
-  if (evidence || backlinks) {
+  if (backlinks) {
     if (typeof row.isNode !== 'boolean') {
       return `${label} response missing isNode: ${row.slug}`;
     }
     if (row.isNode) {
-      if (evidence && (typeof row.uid !== 'string' || row.uid.length === 0)) {
-        return `${label} response missing node uid: ${row.slug}`;
-      }
       if (typeof row.kind !== 'string' || row.kind.length === 0) {
         return `${label} response missing node kind: ${row.slug}`;
       }
@@ -225,12 +222,15 @@ function readMatchRowFailure(label, row, index, { evidence = false, backlinks = 
   if (!Number.isFinite(row.mtime) || row.mtime < 0) {
     return `${label} response missing match mtime: ${row.slug}`;
   }
-  if (evidence) {
+  if (mentions) {
+    if (typeof row.uid !== 'string' || row.uid.length === 0) {
+      return `${label} response missing node uid: ${row.slug}`;
+    }
     if (!['frontmatter', 'body'].includes(row.matchedIn)) {
       return `${label} response missing matchedIn: ${row.slug}`;
     }
-    if (typeof row.excerpt !== 'string') {
-      return `${label} response missing excerpt: ${row.slug}`;
+    if (!Number.isFinite(row.score) || row.score < 0) {
+      return `${label} response missing score: ${row.slug}`;
     }
   }
   if (backlinks) {
@@ -247,15 +247,15 @@ function readMatchRowFailure(label, row, index, { evidence = false, backlinks = 
   return null;
 }
 
-export function findEvidenceFailure(parsed) {
+export function listConceptsMentionsFailure(parsed) {
   if (typeof parsed?.query !== 'string' || parsed.query.length === 0) {
-    return 'find_evidence response missing query';
+    return 'list_concepts mentions response missing query';
   }
-  if (!Array.isArray(parsed.matches)) {
-    return 'find_evidence response missing matches array';
+  if (!Array.isArray(parsed.nodes)) {
+    return 'list_concepts mentions response missing nodes array';
   }
-  for (const [index, row] of parsed.matches.entries()) {
-    const failure = readMatchRowFailure('find_evidence', row, index, { evidence: true });
+  for (const [index, row] of parsed.nodes.entries()) {
+    const failure = readMatchRowFailure('list_concepts mentions', row, index, { mentions: true });
     if (failure) return failure;
   }
   return null;
@@ -281,52 +281,52 @@ export function findBacklinksFailure(parsed, expectedTarget) {
   return null;
 }
 
-export function queryConceptsFailure(parsed) {
+export function listConceptsFilterFailure(parsed) {
   if (typeof parsed?.filter !== 'string' || parsed.filter.length === 0) {
-    return 'query_concepts response missing filter';
+    return 'list_concepts filter response missing filter';
   }
   if (typeof parsed.parsedAs !== 'string' || parsed.parsedAs.length === 0) {
-    return 'query_concepts response missing parsedAs';
+    return 'list_concepts filter response missing parsedAs';
   }
   if (!Number.isInteger(parsed.total) || parsed.total < 0) {
-    return 'query_concepts response missing total count';
+    return 'list_concepts filter response missing total count';
   }
   if (typeof parsed.limited !== 'boolean') {
-    return 'query_concepts response missing limited flag';
+    return 'list_concepts filter response missing limited flag';
   }
-  if (!Array.isArray(parsed.matches)) {
-    return 'query_concepts response missing matches array';
+  if (!Array.isArray(parsed.nodes)) {
+    return 'list_concepts filter response missing nodes array';
   }
-  if (parsed.matches.length > parsed.total) {
-    return `query_concepts response match count exceeds total: matches ${parsed.matches.length}, total ${parsed.total}`;
+  if (parsed.nodes.length > parsed.total) {
+    return `list_concepts filter response row count exceeds total: rows ${parsed.nodes.length}, total ${parsed.total}`;
   }
-  if (!parsed.limited && parsed.matches.length !== parsed.total) {
-    return `query_concepts response match count mismatch: matches ${parsed.matches.length}, total ${parsed.total}`;
+  if (!parsed.limited && parsed.nodes.length !== parsed.total) {
+    return `list_concepts filter response row count mismatch: rows ${parsed.nodes.length}, total ${parsed.total}`;
   }
-  for (const [index, row] of parsed.matches.entries()) {
-    const failure = readMatchRowFailure('query_concepts', row, index);
+  for (const [index, row] of parsed.nodes.entries()) {
+    const failure = readMatchRowFailure('list_concepts filter', row, index);
     if (failure) return failure;
   }
   return null;
 }
 
-export function limitedQueryConceptsFailure(parsed, excludedSlug, expectedTotal) {
-  const baseFailure = queryConceptsFailure(parsed);
+export function limitedListConceptsFilterFailure(parsed, excludedSlug, expectedTotal) {
+  const baseFailure = listConceptsFilterFailure(parsed);
   if (baseFailure) return baseFailure;
   if (parsed.filter !== `slug!=${excludedSlug}`) {
-    return `query_concepts limited filter mismatch: expected slug!=${excludedSlug}, got ${parsed.filter}`;
+    return `list_concepts filter limited filter mismatch: expected slug!=${excludedSlug}, got ${parsed.filter}`;
   }
   if (parsed.total !== expectedTotal) {
-    return `query_concepts limited total mismatch: expected ${expectedTotal}, got ${parsed.total}`;
+    return `list_concepts filter limited total mismatch: expected ${expectedTotal}, got ${parsed.total}`;
   }
-  if (parsed.matches.length !== 1) {
-    return `query_concepts limited match count mismatch: expected 1, got ${parsed.matches.length}`;
+  if (parsed.nodes.length !== 1) {
+    return `list_concepts filter limited row count mismatch: expected 1, got ${parsed.nodes.length}`;
   }
   if (parsed.limited !== true) {
-    return 'query_concepts limited response did not set limited=true';
+    return 'list_concepts filter limited response did not set limited=true';
   }
-  if (parsed.matches.some((row) => row?.slug === excludedSlug)) {
-    return `query_concepts limited response included excluded slug: ${excludedSlug}`;
+  if (parsed.nodes.some((row) => row?.slug === excludedSlug)) {
+    return `list_concepts filter limited response included excluded slug: ${excludedSlug}`;
   }
   return null;
 }

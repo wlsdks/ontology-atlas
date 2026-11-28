@@ -4,8 +4,7 @@
 {"id":2,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":"domains/결제"}}}
 {"id":3,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":"capabilities/주문-취소"}}}
 {"id":4,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":"domains/Zebra"}}}
-{"id":5,"method":"tools/call","params":{"name":"find_orphans","arguments":{}}}
-{"id":6,"method":"tools/call","params":{"name":"find_orphans","arguments":{"kind":"capability"}}}
-{"id":7,"method":"tools/call","params":{"name":"find_orphans","arguments":{"kind":"element"}}}
-{"id":8,"method":"tools/call","params":{"name":"find_orphans","arguments":{"excludeKinds":["project","domain"]}}}
-{"id":9,"method":"tools/call","params":{"name":"find_orphans","arguments":{"kind":"nonsense"}}}
+{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","hasIncoming":false}}}
+{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","hasIncoming":false,"kind":"capability"}}}
+{"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","hasIncoming":false,"kind":"element"}}}
+{"id":8,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","hasIncoming":false,"kind":"nonsense"}}}

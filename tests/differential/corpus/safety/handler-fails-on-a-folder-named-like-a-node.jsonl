@@ -6,7 +6,7 @@
 {"id":3,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":"capabilities/folder"}}}
 {"id":4,"method":"tools/call","params":{"name":"compile_ontology","arguments":{"summary":true}}}
 {"id":5,"method":"tools/call","params":{"name":"validate_vault","arguments":{}}}
-{"id":6,"method":"tools/call","params":{"name":"query_concepts","arguments":{"filter":"kind=capability"}}}
+{"id":6,"method":"tools/call","params":{"name":"list_concepts","arguments":{"filter":"kind=capability"}}}
 {"id":7,"method":"tools/call","params":{"name":"patch_concept","arguments":{"slug":"capabilities/folder","body":"changed"}}}
 {"id":8,"method":"tools/call","params":{"name":"rename_concept","arguments":{"oldSlug":"capabilities/folder","newSlug":"capabilities/folder-renamed","confirm":true}}}
 {"id":9,"method":"tools/call","params":{"name":"delete_concept","arguments":{"slug":"capabilities/folder","confirm":true}}}

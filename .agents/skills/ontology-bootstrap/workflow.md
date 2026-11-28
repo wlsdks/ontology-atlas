@@ -121,7 +121,7 @@ capabilities or one ability-to-ability edge per three.
 Each refusal names its next call: make it and finalize again; mark the row
 `partial` with its `Gap` only when the map cannot be repaired. Answer a
 warning by the repair it names (`relation-note-on-unread` names the read and
-the `replace_relation` call; `rule-without-read-lines` names the read and the
+the `remove_relation` call with `replaceWith`; `rule-without-read-lines` names the read and the
 patch), or say why not. Tell the person what the folder holds and
 what is still unopened.
 

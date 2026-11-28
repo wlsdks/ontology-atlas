@@ -72,7 +72,7 @@ import {
   buildGetConceptsSmokeSlugs,
   buildGraphQuerySmokeArgs,
   buildGraphQuerySmokeRequests,
-  buildLimitedQueryConceptsSmokeRequest,
+  buildLimitedListConceptsFilterSmokeRequest,
   buildPatchConflictGuardSmokeRequest,
 } from './verify/requests/follow-ups.mjs';
 
@@ -128,7 +128,7 @@ async function step2BootAndCall() {
     log('fail', verifyKillGraceValueErrorMessage());
     return false;
   }
-  log('info', `step 2: server boot + tools/list + list_concepts/census/project probe/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_orphans/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2: server boot + tools/list + list_concepts/census/project probe/get_concepts/list_concepts mentions/find_backlinks/list_concepts filter/limited list_concepts filter/analyze_repo_structure/infer_imports/orphan match_nodes/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   // The absorb_document dry-run request (id 69) reads this fixture, so it must exist
   // before the batch is sent; the finally below removes it.
@@ -172,7 +172,7 @@ async function step2BootAndCall() {
     let destructiveDryRunExpectedResponses = [];
     let earlyEmptyVaultPayload = null;
     const expectedFirstContactIds = initialExpectedFirstContactIds();
-    let limitedQueryConceptsSmoke = null;
+    let limitedFilterSmoke = null;
     let timer = null;
     let killTimer = null;
     const stopServer = () => {
@@ -259,10 +259,10 @@ async function step2BootAndCall() {
           }
           if (!sentLimitedQueryConceptsSmoke) {
             sentLimitedQueryConceptsSmoke = true;
-            limitedQueryConceptsSmoke = buildLimitedQueryConceptsSmokeRequest(listPayload);
-            if (limitedQueryConceptsSmoke?.request) {
+            limitedFilterSmoke = buildLimitedListConceptsFilterSmokeRequest(listPayload);
+            if (limitedFilterSmoke?.request) {
               expectedFirstContactIds.add(37);
-              proc.stdin.write(JSON.stringify(limitedQueryConceptsSmoke.request) + '\n');
+              proc.stdin.write(JSON.stringify(limitedFilterSmoke.request) + '\n');
             }
           }
           if (!sentDestructiveDryRunSmoke) {
@@ -512,7 +512,7 @@ async function step2BootAndCall() {
       if (!maintenanceCursor) return res(false);
       const { maintenanceResumeVerified, maintenanceResumeSkipped } = maintenanceCursor;
       const conceptReads = verifyConceptReads(responses, {
-        limitedQueryConceptsSmoke,
+        limitedFilterSmoke,
         callRes,
         projectProbeRes,
       });

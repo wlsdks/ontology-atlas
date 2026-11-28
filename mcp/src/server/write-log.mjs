@@ -28,9 +28,11 @@ function summarizeWrite(name, args, result) {
     case 'add_relation':
       return { target: args.from, summary: `${args.from} --${args.type}--> ${args.to}`, why: args.why ?? null };
     case 'remove_relation':
-      return result?.dryRun ? null : { target: args.from, summary: `remove ${args.from} --${args.type}--> ${args.to}` };
-    case 'replace_relation':
-      return result?.dryRun ? null : { target: args.from, summary: `replace ${args.from} --${args.oldType}--> ${args.oldTo} with --${args.newType}--> ${args.newTo}`, why: args.why ?? null };
+      if (result?.dryRun) return null;
+      // A replacement is logged as the one edit it is, with the reason it carries.
+      return args.replaceWith
+        ? { target: args.from, summary: `replace ${args.from} --${args.type}--> ${args.to} with --${args.replaceWith.type}--> ${args.replaceWith.to}`, why: args.replaceWith.why ?? null }
+        : { target: args.from, summary: `remove ${args.from} --${args.type}--> ${args.to}` };
     case 'add_concepts': {
       const okRows = (result?.concepts ?? []).filter((row) => row?.ok);
       if (okRows.length === 0) return null;
@@ -66,17 +68,15 @@ function summarizeWrite(name, args, result) {
         ? { target: args.projectSlug, summary: `finalize_project_meaning ${args.projectSlug} competency answers` }
         : null;
     case 'connect_project_source':
-      return result?.changed
-        ? { target: result.projectSlug, summary: `connect_project_source ${result.mode} ${result.binding?.kind ?? ''}`.trim() }
-        : null;
-    case 'disconnect_project_source':
-      return result?.changed
+      if (!result?.changed) return null;
+      return args.disconnect === true
         ? { target: result.projectSlug, summary: `disconnect_project_source ${result.removed} removed` }
-        : null;
+        : { target: result.projectSlug, summary: `connect_project_source ${result.mode} ${result.binding?.kind ?? ''}`.trim() };
     case 'rename_concept':
-      return result?.dryRun ? null : { target: args.newSlug, summary: `rename ${args.oldSlug} → ${args.newSlug}` };
-    case 'reclassify_concept':
-      return result?.dryRun ? null : { target: result?.newSlug ?? args.slug, summary: `reclassify ${args.slug} → ${args.newKind}` };
+      if (result?.dryRun) return null;
+      return args.newKind === undefined
+        ? { target: args.newSlug, summary: `rename ${args.oldSlug} → ${args.newSlug}` }
+        : { target: result?.newSlug ?? args.oldSlug, summary: `reclassify ${args.oldSlug} → ${args.newKind}` };
     case 'merge_concepts':
       return result?.dryRun ? null : { target: args.intoSlug, summary: `merge ${args.fromSlug} → ${args.intoSlug}` };
     case 'delete_concept':

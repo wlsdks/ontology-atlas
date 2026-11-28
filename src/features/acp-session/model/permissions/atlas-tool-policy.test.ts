@@ -9,7 +9,7 @@ const tools = ((surface as { mcp?: { tools?: SurfaceTool[] } }).mcp?.tools ?? []
 
 describe('ACP Atlas tool policy: the generated MCP surface is canonical', () => {
   it('classifies every registered tool exactly as the tools/list read/write annotation does', () => {
-    expect(tools.length).toBeGreaterThan(30);
+    expect(tools.length).toBeGreaterThan(20);
     for (const tool of tools) {
       expect(
         atlasToolMode(`mcp__atlas-vault__${tool.name}`, 'atlas-vault'),

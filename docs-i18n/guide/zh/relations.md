@@ -68,7 +68,7 @@ MCP 服务器根据同一批 frontmatter 回答关于图的问题，所以你的
 - `query_ontology` 配合 `impact` 或 `blast_radius`，回答“如果这里变了，会影响什么？”。它只沿着声明过的 `depends_on` 关系查找；结构关系不算影响。
 - `query_ontology` 配合 `domain_matrix`，统计领域之间的关系数量。限定为 `depends_on` 时，得出的数字与地图上弧线所画的相同。
 
-写入时，`add_relations` 接收一组关系，每条关系包含 `from`、`to`、一个 `type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements` 或 `domain`）以及一个 `why`。`remove_relation` 和 `replace_relation` 默认只做预览，只有带上 `confirm: true` 时才会写入。`broader` 目前还不是 `add_relations` 支持的类型：智能体需要用 `patch_concept` 修改它，传入完整的新列表和文件的 `mtime`，然后运行 `validate_vault`。
+写入时，`add_relations` 接收一组关系，每条关系包含 `from`、`to`、一个 `type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements` 或 `domain`）以及一个 `why`。`remove_relation` 默认只做预览，只有带上 `confirm: true` 时才会写入；同时传入 `replaceWith` 时，会一次写入就把一条关系换成另一条。`broader` 目前还不是 `add_relations` 支持的类型：智能体需要用 `patch_concept` 修改它，传入完整的新列表和文件的 `mtime`，然后运行 `validate_vault`。
 
 在地图上，**编辑关系** 每次写入一条关系，执行的检查与 MCP 工具相同；见 [编辑概念和关系](/guide/studio)。
 

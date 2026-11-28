@@ -194,8 +194,8 @@ export function AgentSetupInspection({
       </p>
 
       {/*
-        Validation errors block nothing but `git_snapshot({confirm:true})`; MCP writes have no
-        such gate, so this box must not claim the agent is blocked.
+        Validation errors block no MCP write: no tool commits for the agent, and MCP writes have no
+        validation gate, so this box must not claim the agent is blocked.
       */}
       <div
         role="status"

@@ -129,7 +129,7 @@ is a changelog.
   every backlink. Don't do `find_backlinks` + N `patch_concept` manually.
 - **Destructive boundary**: ordinary ontology-sync does not call
   `delete_concept`, `merge_concepts`, `rename_concept`, `absorb_document`, or
-  `git_snapshot`. Those require an explicit user request, a dry-run or
+  a commit of the ontology folder. Those require an explicit user request, a dry-run or
   preflight review, and the relevant `expected_mtime` guards.
 
 ## Example one-liner the agent might generate

@@ -35,13 +35,7 @@ export function buildFirstContactRequests() {
       jsonrpc: '2.0',
       id: 71,
       method: 'tools/call',
-      params: { name: 'git_status', arguments: {} },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 72,
-      method: 'tools/call',
-      params: { name: 'git_history', arguments: { limit: 20 } },
+      params: { name: 'find_orphans', arguments: {} },
     },
     {
       jsonrpc: '2.0',
@@ -71,19 +65,19 @@ export function buildFirstContactRequests() {
       jsonrpc: '2.0',
       id: 19,
       method: 'tools/call',
-      params: { name: 'find_orphans', arguments: {} },
+      params: { name: 'query_ontology', arguments: { operation: 'match_nodes', hasIncoming: false, limit: 5 } },
     },
     {
       jsonrpc: '2.0',
       id: 32,
       method: 'tools/call',
-      params: { name: 'find_evidence', arguments: { title: 'project' } },
+      params: { name: 'list_concepts', arguments: { mentions: 'project' } },
     },
     {
       jsonrpc: '2.0',
       id: 34,
       method: 'tools/call',
-      params: { name: 'query_concepts', arguments: { filter: 'kind=project', limit: 5 } },
+      params: { name: 'list_concepts', arguments: { filter: 'kind=project', limit: 5 } },
     },
     {
       jsonrpc: '2.0',
@@ -422,32 +416,10 @@ export function buildFirstContactRequests() {
     },
     {
       jsonrpc: '2.0',
-      id: 56,
-      method: 'tools/call',
-      params: {
-        name: 'find_orphans',
-        arguments: {
-          kind: 'capabilty',
-        },
-      },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 57,
-      method: 'tools/call',
-      params: {
-        name: 'find_orphans',
-        arguments: {
-          excludeKinds: ['capabilty'],
-        },
-      },
-    },
-    {
-      jsonrpc: '2.0',
       id: 58,
       method: 'tools/call',
       params: {
-        name: 'query_concepts',
+        name: 'list_concepts',
         arguments: {
           filter: 'kind=capabilty',
         },
@@ -458,7 +430,7 @@ export function buildFirstContactRequests() {
       id: 59,
       method: 'tools/call',
       params: {
-        name: 'query_concepts',
+        name: 'list_concepts',
         arguments: {
           filter: 'has(capabilties)',
         },

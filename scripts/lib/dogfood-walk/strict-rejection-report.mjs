@@ -35,10 +35,9 @@ export const STRICT_REJECTION_SECTIONS = [
     header: "strict relation filters — invalid dependencyTypes rejection",
     rows: [
       { key: "strictRelationFilter", id: 61, label: "dependencyTypes rejected" },
-      { key: "strictFindOrphansKindFilter", id: 76, label: "find_orphans.kind rejected" },
-      { key: "strictFindOrphansExcludeKindFilter", id: 77, label: "find_orphans.excludeKinds rejected" },
-      { key: "strictQueryConceptsKindFilter", id: 78, label: "query_concepts.kind rejected" },
-      { key: "strictQueryConceptsHasKeyFilter", id: 79, label: "query_concepts.has-key rejected" },
+      { key: "strictOrphanMatchNodesKindFilter", id: 76, label: "match_nodes.kind rejected" },
+      { key: "strictListConceptsFilterKind", id: 78, label: "list_concepts.filter kind rejected" },
+      { key: "strictListConceptsFilterHasKey", id: 79, label: "list_concepts.filter has-key rejected" },
       { key: "strictListConceptsKindFilter", id: 80, label: "list_concepts.kind rejected" },
     ],
   },

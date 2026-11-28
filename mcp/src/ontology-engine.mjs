@@ -145,19 +145,6 @@ export {
   WRITE_RELATION_TYPE_VALUES,
 } from './ontology-engine/query-operation/query-values.mjs';
 export { shareArtifact } from './ontology-engine/graph-context/artifact-context.mjs';
-// Frontmatter key (edge.via) → the public relation `type` for dangling-reference
-// hints; only `dependencies` differs (`depends_on`). The inverse of
-// RELATION_KEY in tools/relation-keys.mjs.
-const RELATION_TYPE_FOR_KEY = Object.freeze({
-  dependencies: 'depends_on',
-  relates: 'relates',
-  contains: 'contains',
-  describes: 'describes',
-  domains: 'domains',
-  capabilities: 'capabilities',
-  elements: 'elements',
-  domain: 'domain',
-});
 export const MAINTENANCE_PHASE_VALUES = Object.freeze(['validate', 'repair', 'link', 'materialize', 'review']);
 export const MAINTENANCE_SEVERITY_VALUES = Object.freeze(['fail', 'warn', 'info']);
 export const MAINTENANCE_KIND_VALUES = Object.freeze([
@@ -385,7 +372,7 @@ export function createOntologyEngine(artifact, options = {}) {
   } = createGrowthQueries({
     nodes, edges, nodeBySlug, sourceDocFor, ontologyAtlasIgnorePatterns,
     sourceRoot: typeof options.sourceRoot === 'string' ? options.sourceRoot : null,
-    relationTypeForKey: RELATION_TYPE_FOR_KEY, bodyIsStarterTemplate, compareEdges,
+    bodyIsStarterTemplate, compareEdges,
     containmentChildren, containmentParentsFor, findNearMatchSlug, hasResolvedContainmentParent,
     hasResolvedEdge, inferKindFromRelation, normalizeRecommendRelationKind, resolveOptional,
     suggestedSlugForReference, titleFromReference,

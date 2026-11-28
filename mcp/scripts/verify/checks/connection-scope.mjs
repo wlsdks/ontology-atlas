@@ -43,38 +43,6 @@ export function firstContactLocalProbeFailure(responses, {
         return null;
       },
     },
-    {
-      id: 71,
-      label: 'git_status',
-      validate(payload) {
-        if (payload.operation !== 'git_status' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
-          return 'git_status operation or roots do not match the verifier scope';
-        }
-        if (payload.ok === false) {
-          return typeof payload.reason === 'string' && payload.reason.length > 0 ? null : 'git_status unavailable response missing reason';
-        }
-        if (typeof payload.ok !== 'boolean' || !payload.counts || !Array.isArray(payload.files) || !Array.isArray(payload.stagedOutsideVault)) {
-          return 'git_status scope/count/file metadata missing';
-        }
-        return null;
-      },
-    },
-    {
-      id: 72,
-      label: 'git_history',
-      validate(payload) {
-        if (payload.operation !== 'git_history' || canonical(payload.repoRoot) !== expectedRepoRoot || canonical(payload.vaultRoot) !== expectedVaultRoot) {
-          return 'git_history operation or roots do not match the verifier scope';
-        }
-        if (payload.ok === false) {
-          return typeof payload.reason === 'string' && payload.reason.length > 0 ? null : 'git_history unavailable response missing reason';
-        }
-        if (!Number.isInteger(payload.count) || payload.count < 0 || typeof payload.limited !== 'boolean' || typeof payload.hasMore !== 'boolean' || typeof payload.shallow !== 'boolean' || typeof payload.historyComplete !== 'boolean') {
-          return 'git_history bounded-history metadata missing';
-        }
-        return null;
-      },
-    },
   ];
   for (const check of checks) {
     const response = responses.find((candidate) => candidate?.id === check.id);

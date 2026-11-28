@@ -599,39 +599,19 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.mtime?.type, "number");
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.warnings?.type, "array");
     assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.warnings?.items?.properties?.severity?.enum, ["error", "warning"]);
-    const findEvidence = findTool("find_evidence");
     assert.match(
-      findEvidence?.description ?? "",
-      /Find vault docs that mention a given concept by title[\s\S]*Each match includes a prose `?excerpt`?[\s\S]*without an extra get_concepts call/i,
-      "find_evidence description documents excerpt-first usage",
+      listConcepts?.description ?? "",
+      /by text with `mentions`[\s\S]*ranks nodes whose title, relations or body say it[\s\S]*adds `matchedIn` and `score` to each row/i,
+      "list_concepts description documents the mentions search",
     );
     assert.match(
-      findEvidence?.inputSchema?.properties?.title?.description ?? "",
-      /case-insensitive substring match/i,
-      "find_evidence title schema documents matching behavior",
+      listConcepts?.inputSchema?.properties?.mentions?.description ?? "",
+      /case-insensitive[\s\S]*best match first/i,
+      "list_concepts mentions schema documents matching behavior",
     );
-    assert.equal(findEvidence?.outputSchema?.type, "object");
-    assert.deepEqual(findEvidence?.outputSchema?.required, ["query", "matches"]);
-    assert.equal(findEvidence?.outputSchema?.additionalProperties, false);
-    assert.equal(findEvidence?.outputSchema?.properties?.matches?.type, "array");
-    const evidenceMatchSchema = findEvidence?.outputSchema?.properties?.matches?.items;
-    assert.deepEqual(evidenceMatchSchema?.required, ["slug", "isNode", "title", "mtime", "matchedIn", "score", "excerpt"]);
-    assert.equal(evidenceMatchSchema?.additionalProperties, false);
-    assert.deepEqual(evidenceMatchSchema?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
-    assert.deepEqual(
-      evidenceMatchSchema?.oneOf,
-      [
-        {
-          properties: { isNode: { const: true } },
-          required: ["uid", "kind"],
-        },
-        {
-          properties: { isNode: { const: false } },
-          not: { anyOf: [{ required: ["uid"] }, { required: ["kind"] }] },
-        },
-      ],
-      "find_evidence output rows discriminate graph-node identity from ordinary markdown",
-    );
+    assert.equal(listConcepts?.outputSchema?.properties?.query?.type, "string");
+    assert.deepEqual(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
+    assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.score?.type, "number");
     const findBacklinks = findTool("find_backlinks");
     assert.match(
       findBacklinks?.description ?? "",
@@ -670,33 +650,14 @@ await test("tools/list — each single-item tool description cross-references it
     assert.deepEqual(findPath?.outputSchema?.properties?.edges?.items?.required, ["from", "to", "via"]);
     assert.equal(findPath?.outputSchema?.properties?.edges?.items?.additionalProperties, false);
     assert.deepEqual(findPath?.outputSchema?.properties?.nodes?.items?.required, ["uid", "slug", "kind", "title"]);
-    const findOrphans = findTool("find_orphans");
     assert.match(
-      findOrphans?.description ?? "",
-      /List orphan nodes[\s\S]*docs that no other node references via any frontmatter array key[\s\S]*cleanup starting point[\s\S]*Root\/sentinel kinds like project and vault-readme are excluded by default/i,
-      "find_orphans description documents cleanup and default exclusions",
+      listConcepts?.description ?? "",
+      /by a predicate with `filter`/i,
+      "list_concepts description documents the filter",
     );
-    assert.match(
-      findOrphans?.inputSchema?.properties?.kind?.description ?? "",
-      /Restrict to one kind[\s\S]*Omit for all kinds/i,
-      "find_orphans kind schema documents optional kind filter",
-    );
-    assert.equal(findOrphans?.outputSchema?.type, "object");
-    assert.deepEqual(findOrphans?.outputSchema?.required, ["total", "orphans"]);
-    assert.equal(findOrphans?.outputSchema?.additionalProperties, false);
-    assert.equal(findOrphans?.outputSchema?.properties?.total?.type, "integer");
-    assert.deepEqual(findOrphans?.outputSchema?.properties?.orphans?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
-    assert.equal(findOrphans?.outputSchema?.properties?.orphans?.items?.additionalProperties, false);
-    assert.equal(findOrphans?.outputSchema?.properties?.orphans?.items?.properties?.mtime?.type, "number");
-    const queryConcepts = findTool("query_concepts");
-    assert.equal(queryConcepts?.outputSchema?.type, "object");
-    assert.deepEqual(queryConcepts?.outputSchema?.required, ["filter", "parsedAs", "total", "matches", "limited"]);
-    assert.equal(queryConcepts?.outputSchema?.additionalProperties, false);
-    assert.equal(queryConcepts?.outputSchema?.properties?.total?.type, "integer");
-    assert.equal(queryConcepts?.outputSchema?.properties?.limited?.type, "boolean");
-    assert.deepEqual(queryConcepts?.outputSchema?.properties?.matches?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
-    assert.equal(queryConcepts?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
-    assert.equal(queryConcepts?.outputSchema?.properties?.matches?.items?.properties?.mtime?.type, "number");
+    assert.equal(listConcepts?.outputSchema?.properties?.filter?.type, "string");
+    assert.equal(listConcepts?.outputSchema?.properties?.parsedAs?.type, "string");
+    assert.equal(listConcepts?.outputSchema?.properties?.growthHint?.type, "object");
     const compileOntology = findTool("compile_ontology");
     assert.equal(compileOntology?.outputSchema?.type, "object");
     assert.deepEqual(compileOntology?.outputSchema?.required, [
@@ -1087,9 +1048,13 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(renameConcept?.outputSchema?.type, "object");
     assert.deepEqual(renameConcept?.outputSchema?.required, [
       "ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons",
-      "uid", "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates",
+      "uid", "oldSlug", "newSlug", "sourcePath", "targetPath", "backlinkUpdates",
     ]);
     assert.equal(renameConcept?.outputSchema?.additionalProperties, false);
+    assert.deepEqual(renameConcept?.inputSchema?.required, ["oldSlug"]);
+    assert.equal(renameConcept?.inputSchema?.properties?.newKind?.type, "string");
+    assert.equal(renameConcept?.outputSchema?.properties?.newKind?.type, "string");
+    assert.equal(renameConcept?.outputSchema?.properties?.bodyAction?.type, "string");
     assert.equal(renameConcept?.outputSchema?.properties?.oldSlug?.type, "string");
     assert.equal(renameConcept?.outputSchema?.properties?.newSlug?.type, "string");
     assert.equal(renameConcept?.outputSchema?.properties?.sourcePath?.type, "string");
@@ -1168,13 +1133,10 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(deleteConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
     const destructivePreviewTools = [
       "remove_relation",
-      "replace_relation",
       "rename_concept",
-      "reclassify_concept",
       "merge_concepts",
       "delete_concept",
       "absorb_document",
-      "git_snapshot",
     ];
     for (const name of destructivePreviewTools) {
       const schema = findTool(name)?.outputSchema;
@@ -1575,17 +1537,6 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.deepEqual(
       {
-        kindEnum: findTool("find_orphans")?.inputSchema?.properties?.kind?.enum,
-        excludeKindsEnum: findTool("find_orphans")?.inputSchema?.properties?.excludeKinds?.items?.enum,
-      },
-      {
-        kindEnum: NODE_KIND_VALUES,
-        excludeKindsEnum: NODE_KIND_VALUES,
-      },
-      "find_orphans exposes node kind enums for direct filters",
-    );
-    assert.deepEqual(
-      {
         type: findTool("find_path")?.inputSchema?.properties?.maxHops?.type,
         minimum: findTool("find_path")?.inputSchema?.properties?.maxHops?.minimum,
         maximum: findTool("find_path")?.inputSchema?.properties?.maxHops?.maximum,
@@ -1640,29 +1591,10 @@ await test("tools/list — each single-item tool description cross-references it
       /`nodesOffset`/,
       "compile_ontology nodesLimit schema documents pagination cap",
     );
-    assert.deepEqual(
-      {
-        type: findTool("query_concepts")?.inputSchema?.properties?.limit?.type,
-        minimum: findTool("query_concepts")?.inputSchema?.properties?.limit?.minimum,
-        maximum: findTool("query_concepts")?.inputSchema?.properties?.limit?.maximum,
-      },
-      { type: "integer", minimum: 1, maximum: 500 },
-      "query_concepts exposes bounded integer limit schema",
-    );
     assert.match(
-      findTool("query_concepts")?.description ?? "",
-      /Typed filter DSL[\s\S]*filter\s*:=\s*atom[\s\S]*predicate\s*:=\s*key=value \| key!=value \| has\(key\)[\s\S]*kind=capability AND domain=auth AND NOT has\(elements\)/i,
-      "query_concepts description documents the typed filter grammar",
-    );
-    assert.match(
-      findTool("query_concepts")?.inputSchema?.properties?.filter?.description ?? "",
-      /Supports NOT \/ AND \/ OR[\s\S]*Wrap values containing whitespace or special characters/i,
-      "query_concepts filter schema documents operators and quoting",
-    );
-    assert.match(
-      findTool("query_concepts")?.inputSchema?.properties?.limit?.description ?? "",
-      /Default 100/,
-      "query_concepts limit schema documents default and cap",
+      findTool("list_concepts")?.inputSchema?.properties?.filter?.description ?? "",
+      /`key=value`[\s\S]*quote a value holding spaces[\s\S]*`has\(key\)`[\s\S]*Combine with AND, OR, NOT/i,
+      "list_concepts filter schema documents operators and quoting",
     );
     assert.match(
       findTool("query_ontology")?.description ?? "",
@@ -1937,7 +1869,8 @@ await test("tools/list — each single-item tool description cross-references it
       ["list_concepts", "kind"],
       ["list_concepts", "domain"],
       ["get_concept", "slug"],
-      ["find_evidence", "title"],
+      ["list_concepts", "mentions"],
+      ["list_concepts", "filter"],
       ["add_concept", "slug"],
       ["add_concept", "kind"],
       ["add_concept", "title"],
@@ -1955,8 +1888,6 @@ await test("tools/list — each single-item tool description cross-references it
       ["merge_concepts", "fromSlug"],
       ["merge_concepts", "intoSlug"],
       ["delete_concept", "slug"],
-      ["find_orphans", "kind"],
-      ["query_concepts", "filter"],
       ["query_ontology", "slug"],
       ["query_ontology", "targetOperation"],
       ["query_ontology", "afterActionId"],
@@ -2254,7 +2185,7 @@ await test("tools/call — omitted arguments become an empty object and non-obje
       /Unknown argument "lmit" for list_concepts/i,
     );
     assert.equal(responses.find((r) => r.id === 6)?.result?.structuredContent?.errorCode, "unknown_argument");
-    assert.deepEqual(getCallStructured(responses, 6)?.allowedArguments, ["domain", "kind", "limit", "offset", "since", "summary"]);
+    assert.deepEqual(getCallStructured(responses, 6)?.allowedArguments, ["domain", "filter", "kind", "limit", "mentions", "offset", "since", "summary"]);
     assert.deepEqual(getCallStructured(responses, 6)?.receivedArguments, ["lmit"]);
     assert.equal(getCallStructured(responses, 6)?.receivedArgument, "lmit");
     assert.equal(getCallStructured(responses, 6)?.suggestion, "limit");
@@ -2266,7 +2197,7 @@ await test("tools/call — omitted arguments become an empty object and non-obje
     assert.match(getCallText(responses, 8), /Unknown arguments for list_concepts/i);
     assert.match(getCallText(responses, 8), /"lmit" \(did you mean "limit"\?\)/i);
     assert.match(getCallText(responses, 8), /"summry" \(did you mean "summary"\?\)/i);
-    assert.match(getCallText(responses, 8), /Allowed arguments: domain, kind, limit, offset, since, summary/i);
+    assert.match(getCallText(responses, 8), /Allowed arguments: domain, filter, kind, limit, mentions, offset, since, summary/i);
     assert.equal(getCallStructured(responses, 8)?.errorCode, "unknown_argument");
     assert.deepEqual(getCallStructured(responses, 8)?.unknownArguments, [
       { name: "lmit", suggestion: "limit" },
@@ -5197,7 +5128,7 @@ await test("list_concepts — domain filter", async () => {
   }
 });
 
-await test("find_evidence — each match carries a prose excerpt", async () => {
+await test("list_concepts mentions — each row carries its uid, mtime, matchedIn, score and, on request, a prose summary", async () => {
   const root = makeVault([
     {
       slug: "capabilities/auth",
@@ -5213,26 +5144,24 @@ await test("find_evidence — each match carries a prose excerpt", async () => {
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "find_evidence", { title: "auth" }),
+      callTool(2, "list_concepts", { mentions: "auth", summary: true }),
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.ok(Array.isArray(result.matches));
-    assert.ok(result.matches.length >= 1);
-    for (const m of result.matches) {
+    assert.equal(result.query, "auth");
+    assert.ok(result.nodes.length >= 1);
+    for (const m of result.nodes) {
       assert.match(m.uid, /^[0-9a-f-]{36}$/, `${m.slug}.uid`);
-      assert.equal(typeof m.excerpt, "string");
-      assert.doesNotMatch(m.excerpt, /^#/);
-      assert.doesNotMatch(m.excerpt, /^\|/);
-    }
-    const billing = result.matches.find((m) => m.slug === "domains/billing");
-    if (billing) {
-      assert.match(billing.excerpt, /결제 도메인/);
-    }
-    for (const m of result.matches) {
+      assert.ok(["frontmatter", "body"].includes(m.matchedIn), `${m.slug}.matchedIn`);
+      assert.equal(typeof m.score, "number", `${m.slug}.score`);
+      assert.equal(typeof m.summary, "string");
+      assert.doesNotMatch(m.summary, /^#/);
       assert.equal(typeof m.mtime, "number", `${m.slug}.mtime number`);
       assert.ok(m.mtime > 0);
     }
+    assert.equal(result.nodes[0].slug, "capabilities/auth", "the node titled for the text ranks first");
+    const billing = result.nodes.find((m) => m.slug === "domains/billing");
+    assert.match(billing.summary, /결제 도메인/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5373,62 +5302,45 @@ await test("get_concept — says so for a document outside the graph", async () 
  * outranked nodes. Loose documents stay visible (a memo may be real evidence),
  * but nodes rank first on a tie, each row carries `isNode`, and `nodesOnly` narrows.
  */
-await test("find_evidence — on equal scores nodes rank before non-node documents, with isNode per row", async () => {
+await test("list_concepts mentions — only graph nodes answer, the best match first", async () => {
   const root = makeVault([
-    // Alphabetically the loose document would win (aaa… < capabilities/…).
     {
       slug: "aaa-meeting-note",
       content: "민수랑 얘기함. 토큰 발급이 느리다는 말이 나왔는데 근거는 없었음.\n",
-    },
-    {
-      slug: "aab-scratch",
-      content: "---\ntitle: 낙서\n---\n\n토큰 발급 관련 아이디어 메모.\n",
     },
     {
       slug: "capabilities/token-issue",
       content:
         "---\nkind: capability\ntitle: 접근 토큰\n---\n\n# 접근 토큰\n\n토큰 발급 절차를 소유한다.\n",
     },
+    {
+      slug: "elements/token-store",
+      content:
+        "---\nkind: element\ntitle: 저장소\n---\n\n# 저장소\n\n토큰 발급 기록을 보관한다.\n",
+    },
   ]);
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "find_evidence", { title: "토큰 발급" }),
-      callTool(3, "find_evidence", { title: "토큰 발급", nodesOnly: true }),
+      callTool(2, "list_concepts", { mentions: "토큰 발급" }),
+      callTool(3, "list_concepts", { mentions: "토큰", kind: "element" }),
     ]);
     const all = getCallParsed(responses, 2);
-    assert.ok(all.matches.length >= 3, "all three documents must match for this test to hold");
-    assert.equal(
-      all.matches[0].slug,
-      "capabilities/token-issue",
-      `a node does not rank first: ${all.matches.map((m) => m.slug).join(", ")}`,
+    assert.deepEqual(
+      all.nodes.map((m) => m.slug),
+      ["capabilities/token-issue", "elements/token-store"],
+      "a document without a kind is not a node and never answers",
     );
-    for (const m of all.matches) {
-      assert.equal(typeof m.isNode, "boolean", `${m.slug}.isNode`);
-    }
-    assert.equal(all.matches.find((m) => m.slug === "aaa-meeting-note").isNode, false);
-    const nonNode = all.matches.find((m) => m.slug === "aaa-meeting-note");
-    assert.equal(nonNode.uid, undefined, "ordinary markdown must not invent a graph UID");
-    assert.equal(nonNode.kind, undefined, "ordinary markdown must not invent a graph kind");
-    const node = all.matches.find((m) => m.slug === "capabilities/token-issue");
-    assert.equal(node.isNode, true);
-    assert.match(node.uid, /^[0-9a-f-]{36}$/);
-    assert.equal(node.kind, "capability");
-    assert.match(String(all.nonNodeHint ?? ""), /nodesOnly/);
-
-    const onlyNodes = getCallParsed(responses, 3);
-    assert.ok(onlyNodes.matches.length >= 1);
-    assert.ok(
-      onlyNodes.matches.every((m) => m.isNode === true),
-      "a non-node document survived nodesOnly",
-    );
-    assert.equal(onlyNodes.nonNodeHint, undefined, "the narrowed result carries the guidance again");
+    assert.equal(all.total, 2);
+    assert.ok(all.nodes[0].score >= all.nodes[1].score);
+    const narrowed = getCallParsed(responses, 3);
+    assert.deepEqual(narrowed.nodes.map((m) => m.slug), ["elements/token-store"], "mentions joins kind as AND");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("find_evidence — zero hits return a growthHint (near-title candidates or an add_concept scaffold)", async () => {
+await test("list_concepts mentions — zero hits return a growthHint (near-title candidates or an add_concept scaffold)", async () => {
   const root = makeVault([
     {
       slug: "capabilities/token-issue",
@@ -5438,19 +5350,19 @@ await test("find_evidence — zero hits return a growthHint (near-title candidat
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "find_evidence", { title: "Token Issuance" }),
-      callTool(3, "find_evidence", { title: "Completely Unrelated Concept" }),
+      callTool(2, "list_concepts", { mentions: "Token Issuance" }),
+      callTool(3, "list_concepts", { mentions: "Completely Unrelated Concept" }),
     ]);
 
     const near = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), near);
-    assert.equal(near.matches.length, 0);
+    assert.equal(near.nodes.length, 0);
     assert.ok(near.growthHint, "expected growthHint on 0-hit response");
-    assert.match(near.growthHint.reason, /No vault doc mentions "Token Issuance"/);
+    assert.match(near.growthHint.reason, /No vault node mentions "Token Issuance"/);
     assert.deepEqual(near.growthHint.exampleCall, { tool: "get_concepts", args: { slugs: ["capabilities/token-issue"] } });
 
     const noNear = getCallParsed(responses, 3);
-    assert.equal(noNear.matches.length, 0);
+    assert.equal(noNear.nodes.length, 0);
     assert.ok(noNear.growthHint, "expected growthHint on 0-hit response");
     assert.deepEqual(noNear.growthHint.exampleCall, {
       tool: "add_concepts",
@@ -5898,7 +5810,7 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(4, "find_neighbors", { slug: "a", limit: 501 }),
       callTool(5, "find_neighbors", { slug: "a", direction: "sideways" }),
       callTool(6, "find_path", { from: "a", to: "b", maxHops: -1 }),
-      callTool(7, "query_concepts", { filter: "kind=capability", limit: "10" }),
+      callTool(7, "list_concepts", { filter: "kind=capability", limit: "10" }),
       callTool(8, "compile_ontology", { nodesOffset: -1 }),
       callTool(9, "compile_ontology", { edgesLimit: 1.5 }),
       callTool(10, "query_ontology", {
@@ -5909,7 +5821,7 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(11, "query_ontology", { operation: "centrality", iterations: 101 }),
       callTool(12, "query_ontology", { operation: "cycles", depth: -1 }),
       callTool(13, "find_neighbors", { slug: "a", types: ["depends_on", 123] }),
-      callTool(14, "find_orphans", { excludeKinds: ["vault-readme", false] }),
+      callTool(14, "list_concepts", { mentions: 7 }),
       callTool(15, "query_ontology", {
         operation: "neighbors",
         slug: "a",
@@ -5972,7 +5884,7 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(45, "query_ontology", { operation: "recommend_relations", kind: "domain" }),
       callTool(46, "find_path", { from: "a", to: "b", maxHops: 21 }),
       callTool(47, "list_concepts", { limit: 501 }),
-      callTool(48, "query_concepts", { filter: "kind=capability", limit: 501 }),
+      callTool(48, "list_concepts", { filter: "kind=capability", limit: 501 }),
       callTool(49, "compile_ontology", { nodesLimit: 501 }),
       callTool(50, "compile_ontology", { edgesLimit: 501 }),
       callTool(51, "query_ontology", {}),
@@ -6005,18 +5917,16 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(67, "query_ontology", { operation: "match_edges", fromKind: "capabilty" }),
       callTool(68, "query_ontology", { operation: "match_edges", toKind: "externl" }),
       callTool(69, "find_neighbors", { slug: "a", types: ["depend_on"] }),
-      callTool(70, "find_orphans", { kind: "capabilty" }),
-      callTool(71, "find_orphans", { excludeKinds: ["capabilty"] }),
-      callTool(72, "query_concepts", { filter: "kind=capabilty" }),
-      callTool(73, "query_concepts", { filter: "has(capabilties)" }),
-      callTool(74, "query_concepts", { filter: "knd=capability" }),
+      callTool(72, "list_concepts", { filter: "kind=capabilty" }),
+      callTool(73, "list_concepts", { filter: "has(capabilties)" }),
+      callTool(74, "list_concepts", { filter: "knd=capability" }),
       callTool(75, "list_concepts", { kind: "capabilty" }),
     ]);
     for (const id of [
       2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
       21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
       38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
       72, 73, 74, 75,
     ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
@@ -6035,7 +5945,7 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 11).result.content[0].text, /iterations must be <= 100/i);
     assert.match(responses.find((r) => r.id === 12).result.content[0].text, /depth must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 13).result.content[0].text, /types must be an array of strings/i);
-    assert.match(responses.find((r) => r.id === 14).result.content[0].text, /excludeKinds must be an array of strings/i);
+    assert.match(responses.find((r) => r.id === 14).result.content[0].text, /mentions must be a non-empty string/i);
     assert.match(responses.find((r) => r.id === 15).result.content[0].text, /types must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 41).result.content[0].text, /nodesLimit must be a positive integer/i);
     assert.match(responses.find((r) => r.id === 44).result.content[0].text, /sort must be one of/i);
@@ -6165,24 +6075,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       suggestion: "depends_on",
       allowedValues: RELATION_TYPE_VALUES,
     });
-    assert.match(responses.find((r) => r.id === 70).result.content[0].text, /kind must be one of/i);
-    assert.match(responses.find((r) => r.id === 70).result.content[0].text, /Received: "capabilty"/i);
-    assert.match(responses.find((r) => r.id === 70).result.content[0].text, /Did you mean "capability"\?/i);
-    assertStructuredValueRepair(responses, 70, {
-      valueName: "kind",
-      receivedValue: "capabilty",
-      suggestion: "capability",
-      allowedValues: NODE_KIND_VALUES,
-    });
-    assert.match(responses.find((r) => r.id === 71).result.content[0].text, /excludeKinds items must be one of/i);
-    assert.match(responses.find((r) => r.id === 71).result.content[0].text, /Received: "capabilty"/i);
-    assert.match(responses.find((r) => r.id === 71).result.content[0].text, /Did you mean "capability"\?/i);
-    assertStructuredValueRepair(responses, 71, {
-      valueName: "excludeKinds items",
-      receivedValue: "capabilty",
-      suggestion: "capability",
-      allowedValues: NODE_KIND_VALUES,
-    });
     assert.match(responses.find((r) => r.id === 72).result.content[0].text, /kind must be one of/i);
     assert.match(responses.find((r) => r.id === 72).result.content[0].text, /Received: "capabilty"/i);
     assert.match(responses.find((r) => r.id === 72).result.content[0].text, /Did you mean "capability"\?/i);
@@ -6260,13 +6152,12 @@ await test("MCP read/query tools — blank/padded scalar string inputs are rejec
       callTool(21, "list_concepts", { kind: " capability" }),
       callTool(22, "list_concepts", { domain: "auth\0" }),
       callTool(2, "get_concept", { slug: " a" }),
-      callTool(3, "find_evidence", { title: " " }),
+      callTool(3, "list_concepts", { mentions: " " }),
       callTool(4, "find_backlinks", { slug: "a\0" }),
       callTool(5, "find_neighbors", { slug: " a" }),
       callTool(6, "find_path", { from: " a", to: "b" }),
       callTool(7, "find_path", { from: "a", to: " " }),
-      callTool(8, "find_orphans", { kind: " capability" }),
-      callTool(9, "query_concepts", { filter: " kind=capability" }),
+      callTool(9, "list_concepts", { filter: " kind=capability" }),
       callTool(10, "query_ontology", { operation: "neighbors", slug: " a" }),
       callTool(11, "query_ontology", {
         operation: "query_plan",
@@ -6277,17 +6168,16 @@ await test("MCP read/query tools — blank/padded scalar string inputs are rejec
       callTool(12, "query_ontology", { operation: "similar_nodes", title: " " }),
       callTool(13, "get_concepts", { slugs: ["a", " b", ""] }),
     ]);
-    for (const id of [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 21, 22]) {
+    for (const id of [2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 21, 22]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
     }
     assert.match(responses.find((r) => r.id === 21).result.content[0].text, /kind must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 2).result.content[0].text, /slug must not have leading or trailing whitespace/i);
-    assert.match(responses.find((r) => r.id === 3).result.content[0].text, /title must be a non-empty string/i);
+    assert.match(responses.find((r) => r.id === 3).result.content[0].text, /mentions must be a non-empty string/i);
     assert.match(responses.find((r) => r.id === 4).result.content[0].text, /slug must not contain a null byte/i);
     assert.match(responses.find((r) => r.id === 5).result.content[0].text, /slug must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 6).result.content[0].text, /from must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 7).result.content[0].text, /to must be a non-empty string/i);
-    assert.match(responses.find((r) => r.id === 8).result.content[0].text, /kind must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 9).result.content[0].text, /filter must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 10).result.content[0].text, /slug must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 11).result.content[0].text, /targetOperation must not have leading or trailing whitespace/i);
@@ -6305,7 +6195,7 @@ await test("MCP read/query tools — blank/padded scalar string inputs are rejec
   }
 });
 
-await test("query_concepts — each match row carries its mtime", async () => {
+await test("list_concepts filter — each match row carries its mtime", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\ndomain: x\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\ndomain: x\n---\n" },
@@ -6314,12 +6204,12 @@ await test("query_concepts — each match row carries its mtime", async () => {
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "query_concepts", { filter: "kind=capability" }),
+      callTool(2, "list_concepts", { filter: "kind=capability" }),
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.total, 2);
-    for (const m of result.matches) {
+    for (const m of result.nodes) {
       assert.match(m.uid, /^[0-9a-f-]{36}$/, `${m.slug}.uid`);
       assert.equal(typeof m.mtime, "number", `${m.slug}.mtime number`);
       assert.ok(m.mtime > 0);
@@ -6329,7 +6219,7 @@ await test("query_concepts — each match row carries its mtime", async () => {
   }
 });
 
-await test("query_concepts — zero rows return a growthHint (a missing kind/domain fact or a filter relaxation)", async () => {
+await test("list_concepts filter — zero rows return a growthHint (a missing kind/domain fact or a filter relaxation)", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\ndomain: auth\nelements: [x]\n---\n" },
   ]);
@@ -6337,10 +6227,10 @@ await test("query_concepts — zero rows return a growthHint (a missing kind/dom
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       // A valid kind this vault has none of.
-      callTool(2, "query_concepts", { filter: "kind=project" }),
-      callTool(3, "query_concepts", { filter: "domain=billing" }),
+      callTool(2, "list_concepts", { filter: "kind=project" }),
+      callTool(3, "list_concepts", { filter: "domain=billing" }),
       // Kind and domain both exist; only the combination yields 0 rows.
-      callTool(4, "query_concepts", { filter: "kind=capability AND domain=auth AND NOT has(elements)" }),
+      callTool(4, "list_concepts", { filter: "kind=capability AND domain=auth AND NOT has(elements)" }),
     ]);
 
     const missingKind = getCallParsed(responses, 2);
@@ -6363,7 +6253,7 @@ await test("query_concepts — zero rows return a growthHint (a missing kind/dom
   }
 });
 
-await test("query_concepts — depends_on alias in has() matches canonical dependencies", async () => {
+await test("list_concepts filter — depends_on alias in has() matches canonical dependencies", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\ndependencies: [b]\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
@@ -6372,17 +6262,17 @@ await test("query_concepts — depends_on alias in has() matches canonical depen
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "query_concepts", { filter: "has(depends_on)" }),
+      callTool(2, "list_concepts", { filter: "has(depends_on)" }),
     ]);
     const result = getCallParsed(responses, 2);
     assert.equal(result.parsedAs, "has(dependencies)");
-    assert.deepEqual(result.matches.map((row) => row.slug), ["a", "c"]);
+    assert.deepEqual(result.nodes.map((row) => row.slug), ["a", "c"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("query_concepts — limited reflects hidden rows, not exact page fill", async () => {
+await test("list_concepts filter — limited reflects hidden rows, not exact page fill", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\ndomain: x\n---\n" },
     { slug: "b", content: "---\nkind: capability\ntitle: B\ndomain: x\n---\n" },
@@ -6391,17 +6281,17 @@ await test("query_concepts — limited reflects hidden rows, not exact page fill
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "query_concepts", { filter: "kind=capability", limit: 2 }),
-      callTool(3, "query_concepts", { filter: "kind=capability", limit: 1 }),
+      callTool(2, "list_concepts", { filter: "kind=capability", limit: 2 }),
+      callTool(3, "list_concepts", { filter: "kind=capability", limit: 1 }),
     ]);
     const exact = getCallParsed(responses, 2);
     assert.equal(exact.total, 2);
-    assert.equal(exact.matches.length, 2);
+    assert.equal(exact.nodes.length, 2);
     assert.equal(exact.limited, false);
 
     const truncated = getCallParsed(responses, 3);
     assert.equal(truncated.total, 2);
-    assert.equal(truncated.matches.length, 1);
+    assert.equal(truncated.nodes.length, 1);
     assert.equal(truncated.limited, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -6512,7 +6402,7 @@ await test("query_ontology all_paths — limited exposes hidden MCP paths", asyn
   }
 });
 
-await test("find_orphans — each orphan row carries domain and mtime", async () => {
+await test("query_ontology match_nodes — hasIncoming:false lists the nodes nothing points to", async () => {
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -6521,7 +6411,7 @@ await test("find_orphans — each orphan row carries domain and mtime", async ()
     {
       slug: "capabilities/orphan-cap",
       content:
-        "---\nkind: capability\ntitle: Orphan\ndomain: identity\n---\n", // Do not reference anything here → orphan
+        "---\nkind: capability\ntitle: Orphan\ndomain: identity\n---\n", // referenced by used-cap, so not an orphan
     },
     {
       slug: "capabilities/used-cap",
@@ -6532,19 +6422,18 @@ await test("find_orphans — each orphan row carries domain and mtime", async ()
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "find_orphans"),
+      callTool(2, "query_ontology", { operation: "match_nodes", hasIncoming: false }),
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.ok(result.total >= 1);
-    for (const o of result.orphans) {
-      assert.match(o.uid, /^[0-9a-f-]{36}$/, `${o.slug}.uid`);
-      assert.equal(typeof o.mtime, "number", `${o.slug}.mtime number`);
-      assert.ok(o.mtime > 0);
-    }
-    const usedCap = result.orphans.find((o) => o.slug === "capabilities/used-cap");
-    if (usedCap) {
-      assert.equal(usedCap.domain, "identity");
+    assert.equal(result.filters.hasIncoming, false);
+    assert.deepEqual(
+      result.nodes.map((node) => node.slug).sort(),
+      ["capabilities/used-cap", "domains/auth"],
+    );
+    for (const node of result.nodes) {
+      assert.match(node.uid, /^[0-9a-f-]{36}$/, `${node.slug}.uid`);
+      assert.equal(node.inDegree, 0, `${node.slug}.inDegree`);
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -6588,7 +6477,7 @@ await test("get_concept — an unknown slug returns an error carrying a growthHi
     assert.equal(withCandidate.error, "Doc not found: capabilities/log");
     assert.equal(withCandidate.missingSlug, "capabilities/log");
     assert.deepEqual(withCandidate.similarSlugs, ["capabilities/login"]);
-    assert.deepEqual(withCandidate.recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.deepEqual(withCandidate.recoveryTools, ["list_concepts"]);
     assert.equal(withCandidate.createTool, "add_concepts");
     assert.ok(withCandidate.growthHint, "expected growthHint on not-found error");
     assert.match(withCandidate.growthHint.reason, /"capabilities\/log" does not resolve/);
@@ -6792,7 +6681,7 @@ await test("get_concepts — batch read keeps input order and returns partial re
     assert.equal(result.concepts[1].errorCode, "not_found");
     assert.equal(result.concepts[1].missingSlug, "missing-slug");
     assert.deepEqual(result.concepts[1].similarSlugs, []);
-    assert.deepEqual(result.concepts[1].recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.deepEqual(result.concepts[1].recoveryTools, ["list_concepts"]);
     assert.equal(result.concepts[1].createTool, "add_concepts");
     assert.equal(result.concepts[1].growthHint.exampleCall.tool, "add_concepts");
     assert.equal(result.concepts[2].slug, "alpha");
@@ -7021,8 +6910,8 @@ await test("add_concept/add_concepts — created_by carries the same identity as
       }),
       callTool(4, "get_concepts", { slugs: ["capabilities/single", "capabilities/batch"] }),
       // An agent's write is not counted as human.
-      callTool(5, "query_concepts", { filter: "created_by=human" }),
-      callTool(6, "query_concepts", { filter: 'created_by="agent:codex"' }),
+      callTool(5, "list_concepts", { filter: "created_by=human" }),
+      callTool(6, "list_concepts", { filter: 'created_by="agent:codex"' }),
     ]);
     const docs = getCallParsed(responses, 4).concepts;
     assert.equal(docs[0].frontmatter.created_by, "agent:codex", "single write stamps the heartbeat agent");
@@ -7043,7 +6932,7 @@ await test("add_concept/add_concepts — without a heartbeat, uses the greeting 
       ...INIT_REQUESTS,
       callTool(2, "add_concept", { slug: "capabilities/nameless", kind: "capability", title: "Nameless", domain: "auth" }),
       callTool(3, "get_concept", { slug: "capabilities/nameless" }),
-      callTool(4, "query_concepts", { filter: "created_by=human" }),
+      callTool(4, "list_concepts", { filter: "created_by=human" }),
     ]);
     assert.equal(getCallParsed(responses, 3).frontmatter.created_by, "agent:test");
     assert.equal(getCallParsed(responses, 4).total, 0, "an agent named only by its greeting is still not a human");
@@ -7193,8 +7082,8 @@ await test("absorb_document — absorbed nodes are also stamped as agent-authore
       [
         ...INIT_REQUESTS,
         callTool(2, "absorb_document", { filePath: sourcePath, confirm: true }),
-        callTool(3, "query_concepts", { filter: 'created_by="agent:codex"' }),
-        callTool(4, "query_concepts", { filter: "created_by=human" }),
+        callTool(3, "list_concepts", { filter: 'created_by="agent:codex"' }),
+        callTool(4, "list_concepts", { filter: "created_by=human" }),
       ],
       { OATLAS_REPO_ROOT: repoRoot },
     );
@@ -8010,7 +7899,7 @@ await test("add_relations — batch write keeps row order, sorts canonically and
     assert.equal(result.relations[3].errorCode, "not_found");
     assert.equal(result.relations[3].missingSlug, "missing");
     assert.equal(result.relations[3].createTool, "add_concepts");
-    assert.deepEqual(result.relations[3].recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.deepEqual(result.relations[3].recoveryTools, ["list_concepts"]);
     assert.equal(result.relations[4].ok, false);
     assert.match(result.relations[4].error, /type must be one of/i);
     assert.match(result.relations[4].error, /Received: "weird-type"/i);
@@ -8878,7 +8767,7 @@ await test("delete_concept dry-run — backlink preview only, no disk change", a
   }
 });
 
-await test("identity destructive previews — rename/reclassify/delete expose uid and merge exposes both uids", async () => {
+await test("identity destructive previews — rename (slug or kind) and delete expose uid and merge exposes both uids", async () => {
   const fromUid = "11111111-1111-4111-8111-111111111111";
   const intoUid = "22222222-2222-4222-8222-222222222222";
   const root = makeVault([
@@ -8895,7 +8784,7 @@ await test("identity destructive previews — rename/reclassify/delete expose ui
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "rename_concept", { oldSlug: "from", newSlug: "renamed" }),
-      callTool(3, "reclassify_concept", { slug: "from", newKind: "document" }),
+      callTool(3, "rename_concept", { oldSlug: "from", newKind: "document" }),
       callTool(4, "merge_concepts", { fromSlug: "from", intoSlug: "into" }),
       callTool(5, "delete_concept", { slug: "from" }),
     ]);
@@ -9128,7 +9017,7 @@ await test("add_relation — missing endpoints include recovery and create hints
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
       const text = responses.find((r) => r.id === id).result.content[0].text;
       assert.match(text, /Use list_concepts\(\) to see all slugs/);
-      assert.match(text, /find_evidence\(\{title:"[^"]+"\}\)/);
+      assert.match(text, /list_concepts\(\{mentions:"[^"]+"\}\)/);
       assert.match(text, /add_concepts\(\{concepts:\[\{slug, kind, title\}\]\}\)/);
     }
     assert.match(responses.find((r) => r.id === 2).result.content[0].text, /Source slug does not exist in vault/);
@@ -9141,7 +9030,7 @@ await test("add_relation — missing endpoints include recovery and create hints
     assert.equal(missingSource.errorCode, "not_found");
     assert.equal(missingSource.missingSubject, "Source slug does not exist in vault");
     assert.equal(missingSource.missingSlug, "mcp");
-    assert.deepEqual(missingSource.recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.deepEqual(missingSource.recoveryTools, ["list_concepts"]);
     assert.equal(missingSource.createTool, "add_concepts");
     assert.deepEqual(missingSource.similarSlugs, ["capabilities/mcp-server"]);
 
@@ -9149,7 +9038,7 @@ await test("add_relation — missing endpoints include recovery and create hints
     assert.equal(missingTarget.errorCode, "not_found");
     assert.equal(missingTarget.missingSubject, "Target slug does not exist in vault");
     assert.equal(missingTarget.missingSlug, "missing-new-node");
-    assert.deepEqual(missingTarget.recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.deepEqual(missingTarget.recoveryTools, ["list_concepts"]);
     assert.equal(missingTarget.createTool, "add_concepts");
     assert.deepEqual(missingTarget.similarSlugs, []);
   } finally {
@@ -9344,7 +9233,7 @@ await test("connection_info — active vault/repo roots and resolution sources a
     assert.equal(connectionInfo.server.name, "ontology-atlas-mcp");
     assert.equal(connectionInfo.server.readOnly, false);
     assert.equal(connectionInfo.server.toolCount, EXPECTED_TOOLS.length);
-    assert.ok(connectionInfo.server.toolNames.includes("git_history"));
+    assert.ok(connectionInfo.server.toolNames.includes("list_concepts"));
     assert.ok(connectionInfo.server.toolNames.includes("query_ontology"));
     assert.match(connectionInfo.server.toolsetHash, /^[a-f0-9]{64}$/);
     assert.equal(connectionInfo.restartRequiredForRootChange, true);
@@ -9398,8 +9287,8 @@ await test("initialize — read-only inventory matches the actually advertised t
     assert.equal(connectionInfo.server.readOnly, true);
     assert.equal(connectionInfo.server.toolCount, EXPECTED_READ_TOOLS.length);
     assert.deepEqual(connectionInfo.server.toolNames, listed.map((tool) => tool.name));
-    assert.ok(connectionInfo.server.toolNames.includes("git_history"));
-    assert.ok(!connectionInfo.server.toolNames.includes("git_snapshot"));
+    assert.ok(connectionInfo.server.toolNames.includes("list_concepts"));
+    assert.ok(!connectionInfo.server.toolNames.includes("add_concepts"));
     assert.match(connectionInfo.server.toolsetHash, /^[a-f0-9]{64}$/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -9410,7 +9299,7 @@ await test("construction profile — advertised inventories agree and retain col
   const root = makeVault();
   try {
     const expected = ['connection_info', 'list_concepts', 'get_concepts',
-      'find_evidence', 'find_backlinks', 'query_ontology', 'read_source',
+      'find_backlinks', 'query_ontology', 'read_source',
       'analyze_repo_structure', 'infer_imports', 'add_concepts', 'add_relations',
       'patch_concept', 'validate_vault', 'compile_ontology', 'connect_project_source', 'finalize_project_meaning'];
     for (const readOnly of ['0', '1']) {
@@ -9424,7 +9313,7 @@ await test("construction profile — advertised inventories agree and retain col
       assertInstructionToolInventoryMatches(responses.find((row) => row.id === 1), listed);
       const connectionInfo = getCallParsed(responses, 3);
       assert.deepEqual(connectionInfo.server.toolNames, listed.map((tool) => tool.name));
-      assert.equal(connectionInfo.server.toolCount, readOnly === '0' ? 16 : 11);
+      assert.equal(connectionInfo.server.toolCount, readOnly === '0' ? 15 : 10);
       assert.match(connectionInfo.server.toolsetHash, /^[a-f0-9]{64}$/);
       for (const tool of listed) {
         assert.equal(tool.inputSchema.additionalProperties, false);
@@ -9532,7 +9421,7 @@ await test("query_ontology — unresolved compiled slug exposes structured recov
     assert.equal(structured.missingSubject, "slug");
     assert.equal(structured.missingSlug, "capabilities/logn");
     assert.deepEqual(structured.similarSlugs, ["capabilities/login"]);
-    assert.deepEqual(structured.recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.deepEqual(structured.recoveryTools, ["list_concepts"]);
     assert.equal(structured.createTool, "add_concepts");
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -9675,94 +9564,37 @@ await test("absorb_document — a failed confirm changes neither the vault nor t
   }
 });
 
-await test("git_status/git_snapshot — validated dry-run and vault-only local commit", async () => {
+await test("retired names — each cut or folded tool answers tool_retired with the call that replaces it", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },
   ]);
-  const git = (...args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
+  const expectations = {
+    git_status: /your own git: `git -C <repoRoot> status -- <vault>`/,
+    git_history: /your own git: `git -C <repoRoot> log -- <vault>`/,
+    git_snapshot: /your own git: commit the vault yourself/,
+    list_constellations: /get_constellation with no `id`/,
+    find_evidence: /list_concepts\(\{ mentions: "text" \}\)/,
+    find_orphans: /query_ontology\(\{ operation: 'match_nodes', hasIncoming: false \}\)/,
+    query_concepts: /list_concepts\(\{ filter \}\)/,
+    disconnect_project_source: /connect_project_source\(\{ projectSlug, disconnect: true, confirm \}\)/,
+    replace_relation: /remove_relation\(\{ from, to, type, replaceWith: \{ to, type, why \}, confirm \}\)/,
+    reclassify_concept: /rename_concept\(\{ oldSlug, newKind, domain, body, confirm \}\)/,
+  };
   try {
-    git("init", "-b", "main");
-    git("config", "user.name", "Atlas Integration");
-    git("config", "user.email", "atlas@example.test");
-    writeFileSync(join(root, "outside.txt"), "outside v1\n");
-    git("add", ".");
-    git("commit", "-m", "initial");
-    const expectedHead = git("rev-parse", "HEAD");
-    const projectPath = join(root, "project.md");
-    writeFileSync(
-      projectPath,
-      readFileSync(projectPath, "utf-8").replace("title: Project", "title: Updated Project"),
-    );
-
+    const names = Object.keys(expectations);
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "git_status"),
-      callTool(3, "git_history", { limit: 5 }),
-      callTool(4, "git_snapshot"),
-      callTool(5, "git_snapshot", {
-        confirm: true,
-        expectedHead,
-        message: "docs(ontology): snapshot integration vault",
-      }),
-      callTool(6, "git_status"),
-    ], { OATLAS_REPO_ROOT: root });
-    const status = getCallParsed(responses, 2);
-    const history = getCallParsed(responses, 3);
-    const preview = getCallParsed(responses, 4);
-    const committed = getCallParsed(responses, 5);
-    const clean = getCallParsed(responses, 6);
-    assert.equal(status.counts.total, 1);
-    assert.equal(history.operation, "git_history");
-    assert.deepEqual(history.commits.map((row) => row.subject), ["initial"]);
-    assert.equal(history.limited, false);
-    assert.equal(history.hasMore, false);
-    assert.equal(history.shallow, false);
-    assert.equal(history.historyComplete, true);
-    assert.equal(preview.dryRun, true);
-    assert.equal(preview.previewReady, true);
-    assert.equal(preview.canConfirm, true);
-    assert.equal(preview.wouldChange, true);
-    assert.deepEqual(preview.blockedReasons, []);
-    assert.equal(preview.expectedHead, expectedHead);
-    assert.equal(preview.validation.errorFiles, 0);
-    assert.equal(preview.pushSupported, false);
-    assert.equal(committed.committed, true);
-    assert.equal(committed.previewReady, false);
-    assert.equal(committed.canConfirm, false);
-    assert.equal(committed.wouldChange, false);
-    assert.deepEqual(committed.blockedReasons, []);
-    assert.notEqual(committed.commitHash, expectedHead);
-    assert.equal(clean.counts.total, 0);
-    assert.equal(git("show", "--pretty=", "--name-only", "HEAD"), "project.md");
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-await test("git_snapshot — validation errors remain previewable but block confirmation", async () => {
-  const root = makeVault([
-    { slug: "broken", content: "---\nkind: project\ntitle: Broken\n" },
-  ]);
-  const git = (...args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
-  try {
-    git("init", "-b", "main");
-    git("config", "user.name", "Atlas Integration");
-    git("config", "user.email", "atlas@example.test");
-    git("add", ".");
-    git("commit", "-m", "initial");
-    writeFileSync(join(root, "broken.md"), "---\nkind: project\ntitle: Still Broken\n", "utf-8");
-
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, "git_snapshot"),
-    ], { OATLAS_REPO_ROOT: root });
-    const preview = getCallParsed(responses, 2);
-    assert.equal(preview.previewReady, true);
-    assert.equal(preview.wouldChange, true);
-    assert.equal(preview.canConfirm, false);
-    assert.ok(preview.validation.errorFiles > 0);
-    assert.match(preview.blockedReasons.join("\n"), /validate_vault reports .* error/i);
-    assert.equal(preview.risk.level, "high");
+      ...names.map((name, index) => callTool(index + 2, name, {})),
+    ]);
+    names.forEach((name, index) => {
+      const id = index + 2;
+      assert.equal(isErrorResponse(responses, id), true, `${name} must not run`);
+      const structured = getCallStructured(responses, id);
+      assert.equal(structured.errorCode, "tool_retired", `${name} error code`);
+      assert.equal(structured.retiredTool, name);
+      assert.match(structured.replacement, expectations[name], `${name} names its replacement`);
+      assert.match(getCallText(responses, id), new RegExp(`${name} is retired and no longer runs; use `));
+    });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -9809,7 +9641,7 @@ await test("remove_relation — dry-run then confirmed removal also removes rati
  * returns to `[]`. Asserted on the file, since get_concept reads absent and
  * empty alike.
  */
-await test("remove_relation / replace_relation — an emptied key is deleted, a scaffold list returns to []", async () => {
+await test("remove_relation with and without replaceWith — an emptied key is deleted, a scaffold list returns to []", async () => {
   const WIKI_PAGES = [
     "---",
     "uid: c9f6fc1b-8321-47ce-bd51-78b1f1c1389f",
@@ -9858,22 +9690,19 @@ await test("remove_relation / replace_relation — an emptied key is deleted, a 
     writeFileSync(file, WIKI_PAGES);
     await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "replace_relation", {
-        from: "capabilities/wiki-pages", oldTo: "capabilities/library", oldType: "relates",
-        newTo: "capabilities/library", newType: "depends_on", why: "The library reads the page contract.", confirm: true,
-      }),
+      callTool(2, "remove_relation", { from: "capabilities/wiki-pages", to: "capabilities/library", type: "relates", replaceWith: { to: "capabilities/library", type: "depends_on", why: "The library reads the page contract." }, confirm: true }),
     ]);
-    assert.equal(lines().some((line) => line.startsWith("relates:")), false, `replace_relation left relates: behind:\n${lines().join("\n")}`);
+    assert.equal(lines().some((line) => line.startsWith("relates:")), false, `remove_relation replaceWith left relates: behind:\n${lines().join("\n")}`);
     assert.ok(
       lines().some((line) => line.startsWith("dependencies: [") && line.includes("capabilities/library")),
-      `replace_relation did not land the new edge:\n${lines().join("\n")}`,
+      `remove_relation replaceWith did not land the new edge:\n${lines().join("\n")}`,
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("replace_relation — atomically replaces target/type and rationale", async () => {
+await test("remove_relation replaceWith — atomically replaces target/type and rationale", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [domains/auth]\nrelation_notes: { domains/auth: Old reason }\n---\n" },
     { slug: "domains/auth", content: "---\nkind: domain\ntitle: Auth\n---\n" },
@@ -9882,20 +9711,14 @@ await test("replace_relation — atomically replaces target/type and rationale",
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "replace_relation", {
-        from: "project", oldTo: "domains/auth", oldType: "contains",
-        newTo: "domains/identity", newType: "domains", why: "Canonical ownership",
-      }),
-      callTool(3, "replace_relation", {
-        from: "project", oldTo: "domains/auth", oldType: "contains",
-        newTo: "domains/identity", newType: "domains", why: "Canonical ownership", confirm: true,
-      }),
+      callTool(2, "remove_relation", { from: "project", to: "domains/auth", type: "contains", replaceWith: { to: "domains/identity", type: "domains", why: "Canonical ownership" } }),
+      callTool(3, "remove_relation", { from: "project", to: "domains/auth", type: "contains", replaceWith: { to: "domains/identity", type: "domains", why: "Canonical ownership" }, confirm: true }),
       callTool(4, "get_concept", { slug: "project" }),
     ]);
     assertDestructivePreview(getCallParsed(responses, 2), {
       canConfirm: true,
       wouldChange: true,
-      label: "replace_relation preview",
+      label: "remove_relation replaceWith preview",
     });
     assert.equal(getCallParsed(responses, 3).changed, true);
     const project = getCallParsed(responses, 4);
@@ -9908,8 +9731,8 @@ await test("replace_relation — atomically replaces target/type and rationale",
   }
 });
 
-await test("replace_relation — converting to depends_on demands a why when none can be inherited", async () => {
-  // replace_relation must enforce add_relation's nonblank why on a new
+await test("remove_relation replaceWith — converting to depends_on demands a why when none can be inherited", async () => {
+  // remove_relation with replaceWith must enforce add_relation's nonblank why on a new
   // depends_on edge.
   const root = makeVault([
     { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\nrelates: [capabilities/b]\n---\n" },
@@ -9918,14 +9741,8 @@ await test("replace_relation — converting to depends_on demands a why when non
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "replace_relation", {
-        from: "capabilities/a", oldTo: "capabilities/b", oldType: "relates",
-        newTo: "capabilities/b", newType: "depends_on", confirm: true,
-      }),
-      callTool(3, "replace_relation", {
-        from: "capabilities/a", oldTo: "capabilities/b", oldType: "relates",
-        newTo: "capabilities/b", newType: "depends_on", why: "Uses b's session store", confirm: true,
-      }),
+      callTool(2, "remove_relation", { from: "capabilities/a", to: "capabilities/b", type: "relates", replaceWith: { to: "capabilities/b", type: "depends_on" }, confirm: true }),
+      callTool(3, "remove_relation", { from: "capabilities/a", to: "capabilities/b", type: "relates", replaceWith: { to: "capabilities/b", type: "depends_on", why: "Uses b's session store" }, confirm: true }),
       callTool(4, "get_concept", { slug: "capabilities/a" }),
     ]);
     assert.equal(isErrorResponse(responses, 2), true);
@@ -9954,14 +9771,8 @@ await test("relation writes — canonicalize stored tail aliases without duplica
       callTool(2, "add_relation", {
         from: "domains/auth", to: "capabilities/cap-a", type: "capabilities",
       }),
-      callTool(3, "replace_relation", {
-        from: "domains/auth", oldTo: "cap-a", oldType: "capabilities",
-        newTo: "cap-b", newType: "capabilities",
-      }),
-      callTool(4, "replace_relation", {
-        from: "domains/auth", oldTo: "cap-a", oldType: "capabilities",
-        newTo: "cap-b", newType: "capabilities", confirm: true,
-      }),
+      callTool(3, "remove_relation", { from: "domains/auth", to: "cap-a", type: "capabilities", replaceWith: { to: "cap-b", type: "capabilities" } }),
+      callTool(4, "remove_relation", { from: "domains/auth", to: "cap-a", type: "capabilities", replaceWith: { to: "cap-b", type: "capabilities" }, confirm: true }),
       callTool(5, "get_concept", { slug: "domains/auth" }),
     ]);
     const addExisting = getCallParsed(responses, 2);
@@ -9970,7 +9781,7 @@ await test("relation writes — canonicalize stored tail aliases without duplica
     assertDestructivePreview(getCallParsed(responses, 3), {
       canConfirm: true,
       wouldChange: true,
-      label: "replace_relation tail-alias preview",
+      label: "remove_relation replaceWith tail-alias preview",
     });
     assert.equal(getCallParsed(responses, 4).changed, true);
     const domain = getCallParsed(responses, 5);
@@ -10019,7 +9830,7 @@ await test("remove_relation — resolves stored frontmatter-slug aliases and the
   }
 });
 
-await test("reclassify_concept — kind/slug/domain/body and backlinks move together", async () => {
+await test("rename_concept newKind — kind/slug/domain/body and backlinks move together", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [capabilities/claim]\n---\n" },
     { slug: "domains/review", content: "---\nkind: domain\ntitle: Review\n---\n" },
@@ -10031,14 +9842,8 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "reclassify_concept", {
-        slug: "capabilities/claim", newSlug: "elements/claim-entity",
-        newKind: "element", domain: "domains/review",
-      }),
-      callTool(3, "reclassify_concept", {
-        slug: "capabilities/claim", newSlug: "elements/claim-entity",
-        newKind: "element", domain: "domains/review", confirm: true,
-      }),
+      callTool(2, "rename_concept", { oldSlug: "capabilities/claim", newSlug: "elements/claim-entity", newKind: "element", domain: "domains/review" }),
+      callTool(3, "rename_concept", { oldSlug: "capabilities/claim", newSlug: "elements/claim-entity", newKind: "element", domain: "domains/review", confirm: true }),
       callTool(4, "get_concept", { slug: "elements/claim-entity" }),
       callTool(5, "get_concept", { slug: "project" }),
     ]);
@@ -10046,7 +9851,7 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
     assertDestructivePreview(preview, {
       canConfirm: true,
       wouldChange: true,
-      label: "reclassify_concept preview",
+      label: "rename_concept newKind preview",
     });
     assert.equal(Object.hasOwn(preview.backlinkUpdates, "plan"), false);
     const reclassified = getCallParsed(responses, 3);
@@ -10066,7 +9871,7 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
  * A reclassified node's entry follows it into the list for its new kind, or is
  * named in `warnings` when the referrer's kind keeps no such list.
  */
-await test("reclassify_concept — typed list entries follow the new kind, or are named in warnings", async () => {
+await test("rename_concept newKind — typed list entries follow the new kind, or are named in warnings", async () => {
   const root = makeVault([
     { slug: "domains/workbench", content: "---\nkind: domain\ntitle: Workbench\ncapabilities: [capabilities/memories, capabilities/map]\nelements: [elements/camera]\n---\n" },
     { slug: "capabilities/map", content: "---\nkind: capability\ntitle: Map\ndomain: domains/workbench\n---\n" },
@@ -10078,13 +9883,8 @@ await test("reclassify_concept — typed list entries follow the new kind, or ar
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "reclassify_concept", {
-        slug: "capabilities/memories", newSlug: "elements/memories",
-        newKind: "element", domain: "domains/workbench", confirm: true,
-      }),
-      callTool(3, "reclassify_concept", {
-        slug: "elements/recall-index", newKind: "capability", domain: "domains/workbench",
-      }),
+      callTool(2, "rename_concept", { oldSlug: "capabilities/memories", newSlug: "elements/memories", newKind: "element", domain: "domains/workbench", confirm: true }),
+      callTool(3, "rename_concept", { oldSlug: "elements/recall-index", newKind: "capability", domain: "domains/workbench" }),
     ]);
     const moved = getCallParsed(responses, 2);
     assert.equal(moved.changed, true);
@@ -10138,7 +9938,7 @@ await test("body delivery — the full body is available and truncation is never
       callTool(3, "get_concept", { slug: "capabilities/app-authoring", body: "full" }),
       callTool(4, "get_concept", { slug: "elements/editor" }),
       callTool(5, "get_concepts", { slugs: ["capabilities/app-authoring"], body: "full" }),
-      callTool(6, "find_evidence", { title: "App Authoring" }),
+      callTool(6, "list_concepts", { mentions: "App Authoring", summary: true }),
       callTool(7, "list_concepts", { summary: true }),
       callTool(8, "get_concept", { slug: "elements/editor", body: "outline" }),
     ]);
@@ -10170,10 +9970,9 @@ await test("body delivery — the full body is available and truncation is never
     assert.equal(batch.concepts[0].bodyInfo.mode, "full");
 
     const evidence = getCallParsed(responses, 6);
-    const hit = evidence.matches.find((m) => m.slug === "capabilities/app-authoring");
-    assert.equal(hit.excerptTruncated, true);
-    assert.ok(hit.bodyChars > hit.excerpt.length);
-    assert.match(evidence.bodyHint, /body: "full"/);
+    const hit = evidence.nodes.find((m) => m.slug === "capabilities/app-authoring");
+    assert.equal(hit.summaryTruncated, true);
+    assert.match(evidence.summaryHint, /body: "full"/);
 
     const listed = getCallParsed(responses, 7);
     const row = listed.nodes.find((n) => n.slug === "capabilities/app-authoring");

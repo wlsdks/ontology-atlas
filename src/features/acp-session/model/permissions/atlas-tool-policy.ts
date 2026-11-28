@@ -1,18 +1,13 @@
 /** ACP permission requests carry only the MCP tool name; the server's generated surface decides read vs write, and the sibling contract test compares every entry so this fail-closed list cannot drift. */
 const ATLAS_READ_TOOLS = new Set([
   'connection_info',
-  'git_status',
-  'git_history',
   'list_concepts',
   'get_concept',
   'get_concepts',
-  'find_evidence',
   'find_backlinks',
   'find_neighbors',
   'find_path',
   'list_kinds',
-  'find_orphans',
-  'query_concepts',
   'compile_ontology',
   'query_ontology',
   'validate_vault',
@@ -22,7 +17,6 @@ const ATLAS_READ_TOOLS = new Set([
   'analyze_repo_structure',
   'infer_imports',
   'index_project',
-  'list_constellations',
   'get_constellation',
 ]);
 

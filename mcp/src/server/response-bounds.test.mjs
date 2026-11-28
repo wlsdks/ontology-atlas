@@ -56,7 +56,7 @@ function inServer(root, body, { vault = root } = {}) {
   const script = `
     const { queryOntologyTool, compileOntologyTool } = await import(${JSON.stringify(modules['tools/graph.mjs'])});
     const { validateVaultTool } = await import(${JSON.stringify(modules['tools/validate-vault.mjs'])});
-    const { findEvidence, readSourceTool } = await import(${JSON.stringify(modules['tools/read.mjs'])});
+    const { listConcepts, readSourceTool } = await import(${JSON.stringify(modules['tools/read.mjs'])});
     const { addConceptsBatch } = await import(${JSON.stringify(modules['tools/writes/write-concepts.mjs'])});
     const { ok } = await import(${JSON.stringify(modules['server/rpc.mjs'])});
     ${body}
@@ -248,24 +248,24 @@ test('compile_ontology answers with the bounded summary unless arrays are asked 
   }
 });
 
-test('find_evidence returns the best 50 by default and says how many matched', () => {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-evidence-limit-')));
+test('list_concepts with mentions pages the best matches first and says how many matched', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-mentions-limit-')));
   try {
-    for (let index = 0; index < 60; index += 1) {
-      writeNode(root, `note-${String(index).padStart(2, '0')}`, { title: `Signal note ${index}` }, 'A note about the signal.');
+    for (let index = 0; index < 120; index += 1) {
+      writeNode(root, `note-${String(index).padStart(3, '0')}`, { uid: randomUUID(), kind: 'element', title: `Note ${index}` }, 'A note about the signal.');
     }
+    writeNode(root, 'zz-signal', { uid: randomUUID(), kind: 'element', title: 'Signal' }, 'The one titled for it.');
     const result = inServer(root, `
-      console.log(JSON.stringify({ bare: findEvidence({ title: 'signal' }), wide: findEvidence({ title: 'signal', limit: 500 }) }));
+      console.log(JSON.stringify({ bare: listConcepts({ mentions: 'signal' }), wide: listConcepts({ mentions: 'signal', limit: 500 }) }));
     `);
-    assert.equal(result.bare.matches.length, 50);
-    assert.equal(result.bare.total, 60);
+    assert.equal(result.bare.nodes.length, 100);
+    assert.equal(result.bare.total, 121);
     assert.equal(result.bare.limited, true);
-    assert.match(result.bare.limitHint, /50 best of 60/);
-    assert.equal(Object.keys(result.bare)[0], 'limitHint');
-    assert.equal(result.wide.matches.length, 60);
+    assert.equal(result.bare.pagination.nextOffset, 100);
+    assert.equal(result.bare.nodes[0].slug, 'zz-signal', 'a title match ranks above 120 body matches');
+    assert.equal(result.wide.nodes.length, 121);
     assert.equal(result.wide.limited, false);
-    assert.equal(result.wide.limitHint, undefined);
-    for (const answer of Object.values(result)) assertConforms('find_evidence', answer);
+    for (const answer of Object.values(result)) assertConforms('list_concepts', answer);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

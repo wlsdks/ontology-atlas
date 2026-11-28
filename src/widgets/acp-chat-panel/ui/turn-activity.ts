@@ -32,10 +32,7 @@ const KNOWN_TOOL_KIND: Readonly<Record<string, TurnActivityKind>> = {
   read: 'reading',
   readConstellation: 'reading',
   readSource: 'reading',
-  readHistory: 'reading',
   readCode: 'reading',
-  findEvidence: 'searching',
-  findOrphans: 'searching',
   check: 'searching',
   checkPages: 'searching',
 };
@@ -52,8 +49,8 @@ const PROTOCOL_KIND: Readonly<Record<string, TurnActivityKind>> = {
 
 type ToolEvent = Extract<AcpEvent, { kind: 'tool' }>;
 
-const CONCEPT_WRITE_TOOLS = new Set(['add_concept', 'add_concepts', 'patch_concept', 'rename_concept', 'reclassify_concept', 'merge_concepts', 'absorb_document']);
-const RELATION_WRITE_TOOLS = new Set(['add_relation', 'add_relations', 'replace_relation']);
+const CONCEPT_WRITE_TOOLS = new Set(['add_concept', 'add_concepts', 'patch_concept', 'rename_concept', 'merge_concepts', 'absorb_document']);
+const RELATION_WRITE_TOOLS = new Set(['add_relation', 'add_relations']);
 /** How deep a result may sit inside the adapter's envelope (`result` → `content` → text block → JSON). */
 const RESULT_DEPTH = 6;
 

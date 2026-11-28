@@ -98,9 +98,8 @@ The ontology folder is ordinary files in Git, so you review concept changes in
 the same pull request as the code. In the app, the **Git** screen lists the
 uncommitted changes by document, with the changed lines marked. The **Commit**
 button shows how many changes there are and commits them. You can also restore
-a single document to an earlier version there. An agent's `git_snapshot`
-commits only the ontology folder, and by default only previews what it would
-commit.
+a single document to an earlier version there. An agent commits the
+ontology folder with its own Git command; no Atlas tool commits for it.
 
 How concepts and relations are shaped is covered in
 [Relations between concepts](/guide/relations).

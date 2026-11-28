@@ -12,20 +12,16 @@ export const STANDING_APPROVAL_ATLAS_WRITES: ReadonlySet<string> = new Set([
   'add_relation',
   'add_relations',
   'connect_project_source',
-  'disconnect_project_source',
   'finalize_project_meaning',
-  'git_snapshot',
   'patch_concept',
-  'reclassify_concept',
   'remove_relation',
   'rename_concept',
-  'replace_relation',
 ]);
 
 /** Bumped when a check below lets more through, so a kept choice is asked for again. */
 const VAULT_EDIT_RULE = 'edit-inside-folder@1';
 const ATLAS_READ_RULE = 'atlas-read-inside-folder@1';
-const ATLAS_WRITE_RULES = 'atlas-write-arguments@3';
+const ATLAS_WRITE_RULES = 'atlas-write-arguments@4';
 
 /** Everything auto-approve answers; a kept choice holds only while it equals this, so widening the scope never widens what an earlier press allowed. */
 export const STANDING_APPROVAL_SCOPE = [
@@ -129,9 +125,8 @@ function approvableAtlasWrite(request: AcpPermissionRequest, context: StandingAp
   const { rawInput } = request;
   // `overwrite` deletes the concept already at the new slug, so it asks as a deletion does.
   if (bareName === 'rename_concept' && !(rawInput.overwrite === undefined || rawInput.overwrite === false)) return null;
-  if (bareName === 'connect_project_source' && !bindsOpenedFolder(rawInput, context.vaultRoot)) return null;
-  // The snapshot commit runs the repository's hooks, which may load files the agent just wrote.
-  if (bareName === 'git_snapshot' && rawInput.confirm === true) return null;
+  // Disconnecting only unbinds a folder, so it needs no folder check; binding does.
+  if (bareName === 'connect_project_source' && rawInput.disconnect !== true && !bindsOpenedFolder(rawInput, context.vaultRoot)) return null;
   if (bareName === 'patch_concept' && typeof rawInput.body === 'string' && rawInput.body.trim() === '') return null;
   return bareName;
 }

@@ -33,17 +33,30 @@ export function matchesShapeFailure(label, result) {
   return matchRowsFailure(label, result.matches);
 }
 
-export function orphansShapeFailure(result) {
+export function nodesShapeFailure(label, result) {
   if (!Number.isInteger(result.total) || result.total < 0) {
-    return "find_orphans response missing total count";
+    return `${label} response missing total count`;
   }
-  if (!Array.isArray(result.orphans)) {
-    return "find_orphans response missing orphans array";
+  if (!Array.isArray(result.nodes)) {
+    return `${label} response missing nodes array`;
   }
-  if (result.orphans.length > result.total) {
-    return `find_orphans response orphan count exceeds total — orphans ${result.orphans.length}, total ${result.total}`;
+  if (result.nodes.length > result.total) {
+    return `${label} response node count exceeds total — nodes ${result.nodes.length}, total ${result.total}`;
   }
-  return matchRowsFailure("find_orphans", result.orphans);
+  return matchRowsFailure(label, result.nodes);
+}
+
+export function orphansShapeFailure(result) {
+  if (!Number.isInteger(result.totalMatches) || result.totalMatches < 0) {
+    return "orphan match_nodes response missing totalMatches count";
+  }
+  if (!Array.isArray(result.nodes)) {
+    return "orphan match_nodes response missing nodes array";
+  }
+  if (result.nodes.length > result.totalMatches) {
+    return `orphan match_nodes response node count exceeds totalMatches — nodes ${result.nodes.length}, totalMatches ${result.totalMatches}`;
+  }
+  return matchRowsFailure("orphan match_nodes", result.nodes);
 }
 
 export function pathShapeFailure(result) {

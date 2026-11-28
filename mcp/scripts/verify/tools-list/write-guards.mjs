@@ -158,13 +158,10 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
 export function writeGuardsSchemaFailure(tools) {
   for (const toolName of [
     'remove_relation',
-    'replace_relation',
     'rename_concept',
-    'reclassify_concept',
     'merge_concepts',
     'delete_concept',
     'absorb_document',
-    'git_snapshot',
   ]) {
     const tool = tools.find((candidate) => candidate?.name === toolName);
     // Focused unit fixtures may omit tools outside their contract slice.

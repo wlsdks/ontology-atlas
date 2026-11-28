@@ -1,7 +1,7 @@
 /**
- * Filter DSL for `query_concepts`: "which X have or lack Y" without Cypher or
+ * Filter DSL for `list_concepts({ filter })`: "which X have or lack Y" without Cypher or
  * SPARQL; paths use query_ontology `path`, aggregates the list_concepts census
- * and find_orphans. Recursive descent over tokens, O(tokens) to parse and
+ * and query_ontology `match_nodes`. Recursive descent over tokens, O(tokens) to parse and
  * O(tree) per document to evaluate.
  *
  *   filter    := orExpr

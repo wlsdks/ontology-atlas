@@ -647,8 +647,8 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
     assert.match(finding.message, /src\/lib\/helper\.ts/);
     // The witness must be offered before the deletion.
     assert.match(finding.message, /not.*proof of independence/);
-    assert.match(finding.message, /replace_relation/);
-    assert.match(finding.message, /remove_relation/);
+    assert.match(finding.message, /remove_relation and replaceWith/);
+    assert.match(finding.message, /remove_relation only an edge/);
   });
 
   /**

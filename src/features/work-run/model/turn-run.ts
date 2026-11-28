@@ -72,8 +72,8 @@ export type TurnEndOutcome = 'completed' | 'cancelled' | 'failed';
 const WRITE_KINDS = new Set(['edit', 'delete', 'move']);
 const PATH_KEYS = ['filePath', 'file_path', 'path', 'targetPath', 'destination'] as const;
 const CONCEPT_WRITE_TOOLS = new Set([
-  'add_concept', 'add_concepts', 'patch_concept', 'rename_concept', 'reclassify_concept', 'merge_concepts',
-  'delete_concept', 'absorb_document', 'add_relation', 'add_relations', 'remove_relation', 'replace_relation',
+  'add_concept', 'add_concepts', 'patch_concept', 'rename_concept', 'merge_concepts',
+  'delete_concept', 'absorb_document', 'add_relation', 'add_relations', 'remove_relation',
 ]);
 
 export function isTurnActive(run: TurnRun | null): boolean {

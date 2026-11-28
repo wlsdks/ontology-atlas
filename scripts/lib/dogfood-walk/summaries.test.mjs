@@ -252,7 +252,7 @@ describe("rpc response completion helpers", () => {
     drifted.find((tool) => tool.name === "list_concepts").annotations.openWorldHint = true;
     assert.equal(
       toolsListAnnotationSummary(drifted),
-      "33/33 titled; 19/19 read; 14/14 write; 9/9 destructive; 2/2 idempotent; 32/33 local-only",
+      "23/23 titled; 13/13 read; 10/10 write; 6/6 destructive; 2/2 idempotent; 22/23 local-only",
     );
     assert.equal(toolsListAnnotationSummary(null), "missing tools/list");
   });
@@ -303,11 +303,11 @@ describe("rpc response completion helpers", () => {
   it("summarizes strict closest-value smoke details for final dogfood output", () => {
     assert.equal(
       strictRepairSummary(okShape.strictArgs),
-      "rejected true (arg lmit->limit; allowed 6)",
+      "rejected true (arg lmit->limit; allowed 8)",
     );
     assert.equal(
       strictRepairSummary(okShape.strictMultiArgs),
-      "rejected true (args lmit->limit, summry->summary; allowed 6)",
+      "rejected true (args lmit->limit, summry->summary; allowed 8)",
     );
     assert.equal(
       strictRepairSummary(okShape.strictEnum),
@@ -330,7 +330,7 @@ describe("rpc response completion helpers", () => {
       "rejected true (type depend_on->depends_on; allowed 9)",
     );
     assert.equal(
-      strictRepairSummary(okShape.strictFindOrphansKindFilter),
+      strictRepairSummary(okShape.strictOrphanMatchNodesKindFilter),
       "rejected true (kind capabilty->capability; allowed 6)",
     );
     assert.equal(
@@ -350,7 +350,7 @@ describe("rpc response completion helpers", () => {
       "rejected true (depend_on -> depends_on)",
     );
     assert.equal(
-      strictClosestValueSummary(okShape.strictFindOrphansKindFilter),
+      strictClosestValueSummary(okShape.strictOrphanMatchNodesKindFilter),
       "rejected true (capabilty -> capability)",
     );
     assert.equal(
@@ -358,11 +358,11 @@ describe("rpc response completion helpers", () => {
       "rejected true (capabilty -> capability)",
     );
     assert.equal(
-      strictClosestValueSummary(okShape.strictQueryConceptsKindFilter),
+      strictClosestValueSummary(okShape.strictListConceptsFilterKind),
       "rejected true (capabilty -> capability)",
     );
     assert.equal(
-      strictClosestValueSummary(okShape.strictQueryConceptsHasKeyFilter),
+      strictClosestValueSummary(okShape.strictListConceptsFilterHasKey),
       "rejected true (capabilties -> capabilities)",
     );
     assert.equal(
@@ -771,7 +771,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(53), "strict_maintenance_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(54), "maintenance_plan_missing_cursor");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(55), "tools_list");
-    assert.equal(DOGFOOD_RESPONSE_LABELS.get(56), "query_concepts");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(56), "list_concepts_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(57), "analyze_repo_structure");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(58), "infer_imports");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(59), "strict_multi_args");
@@ -788,10 +788,9 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(72), "strict_recommend_relations_unsupported_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(73), "strict_match_nodes_sort_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(74), "strict_match_edges_type_filter");
-    assert.equal(DOGFOOD_RESPONSE_LABELS.get(76), "strict_find_orphans_kind_filter");
-    assert.equal(DOGFOOD_RESPONSE_LABELS.get(77), "strict_find_orphans_exclude_kind_filter");
-    assert.equal(DOGFOOD_RESPONSE_LABELS.get(78), "strict_query_concepts_kind_filter");
-    assert.equal(DOGFOOD_RESPONSE_LABELS.get(79), "strict_query_concepts_has_key_filter");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(76), "strict_orphan_match_nodes_kind_filter");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(78), "strict_list_concepts_filter_kind");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(79), "strict_list_concepts_filter_has_key");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(80), "strict_list_concepts_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(81), "get_concepts_batch_cap");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(82), "add_concepts_batch_cap");
@@ -879,32 +878,29 @@ describe("rpc response completion helpers", () => {
     });
   });
 
-  it("keeps strict find_orphans kind dogfood requests endpoint-independent", () => {
+  it("keeps the strict orphan match_nodes kind dogfood request endpoint-independent", () => {
     const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 76)?.params, {
-      name: "find_orphans",
+      name: "query_ontology",
       arguments: {
+        operation: "match_nodes",
+        hasIncoming: false,
         kind: "capabilty",
       },
     });
-    assert.deepEqual(requests.find((request) => request.id === 77)?.params, {
-      name: "find_orphans",
-      arguments: {
-        excludeKinds: ["capabilty"],
-      },
-    });
+    assert.equal(requests.some((request) => request.id === 77), false);
   });
 
-  it("keeps strict query_concepts filter dogfood requests endpoint-independent", () => {
+  it("keeps strict list_concepts filter dogfood requests endpoint-independent", () => {
     const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 78)?.params, {
-      name: "query_concepts",
+      name: "list_concepts",
       arguments: {
         filter: "kind=capabilty",
       },
     });
     assert.deepEqual(requests.find((request) => request.id === 79)?.params, {
-      name: "query_concepts",
+      name: "list_concepts",
       arguments: {
         filter: "has(capabilties)",
       },

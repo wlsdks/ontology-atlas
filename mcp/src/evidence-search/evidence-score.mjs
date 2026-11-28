@@ -1,4 +1,4 @@
-// Relevance order for find_evidence, local and deterministic (no embeddings).
+// Relevance order for list_concepts `mentions`, local and deterministic (no embeddings).
 // A doc is included iff a substring matched (score > 0); the score only orders
 // the results.
 

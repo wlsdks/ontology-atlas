@@ -32,10 +32,7 @@ export interface ProjectSourceReadiness {
   unbound: UnboundProjectSource | null;
 }
 
-const SOURCE_BINDING_TOOLS = new Set([
-  "connect_project_source",
-  "disconnect_project_source",
-]);
+const SOURCE_BINDING_TOOLS = new Set(["connect_project_source"]);
 
 /**
  * ACP binding writes only a sidecar, so its receipt belongs in this key, or the screen recommends a

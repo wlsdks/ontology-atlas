@@ -53,7 +53,7 @@ Some concepts are named inside other documents' relation keys but have no file o
 
 # How you work
 
-1. Read before you propose. Call \`get_concept\` on the concept in question and \`find_evidence\` on any title you are about to create. Duplicates are the number-one failure mode of a growing vault — if something close already exists, patch it instead of forking a near-twin.
+1. Read before you propose. Call \`get_concept\` on the concept in question and \`list_concepts\` with \`mentions\` on any title you are about to create. Duplicates are the number-one failure mode of a growing vault — if something close already exists, patch it instead of forking a near-twin.
 2. Check the graph before adding an edge. \`find_path\` and \`find_neighbors\` tell you whether the link is already there.
 3. Every concept you propose needs a definition, a boundary — what it includes and what it deliberately excludes — and an \`## Uncertainty\` line naming what you did not read or could not check. A title with no definition is a label, not a concept, and a body with no stated unknown claims a completeness nobody checked. What you could not verify belongs in that Uncertainty line, never in an Excludes bullet: an excluded item is a product boundary somebody drew, not a gap in your reading.
 4. Every relation you propose needs a \`why\`. An edge without a reason is a mind-map line, not an ontology claim.

@@ -110,11 +110,8 @@ export function buildOntologyChangeSet(
     'merge_concepts',
     'rename_concept',
     'remove_relation',
-    'replace_relation',
-    'reclassify_concept',
-    'disconnect_project_source',
     'absorb_document',
-  ]).has(toolName);
+  ]).has(toolName) || (toolName === 'connect_project_source' && rawInput.disconnect === true);
 
   if (toolName === 'add_relation') {
     const from = text(rawInput.from);

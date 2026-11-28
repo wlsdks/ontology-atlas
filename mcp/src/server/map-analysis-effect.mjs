@@ -22,7 +22,6 @@ function conceptEffect(name, args, result) {
       return { ...none, added: slugsOf((result.concepts ?? []).filter((row) => row?.ok && row.changed !== false).map((row) => row.slug)) };
     case 'add_relation':
     case 'remove_relation':
-    case 'replace_relation':
       return { ...none, changed: slugsOf([result.from ?? args.from]) };
     case 'add_relations':
       return { ...none, changed: slugsOf((result.relations ?? []).filter((row) => row?.ok && row.changed !== false).map((row) => row.from)) };
@@ -32,8 +31,6 @@ function conceptEffect(name, args, result) {
       return result.bodyWritten ? { ...none, changed: slugsOf([args.projectSlug]) } : none;
     case 'rename_concept':
       return { ...none, changed: slugsOf([result.newSlug ?? args.newSlug]) };
-    case 'reclassify_concept':
-      return { ...none, changed: slugsOf([result.newSlug ?? args.slug]) };
     case 'merge_concepts':
       return { added: [], changed: slugsOf([args.intoSlug]), removed: slugsOf([args.fromSlug]) };
     case 'delete_concept':
@@ -45,7 +42,7 @@ function conceptEffect(name, args, result) {
   }
 }
 
-const RELATION_TOOLS = new Set(['add_relation', 'add_relations', 'remove_relation', 'replace_relation']);
+const RELATION_TOOLS = new Set(['add_relation', 'add_relations', 'remove_relation']);
 
 /**
  * Whether a write can move the share on the map: a relation changes no concept's

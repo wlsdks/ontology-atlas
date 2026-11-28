@@ -2,9 +2,9 @@
   "_generatedBy": "pnpm docs:surface:build",
   "_contract": "Derived from the MCP tool registry and the CLI command registry. Never hand-edit — run `pnpm docs:surface:build` and commit the diff.",
   "mcp": {
-    "toolCount": 33,
-    "readToolCount": 19,
-    "writeToolCount": 14,
+    "toolCount": 23,
+    "readToolCount": 13,
+    "writeToolCount": 10,
     "tools": [
       {
         "name": "absorb_document",
@@ -72,6 +72,7 @@
         "mode": "write",
         "arguments": [
           "confirm",
+          "disconnect",
           "projectSlug",
           "repair",
           "rootPath"
@@ -102,17 +103,6 @@
         ]
       },
       {
-        "name": "disconnect_project_source",
-        "mode": "write",
-        "arguments": [
-          "confirm",
-          "projectSlug"
-        ],
-        "required": [
-          "projectSlug"
-        ]
-      },
-      {
         "name": "finalize_project_meaning",
         "mode": "write",
         "arguments": [
@@ -136,27 +126,6 @@
         ]
       },
       {
-        "name": "find_evidence",
-        "mode": "read",
-        "arguments": [
-          "limit",
-          "nodesOnly",
-          "title"
-        ],
-        "required": [
-          "title"
-        ]
-      },
-      {
-        "name": "find_orphans",
-        "mode": "read",
-        "arguments": [
-          "excludeKinds",
-          "kind"
-        ],
-        "required": []
-      },
-      {
         "name": "get_concepts",
         "mode": "read",
         "arguments": [
@@ -176,32 +145,6 @@
           "offset",
           "relationLimit"
         ],
-        "required": [
-          "id"
-        ]
-      },
-      {
-        "name": "git_history",
-        "mode": "read",
-        "arguments": [
-          "limit"
-        ],
-        "required": []
-      },
-      {
-        "name": "git_snapshot",
-        "mode": "write",
-        "arguments": [
-          "confirm",
-          "expectedHead",
-          "message"
-        ],
-        "required": []
-      },
-      {
-        "name": "git_status",
-        "mode": "read",
-        "arguments": [],
         "required": []
       },
       {
@@ -238,20 +181,13 @@
         "mode": "read",
         "arguments": [
           "domain",
+          "filter",
           "kind",
           "limit",
+          "mentions",
           "offset",
           "since",
           "summary"
-        ],
-        "required": []
-      },
-      {
-        "name": "list_constellations",
-        "mode": "read",
-        "arguments": [
-          "limit",
-          "offset"
         ],
         "required": []
       },
@@ -281,17 +217,6 @@
         ],
         "required": [
           "slug"
-        ]
-      },
-      {
-        "name": "query_concepts",
-        "mode": "read",
-        "arguments": [
-          "filter",
-          "limit"
-        ],
-        "required": [
-          "filter"
         ]
       },
       {
@@ -374,29 +299,13 @@
         ]
       },
       {
-        "name": "reclassify_concept",
-        "mode": "write",
-        "arguments": [
-          "body",
-          "confirm",
-          "domain",
-          "expected_mtime",
-          "newKind",
-          "newSlug",
-          "slug"
-        ],
-        "required": [
-          "newKind",
-          "slug"
-        ]
-      },
-      {
         "name": "remove_relation",
         "mode": "write",
         "arguments": [
           "confirm",
           "expected_mtime",
           "from",
+          "replaceWith",
           "to",
           "type"
         ],
@@ -410,36 +319,17 @@
         "name": "rename_concept",
         "mode": "write",
         "arguments": [
+          "body",
           "confirm",
+          "domain",
           "expected_mtime",
+          "newKind",
           "newSlug",
           "oldSlug",
           "overwrite"
         ],
         "required": [
-          "newSlug",
           "oldSlug"
-        ]
-      },
-      {
-        "name": "replace_relation",
-        "mode": "write",
-        "arguments": [
-          "confirm",
-          "expected_mtime",
-          "from",
-          "newTo",
-          "newType",
-          "oldTo",
-          "oldType",
-          "why"
-        ],
-        "required": [
-          "from",
-          "newTo",
-          "newType",
-          "oldTo",
-          "oldType"
         ]
       },
       {

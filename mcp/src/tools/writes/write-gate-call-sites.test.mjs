@@ -21,8 +21,8 @@ after(() => rmSync(vaultRoot, { recursive: true, force: true }));
 process.env.OATLAS_VAULT = vaultRoot;
 process.env.OATLAS_REPO_ROOT = vaultRoot;
 const { addConceptsBatch, patchConcept } = await import('./write-concepts.mjs');
-const { addRelation, removeRelation, replaceRelation } = await import('./write-relations.mjs');
-const { deleteConcept, mergeConcepts, reclassifyConcept, renameConcept } = await import('../lifecycle.mjs');
+const { addRelation, removeRelation } = await import('./write-relations.mjs');
+const { deleteConcept, mergeConcepts, renameConcept } = await import('../lifecycle.mjs');
 const { finalizeProjectMeaningTool } = await import('../project-source.mjs');
 const { connectionInfoTool } = await import('../read.mjs');
 
@@ -42,11 +42,11 @@ test('every write that names a reserved node as its source is refused before any
     ['patch_concept', () => patchConcept({ slug: reserved, frontmatter: { title: 'Renamed' } })],
     ['add_relations', () => addRelation({ from: reserved, to: open, type: 'depends_on' })],
     ['remove_relation', () => removeRelation({ from: reserved, to: open, type: 'depends_on', confirm: true })],
-    ['replace_relation', () => replaceRelation({
-      from: reserved, oldTo: open, oldType: 'depends_on', newTo: 'capabilities/target', newType: 'depends_on', confirm: true,
+    ['remove_relation', () => removeRelation({
+      from: reserved, to: open, type: 'depends_on', replaceWith: { to: 'capabilities/target', type: 'depends_on' }, confirm: true,
     })],
     ['rename_concept', () => renameConcept({ oldSlug: reserved, newSlug: 'capabilities/renamed', confirm: true })],
-    ['reclassify_concept', () => reclassifyConcept({ slug: reserved, newKind: 'element', domain: 'domains/orders', confirm: true })],
+    ['rename_concept', () => renameConcept({ oldSlug: reserved, newKind: 'element', domain: 'domains/orders', confirm: true })],
     ['merge_concepts', () => mergeConcepts({ fromSlug: reserved, intoSlug: open, confirm: true })],
     ['merge_concepts', () => mergeConcepts({ fromSlug: open, intoSlug: reserved, confirm: true })],
     ['delete_concept', () => deleteConcept({ slug: reserved, confirm: true })],

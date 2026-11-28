@@ -33,9 +33,8 @@ export const DOGFOOD_MCP_WALK_CHECK_COUNT = 86;
 
 const AGENT_READINESS_TOOLS = new Set([
   "analyze_repo_structure",
-  "find_evidence",
-  "find_orphans",
   "infer_imports",
+  "list_concepts",
   "query_ontology",
   "validate_vault",
 ]);
@@ -56,7 +55,7 @@ const AGENT_READINESS_QUERY_OPERATIONS = new Set([
 
 const ACTION_GUIDANCE: Record<AgentReadinessActionKey, string> = {
   resolveUnknown:
-    "Resolve unknown/stub nodes: inspect get_concepts and find_evidence, then patch_concept or merge_concepts.",
+    "Resolve unknown/stub nodes: inspect get_concepts and list_concepts with mentions, then patch_concept or merge_concepts.",
   addConcepts:
     "Add missing shape: create at least one domain, capability, and element before relying on graph answers.",
   linkOrphans:
@@ -72,14 +71,14 @@ const ACTION_GUIDANCE: Record<AgentReadinessActionKey, string> = {
 const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]> = {
   resolveUnknown: [
     { tool: "query_ontology", arguments: { operation: "match_nodes", kind: "unknown", limit: 20 } },
-    { tool: "find_evidence", arguments: { query: "<unknown-title-or-slug>" } },
+    { tool: "list_concepts", arguments: { mentions: "<unknown-title-or-slug>" } },
   ],
   addConcepts: [
     { tool: "analyze_repo_structure", arguments: {} },
     { tool: "query_ontology", arguments: { operation: "recommend_relations", kind: "domain", limit: 20 } },
   ],
   linkOrphans: [
-    { tool: "find_orphans", arguments: { excludeKinds: ["project", "vault-readme"] } },
+    { tool: "query_ontology", arguments: { operation: "match_nodes", hasIncoming: false, limit: 20 } },
     { tool: "query_ontology", arguments: { operation: "recommend_relations", limit: 20 } },
   ],
   addRelations: [
@@ -134,17 +133,10 @@ export function validateAgentReadinessToolCall(payload: AgentReadinessToolCall):
       issues.push(`unsupported readiness query_ontology operation: ${String(operation)}`);
     }
   }
-  if (payload.tool === "find_orphans") {
-    if ("kinds" in payload.arguments) {
-      issues.push("find_orphans uses excludeKinds or kind; kinds is not a supported argument");
-    }
-    const excludeKinds = payload.arguments.excludeKinds;
-    if (
-      excludeKinds !== undefined &&
-      (!Array.isArray(excludeKinds) ||
-        excludeKinds.some((kind) => typeof kind !== "string" || kind.trim() === ""))
-    ) {
-      issues.push("find_orphans.excludeKinds must be an array of non-empty strings");
+  if (payload.tool === "list_concepts") {
+    const mentions = payload.arguments.mentions;
+    if (mentions !== undefined && (typeof mentions !== "string" || mentions.trim() === "")) {
+      issues.push("list_concepts.mentions must be a non-empty string");
     }
   }
   return issues;
@@ -192,7 +184,7 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
     "",
     "If these MCP tools are not available, stop and ask the person to connect this agent in the Ontology Atlas app (Agents > MCP).",
     "",
-    "Prefer read tools first (workspace_brief, health, get_concepts, find_evidence, find_backlinks, node_profile).",
+    "Prefer read tools first (workspace_brief, health, get_concepts, list_concepts, find_backlinks, node_profile).",
     "Only write after confirming the intended ontology change; use add_concepts/add_relations/patch_concept/merge_concepts and keep docs/ontology synced.",
   ].join("\n");
 }

@@ -38,7 +38,7 @@
 > Find nodes in this repo's ontology with `kind: capability` but empty `elements` arrays (= potential incomplete items).
 
 **Correct answer:**
-- Verifiable via `query_concepts({ filter: "kind=capability AND NOT has(elements)" })` (MCP-on) or by grepping all capability `.md` files (MCP-off).
+- Verifiable via `list_concepts({ filter: "kind=capability AND NOT has(elements)" })` (MCP-on) or by grepping all capability `.md` files (MCP-off).
 - The agent should produce the actual list of slugs, not a heuristic guess.
 
 **Score axis emphasis:** hallucinations (any non-existent slug = -1 per item), correctness.

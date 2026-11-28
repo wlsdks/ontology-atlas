@@ -641,7 +641,7 @@ export function createBriefQueries({
         'When a source body says bounded packet, static packet, bounded excerpt, or selected evidence, preserve it in the same atomic claim as a measurement qualifier; never detach only/one/none/unmeasured/absent from it.',
         'Structural readiness is not semantic qualification: inspect projectSource.currentness, meaningAssessment.status, competency question witnesses, and meaningRepair before claiming a project is ontology-ready.',
         'The nested project-source receipt is the last measured snapshot; the outer projectSource.currentness is the current graph comparison. Treat ontology_changed, stale, unavailable, or review_required as unresolved.',
-        'Ordinary synchronization must not call delete_concept, merge_concepts, rename_concept, absorb_document, or git_snapshot. These require an explicit human request plus dry-run or preflight review and conflict guards.',
+        'Ordinary synchronization must not call delete_concept, merge_concepts, rename_concept, absorb_document, or a git commit of the vault. These require an explicit human request plus dry-run or preflight review and conflict guards.',
         'Never finalize project meaning or repair competency answers automatically. Require independent qualification, explicit human approval, the returned writePlan, expected_mtime, validation, compile, and post-write health checks.',
         'After code changes introduce or rename a domain, capability, element, or relation, sync the vault before finishing.',
       ],

@@ -232,13 +232,13 @@ export async function runDogfoodWalk() {
     console.log(`  ${toolName}: write metadata ${batchWriteMetadataAbsenceSummary(payload, structuredPayload, key)}`);
   }
 
-  header(`find_evidence(title="vault")`);
+  header(`list_concepts(mentions="vault")`);
   const ev = getResult(responses, 4);
   const evStructured = getRpcResult(responses, 4)?.structuredContent ?? null;
   if (ev) {
     console.log(`  structuredContent: ${structuredContentStatus(ev, evStructured)}`);
-    console.log(`  matches: ${ev.matches?.length || 0}`);
-    for (const m of (ev.matches || []).slice(0, 5)) {
+    console.log(`  nodes: ${ev.nodes?.length || 0} / total ${ev.total}`);
+    for (const m of (ev.nodes || []).slice(0, 5)) {
       console.log(`  ${m.kind?.padEnd(13) || ""} ${m.slug.padEnd(40)} (${m.matchedIn})`);
     }
   }
@@ -257,35 +257,35 @@ export async function runDogfoodWalk() {
     }
   }
 
-  header(`find_orphans (isolated nodes with no backlink at all)`);
+  header(`query_ontology(match_nodes hasIncoming=false: nodes no other node points to)`);
   const orph = getResult(responses, 7);
   const orphStructured = getRpcResult(responses, 7)?.structuredContent ?? null;
   if (orph) {
     console.log(`  structuredContent: ${structuredContentStatus(orph, orphStructured)}`);
-    console.log(`  total: ${orph.total}`);
-    for (const m of (orph.orphans || []).slice(0, 8)) {
+    console.log(`  total: ${orph.totalMatches}`);
+    for (const m of (orph.nodes || []).slice(0, 8)) {
       console.log(`  ${m.kind?.padEnd(13) || ""} ${m.slug.padEnd(40)} ${m.title || ""}`);
     }
   }
 
-  header(`query_concepts(kind=capability AND domain=${targets.domainSlug})`);
-  const queryConcepts = getResult(responses, 56);
-  const queryConceptsStructured = getRpcResult(responses, 56)?.structuredContent ?? null;
-  if (queryConcepts) {
-    console.log(`  structuredContent: ${structuredContentStatus(queryConcepts, queryConceptsStructured)}`);
-    console.log(`  matches: ${queryConcepts.matches?.length ?? 0} / total ${queryConcepts.total}`);
-    for (const m of (queryConcepts.matches || []).slice(0, 5)) {
+  header(`list_concepts(filter=kind=capability AND domain=${targets.domainSlug})`);
+  const listConceptsFilter = getResult(responses, 56);
+  const listConceptsFilterStructured = getRpcResult(responses, 56)?.structuredContent ?? null;
+  if (listConceptsFilter) {
+    console.log(`  structuredContent: ${structuredContentStatus(listConceptsFilter, listConceptsFilterStructured)}`);
+    console.log(`  matches: ${listConceptsFilter.nodes?.length ?? 0} / total ${listConceptsFilter.total}`);
+    for (const m of (listConceptsFilter.nodes || []).slice(0, 5)) {
       console.log(`  ${m.kind?.padEnd(13) || ""} ${m.slug.padEnd(40)} ${m.title || ""}`);
     }
   }
 
-  header(`query_concepts(slug!=${targets.projectSlug}, limit=1)`);
-  const queryConceptsLimited = getResult(responses, 60);
-  const queryConceptsLimitedStructured = getRpcResult(responses, 60)?.structuredContent ?? null;
-  if (queryConceptsLimited) {
-    console.log(`  structuredContent: ${structuredContentStatus(queryConceptsLimited, queryConceptsLimitedStructured)}`);
-    console.log(`  matches: ${queryConceptsLimited.matches?.length ?? 0} / total ${queryConceptsLimited.total} · limited ${queryConceptsLimited.limited === true}`);
-    for (const m of (queryConceptsLimited.matches || []).slice(0, 3)) {
+  header(`list_concepts(filter=slug!=${targets.projectSlug}, limit=1)`);
+  const listConceptsFilterLimited = getResult(responses, 60);
+  const listConceptsFilterLimitedStructured = getRpcResult(responses, 60)?.structuredContent ?? null;
+  if (listConceptsFilterLimited) {
+    console.log(`  structuredContent: ${structuredContentStatus(listConceptsFilterLimited, listConceptsFilterLimitedStructured)}`);
+    console.log(`  matches: ${listConceptsFilterLimited.nodes?.length ?? 0} / total ${listConceptsFilterLimited.total} · limited ${listConceptsFilterLimited.limited === true}`);
+    for (const m of (listConceptsFilterLimited.nodes || []).slice(0, 3)) {
       console.log(`  ${m.kind?.padEnd(13) || ""} ${m.slug.padEnd(40)} ${m.title || ""}`);
     }
   }
@@ -873,10 +873,9 @@ export async function runDogfoodWalk() {
     strictMaintenanceSeverityFilter,
     strictMaintenanceKindFilter,
     strictRelationFilter,
-    strictFindOrphansKindFilter,
-    strictFindOrphansExcludeKindFilter,
-    strictQueryConceptsKindFilter,
-    strictQueryConceptsHasKeyFilter,
+    strictOrphanMatchNodesKindFilter,
+    strictListConceptsFilterKind,
+    strictListConceptsFilterHasKey,
     strictListConceptsKindFilter,
     strictRelationCheck,
     strictGraphKindFilter,
@@ -933,11 +932,11 @@ export async function runDogfoodWalk() {
     ["list_concepts", list, listStructured],
     ["project_probe", projectProbe, projectProbeStructured],
     ["get_concepts", batch, batchStructured],
-    ["find_evidence", ev, evStructured],
+    ["list_concepts_mentions", ev, evStructured],
     ["find_backlinks", bl, blStructured],
-    ["find_orphans", orph, orphStructured],
-    ["query_concepts", queryConcepts, queryConceptsStructured],
-    ["query_concepts_limited", queryConceptsLimited, queryConceptsLimitedStructured],
+    ["orphan_match_nodes", orph, orphStructured],
+    ["list_concepts_filter", listConceptsFilter, listConceptsFilterStructured],
+    ["list_concepts_filter_limited", listConceptsFilterLimited, listConceptsFilterLimitedStructured],
     ["infer_imports", inferredImports, inferredImportsStructured],
     ["validate_vault", validation, validationStructured],
     ["compile_ontology", compiled, compiledStructured],
@@ -960,10 +959,10 @@ export async function runDogfoodWalk() {
     blStructured,
     orph,
     orphStructured,
-    queryConcepts,
-    queryConceptsStructured,
-    queryConceptsLimited,
-    queryConceptsLimitedStructured,
+    listConceptsFilter,
+    listConceptsFilterStructured,
+    listConceptsFilterLimited,
+    listConceptsFilterLimitedStructured,
     analyzedRepo,
     analyzedRepoStructured,
     inferredImports,
@@ -1065,10 +1064,9 @@ export async function runDogfoodWalk() {
     strictMaintenanceSeverityFilter,
     strictMaintenanceKindFilter,
     strictRelationFilter,
-    strictFindOrphansKindFilter,
-    strictFindOrphansExcludeKindFilter,
-    strictQueryConceptsKindFilter,
-    strictQueryConceptsHasKeyFilter,
+    strictOrphanMatchNodesKindFilter,
+    strictListConceptsFilterKind,
+    strictListConceptsFilterHasKey,
     strictListConceptsKindFilter,
     strictRelationCheck,
     strictGraphKindFilter,
@@ -1096,7 +1094,7 @@ export async function runDogfoodWalk() {
 
   header("Analysis — AI agent quality assessment");
   const total = census?.total || 0;
-  const orphCount = orph?.total || 0;
+  const orphCount = orph?.totalMatches || 0;
   const orphRatio = total > 0 ? ((orphCount / total) * 100).toFixed(0) : 0;
   console.log(`  vault size: ${total} nodes`);
   const inventoryFailure = toolsListInventoryFailure(toolsList?.tools);
@@ -1112,8 +1110,8 @@ export async function runDogfoodWalk() {
   );
   console.log(`  project_probe: ${projectProbe ? formatCount(projectProbe.total ?? 0, "project node") : "n/a"}`);
   console.log(`  get_concepts: ${(batch?.concepts || []).filter((row) => row?.ok === true).length} ok · ${(batch?.concepts || []).filter((row) => row?.ok === false).length} partial`);
-  console.log(`  query_concepts: ${queryConcepts ? `${queryConcepts.matches?.length ?? 0} matches · limited ${queryConcepts.limited === true}` : "n/a"}`);
-  console.log(`  query_concepts_limited: ${queryConceptsLimited ? `${queryConceptsLimited.matches?.length ?? 0} matches · total ${queryConceptsLimited.total ?? "n/a"} · limited ${queryConceptsLimited.limited === true}` : "n/a"}`);
+  console.log(`  list_concepts_filter: ${listConceptsFilter ? `${listConceptsFilter.nodes?.length ?? 0} matches · limited ${listConceptsFilter.limited === true}` : "n/a"}`);
+  console.log(`  list_concepts_filter_limited: ${listConceptsFilterLimited ? `${listConceptsFilterLimited.nodes?.length ?? 0} matches · total ${listConceptsFilterLimited.total ?? "n/a"} · limited ${listConceptsFilterLimited.limited === true}` : "n/a"}`);
   console.log(`  analyze_repo_structure: ${/: (\d+ product units, .*? files)/.exec(analyzedRepo?.rawText ?? "")?.[1] ?? "n/a"}`);
   console.log(`  infer_imports: ${inferredImports ? `${inferredImports.filesScanned ?? 0} files · ${inferredImports.moduleEdges?.length ?? 0} module edges · ${importModuleEdgeKindSummary(inferredImports.moduleEdges, 2)}` : "n/a"}`);
   console.log(
@@ -1187,10 +1185,9 @@ export async function runDogfoodWalk() {
   console.log(`  strict_maintenance_severity_filter: ${strictRepairSummary(strictMaintenanceSeverityFilter)}`);
   console.log(`  strict_maintenance_kind_filter: ${strictRepairSummary(strictMaintenanceKindFilter)}`);
   console.log(`  strict_relation_filter: ${strictRepairSummary(strictRelationFilter)}`);
-  console.log(`  strict_find_orphans_kind_filter: ${strictRepairSummary(strictFindOrphansKindFilter)}`);
-  console.log(`  strict_find_orphans_exclude_kind_filter: ${strictRepairSummary(strictFindOrphansExcludeKindFilter)}`);
-  console.log(`  strict_query_concepts_kind_filter: ${strictRepairSummary(strictQueryConceptsKindFilter)}`);
-  console.log(`  strict_query_concepts_has_key_filter: ${strictRepairSummary(strictQueryConceptsHasKeyFilter)}`);
+  console.log(`  strict_orphan_match_nodes_kind_filter: ${strictRepairSummary(strictOrphanMatchNodesKindFilter)}`);
+  console.log(`  strict_list_concepts_filter_kind: ${strictRepairSummary(strictListConceptsFilterKind)}`);
+  console.log(`  strict_list_concepts_filter_has_key: ${strictRepairSummary(strictListConceptsFilterHasKey)}`);
   console.log(`  strict_list_concepts_kind_filter: ${strictRepairSummary(strictListConceptsKindFilter)}`);
   console.log(`  strict_relation_check: ${strictRepairSummary(strictRelationCheck)}`);
   console.log(`  strict_graph_kind_filter: ${strictRepairSummary(strictGraphKindFilter)}`);

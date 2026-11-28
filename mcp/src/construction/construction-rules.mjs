@@ -393,7 +393,7 @@ export function dependencyUnjudgedMessage({ slug, target, unreadPaths, maxBytes 
 export function dependencyUnwitnessedMessage({ slug, sourcePath, target, targetPath, witnessName }) {
   return `"${slug}" depends on "${target}", and \`${sourcePath}\` never imports \`${targetPath}\` (nothing there names \`${witnessName}\`). ` +
     'Nothing is blocked: a missing import is not proof of independence (a record, an event or configuration needs none), and the edge stays listed here as unwitnessed. ' +
-    'If a file does import it, name that repository-relative file in the edge\'s why with replace_relation (same from, to and type, confirm:true); ' +
+    'If a file does import it, name that repository-relative file in the edge\'s why with remove_relation and replaceWith (same to and type, confirm:true); ' +
     'remove_relation only an edge that came from look-alike names.';
 }
 

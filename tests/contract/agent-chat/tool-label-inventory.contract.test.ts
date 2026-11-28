@@ -17,7 +17,7 @@ const ADVERTISED: string[] = (TOOLS_FOR_LIST as Array<{ name: string }>).map((to
 
 describe('the transcript has a word for every tool our server advertises', () => {
   it('has subjects at all — an empty inventory would make every check below vacuous', () => {
-    expect(ADVERTISED.length).toBeGreaterThan(30);
+    expect(ADVERTISED.length).toBeGreaterThan(20);
   });
 
   it('labels every advertised tool', () => {

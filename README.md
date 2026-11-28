@@ -124,7 +124,7 @@ your agent. These MCP tools answer the questions an agent asks most:
 | What points at it, before I rename or delete it? | `find_backlinks` |
 | How are these two concepts connected? | `query_ontology` with `path` |
 | What may this change affect? | `query_ontology` with `impact` |
-| Where is this mentioned? | `find_evidence` |
+| Where is this mentioned? | `list_concepts({ mentions })` |
 | Record what I just built or changed | `add_concepts`, `add_relations`, `patch_concept` |
 | Is the folder still consistent? | `validate_vault` |
 

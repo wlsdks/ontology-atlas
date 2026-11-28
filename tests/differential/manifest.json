@@ -5,14 +5,14 @@
     "shell": { "tools": [], "proven": false, "equalExcept": [] },
     "safety": { "tools": [], "proven": false, "equalExcept": [] },
     "vault-read": {
-      "tools": ["connection_info", "list_concepts", "get_concepts", "find_backlinks", "find_orphans", "query_concepts"],
+      "tools": ["connection_info", "list_concepts", "get_concepts", "find_backlinks"],
       "proven": false,
       "equalExcept": []
     },
     "graph": { "tools": ["compile_ontology", "query_ontology"], "proven": false, "equalExcept": [] },
-    "git": { "tools": ["git_status", "git_history"], "proven": false, "equalExcept": [] },
+    "git": { "tools": [], "proven": false, "equalExcept": [] },
     "imports": { "tools": ["infer_imports", "inspect_architecture"], "proven": false, "equalExcept": [] },
-    "evidence": { "tools": ["find_evidence", "read_source"], "proven": false, "equalExcept": [] },
+    "evidence": { "tools": ["read_source"], "proven": false, "equalExcept": [] },
     "survey": { "tools": ["analyze_repo_structure"], "proven": false, "equalExcept": [] },
     "meaning": { "tools": ["validate_vault"], "proven": false, "equalExcept": [] },
     "writes": {
@@ -20,25 +20,20 @@
         "add_concepts",
         "add_relations",
         "remove_relation",
-        "replace_relation",
         "patch_concept",
         "rename_concept",
-        "reclassify_concept",
         "merge_concepts",
-        "delete_concept",
-        "git_snapshot"
+        "delete_concept"
       ],
       "proven": false,
       "equalExcept": []
     },
     "library": {
       "tools": [
-        "list_constellations",
         "get_constellation",
         "validate_wiki",
         "absorb_document",
         "connect_project_source",
-        "disconnect_project_source",
         "finalize_project_meaning"
       ],
       "proven": false,

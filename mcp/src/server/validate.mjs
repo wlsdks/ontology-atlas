@@ -5,10 +5,7 @@
  * values rather than failing deep inside a handler.
  */
 
-import {
-  NODE_KIND_VALUES,
-  RELATION_TYPE_VALUES,
-} from '../ontology-engine.mjs';
+import { RELATION_TYPE_VALUES } from '../ontology-engine.mjs';
 import {
   closestAllowedValue,
   formatAllowedValueError,
@@ -162,16 +159,6 @@ function requireOptionalRelationTypeArray(value, name) {
   }
 }
 
-function requireOptionalNodeKindArray(value, name) {
-  requireOptionalStringArray(value, name, { max: NODE_KIND_VALUES.length });
-  if (value === undefined) return;
-  for (const item of value) {
-    if (!NODE_KIND_VALUES.includes(item)) {
-      throw new Error(formatAllowedValueError(`${name} items`, item, NODE_KIND_VALUES));
-    }
-  }
-}
-
 function requireOptionalPlainObject(value, name) {
   if (value === undefined) return;
   requirePlainObject(value, name);
@@ -227,7 +214,6 @@ export {
   requireOptionalNonBlankString,
   requireOptionalStringArray,
   requireOptionalRelationTypeArray,
-  requireOptionalNodeKindArray,
   requireOptionalPlainObject,
   requirePlainObject,
   requireAllowedObjectKeys,

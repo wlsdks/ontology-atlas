@@ -17,17 +17,68 @@ import {
   CAPTURED_DOC_OUTPUT_SCHEMA,
 } from '../tool-schemas/vault-node-shapes.mjs';
 
+/** The answer to a slug change. */
+const RENAME_ANSWER_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' },
+    dryRun: { type: 'boolean' },
+    ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+    uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+    oldSlug: { type: 'string' },
+    newSlug: { type: 'string' },
+    sourcePath: { type: 'string' },
+    targetPath: { type: 'string' },
+    moved: { type: 'boolean' },
+    backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
+    warnings: { type: 'array', items: { type: 'string' } },
+    message: { type: 'string' },
+    changed: { type: 'boolean' },
+    postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+  },
+  required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'uid', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates'],
+  additionalProperties: false,
+};
+
+/** The answer to a kind change (`newKind`), which also names the kinds and what became of the body. */
+const KIND_CHANGE_ANSWER_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+    ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+    uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+    oldSlug: NON_BLANK_STRING_SCHEMA, newSlug: NON_BLANK_STRING_SCHEMA,
+    oldKind: NON_BLANK_STRING_SCHEMA, newKind: NON_BLANK_STRING_SCHEMA,
+    sourcePath: NON_BLANK_STRING_SCHEMA, targetPath: NON_BLANK_STRING_SCHEMA,
+    bodyAction: { type: 'string', enum: ['preserved', 'replaced_explicitly', 'regenerated_starter'] },
+    backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
+    // Entries the kind change left in a list the referrer's kind keeps no list for the new kind in.
+    warnings: { type: 'array', items: { type: 'string' } },
+    postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+  },
+  required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'uid', 'oldSlug', 'newSlug', 'oldKind', 'newKind', 'sourcePath', 'targetPath', 'bodyAction', 'backlinkUpdates'],
+  additionalProperties: false,
+};
+
 export const RENAME_CONCEPT_TOOL = {
   name: 'rename_concept',
   description:
-    '⚠ MULTI-FILE WRITE: change a node\'s slug and rewrite every backlink (frontmatter, body links, tail-only references) in one operation, keeping its UID; use it instead of patch_concept loops. Dry-run returns `updates` unless confirm: true. Throws if oldSlug is missing or newSlug taken (unless overwrite). Confirmed writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + '.',
+    '⚠ MULTI-FILE WRITE: change a node\'s slug and rewrite every backlink (frontmatter, body links, tail-only references) in one operation, keeping its UID; use it instead of patch_concept loops. Dry-run returns `updates` unless confirm: true. Throws if oldSlug is missing or newSlug taken (unless overwrite). ' +
+    'Pass `newKind` to change the node\'s kind as well (`newSlug` then optional, `domain` required for a capability or element, `body` optional, `overwrite` refused): each referrer\'s entry moves to the new kind\'s list, entries a referrer cannot keep are named in `warnings`, and the answer adds `oldKind`, `newKind` and `bodyAction`. Confirmed writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + '.',
   inputSchema: {
     type: 'object',
     properties: {
       oldSlug: nonBlankStringSchema('Current slug.'),
       newSlug: nonBlankStringSchema(
-        'New slug; directories are created.',
+        'New slug; directories are created. Required unless `newKind` is given.',
       ),
+      newKind: {
+        type: 'string',
+        enum: ['project', 'domain', 'capability', 'element', 'document'],
+        description: 'Change the node\'s kind.',
+      },
+      domain: { type: ['string', 'null'], description: 'With `newKind`: the new domain; required for capability and element.' },
+      body: { type: 'string', description: 'With `newKind`: replace the body. Without it a body that is still a generated starter is regenerated for the new kind and any other body is kept.' },
       confirm: {
         type: 'boolean',
         description:
@@ -45,63 +96,16 @@ export const RENAME_CONCEPT_TOOL = {
           'Conflict guard for oldSlug.',
       },
     },
-    required: ['oldSlug', 'newSlug'],
+    required: ['oldSlug'],
   },
+  // One object for both answers: the slug change, and the kind change (`newKind`).
   outputSchema: {
     type: 'object',
     properties: {
-      ok: { type: 'boolean' },
-      dryRun: { type: 'boolean' },
-      ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
-      uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
-      oldSlug: { type: 'string' },
-      newSlug: { type: 'string' },
-      sourcePath: { type: 'string' },
-      targetPath: { type: 'string' },
-      moved: { type: 'boolean' },
-      backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
-      warnings: { type: 'array', items: { type: 'string' } },
-      message: { type: 'string' },
-      changed: { type: 'boolean' },
-      postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      ...RENAME_ANSWER_OUTPUT_SCHEMA.properties,
+      ...KIND_CHANGE_ANSWER_OUTPUT_SCHEMA.properties,
     },
-    required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'uid', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates'],
-    additionalProperties: false,
-  },
-};
-
-export const RECLASSIFY_CONCEPT_TOOL = {
-  name: 'reclassify_concept',
-  description:
-    '⚠ MULTI-FILE WRITE: change a node\'s kind, and optionally its slug and domain, keeping its UID and redirecting backlinks like rename_concept; entries a referrer cannot keep are named in `warnings`. Defaults to dry-run.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      slug: NON_BLANK_STRING_SCHEMA,
-      newKind: { type: 'string', enum: ['project', 'domain', 'capability', 'element', 'document'] },
-      newSlug: NON_BLANK_STRING_SCHEMA,
-      domain: { type: ['string', 'null'], description: 'New domain; required for capability/element.' },
-      body: { type: 'string' },
-      confirm: { type: 'boolean' }, expected_mtime: { type: 'number', minimum: 0 },
-    },
-    required: ['slug', 'newKind'],
-  },
-  outputSchema: {
-    type: 'object',
-    properties: {
-      ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
-      ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
-      uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
-      oldSlug: NON_BLANK_STRING_SCHEMA, newSlug: NON_BLANK_STRING_SCHEMA,
-      oldKind: NON_BLANK_STRING_SCHEMA, newKind: NON_BLANK_STRING_SCHEMA,
-      sourcePath: NON_BLANK_STRING_SCHEMA, targetPath: NON_BLANK_STRING_SCHEMA,
-      bodyAction: { type: 'string', enum: ['preserved', 'replaced_explicitly', 'regenerated_starter'] },
-      backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
-      // Entries the kind change left in a list the referrer's kind keeps no list for the new kind in.
-      warnings: { type: 'array', items: { type: 'string' } },
-      postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
-    },
-    required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'uid', 'oldSlug', 'newSlug', 'oldKind', 'newKind', 'sourcePath', 'targetPath', 'bodyAction', 'backlinkUpdates'],
+    required: RENAME_ANSWER_OUTPUT_SCHEMA.required.filter((key) => KIND_CHANGE_ANSWER_OUTPUT_SCHEMA.required.includes(key)),
     additionalProperties: false,
   },
 };

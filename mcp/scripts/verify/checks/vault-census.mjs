@@ -46,34 +46,34 @@ export function projectProbeFailure(parsed, kinds) {
   return null;
 }
 
-export function findOrphansFailure(parsed) {
-  if (!Number.isInteger(parsed?.total) || parsed.total < 0) {
-    return 'find_orphans response missing total count';
+export function orphanNodesFailure(parsed) {
+  if (parsed?.operation !== 'match_nodes' || parsed.filters?.hasIncoming !== false) {
+    return 'orphan match_nodes response did not answer hasIncoming:false';
   }
-  if (!Array.isArray(parsed.orphans)) {
-    return 'find_orphans response missing orphans array';
+  if (!Number.isInteger(parsed.totalMatches) || parsed.totalMatches < 0) {
+    return 'orphan match_nodes response missing totalMatches';
   }
-  if (parsed.orphans.length > parsed.total) {
-    return `find_orphans response orphan count exceeds total: orphans ${parsed.orphans.length}, total ${parsed.total}`;
+  if (!Array.isArray(parsed.nodes)) {
+    return 'orphan match_nodes response missing nodes array';
   }
-  for (const [index, node] of parsed.orphans.entries()) {
+  if (parsed.nodes.length > parsed.totalMatches) {
+    return `orphan match_nodes node count exceeds totalMatches: nodes ${parsed.nodes.length}, totalMatches ${parsed.totalMatches}`;
+  }
+  for (const [index, node] of parsed.nodes.entries()) {
     if (!node || typeof node !== 'object' || Array.isArray(node)) {
-      return `find_orphans response malformed orphan at index ${index}`;
+      return `orphan match_nodes response malformed node at index ${index}`;
     }
     if (typeof node.slug !== 'string' || node.slug.length === 0) {
-      return `find_orphans response missing orphan slug at index ${index}`;
+      return `orphan match_nodes response missing slug at index ${index}`;
     }
     if (typeof node.kind !== 'string' || node.kind.length === 0) {
-      return `find_orphans response missing orphan kind: ${node.slug}`;
-    }
-    if (node.kind === 'project' || node.kind === 'vault-readme') {
-      return `find_orphans default exclusions returned root/sentinel kind: ${node.slug}`;
+      return `orphan match_nodes response missing kind: ${node.slug}`;
     }
     if (typeof node.title !== 'string' || node.title.length === 0) {
-      return `find_orphans response missing orphan title: ${node.slug}`;
+      return `orphan match_nodes response missing title: ${node.slug}`;
     }
-    if (!Number.isFinite(node.mtime) || node.mtime < 0) {
-      return `find_orphans response missing orphan mtime: ${node.slug}`;
+    if (node.inDegree !== 0) {
+      return `orphan match_nodes response returned a node with incoming relations: ${node.slug}`;
     }
   }
   return null;

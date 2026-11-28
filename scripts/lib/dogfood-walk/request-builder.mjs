@@ -146,11 +146,11 @@ export function buildDogfoodRequests(targets) {
     call(81, "get_concepts", {
       slugs: Array.from({ length: 51 }, (_, index) => `dogfood-slug-${index}`),
     }),
-    call(4, "find_evidence", { title: "vault" }),
+    call(4, "list_concepts", { mentions: "vault" }),
     call(6, "find_backlinks", { slug: capabilitySlug }),
-    call(7, "find_orphans", {}),
-    call(56, "query_concepts", { filter: `kind=capability AND domain=${domainSlug}`, limit: 5 }),
-    call(60, "query_concepts", { filter: `slug!=${projectSlug}`, limit: 1 }),
+    call(7, "query_ontology", { operation: "match_nodes", hasIncoming: false }),
+    call(56, "list_concepts", { filter: `kind=capability AND domain=${domainSlug}`, limit: 5 }),
+    call(60, "list_concepts", { filter: `slug!=${projectSlug}`, limit: 1 }),
     call(57, "analyze_repo_structure", { rootPath: ROOT, maxDepth: 2 }),
     // A default call without reviewMode switches to the compressed review packet
     // (inferImportsReview:v1, no raw arrays) above 128 KiB. The gate measures the full response
@@ -354,16 +354,15 @@ export function buildDogfoodRequests(targets) {
       operation: "match_edges",
       type: "depend_on",
     }),
-    call(76, "find_orphans", {
+    call(76, "query_ontology", {
+      operation: "match_nodes",
+      hasIncoming: false,
       kind: "capabilty",
     }),
-    call(77, "find_orphans", {
-      excludeKinds: ["capabilty"],
-    }),
-    call(78, "query_concepts", {
+    call(78, "list_concepts", {
       filter: "kind=capabilty",
     }),
-    call(79, "query_concepts", {
+    call(79, "list_concepts", {
       filter: "has(capabilties)",
     }),
     call(80, "list_concepts", {

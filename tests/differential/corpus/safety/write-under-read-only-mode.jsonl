@@ -4,9 +4,8 @@
 {"id":2,"method":"tools/call","params":{"name":"patch_concept","arguments":{"slug":"capabilities/cart","body":"nope"}}}
 {"id":3,"method":"tools/call","params":{"name":"delete_concept","arguments":{"slug":"capabilities/cart","confirm":true,"force":true}}}
 {"id":4,"method":"tools/call","params":{"name":"rename_concept","arguments":{"oldSlug":"capabilities/cart","newSlug":"capabilities/x","confirm":true}}}
-{"id":5,"method":"tools/call","params":{"name":"git_snapshot","arguments":{"confirm":true}}}
-{"id":6,"method":"tools/call","params":{"name":"absorb_document","arguments":{"filePath":"$VAULT/storefront.md","confirm":true}}}
-{"id":7,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"storefront","rootPath":"$VAULT","confirm":true}}}
-{"id":8,"method":"tools/call","params":{"name":"finalize_project_meaning","arguments":{"projectSlug":"storefront","expected_mtime":5}}}
-{"id":9,"method":"tools/call","params":{"name":"add_concepts","arguments":{"concepts":[{"slug":"elements/nope","kind":"element","title":"Nope"}],"dryRun":true}}}
-{"id":10,"method":"tools/call","params":{"name":"list_concepts","arguments":{"limit":1}}}
+{"id":5,"method":"tools/call","params":{"name":"absorb_document","arguments":{"filePath":"$VAULT/storefront.md","confirm":true}}}
+{"id":6,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"storefront","rootPath":"$VAULT","confirm":true}}}
+{"id":7,"method":"tools/call","params":{"name":"finalize_project_meaning","arguments":{"projectSlug":"storefront","expected_mtime":5}}}
+{"id":8,"method":"tools/call","params":{"name":"add_concepts","arguments":{"concepts":[{"slug":"elements/nope","kind":"element","title":"Nope"}],"dryRun":true}}}
+{"id":9,"method":"tools/call","params":{"name":"list_concepts","arguments":{"limit":1}}}

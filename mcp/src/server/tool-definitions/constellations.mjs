@@ -261,64 +261,58 @@ const CONSTELLATION_CONTEXT_OUTPUT_SCHEMA = {
   additionalProperties: false,
 };
 
-export const LIST_CONSTELLATIONS_TOOL = {
-  name: 'list_constellations',
-  description:
-    'List the saved constellations (task-scoped node sets) in this vault with their names, purpose, member counts and revision. Membership is task scope, not an ontology relation.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      offset: {
-        type: 'integer',
-        minimum: 0,
-        description: 'Zero-based offset.',
-      },
-      limit: {
-        type: 'integer',
-        minimum: 1,
-        maximum: 100,
-        description: 'Default 50.',
-      },
+/** One object for both answers: the list (no `id`) and one constellation's context (`id`). */
+const CONSTELLATION_ANSWER_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    ...CONSTELLATION_LIST_OUTPUT_SCHEMA.properties,
+    ...CONSTELLATION_CONTEXT_OUTPUT_SCHEMA.properties,
+    contract: {
+      type: 'string',
+      enum: [
+        ...CONSTELLATION_LIST_OUTPUT_SCHEMA.properties.contract.enum,
+        ...CONSTELLATION_CONTEXT_OUTPUT_SCHEMA.properties.contract.enum,
+      ],
     },
   },
-  outputSchema: CONSTELLATION_LIST_OUTPUT_SCHEMA,
+  required: CONSTELLATION_LIST_OUTPUT_SCHEMA.required.filter((key) => CONSTELLATION_CONTEXT_OUTPUT_SCHEMA.required.includes(key)),
+  additionalProperties: false,
 };
 
 export const GET_CONSTELLATION_TOOL = {
   name: 'get_constellation',
   description:
-    'Read one saved constellation (a task-scoped node set) by immutable ID: paged members with current UID-resolved facts, review currentness, internal relations and outside-scope dependencies. Read-only.',
+    'Read the saved constellations (task-scoped node sets; membership is task scope, not an ontology relation). With no `id`, list them: names, purpose, member counts and revision. With an immutable `id`, read one: paged members with current UID-resolved facts, review currentness, internal relations and outside-scope dependencies. Read-only.',
   inputSchema: {
     type: 'object',
     properties: {
-      id: nonBlankStringSchema('Immutable UUIDv4 of the saved constellation.', {
+      id: nonBlankStringSchema('Immutable UUIDv4 of the saved constellation; omit to list them all.', {
         pattern: NODE_UID_PATTERN,
       }),
       offset: {
         type: 'integer',
         minimum: 0,
-        description: 'Zero-based member offset.',
+        description: 'Zero-based offset into the members, or into the list when `id` is omitted.',
       },
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 100,
-        description: 'Members per page, default 50.',
+        description: 'Rows per page, default 50.',
       },
       relationLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 200,
-        description: 'Relations between members, default 100.',
+        description: 'With `id`: relations between members, default 100.',
       },
       dependencyLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 200,
-        description: 'Dependency edges leaving the scope, default 100.',
+        description: 'With `id`: dependency edges leaving the scope, default 100.',
       },
     },
-    required: ['id'],
   },
-  outputSchema: CONSTELLATION_CONTEXT_OUTPUT_SCHEMA,
+  outputSchema: CONSTELLATION_ANSWER_OUTPUT_SCHEMA,
 };

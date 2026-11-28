@@ -169,11 +169,11 @@ const READS = [
   ['find_backlinks', { slug: 'elements/el-15' }],
   ['query_ontology', { operation: 'path', from: 'capabilities/cap-5', to: 'domains/dom-1' }, 'path'],
   ['compile_ontology', { summary: true }],
-  // The one read that scores file text, which the server reads back from disk: a
+  // The one read that scores file text, which the server reads back from disk (mentions): a
   // phrase few files hold, and a word about half of them hold, so half the bodies
   // are read and scored.
-  ['find_evidence', { title: 'relation boundary meaning' }, 'evidence phrase'],
-  ['find_evidence', { title: 'meaning' }, 'evidence word'],
+  ['list_concepts', { mentions: 'relation boundary meaning' }, 'mentions phrase'],
+  ['list_concepts', { mentions: 'meaning' }, 'mentions word'],
 ];
 
 async function openFlow(serverPath, flow) {

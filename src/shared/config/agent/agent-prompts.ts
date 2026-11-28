@@ -85,7 +85,7 @@ export function buildAgentAnalyzePrompt({
     `   its full construction lifecycle in its own instructions, so read`,
     `   that rather than inferring the rest.`,
     `10. Never use delete_concept, merge_concepts, rename_concept,`,
-    `   absorb_document, or git_snapshot as part of ordinary synchronization`,
+    `   or absorb_document as part of ordinary synchronization`,
     `   unless the human explicitly requested that operation and reviewed its`,
     `   dry-run or preflight.`,
   ].join("\n");

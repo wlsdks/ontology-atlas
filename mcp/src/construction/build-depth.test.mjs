@@ -530,7 +530,7 @@ test('a relation note about a node that says it was not read names the read and 
   const findings = buildDepthFindings(docs);
   assert.deepEqual(findings.map(({ slug, code }) => [slug, code]), [['capabilities/send', 'relation-note-on-unread']]);
   assert.match(findings[0].message, /"sourceReads":\[\{"path":"src\/queue\.ts","symbol":"Queue\.push"\}\]/);
-  assert.match(findings[0].message, /replace_relation\(\{"from":"capabilities\/send","oldTo":"elements\/queue","oldType":"depends_on","newTo":"elements\/queue","newType":"depends_on"/);
+  assert.match(findings[0].message, /remove_relation\(\{"from":"capabilities\/send","to":"elements\/queue","type":"depends_on","replaceWith":\{"to":"elements\/queue","type":"depends_on"/);
   assert.equal(buildDepthFindings([docs[0], doc('elements/queue', {})]).length, 0);
 });
 
