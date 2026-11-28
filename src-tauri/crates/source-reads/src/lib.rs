@@ -8,6 +8,7 @@ mod declaration_span;
 mod declaration_survey;
 mod file_outline;
 mod import_bindings;
+mod kept_files;
 mod opened_file;
 mod path_policy;
 mod posix_path;

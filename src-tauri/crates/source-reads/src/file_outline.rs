@@ -123,6 +123,12 @@ fn language_of(path: &str) -> (&'static str, Option<Scanner>) {
     }
 }
 
+/// Whether the declarations of `path` come from a line scanner and not from a syntax tree, so a
+/// reader that has the survey's trees must still read the file for them.
+pub fn is_line_scanned(path: &str) -> bool {
+    matches!(language_of(path).1, Some(Scanner::Ruby | Scanner::CSharp))
+}
+
 fn signature_of(line: &str) -> String {
     line.trim().chars().take(SIGNATURE_CHARACTERS).collect()
 }
@@ -145,8 +151,7 @@ pub fn outline_file(text: &str, path: &str) -> FileOutline {
     };
     match scanner {
         Scanner::Tree(tree_language) => {
-            let (rows, left_out) = one_line_per_row(text);
-            match outline_text(tree_language, &rows) {
+            match outline_text(tree_language, text) {
                 Ok(outline) => FileOutline {
                     language,
                     declarations: outline
@@ -159,7 +164,7 @@ pub fn outline_file(text: &str, path: &str) -> FileOutline {
                             signature: declaration.signature,
                         })
                         .collect(),
-                    truncated: outline.truncated || left_out,
+                    truncated: outline.truncated,
                 },
                 // A file the parser could not finish in budget has no outline, and the row says it
                 // stopped early.
@@ -174,27 +179,6 @@ pub fn outline_file(text: &str, path: &str) -> FileOutline {
         Scanner::Ruby => scan_lines(text, language, ruby_declarations),
         Scanner::CSharp => scan_lines(text, language, curly_brace_declarations),
     }
-}
-
-/// `text` as the parser should see it, and whether a line was left out. A line ends at `\r\n`, `\n`
-/// or a lone `\r`, as the lines a read quotes do, so a declaration's line number and signature
-/// agree with them; a line over [`LINE_CHARACTERS`] is generated or minified and is blanked, its
-/// row kept, so the outline says it stopped early and no declaration sits on it.
-fn one_line_per_row(text: &str) -> (String, bool) {
-    if !text.contains('\r') && !text.lines().any(|line| line.len() > LINE_CHARACTERS) {
-        return (text.to_string(), false);
-    }
-    let mut skipped = false;
-    let mut rows: Vec<String> = Vec::new();
-    for line in split_rows(text) {
-        if answer_format::utf16::len(&line) > LINE_CHARACTERS {
-            skipped = true;
-            rows.push(String::new());
-        } else {
-            rows.push(line);
-        }
-    }
-    (rows.join("\n"), skipped)
 }
 
 /// Lines split at `\r\n`, `\n` or `\r`.

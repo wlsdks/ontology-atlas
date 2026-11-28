@@ -35,6 +35,7 @@ mod import_scan;
 mod jvm_declarations;
 mod jvm_resolution;
 mod module_grouping;
+mod one_line_per_row;
 mod path_dating;
 mod path_facts;
 mod path_pattern;

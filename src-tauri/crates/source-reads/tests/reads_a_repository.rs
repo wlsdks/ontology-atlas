@@ -29,7 +29,7 @@ fn repository(files: &[(&str, &str)]) -> (tempfile::TempDir, SourceRoot) {
 
 fn evidence(root: &SourceRoot, selectors: serde_json::Value) -> SourceEvidence {
     let selectors = parse_source_reads(&selectors).expect("selectors");
-    read_source_evidence(root, &selectors, &[])
+    read_source_evidence(root, &selectors, &[], &|| false)
 }
 
 fn refusal_of(row: &SourceRow) -> Option<RefusalReason> {
@@ -153,4 +153,21 @@ fn a_range_counts_as_read_until_its_lines_change() {
             .map(|selector| &selector.target),
         Some(ReadTarget::Outline)
     ));
+}
+
+#[test]
+fn a_cancelled_call_reads_no_more_selectors() {
+    let (_base, root) = repository(&[("src/a.ts", "export const a = 1;\n")]);
+    let selectors = parse_source_reads(&serde_json::json!([
+        { "path": "src/a.ts", "mode": "outline" },
+        { "path": "src/a.ts", "mode": "outline" },
+        { "path": "src/a.ts", "mode": "outline" },
+    ]))
+    .expect("selectors");
+    let asked = std::cell::Cell::new(0);
+    let read = read_source_evidence(&root, &selectors, &[], &|| {
+        asked.set(asked.get() + 1);
+        asked.get() > 2
+    });
+    assert_eq!(read.rows.len(), 2, "cancelled before the third selector");
 }

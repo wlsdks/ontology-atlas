@@ -41,6 +41,18 @@ pub enum RepositoryFileRefusal {
 }
 
 impl SourceRoot {
+    /// The stamp of the regular file at `parts` below this root, or `None` when nothing regular is
+    /// there. One `stat` and no open: the cheap question a cache asks before it trusts the text it
+    /// kept. It does not judge links or names; only a read does.
+    pub fn repository_file_stamp(&self, parts: &[&str]) -> Option<FileStamp> {
+        let file_path = parts
+            .iter()
+            .fold(self.as_path().to_path_buf(), |joined, part| {
+                joined.join(part)
+            });
+        crate::stable_read::stamp_of(&file_path).ok().flatten()
+    }
+
     /// The bytes of the regular file at `parts` below this root, of at most `max_bytes`, that no
     /// link leads to, read as one version.
     pub fn read_repository_file(

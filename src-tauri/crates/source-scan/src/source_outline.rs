@@ -10,6 +10,7 @@
 use tree_sitter::Node;
 
 use crate::bounded_parse::{parse_bounded, ParseLimits, ParseRefusal, ParsedSource};
+use crate::one_line_per_row::one_line_per_row;
 use crate::source_language::SourceLanguage;
 
 /// Declarations one outline lists at most; a longer file reports `truncated`.
@@ -77,9 +78,15 @@ enum Place {
 }
 
 /// Parses `text` and lists its declarations; refused when the file cannot be parsed in budget.
+/// The text is read one row per line a read quotes (see [`one_line_per_row`]), so the line of a
+/// declaration is the line a cite names, and a line too wide to scan is blanked and reported as
+/// `truncated`.
 pub fn outline_text(language: SourceLanguage, text: &str) -> Result<Outline, ParseRefusal> {
-    let parsed = parse_bounded(language, text, OUTLINE_PARSE_LIMITS)?;
-    Ok(outline_parsed(&parsed))
+    let (rows, blanked) = one_line_per_row(text);
+    let parsed = parse_bounded(language, &rows, OUTLINE_PARSE_LIMITS)?;
+    let mut outline = outline_parsed(&parsed);
+    outline.truncated |= blanked;
+    Ok(outline)
 }
 
 pub fn outline_parsed(parsed: &ParsedSource<'_>) -> Outline {
@@ -772,7 +779,8 @@ const LIMIT: u32 = 3;
     #[test]
     fn classes_nested_ten_thousand_deep_are_listed_without_overflowing_the_stack() {
         let depth = 10_000;
-        let source = format!("{}{}", "class A { ".repeat(depth), "}".repeat(depth));
+        // One class to a line: a line over the outline's line width is blanked, not parsed.
+        let source = format!("{}{}", "class A {\n".repeat(depth), "}\n".repeat(depth));
         let outline = outline_text(SourceLanguage::JavaScript, &source);
         match outline {
             Ok(outline) => assert!(!outline.declarations.is_empty()),
@@ -781,6 +789,22 @@ const LIMIT: u32 = 3;
                 ParseRefusal::TooManyNodes | ParseRefusal::TookTooLong
             )),
         }
+    }
+
+    #[test]
+    fn a_line_too_wide_to_scan_is_blanked_and_the_outline_says_it_stopped_early() {
+        let wide = "x".repeat(2000);
+        let source = format!("function a() {{}}\nconst wide = '{wide}';\nfunction b() {{}}\n");
+        let outline = outline_text(SourceLanguage::JavaScript, &source).expect("parsed");
+        assert!(outline.truncated);
+        assert_eq!(
+            outline
+                .declarations
+                .iter()
+                .map(|declaration| declaration.line)
+                .collect::<Vec<_>>(),
+            [1, 3]
+        );
     }
 
     #[test]

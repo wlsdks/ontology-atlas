@@ -16,16 +16,21 @@ use crate::source_row::{AskedFor, SourceEvidence, SourceRow};
 pub const AGGREGATE_TEXT_BYTES: usize = 32 * 1024;
 
 /// The rows `selectors` ask for. A read the aggregate cannot hold is not returned, and named so a
-/// later call can ask for it.
+/// later call can ask for it. `cancelled` is asked before each selector: once it answers true the
+/// rows made so far are returned and no more are read, because nobody waits for the answer.
 pub fn read_source_evidence(
     root: &SourceRoot,
     selectors: &[SourceReadSelector],
     extra_ignore: &[String],
+    cancelled: &dyn Fn() -> bool,
 ) -> SourceEvidence {
     let ignore: HashSet<String> = ignored_names(extra_ignore);
     let environment = ReadEnvironment::new(root, extra_ignore, &ignore);
     let mut evidence = SourceEvidence::default();
     for (index, selector) in selectors.iter().enumerate() {
+        if cancelled() {
+            break;
+        }
         let budget = CallBudget {
             remaining_bytes: AGGREGATE_TEXT_BYTES.saturating_sub(evidence.total_returned_bytes),
             reads_left: selectors
