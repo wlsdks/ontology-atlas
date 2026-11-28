@@ -6,6 +6,8 @@ const route = vi.hoisted(() => ({ pathname: "/topology" }));
 vi.mock("@/i18n/navigation", () => ({
   usePathname: () => route.pathname,
 }));
+// No router mounts around the sheet here, and no tab is named in the address.
+vi.mock("@/shared/lib/navigation/use-committed-address", () => ({ useCommittedSearch: () => ({}) }));
 import enMessages from "../../../../messages/en.json";
 import { ShortcutSheet } from "./ShortcutSheet";
 
