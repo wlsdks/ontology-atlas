@@ -5,7 +5,7 @@ use std::cell::{OnceCell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use confined_files::{sha256_hex, SourceRoot};
+use confined_files::{sha256_hex, FileStamp, PlainParts, SourceRoot};
 
 use crate::file_outline::{outline_file, FileOutline, OutlineDeclaration};
 use crate::import_bindings::{read_imports, Imports};
@@ -20,6 +20,8 @@ pub struct OpenedFile {
     pub path: String,
     pub bytes: usize,
     pub sha256: String,
+    /// The stamp of the file these bytes were read from.
+    pub stamp: FileStamp,
     pub lines: Vec<String>,
     pub outline: FileOutline,
     imports: OnceCell<Imports>,
@@ -47,9 +49,11 @@ pub fn open_source_file(
         return Err(reason);
     }
     let parts: Vec<&str> = path.split('/').collect();
-    let bytes = root
-        .read_repository_file(&parts, MAX_FILE_BYTES)
+    let plain = PlainParts::new(&parts).map_err(RefusalReason::from)?;
+    let file = root
+        .read_repository_file(&plain, MAX_FILE_BYTES)
         .map_err(RefusalReason::from)?;
+    let bytes = file.bytes;
     if bytes.contains(&0) {
         return Err(RefusalReason::BinarySource);
     }
@@ -58,6 +62,7 @@ pub fn open_source_file(
         path: path.to_string(),
         bytes: bytes.len(),
         sha256: sha256_hex(&bytes),
+        stamp: file.stamp,
         lines: complete_lines(text),
         outline: outline_file(text, path),
         imports: OnceCell::new(),

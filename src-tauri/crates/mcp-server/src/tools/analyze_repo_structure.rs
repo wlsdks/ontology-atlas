@@ -86,7 +86,9 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
                 ToolError::failed(refusal.message)
             }
         })?;
-        let read = read_source_evidence(target.source_root(), &selectors, &ignore);
+        let read = read_source_evidence(target.source_root(), &selectors, &ignore, &|| {
+            context.was_cancelled()
+        });
         let evidence = fit_source_reads(&target.label, read);
         context
             .source_reads()

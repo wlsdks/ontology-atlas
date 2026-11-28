@@ -1,6 +1,6 @@
 //! Why a selector was refused or its row not returned: one word each, as an agent reads it.
 
-use confined_files::RepositoryFileRefusal;
+use confined_files::{PlainPartsRefusal, RepositoryFileRefusal};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RefusalReason {
@@ -9,6 +9,8 @@ pub enum RefusalReason {
     AmbiguousSeparator,
     AmbiguousCitationDelimiter,
     PathTraversal,
+    /// A part no Windows file can have (a device name such as `CON`): refused on every system.
+    NotAFileName,
     SensitivePath,
     IgnoredPath,
     UnsupportedSourceType,
@@ -36,6 +38,7 @@ impl RefusalReason {
             Self::AmbiguousSeparator => "ambiguous_separator",
             Self::AmbiguousCitationDelimiter => "ambiguous_citation_delimiter",
             Self::PathTraversal => "path_traversal",
+            Self::NotAFileName => "not_a_file_name",
             Self::SensitivePath => "sensitive_path",
             Self::IgnoredPath => "ignored_path",
             Self::UnsupportedSourceType => "unsupported_source_type",
@@ -63,9 +66,20 @@ impl From<RepositoryFileRefusal> for RefusalReason {
             RepositoryFileRefusal::NotFound => Self::NotFound,
             RepositoryFileRefusal::ThroughLink => Self::SymlinkPath,
             RepositoryFileRefusal::NotRegular => Self::NonRegularFile,
+            RepositoryFileRefusal::HiddenOrCredential => Self::SensitivePath,
             RepositoryFileRefusal::TooLarge => Self::FileTooLarge,
             RepositoryFileRefusal::Changed => Self::FileChanged,
             RepositoryFileRefusal::Unreadable => Self::UnsafeRead,
+        }
+    }
+}
+
+impl From<PlainPartsRefusal> for RefusalReason {
+    fn from(refusal: PlainPartsRefusal) -> Self {
+        match refusal {
+            PlainPartsRefusal::Empty | PlainPartsRefusal::NotAName { .. } => Self::PathTraversal,
+            PlainPartsRefusal::Separator { .. } => Self::AmbiguousSeparator,
+            PlainPartsRefusal::NotAFileName { .. } => Self::NotAFileName,
         }
     }
 }

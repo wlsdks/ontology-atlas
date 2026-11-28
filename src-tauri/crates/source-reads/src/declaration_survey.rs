@@ -10,15 +10,11 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
 use crate::import_bindings::{language_of, segment_suffixes, stems_of, Imports, Spec};
+use crate::posix_path::dirname;
 use crate::product_index::{DeclarationRow, ProductIndex};
 
 /// A spec answering to more files than this names no one module (`utils`).
 const MODULE_FILES: usize = 8;
-
-fn folder_of(path: &str) -> &str {
-    path.rfind('/')
-        .map_or("", |slash| path.get(..slash).unwrap_or(""))
-}
 
 fn push_unique(map: &mut HashMap<String, Vec<String>>, key: String, value: &str) {
     let list = map.entry(key).or_default();
@@ -79,7 +75,7 @@ impl DeclarationSurvey {
         let mut suffixes = HashMap::new();
         let mut folders = HashMap::new();
         for path in paths {
-            push_unique(&mut folders, folder_of(path).to_string(), path);
+            push_unique(&mut folders, dirname(path), path);
             for stem in stems_of(path) {
                 push_unique(&mut stems, stem.clone(), path);
                 for suffix in segment_suffixes(&stem) {
@@ -151,7 +147,7 @@ impl DeclarationSurvey {
     /// Every file in one folder (a Go package).
     pub fn folder(&self, path: &str) -> Vec<String> {
         self.folders
-            .get(folder_of(path))
+            .get(&dirname(path))
             .cloned()
             .unwrap_or_default()
     }

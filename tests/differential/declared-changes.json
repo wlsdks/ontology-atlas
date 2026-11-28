@@ -12776,6 +12776,30 @@
       "path": "result.structuredContent",
       "change": 46,
       "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-source-reads-hostile-files",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text",
+      "change": 50,
+      "reason": "A name that a case-insensitive disk (APFS, NTFS) opens as a credential file is refused as `sensitive_path`: a Kelvin sign is the letter K there, so a name spelled with one opens `private_key.py`. The script server lower-cases ASCII letters only, passes the name and outlines the credential file (row 50)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-source-reads-hostile-files",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text",
+      "change": 51,
+      "reason": "A file named like a Windows device (`con.ts`, `NUL.txt`, `COM1`) is refused as `not_a_file_name` on every system before the disk is asked, because Windows opens such a name as the device, not the file. The script server reads it wherever the name is an ordinary file (row 51)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-source-reads-hostile-files",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text",
+      "change": 52,
+      "reason": "An outline signature is cut to 160 UTF-16 units without cutting through a surrogate pair: the script server keeps the first half of an emoji at the cut, a lone surrogate that its answer shows as U+FFFD, and the Rust server stops before that emoji (row 52). The trim (U+FEFF removed, U+0085 kept) and every other cut are equal."
     }
   ]
 }

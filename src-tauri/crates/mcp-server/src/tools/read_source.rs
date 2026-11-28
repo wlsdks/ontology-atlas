@@ -73,6 +73,10 @@ fn read_refusal(path: &str, refusal: &RawSourceReadRefusal) -> ToolError {
             ErrorCode::ToolError,
             "is not a regular file. Name one document file under `sources/`.".to_string(),
         ),
+        RawSourceReadRefusal::HiddenOrCredential => (
+            ErrorCode::ToolError,
+            "opens a hidden or credential-like file on this disk (a letter that folds to another), which a vault read never opens.".to_string(),
+        ),
         RawSourceReadRefusal::TooLarge { max_bytes } => (
             ErrorCode::ToolError,
             format!(

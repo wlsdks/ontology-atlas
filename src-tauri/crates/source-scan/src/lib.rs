@@ -36,6 +36,7 @@ mod import_scan;
 mod jvm_declarations;
 mod jvm_resolution;
 mod module_grouping;
+mod one_line_per_row;
 mod path_dating;
 mod path_facts;
 mod path_pattern;
@@ -96,7 +97,8 @@ pub use import_scan::{
 };
 pub use source_language::{extension_of, extension_of_file, SourceLanguage};
 pub use source_outline::{
-    outline_parsed, outline_text, Declaration, DeclarationKind, Outline, OUTLINE_DECLARATION_LIMIT,
+    outline_parsed, outline_signature, outline_text, Declaration, DeclarationKind, Outline,
+    OUTLINE_DECLARATION_LIMIT,
 };
 pub use source_scan_error::{ScanErrorCode, SourceScanError};
 pub use source_stamp::{read_git_source_state, GitSourceState};

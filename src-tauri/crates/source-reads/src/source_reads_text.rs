@@ -10,7 +10,7 @@ use crate::read_one::outline_line;
 use crate::refusal_reason::RefusalReason;
 use crate::source_row::{AskedFor, NextRead, OutlineRow, ReadRow, SourceEvidence, SourceRow};
 
-fn t(value: &str) -> String {
+fn short_repo_text(value: &str) -> String {
     repo_text(value, 160)
 }
 
@@ -35,7 +35,7 @@ fn placed(own_path: &str, path: &str, line: usize) -> String {
     if path == own_path {
         format!("L{line}")
     } else {
-        format!("{}:L{line}", t(path))
+        format!("{}:L{line}", short_repo_text(path))
     }
 }
 
@@ -80,7 +80,7 @@ fn read_call(selectors: &[String]) -> String {
 fn outline_lines(row: &OutlineRow) -> Vec<String> {
     let mut lines = vec![format!(
         "== outline {} ({}, {} lines, {} declarations)",
-        t(&row.path),
+        short_repo_text(&row.path),
         repo_text(row.language, 40),
         row.file_lines,
         row.declarations.len()
@@ -111,7 +111,7 @@ fn context_lines(row: &ReadRow) -> Vec<String> {
             "-- {} {} {}{via}{by_name}",
             part.role.word(),
             repo_text(&part.symbol, 120),
-            t(&part.cite)
+            short_repo_text(&part.cite)
         ));
         lines.push(fenced(&part.text));
         if let Some(next) = &part.next {
@@ -141,12 +141,12 @@ fn read_lines(row: &ReadRow) -> Vec<String> {
     let mut lines = vec![
         format!(
             "== read {}{symbol} {range} of {} lines",
-            t(&row.path),
+            short_repo_text(&row.path),
             row.file_lines
         ),
         format!(
             "cite {} pinned {}",
-            t(&cite),
+            short_repo_text(&cite),
             repo_text(&row.citation, 1400)
         ),
         fenced(&row.text),
@@ -198,7 +198,7 @@ fn read_lines(row: &ReadRow) -> Vec<String> {
                     "{} {} {}:L{}",
                     part.role.word(),
                     repo_text(&part.symbol, 120),
-                    t(&part.path),
+                    short_repo_text(&part.path),
                     part.line
                 )
             })
@@ -227,8 +227,8 @@ fn refused_lines(asked: &AskedFor, reason: RefusalReason, status: &str) -> Vec<S
     let outline = if asked.outline { " outline" } else { "" };
     vec![format!(
         "== {status} {}{symbol}{outline}: {}",
-        t(&asked.path),
-        t(reason.word())
+        short_repo_text(&asked.path),
+        short_repo_text(reason.word())
     )]
 }
 

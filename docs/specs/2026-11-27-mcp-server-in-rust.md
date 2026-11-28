@@ -283,6 +283,9 @@ merge.
 | 47 | a Python task decorator (`@task`, `@shared_task`, `@periodic_task`) below the first line of a file, in the ability rows of `analyze_repo_structure` | not a worker: the decorator pattern is anchored at the start of the file and the file is asked as one string, so only a decorator on the first line is seen | a `worker` row named for the decorated function | a Celery task is background work; the pattern was written to be asked line by line, and a whole-file test made it miss almost every task. Subcommands, flags, settings, workers and the Java and Kotlin rows are ported and equal. Test: the survey case `analyze-repo-structure-celery-task`. |
 | 48 | the folder names every scan of a repository skips (`infer_imports`, `inspect_architecture`, `analyze_repo_structure`) | two lists: the import scan skipped ten names, the survey and the exact reads sixteen | one list of sixteen in `source_scan::DEFAULT_IGNORE`: the ten plus `.idea`, `.vscode`, `__pycache__`, `.pytest_cache`, `.venv` and `venv` | the six added names hold an editor's settings, Python caches and a virtual environment, thousands of third-party files that would pass for the product's own modules and external imports in an import scan; no repository keeps its own code there, and one list cannot drift between the two readers. The vault Markdown walk keeps its own list because it reads documents, not code. The survey's listing of documentation pages under `docs`, `doc` and `documentation` is a second walk with its own rule, as in the script server: it skips hidden names, the caller's `ignore` and the page folders `blog`, `changelog`, `release-notes`, `news`, `node_modules` and any name that starts with `_`, and neither the sixteen names nor Git's ignored set, because a page is listed for the Markdown or reStructuredText a person put in a documentation folder, not for code to be scanned. Test: the imports case `infer-imports-ignored-environments`. |
 | 49 | a method whose body is on the line that declares it (`open(): void {}`, `public String label() { return x; }`), in the outline and the symbol read of `analyze_repo_structure` `sourceReads` | neither listed nor found by name: the script server's line patterns need the opening brace to end the line; the declaration itself is counted as a call of that name, so the class around it is named as a caller | listed in the outline, found by its name, and not counted as a call of itself | every other outline, symbol read, callee, caller, constant and refusal of the survey cases is equal; the syntax tree is the one source of declarations for the outline and for the index of declared names. Tests: the survey cases `analyze-repo-structure-source-reads-code-around` (step 17) and `analyze-repo-structure-source-reads-hostile-files` (step 2). |
+| 50 | a name that a case-insensitive disk opens as a credential or hidden file: `src/private_Key.py` (a Kelvin sign) opens `private_key.py` and `src/ſecret.py` (a long s) opens `secret.py` on APFS and NTFS, in the exact source reads of `analyze_repo_structure` (and the vault's `read_source` for a name below `sources/`) | the script server's credential test lowercases ASCII letters only, so these names pass it and, on a disk that folds them, the read serves the credential file's lines | refused as `sensitive_path`: the name test folds a name as the disk does (composed, then lower-cased) and the read asks the same test again of the path as the disk spells the opened file, which also catches a fold the name test does not know (the long s) | security: a stranger's repository can plant a lookalike name and an agent that is told only a safe-looking path would be handed a private key; the refusal costs nothing, because no repository documents itself under such a name. The script server answers the lines on a disk that folds and `not_found` on one that does not; Rust answers `sensitive_path` for the Kelvin sign on both, and for the long s whenever the disk folds it. Test: the survey case `analyze-repo-structure-source-reads-hostile-files` (the last step). |
+| 51 | a file whose name is a Windows device name (`con.ts`, `NUL.txt`, `COM1`, `lpt2.rs`, in any letter case, with any extension), in the exact source reads of `analyze_repo_structure` | read as any file on a system where the name is an ordinary file | refused as `not_a_file_name` before the disk is asked, on every system | Windows opens `CON`, `NUL` and `COM1` as devices whatever the extension (Microsoft, "Naming Files, Paths, and Namespaces"), so a repository that plants such a name could hang or read a port; the vault's `read_source` already refuses the same names on every system, and an answer must not depend on where the repository lies. No repository documents itself under such a name. Test: the survey case `analyze-repo-structure-source-reads-hostile-files` (the last step). |
+| 52 | an outline signature of 160 UTF-16 units that ends inside a surrogate pair (an emoji at the cut), in the `analyze_repo_structure` outline | the pair is cut in half and the answer carries one lone surrogate, which the text answer shows as U+FFFD | the signature ends before the emoji that does not fit, so it is 159 units | half of a surrogate pair is not text (row 3 refuses it in arguments for the same reason); the signature is trimmed and cut as the script server does otherwise: JavaScript white space including U+FEFF, and 160 units. Test: the survey case `analyze-repo-structure-source-reads-hostile-files` (the last step). |
 | 64 | `validate_vault`, two files whose names fold to one slug (a name composed and decomposed, which a Linux file system keeps apart and macOS does not) | the second file is read in place of the first and its node is lost without a word | one `duplicate-file-name` error on the shared slug, and one row for it | a lost node is the worst silent loss a vault can have; naming the collision lets the person rename one file. Test: the unit test in `slug_collision.rs`; a corpus case cannot be built because the file system of the machine that makes the corpus (macOS) keeps one spelling of the name. |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
@@ -717,6 +720,15 @@ window-in-units rules and the shapes the patterns cannot see (a nested generic, 
 split across lines by a comment); it changes rows only where the patterns were wrong, so each such
 case is declared with its corpus case.
 
+Left to a later slice by the review of the source reads: `source-reads` reads a file's imports from
+its lines (`import_bindings.rs`, by patterns over statements of at most 40 lines and 2,000
+characters each) although `source-scan` already reads imports from the syntax tree for
+`infer_imports`. Folding the line reader onto the tree removes the caps and the patterns. The case
+that shows the difference is a file whose `import {` list runs over 45 lines, one name to a line,
+before `} from './x'`: the line reader stops at the 40th line, binds only the names it saw and marks
+the file's bindings incomplete, so a call of a name past the 40th line is not followed to `./x`,
+and the tree reads all 45. Each row that changes is declared with its corpus case.
+
 Slice 10 may start after slice 4 under named fields if the manifest shows that the bytes a write
 puts on disk depend only on built functions.
 
@@ -1000,7 +1012,8 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   (resolved through imports, inheritance and Go packages) and serves the code that decides what it
   does, ranked and held to the same byte budget. Run against every outline and symbol of five
   fixtures and a planted five-language repository, the text equals the script server's except
-  row 49. Row 46 narrows to the analysis view and the review of a proposal or qualification. **Not
+  rows 49 to 52 (a one-line method body, a lookalike name that opens a credential, a Windows device
+  name, a signature cut inside an emoji). Row 46 narrows to the analysis view and the review of a proposal or qualification. **Not
   built:** the `Family:` line that counts a symbol's siblings by type (`type-family`), and the use
   of this session's reads by the proposal review, which waits for slice 9.
 - 2026-11-28 (slice 9c; each item questioned, approaches weighed): **The analysis view, the
@@ -1029,3 +1042,20 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   for each cite, so the bound is on memory and never on the answer. Two files whose names fold to
   one slug are reported (row 64) instead of one hiding the other. A `path:` splits on `\` as on
   `/`, so `src\..\..\x` cannot climb out on Windows.
+- 2026-11-28: review of slice 8b, fixed on `fix/mcp-rust-source-reads-review`. A name that a
+  case-insensitive disk folds into a credential (a Kelvin sign, a long s) is refused: the credential
+  test folds a name as the disk does and both reads ask it again of the path as the disk spells the
+  opened file (row 50). A symbol read takes the declarations the survey already produced instead of
+  parsing every file again, and keeps Ruby and C# declarations and call-site texts between calls by
+  the file's stamp: one symbol read on this repository took 3.1 to 6.5 s before and 0.7 to 1.1 s
+  after, against the script server's 1.9 s cold and 0.55 s warm, so the survey walk that each call
+  repeats is the floor and a warm call is slower than the script server's. The session record
+  hashes the lines that were served and keeps the file's stamp, so it reads a file again only when
+  the stamp moves and never under the lock. The vault's raw source read and the repository read are
+  one confined read over checked parts, which refuses a Windows device name on every system (row
+  51) and compares the name with the opened handle after the read. A signature is trimmed and cut
+  as JavaScript does (row 52). Runtime patterns built from names became substring scans. Two
+  decisions for the reader of this log: the Ruby and C# scanners keep reading the `fun` keyword the
+  script server's scanner reads, and `JS` white space is defined twice (`repository-survey` and
+  `source-scan`), since `source-scan` cannot depend on the crate that depends on it; one definition
+  in `answer-format` ends that.

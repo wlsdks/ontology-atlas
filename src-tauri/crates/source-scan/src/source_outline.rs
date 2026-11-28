@@ -10,12 +10,13 @@
 use tree_sitter::Node;
 
 use crate::bounded_parse::{parse_bounded, ParseLimits, ParseRefusal, ParsedSource};
+use crate::one_line_per_row::one_line_per_row;
 use crate::source_language::SourceLanguage;
 
 /// Declarations one outline lists at most; a longer file reports `truncated`.
 pub const OUTLINE_DECLARATION_LIMIT: usize = 400;
-/// A signature is the declaration's own line, cut to this many characters.
-const SIGNATURE_CHARS: usize = 160;
+/// A signature is the declaration's own line, cut to this many UTF-16 units.
+const SIGNATURE_UNITS: usize = 160;
 const OUTLINE_PARSE_LIMITS: ParseLimits = ParseLimits {
     max_bytes: 2 * 1024 * 1024,
     max_nodes: 400_000,
@@ -77,9 +78,15 @@ enum Place {
 }
 
 /// Parses `text` and lists its declarations; refused when the file cannot be parsed in budget.
+/// The text is read one row per line a read quotes (see [`one_line_per_row`]), so the line of a
+/// declaration is the line a cite names, and a line too wide to scan is blanked and reported as
+/// `truncated`.
 pub fn outline_text(language: SourceLanguage, text: &str) -> Result<Outline, ParseRefusal> {
-    let parsed = parse_bounded(language, text, OUTLINE_PARSE_LIMITS)?;
-    Ok(outline_parsed(&parsed))
+    let (rows, blanked) = one_line_per_row(text);
+    let parsed = parse_bounded(language, &rows, OUTLINE_PARSE_LIMITS)?;
+    let mut outline = outline_parsed(&parsed);
+    outline.truncated |= blanked;
+    Ok(outline)
 }
 
 pub fn outline_parsed(parsed: &ParsedSource<'_>) -> Outline {
@@ -107,7 +114,7 @@ pub fn outline_parsed(parsed: &ParsedSource<'_>) -> Outline {
                 line: line + 1,
                 kind,
                 name,
-                signature: signature_of(lines.get(line).copied().unwrap_or("")),
+                signature: outline_signature(lines.get(line).copied().unwrap_or("")),
             });
         }
         // Reversed, so the first child is read first and declarations come out in file order.
@@ -123,8 +130,27 @@ fn finish(mut outline: Outline) -> Outline {
     outline
 }
 
-fn signature_of(line: &str) -> String {
-    line.trim().chars().take(SIGNATURE_CHARS).collect()
+/// Whether ECMAScript's `trim` removes `character`: its white space and line terminators, which
+/// include the byte-order mark (U+FEFF) and leave out the next-line control (U+0085) that Rust's
+/// `trim` removes.
+fn is_js_space(character: char) -> bool {
+    matches!(
+        character,
+        '\t' | '\n' | '\u{B}' | '\u{C}' | '\r' | ' ' | '\u{A0}' | '\u{1680}' | '\u{2000}'
+            ..='\u{200A}'
+                | '\u{2028}'
+                | '\u{2029}'
+                | '\u{202F}'
+                | '\u{205F}'
+                | '\u{3000}'
+                | '\u{FEFF}'
+    )
+}
+
+/// The signature of a declaration: its own line as JavaScript's `trim()` leaves it, cut to at most
+/// [`SIGNATURE_UNITS`] UTF-16 units and not through a surrogate pair.
+pub fn outline_signature(line: &str) -> String {
+    answer_format::utf16::prefix(line.trim_matches(is_js_space), SIGNATURE_UNITS).to_string()
 }
 
 fn children<'tree>(node: Node<'tree>) -> Vec<Node<'tree>> {
@@ -772,7 +798,8 @@ const LIMIT: u32 = 3;
     #[test]
     fn classes_nested_ten_thousand_deep_are_listed_without_overflowing_the_stack() {
         let depth = 10_000;
-        let source = format!("{}{}", "class A { ".repeat(depth), "}".repeat(depth));
+        // One class to a line: a line over the outline's line width is blanked, not parsed.
+        let source = format!("{}{}", "class A {\n".repeat(depth), "}\n".repeat(depth));
         let outline = outline_text(SourceLanguage::JavaScript, &source);
         match outline {
             Ok(outline) => assert!(!outline.declarations.is_empty()),
@@ -781,6 +808,39 @@ const LIMIT: u32 = 3;
                 ParseRefusal::TooManyNodes | ParseRefusal::TookTooLong
             )),
         }
+    }
+
+    #[test]
+    fn a_signature_is_trimmed_as_javascript_trims_and_cut_to_160_units_between_characters() {
+        // U+FEFF is white space to JavaScript's `trim` and not to Rust's; U+0085 is the reverse.
+        assert_eq!(
+            outline_signature("\u{feff} \u{a0}export function a() {}\u{feff}"),
+            "export function a() {}"
+        );
+        assert_eq!(outline_signature("\u{85}x\u{85}"), "\u{85}x\u{85}");
+        // 159 ASCII units and one emoji: the emoji is two units, so only 159 fit.
+        let line = format!("{}{}", "a".repeat(159), "\u{1f600}");
+        assert_eq!(outline_signature(&line), "a".repeat(159));
+        assert_eq!(
+            outline_signature(&format!("{}b", "a".repeat(200))).len(),
+            160
+        );
+    }
+
+    #[test]
+    fn a_line_too_wide_to_scan_is_blanked_and_the_outline_says_it_stopped_early() {
+        let wide = "x".repeat(2000);
+        let source = format!("function a() {{}}\nconst wide = '{wide}';\nfunction b() {{}}\n");
+        let outline = outline_text(SourceLanguage::JavaScript, &source).expect("parsed");
+        assert!(outline.truncated);
+        assert_eq!(
+            outline
+                .declarations
+                .iter()
+                .map(|declaration| declaration.line)
+                .collect::<Vec<_>>(),
+            [1, 3]
+        );
     }
 
     #[test]

@@ -24,10 +24,13 @@ use crate::deciding_lines::{
 };
 use crate::declaration_span::{declaration_end, enclosing_class, Ends};
 use crate::file_outline::{OutlineDeclaration, OutlineKind};
+use crate::name_scans::returns_named;
 use crate::opened_file::OpenedFile;
 use crate::read_environment::ReadEnvironment;
 use crate::source_lines::indent_at;
-use crate::source_row::{Callee, CallerSite, ContextPart, ContextRole, NextRead, OmittedPart};
+use crate::source_row::{
+    Callee, CallerSite, ContextPart, ContextRole, NextRead, OmittedPart, ServedVersion,
+};
 
 /// 6 KiB holds the three to five deciding parts measured on the trial repositories (a guard window
 /// is about 0.5 KiB, a constructor or options builder 0.5 to 2 KiB) beside an 8 KiB body, so a full
@@ -74,6 +77,7 @@ struct Candidate {
     score: i64,
     via: Option<String>,
     by_name: bool,
+    served: ServedVersion,
 }
 
 #[derive(Default)]
@@ -284,10 +288,11 @@ impl Builder<'_> {
             start_line,
             end_line: cut,
             more: (cut < end_line).then_some(end_line),
-            text,
             score,
             via: options.via,
             by_name: options.by_name,
+            served: ServedVersion::of(&text, file),
+            text,
         });
         Some(self.candidates.len() - 1)
     }
@@ -447,8 +452,6 @@ pub fn symbol_context(
         }
     }
     if let Some(owner) = &owner {
-        let escaped = regex::escape(&owner.name);
-        let returns_owner = js_regex(&format!(r"\)\s*\(?\*?{escaped}\b"));
         let owner_end = owner
             .declaration
             .as_ref()
@@ -466,7 +469,7 @@ pub fn symbol_context(
                                     && owner_end.is_some_and(|end| candidate.line <= end)
                             }))
                         || (candidate.kind == OutlineKind::Function
-                            && returns_owner.is_match(&candidate.signature)))
+                            && returns_named(&candidate.signature, &owner.name)))
             })
             .collect();
         for constructor in constructors {
@@ -857,6 +860,7 @@ pub fn symbol_context(
             text: candidate.text.clone(),
             via: candidate.via.clone(),
             by_name: candidate.by_name,
+            served: candidate.served.clone(),
             next: candidate.more.map(|more| NextRead {
                 path: candidate.path.clone(),
                 start_line: candidate.end_line + 1,
@@ -897,6 +901,7 @@ pub fn symbol_context(
             start_line: row.line,
             end_line: row.line,
             cite: format!("{}:L{}-L{}", row.file.path, row.line, row.line),
+            served: ServedVersion::of(&text, &row.file),
             text,
             via: None,
             by_name: false,

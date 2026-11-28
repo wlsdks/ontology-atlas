@@ -8,6 +8,7 @@
 //! [`ScanRoots::allow`]. A function that takes one needs no check of its own.
 
 mod atomic_write;
+mod confined_file_read;
 // Public only because `mcp-server` imports `confined_files::confined_root::...` by this path;
 // the same names are re-exported at the root below, and the module closes once it moves there.
 pub mod confined_root;
@@ -15,6 +16,7 @@ mod markdown_walk;
 mod modified_time;
 mod os_error;
 mod plain_file;
+mod plain_parts;
 mod private_names;
 mod raw_source_read;
 mod real_paths;
@@ -38,12 +40,13 @@ pub use confined_root::{ensure_vault_root, resolve_path, VaultRootError};
 pub use markdown_walk::utf16_order;
 pub use modified_time::ModifiedTime;
 pub use os_error::{IoFailure, OsErrorCode};
+pub use plain_parts::{PlainParts, PlainPartsRefusal};
 pub use private_names::{is_credential_name, is_hidden_name, names_hidden_or_credential_file};
 pub use raw_source_read::{
     RawSourcePath, RawSourcePathRefusal, RawSourceReadRefusal, RAW_SOURCE_PATH_MAX_BYTES,
 };
 pub use real_paths::{is_within_folding_case, real_path};
-pub use repository_file_read::RepositoryFileRefusal;
+pub use repository_file_read::{RepositoryFile, RepositoryFileRefusal};
 pub use scan_root::{ScanRootRefused, ScanRoots, SourceRoot};
 pub use slug_rules::{
     is_vault_source_path, raw_source_file_for_slug, unwritable_slug_reason, UnwritableReason,

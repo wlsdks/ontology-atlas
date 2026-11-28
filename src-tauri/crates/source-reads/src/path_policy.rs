@@ -7,6 +7,7 @@ use std::collections::HashSet;
 use confined_files::is_credential_name;
 use source_scan::DEFAULT_IGNORE;
 
+use crate::posix_path::extname;
 use crate::refusal_reason::RefusalReason;
 
 const SOURCE_EXTENSIONS: [&str; 31] = [
@@ -73,16 +74,6 @@ fn is_absolute(path: &str) -> bool {
     drive || path.starts_with("\\\\") || path.starts_with('/')
 }
 
-/// The extension of the last part with its dot, lower-cased; none for a part that is only a
-/// leading dot name.
-fn extension_of(path: &str) -> String {
-    let name = path.rsplit('/').next().unwrap_or(path);
-    match name.rfind('.') {
-        Some(dot) if dot > 0 => name.get(dot..).unwrap_or("").to_ascii_lowercase(),
-        _ => String::new(),
-    }
-}
-
 /// Why `path` may not be read, or `None` when its text is acceptable.
 pub fn path_refusal(path: &str, ignore: &HashSet<String>) -> Option<RefusalReason> {
     if is_absolute(path) {
@@ -117,7 +108,9 @@ pub fn path_refusal(path: &str, ignore: &HashSet<String>) -> Option<RefusalReaso
         return Some(RefusalReason::SensitivePath);
     }
     let name = parts.last().copied().unwrap_or("");
-    if !SOURCE_EXTENSIONS.contains(&extension_of(path).as_str()) && !MANIFESTS.contains(&name) {
+    if !SOURCE_EXTENSIONS.contains(&extname(path).to_ascii_lowercase().as_str())
+        && !MANIFESTS.contains(&name)
+    {
         return Some(RefusalReason::UnsupportedSourceType);
     }
     None

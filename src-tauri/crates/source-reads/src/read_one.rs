@@ -10,7 +10,7 @@ use crate::opened_file::OpenedFile;
 use crate::read_environment::ReadEnvironment;
 use crate::refusal_reason::RefusalReason;
 use crate::selector::{ReadTarget, SourceReadSelector, MAX_LINES};
-use crate::source_row::{AskedFor, NextRead, OutlineRow, ReadRow, SourceRow};
+use crate::source_row::{AskedFor, NextRead, OutlineRow, ReadRow, ServedVersion, SourceRow};
 use crate::symbol_context::{symbol_context, CONTEXT_BYTES};
 
 pub const RANGE_BYTES: usize = 8 * 1024;
@@ -197,6 +197,7 @@ pub fn read_one(
         requested_max_lines: max_lines,
         start_line,
         end_line,
+        served: ServedVersion::of(&text, &file),
         text,
         cite,
         returned_bytes: returned_bytes + context_bytes,
