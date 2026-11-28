@@ -54,7 +54,7 @@ import { useMapViewSync } from "../model/route-state/use-map-view-sync";
 import { useHomeWorkbenchController } from "../model/use-home-workbench-controller";
 import { useNodeDatasheetModel } from "../model/inspector/use-node-datasheet-model";
 import { useTopologyGraphProjection } from "../model/map-canvas/use-topology-graph-projection";
-import { isDeeplinkRouteState } from "../model/route-state/url-state";
+import { isDeeplinkRouteState, type HomeSearch } from "../model/route-state/url-state";
 
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { refreshIndexDependentTokens } from "@/widgets/ontology-map";
@@ -70,9 +70,9 @@ const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
  * Boot render gate: the first client commit renders the server fallback's `MapEntryLoadingVisual`
  * and the body follows in a `startTransition`, splitting the largest boot long task. A client mount
  * with no loader on screen holds it back for `--motion-base`, so a shorter boot shows none. SSG
- * goes straight to the body, which suspends on `useSearchParams`, keeping the export identical.
+ * goes straight to the body.
  */
-export function HomePage() {
+export function HomePage({ search }: { search: HomeSearch }) {
   const tMapEntry = useTranslations('mapEntry');
   const tMapError = useTranslations('topology.widgetError');
   const [mapEntryTicket] = useState(() => readMapNavigationPending()?.id ?? null);
@@ -109,10 +109,10 @@ export function HomePage() {
     fallback={({ error, reset }) => (
       <WidgetErrorFallback error={error} onReset={reset} title={tMapError('mapTitle')} body={tMapError('body')} retryLabel={tMapError('retry')} className="h-full w-full" />
     )}
-  ><HomePageImpl mapEntryTicket={mapEntryTicket} /></ErrorBoundary>;
+  ><HomePageImpl mapEntryTicket={mapEntryTicket} search={search} /></ErrorBoundary>;
 }
 
-function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
+function HomePageImpl({ mapEntryTicket, search }: { mapEntryTicket: number | null; search: HomeSearch }) {
   const topologyPreferences = useTopologyPreferences();
   const { t, siteT, relationLabelInRegister, activeLocale, view3d, neural } = topologyPreferences;
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
@@ -137,7 +137,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const projects = projectsQuery.projects;
   const projectsError = projectsQuery.error;
   const heldProjectsError = useHeldValue(projectsError);
-  const [routeState, setRouteState] = useHomeRouteState();
+  const [routeState, setRouteState] = useHomeRouteState(search);
   useMapViewSync(routeState.mapView, setRouteState);
   const homeWorkbenchController = useHomeWorkbenchController();
   const { setAcpChatOpen, acpDockFrameOpen, meaningWorkbenchOpen, reviewUsesSheet } = homeWorkbenchController;
@@ -197,7 +197,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
    */
   const toast = useToast();
 
-  const prefetchedProjectHrefsRef = useRef(new Set<string>());
   const preloadedImageUrlsRef = useRef(new Set<string>());
   const {
     activeCategory,
@@ -477,7 +476,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     topologyAuthoring, topologyCanvasFocus
   });
   const { drawerOpen } = topologySceneControls;
-  useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, preloadedImageUrlsRef, selectedSlug, topologyGraphProjection });
+  useTopologyAssetPreload({ preloadedImageUrlsRef, selectedSlug, topologyGraphProjection });
   const topologyAnalysisReview = useTopologyAnalysisReview({
     router, setExpandAllActive, setRouteState, topologyVaultReadModel, homeWorkbenchController,
     topologyAuthoring, topologyPreferences, topologyCanvasFocus, topologyNavigationActions,

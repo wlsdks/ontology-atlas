@@ -37,7 +37,7 @@ export default async function Page({
   const { locale } = await params;
   return (
     <Suspense fallback={<GatewayEntryFallback locale={locale} />}>
-      <RootEntryPage />
+      <RootEntryPage search={{}} />
     </Suspense>
   );
 }

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { replaceDocsVaultUrlState, settleDocsVaultAddress } from './url-state';
 
 // jsdom allows only same-origin replaceState.
@@ -37,14 +37,6 @@ describe('replaceDocsVaultUrlState', () => {
     expect(params.get('view')).toBeNull();
   });
 
-  it('app:urlchange event dispatch', () => {
-    const listener = vi.fn();
-    window.addEventListener('app:urlchange', listener);
-    replaceDocsVaultUrlState({ slug: 'bar' });
-    expect(listener).toHaveBeenCalledTimes(1);
-    window.removeEventListener('app:urlchange', listener);
-  });
-
   it("keeps the existing slug when the slug key is absent", () => {
     window.history.replaceState({}, '', `${ORIGINAL_HREF}?slug=foo`);
     replaceDocsVaultUrlState({ view: 'doc' });
@@ -80,13 +72,9 @@ describe('settleDocsVaultAddress', () => {
   it('names the settled document in the address and keeps the entry the router owns', () => {
     const routerEntry = { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: ['docs'] } };
     window.history.replaceState(routerEntry, '', `${ORIGINAL_HREF}?tab=ontology`);
-    const listener = vi.fn();
-    window.addEventListener('app:urlchange', listener);
     settleDocsVaultAddress('/docs/', 'README');
-    window.removeEventListener('app:urlchange', listener);
     expect(currentSearch()).toBe('?tab=ontology&slug=README');
     expect(window.history.state).toEqual(routerEntry);
-    expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it('leaves the address alone once it belongs to another route', () => {

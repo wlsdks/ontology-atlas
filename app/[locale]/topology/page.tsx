@@ -30,7 +30,7 @@ export default async function Page({
   const { locale } = await params;
   return (
     <Suspense fallback={<MapEntryFallback locale={locale} />}>
-      <HomePage />
+      <HomePage search={{}} />
     </Suspense>
   );
 }

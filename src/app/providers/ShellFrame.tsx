@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
+import { useCommittedAddress } from "@/shared/lib/navigation/use-committed-address";
 import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
 import { applyGuideOverride } from "@/shared/lib/preferences/first-run-seen";
 import { RouteFocusManager } from "@/shared/ui/routing/route-focus-manager";
@@ -98,8 +99,6 @@ export function useShellSetup(): void {
  * The write is idempotent, so a StrictMode double render is harmless.
  */
 function useGuideOverride(): void {
-  useState(() => {
-    if (typeof window === "undefined") return null;
-    return applyGuideOverride(window.location.search);
-  });
+  const { searchString } = useCommittedAddress();
+  useState(() => applyGuideOverride(searchString));
 }

@@ -1,4 +1,4 @@
-import { AgentsPage } from '@/views/agents';
+import { AgentsPage, type AgentsSearch } from '@/views/agents';
 import { McpPage } from '@/views/mcp';
 import { useVaultConnectors } from '@/features/mcp-connectors';
 import { useLocalVault } from '@/entities/vault-session';
@@ -13,7 +13,7 @@ import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vau
  * stores defect `.claude/rules/local-first.md` names. `?tab=mcp` is what `/mcp/` and the app's
  * deep link (`ontology-atlas://mcp?install=…`) resolve into.
  */
-export function AgentsWorkspace() {
+export function AgentsWorkspace({ search }: { search: AgentsSearch }) {
   const localVault = useLocalVault();
   // Kept across a rescan, or the connectors are re-read from nothing each time.
   const handle = selectOpenVaultHandle(localVault.status, localVault.handle);
@@ -26,8 +26,8 @@ export function AgentsWorkspace() {
   // No wrapper: `AgentsPage`'s `<main>` must be the shell slot's first child, or a second
   // scroll container hides the slot's scroll from the scroll-end gate.
   return (
-    <AgentsPage mcpCount={mcpCount}>
-      <McpPage connectors={connectors} handle={handle} />
+    <AgentsPage mcpCount={mcpCount} search={search}>
+      <McpPage connectors={connectors} handle={handle} search={search} />
     </AgentsPage>
   );
 }

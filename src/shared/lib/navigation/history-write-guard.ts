@@ -57,6 +57,25 @@ export function setRouterHistory(writer: RouterHistoryWriter | null): void {
   routerHistory = writer;
 }
 
+export interface WrittenAddress {
+  pathname: string;
+  /** With its leading `?`, or empty. */
+  search: string;
+  /** With its leading `#`, or empty. */
+  hash: string;
+}
+
+/**
+ * The address as last written, for an event handler that changes part of it. The router flushes its
+ * history before `guardedHistoryWrite` returns, so the window already holds the latest write; a
+ * screen's render reads its own route match instead, never this.
+ */
+export function currentAddress(): WrittenAddress {
+  if (typeof window === 'undefined') return { pathname: '', search: '', hash: '' };
+  const { pathname, search, hash } = window.location;
+  return { pathname, search, hash };
+}
+
 /**
  * The one door every direct address write goes through. Under a router the write is the router's, so
  * its history keys stay and Back and Forward land where they should.

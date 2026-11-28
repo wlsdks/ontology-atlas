@@ -1,3 +1,5 @@
+import { screenSearch, type ScreenSearch } from '@/shared/lib/navigation/search-text';
+
 /**
  * The `?tab=` query is the source of truth: a refresh, a shared link and the app's deep link
  * (`ontology-atlas://mcp?install=…`, forwarded by `/mcp/`) must all open the same tab.
@@ -10,6 +12,11 @@ export type AgentsTab = (typeof AGENTS_TABS)[number];
 const DEFAULT_AGENTS_TAB: AgentsTab = 'agents';
 
 export const AGENTS_TAB_PARAM = 'tab';
+
+/** Beside the tab, the page reads `returnTo`, and its MCP tab reads `mcp` and `install`. */
+export const agentsSearch = screenSearch([AGENTS_TAB_PARAM, 'returnTo', 'mcp', 'install'] as const);
+
+export type AgentsSearch = ScreenSearch<readonly [typeof AGENTS_TAB_PARAM, 'returnTo', 'mcp', 'install']>;
 
 function isAgentsTab(value: string): value is AgentsTab {
   return (AGENTS_TABS as readonly string[]).includes(value);
@@ -24,7 +31,7 @@ export function parseAgentsTab(raw: string | null | undefined): AgentsTab {
  * The default tab omits `?tab=` so the plain URL is the one a person copies. Leaving MCP drops
  * both `?mcp=` and a consumed `?install=`, or a stale `install` reopens the connectors dialog.
  */
-export function buildAgentsTabHref(tab: AgentsTab, current: URL): string {
+export function buildAgentsTabHref(tab: AgentsTab, current: { pathname: string; search: string }): string {
   const query = new URLSearchParams(current.search);
   if (tab !== 'mcp') {
     query.delete('mcp');

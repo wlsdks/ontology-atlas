@@ -56,13 +56,13 @@ describe('RootEntryPage', () => {
       restoreAttempted: true,
     };
 
-    render(<RootEntryPage />);
+    render(<RootEntryPage search={{}} />);
 
     expect(await screen.findByTestId('topology-hub')).toBeInTheDocument();
   });
 
   it('keeps the neutral frame in the server-rendered root shell', () => {
-    const html = renderToString(<RootEntryPage />);
+    const html = renderToString(<RootEntryPage search={{}} />);
 
     // Until the browser knows whether this is the installed app, only the neutral frame paints.
     expect(html).toContain('Opening local vault picker');
@@ -71,7 +71,7 @@ describe('RootEntryPage', () => {
   it('shows the first-run surface in the desktop shell when no vault is loaded', async () => {
     mocks.isDesktopShell = true;
 
-    render(<RootEntryPage />);
+    render(<RootEntryPage search={{}} />);
 
     expect(await screen.findByTestId('first-run')).toBeInTheDocument();
   });
@@ -80,7 +80,7 @@ describe('RootEntryPage', () => {
     mocks.isDesktopShell = true;
     mocks.vaultState = { handle: null, manifest: null, restoreAttempted: false };
 
-    render(<RootEntryPage />);
+    render(<RootEntryPage search={{}} />);
 
     expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
     expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe('RootEntryPage', () => {
       restoreAttempted: true,
     };
 
-    render(<RootEntryPage />);
+    render(<RootEntryPage search={{}} />);
 
     expect(await screen.findByTestId('topology-hub')).toBeInTheDocument();
   });
@@ -107,7 +107,7 @@ describe('RootEntryPage', () => {
       restoreAttempted: true,
     };
 
-    render(<RootEntryPage />);
+    render(<RootEntryPage search={{}} />);
 
     expect(await screen.findByTestId('first-run')).toBeInTheDocument();
     expect(screen.queryByTestId('topology-hub')).not.toBeInTheDocument();

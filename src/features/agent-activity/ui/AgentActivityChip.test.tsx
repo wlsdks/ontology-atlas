@@ -200,7 +200,7 @@ describe("AgentActivityChip", () => {
     fireEvent.click(screen.getByTestId("agent-activity-status-trigger"));
     expect(screen.getByTestId("agent-activity-target")).toHaveAttribute(
       "href",
-      expect.stringContaining("/topology?mode=focus&p=capabilities%2Fcheckout"),
+      "/ko/topology/?mode=focus&p=capabilities%2Fcheckout",
     );
   });
 

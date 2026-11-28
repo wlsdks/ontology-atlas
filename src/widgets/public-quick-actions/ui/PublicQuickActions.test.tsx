@@ -21,8 +21,8 @@ vi.mock("@/i18n/navigation", () => ({
   usePathname: () => pathname,
 }));
 
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(search),
+vi.mock("@/shared/lib/navigation/use-committed-address", () => ({
+  useCommittedAddress: () => ({ pathname, searchString: search === "" ? "" : `?${search}` }),
 }));
 
 function renderActions(props: { projectSlug?: string | null } = {}) {

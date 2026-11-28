@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "use-intl";
-import { useSearchParams } from 'next/navigation';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
+import { useCommittedSearch } from '@/shared/lib/navigation/use-committed-address';
 import {
   DESTINATION_IDS,
   DESTINATION_KEY,
@@ -260,8 +261,7 @@ const SECTIONS: ShortcutSection[] = [
 export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
   const t = useTranslations("searchWidgets.shortcuts");
   const pathname = usePathname() ?? "/";
-  const searchParams = useSearchParams();
-  const currentSurface = surfaceForPathname(pathname, searchParams?.get('tab') ?? null);
+  const currentSurface = surfaceForPathname(pathname, firstSearchText(useCommittedSearch().tab) ?? null);
   const [scope, setScope] = useState<ShortcutScope>("current");
   const [wasOpen, setWasOpen] = useState(open);
   // Read once as the sheet opens: a section is on the current-screen tab only when its control is

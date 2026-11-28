@@ -11,8 +11,11 @@ import {
  * installed app: the map and the first-run screen, and the whole message catalog they read. A
  * first-time web visitor never fetches any of it, so `/` costs about what `/download` does.
  */
+/** The map's query, handed to it as the router read it; the map owns what each key means. */
+export type MapQuery = Readonly<Record<string, unknown>>;
+
 export interface RootWorkbenchViews {
-  HomePage: ComponentType;
+  HomePage: ComponentType<{ search: MapQuery }>;
   FirstRunPage: ComponentType;
 }
 
@@ -24,7 +27,7 @@ function loadViews(): Promise<RootWorkbenchViews> {
   if (!pending) {
     pending = Promise.all([import('@/views/home'), import('@/views/first-run')]).then(
       ([home, firstRun]) => {
-        views = { HomePage: home.HomePage, FirstRunPage: firstRun.FirstRunPage };
+        views = { HomePage: home.HomePage as RootWorkbenchViews['HomePage'], FirstRunPage: firstRun.FirstRunPage };
         listeners.forEach((listener) => listener());
         return views;
       },

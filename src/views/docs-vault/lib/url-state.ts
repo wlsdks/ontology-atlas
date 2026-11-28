@@ -7,7 +7,7 @@ import {
 } from '@/widgets/docs-vault';
 
 import type { DocsVaultView } from './persistence';
-import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { currentAddress, guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 interface DocsVaultUrlState {
   slug?: string | null;
@@ -17,35 +17,35 @@ interface DocsVaultUrlState {
 }
 
 function docsVaultHref(next: DocsVaultUrlState): string {
-  const url = new URL(window.location.href);
+  const written = currentAddress();
+  const query = new URLSearchParams(written.search);
   if ('slug' in next) {
-    if (next.slug) url.searchParams.set('slug', next.slug);
-    else url.searchParams.delete('slug');
+    if (next.slug) query.set('slug', next.slug);
+    else query.delete('slug');
   }
   if ('view' in next) {
     if (next.view && next.view !== 'doc') {
-      url.searchParams.set('view', next.view);
+      query.set('view', next.view);
     } else {
-      url.searchParams.delete('view');
+      query.delete('view');
     }
   }
   if ('sort' in next && next.sort) {
     const value = serializeDocsTreeSort(next.sort);
-    if (value) url.searchParams.set('sort', value);
-    else url.searchParams.delete('sort');
+    if (value) query.set('sort', value);
+    else query.delete('sort');
   }
   if ('group' in next && next.group) {
     const value = serializeDocsTreeGroup(next.group);
-    if (value) url.searchParams.set('group', value);
-    else url.searchParams.delete('group');
+    if (value) query.set('group', value);
+    else query.delete('group');
   }
-  return url.toString();
+  const search = query.toString();
+  return `${written.pathname}${search === '' ? '' : `?${search}`}${written.hash}`;
 }
 
 export function replaceDocsVaultUrlState(next: DocsVaultUrlState): void {
-  if (typeof window === 'undefined') return;
   guardedHistoryWrite('replace', docsVaultHref(next));
-  window.dispatchEvent(new Event('app:urlchange'));
 }
 
 const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/+$/, '');
@@ -54,5 +54,4 @@ export function settleDocsVaultAddress(routePathname: string, slug: string): voi
   if (typeof window === 'undefined') return;
   if (withoutTrailingSlash(window.location.pathname) !== withoutTrailingSlash(withBasePath(routePathname))) return;
   guardedHistoryWrite('replace', docsVaultHref({ slug }));
-  window.dispatchEvent(new Event('app:urlchange'));
 }

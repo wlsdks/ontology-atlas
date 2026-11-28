@@ -6,7 +6,7 @@ import {
   deriveDeeplinkAncestorExpansion,
   enterRealmRouteState,
   exitRealmRouteState,
-  parseHomeRouteState,
+  parseHomeRouteState as parseHomeSearch,
   resolveRealmNodeId,
   resolveTopologyNodeClickRouteState,
   selectTopologyNodeRouteState,
@@ -19,6 +19,19 @@ import {
   VAULT_SCOPED_HOME_QUERY_KEYS,
   HOME_QUERY_KEYS,
 } from "./url-state";
+import { ONTOLOGY_DEEPLINK_ASK_KEY } from "@/entities/knowledge-graph";
+import { parseSearch } from "@/shared/lib/navigation/atlas-search";
+
+/** The rules read what the router hands a screen, so the tests write queries and pass them through its serializer. */
+function parseHomeRouteState(params: URLSearchParams) {
+  return parseHomeSearch(parseSearch(params.toString()));
+}
+
+describe("the map's query keys", () => {
+  it("keep the ask key the ontology deep links write", () => {
+    expect(HOME_QUERY_KEYS.ask).toBe(ONTOLOGY_DEEPLINK_ASK_KEY);
+  });
+});
 
 describe("parseHomeRouteState", () => {
   it("reads supported home query params", () => {

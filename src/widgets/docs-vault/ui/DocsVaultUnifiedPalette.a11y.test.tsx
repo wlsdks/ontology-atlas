@@ -6,8 +6,7 @@ import koMessages from '../../../../messages/ko.json';
 import { DocsVaultUnifiedPalette } from './DocsVaultUnifiedPalette';
 import type { VaultDoc } from '@/entities/docs-vault';
 
-// next-intl's navigation wrapper cannot resolve next/navigation under vitest, so Link is a plain
-// <a>.
+// The router's Link needs a mounted router, so Link is a plain <a>.
 vi.mock('../lib/use-vault-text-search', () => ({
   useVaultTextSearch: () => ({ bodyIndex: undefined, status: null }),
 }));

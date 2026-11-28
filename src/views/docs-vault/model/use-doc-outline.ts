@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { shouldShowOutlineRail } from '@/widgets/doc-reading-pane';
 import type { VaultDocDetail } from '@/entities/docs-vault';
-import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { currentAddress, guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 type VaultHeading = VaultDocDetail['headings'][number];
 
@@ -43,9 +43,8 @@ export function useDocOutline({
           block: 'start',
         });
       setActiveHeadingSlug(slug);
-      if (typeof window !== 'undefined') {
-        guardedHistoryWrite('replace', `${window.location.pathname}${window.location.search}#${slug}`);
-      }
+      const written = currentAddress();
+      guardedHistoryWrite('replace', `${written.pathname}${written.search}#${slug}`);
     },
     [reducedMotion, setActiveHeadingSlug],
   );

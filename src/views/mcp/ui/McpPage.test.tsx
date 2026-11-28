@@ -7,10 +7,6 @@ import ko from '../../../../messages/ko.json';
 import { McpPage } from './McpPage';
 import type { VaultConnectorsState } from '@/features/mcp-connectors';
 
-vi.mock('next/navigation', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('next/navigation')>()),
-  useSearchParams: () => new URLSearchParams(''),
-}));
 vi.mock('@/widgets/app-settings-menu', () => ({
   AgentSetupSection: () => <div data-testid="agent-setup-section" />,
   SettingsGroupHeading: ({ label, trailing }: { label: string; trailing?: ReactNode }) => (
@@ -50,7 +46,7 @@ function draw(next: Partial<VaultConnectorsState>, handle: FileSystemDirectoryHa
   } as VaultConnectorsState;
   return render(
     <IntlProvider locale="ko" messages={ko}>
-      <McpPage connectors={store} handle={handle} />
+      <McpPage connectors={store} handle={handle} search={{}} />
     </IntlProvider>,
   );
 }

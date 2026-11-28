@@ -1,8 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Suspense } from 'react';
-import { OntologyRedirectPage } from '@/views/ontology-redirect';
-import { RouteLoadingFallback } from '@/shared/ui';
-import { ScreenTitle } from '../../../-site/ScreenTitle';
+import { redirectRetiredAddress } from '../../../-redirects/redirect-retired-address';
 import type { ScreenHead } from '../../../-site/screen-metadata';
 
 const head: ScreenHead = {
@@ -11,13 +8,8 @@ const head: ScreenHead = {
   follow: true,
 };
 
-export const Route = createFileRoute('/$locale/_app/ontology/')({ staticData: { head }, component: OntologyRoute });
-
-function OntologyRoute() {
-  return (
-    <>
-      <ScreenTitle head={head} />
-      <Suspense fallback={<RouteLoadingFallback />}><OntologyRedirectPage /></Suspense>
-    </>
-  );
-}
+export const Route = createFileRoute('/$locale/_app/ontology/')({
+  staticData: { head },
+  beforeLoad: ({ params, search, location }) =>
+    redirectRetiredAddress('ontology', { locale: params.locale, search, hash: location.hash }),
+});

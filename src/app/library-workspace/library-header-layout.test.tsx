@@ -1,7 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams('tab=ontology') }));
 vi.mock('use-intl', () => ({ useTranslations: () => (key: string) => key, useFormatter: () => ({ number: String }) }));
 vi.mock('@/views/docs-vault', () => ({ DocsVaultPage: () => null }));
 vi.mock('@/views/library', () => ({
@@ -33,7 +32,7 @@ describe('library header placement', () => {
     vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (this: HTMLElement) {
       return this.getAttribute('role') === 'tablist' ? 101 : 1000;
     });
-    render(<LibraryWorkspace />);
+    render(<LibraryWorkspace search={{ tab: 'ontology' }} />);
     expect(screen.getByTestId('ontology-selector')).toBeInTheDocument();
     expect(screen.getByRole('tabpanel')).toBeInTheDocument();
   });
@@ -54,7 +53,7 @@ describe('library header placement', () => {
     vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (this: HTMLElement) {
       return this.getAttribute('role') === 'tablist' && overflow ? 101 : 100;
     });
-    render(<LibraryWorkspace />);
+    render(<LibraryWorkspace search={{ tab: 'ontology' }} />);
     expect(screen.getByTestId('ontology-selector').closest('[role="tabpanel"]')).not.toBeNull();
     width = 1200;
     overflow = false;

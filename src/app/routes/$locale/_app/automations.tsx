@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { automationsSearch } from '@/views/automations';
 import { Suspense } from 'react';
 import { AutomationsWorkspace } from '@/app-providers/automations-workspace';
 import { RouteLoadingFallback } from '@/shared/ui';
@@ -12,13 +13,18 @@ const head: ScreenHead = {
   description: { namespace: 'metadata', key: 'descriptions.automations' },
 };
 
-export const Route = createFileRoute('/$locale/_app/automations')({ staticData: { head }, component: AutomationsRoute });
+export const Route = createFileRoute('/$locale/_app/automations')({
+  staticData: { head },
+  validateSearch: automationsSearch,
+  component: AutomationsRoute,
+});
 
 function AutomationsRoute() {
+  const search = Route.useSearch();
   return (
     <>
       <ScreenTitle head={head} />
-      <Suspense fallback={<RouteLoadingFallback />}><AutomationsWorkspace /></Suspense>
+      <Suspense fallback={<RouteLoadingFallback />}><AutomationsWorkspace search={search} /></Suspense>
     </>
   );
 }

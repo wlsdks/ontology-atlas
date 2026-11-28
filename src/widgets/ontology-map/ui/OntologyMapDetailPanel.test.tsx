@@ -18,10 +18,8 @@ function render(ui: React.ReactElement) {
   });
 }
 
-// `@/i18n/navigation`'s Link wraps next-intl's `createNavigation`, which
-// pulls in `next/navigation` — unresolvable under vitest's module graph in
-// this repo (established pattern, see `DocsVaultViewer.test.tsx`). Mocked to
-// a plain anchor so href/click assertions still work.
+// `@/i18n/navigation`'s Link needs a mounted router. Mocked to a plain anchor so href/click
+// assertions still work.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
     <a href={String(href)} {...props}>

@@ -4,7 +4,7 @@ import { setRouterHistory } from '@/shared/lib/navigation/history-write-guard';
 
 import { replayBuildFacts, type BuildFacts } from '../routes/-site/build-facts';
 import { routeTree } from '../route-tree.gen';
-import { parseSearch, stringifySearch } from './atlas-search';
+import { parseSearch, stringifySearch } from '@/shared/lib/navigation/atlas-search';
 
 /**
  * The one router of the app. Addresses keep the shape `/<language>/<screen>/?query#hash`: a trailing

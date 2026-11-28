@@ -1,17 +1,13 @@
 import type { useTopologyGraphProjection } from "./use-topology-graph-projection";
 
-import { buildProjectRuntimeDetailHref } from "@/entities/project";
-import { useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect } from "react";
 
 interface Options {
-  prefetchedProjectHrefsRef: React.RefObject<Set<string>>;
-  router: ReturnType<typeof useRouter>;
   preloadedImageUrlsRef: React.RefObject<Set<string>>;
   selectedSlug: string | null;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "projectBySlug" | "hubs">;
 }
-export function useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, preloadedImageUrlsRef, selectedSlug, topologyGraphProjection }: Options) {
+export function useTopologyAssetPreload({ preloadedImageUrlsRef, selectedSlug, topologyGraphProjection }: Options) {
   const { projectBySlug, hubs } = topologyGraphProjection;
 
 
@@ -19,12 +15,6 @@ export function useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, pre
     (slug: string) => {
       const project = projectBySlug.get(slug);
       if (!project) return;
-
-      const href = buildProjectRuntimeDetailHref(slug);
-      if (!prefetchedProjectHrefsRef.current.has(href)) {
-        prefetchedProjectHrefsRef.current.add(href);
-        router.prefetch(href);
-      }
 
       project.screenshots.slice(0, 2).forEach((url) => {
         if (!url || preloadedImageUrlsRef.current.has(url)) return;
@@ -35,7 +25,7 @@ export function useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, pre
         image.decode?.().catch(() => { });
       });
     },
-    [prefetchedProjectHrefsRef, preloadedImageUrlsRef, projectBySlug, router],
+    [preloadedImageUrlsRef, projectBySlug],
   );
 
   useEffect(() => {

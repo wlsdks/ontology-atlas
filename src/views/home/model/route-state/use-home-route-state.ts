@@ -1,30 +1,23 @@
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
 import {
   applyHomeRouteState,
-  DEFAULT_HOME_ROUTE_STATE,
   parseHomeRouteState,
   type HomeRouteState,
+  type HomeSearch,
 } from './url-state';
-import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
-
-const HOME_URL_CHANGE_EVENT = 'app:urlchange';
-
-function readHomeSearch() {
-  if (typeof window === 'undefined') return '';
-  return window.location.search;
-}
+import { parseSearch } from '@/shared/lib/navigation/atlas-search';
+import { currentAddress, guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 export interface HomeRouteStateUpdateOptions {
   replace?: boolean;
 }
 
 /**
- * Serialises route state to query parameters and back. It subscribes to popstate, the in-app push
- * event and `useSearchParams`, or a Next `<Link>` changes the URL without refreshing state; the
- * value always reads `window.location` fresh.
+ * The map's state as the address holds it. `search` is the map route's own query, so the state a
+ * render sees is always the address of the screen on show; an update writes the next address through
+ * the history door and the router hands the new query back.
  */
-export function useHomeRouteState(): [
+export function useHomeRouteState(search: HomeSearch): [
   HomeRouteState,
   (
     updater:
@@ -33,38 +26,7 @@ export function useHomeRouteState(): [
     options?: HomeRouteStateUpdateOptions,
   ) => void,
 ] {
-  const hydrated = useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false,
-  );
-  // Only a re-render trigger for app-router changes; never feeds routeState.
-  const routerSearchParams = useSearchParams();
-  const search = useSyncExternalStore(
-    (onStoreChange) => {
-      if (typeof window === 'undefined') return () => undefined;
-      window.addEventListener('popstate', onStoreChange);
-      window.addEventListener(HOME_URL_CHANGE_EVENT, onStoreChange);
-      return () => {
-        window.removeEventListener('popstate', onStoreChange);
-        window.removeEventListener(HOME_URL_CHANGE_EVENT, onStoreChange);
-      };
-    },
-    readHomeSearch,
-    () => '',
-  );
-
-  // An explicit string so the react-hooks lint rule sees the dependency.
-  const routerSearchKey = routerSearchParams?.toString() ?? '';
-  const routeState = useMemo(() => {
-    void routerSearchKey;
-    if (!hydrated) return DEFAULT_HOME_ROUTE_STATE;
-    const currentSearch =
-      typeof window !== 'undefined' ? window.location.search : search;
-    return currentSearch.length > 0
-      ? parseHomeRouteState(new URLSearchParams(currentSearch))
-      : DEFAULT_HOME_ROUTE_STATE;
-  }, [hydrated, search, routerSearchKey]);
+  const routeState = useMemo(() => parseHomeRouteState(search), [search]);
 
   const updateRouteState = useCallback(
     (
@@ -73,31 +35,21 @@ export function useHomeRouteState(): [
         | ((current: HomeRouteState) => HomeRouteState),
       options?: HomeRouteStateUpdateOptions,
     ) => {
-      if (typeof window === 'undefined') return;
-      const current = parseHomeRouteState(
-        new URLSearchParams(window.location.search),
-      );
+      // Read fresh: two updates in one event must build on each other, not on the last render.
+      const written = currentAddress();
+      const query = new URLSearchParams(written.search);
+      const current = parseHomeRouteState(parseSearch(written.search));
       const next =
         typeof updater === 'function'
           ? updater(current)
           : { ...current, ...updater };
-      const params = applyHomeRouteState(
-        new URLSearchParams(window.location.search),
-        next,
-      );
-      const query = params.toString();
-      // The actual browser path: next-intl's `usePathname` drops the locale, and reloading that
-      // breaks the static export's [locale] route.
-      const browserPath = window.location.pathname;
-      const nextUrl = query ? `${browserPath}?${query}` : browserPath;
+      const params = applyHomeRouteState(query, next).toString();
+      const nextUrl = params ? `${written.pathname}?${params}` : written.pathname;
       // An identical URL pushes nothing, or Back changes nothing on screen and reads as broken.
-      if (nextUrl === `${window.location.pathname}${window.location.search}`) {
-        return;
-      }
+      if (nextUrl === `${written.pathname}${written.search}`) return;
       // Through the shared budget, or a runaway loop hits WebKit's 100-per-10s limit and throws
       // (`shared/lib/navigation/history-write-guard.ts`).
-      if (!guardedHistoryWrite(options?.replace ? 'replace' : 'push', nextUrl)) return;
-      window.dispatchEvent(new Event(HOME_URL_CHANGE_EVENT));
+      guardedHistoryWrite(options?.replace ? 'replace' : 'push', nextUrl);
     },
     [],
   );

@@ -26,7 +26,7 @@ export async function generateMetadata({
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <LibraryWorkspace />
+      <LibraryWorkspace search={{}} />
     </Suspense>
   );
 }

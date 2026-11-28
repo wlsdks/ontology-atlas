@@ -26,9 +26,9 @@ function setup(initial: Context) {
   let nextRoute: HomeRouteState | null = null;
   const hook = renderHook(({ setId, members, route }: Context) => useTopologyGrayArea({
     docs, nodes: [], selectedSlug: route?.selectedSlug ?? null, memberSlugs: members,
-    vaultPath: '/fixture/vault', locale: 'en', routeState: route ?? { ...parseHomeRouteState(new URLSearchParams()), constellationIntent: setId },
+    vaultPath: '/fixture/vault', locale: 'en', routeState: route ?? { ...parseHomeRouteState({}), constellationIntent: setId },
     setRouteState: updater => {
-      const current = { ...parseHomeRouteState(new URLSearchParams()), constellationIntent: setId };
+      const current = { ...parseHomeRouteState({}), constellationIntent: setId };
       nextRoute = typeof updater === 'function' ? updater(current) : { ...current, ...updater };
     },
     onOpen: () => {}, onPrepare: () => {},
@@ -65,7 +65,7 @@ describe('Gray Area inspection scope lifetime', () => {
 
 it('offers no check until a concept or a concept set is chosen',()=>{
  const hook=renderHook(()=>useTopologyGrayArea({docs,nodes:[],selectedSlug:null,memberSlugs:null,
-   vaultPath:'/fixture/vault',locale:'en',routeState:parseHomeRouteState(new URLSearchParams()),
+   vaultPath:'/fixture/vault',locale:'en',routeState:parseHomeRouteState({}),
    setRouteState:()=>{},onOpen:()=>{},onPrepare:()=>{}}));
  expect(hook.result.current.action).toBeUndefined();
  expect(hook.result.current.inspector).toBeNull();
@@ -73,7 +73,7 @@ it('offers no check until a concept or a concept set is chosen',()=>{
 
 it('prepares an improvement without adding the investigation-only lead or automatically sending',()=>{
  const prepare=vi.fn();
- const hook=renderHook(()=>useTopologyGrayArea({docs,nodes:[],selectedSlug:'capabilities/a',memberSlugs:null,vaultPath:'/fixture/vault',locale:'en',routeState:parseHomeRouteState(new URLSearchParams()),setRouteState:()=>{},onOpen:()=>{},onPrepare:prepare}));
+ const hook=renderHook(()=>useTopologyGrayArea({docs,nodes:[],selectedSlug:'capabilities/a',memberSlugs:null,vaultPath:'/fixture/vault',locale:'en',routeState:parseHomeRouteState({}),setRouteState:()=>{},onOpen:()=>{},onPrepare:prepare}));
  act(()=>hook.result.current.action?.onOpen());
  const inspector=hook.result.current.inspector as ReactElement<{onPrepareImprovement:(text:string,candidate:GrayAreaCandidate,snapshot:unknown,sourceRoot:string)=>void}>;
  const snapshot={snapshotId:'current-evidence'};

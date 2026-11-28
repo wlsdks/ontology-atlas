@@ -236,7 +236,7 @@ function ProjectCard({
           <h2 className="min-w-0 truncate text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)]">
             <Link
               href={detailHref}
-              prefetch={false}
+             
               aria-current={selected ? "true" : undefined}
               className={controlClass({
                 shape: "link",
@@ -274,14 +274,14 @@ function ProjectCard({
         </span>
         <Link
           href={buildTopologyProjectNodeHref(project.slug)}
-          prefetch={false}
+         
           className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "relative z-[1]" })}
         >
           {t("footTopologyView")}
         </Link>
         <Link
           href={detailHref}
-          prefetch={false}
+         
           aria-label={t("cardDetailAriaLabel", { name })}
           className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "relative z-[1]" })}
         >

@@ -15,6 +15,8 @@ const bridge = vi.hoisted(() => ({
 }));
 const motion = vi.hoisted(() => ({ reduced: false }));
 
+// No router mounts around the panel here, and no install link arrived.
+vi.mock('@/shared/lib/navigation/use-committed-address', () => ({ useCommittedSearch: () => ({}) }));
 vi.mock('@/shared/lib/render-timing/use-prefers-reduced-motion', () => ({
   usePrefersReducedMotion: () => motion.reduced,
 }));

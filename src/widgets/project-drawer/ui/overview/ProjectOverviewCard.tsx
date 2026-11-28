@@ -39,7 +39,7 @@ export function ProjectOverviewCard({
   const { isContainerNode, displayName, detailHref, docsVaultHref, primaryRelatedDocSlug } = model;
 
   // The click pushes through the router before the drawer unmounts, since Link's default click raced
-  // framer-motion's drag; the href stays for prefetch and middle-click.
+  // framer-motion's drag; the href stays for middle-click.
   const handleDetailClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       if (!isPlainLeftClick(event)) return;
@@ -161,7 +161,6 @@ export function ProjectOverviewCard({
             <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
               <Link
                 href={detailHref}
-                prefetch
                 onClick={handleDetailClick}
                 className={controlClass({
                   shape: "card",

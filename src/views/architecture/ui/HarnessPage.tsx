@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'use-intl';
-import { useSearchParams } from 'next/navigation';
 
 import { useDataSourceMode, useLocalVault, useOpenFolderManifest } from '@/entities/vault-session';
 import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
@@ -16,7 +15,7 @@ import {
   HARNESS_VIEW_ORDER,
   parseHarnessView,
   resolveAddressView,
-  rewriteRetiredView,
+  type HarnessSearch,
   type HarnessView,
 } from '../lib/harness-view-state';
 import { useHarnessReport } from '@/features/harness-report';
@@ -30,7 +29,7 @@ import {
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessConnectSource } from './HarnessConnectSource';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
-import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { currentAddress, guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 /**
  * How long a read may take before the progress screen is shown: the app's anti-flash delay, the
@@ -46,15 +45,15 @@ function failedReasonKey(code: string | null) {
   return 'failedBody';
 }
 
-function HarnessPageInner() {
+function HarnessPageInner({ search }: { search: HarnessSearch }) {
   const t = useTranslations('harness');
-  const searchParams = useSearchParams();
-  /*
-   * The address is read on every render: `useSearchParams()` is empty during a static export's
-   * prerender, so a `useState` initializer would lose the named view. A press wins until the next
-   * history move, because `setView` uses `replaceState`, which `useSearchParams` does not observe.
-   */
+  /* A press shows its view at once and wins until the address next moves; the router hands the address back a moment later. */
   const [viewOverride, setViewOverride] = useState<HarnessView | null>(null);
+  const [seenSearch, setSeenSearch] = useState(search);
+  if (search !== seenSearch) {
+    setSeenSearch(search);
+    setViewOverride(null);
+  }
   const [reloadNonce, setReloadNonce] = useState(0);
   const tabpanelRef = useRef<HTMLDivElement>(null);
   const rereadHarness = useCallback(() => {
@@ -72,22 +71,6 @@ function HarnessPageInner() {
         .filter((slug): slug is string => typeof slug === 'string'),
     [docs],
   );
-
-  useEffect(() => {
-    const rewritten = rewriteRetiredView(window.location.search);
-    if (rewritten === null) return;
-    const { pathname, hash } = window.location;
-    guardedHistoryWrite('replace', pathname + rewritten + hash);
-  }, [searchParams]);
-
-  useEffect(() => {
-    const onPopState = () => {
-      const params = new URL(window.location.href).searchParams;
-      setViewOverride(resolveAddressView(params));
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
 
   /* Not gated on the view: a reading decides what Overview shows. With no folder loaded the hook returns `unsupported` at no cost. */
   const reportState = useHarnessReport(
@@ -107,7 +90,7 @@ function HarnessPageInner() {
     const name = reportState.sourceRoot.split(/[\\/]+/).filter(Boolean).pop();
     return name ? { name, folders: reportState.report.topLevelFolders } : null;
   }, [reportState]);
-  const view: HarnessView = viewOverride ?? resolveAddressView(searchParams);
+  const view: HarnessView = viewOverride ?? resolveAddressView(search);
 
   const setView = useCallback(
     (next: HarnessView) => {
@@ -116,9 +99,8 @@ function HarnessPageInner() {
        * A replace through the history door, not a router push: a view switch is not a new place, and Back should
        * leave the screen.
        */
-      if (typeof window === 'undefined') return;
-      const url = new URL(window.location.href);
-      guardedHistoryWrite('replace', buildHarnessViewHref(next, url.pathname, url.search) + url.hash);
+      const written = currentAddress();
+      guardedHistoryWrite('replace', buildHarnessViewHref(next, written.pathname, written.search) + written.hash);
     },
     [],
   );
@@ -271,7 +253,7 @@ function HarnessPageInner() {
 }
 
 /** The exported HTML holds only the neutral loading surface: a restored folder is known after hydration. */
-export function HarnessPage() {
+export function HarnessPage({ search }: { search: HarnessSearch }) {
   const hydrated = useHydrated();
-  return hydrated ? <HarnessPageInner /> : <RouteLoadingFallback />;
+  return hydrated ? <HarnessPageInner search={search} /> : <RouteLoadingFallback />;
 }

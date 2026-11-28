@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { AgentsWorkspace } from '@/app-providers/agents-workspace';
+import { agentsSearch } from '@/views/agents';
 import { RouteLoadingFallback } from '@/shared/ui';
 import { ScreenTitle } from '../../-site/ScreenTitle';
 import type { ScreenHead } from '../../-site/screen-metadata';
@@ -12,13 +13,18 @@ const head: ScreenHead = {
   description: { namespace: 'metadata', key: 'descriptions.agents' },
 };
 
-export const Route = createFileRoute('/$locale/_app/agents')({ staticData: { head }, component: AgentsRoute });
+export const Route = createFileRoute('/$locale/_app/agents')({
+  staticData: { head },
+  validateSearch: agentsSearch,
+  component: AgentsRoute,
+});
 
 function AgentsRoute() {
+  const search = Route.useSearch();
   return (
     <>
       <ScreenTitle head={head} />
-      <Suspense fallback={<RouteLoadingFallback />}><AgentsWorkspace /></Suspense>
+      <Suspense fallback={<RouteLoadingFallback />}><AgentsWorkspace search={search} /></Suspense>
     </>
   );
 }

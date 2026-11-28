@@ -17,6 +17,12 @@ vi.mock('@/i18n/navigation', () => ({
   usePathname: () => route.pathname,
 }));
 
+// The router is the subject elsewhere; here the screen on show is whatever the test wrote to the address.
+vi.mock('@/shared/lib/navigation/use-committed-address', async () => {
+  const { parseSearch } = await import('@/shared/lib/navigation/atlas-search');
+  return { useCommittedSearch: () => parseSearch(window.location.search) };
+});
+
 function Surface({ title, withHeading = true }: { title: string; withHeading?: boolean }) {
   return (
     <main id="main" data-testid="main">

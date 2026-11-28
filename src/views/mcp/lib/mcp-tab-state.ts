@@ -1,3 +1,5 @@
+import type { ScreenSearch } from '@/shared/lib/navigation/search-text';
+
 /**
  * The section a deep link lands on under `?mcp=`; both groups are always drawn. `share` is the
  * default, since the folder's own server is what everyone needs.
@@ -18,3 +20,5 @@ export function parseMcpTab(raw: string | null | undefined): McpTab {
 }
 
 export const MCP_SECTION_PARAM = 'mcp';
+
+export type McpSearch = ScreenSearch<readonly [typeof MCP_SECTION_PARAM]>;

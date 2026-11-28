@@ -1,6 +1,8 @@
 import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "use-intl";
-import { useSearchParams } from "next/navigation";
+import { stringifySearch } from "@/shared/lib/navigation/atlas-search";
+import { firstSearchText } from "@/shared/lib/navigation/search-text";
+import { type AutomationsSearch } from "../lib/automations-search";
 import { useEffect, useMemo, useRef, useState, useTransition, type CSSProperties } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
@@ -46,7 +48,9 @@ export function AutomationsPage({
   runner,
   onOpenDocumentSchedule,
   onEditDocumentSchedule,
+  search,
 }: {
+  search: AutomationsSearch;
   runner: RoundsRunnerValue | null;
   onOpenDocumentSchedule: () => void;
   onEditDocumentSchedule: (round: RoundRecord) => void;
@@ -55,12 +59,11 @@ export function AutomationsPage({
   const tRounds = useTranslations("library.rounds");
   const locale = useLocale();
   const hydrated = useHydrated();
-  const params = useSearchParams();
   const router = useRouter();
   const toast = useToast();
   const reduced = usePrefersReducedMotion();
   const newButtonRef = useRef<HTMLButtonElement>(null);
-  const requested = params.get("kind");
+  const requested = firstSearchText(search.kind);
   const lane: AutomationLane = requested === "documents" ? "documents" : "ontology";
   const [selectedId, setSelectedId] = useState<string | null | undefined>(undefined);
   const [ontologySheetOpen, setOntologySheetOpen] = useState(false);
@@ -70,17 +73,17 @@ export function AutomationsPage({
 
   const allRounds = runner?.rounds ?? EMPTY_RUNNER_ROUNDS;
   const rounds = useMemo(() => allRounds.filter((round) => isLaneRound(round, lane)), [allRounds, lane]);
-  const requestedRound = params.get("round");
+  const requestedRound = firstSearchText(search.round);
   const selected = rounds.find((round) => round.id === (selectedId === undefined ? requestedRound : selectedId)) ?? null;
   const history = useLaneHistory(runner, lane, rounds, selected);
   // This screen is the stage of every scheduled run: the card stands down and results read here.
   useAutomationsStage(hydrated);
   const scheduledRuns = useScheduledRuns();
   const stagedRun = scheduledRuns.findLast(isScheduledActive) ?? null;
-  const landedRunId = params.get("run");
+  const landedRunId = firstSearchText(search.run);
 
   const selectLane = (nextLane: AutomationLane) => {
-    const query = new URLSearchParams(params.toString());
+    const query = new URLSearchParams(stringifySearch(search));
     query.set("kind", nextLane);
     query.delete("round");
     startLaneTransition(() => router.push(`/automations/?${query}`, { scroll: false }));

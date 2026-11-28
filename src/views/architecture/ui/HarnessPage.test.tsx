@@ -59,12 +59,14 @@ vi.mock('./ArchitecturePage', () => ({
     </div>
   ),
 }));
-vi.mock('next/navigation', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('next/navigation')>()),
-  useSearchParams: () => new URLSearchParams(window.location.search),
-}));
+// No router mounts around the screen here; the address on show is whatever the test wrote to the window.
+vi.mock('@/shared/lib/navigation/use-committed-address', async () => {
+  const { parseSearch } = await import('@/shared/lib/navigation/atlas-search');
+  return { useCommittedSearch: () => parseSearch(window.location.search) };
+});
 
 const { HarnessPage } = await import('./HarnessPage');
+const { parseSearch } = await import('@/shared/lib/navigation/atlas-search');
 
 /** Walks past the threshold that holds the wait screen back, so the read is genuinely slow. */
 function waitPastProgressThreshold() {
@@ -73,11 +75,17 @@ function waitPastProgressThreshold() {
   });
 }
 
+function page() {
+  return (
+    <IntlProvider locale="ko" messages={koMessages}>
+      <HarnessPage search={parseSearch(window.location.search)} />
+    </IntlProvider>
+  );
+}
+
 function mount() {
   return render(
-    <IntlProvider locale="ko" messages={koMessages}>
-      <HarnessPage />
-    </IntlProvider>,
+    page(),
   );
 }
 
@@ -174,17 +182,6 @@ describe('the destination identity', () => {
     expect(tabs.map((tab) => tab.id)).toEqual(['harness-tab-overview', 'harness-tab-architecture']);
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
   });
-
-  it.each(['structure', 'coverage', 'sensors', 'guides'])(
-    'rewrites the retired ?view=%s address to the overview and opens it',
-    (retired) => {
-      state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-      window.history.replaceState(null, '', `/ko/architecture/?view=${retired}&guides=off`);
-      mount();
-      expect(window.location.search).toBe('?view=overview&guides=off');
-      expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
-    },
-  );
 });
 
 describe('the segmented control', () => {
@@ -206,12 +203,10 @@ describe('the segmented control', () => {
 
   it('follows the address when history moves under it', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-    mount();
+    const view = mount();
     expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
-    act(() => {
-      window.history.replaceState(null, '', '/ko/architecture/?view=architecture');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
+    window.history.replaceState(null, '', '/ko/architecture/?view=architecture');
+    view.rerender(page());
     // The address and the screen must name the same view; that is what putting it in the URL is for.
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
   });
@@ -284,7 +279,7 @@ describe('the segmented control', () => {
     act(() => {
       view.rerender(
         <IntlProvider locale="ko" messages={koMessages}>
-          <HarnessPage />
+          <HarnessPage search={parseSearch(window.location.search)} />
         </IntlProvider>,
       );
     });

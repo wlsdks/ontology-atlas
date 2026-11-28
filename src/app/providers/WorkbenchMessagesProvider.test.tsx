@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ pathname: '/en/', desktop: false }));
 
-vi.mock('next/navigation', () => ({ usePathname: () => mocks.pathname }));
+vi.mock('@/shared/lib/navigation/use-committed-address', () => ({
+  useCommittedAddress: () => ({ pathname: mocks.pathname, searchString: '' }),
+}));
 vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => mocks.desktop }));
 
 const ROOT_SUBSET = { rootEntry: { redirectTitle: 'from the subset' } };

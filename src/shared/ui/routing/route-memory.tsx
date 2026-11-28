@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useLocation } from '@tanstack/react-router';
 import { routing } from '@/i18n/routing';
+import { useCommittedAddress } from '@/shared/lib/navigation/use-committed-address';
 
 export const ROUTE_MEMORY_KEY = 'ontology-atlas:last-route';
 
@@ -27,36 +28,18 @@ export function buildRestorableRoute(
 }
 
 export function RouteMemory() {
-  const pathname = usePathname();
+  const { pathname, searchString } = useCommittedAddress();
+  const hash = useLocation({ select: (location) => location.hash });
 
   useEffect(() => {
-    const rememberCurrentRoute = () => {
-      const route = buildRestorableRoute(
-        window.location.pathname,
-        window.location.search,
-        window.location.hash,
-      );
-      if (!route) return;
-
-      try {
-        window.localStorage.setItem(ROUTE_MEMORY_KEY, route);
-      } catch {
-        // localStorage unavailable: route restore is only a convenience.
-      }
-    };
-
-    rememberCurrentRoute();
-    // Surfaces replace the URL for in-surface selection (`?slug=`, `?node=`) and emit this
-    // event; watching the pathname alone would lose that selection on relaunch.
-    window.addEventListener('app:urlchange', rememberCurrentRoute);
-    window.addEventListener('popstate', rememberCurrentRoute);
-    window.addEventListener('hashchange', rememberCurrentRoute);
-    return () => {
-      window.removeEventListener('app:urlchange', rememberCurrentRoute);
-      window.removeEventListener('popstate', rememberCurrentRoute);
-      window.removeEventListener('hashchange', rememberCurrentRoute);
-    };
-  }, [pathname]);
+    const route = buildRestorableRoute(pathname, searchString, hash === '' ? '' : `#${hash}`);
+    if (!route) return;
+    try {
+      window.localStorage.setItem(ROUTE_MEMORY_KEY, route);
+    } catch {
+      // localStorage unavailable: route restore is only a convenience.
+    }
+  }, [pathname, searchString, hash]);
 
   return null;
 }

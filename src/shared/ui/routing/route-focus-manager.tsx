@@ -1,7 +1,9 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { usePathname } from '@/i18n/navigation';
 import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
-import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { currentAddress, guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
+import { useCommittedSearch } from '@/shared/lib/navigation/use-committed-address';
 
 const ROUTE_FOCUS_INTENT_KEY = 'ontology-atlas:route-focus-intent';
 const ROUTE_FOCUS_INTENT_MAX_AGE_MS = 10_000;
@@ -34,11 +36,12 @@ export function buildRouteFocusHref(href: string): string {
 }
 
 function clearRouteFocusQueryMarker() {
-  const url = new URL(window.location.href);
-  if (url.searchParams.get(ROUTE_FOCUS_QUERY_KEY) !== ROUTE_FOCUS_QUERY_VALUE) return;
-  url.searchParams.delete(ROUTE_FOCUS_QUERY_KEY);
-  guardedHistoryWrite('replace', `${url.pathname}${url.search}${url.hash}`);
-  window.dispatchEvent(new Event('app:urlchange'));
+  const written = currentAddress();
+  const query = new URLSearchParams(written.search);
+  if (query.get(ROUTE_FOCUS_QUERY_KEY) !== ROUTE_FOCUS_QUERY_VALUE) return;
+  query.delete(ROUTE_FOCUS_QUERY_KEY);
+  const search = query.toString();
+  guardedHistoryWrite('replace', `${written.pathname}${search === '' ? '' : `?${search}`}${written.hash}`);
 }
 
 /**
@@ -92,15 +95,11 @@ export function RouteFocusManager() {
   const pathname = usePathname() ?? '/';
   const surfacePath = normalizeRouteSurfacePath(pathname);
   const previousSurfaceRef = useRef<string | null>(null);
-  // Captured during render: a destination may replace the query in its own mount effect.
-  const hasUrlFocusIntent =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get(ROUTE_FOCUS_QUERY_KEY) ===
-      ROUTE_FOCUS_QUERY_VALUE;
+  // Read from the screen on show: a destination may replace the query in its own mount effect.
+  const hasUrlFocusIntent = firstSearchText(useCommittedSearch()[ROUTE_FOCUS_QUERY_KEY]) === ROUTE_FOCUS_QUERY_VALUE;
   /*
-   * The arrival re-runs when a marker appears, never when one goes. A client navigation renders
-   * before Next writes the new address, so a destination's first render can read the marker of the
-   * page being left; re-running when it then vanished would cancel the arrival in progress.
+   * The arrival re-runs when a marker appears, never when one goes: a destination clears the marker
+   * once it has taken focus, and re-running then would cancel the arrival in progress.
    */
   const [urlIntent, setUrlIntent] = useState({ present: hasUrlFocusIntent, appearances: 0 });
   if (urlIntent.present !== hasUrlFocusIntent) {

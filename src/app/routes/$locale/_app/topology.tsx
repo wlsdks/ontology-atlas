@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
-import { HomePage } from '@/views/home';
+import { HomePage, homeSearch } from '@/views/home';
 import { MapEntryPending } from '@/app-providers/router/MapEntryPending';
 import { ScreenTitle } from '../../-site/ScreenTitle';
 import type { ScreenHead } from '../../-site/screen-metadata';
@@ -12,13 +12,18 @@ const head: ScreenHead = {
   description: { namespace: 'metadata', key: 'descriptions.topology' },
 };
 
-export const Route = createFileRoute('/$locale/_app/topology')({ staticData: { head }, component: TopologyRoute });
+export const Route = createFileRoute('/$locale/_app/topology')({
+  staticData: { head },
+  validateSearch: homeSearch,
+  component: TopologyRoute,
+});
 
 function TopologyRoute() {
+  const search = Route.useSearch();
   return (
     <>
       <ScreenTitle head={head} />
-      <Suspense fallback={<MapEntryPending />}><HomePage /></Suspense>
+      <Suspense fallback={<MapEntryPending />}><HomePage search={search} /></Suspense>
     </>
   );
 }

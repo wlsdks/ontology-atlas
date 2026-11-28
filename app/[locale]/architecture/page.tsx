@@ -30,7 +30,7 @@ export async function generateMetadata({
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <HarnessPage />
+      <HarnessPage search={{}} />
     </Suspense>
   );
 }
