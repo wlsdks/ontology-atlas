@@ -4,10 +4,12 @@
 //! The survey lists these units, and the coverage line every write reports is measured against
 //! them, so both speak of the same thing.
 //!
-//! The files are read once, on the global pool, and each product file gives everything the map
-//! asks of its text in that one read ([`ProductReading`]); the walk and the grouping that decide
-//! what is read and how it is grouped stay one sequence, so the answer is the same as reading one
-//! file after another.
+//! The files are read once here, on the global pool, and each product file gives everything its
+//! own row asks of its text in that one read ([`ProductReading`]); the walk and the grouping that
+//! decide what is read and how it is grouped stay one sequence, so the answer is the same as
+//! reading one file after another. Other parts of the map read a file again: the import scan has
+//! its own walk, and entry, main and library export files are read through `SurveyFiles` for a
+//! row's line.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

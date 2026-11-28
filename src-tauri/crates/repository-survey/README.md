@@ -5,10 +5,16 @@ entry points and the abilities a builder has to place. One crate, one job: it re
 through `confined-files` and `source-scan` and returns a typed map plus the text an agent reads. It
 writes nothing and runs no repository code.
 
-Every source file is read once, on the global rayon pool (`par_iter` only, no pool of its own);
-each product file gives all its facts in that read (lines, class, entry signals, declarations,
-dispatched operations). Walking, grouping and every list's order stay sequential, so the answer is
-the same as reading one file after another.
+Every source file the walk admits is read once, on the global rayon pool (`par_iter` only, no pool
+of its own), and each product file gives its own facts in that read (lines, class, entry signals,
+declarations, dispatched operations). Walking, grouping and every list's order stay sequential, so
+the answer is the same as reading one file after another. Four things read again, and the map
+counts them as separate reads: the import links come from `source_scan::scan_imports`, a second
+walk of the root that reads and parses the files itself; the entry files, a unit's main files and
+the library export files are read a second time through `SurveyFiles` to find a row's line; the
+manifests and the README are read once each when asked for; and the documentation pages are a
+third, smaller walk of `docs`, `doc` and `documentation` with their own rule (see row 48 of the
+specification).
 
 | File | Owns |
 |---|---|

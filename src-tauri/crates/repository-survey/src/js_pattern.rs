@@ -5,8 +5,10 @@
 //! default): `\w` is ASCII only, `\s` is the ECMAScript white space and line terminators, and `\b`
 //! is the ASCII word boundary, and `.` leaves out all four line terminators, not `\n` alone.
 //! [`js_regex`] rewrites those so one pattern text means in Rust what it meant before. Case
-//! folding is the one thing left to the caller: `(?i)` folds Unicode, and a pattern with an `s` or
-//! a `k` in it compares the lower-cased ASCII text instead.
+//! folding is left as `regex` has it: `(?i)` folds Unicode, so a pattern with an `s` or a `k` in it
+//! also matches the long s (U+017F) and the Kelvin sign (U+212A), which ECMAScript's `i` flag does
+//! not, because it never folds a non-ASCII letter to an ASCII one. No survey path or name holds
+//! either character in practice; a pattern that must not match them is written with a class.
 
 use regex::Regex;
 

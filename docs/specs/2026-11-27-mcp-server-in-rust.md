@@ -281,7 +281,7 @@ merge.
 | 45 | `index_project`, a retired tool name | the script server still runs the structural analysis under it and answers with the project, domain and capability candidates | answered as an unknown tool | a name no tool list advertises can no longer start a scan of the repository. Test: the survey case `index-project-retired`. |
 | 46 | `analyze_repo_structure` parts not answered in this build: `sourceReads` and `sourceOnly` with selectors, `view: "analysis"`, a `proposal` or `qualification` | each is answered in full: exact source reads with callees and outlines, the structural analysis, the review of a proposal or qualification against its schema | refused by name with `tool_error`, saying the script server answers it and that the call without the argument gives the breadth map | the breadth map, the argument checks and the refusals before these paths are equal; the row goes when each part is ported. Tests: the survey cases `analyze-repo-structure-miniature` (steps 11, 13, 14, 15) and `analyze-repo-structure-polyglot` (step 6). |
 | 47 | a Python task decorator (`@task`, `@shared_task`, `@periodic_task`) below the first line of a file, in the ability rows of `analyze_repo_structure` | not a worker: the decorator pattern is anchored at the start of the file and the file is asked as one string, so only a decorator on the first line is seen | a `worker` row named for the decorated function | a Celery task is background work; the pattern was written to be asked line by line, and a whole-file test made it miss almost every task. Subcommands, flags, settings, workers and the Java and Kotlin rows are ported and equal. Test: the survey case `analyze-repo-structure-celery-task`. |
-| 48 | the folder names every scan of a repository skips (`infer_imports`, `analyze_repo_structure`) | two lists: the import scan skipped ten names, the survey and the exact reads sixteen | one list of sixteen in `source_scan::DEFAULT_IGNORE`: the ten plus `.idea`, `.vscode`, `__pycache__`, `.pytest_cache`, `.venv` and `venv` | the six added names hold an editor's settings, Python caches and a virtual environment, thousands of third-party files that would pass for the product's own modules and external imports in an import scan; no repository keeps its own code there, and one list cannot drift between the two readers. The vault Markdown walk keeps its own list because it reads documents, not code. The survey's listing of documentation pages under `docs`, `doc` and `documentation` is a second walk with its own rule, as in the script server: it skips hidden names, the caller's `ignore` and the page folders `blog`, `changelog`, `release-notes`, `news`, `node_modules` and any name that starts with `_`, and neither the sixteen names nor Git's ignored set, because a page is listed for the Markdown or reStructuredText a person put in a documentation folder, not for code to be scanned. Test: the imports case `infer-imports-ignored-environments`. |
+| 48 | the folder names every scan of a repository skips (`infer_imports`, `inspect_architecture`, `analyze_repo_structure`) | two lists: the import scan skipped ten names, the survey and the exact reads sixteen | one list of sixteen in `source_scan::DEFAULT_IGNORE`: the ten plus `.idea`, `.vscode`, `__pycache__`, `.pytest_cache`, `.venv` and `venv` | the six added names hold an editor's settings, Python caches and a virtual environment, thousands of third-party files that would pass for the product's own modules and external imports in an import scan; no repository keeps its own code there, and one list cannot drift between the two readers. The vault Markdown walk keeps its own list because it reads documents, not code. The survey's listing of documentation pages under `docs`, `doc` and `documentation` is a second walk with its own rule, as in the script server: it skips hidden names, the caller's `ignore` and the page folders `blog`, `changelog`, `release-notes`, `news`, `node_modules` and any name that starts with `_`, and neither the sixteen names nor Git's ignored set, because a page is listed for the Markdown or reStructuredText a person put in a documentation folder, not for code to be scanned. Test: the imports case `infer-imports-ignored-environments`. |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -707,6 +707,14 @@ Left to a later slice by the review of the analysis and plan operations:
   operation would refuse for a missing required argument (`node_profile` without `slug`); it
   states the call it was sent. The operations' own refusals are not a table the plan can read.
 
+Left to a later slice by the review of the survey: `repository-survey` reads Java and Kotlin
+structure (classes, annotations and their arguments, members, `main`) from source with comments and
+literals masked and then matched by patterns, as the script server did, although `source-scan`
+already parses both languages. Reading it from the syntax tree removes the masking, the
+window-in-units rules and the shapes the patterns cannot see (a nested generic, an annotation
+split across lines by a comment); it changes rows only where the patterns were wrong, so each such
+case is declared with its corpus case.
+
 Slice 10 may start after slice 4 under named fields if the manifest shows that the bytes a write
 puts on disk depend only on built functions.
 
@@ -935,8 +943,10 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   `HistoryLimit` is the one place the page size is
   judged, and `analysisMode` reads `AnalysisMode::NAMES`.
 - 2026-11-28: slice 8 (the repository survey). `analyze_repo_structure` answers the breadth map in
-  Rust (`repository-survey`: files read once on the shared pool, declarations from the syntax tree
-  through `source-scan`, ignored paths through `hardened-git`), including the ability rows from
+  Rust (`repository-survey`: each product file read once on the shared pool for its own facts, then
+  read again by the import scan's own walk and for the line of an entry, main or library export
+  file; declarations from the syntax tree through `source-scan`, ignored paths through
+  `hardened-git`), including the ability rows from
   operator code (subcommands, flags, settings, workers) and from Java and Kotlin (routes,
   executables, workers, families). It is equal to the script server on the survey family except
   rows 45 to 48 (48 is the one list of folder names every scan skips). Row 46 stays open: exact source reads, the analysis view and the review of a
