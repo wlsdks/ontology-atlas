@@ -12,7 +12,9 @@ use answer_format::whitespace::trim;
 use rayon::prelude::*;
 
 use crate::loaded_document::{FileReadError, LoadedDocument};
+use crate::search_needle::SearchNeedle;
 use crate::search_text::{folded, words};
+use crate::serial_reads::{read_serially, Reading};
 
 /// Where the title was found. A title match is `Frontmatter` whichever key held it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,7 +35,7 @@ const OVERLAP_WEIGHT: f64 = 0.1;
 
 /// What a call asked for, folded once.
 pub struct EvidenceQuery {
-    needle: String,
+    needle: SearchNeedle,
     words: HashSet<String>,
 }
 
@@ -44,8 +46,8 @@ impl EvidenceQuery {
         if trimmed.is_empty() {
             return None;
         }
-        let needle = folded(trimmed).into_owned();
-        let words = words(&needle).map(str::to_string).collect();
+        let needle = SearchNeedle::new(folded(trimmed).into_owned());
+        let words = words(needle.text()).map(str::to_string).collect();
         Some(Self { needle, words })
     }
 
@@ -99,61 +101,116 @@ fn references_text(document: &LoadedDocument) -> String {
     )
 }
 
-fn judge<'a>(
-    document: &'a LoadedDocument,
-    query: &EvidenceQuery,
-    nodes_only: bool,
-) -> Result<Option<EvidenceHit<'a>>, FileReadError> {
+/// What a document comes to before its body is read.
+enum Judged<'a> {
+    Hit(EvidenceHit<'a>),
+    Miss,
+    /// Neither the title nor the references hold the needle, and only the body can say.
+    AskBody {
+        is_node: bool,
+        title: String,
+    },
+}
+
+fn judge<'a>(document: &'a LoadedDocument, query: &EvidenceQuery, nodes_only: bool) -> Judged<'a> {
     let is_node = document.node_kind().is_some();
     if nodes_only && !is_node {
-        return Ok(None);
+        return Judged::Miss;
     }
     let title = folded(&title_text(document)).into_owned();
     let references = folded(&references_text(document)).into_owned();
-    let needle = query.needle.as_str();
-    let by_title_or_reference = if title == needle {
-        Some(EXACT_TITLE)
+    let needle = query.needle.text();
+    let base = if title == needle {
+        EXACT_TITLE
     } else if title.starts_with(needle) {
-        Some(TITLE_PREFIX)
+        TITLE_PREFIX
     } else if title.contains(needle) {
-        Some(TITLE_CONTAINS)
+        TITLE_CONTAINS
     } else if references.contains(needle) {
-        Some(REFERENCE)
+        REFERENCE
     } else {
-        None
+        return match document.known_body_answer(&query.needle) {
+            Some(true) => body_hit(document, query, is_node, &title),
+            Some(false) => Judged::Miss,
+            None => Judged::AskBody { is_node, title },
+        };
     };
-    let (base, matched_in) = match by_title_or_reference {
-        Some(base) => (base, MatchedIn::Frontmatter),
-        None if document.body_includes(needle)? => (BODY, MatchedIn::Body),
-        None => return Ok(None),
-    };
-    Ok(Some(EvidenceHit {
+    Judged::Hit(EvidenceHit {
         document,
         is_node,
-        matched_in,
+        matched_in: MatchedIn::Frontmatter,
         score: query.score(base, &title),
-    }))
+    })
+}
+
+fn body_hit<'a>(
+    document: &'a LoadedDocument,
+    query: &EvidenceQuery,
+    is_node: bool,
+    folded_title: &str,
+) -> Judged<'a> {
+    Judged::Hit(EvidenceHit {
+        document,
+        is_node,
+        matched_in: MatchedIn::Body,
+        score: query.score(BODY, folded_title),
+    })
 }
 
 /// Every document that mentions the title, best first: by score, a node before a note of the same
-/// score, then the collation of the slug. Bodies are read on every core, and only where a
-/// document's title and references did not already match.
+/// score, then the collation of the slug. Titles and references are judged on every core; a body is
+/// read only where they did not match and an earlier search cannot answer for it, one file after
+/// another (see `serial_reads`), and searched on every core.
 pub fn search_evidence<'a>(
     documents: &'a [LoadedDocument],
     query: &EvidenceQuery,
     nodes_only: bool,
 ) -> Result<Vec<EvidenceHit<'a>>, FileReadError> {
-    let judged: Result<Vec<Option<EvidenceHit<'a>>>, FileReadError> = documents
+    let judged: Vec<Judged<'a>> = documents
         .par_iter()
         .map(|document| judge(document, query, nodes_only))
         .collect();
-    let mut hits: Vec<EvidenceHit<'a>> = judged?.into_iter().flatten().collect();
-    hits.sort_by(|left, right| {
+    // Each hit keeps its document's place in the vault, the last tie-break, so the order does not
+    // depend on which bodies had to be read.
+    let mut hits: Vec<(usize, EvidenceHit<'a>)> = Vec::new();
+    let mut ask_body: Vec<(usize, &'a LoadedDocument, bool, String)> = Vec::new();
+    for (position, (document, judged)) in documents.iter().zip(judged).enumerate() {
+        match judged {
+            Judged::Hit(hit) => hits.push((position, hit)),
+            Judged::Miss => {}
+            Judged::AskBody { is_node, title } => {
+                ask_body.push((position, document, is_node, title));
+            }
+        }
+    }
+    let answered = read_serially(
+        &ask_body,
+        |(_, document, ..)| {
+            let read = document.read_body();
+            let bytes = match &read {
+                Some(Ok(Some(snapshot))) => snapshot.bytes.len(),
+                _ => 0,
+            };
+            Reading { value: read, bytes }
+        },
+        |(_, document, is_node, title), read| {
+            document
+                .body_includes_from(read, &query.needle)
+                .map(|found| found.then(|| body_hit(document, query, *is_node, title)))
+        },
+    );
+    for ((position, ..), answer) in ask_body.iter().zip(answered) {
+        if let Some(Judged::Hit(hit)) = answer? {
+            hits.push((*position, hit));
+        }
+    }
+    hits.sort_by(|(left_position, left), (right_position, right)| {
         right
             .score
             .total_cmp(&left.score)
             .then(right.is_node.cmp(&left.is_node))
             .then_with(|| compare_text(left.document.slug(), right.document.slug()))
+            .then(left_position.cmp(right_position))
     });
-    Ok(hits)
+    Ok(hits.into_iter().map(|(_, hit)| hit).collect())
 }

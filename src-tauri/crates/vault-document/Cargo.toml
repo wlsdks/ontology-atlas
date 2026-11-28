@@ -23,8 +23,8 @@ thiserror = "2"
 # The evidence-limit phrasings of an exclusion are ten patterns tested together; MIT OR Apache-2.0. ASCII
 # patterns only, so the Unicode tables stay out.
 regex = { version = "1", default-features = false, features = ["std", "perf"] }
-# Reads and checks every file of a large vault on all the cores: one `par_iter`, results in order.
-# MIT OR Apache-2.0; the app already links it (through the image crates).
+# Parses the files of a large vault on the pool while one thread reads them (`serial_reads.rs`),
+# results in order. MIT OR Apache-2.0; the app already links it (through the image crates).
 rayon = "1"
 # Edit distance for the titles a search that found nothing offers instead; MIT, already in the
 # lockfile through the app's dependencies and the server's suggestions.
