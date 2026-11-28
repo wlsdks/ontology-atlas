@@ -13,7 +13,7 @@ import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { comparableBranch, usablePushBefore } from './plan-base.mjs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 import { importClosure, readTestReach } from '../lib/import-graph/test-reach.mjs';
-import { packageScriptFiles } from '../lib/ci/package-script-files.mjs';
+import { filesNamedBy, packageScriptFiles } from '../lib/ci/package-script-files.mjs';
 import { RUST_LINT_COMMAND } from '../lib/check-rules/desktop.mjs';
 
 import {
@@ -145,12 +145,13 @@ const E2E_BROAD_INPUTS = [
 ];
 
 /**
- * The scripts `pnpm build` runs (and the install's `prepare`), followed through `pnpm <script>`
- * and their imports, with the two configs that import build code. A change to any of them can
- * change the artifact every browser job tests, so each is a broad browser input.
+ * The scripts `pnpm build` runs (and the install's `prepare`), followed through `pnpm <script>`, the
+ * steps those run by path, and their imports, with the two configs that import build code. A change
+ * to any of them can change the folders every browser job tests, so each is a broad browser input.
  */
 export function browserBuildFiles(root = '.') {
-  return [...importClosure([...packageScriptFiles(['build', 'build:static', 'prepare'], root), 'next.config.ts', 'playwright.config.ts'], root)].sort();
+  const started = packageScriptFiles(['build', 'build:static', 'prepare'], root);
+  return [...importClosure([...started, ...filesNamedBy(started, root), 'vite.config.ts', 'playwright.config.ts'], root)].sort();
 }
 
 let browserBuild;

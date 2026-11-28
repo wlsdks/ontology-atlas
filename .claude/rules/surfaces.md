@@ -32,7 +32,7 @@ to it.
 ## One build, thin bridges
 
 Tauri loads the same static export minus website-only pages and media
-(`frontendDist`, staged by `scripts/desktop/stage-desktop-frontend.mjs`), so the
+(`frontendDist`, checked by `scripts/desktop/check-app-folder.mjs`), so the
 installed app and the website run one bundle. A bridge calls the native ability
 and answers "no runtime" when there is none, which only a test browser without
 the faked app runtime (`installDesktopRailRuntime`) or `pnpm dev` ever sees; no

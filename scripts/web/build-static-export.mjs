@@ -5,7 +5,10 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const STAMP = join('out', '.build-inputs');
+import { APP_FOLDER, SITE_FOLDER } from '../lib/web/built-folders.mjs';
+
+// The stamp lives in the site folder: the app folder holds only what the app uses.
+const STAMP = join(SITE_FOLDER, '.build-inputs');
 const NOT_BUILT_FROM = [
   /^tests\//,
   /\.(test|spec|perf\.test)\.[cm]?[jt]sx?$/,
@@ -39,7 +42,7 @@ export function buildInputsDigest({ cwd = process.cwd(), env = process.env } = {
 
 export function builtFrom(digest, { cwd = process.cwd() } = {}) {
   const stamp = join(cwd, STAMP);
-  return existsSync(join(cwd, 'out', 'index.html')) && existsSync(stamp) && readFileSync(stamp, 'utf8').trim() === digest;
+  return existsSync(join(cwd, SITE_FOLDER, 'index.html')) && existsSync(join(cwd, APP_FOLDER, 'index.html')) && existsSync(stamp) && readFileSync(stamp, 'utf8').trim() === digest;
 }
 
 export function runStaticBuild({
@@ -48,7 +51,7 @@ export function runStaticBuild({
 } = {}) {
   const digest = buildInputsDigest({ cwd, env });
   if (builtFrom(digest, { cwd })) {
-    log('[build:static] out/ is already built from these exact inputs; skipping the build.');
+    log('[build:static] the app and site folders are already built from these exact inputs; skipping the build.');
     return 0;
   }
   const stamp = join(cwd, STAMP);

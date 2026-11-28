@@ -47,6 +47,24 @@ describe('serve-static-export security boundary', () => {
     assert.equal(await resolveStaticExportFile(root, '/linked.html'), null);
   });
 
+  it('answers a missing path with the fallback document and status 200 only when asked, else 404.html', async () => {
+    const { root } = fixture();
+    writeFileSync(path.join(root, '404.html'), 'not found page', 'utf-8');
+    const answers = async (fallback) => {
+      const server = startStaticExportServer({ root, port: 0, fallback });
+      try {
+        await once(server, 'listening');
+        const response = await fetch(`http://127.0.0.1:${server.address().port}/ko/topology/`);
+        return [response.status, await response.text()];
+      } finally {
+        server.close();
+        await once(server, 'close');
+      }
+    };
+    assert.deepEqual(await answers(null), [404, 'not found page']);
+    assert.deepEqual(await answers('index.html'), [200, 'inside']);
+  });
+
   it('binds the helper server to loopback by default', async () => {
     const { root } = fixture();
     const server = startStaticExportServer({ root, port: 0 });

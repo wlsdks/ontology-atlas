@@ -6,6 +6,7 @@ import { constants, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { APP_FOLDER } from "../lib/web/built-folders.mjs";
 import { VAULT_DIR_ENV } from "./look/open-vault.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -90,7 +91,7 @@ async function waitForServer(base) {
 
 async function serveStaticExport() {
   const port = await freePort();
-  const server = spawn(process.execPath, ["scripts/web/serve-static-export.mjs", `--port=${port}`], {
+  const server = spawn(process.execPath, ["scripts/web/serve-static-export.mjs", `--port=${port}`, `--dir=${APP_FOLDER}`, "--fallback=index.html"], {
     cwd: ROOT,
     stdio: ["ignore", process.stderr, "inherit"],
   });

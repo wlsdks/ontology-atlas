@@ -229,32 +229,13 @@ describe("`.claude/rules` path scoping contract", () => {
     ).toEqual([]);
   });
 
-  /**
-   * `AGENTS.md` has a region Next writes itself when an agent runs `pnpm dev` or `pnpm build`,
-   * between the `nextjs-agent-rules` markers. It is committed and excluded from this measurement;
-   * the test below refuses our own paragraphs placed inside the markers.
-   */
-  const VENDOR_REGION = /<!-- BEGIN:nextjs-agent-rules -->[\s\S]*?<!-- END:nextjs-agent-rules -->\n?/g;
-
   function authoredBytes(file: string): number {
-    const text = readFileSync(join(process.cwd(), file), "utf8");
-    return Buffer.byteLength(text.replace(VENDOR_REGION, ""), "utf8");
+    return Buffer.byteLength(readFileSync(join(process.cwd(), file), "utf8"), "utf8");
   }
 
-  it("keeps the tool-managed region tool-managed", () => {
-    const text = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
-    const blocks = text.match(VENDOR_REGION) ?? [];
-
-    expect(blocks.length, "AGENTS.md should carry the Next block exactly once").toBe(1);
-    const block = blocks[0] ?? "";
-    // Byte-for-byte what `next` writes. If Next changes its block, this fails and
-    // the fix is to let the writer update it, not to edit inside the markers.
-    expect(block).toContain("# This is NOT the Next.js you know");
-    expect(block).toContain("node_modules/next/dist/server/lib/generate-agent-files.js");
-    expect(
-      Buffer.byteLength(block, "utf8"),
-      "the region between the markers grew — something of ours was put inside it",
-    ).toBeLessThanOrEqual(900);
+  it("carries no region a build tool writes into the file", () => {
+    // `next dev` used to re-add a block here; the dev server is Vite now, and nothing rewrites this file.
+    expect(readFileSync(join(process.cwd(), "AGENTS.md"), "utf8")).not.toContain("nextjs-agent-rules");
   });
 
   it("keeps the whole resident context at or under 20,000 bytes", () => {

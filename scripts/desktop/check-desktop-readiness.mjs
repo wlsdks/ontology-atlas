@@ -6,6 +6,7 @@ import { inspectCodexRunContract } from "../lib/desktop/codex-run-contract.mjs";
 import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "../lib/desktop/desktop-csp.mjs";
 import { matches } from "../lib/i18n/locale-vocabulary.mjs";
 import { blankComments } from "../quality/source-language/inventory.mjs";
+import { APP_FOLDER } from "../lib/web/built-folders.mjs";
 import { APP_VERSION_FILE_LIST, readAppVersions, versionMismatches } from "../lib/release-versions.mjs";
 
 const root = process.cwd();
@@ -70,7 +71,7 @@ function needsAdmission(jobSource) {
   return /needs:\s*(?:\[[^\]]*\badmit-release\b[^\]]*\]|admit-release\b)/.test(jobSource);
 }
 
-const nextConfig = readText("next.config.ts");
+const viteConfig = readText("vite.config.ts");
 const tsConfig = JSON.parse(readText("tsconfig.json"));
 const pkg = JSON.parse(readText("package.json"));
 // Every Corepack line in the workflows must activate the pnpm that `packageManager` pins.
@@ -187,37 +188,33 @@ if (unpinnedInstallRoots.length === 0) {
   fail(`${unpinnedInstallRoots.join(", ")} package.json must set packageManager to ${pinnedPnpm}, as the root does`);
 }
 
-if (/output\s*:\s*['"]export['"]/.test(nextConfig)) {
-  pass("Next.js uses static export output");
+// What the installed app's WebView can load: its policy answers 'self' alone, so no asset may become an inline
+// data address, and every asset is a file of the folder Tauri embeds.
+if (/assetsInlineLimit\s*:\s*0\b/.test(viteConfig)) {
+  pass("Vite writes every asset as a file the WebView's 'self' policy covers, none as an inline data address");
 } else {
-  fail("next.config.ts must keep output: 'export' before a Tauri shell can load out/");
+  fail("vite.config.ts must keep build.assetsInlineLimit: 0, so the installed app's policy covers every asset");
 }
 
-if (/images\s*:\s*{[\s\S]*unoptimized\s*:\s*true[\s\S]*}/.test(nextConfig)) {
-  pass("Next.js image optimization is disabled for static export");
+const buildScript = "node scripts/web/build-app-and-site.mjs";
+if (pkg.scripts?.build === buildScript && pkg.scripts?.["build:app"] === `${buildScript} --only=app`) {
+  pass("build writes the app folder and the site folder together, and build:app the app folder alone, through one script");
 } else {
-  fail("next.config.ts must keep images.unoptimized: true for static export packaging");
+  fail(`package.json must set build to "${buildScript}" and build:app to "${buildScript} --only=app"`);
 }
 
-if (/trailingSlash\s*:\s*true/.test(nextConfig)) {
-  pass("Next.js emits trailing-slash routes for file-backed desktop navigation");
+const devServer = "vite --host 127.0.0.1 --port 3000 --strictPort";
+if (pkg.scripts?.dev === devServer && tauriConfig?.build?.devUrl === "http://127.0.0.1:3000") {
+  pass("pnpm dev serves the address Tauri's devUrl waits for");
 } else {
-  fail("next.config.ts must keep trailingSlash: true for static out/ routes");
-}
-
-// The first-load report may follow the localized-lang step: it only reads the finished export.
-const buildSteps = "pnpm docs-vault:build && pnpm messages:build && node scripts/web/next-build.mjs && node scripts/web/localize-html-lang.mjs";
-if (pkg.scripts?.build === buildSteps || pkg.scripts?.build?.startsWith(`${buildSteps} && node scripts/web/first-load-report.mjs `)) {
-  pass("build script refreshes docs-vault and composes message catalogues before next build, then gives localized pages their own html lang");
-} else {
-  fail("package.json build script must refresh docs-vault and compose message catalogues before next build");
+  fail(`package.json dev must be "${devServer}" and src-tauri/tauri.conf.json devUrl "http://127.0.0.1:3000", the address that script serves`);
 }
 
 if (tsConfig?.exclude?.includes("src-tauri/target")) {
-  pass("TypeScript excludes Tauri target artifacts from Next.js type checks");
+  pass("TypeScript excludes Tauri target artifacts, the app folder among them, from type checks");
 } else {
   fail(
-    "tsconfig.json must exclude src-tauri/target so Tauri codegen artifacts cannot break Next.js type checks",
+    "tsconfig.json must exclude src-tauri/target so Tauri codegen artifacts and the built app folder cannot break type checks",
   );
 }
 
@@ -285,7 +282,7 @@ if (
   pkg.scripts?.["desktop:perf"] === "node scripts/desktop/check-desktop-performance.mjs" &&
   desktopPerformanceScript.includes("DESKTOP_PERFORMANCE_BUDGETS") &&
   desktopPerformanceScript.includes("maxStaticAssetBytes") &&
-  desktopPerformanceScript.includes("nextStaticBytes") &&
+  desktopPerformanceScript.includes("bundleBytes") &&
   desktopPerformanceScript.includes("DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY") &&
   desktopPerformanceScript.includes("desktop:verify-app") &&
   desktopPerformanceScript.includes("dogfood:verify") &&
@@ -294,7 +291,7 @@ if (
   pass("desktop performance gate keeps static asset hard limits, report-only artifact totals, and explicit runtime/MCP evidence boundaries");
 } else {
   fail(
-    "package.json must expose desktop:perf and include `pnpm desktop:perf -- --require-app` in desktop:release-preflight; the script must hard-gate Next static/chunk sizes while reporting total artifact sizes and naming desktop:verify-app plus dogfood:verify as separate startup evidence",
+    "package.json must expose desktop:perf and include `pnpm desktop:perf -- --require-app` in desktop:release-preflight; the script must hard-gate the app folder's bundled asset and chunk sizes while reporting total artifact sizes and naming desktop:verify-app plus dogfood:verify as separate startup evidence",
   );
 }
 
@@ -603,7 +600,7 @@ if (
   (pagesDeployWorkflow.match(corepackPrepare)?.length ?? 0) >= 1 &&
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
-  /^\s*(?:-\s+)?run:\s*pnpm build\s*$/m.test(pagesDeployWorkflow) &&
+  /^\s*(?:-\s+)?run:\s*pnpm build:site\s*$/m.test(pagesDeployWorkflow) &&
   /actions\/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9\b/.test(pagesDeployWorkflow) &&
   /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\b/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
@@ -1303,16 +1300,16 @@ if (
   );
 }
 
-if (tauriConfig?.build?.frontendDist === "target/desktop-frontend") {
-  pass("Tauri embeds the staged desktop copy of the static export");
+if (tauriConfig?.build?.frontendDist === path.posix.relative("src-tauri", APP_FOLDER)) {
+  pass("Tauri embeds the app folder the build writes");
 } else {
-  fail("src-tauri/tauri.conf.json must set build.frontendDist to target/desktop-frontend, the folder scripts/desktop/stage-desktop-frontend.mjs writes");
+  fail(`src-tauri/tauri.conf.json must set build.frontendDist to ${path.posix.relative("src-tauri", APP_FOLDER)}, the app folder (scripts/lib/web/built-folders.mjs) that pnpm build:app writes`);
 }
 
-if (tauriConfig?.build?.beforeBuildCommand === "pnpm build && node scripts/desktop/stage-desktop-frontend.mjs") {
-  pass("Tauri build refreshes the static frontend through pnpm build, then stages the desktop copy");
+if (tauriConfig?.build?.beforeBuildCommand === "pnpm build:app") {
+  pass("Tauri build refreshes the app folder through pnpm build:app");
 } else {
-  fail("src-tauri/tauri.conf.json must set build.beforeBuildCommand to pnpm build && node scripts/desktop/stage-desktop-frontend.mjs");
+  fail("src-tauri/tauri.conf.json must set build.beforeBuildCommand to pnpm build:app");
 }
 
 if (tauriConfig?.bundle?.targets?.includes("app")) {

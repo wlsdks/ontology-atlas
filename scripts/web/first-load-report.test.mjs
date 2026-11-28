@@ -58,3 +58,38 @@ test('refuses a page that names no chunks or a chunk that is not in the export',
   writeFileSync(join(out, 'en/index.html'), '<script src="/_next/static/chunks/gone.js" async=""></script>');
   assert.throws(() => main([out, 'en'], { log }), /which is not under/);
 });
+
+test('reads a Vite page: module scripts and module preloads count, a stylesheet does not', () => {
+  const page = `<link rel="modulepreload" crossorigin href="/assets/vendor-a1.js"><link rel="stylesheet" href="/assets/app-b2.css">
+<script type="module" crossorigin src="/assets/index-c3.js"></script>`;
+  assert.deepEqual(firstLoadChunkPaths(page), ['assets/vendor-a1.js', 'assets/index-c3.js']);
+});
+
+test('the app screen is the entry plus its route module, and a chunk loaded later is not first load', () => {
+  const app = mkdtempSync(join(tmpdir(), 'first-load-app-'));
+  mkdirSync(join(app, 'assets'), { recursive: true });
+  const bytes = { 'entry.js': 'e()', 'shared.js': 's()', 'map.js': 'm()', 'later.js': `JSON.parse("${'z'.repeat(2048)}")` };
+  for (const [name, text] of Object.entries(bytes)) writeFileSync(join(app, 'assets', name), text);
+  const manifestPath = join(app, 'manifest.json');
+  const mapKey = 'src/app/routes/$locale/_app/topology.tsx?tsr-split=component';
+  const manifest = {
+    'index.html': { file: 'assets/entry.js', isEntry: true, imports: ['shared'] },
+    shared: { file: 'assets/shared.js' },
+    [mapKey]: { file: 'assets/map.js', imports: ['shared'], dynamicImports: ['later'] },
+    later: { file: 'assets/later.js' },
+  };
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+  const lines = [];
+  const log = (line) => lines.push(line);
+  const route = '--app-route=src/app/routes/$locale/_app/topology';
+  const args = ['--json-limit-kb=1', `--manifest=${manifestPath}`, route, app];
+  assert.equal(main(args, { log }), 0, 'the JSON literal sits in a chunk the map loads later');
+  assert.match(lines[0], /3 chunks/);
+
+  manifest[mapKey].imports.push('later');
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+  assert.equal(main(args, { log }), 1, 'the same literal, imported statically, is first load');
+
+  assert.equal(main(['--max-brotli-kb=0.001', `--manifest=${manifestPath}`, route, app], { log }), 1, 'over the brotli budget');
+  assert.throws(() => main([`--manifest=${manifestPath}`, '--app-route=src/app/routes/nowhere', app], { log }), /holds no chunk of/);
+});

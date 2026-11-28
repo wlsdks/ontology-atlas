@@ -6,7 +6,7 @@ import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } 
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ensurePerfExport } from './perf-export.mjs';
+import { ensurePerfExport, EXPORT_DIR } from './perf-export.mjs';
 import { MACOS_TOOL } from './macos-memory.mjs';
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
@@ -26,7 +26,7 @@ function probeSource(reportDir) {
 
 function injectProbe(probe) {
   rmSync(FRONTEND, { recursive: true, force: true });
-  cpSync(join(ROOT, 'src-tauri', 'target', 'desktop-frontend'), FRONTEND, { recursive: true });
+  cpSync(EXPORT_DIR, FRONTEND, { recursive: true });
   writeFileSync(join(FRONTEND, PROBE_FILE), probe);
   let pages = 0;
   const visit = (directory) => {
@@ -69,8 +69,6 @@ export function ensurePerfApp({ reportDir, rebuild = false }) {
   const want = { commit: exportStamp.commit, dirty: exportStamp.dirty, reportDir, probe };
   const have = existsSync(STAMP) ? JSON.parse(readFileSync(STAMP, 'utf8')) : null;
   if (rebuild || !existsSync(BUNDLE) || !have || have.commit !== want.commit || have.reportDir !== reportDir || have.probe !== probe || want.dirty) {
-    const stage = spawnSync(process.execPath, ['scripts/desktop/stage-desktop-frontend.mjs'], { cwd: ROOT, stdio: 'inherit' });
-    if (stage.status !== 0) throw new Error('staging the desktop frontend failed');
     const pages = injectProbe(source);
     console.log(`[perf-app] probe added to ${pages} pages`);
     // Tauri embeds frontendDist in the executable; removing it forces the relink that re-embeds.

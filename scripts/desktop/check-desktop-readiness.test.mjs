@@ -56,13 +56,12 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.notEqual(result.signal, "SIGTERM", result.stderr);
   const readinessOutput = `${result.stdout}\n${result.stderr}`;
   assert.match(result.stdout, /macOS desktop Tauri-shell readiness/);
-  assert.match(result.stdout, /✓ Next\.js uses static export output/);
-  assert.match(result.stdout, /✓ Next\.js image optimization is disabled/);
-  assert.match(result.stdout, /✓ Next\.js emits trailing-slash routes/);
-  assert.match(result.stdout, /✓ build script refreshes docs-vault and composes message catalogues before next build/);
+  assert.match(result.stdout, /✓ Vite writes every asset as a file the WebView's 'self' policy covers/);
+  assert.match(result.stdout, /✓ build writes the app folder and the site folder together/);
+  assert.match(result.stdout, /✓ pnpm dev serves the address Tauri's devUrl waits for/);
   assert.match(
     result.stdout,
-    /✓ TypeScript excludes Tauri target artifacts from Next\.js type checks/,
+    /✓ TypeScript excludes Tauri target artifacts, the app folder among them, from type checks/,
   );
   assert.match(
     result.stdout,
@@ -255,7 +254,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ Tauri CLI dependency is installed/);
   assert.match(result.stdout, /✓ Tauri JavaScript API dependency is installed/);
   assert.match(result.stdout, /✓ Tauri scaffold exists/);
-  assert.match(result.stdout, /✓ Tauri embeds the staged desktop copy of the static export/);
+  assert.match(result.stdout, /✓ Tauri embeds the app folder the build writes/);
   assert.match(result.stdout, /✓ Tauri bundle target includes macOS \.app/);
   assert.match(
     result.stdout,
@@ -1075,7 +1074,7 @@ test("desktop release tag gate refuses a tag when only the MCP server version la
   const root = mkdtempSync(join(tmpdir(), "release-tag-mcp-"));
   const copiedFiles = [
     "package.json",
-    "next.config.ts",
+    "vite.config.ts",
     "src-tauri/tauri.conf.json",
     "src-tauri/Cargo.toml",
     "src/views/download/lib/release/release-facts.ts",

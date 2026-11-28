@@ -4,26 +4,23 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
-  DESKTOP_SMOKE_DOCS,
-  DESKTOP_SMOKE_THIRD_PARTY_LICENSES,
+  DESKTOP_SMOKE_APP_ROUTES,
   DESKTOP_SMOKE_LOCALES,
   DESKTOP_SMOKE_ROOT_ENTRY,
-  DESKTOP_SMOKE_ROUTES,
   DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
   DESKTOP_SMOKE_ROUTE_TEXT_KEYS,
-  DESKTOP_SMOKE_ROUTE_TITLES,
-  DESKTOP_SMOKE_ROUTE_TITLE_KEYS,
-  resolveRouteTitles,
+  DESKTOP_SMOKE_SITE_FILES,
+  DESKTOP_SMOKE_THIRD_PARTY_LICENSES,
   evaluateDesktopSmoke,
+  resolveDownloadTitles,
   resolveRouteText,
 } from "./desktop-smoke.mjs";
 
 /** The expected copy expanded from the catalogue — the fixture uses the same source as the gate. */
 const ROUTE_TEXT = resolveRouteText();
-
-function makeOutDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "atlas-desktop-smoke-"));
-}
+const TITLES = resolveDownloadTitles();
+const escapeHtml = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const loadingWords = (locale) => JSON.parse(fs.readFileSync(`messages/${locale}/mapEntry.json`, "utf8"));
 
 function write(root, relativePath, contents = "<!doctype html>") {
   const filePath = path.join(root, relativePath);
@@ -31,181 +28,73 @@ function write(root, relativePath, contents = "<!doctype html>") {
   fs.writeFileSync(filePath, contents, "utf8");
 }
 
-function routeIndexPath(locale, route) {
-  return path.join(locale, route.replace(/^\/+|\/+$/g, ""), "index.html");
-}
+/** An app folder, a site folder and the app build's manifest that satisfy the smoke, as a build would write them. */
+function makeCurrentFolders() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-desktop-smoke-"));
+  const appDir = path.join(root, "app");
+  const siteDir = path.join(root, "site");
+  const manifestPath = path.join(root, "manifest.json");
 
-function routeChunkPath(locale, route) {
-  const slug = route.replace(/^\/+|\/+$/g, "").replaceAll("/", "-");
-  return `_next/static/chunks/${locale}-${slug || "root"}.js`;
-}
+  const pictures = DESKTOP_SMOKE_LOCALES.flatMap((locale) => {
+    const { mapComing, loadingDetail } = loadingWords(locale);
+    return [escapeHtml(mapComing), escapeHtml(loadingDetail)];
+  });
+  write(appDir, DESKTOP_SMOKE_ROOT_ENTRY, `<!doctype html><script type="module" src="/assets/index-a1.js"></script><p>${pictures.join("</p><p>")}</p>`);
+  write(appDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES, "license texts");
+  // The public file the code names by its address, so the app-folder check finds it named.
+  write(appDir, "assets/folders-b2.js", '"/third-party-licenses.txt"');
 
-function writeRoute(root, locale, route, { title, text = [], chunk = [] }) {
-  const chunkPath = routeChunkPath(locale, route);
-  write(root, chunkPath, chunk.join("\n"));
-  write(
-    root,
-    routeIndexPath(locale, route),
-    [
-      "<!doctype html>",
-      title ? `<title>${title}</title>` : "",
-      `<main>${text.join(" ")}</main>`,
-      `<script src="/${chunkPath}"></script>`,
-    ].join(""),
-  );
-}
-
-function makeCurrentOut() {
-  const outDir = makeOutDir();
-  write(outDir, DESKTOP_SMOKE_ROOT_ENTRY);
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  for (const doc of DESKTOP_SMOKE_DOCS) write(outDir, doc, "# bundled");
-  write(outDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES, "license texts");
+  const manifest = { "index.html": { file: "assets/index-a1.js", isEntry: true } };
+  const loads = ['import("./folders-b2.js")'];
+  for (const [route, source] of Object.entries(DESKTOP_SMOKE_APP_ROUTES)) {
+    const name = `route-${route.slice(1).replaceAll("/", "-")}.js`;
+    write(appDir, `assets/${name}`, (DESKTOP_SMOKE_ROUTE_CHUNK_TEXT[route] ?? []).join("\n"));
+    manifest[`${source}.tsx`] = { file: `assets/${name}`, src: `${source}.tsx`, isDynamicEntry: true };
+    loads.push(`import("./${name}")`);
+  }
+  // The entry loads every route chunk, as the router's code splitting does, so each file is one the bundle names.
+  write(appDir, "assets/index-a1.js", loads.join(";"));
+  write(root, "manifest.json", JSON.stringify(manifest));
 
   for (const locale of DESKTOP_SMOKE_LOCALES) {
-    for (const route of DESKTOP_SMOKE_ROUTES) {
-      writeRoute(outDir, locale, route, {
-        title: DESKTOP_SMOKE_ROUTE_TITLES[`${locale}:${route}`],
-        text: ROUTE_TEXT[`${locale}:${route}`] ?? [],
-        chunk: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT[route] ?? [],
-      });
-    }
+    write(siteDir, `${locale}/download/index.html`, `<title>${TITLES[locale]}</title><main>${ROUTE_TEXT[`${locale}:/download`].join(" ")}</main>`);
   }
-  return outDir;
+  for (const file of DESKTOP_SMOKE_SITE_FILES) write(siteDir, file, "x");
+  write(siteDir, "assets/download-c3.js", DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/download"].join("\n"));
+  return { root, appDir, siteDir, manifestPath, manifest };
 }
 
-test("desktop smoke inventory covers the current packaged workbench", () => {
+const evaluate = ({ appDir, siteDir, manifestPath }) =>
+  evaluateDesktopSmoke({ appDir, siteDir, manifestPath, routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT });
+
+const failing = (report) => report.missing.map((check) => check.id);
+
+test("desktop smoke inventory covers the screens the installed app packages", () => {
   assert.deepEqual(DESKTOP_SMOKE_LOCALES, ["en", "ja", "ko", "zh"]);
-  assert.deepEqual(DESKTOP_SMOKE_ROUTES, [
-    "/download",
-    "/docs",
-    "/ontology",
-    "/topology",
-    "/ontology/edit",
-    "/ontology/insights",
-  ]);
-  assert.deepEqual(DESKTOP_SMOKE_DOCS, [
-    "docs-vault/DESKTOP-MACOS.md",
-    // The sample must survive a vault rebuild — not a concept node but the
-    // `vault-readme` the generator always produces.
-    "docs-vault/ontology/README.md",
-  ]);
-});
-
-test("desktop smoke titles derive current route metadata for every locale", () => {
-  assert.equal(Object.keys(DESKTOP_SMOKE_ROUTE_TITLES).length, 20);
-  assert.equal(DESKTOP_SMOKE_ROUTE_TITLE_KEYS["/ontology/edit"], undefined);
-  for (const locale of DESKTOP_SMOKE_LOCALES) {
-    const { metadata } = JSON.parse(fs.readFileSync(`messages/${locale}.json`, "utf8"));
-    for (const [route, key] of Object.entries(DESKTOP_SMOKE_ROUTE_TITLE_KEYS)) {
-      const expected = route === "/download" ? metadata.homeTitle : `${metadata.pages[key]} · ${metadata.siteName}`;
-      assert.equal(DESKTOP_SMOKE_ROUTE_TITLES[`${locale}:${route}`], expected);
-    }
-  }
-});
-
-test("download uses absolute landing metadata and refuses a missing title", () => {
-  const root = makeOutDir();
-  try {
-    const messages = JSON.parse(fs.readFileSync("messages/en.json", "utf8"));
-    messages.metadata.homeTitle = "Fixture landing title";
-    messages.metadata.siteName = "Fixture brand";
-    write(root, "messages/en.json", JSON.stringify(messages));
-    assert.equal(resolveRouteTitles({ root, locales: ["en"] })["en:/download"], messages.metadata.homeTitle);
-    delete messages.metadata.homeTitle;
-    write(root, "messages/en.json", JSON.stringify(messages));
-    assert.throws(() => resolveRouteTitles({ root, locales: ["en"] }), /en:\/download.*metadata.homeTitle/);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test("desktop title expectations follow a changed catalogue and reject missing metadata", () => {
-  const root = makeOutDir();
-  try {
-    const messages = JSON.parse(fs.readFileSync("messages/en.json", "utf8"));
-    messages.metadata.pages.docs = "Renamed fixture collection";
-    write(root, "messages/en.json", JSON.stringify(messages));
-    assert.equal(resolveRouteTitles({ root, locales: ["en"] })["en:/docs"], `Renamed fixture collection · ${messages.metadata.siteName}`);
-    delete messages.metadata.pages.docs;
-    write(root, "messages/en.json", JSON.stringify(messages));
-    assert.throws(() => resolveRouteTitles({ root, locales: ["en"] }), /en:\/docs.*metadata.pages.docs/);
-    assert.throws(() => resolveRouteTitles({ root, locales: [] }), /at least one locale/);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
+  assert.deepEqual(Object.keys(DESKTOP_SMOKE_APP_ROUTES), ["/docs", "/ontology", "/topology", "/ontology/edit", "/ontology/insights"]);
 });
 
 /**
  * Pins keys, not sentences, and checks that they resolve against the live catalogue, so copy
  * changes bring the gate along.
  */
-test("desktop smoke download copy is read from the live message catalog", () => {
+test("desktop smoke wording is read from the live message catalog and refuses a retired key", () => {
   assert.deepEqual(Object.keys(DESKTOP_SMOKE_ROUTE_TEXT_KEYS), ["/download"]);
-
-  const resolved = resolveRouteText();
-  assert.deepEqual(Object.keys(resolved).sort(), ["en:/download", "ja:/download", "ko:/download", "zh:/download"]);
-
+  assert.deepEqual(Object.keys(ROUTE_TEXT).sort(), ["en:/download", "ja:/download", "ko:/download", "zh:/download"]);
   for (const locale of DESKTOP_SMOKE_LOCALES) {
-    const fragments = resolved[`${locale}:/download`];
-    assert.equal(fragments.length, DESKTOP_SMOKE_ROUTE_TEXT_KEYS["/download"].length);
-    for (const fragment of fragments) {
-      assert.equal(typeof fragment, "string");
-      assert.ok(fragment.length > 0, `${locale} download copy fragment is empty`);
+    assert.equal(TITLES[locale], JSON.parse(fs.readFileSync(`messages/${locale}.json`, "utf8")).metadata.homeTitle);
+    for (const fragment of ROUTE_TEXT[`${locale}:/download`]) {
       // Copy with an ICU placeholder renders differently from its source and cannot be found in the static HTML.
       assert.doesNotMatch(fragment, /[{}]/, `${locale} "${fragment}" carries an ICU placeholder`);
     }
   }
-
   // Two locales producing the same sentence means one catalogue was left untranslated.
-  assert.notDeepEqual(resolved["en:/download"], resolved["ko:/download"]);
-});
+  assert.notDeepEqual(ROUTE_TEXT["en:/download"], ROUTE_TEXT["ko:/download"]);
 
-test("desktop smoke copy contract refuses a message key the catalog dropped", () => {
-  assert.throws(
-    () => resolveRouteText({ keysByRoute: { "/download": ["download.factStripRetired"] } }),
-    /no longer exists/,
-  );
-});
-
-test("desktop smoke copy contract refuses a message with an ICU placeholder", () => {
-  assert.throws(
-    // The key must be live and carry a placeholder: a deleted key makes the probe throw "missing key"
-    // instead of "ICU rejected".
-    () => resolveRouteText({ keysByRoute: { "/download": ["download.factShaLink"] } }),
-    /ICU placeholder/,
-  );
-});
-
-test("desktop smoke chunks prove current route meaning", () => {
-  assert.deepEqual(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT, {
-    "/download": [
-      "gateway-hero-cta",
-      "gateway-demo-section",
-      "gateway-screens-section",
-    ],
-    "/docs": [
-      "data-docs-header-zone",
-      "data-docs-viewer",
-      "sourceContract.filesLabel",
-      "sourceContract.graphLabel",
-      "sourceContract.agentLabel",
-    ],
-    "/ontology": ["/topology/?", "index", "expanded"],
-    "/topology": ["ontology-map-canvas", "topology-concept-search"],
-    "/ontology/edit": ["/topology/?p=", "/topology/?workbench=create"],
-    "/ontology/insights": ["/library/?tab=wiki", "/architecture/?"],
-  });
-
-  const retired = JSON.stringify(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT);
-  for (const marker of [
-    "business-first",
-    "queryCockpitContractsAriaLabel",
-    "collaboratorBusinessExtractionChecks",
-    "Saved concept list",
-  ]) {
-    assert.equal(retired.includes(marker), false, marker);
-  }
+  assert.throws(() => resolveRouteText({ keysByRoute: { "/download": ["download.factStripRetired"] } }), /no longer exists/);
+  // The key must be live and carry a placeholder: a deleted key makes the probe throw "missing key" instead.
+  assert.throws(() => resolveRouteText({ keysByRoute: { "/download": ["download.factShaLink"] } }), /ICU placeholder/);
+  assert.throws(() => resolveDownloadTitles({ locales: [] }), /at least one locale/);
 });
 
 /**
@@ -260,193 +149,86 @@ test("smoke markers must exist in product source, not only in generated data", (
   );
 });
 
-test("desktop smoke accepts a complete current static payload", () => {
-  const report = evaluateDesktopSmoke({
-    outDir: makeCurrentOut(),
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, true);
-  assert.equal(report.missing.length, 0);
-  assert.match(report.nextAction, /desktop:dev|desktop:build/);
-});
-
-test("desktop smoke reports the exact missing packaged route", () => {
-  const outDir = makeCurrentOut();
-  fs.rmSync(path.join(outDir, "en/topology"), { recursive: true });
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, false);
-  assert.ok(report.missing.some((check) => check.id === "route:en:/topology"));
-  assert.match(report.nextAction, /pnpm build/);
-});
-
-test("desktop smoke refuses a smoked workbench route the desktop bundle would leave out", () => {
-  // `/project/<sample>` pages are pre-rendered for the website, and the stage drops them.
-  const route = "/project/storefront";
-  const outDir = makeCurrentOut();
-  for (const locale of DESKTOP_SMOKE_LOCALES) writeRoute(outDir, locale, route, {});
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    routes: [...DESKTOP_SMOKE_ROUTES, route],
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    DESKTOP_SMOKE_LOCALES.map((locale) => `bundle:${locale}:${route}`),
-  );
-  assert.ok(report.checks.some((check) => check.id === "bundle:en:/download" && check.ok));
-});
-
-test("desktop smoke reports the exact missing Tauri root entry", () => {
-  const outDir = makeCurrentOut();
-  fs.rmSync(path.join(outDir, DESKTOP_SMOKE_ROOT_ENTRY));
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, false);
-  assert.ok(report.missing.some((check) => check.id === "root-entry"));
-  assert.match(report.nextAction, /pnpm build/);
-});
-
-test("desktop smoke refuses an export without the third-party license texts", () => {
-  const outDir = makeCurrentOut();
-  fs.rmSync(path.join(outDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES));
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(report.missing.map((check) => check.id), ["third-party-licenses"]);
-  assert.match(report.nextAction, /pnpm build/);
-});
-
-test("desktop smoke detects stale route metadata without prescribing another build", () => {
-  const outDir = makeCurrentOut();
-  const routePath = routeIndexPath("en", "/ontology");
-  const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
-  write(
-    outDir,
-    routePath,
-    html.replace("Ontology · Ontology Atlas", "Verify Graph · Ontology Atlas"),
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, false);
-  assert.ok(
-    report.missing.some(
-      (check) => check.id === "route-title:en:/ontology",
-    ),
-  );
-  assert.match(report.nextAction, /contract drift|current route/i);
-  assert.doesNotMatch(report.nextAction, /pnpm build/);
-});
-
-test("desktop smoke detects a missing current component marker", () => {
-  const outDir = makeCurrentOut();
-  const chunkPath = routeChunkPath("ko", "/ontology");
-  const chunk = fs.readFileSync(path.join(outDir, chunkPath), "utf8");
-  write(outDir, chunkPath, chunk.replace("expanded", ""));
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, false);
-  assert.ok(
-    report.missing.some(
-      (check) => check.id === "route-chunk-text:ko:/ontology",
-    ),
-  );
-  assert.match(report.nextAction, /contract drift|current route/i);
-});
-
-test("desktop smoke follows reachable lazy chunks without accepting unrelated output", () => {
-  const outDir = makeCurrentOut();
-  const entry = routeChunkPath("en", "/ontology");
-  const lazy = "_next/static/chunks/insights-lazy.js";
-  const nested = "_next/static/chunks/insights-handoff.js";
-  const markers = DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology"];
-  const evaluate = () => evaluateDesktopSmoke({ outDir, routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT });
+test("desktop smoke accepts the app folder, the site folder and the manifest a build writes", () => {
+  const folders = makeCurrentFolders();
   try {
-    write(outDir, entry, 'load("static/chunks/insights-lazy.js")');
-    write(outDir, lazy, `${markers.slice(0, 2).join("\n")}\nload("static/chunks/insights-handoff.js")`);
-    write(outDir, nested, `${markers[2]}\nload("${entry}")`);
-    assert.equal(evaluate().ok, true, "lazy descendants and cycles remain reachable");
-
-    fs.unlinkSync(path.join(outDir, nested));
-    write(outDir, "_next/static/chunks/unrelated.js", markers[2]);
-    const missing = evaluate();
-    assert.equal(missing.ok, false, "an unrelated chunk cannot replace a missing descendant");
-    assert.ok(missing.missing.some((check) => check.id === "route-chunk-text:en:/ontology"));
-
-    write(outDir, nested, markers[2]);
-    assert.equal(evaluate().ok, true, "restoring the reachable artifact restores the gate");
-
-    write(outDir, entry, "");
-    assert.equal(evaluate().ok, false, "orphaned output cannot satisfy a route contract");
+    const report = evaluate(folders);
+    assert.deepEqual(failing(report), []);
+    assert.match(report.nextAction, /desktop:dev|desktop:build/);
   } finally {
-    fs.rmSync(outDir, { recursive: true, force: true });
+    fs.rmSync(folders.root, { recursive: true, force: true });
   }
 });
 
-test("desktop smoke detects drift in the current download handoff", () => {
-  const outDir = makeCurrentOut();
-  const routePath = routeIndexPath("ko", "/download");
-  const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
-  // The sentence being removed also comes from the catalogue: pinning a literal would make this
-  // probe silently meaningless at the next remake.
-  const [firstFragment] = ROUTE_TEXT["ko:/download"];
-  write(outDir, routePath, html.replace(firstFragment, ""));
+test("desktop smoke names a missing build artifact as one to build, and drift as one to read", () => {
+  const folders = makeCurrentFolders();
+  try {
+    fs.rmSync(path.join(folders.appDir, DESKTOP_SMOKE_ROOT_ENTRY));
+    fs.rmSync(path.join(folders.appDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES));
+    const missingArtifact = evaluate(folders);
+    assert.equal(missingArtifact.blockerKind, "missing-build-artifact");
+    assert.ok(failing(missingArtifact).includes("root-entry") && failing(missingArtifact).includes("third-party-licenses"));
+    assert.match(missingArtifact.nextAction, /pnpm build/);
 
-  const report = evaluateDesktopSmoke({
-    outDir,
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, false);
-  assert.ok(
-    report.missing.some((check) => check.id === "route-text:ko:/download"),
-  );
-  assert.match(report.nextAction, /contract drift|current route/i);
+    write(folders.appDir, DESKTOP_SMOKE_ROOT_ENTRY, '<!doctype html><script type="module" src="/assets/index-a1.js"></script>');
+    write(folders.appDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES, "license texts");
+    const drift = evaluate(folders);
+    assert.deepEqual(failing(drift), DESKTOP_SMOKE_LOCALES.map((locale) => `loading-picture:${locale}`));
+    assert.equal(drift.blockerKind, "static-contract-drift");
+    assert.doesNotMatch(drift.nextAction, /pnpm build/);
+  } finally {
+    fs.rmSync(folders.root, { recursive: true, force: true });
+  }
 });
 
-test("desktop smoke follows an injected four-locale list", () => {
-  const root = makeOutDir();
+test("desktop smoke refuses a file only the website serves, or one nothing names, in the app folder", () => {
+  const folders = makeCurrentFolders();
   try {
-    const locales = ["en", "ja", "ko", "zh"];
-    for (const locale of locales) {
-      const catalog = JSON.parse(fs.readFileSync("messages/en.json", "utf8"));
-      catalog.metadata.siteName = `Site ${locale}`;
-      catalog.metadata.homeTitle = `Home ${locale}`;
-      write(root, `messages/${locale}.json`, JSON.stringify(catalog));
-    }
-    const titles = resolveRouteTitles({ root, locales });
-    assert.equal(Object.keys(titles).length, locales.length * Object.keys(DESKTOP_SMOKE_ROUTE_TITLE_KEYS).length);
-    assert.equal(titles["zh:/download"], "Home zh");
-    assert.ok(titles["zh:/docs"].endsWith("· Site zh"));
-    assert.deepEqual(
-      Object.keys(resolveRouteText({ root, locales })).sort(),
-      locales.map((locale) => `${locale}:/download`),
-    );
+    write(folders.appDir, "og-image.png", "png");
+    assert.ok(failing(evaluate(folders)).includes("app-folder-contents"));
+    fs.rmSync(path.join(folders.appDir, "og-image.png"));
+    write(folders.appDir, "orphan.bin", "x");
+    assert.ok(failing(evaluate(folders)).includes("app-folder-contents"));
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(folders.root, { recursive: true, force: true });
+  }
+});
+
+test("desktop smoke follows a route's lazy chunks, and an unrelated chunk cannot stand in for one", () => {
+  const folders = makeCurrentFolders();
+  const { appDir, manifest, manifestPath } = folders;
+  const source = `${DESKTOP_SMOKE_APP_ROUTES["/ontology"]}.tsx`;
+  const markers = DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology"];
+  const withLazyMarkers = () => {
+    write(appDir, "assets/lazy-d4.js", markers.join("\n"));
+    write(appDir, "assets/route-ontology.js", 'import("./lazy-d4.js")');
+    manifest[source] = { ...manifest[source], dynamicImports: ["lazy"] };
+    manifest.lazy = { file: "assets/lazy-d4.js", isDynamicEntry: true };
+    write(path.dirname(manifestPath), "manifest.json", JSON.stringify(manifest));
+  };
+  try {
+    withLazyMarkers();
+    assert.deepEqual(failing(evaluate(folders)), [], "markers in a chunk the route loads on demand count");
+
+    delete manifest[source].dynamicImports;
+    write(path.dirname(manifestPath), "manifest.json", JSON.stringify(manifest));
+    assert.ok(failing(evaluate(folders)).includes("route-chunk-text:/ontology"), "a chunk the route does not load cannot satisfy it");
+  } finally {
+    fs.rmSync(folders.root, { recursive: true, force: true });
+  }
+});
+
+test("desktop smoke detects drift in the download page the website serves", () => {
+  const folders = makeCurrentFolders();
+  try {
+    const page = path.join(folders.siteDir, "ko/download/index.html");
+    const [firstFragment] = ROUTE_TEXT["ko:/download"];
+    fs.writeFileSync(page, fs.readFileSync(page, "utf8").replace(firstFragment, ""));
+    fs.writeFileSync(path.join(folders.siteDir, "en/download/index.html"), "<title>Old title</title>");
+    const report = evaluate(folders);
+    assert.deepEqual(failing(report).sort(), ["route-text:en:/download", "route-text:ko:/download", "route-title:en:/download"].sort());
+    assert.match(report.nextAction, /drift/i);
+  } finally {
+    fs.rmSync(folders.root, { recursive: true, force: true });
   }
 });

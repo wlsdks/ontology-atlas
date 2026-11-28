@@ -3,12 +3,13 @@ import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileS
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import playwrightConfig, { resolvePlaywrightWorkers } from '../../../playwright.config';
 import { importCheckRules } from '../../../scripts/lib/ci/focused-check-suggestions.mjs';
 import { MERGE_SMOKE_SPECS } from '../../../scripts/ci/merge-smoke-specs.mjs';
 import { POST_MERGE_SPECS } from '../../e2e/post-merge-specs';
+import { WEBSITE_SPECS } from '../../e2e/website-specs';
 
 /**
  * Watches the wiring of the PR-gate and post-merge-sweep split: the spec list
@@ -151,19 +152,49 @@ describe('post-merge specs reach the pull requests that change their owner', () 
   });
 });
 
-describe('Playwright projects come from that list', () => {
-  const projects = playwrightConfig.projects ?? [];
-
-  it('there are two projects, smoke and post-merge', () => {
-    expect(projects.map((p) => p.name).sort()).toEqual(['post-merge', 'smoke']);
+describe('the website specs list holds only specs that exist', () => {
+  it('is non-empty and has no duplicates', () => {
+    expect(WEBSITE_SPECS.length).toBeGreaterThanOrEqual(5);
+    expect(new Set(WEBSITE_SPECS).size).toBe(WEBSITE_SPECS.length);
   });
 
-  it('post-merge matches the list exactly, and smoke is its complement', () => {
-    const globs = POST_MERGE_SPECS.map((file) => `**/${file}`);
-    const smoke = projects.find((p) => p.name === 'smoke');
-    const postMerge = projects.find((p) => p.name === 'post-merge');
-    expect(postMerge?.testMatch).toEqual(globs);
-    expect(smoke?.testIgnore).toEqual(globs);
+  it.each([...WEBSITE_SPECS])('%s exists in tests/e2e', (file) => {
+    // A renamed or deleted spec left in the list belongs to no website project, so it would run against the app folder.
+    expect(existsSync(join(E2E_DIR, file)), `${file} is missing — if renamed, fix the list too`).toBe(true);
+  });
+});
+
+describe('Playwright projects come from those two lists', () => {
+  const projects = playwrightConfig.projects ?? [];
+  const named = (name: string) => projects.find((p) => p.name === name);
+  const globs = (files: readonly string[]) => files.map((file) => `**/${file}`);
+  const bothLists = POST_MERGE_SPECS.filter((file) => (WEBSITE_SPECS as readonly string[]).includes(file));
+
+  it('there are four projects: the gate and the measurements, each on the app folder and on the site folder', () => {
+    expect(projects.map((p) => p.name).sort()).toEqual(['post-merge', 'smoke', 'website', 'website-post-merge']);
+  });
+
+  it('every spec is in exactly one project: the lists cut the suite into four and leave nothing over or twice', () => {
+    expect(named('smoke')?.testIgnore).toEqual(globs([...POST_MERGE_SPECS, ...WEBSITE_SPECS]));
+    expect(named('post-merge')?.testMatch).toEqual(globs(POST_MERGE_SPECS.filter((file) => !bothLists.includes(file))));
+    expect(named('website')?.testMatch).toEqual(globs(WEBSITE_SPECS));
+    expect(named('website')?.testIgnore).toEqual(globs(POST_MERGE_SPECS));
+    expect(named('website-post-merge')?.testMatch).toEqual(globs(bothLists));
+  });
+
+  it('against the built folders the website projects read another origin than the app projects', async () => {
+    vi.resetModules();
+    for (const [name, value] of Object.entries({ CI: '1', PLAYWRIGHT_STATIC: '1', PLAYWRIGHT_BASE_URL: 'http://127.0.0.1:3110', PLAYWRIGHT_SITE_BASE_URL: '', PLAYWRIGHT_SURFACE: '' })) vi.stubEnv(name, value);
+    try {
+      const { default: built } = await import('../../../playwright.config');
+      expect(Object.fromEntries((built.projects ?? []).map((p) => [p.name, p.use?.baseURL]))).toEqual({
+        smoke: 'http://127.0.0.1:3110', 'post-merge': 'http://127.0.0.1:3110',
+        website: 'http://127.0.0.1:3111', 'website-post-merge': 'http://127.0.0.1:3111',
+      });
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
   });
 });
 

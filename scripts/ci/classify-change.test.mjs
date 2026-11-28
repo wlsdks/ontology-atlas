@@ -797,10 +797,10 @@ test('every plan audits vault paths, because a move anywhere can break one', () 
 
 test('tsconfig and every script the browser build runs are broad browser inputs', () => {
   const build = browserBuildFiles();
-  for (const path of ['scripts/web/next-build.mjs', 'scripts/web/localize-html-lang.mjs', 'scripts/docs-vault/build-docs-vault.mjs', 'scripts/i18n/build-messages.mjs', 'scripts/prepare-worktree.mjs']) {
+  for (const path of ['scripts/web/build-app-and-site.mjs', 'scripts/web/site/prerender-site.mjs', 'scripts/vite/atlas-app-folder.ts', 'scripts/desktop/check-app-folder.mjs', 'scripts/docs-vault/build-docs-vault.mjs', 'scripts/i18n/build-messages.mjs', 'scripts/prepare-worktree.mjs']) {
     assert.ok(build.includes(path), path);
   }
-  for (const path of ['tsconfig.json', 'scripts/web/next-build.mjs', 'scripts/docs-vault/build-docs-vault.mjs']) {
+  for (const path of ['tsconfig.json', 'scripts/web/site/prerender-site.mjs', 'scripts/docs-vault/build-docs-vault.mjs']) {
     const { e2e } = buildImpactPlan({ files: [path] }).lanes;
     assert.deepEqual([e2e.mode, e2e.staticExport, e2e.webSurface], ['smoke', true, true], path);
   }

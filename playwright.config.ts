@@ -1,28 +1,48 @@
 import { existsSync } from 'node:fs';
 
-import { defineConfig } from '@playwright/test';
+import { defineConfig, type Project } from '@playwright/test';
 
 import { POST_MERGE_SPECS } from './tests/e2e/post-merge-specs';
+import { WEBSITE_SPECS } from './tests/e2e/website-specs';
+import { APP_FOLDER, SITE_FOLDER } from './scripts/lib/web/built-folders.mjs';
 import { foreignServer } from './scripts/lib/ci/playwright-server-owner.mjs';
 
-const servesStaticExport = Boolean(process.env.PLAYWRIGHT_STATIC);
-// The folder the Vite build writes for the installed app (`pnpm app:build`); when set, static mode
-// serves it, with the one document every path falls back to, instead of the Next export in `out/`.
-const viteAppFolder = process.env.ATLAS_E2E_APP_FOLDER;
+const servesBuiltFolders = Boolean(process.env.PLAYWRIGHT_STATIC);
 const isCI = process.env.CI === 'true' || process.env.CI === '1';
-// The static export gets its own port so it never reuses a dev server left on 3100.
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || (servesStaticExport ? 'http://127.0.0.1:3110' : 'http://127.0.0.1:3100');
-const webServerOrigin = new URL(baseURL).origin;
-const webServerPort = new URL(baseURL).port || '3100';
+// The built folders get their own ports so they never reuse a dev server left on 3100.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || (servesBuiltFolders ? 'http://127.0.0.1:3110' : 'http://127.0.0.1:3100');
+const appOrigin = new URL(baseURL);
+// Against the dev server one origin serves both surfaces. Against the built folders the website host and the
+// installed app are two servers, so they are two origins: the site folder one port above the app folder, unless named.
+const siteOrigin = process.env.PLAYWRIGHT_SITE_BASE_URL
+  ? new URL(process.env.PLAYWRIGHT_SITE_BASE_URL)
+  : servesBuiltFolders
+    ? new URL(`${appOrigin.protocol}//${appOrigin.hostname}:${Number(appOrigin.port || 80) + 1}`)
+    : appOrigin;
+// `PLAYWRIGHT_SURFACE=app|site` serves and runs one surface alone at `PLAYWRIGHT_BASE_URL`, for a machine whose
+// sessions each own one port; unset, a run serves both.
+const onlySurface = servesBuiltFolders ? process.env.PLAYWRIGHT_SURFACE || undefined : undefined;
+if (onlySurface !== undefined && onlySurface !== 'app' && onlySurface !== 'site') {
+  throw new Error(`PLAYWRIGHT_SURFACE is "${onlySurface}"; expected "app" or "site".`);
+}
+if (onlySurface === 'site') siteOrigin.port = appOrigin.port;
+const runsApp = onlySurface !== 'site';
+const runsSite = onlySurface !== 'app';
 // Vite binds `localhost` to 127.0.0.1 alone, but Node-side requests (`route.fetch`, `page.request`) try ::1 first.
-const previewHost = new URL(baseURL).hostname === 'localhost' ? '::1' : new URL(baseURL).hostname;
+const hostFor = (origin: URL) => (origin.hostname === 'localhost' ? '::1' : origin.hostname);
 
 // Locally Playwright reuses whatever already listens on the port; refuse one
 // that another worktree or project started.
-const foreignServerMessage = process.env.CI ? null : foreignServer(new URL(baseURL).hostname, webServerPort, process.cwd());
-if (foreignServerMessage) throw new Error(foreignServerMessage);
-if (!process.env.CI && servesStaticExport && !viteAppFolder && !existsSync('out/index.html')) {
-  throw new Error('PLAYWRIGHT_STATIC=1 serves the static export in out/, which is missing: run `pnpm build` first.');
+for (const origin of new Set([appOrigin, siteOrigin])) {
+  const foreignServerMessage = process.env.CI ? null : foreignServer(origin.hostname, origin.port || '80', process.cwd());
+  if (foreignServerMessage) throw new Error(foreignServerMessage);
+}
+if (!process.env.CI && servesBuiltFolders) {
+  const missing = [
+    ...(runsApp && !existsSync(`${APP_FOLDER}/index.html`) ? [APP_FOLDER] : []),
+    ...(runsSite && !existsSync(`${SITE_FOLDER}/index.html`) ? [SITE_FOLDER] : []),
+  ];
+  if (missing.length > 0) throw new Error(`PLAYWRIGHT_STATIC=1 serves ${missing.join(' and ')}, which ${missing.length > 1 ? 'are' : 'is'} missing: run \`pnpm build\` first.`);
 }
 
 const CI_STATIC_WORKERS = 2;
@@ -37,6 +57,56 @@ export function resolvePlaywrightWorkers(
   if (Number.isInteger(requested) && requested > 0) return requested;
   if (env.PLAYWRIGHT_STATIC !== '1') return 1;
   return isCI ? CI_STATIC_WORKERS : LOCAL_STATIC_WORKERS;
+}
+
+const globs = (files: readonly string[]) => files.map((file) => `**/${file}`);
+const inBoth = POST_MERGE_SPECS.filter((file) => (WEBSITE_SPECS as readonly string[]).includes(file));
+
+function projects(): Project[] {
+  const app: Project[] = [
+    { name: 'smoke', testIgnore: globs([...POST_MERGE_SPECS, ...WEBSITE_SPECS]), use: { baseURL: appOrigin.origin } },
+    {
+      name: 'post-merge',
+      testMatch: globs(POST_MERGE_SPECS.filter((file) => !inBoth.includes(file))),
+      // These specs time frames, so outside CI they do not share the machine with other workers.
+      ...(isCI ? {} : { workers: 1 }),
+      use: { baseURL: appOrigin.origin },
+    },
+  ];
+  const site: Project[] = [
+    { name: 'website', testMatch: globs(WEBSITE_SPECS), testIgnore: globs(POST_MERGE_SPECS), use: { baseURL: siteOrigin.origin } },
+    {
+      name: 'website-post-merge',
+      testMatch: globs(inBoth),
+      ...(isCI ? {} : { workers: 1 }),
+      use: { baseURL: siteOrigin.origin },
+    },
+  ];
+  return [...(runsApp ? app : []), ...(runsSite ? site : [])];
+}
+
+/** What serves each surface: the dev server for both at once, or one static server per built folder. */
+function webServers() {
+  if (!servesBuiltFolders) {
+    return {
+      // Runs the predev step (docs vault and messages) before Vite, which the `dev` script does itself.
+      command: `pnpm predev && pnpm exec vite --host ${hostFor(appOrigin)} --port ${appOrigin.port} --strictPort`,
+      url: appOrigin.origin,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    };
+  }
+  const serve = (origin: URL, folder: string, fallback: string | null) => ({
+    command: `node scripts/web/serve-static-export.mjs --dir=${folder} --host=${hostFor(origin)} --port=${origin.port}${fallback ? ` --fallback=${fallback}` : ''}`,
+    url: origin.origin,
+    reuseExistingServer: false,
+    timeout: 120_000,
+  });
+  return [
+    // Tauri answers a path the app folder lacks with its one document; the website host answers 404.html.
+    ...(runsApp ? [serve(appOrigin, APP_FOLDER, 'index.html')] : []),
+    ...(runsSite ? [serve(siteOrigin, SITE_FOLDER, null)] : []),
+  ];
 }
 
 export default defineConfig({
@@ -60,26 +130,19 @@ export default defineConfig({
   retries: isCI ? 2 : 0,
   reporter: [['list']],
   /**
-   * Journeys and measurements — two projects, one list.
+   * Journeys and measurements, each on the surface it reads: four projects, two lists.
    *
-   * The source of truth for the boundary is `tests/e2e/post-merge-specs.ts` (why that boundary
-   * is chosen is also documented there). Here we only split the list into its complement (smoke) and
-   * the measurement list — new specs not in the list are **automatically smoke**.
+   * `tests/e2e/post-merge-specs.ts` draws the boundary between the gate and the measurements (why is
+   * documented there), and `tests/e2e/website-specs.ts` the one between the website's pages and the app's
+   * screens. Here we only cut the two lists across each other; a new spec in neither list is an app journey
+   * in the gate. A website project reads the site folder, the others the app folder.
    *
-   * `pnpm exec playwright test` without filters runs both projects, as the nightly whole run does in
+   * `pnpm exec playwright test` without filters runs every project, as the nightly whole run does in
    * CI. A planned dispatch runs its mapped specs and the merge smoke set
    * (`scripts/ci/merge-smoke-specs.mjs`) by file.
    * Verify wiring is alive via `tests/contract/ci-gates/e2e-suite-split.contract.test.ts`.
    */
-  projects: [
-    { name: 'smoke', testIgnore: POST_MERGE_SPECS.map((file) => `**/${file}`) },
-    {
-      name: 'post-merge',
-      testMatch: POST_MERGE_SPECS.map((file) => `**/${file}`),
-      // These specs time frames, so outside CI they do not share the machine with other workers.
-      ...(isCI ? {} : { workers: 1 }),
-    },
-  ],
+  projects: projects(),
   outputDir: 'output/playwright/test-results',
   use: {
     baseURL,
@@ -94,19 +157,7 @@ export default defineConfig({
     video: 'off',
     screenshot: 'off',
   },
-  // R11 #24 — Automatically start the dev server when running e2e in CI. Locally, reuse the already
-  // started dev (3100). Without webServer, CI cannot connect to baseURL.
-  webServer: {
-    // pnpm entry point that also runs the predev hook (docs-vault build). With `PLAYWRIGHT_STATIC=1`,
-    // serve the built static export: some specs measure layers absent in dev, e.g. same-route
-    // navigation that only fails in production.
-    command: servesStaticExport
-      ? viteAppFolder
-        ? `pnpm exec vite preview --host ${previewHost} --port ${webServerPort} --outDir ${viteAppFolder}`
-        : `node scripts/web/serve-static-export.mjs --port=${webServerPort}`
-      : `pnpm dev -p ${webServerPort}`,
-    url: webServerOrigin,
-    reuseExistingServer: !process.env.CI && !servesStaticExport,
-    timeout: 120_000,
-  },
+  // Without webServer, CI cannot connect to baseURL. Locally the dev server is reused when one already
+  // listens on the port; the built folders are always served fresh.
+  webServer: webServers(),
 });

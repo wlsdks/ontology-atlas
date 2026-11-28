@@ -62,7 +62,7 @@ function parseArguments(argv) {
     seen.add(identity);
     if (key === '--shard') options.shard = value;
     if (key === '--project') {
-      if (!['smoke', 'post-merge'].includes(value)) throw new Error(`unsupported project: ${value}`);
+      if (!['smoke', 'post-merge', 'website', 'website-post-merge'].includes(value)) throw new Error(`unsupported project: ${value}`);
       options.project = [arg];
     }
     if (key === '--exclude') {
@@ -127,7 +127,7 @@ function executionSummary(report) {
 export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), env = process.env, quarantine } = {}) {
   const { shard, index, total, project, excluded, only, help } = parseArguments(argv);
   if (help) {
-    console.log('Usage: node scripts/ci/run-playwright-ci.mjs [--shard=N/M] [--project=smoke|post-merge] [--exclude=SPEC] [--only=SPEC...]\nDefaults: shard 1/3, both projects, every file. Exclusions: web-surface-smoke.spec.ts, contextual-meaning-editor.spec.ts. --only names files under tests/e2e/; one that discovery cannot find is an error.\nFiles in tests/quarantine.json never run here; `node scripts/ci/quarantine.mjs run-browser` runs them.\nUse --help or -h alone to display this help without running tests.');
+    console.log('Usage: node scripts/ci/run-playwright-ci.mjs [--shard=N/M] [--project=smoke|post-merge|website|website-post-merge] [--exclude=SPEC] [--only=SPEC...]\nDefaults: shard 1/3, every project, every file. Exclusions: web-surface-smoke.spec.ts, contextual-meaning-editor.spec.ts. --only names files under tests/e2e/; one that discovery cannot find is an error.\nFiles in tests/quarantine.json never run here; `node scripts/ci/quarantine.mjs run-browser` runs them.\nUse --help or -h alone to display this help without running tests.');
     return 0;
   }
   // Every gating run leaves the quarantined specs out, so they block neither a merge nor a release.
