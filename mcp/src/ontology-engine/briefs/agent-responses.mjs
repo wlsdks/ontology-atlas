@@ -1,5 +1,3 @@
-import { publicRelationType } from '../query-operation/query-primitives.mjs';
-
 /**
  * What an agent does when the server cannot be reached. There is no write path around MCP: the
  * Markdown is readable without it, and only the person can restore the connection.

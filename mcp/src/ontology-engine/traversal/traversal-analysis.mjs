@@ -8,38 +8,27 @@ import {
   normalizePathDirection,
   normalizeTypes,
   summarizeNode,
-  typeAllowed,
 } from '../query-operation/query-primitives.mjs';
 import { compareText } from '../../compare-text.mjs';
 
 export function createTraversalAnalysis({
-  artifact,
   nodes,
-  edges,
   nodeBySlug,
-  sourceDocFor,
   resolve,
   path,
   pathNodes,
   traversalEdges,
   buildDependencyImpactQualification,
-  builderFocusParam,
   commonNeighborRows,
-  compareCentralityRows,
   countBy,
   nearestDomainFor,
-  normalizeBuilderFocusInput,
-  normalizeCanvasPosition,
   normalizeDependencyImpactTypes,
-  normalizeIterations,
   normalizePattern,
   normalizeTraversalDirection,
-  pageRankScores,
   patternLayer,
   qualifyDeclaredDependencyEdges,
   relationVerdict,
   resolvedEdgesBetween,
-  roundScore,
   uniqueEdges,
 }) {
   function explainRelation(fromInput, toInput, options = {}) {

@@ -34,7 +34,6 @@ import {
   normalizeDependencyImpactTypes,
   normalizeNodeKind,
   normalizeNodeSort,
-  normalizeNonNegativeInteger,
   normalizeOptionalString,
   normalizePattern,
   normalizeRecommendRelationKind,
@@ -46,7 +45,6 @@ import {
   countEdges,
   formatCompiledEdge,
   publicRelationCountObject,
-  publicRelationTypes,
   uniqueEdges,
 } from './ontology-engine/query-operation/query-primitives.mjs';
 import { findNearMatchSlug, suggestedSlugForReference, titleFromReference } from './ontology-engine/maintenance/reference-repair.mjs';
@@ -221,8 +219,8 @@ export function createOntologyEngine(artifact, options = {}) {
   } = contextOperations;
 
   const {
-    resolveProjectRoot, projectRootSlugs, resolveDomainRoot, collectContainmentScope,
-    nearestDomainFor, intersectSlugSets, sortedNodesInScope, domainMapRow, limitedNodeList,
+    resolveProjectRoot, projectRootSlugs, collectContainmentScope,
+    nearestDomainFor, intersectSlugSets, sortedNodesInScope, domainMapRow,
   } = createScopeLookups({
     nodes, nodeBySlug, resolve, resolveOptional, containmentChildren, containmentParentsFor,
     partitionScopeEdges, topHubs,
@@ -240,7 +238,6 @@ export function createOntologyEngine(artifact, options = {}) {
     artifact,
     nodes,
     edges,
-    nodeBySlug,
     resolve,
     filteredEdges,
     traversalEstimate,
@@ -248,10 +245,8 @@ export function createOntologyEngine(artifact, options = {}) {
     normalizeDependencyImpactTypes,
     normalizeNodeKind,
     normalizeNodeSort,
-    normalizeNonNegativeInteger,
     normalizeOptionalString,
     normalizeTraversalDirection,
-    publicRelationTypes,
   });
 
   const {
@@ -263,7 +258,6 @@ export function createOntologyEngine(artifact, options = {}) {
     subgraph,
   } = createTraversalAnalysis({
     nodes,
-    edges,
     nodeBySlug,
     resolve,
     path,
@@ -308,16 +302,16 @@ export function createOntologyEngine(artifact, options = {}) {
     topHubs,
   });
   const { matchNodes, relationCheck, similarNodes } = createMatchQueries({
-    edges, nodes, nodeBySlug, resolve, traversalEdges, compareEdges, compareNodeRows,
+    edges, nodes, nodeBySlug, resolve, traversalEdges, compareNodeRows,
     formatCompiledEdge, nearbySchemaPatterns,
-    normalizeNodeKind, normalizeNodeSort, normalizeNonNegativeInteger, normalizeOptionalString,
-    publicRelationTypes, roundScore, schemaPatterns, similarityScore, writeRelationType,
+    normalizeNodeKind, normalizeNodeSort, normalizeOptionalString,
+    roundScore, schemaPatterns, similarityScore, writeRelationType,
   });
   const { nodeProfile, projectScope, projectMap } = createProfileQueries({
     nodeBySlug, outgoing, incoming, resolveWithGrowthHint, aliasesFor, collectContainmentScope,
     collectLineage, compareEdges, containmentChildren, containmentParentsFor, countBy: countEdges,
-    domainMapRow, intersectSlugSets, limitedNodeList, partitionScopeEdges, profileEdgeGroup,
-    resolveDomainRoot, resolveProjectRoot, scopeEdgeGroup, sortedNodesInScope, topHubs,
+    domainMapRow, intersectSlugSets, partitionScopeEdges, profileEdgeGroup,
+    resolveProjectRoot, scopeEdgeGroup, sortedNodesInScope, topHubs,
   });
   const { components, communities, connectedComponentGroups, componentGroupOnlyHasKinds } =
     createClusterQueries({

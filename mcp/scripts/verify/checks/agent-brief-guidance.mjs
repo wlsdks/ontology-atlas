@@ -68,14 +68,6 @@ export function agentToolCallsIncludeOperation(calls, operation) {
   return Array.isArray(calls) && calls.some((call) => call?.tool === 'query_ontology' && call?.arguments?.operation === operation);
 }
 
-function agentToolCallsIncludeQueryPlanTarget(calls, targetOperation) {
-  return Array.isArray(calls) && calls.some((call) =>
-    call?.tool === 'query_ontology' &&
-    call?.arguments?.operation === 'query_plan' &&
-    call?.arguments?.targetOperation === targetOperation
-  );
-}
-
 export function agentToolCallsFailure(label, calls) {
   if (!Array.isArray(calls) || calls.length === 0) {
     return `${label} missing tool calls`;

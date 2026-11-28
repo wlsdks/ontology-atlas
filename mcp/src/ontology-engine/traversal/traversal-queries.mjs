@@ -1,5 +1,4 @@
 import {
-  countEdges,
   edgeAllowed,
   edgeSortKey,
   formatDirectedEdge,
@@ -9,9 +8,7 @@ import {
   normalizeLimit,
   normalizeOptionalBoolean,
   normalizePathDirection,
-  normalizeSearchBudget,
   normalizeTypes,
-  sortedCountObject,
   summarizeNode,
   typeAllowed,
 } from '../query-operation/query-primitives.mjs';

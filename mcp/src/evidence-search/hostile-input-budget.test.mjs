@@ -15,17 +15,6 @@ import { readSourceEvidence } from './source-evidence.mjs';
 const FILE_BYTES = 256 * 1024;
 // Cases take at most 5 ms each; the budget leaves wide headroom.
 const BUDGET_MS = 200;
-// Measured 2026-11-19: each Markdown case takes at most 16 ms; micromark 2.1.0
-// took 0.2 to 4.2 s on the first six. Unterminated instructions take 8 ms, and
-// 2.9 s when each one searches ahead for its terminator.
-const MARKDOWN_BUDGET_MS = 100;
-// Pages of tiny blocks cost markdown-it's own parse about 0.8 ms a KiB.
-// Measured 2026-11-19: 128 KiB of NUL headings takes 58 ms, and 770 ms when
-// each heading is searched for; 48 KiB of quotes each followed by a lazy line
-// takes 50 ms, and 1.7 s when each quote scans every lazy line after it; a
-// lazy paragraph 19 quotes deep takes 45 ms, and 1.6 s when each enclosing
-// quote's retry repeats the probes of the quotes inside it.
-const DENSE_BUDGET_MS = 300;
 const scratchRoots = [];
 
 after(() => {

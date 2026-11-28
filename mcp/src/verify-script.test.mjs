@@ -7,7 +7,6 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
-  EDGE_TARGET_KIND_VALUES,
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
@@ -303,85 +302,6 @@ function verifiedGoPackageImportEvidence(overrides = {}) {
   };
 }
 
-function humanMeaningRepair(projectSlug) {
-  const domains = Array.from({ length: 6 }, (_, index) => `domains/d${index + 1}`);
-  const capabilities = Array.from(
-    { length: 20 },
-    (_, index) => `capabilities/c${String(index + 1).padStart(2, '0')}`,
-  );
-  const reviewRevision = `sha256:${'a'.repeat(64)}`;
-  return {
-    contract: 'meaningRepair:v2',
-    status: 'human_review_required',
-    projectSlug,
-    blockedBy: null,
-    primaryQuestion: 'abilities',
-    questionsNeedingReview: ['abilities', 'evidence'],
-    provenance: {
-      graphHash: 'project-graph-v1:a1b2c3d4',
-      sourceFingerprint: 'git:abc123:clean',
-      sourceMeasuredAt: '2026-08-04T00:00:00.000Z',
-      sourceCurrentness: 'current',
-    },
-    reviewRevision,
-    questions: {
-      abilities: {
-        basis: 'typed_containment',
-        answerStatus: 'partial',
-        targetCount: domains.length,
-        review: {
-          state: 'structural_candidates_only',
-          alreadyDeclared: 1,
-          candidateAdditions: 5,
-          declaredWithoutSupport: 0,
-          unresolved: 0,
-        },
-      },
-      evidence: {
-        basis: 'current_source_canonical_path',
-        answerStatus: 'partial',
-        targetCount: capabilities.length,
-        review: {
-          state: 'source_path_candidates_only',
-          alreadyDeclared: 2,
-          candidateAdditions: 9,
-          declaredWithoutSupport: 0,
-          unresolved: 9,
-        },
-      },
-    },
-    workflow: [
-      {
-        step: 'read_review_inputs',
-        derivation: {
-          operation: 'meaning_repair_review',
-          order: 'project_then_domains_then_capabilities',
-        },
-        calls: [{
-          tool: 'query_ontology',
-          arguments: {
-            operation: 'meaning_repair_review',
-            project: projectSlug,
-            expectedGraphHash: 'project-graph-v1:a1b2c3d4',
-            expectedSourceFingerprint: 'git:abc123:clean',
-            reviewRevision,
-          },
-        }],
-      },
-      { step: 'human_semantic_approval', calls: [] },
-      { step: 'write_approved_project_body', calls: [] },
-      { step: 'verify', calls: [] },
-      { step: 'refresh_conflict_guard', calls: [] },
-      { step: 'finalize', calls: [] },
-    ],
-    stopWhen: ['source_not_current'],
-    writePolicy: {
-      humanApprovalRequired: true,
-      automaticWrite: false,
-      automaticFinalize: false,
-    },
-  };
-}
 import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-lines.mjs';
 import { GRAPH_ARRAY_KEYS } from './vault/graph/relation-refs.mjs';
 import { NODE_UID_PATTERN } from './schema.mjs';

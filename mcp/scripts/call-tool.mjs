@@ -299,10 +299,6 @@ export function formatMcpJsonRpcError(error, { toolName } = {}) {
   return new Error(`mcp tool error${toolLabel}:${code} ${message}${data}`);
 }
 
-function attachUnenumeratedHandoffText(structure, text) {
-  return Object.defineProperty(structure, 'handoffPrompt', { value: text, enumerable: false });
-}
-
 export function parseMcpToolResponse(toolResp, { toolName } = {}) {
   const toolLabel = toolName ? ` (${toolName})` : '';
   if (toolResp?.error) {
@@ -323,16 +319,6 @@ export function parseMcpToolResponse(toolResp, { toolName } = {}) {
     result.structuredContent != null
   ) {
     if (typeof text !== 'string') {
-      return result.structuredContent;
-    }
-    if (result.structuredContent?.contract === 'agentBriefCompact:v3' && !Object.hasOwn(result.structuredContent, 'handoffPrompt')) {
-      return attachUnenumeratedHandoffText(result.structuredContent, text);
-    }
-    if (
-      result.structuredContent?.contract === 'agentBriefCompact:v2'
-      && typeof result.structuredContent?.handoffPrompt === 'string'
-      && text === result.structuredContent.handoffPrompt
-    ) {
       return result.structuredContent;
     }
     let textPayload;

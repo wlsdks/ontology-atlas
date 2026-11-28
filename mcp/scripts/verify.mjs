@@ -311,7 +311,6 @@ async function step2BootAndCall() {
           }
         }
       }
-      const liveResponses = parseJsonRpcResponses(stdout);
       if (
         !completed
         && (hasAllFirstContactResponses(stdout, expectedFirstContactIds)

@@ -10,13 +10,32 @@ import {
 } from 'node:fs';
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
-import { DEFAULT_IGNORE } from '../analyze/scan-tables.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
 import { calleesOf } from './callees.mjs';
 import { SENSITIVE } from './credential-names.mjs';
 import { productFiles } from './declaration-index.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
 import { SYMBOL_CONTEXT_LIMITS, symbolContext } from './symbol-context.mjs';
+
+/** Folders a repository walk never enters: dependencies, build output and tool caches. */
+const DEFAULT_IGNORE = new Set([
+  'node_modules',
+  '.git',
+  'out',
+  'dist',
+  'build',
+  '.next',
+  '.expo',
+  '.turbo',
+  '.cache',
+  '.idea',
+  '.vscode',
+  'coverage',
+  '__pycache__',
+  '.pytest_cache',
+  '.venv',
+  'venv',
+]);
 
 const SOURCE_READ_LIMITS = Object.freeze({
   requests: 16,

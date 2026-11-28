@@ -48,7 +48,7 @@ export function listKinds(rootPath) {
   };
 }
 
-export const DEFAULT_ORPHAN_EXCLUDED_KINDS = Object.freeze(['project', 'vault-readme']);
+const DEFAULT_ORPHAN_EXCLUDED_KINDS = Object.freeze(['project', 'vault-readme']);
 
 const ORPHAN_ROW_ORDER = {
   degree: (a, b) => b.degree - a.degree,

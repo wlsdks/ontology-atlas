@@ -376,50 +376,6 @@ describe('mcp-call response parsing', () => {
     );
   });
 
-  it('accepts the compact v2 handoff prompt as the non-duplicated human content', () => {
-    const payload = {
-      contract: 'agentBriefCompact:v2',
-      handoffPrompt: 'Task navigation: ready/current',
-      focus: { taskNavigation: { status: 'ready' } },
-    };
-    assert.equal(
-      parseMcpToolResponse({
-        result: {
-          content: [{ text: payload.handoffPrompt }],
-          structuredContent: payload,
-        },
-      }),
-      payload,
-    );
-    assert.throws(
-      () => parseMcpToolResponse({
-        result: {
-          content: [{ text: 'different prompt' }],
-          structuredContent: payload,
-        },
-      }),
-      /structuredContent text is not JSON/,
-    );
-  });
-
-  it('carries the compact v3 handoff text beside an unchanged structure', () => {
-    const structure = { contract: 'agentBriefCompact:v3', focus: { taskNavigation: { status: 'ready' } } };
-    const text = 'Atlas compact task handoff\nTask navigation: ready/current';
-    const parsed = parseMcpToolResponse({
-      result: { content: [{ text }], structuredContent: structuredClone(structure) },
-    });
-    assert.deepEqual(parsed, structure);
-    assert.equal(parsed.handoffPrompt, text);
-    assert.equal(JSON.stringify(parsed), JSON.stringify(structure));
-    assert.deepEqual(Object.keys(parsed), Object.keys(structure));
-    assert.throws(
-      () => parseMcpToolResponse({
-        result: { content: [{ text }], structuredContent: { ...structure, handoffPrompt: 'inside' } },
-      }),
-      /structuredContent text is not JSON/,
-    );
-  });
-
   it('rejects successful responses when structuredContent drifts from text JSON', () => {
     assert.throws(
       () =>

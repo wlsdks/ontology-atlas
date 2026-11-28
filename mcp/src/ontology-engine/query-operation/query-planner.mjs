@@ -15,7 +15,6 @@ export function createQueryPlanner({
   artifact,
   nodes,
   edges,
-  nodeBySlug,
   resolve,
   filteredEdges,
   traversalEstimate,
@@ -23,7 +22,6 @@ export function createQueryPlanner({
   normalizeDependencyImpactTypes,
   normalizeNodeKind,
   normalizeNodeSort,
-  normalizeNonNegativeInteger,
   normalizeOptionalString,
   normalizeTraversalDirection,
 }) {
