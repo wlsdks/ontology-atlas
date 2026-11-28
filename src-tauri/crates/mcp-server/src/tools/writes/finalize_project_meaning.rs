@@ -15,18 +15,15 @@ use build_depth::{
 };
 use confined_files::{ModifiedTime, SourceFiles};
 use meaning_findings::WITNESS_TEXT_MAX_BYTES;
-use ontology_graph::{project_scope_slugs, CompiledGraph};
 use project_meaning::{
-    build_meaning_inventory, finalize_meaning_receipt, parse_competency_markdown,
-    read_meaning_assessment, render_competency_answers, structure_readiness,
-    trusted_view_receipt, unresolved_competency_rows, with_competency_section, AnswerRow,
-    AnswerStatus, AssessedProject, Assessment, CompetencyBlock, Inventory, InventoryInput,
-    QuestionRow, ReceiptSubject, SourceFacts, UnresolvedRow, ValidationCounts,
+    finalize_meaning_receipt, parse_competency_markdown, read_meaning_assessment,
+    render_competency_answers, structure_readiness, unresolved_competency_rows,
+    with_competency_section, AnswerRow, AnswerStatus, AssessedProject, Assessment,
+    CompetencyBlock, Inventory, QuestionRow, ReceiptSubject, SourceFacts, UnresolvedRow, ValidationCounts,
     COMPETENCY_CONTRACT, COMPETENCY_EVALUATOR, QUESTIONS,
 };
 use project_source::{
-    derive_witness_claims_with_body, pinned_citation_verifier, read_source_bindings,
-    read_source_view, write_source_binding, BindingsRead, OrderedJson, SourceReceipt, SourceView,
+    read_source_bindings, write_source_binding, BindingsRead, OrderedJson, SourceReceipt,
     WitnessClaim,
 };
 use regex::Regex;
@@ -38,7 +35,7 @@ use vault_document::LoadedDocument;
 use super::connect_project_source::{binding_failure, measure_source, Measured};
 use super::patch_document::patch_document;
 use super::plain_refusal::plain_refusal;
-use super::project_source_scope::{project_scope, ProjectScope};
+use crate::tools::project_meaning_context::{meaning_inventory, project_meaning_context};
 use super::project_source_selection::{existing_slug, missing_project};
 use super::vault_view::VaultView;
 use super::write_aftermath::{measure_coverage, share_counts, source_state};
@@ -57,7 +54,6 @@ use crate::write_checkpoint::Permit;
 use crate::write_tool::WriteTool;
 
 const RECEIPT_CONTRACT: &str = "projectMeaningReceipt:v1";
-const PROJECT_SCOPE_LIMIT: usize = 500;
 const TOOL: &str = "finalize_project_meaning";
 
 /// What an agent is told when the body's section is not in the layout and `answers` was not sent:
@@ -112,54 +108,6 @@ struct Finalized<'a> {
     measured_at: &'a str,
     #[serde(rename = "meaningAssessment")]
     meaning_assessment: &'a Assessment,
-}
-
-/// Every fact one call judges from: the vault with the body the project will have, and the
-/// project's containment, graph hash, stored source view and the inventory made from them.
-struct Context<'a> {
-    graph_hash: Option<String>,
-    scope: ProjectScope<'a>,
-    view: SourceView,
-    inventory: Result<Inventory, project_meaning::InventoryUnavailable>,
-    claims: Vec<WitnessClaim>,
-}
-
-fn slugs_of_scope(graph: &CompiledGraph, project_slug: &str) -> Option<Vec<String>> {
-    project_scope_slugs(graph, project_slug, PROJECT_SCOPE_LIMIT)
-}
-
-#[allow(clippy::too_many_arguments, reason = "the facts one judgement reads, named at the call")]
-fn context_of<'a>(
-    call: &crate::dispatch::CallContext<'_>,
-    graph: &CompiledGraph,
-    documents: &'a [LoadedDocument],
-    project_slug: &str,
-    project_body: &str,
-) -> Context<'a> {
-    let vault = &call.config().vault_root;
-    let scope = project_scope(call, documents, project_slug);
-    let claims =
-        derive_witness_claims_with_body(project_slug, &scope.documents, Some(project_body));
-    let view = read_source_view(vault, project_slug, scope.graph_hash.as_deref(), Some(&claims));
-    let slugs = slugs_of_scope(graph, project_slug);
-    let verify = pinned_citation_verifier(vault, project_slug);
-    let inventory = build_meaning_inventory(&InventoryInput {
-        project_slug,
-        graph_hash: scope.graph_hash.as_deref(),
-        scope: slugs.as_deref(),
-        graph,
-        documents: &scope.documents,
-        project_body: Some(project_body),
-        receipt: trusted_view_receipt(&view, project_slug),
-        verify_citation: verify.as_ref().map(|check| check as &dyn Fn(&_) -> bool),
-    });
-    Context {
-        graph_hash: scope.graph_hash.clone(),
-        scope,
-        view,
-        inventory,
-        claims,
-    }
 }
 
 /// Whether the receipt measured, for the ontology as it is now, every path an answer cites.
@@ -498,7 +446,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         path_drifts: report.frame.path_drift.drifts.len(),
     };
     let structure = structure_readiness(&graph, validation);
-    let context = context_of(call, &graph, &documents, &slug, &project_body);
+    let context = project_meaning_context(call, &graph, &documents, &slug, Some(&project_body));
     let inventory = match (&context.graph_hash, &context.inventory) {
         (Some(_), Ok(inventory)) => inventory,
         (_, Err(unavailable)) => {
@@ -541,18 +489,14 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
     }
     let rebuilt: Option<Inventory> = match &remeasured {
         Some(measured) => {
-            let slugs = slugs_of_scope(&graph, &slug);
-            let verify = pinned_citation_verifier(&call.config().vault_root, &slug);
-            let built = build_meaning_inventory(&InventoryInput {
-                project_slug: &slug,
-                graph_hash: Some(&graph_hash),
-                scope: slugs.as_deref(),
-                graph: &graph,
-                documents: &context.scope.documents,
-                project_body: Some(&project_body),
-                receipt: Some(&measured.receipt),
-                verify_citation: verify.as_ref().map(|check| check as &dyn Fn(&_) -> bool),
-            });
+            let built = meaning_inventory(
+                call,
+                &graph,
+                &slug,
+                &context.scope,
+                Some(&project_body),
+                Some(&measured.receipt),
+            );
             match built {
                 Ok(inventory) => Some(inventory),
                 Err(unavailable) => {
@@ -645,7 +589,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
 
     let assessment = if remeasured.is_some() {
         let after = VaultView::read(permit)?;
-        let fresh = context_of(call, &graph, after.documents(), &slug, &stored_body);
+        let fresh = project_meaning_context(call, &graph, after.documents(), &slug, Some(&stored_body));
         let source = SourceFacts::of_view(&fresh.view);
         let inventory = fresh.inventory.as_ref().ok();
         let assessment = read_meaning_assessment(

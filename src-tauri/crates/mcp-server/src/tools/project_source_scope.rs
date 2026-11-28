@@ -4,14 +4,17 @@
 
 use std::collections::HashSet;
 
-use ontology_graph::project_scope_slugs;
+use ontology_graph::{project_scope_slugs, CompiledGraph};
 use project_source::project_graph_hash;
 use vault_document::LoadedDocument;
 
-use crate::dispatch::CallContext;
-
 /// Nodes a project may hold for its receipt to cover it.
 const PROJECT_SCOPE_LIMIT: usize = 500;
+
+/// The slugs the project holds, or `None` when it holds more than a receipt covers.
+pub fn scope_slugs(graph: &CompiledGraph, project_slug: &str) -> Option<Vec<String>> {
+    project_scope_slugs(graph, project_slug, PROJECT_SCOPE_LIMIT)
+}
 
 pub struct ProjectScope<'a> {
     /// The project's documents in the order the vault lists them.
@@ -20,16 +23,13 @@ pub struct ProjectScope<'a> {
     pub graph_hash: Option<String>,
 }
 
+/// The scope of `project_slug` in `graph`; `None` is a vault that did not compile.
 pub fn project_scope<'a>(
-    context: &CallContext<'_>,
+    graph: Option<&CompiledGraph>,
     documents: &'a [LoadedDocument],
     project_slug: &str,
 ) -> ProjectScope<'a> {
-    let slugs = context
-        .compiled_graph()
-        .read(context)
-        .ok()
-        .and_then(|graph| project_scope_slugs(&graph, project_slug, PROJECT_SCOPE_LIMIT));
+    let slugs = graph.and_then(|graph| scope_slugs(graph, project_slug));
     let Some(slugs) = slugs else {
         return ProjectScope {
             documents: Vec::new(),

@@ -61,7 +61,7 @@ from the whole graph.
 | `selection/agent_brief.rs` | `agent_brief`: the readiness of one project, the nodes to start from and the calls to make first, from `workspace_brief`'s counts; `project_holdings`: what a project holds, which the tool layer compiles alone before asking |
 | `selection/growth_plan.rs`, `selection/growth_candidates.rs` | `growth_plan` and the groups it lists: external files, dangling references, unassigned nodes, empty domains |
 | `selection/maintenance_plan.rs`, `selection/maintenance_action.rs` | `maintenance_plan`: every action in order, with its address (`maint_` and an FNV-1a hash) |
-| `selection/outside_checks.rs` | the validation check `health` and `workspace_brief` carry when the tool layer hands them over |
+| `selection/outside_checks.rs` | the checks `health` and `workspace_brief` carry when the tool layer hands them over: validation, and meaning (`selection/meaning_readiness.rs`, which words the one check naming the first project whose meaning is not current) |
 | `selection/selection_request.rs` | `SelectionArguments`, `OutsideFacts`: what only the selection operations read, beside the arguments `QueryRequest` carries for every family |
 
 `OutsideFacts` is the seam to what a graph cannot know: the vault's `.ontology-atlasignore`, the

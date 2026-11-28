@@ -19,7 +19,6 @@ mod patch_batch;
 mod patch_concept;
 mod patch_document;
 mod plain_refusal;
-mod project_source_scope;
 mod project_source_selection;
 mod referrer_rewrites;
 mod relation_notes;

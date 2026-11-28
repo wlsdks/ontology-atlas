@@ -108,6 +108,42 @@ pub struct VaultValidationFacts {
     pub repo_root: Option<String>,
 }
 
+/// What a project's source says now about the witnesses its receipt recorded, when it can judge them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WitnessesNow {
+    /// Every recorded witness path still resolves.
+    AllResolve { total: usize },
+    SomeMissing { missing: usize, total: usize },
+}
+
+/// The source as it is now, beside the receipt that is behind it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNow {
+    /// The first characters of the revision the source is at.
+    pub revision: String,
+    pub witnesses: WitnessesNow,
+}
+
+/// One project's meaning assessment as the tool layer judged it from the project's receipts: the
+/// status and the gap and next action that decide it, copied as the assessment names them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectMeaningFacts {
+    pub project_slug: String,
+    pub status: String,
+    pub top_gap: String,
+    pub next_action: String,
+    /// Whether the project's `## Competency answers` section parses, so a section that is written
+    /// and only not finalized is not asked to be written again.
+    pub competency_authored: bool,
+    pub source_now: Option<SourceNow>,
+}
+
+impl ProjectMeaningFacts {
+    pub fn is_current(&self) -> bool {
+        self.status == "verified_current"
+    }
+}
+
 /// What the tool layer reads from beside the graph.
 #[derive(Debug, Clone, Default)]
 pub struct OutsideFacts {
@@ -119,6 +155,9 @@ pub struct OutsideFacts {
     /// The reads the uncertainty sections ask for, ordered; `None` when no body was handed to the
     /// reader of them.
     pub next_reads: Option<Vec<UncertaintyRead>>,
+    /// The assessment of every project, ordered by slug; empty when none was judged, and then the
+    /// answer carries no meaning check.
+    pub meaning: Vec<ProjectMeaningFacts>,
 }
 
 #[derive(Debug, Clone, Default)]

@@ -3,3 +3,6 @@
 {"id":1,"method":"tools/call","params":{"name":"compile_ontology","arguments":{}}}
 {"id":2,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"overview"}}}
 {"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"neighbors","slug":"capabilities/a"}}}
+{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health"}}}
+{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"workspace_brief"}}}
+{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"agent_brief"}}}

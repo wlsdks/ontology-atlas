@@ -8,7 +8,7 @@ use project_source::{infer_source_folder, read_source_bindings, BindingsRead};
 use vault_document::{LoadedDocument, SlugLookup};
 
 use super::plain_refusal::plain_refusal;
-use super::project_source_scope::{project_scope, ProjectScope};
+use crate::tools::project_source_scope::{project_scope, ProjectScope};
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
@@ -103,7 +103,8 @@ pub fn select_source_folder<'a>(
             "connect_project_source requires a kind: project node; received \"{project_slug}\"."
         )));
     }
-    let scope = project_scope(context, documents, &project_slug);
+    let graph = context.compiled_graph().read(context).ok();
+    let scope = project_scope(graph.as_deref(), documents, &project_slug);
     if scope.graph_hash.is_none() {
         return Err(plain_refusal(format!(
             "connect_project_source blocked: the project scope for \"{project_slug}\" is incomplete, so no receipt could detect later ontology drift. Repair the project containment first (query_ontology({{operation:\"project_scope\", project:\"{project_slug}\"}}))."
