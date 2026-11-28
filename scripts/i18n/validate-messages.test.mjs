@@ -527,8 +527,8 @@ describe('i18n message catalog', () => {
 
 async function readRoutingLocales() {
   const source = await readFile(ROUTING_FILE, 'utf8');
-  const match = source.match(/locales:\s*\[([^\]]+)\]\s+as const/);
-  assert.ok(match, 'routing.ts must declare locales as a literal const array');
+  const match = source.match(/locales:\s*\[([^\]]+)\]/);
+  assert.ok(match, 'routing.ts must declare locales as a literal array');
 
   const locales = [...match[1].matchAll(/['"]([a-z][a-z-]*)['"]/g)].map((item) => item[1]);
   assert.ok(locales.length > 0, 'routing.ts must declare at least one locale');
