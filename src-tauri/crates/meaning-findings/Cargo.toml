@@ -1,0 +1,21 @@
+[package]
+name = "meaning-findings"
+version = "0.1.0"
+description = "What a vault's nodes say that their source does not back, and the schema checks a meaning proposal is held to"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+answer-format = { path = "../answer-format" }
+confined-files = { path = "../confined-files" }
+vault-document = { path = "../vault-document" }
+serde_json = "1"
+# Import specifiers are found with patterns; the engine matches in linear time.
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

@@ -37,12 +37,16 @@ pub struct WorkspaceDiscovery {
     /// Whether the repository declares a workspace at all, even one that matches no package.
     pub has_declaration: bool,
     pub packages: Vec<WorkspacePackage>,
+    /// What discovery left out and why, as `(path, reason)` rows in the order they arose.
+    pub skipped: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone)]
 struct Pattern {
     text: String,
     exclude: bool,
+    /// The file the pattern was declared in, as a skipped row names it.
+    source: &'static str,
 }
 
 /// A package the repository declares as part of its workspace, below the root.
@@ -72,15 +76,26 @@ pub fn declared_workspace_members(
         .collect()
 }
 
+/// The workspace `files` declares, with what discovery left out. `ignore` names folders skipped on
+/// top of the defaults.
+pub fn discover_declared_workspace(
+    files: &dyn SourceFiles,
+    ignore: &[String],
+) -> WorkspaceDiscovery {
+    let facts = PathFacts::new(files);
+    discover_workspace_packages(&facts, &IgnoredNames::with_defaults(ignore))
+}
+
 pub fn discover_workspace_packages(
     facts: &PathFacts<'_>,
     ignore: &IgnoredNames,
 ) -> WorkspaceDiscovery {
-    let (has_declaration, patterns) = read_declarations(facts);
+    let (has_declaration, patterns, mut skipped) = read_declarations(facts);
     if patterns.is_empty() {
         return WorkspaceDiscovery {
             has_declaration,
             packages: Vec::new(),
+            skipped: dedupe_skipped(skipped),
         };
     }
     let (included, excluded): (Vec<&Pattern>, Vec<&Pattern>) =
@@ -98,11 +113,13 @@ pub fn discover_workspace_packages(
     }
     let mut budget = MatchBudget::of(PATTERN_MATCH_STATE_LIMIT);
     let mut packages: Vec<Candidate> = Vec::new();
+    let mut matched: Vec<(&str, &str)> = Vec::new();
     'candidates: for candidate in candidates {
         let mut matches_an_include = false;
         for declaration in &included {
             if pattern_matches(&declaration.text, &candidate.path, &mut budget) {
                 matches_an_include = true;
+                matched.push((declaration.source, declaration.text.as_str()));
             }
             if budget.exhausted {
                 break 'candidates;
@@ -123,15 +140,50 @@ pub fn discover_workspace_packages(
                 break;
             }
         }
-        if !is_excluded {
+        if is_excluded {
+            skipped.push((
+                candidate.path.clone(),
+                "workspace-declaration-excluded".to_string(),
+            ));
+        } else {
             packages.push(candidate);
         }
     }
+    if budget.exhausted {
+        skipped.push((
+            ".".to_string(),
+            format!(
+                "workspace-declaration-match-limit: reached {PATTERN_MATCH_STATE_LIMIT} pattern states"
+            ),
+        ));
+    }
+    for declaration in &included {
+        if matched.contains(&(declaration.source, declaration.text.as_str())) {
+            continue;
+        }
+        skipped.push((
+            declaration.source.to_string(),
+            format!(
+                "workspace-declaration-no-package-match: {}",
+                declaration.text
+            ),
+        ));
+    }
     packages.sort_by(|left, right| answer_format::collation::compare_text(&left.path, &right.path));
+    if packages.len() > PACKAGE_LIMIT {
+        skipped.push((
+            ".".to_string(),
+            format!(
+                "workspace-declaration-package-limit: omitted {} declared package roots",
+                packages.len() - PACKAGE_LIMIT
+            ),
+        ));
+    }
     packages.truncate(PACKAGE_LIMIT);
     WorkspaceDiscovery {
         has_declaration: true,
         packages: assign_slugs(packages),
+        skipped: dedupe_skipped(skipped),
     }
 }
 
@@ -141,46 +193,75 @@ struct Candidate {
     name: Option<String>,
 }
 
-/// `(declared at all, the normalized patterns)`.
-fn read_declarations(facts: &PathFacts<'_>) -> (bool, Vec<Pattern>) {
-    let mut raw: Vec<String> = Vec::new();
+/// `(declared at all, the normalized patterns, what was left out)`.
+fn read_declarations(facts: &PathFacts<'_>) -> (bool, Vec<Pattern>, Vec<(String, String)>) {
+    let mut raw: Vec<(String, &'static str)> = Vec::new();
+    let mut skipped: Vec<(String, String)> = Vec::new();
     let mut has_declaration = false;
     let pnpm = facts.root().join("pnpm-workspace.yaml");
     if facts.kind(&pnpm).is_some() {
         has_declaration = true;
-        raw.extend(read_pnpm_patterns(facts.files(), &pnpm));
+        for pattern in read_pnpm_patterns(facts.files(), &pnpm, &mut skipped) {
+            raw.push((pattern, "pnpm-workspace.yaml"));
+        }
     }
     let package = facts.root().join("package.json");
     if facts.kind(&package).is_some() {
-        if let Some(patterns) = read_node_patterns(facts.files(), &package) {
+        if let Some(patterns) = read_node_patterns(facts.files(), &package, &mut skipped) {
             has_declaration = true;
-            raw.extend(patterns);
+            for pattern in patterns {
+                raw.push((pattern, "package.json#workspaces"));
+            }
         }
     }
     if raw.len() > PATTERN_LIMIT {
         // Past the budget a later exclusion could be dropped and a prefix could re-admit a
         // package it removes, so discovery fails closed.
-        return (has_declaration, Vec::new());
+        skipped.push((
+            ".".to_string(),
+            format!(
+                "workspace-declaration-pattern-limit: omitted {} patterns",
+                raw.len() - PATTERN_LIMIT
+            ),
+        ));
+        return (has_declaration, Vec::new(), skipped);
     }
-    let patterns = raw
-        .into_iter()
-        .filter_map(|text| {
-            let (text, exclude) = normalize_pattern(&text)?;
-            Some(Pattern { text, exclude })
-        })
-        .collect();
-    (has_declaration, patterns)
+    let mut patterns = Vec::new();
+    for (text, source) in raw {
+        match normalize_pattern_reason(&text) {
+            Ok((text, exclude)) => patterns.push(Pattern {
+                text,
+                exclude,
+                source,
+            }),
+            Err(reason) => skipped.push((source.to_string(), reason)),
+        }
+    }
+    (has_declaration, patterns, skipped)
 }
 
-fn read_manifest_text(files: &dyn SourceFiles, path: &Path) -> Option<String> {
-    let text = files.read_text(path).ok()?;
-    (text.len() <= MANIFEST_MAX_BYTES).then(|| text.into_owned())
+fn dedupe_skipped(rows: Vec<(String, String)>) -> Vec<(String, String)> {
+    let mut seen: BTreeSet<(String, String)> = BTreeSet::new();
+    rows.into_iter()
+        .filter(|row| seen.insert(row.clone()))
+        .collect()
 }
 
-fn read_pnpm_patterns(files: &dyn SourceFiles, path: &Path) -> Vec<String> {
-    let Some(text) = read_manifest_text(files, path) else {
+fn read_pnpm_patterns(
+    files: &dyn SourceFiles,
+    path: &Path,
+    skipped: &mut Vec<(String, String)>,
+) -> Vec<String> {
+    let Ok(text) = files.read_text(path) else {
         return Vec::new();
     };
+    if text.len() > MANIFEST_MAX_BYTES {
+        skipped.push((
+            "pnpm-workspace.yaml".to_string(),
+            format!("workspace-declaration-skip: exceeds {MANIFEST_MAX_BYTES} byte limit"),
+        ));
+        return Vec::new();
+    }
     let mut patterns = Vec::new();
     let mut in_packages = false;
     for line in text.lines() {
@@ -201,6 +282,12 @@ fn read_pnpm_patterns(files: &dyn SourceFiles, path: &Path) -> Vec<String> {
         if !value.is_empty() {
             patterns.push(value.to_string());
         }
+    }
+    if patterns.is_empty() {
+        skipped.push((
+            "pnpm-workspace.yaml".to_string(),
+            "workspace-declaration-skip: no static packages entries".to_string(),
+        ));
     }
     patterns
 }
@@ -236,8 +323,20 @@ fn unquote(value: &str) -> &str {
 }
 
 /// The `workspaces` of a `package.json`, `None` when it has none or the file is not an object.
-fn read_node_patterns(files: &dyn SourceFiles, path: &Path) -> Option<Vec<String>> {
-    let manifest = Json::parse(&read_manifest_text(files, path)?)?;
+fn read_node_patterns(
+    files: &dyn SourceFiles,
+    path: &Path,
+    skipped: &mut Vec<(String, String)>,
+) -> Option<Vec<String>> {
+    let text = files.read_text(path).ok()?;
+    if text.len() > MANIFEST_MAX_BYTES {
+        skipped.push((
+            "package.json".to_string(),
+            format!("workspace-declaration-skip: exceeds {MANIFEST_MAX_BYTES} byte limit"),
+        ));
+        return None;
+    }
+    let manifest = Json::parse(&text)?;
     let workspaces = manifest.get("workspaces")?;
     let list = match workspaces {
         Json::List(items) => Some(items.as_slice()),
@@ -249,11 +348,24 @@ fn read_node_patterns(files: &dyn SourceFiles, path: &Path) -> Option<Vec<String
             .map(|item| item.as_text().map(str::to_string))
             .collect()
     });
+    if strings.is_none() {
+        skipped.push((
+            "package.json".to_string(),
+            "workspace-declaration-skip: workspaces must be a static string array".to_string(),
+        ));
+    }
     Some(strings.unwrap_or_default())
 }
 
 /// `(pattern, is an exclusion)`; `None` for a pattern that is unsafe or over a limit.
+#[cfg(test)]
 fn normalize_pattern(value: &str) -> Option<(String, bool)> {
+    normalize_pattern_reason(value).ok()
+}
+
+/// `(pattern, is an exclusion)`, or the reason the pattern is left out.
+fn normalize_pattern_reason(value: &str) -> Result<(String, bool), String> {
+    let quoted = || serde_json::to_string(value).unwrap_or_default();
     let raw = value.trim();
     let exclude = raw.starts_with('!');
     let body = raw.strip_prefix('!').unwrap_or(raw).replace('\\', "/");
@@ -262,14 +374,20 @@ fn normalize_pattern(value: &str) -> Option<(String, bool)> {
         && body.as_bytes().get(2) == Some(&b'/')
         && body.as_bytes().first().is_some_and(u8::is_ascii_alphabetic);
     if body.is_empty() || body.starts_with('/') || drive {
-        return None;
+        return Err(format!(
+            "workspace-declaration-skip: invalid absolute pattern {}",
+            quoted()
+        ));
     }
     let segments: Vec<&str> = body.split('/').collect();
     if segments
         .iter()
         .any(|segment| *segment == ".." || segment.contains('\0'))
     {
-        return None;
+        return Err(format!(
+            "workspace-declaration-skip: unsafe pattern {}",
+            quoted()
+        ));
     }
     let kept: Vec<&str> = segments
         .into_iter()
@@ -285,18 +403,27 @@ fn normalize_pattern(value: &str) -> Option<(String, bool)> {
                 .count()
         })
         .sum();
-    if kept.len() > PATTERN_MAX_SEGMENTS
-        || globstars > PATTERN_MAX_GLOBSTARS
-        || wildcards > PATTERN_MAX_WILDCARDS
-    {
-        return None;
+    if kept.len() > PATTERN_MAX_SEGMENTS {
+        return Err(format!(
+            "workspace-declaration-skip: segment limit {PATTERN_MAX_SEGMENTS} exceeded"
+        ));
+    }
+    if globstars > PATTERN_MAX_GLOBSTARS {
+        return Err(format!(
+            "workspace-declaration-skip: globstar limit {PATTERN_MAX_GLOBSTARS} exceeded"
+        ));
+    }
+    if wildcards > PATTERN_MAX_WILDCARDS {
+        return Err(format!(
+            "workspace-declaration-skip: wildcard limit {PATTERN_MAX_WILDCARDS} exceeded"
+        ));
     }
     let text = if kept.is_empty() {
         ".".to_string()
     } else {
         kept.join("/")
     };
-    Some((text, exclude))
+    Ok((text, exclude))
 }
 
 /// Every folder below the root holding a `package.json`, found in a bounded walk.

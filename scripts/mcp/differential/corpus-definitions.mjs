@@ -1454,17 +1454,23 @@ add('survey', 'analyze-repo-structure-miniature', { vault: 'miniature-repo' }, [
   call('analyze_repo_structure', {}),
   call('analyze_repo_structure', { rootPath: '$PARENT/src' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/does-not-exist' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis', ignore: ['src/billing'] }),
+  call('analyze_repo_structure', { rootPath: '$PARENT/src', view: 'analysis' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT/does-not-exist', view: 'analysis' }),
 ]);
 add('survey', 'analyze-repo-structure-vaults', { vault: 'storefront' }, [
   call('analyze_repo_structure', { rootPath: '$VAULT' }),
   call('analyze_repo_structure', { rootPath: '$VAULT', view: 'breadth', maxDepth: 2 }),
   call('analyze_repo_structure', {}),
+  call('analyze_repo_structure', { rootPath: '$VAULT', view: 'analysis' }),
 ]);
 for (const vault of ['edge-names', 'edge-bytes', 'edge-hostile', 'library', 'empty']) {
   add('survey', `analyze-repo-structure-${vault}`, { vault }, [
     call('analyze_repo_structure', { rootPath: '$VAULT' }),
     call('analyze_repo_structure', { rootPath: '$VAULT', view: 'breadth' }),
     call('analyze_repo_structure', { rootPath: '$VAULT', sourceOnly: true }),
+    call('analyze_repo_structure', { rootPath: '$VAULT', view: 'analysis' }),
   ]);
 }
 add('survey', 'analyze-repo-structure-atlas-ontology', { vault: 'atlas-ontology' }, [
@@ -1478,10 +1484,14 @@ add('survey', 'analyze-repo-structure-polyglot', { vault: 'survey-polyglot' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT/cmd' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/docs' }),
   call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis', ignore: ['vendor', 'internal'] }),
+  call('analyze_repo_structure', { rootPath: '$PARENT/src', view: 'analysis' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT/cmd', view: 'analysis' }),
 ]);
 add('survey', 'analyze-repo-structure-large', { vault: 'survey-large' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/src/area-0' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
 ]);
 const planted = (name, text, extra = {}) => ({ $: 'write-file', path: `../${name}`, text, ...extra });
 add('survey', 'analyze-repo-structure-hostile-tree', { vault: 'miniature-repo' }, [
@@ -1972,6 +1982,106 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/cancel.ts', symbol: 'a'.repeat(3000) }] }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceOnly: true }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/cancel.ts', mode: 'outline' }], maxDepth: 99 }),
+  ]);
+// The structural analysis over layouts the miniature repository does not have: a feature-sliced
+// source tree whose README headings the folders answer, workspace packages that import each other,
+// and Python and Go packages whose imports are the only evidence. Each case plants its tree first.
+add('survey', 'analyze-repo-structure-analysis-feature-sliced', { vault: 'miniature-repo' }, [
+  planted('next.config.js', 'module.exports = {};\n'),
+  planted('README.md', '# Atelier\n\nA studio tool.\n\n## Booking\n\nBooking a session with a studio.\n\n## Billing\n\nBilling clients for a session.\n\n## Reporting\n\nA heading nothing else answers to.\n'),
+  planted('docs/booking.md', '# Booking\n\nBooking is responsible for holding a studio slot until the client pays, and it releases the slot when payment fails.\n'),
+  planted('src/features/book-session/index.ts', "export { bookSession } from './model';\n"),
+  planted('src/features/book-session/model.ts', "import { Client } from '../../entities/client';\nexport function bookSession(client: Client) {\n  return client.id;\n}\n"),
+  planted('src/features/bill-client/index.ts', "export function billClient() { return 1; }\n"),
+  planted('src/entities/client/index.ts', 'export interface Client { id: string }\n'),
+  planted('src/entities/session/index.ts', 'export interface Session { id: string }\n'),
+  planted('src/shared/session/index.ts', 'export const session = 1;\n'),
+  planted('src/widgets/calendar/index.tsx', 'export const Calendar = () => null;\n'),
+  planted('src/widgets/.gitkeep', ''),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis', ignore: ['widgets'] }),
+  call('analyze_repo_structure', { rootPath: '$PARENT/src', view: 'analysis' }),
+]);
+add('survey', 'analyze-repo-structure-analysis-workspaces', { vault: 'miniature-repo' }, [
+  planted('package.json', '{\n  "name": "mono",\n  "private": true,\n  "workspaces": ["packages/*", "apps/*"]\n}\n'),
+  planted('packages/ledger/package.json', '{\n  "name": "@mono/ledger",\n  "main": "src/index.ts"\n}\n'),
+  planted('packages/ledger/src/index.ts', 'export const total = (a: number[]) => a.length;\n'),
+  planted('packages/pricing/package.json', '{\n  "name": "@mono/pricing",\n  "main": "src/index.ts",\n  "dependencies": { "@mono/ledger": "*" }\n}\n'),
+  planted('packages/pricing/src/index.ts', "import { total } from '@mono/ledger';\nexport const price = () => total([1]);\n"),
+  planted('apps/web/package.json', '{\n  "name": "@mono/web",\n  "dependencies": { "@mono/pricing": "*", "@mono/ledger": "*" }\n}\n'),
+  planted('apps/web/src/main.ts', "import { price } from '@mono/pricing';\nimport { total } from '@mono/ledger';\nconsole.log(price(), total([]));\n"),
+  planted('apps/broken/package.json', '{ "name": '),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis', ignore: ['apps'] }),
+]);
+add('survey', 'analyze-repo-structure-analysis-python-and-go', { vault: 'miniature-repo' }, [
+  planted('pyproject.toml', '[project]\nname = "kitchen"\nversion = "0.1.0"\n'),
+  planted('kitchen/__init__.py', ''),
+  planted('kitchen/orders.py', 'from kitchen import stock\n\n\ndef take(order):\n    return stock.reserve(order)\n'),
+  planted('kitchen/stock.py', 'def reserve(order):\n    return order\n'),
+  planted('go.mod', 'module example.com/pantry\n\ngo 1.22\n'),
+  planted('cmd/pantry/main.go', 'package main\n\nimport "example.com/pantry/internal/shelf"\n\nfunc main() { shelf.Fill() }\n'),
+  planted('internal/shelf/shelf.go', 'package shelf\n\nimport "example.com/pantry/internal/label"\n\nfunc Fill() { label.Print() }\n'),
+  planted('internal/label/label.go', 'package label\n\nfunc Print() {}\n'),
+  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
+]);
+// A `proposal` or `qualification` that breaks its whole contract is refused with the field, the
+// rule, the object's shape, one valid example and the repair fields, by both servers. Every input
+// here breaks the contract in exactly one place, so none reaches the review itself.
+const WITNESSES = { concepts: [], relations: [], evidence: [], paths: [] };
+const ANSWER = { answer: 'what it is', status: 'answered', witnesses: WITNESSES };
+const proposalWith = (change = {}) => ({
+  project: { slug: 'projects/shop', title: 'Shop', definition: 'A small shop.', evidence: ['README.md'], confidence: 0.8 },
+  domains: [],
+  capabilities: [],
+  elements: [],
+  relations: [],
+  competencyAnswers: { scope: ANSWER, domains: ANSWER, abilities: ANSWER, evidence: ANSWER, impact: ANSWER },
+  ...change,
+});
+const projectWith = (change) => proposalWith({ project: { ...proposalWith().project, ...change } });
+const DIGEST = `sha256:${'0'.repeat(64)}`;
+const qualificationWith = (change = {}) => ({
+  contract: 'constructionQualification:v1',
+  qualificationId: 'qualification-1',
+  subject: { projectSlug: 'projects/shop', graphDigest: DIGEST, sourceDigest: DIGEST },
+  ...change,
+});
+let deep = 1;
+for (let level = 0; level < 70; level += 1) deep = [deep];
+const review = (args) => call('analyze_repo_structure', { rootPath: '$PARENT', ...args });
+add('survey', 'analyze-repo-structure-malformed-review-inputs', { vault: 'miniature-repo' }, [
+  review({ proposal: {} }),
+  review({ proposal: 'a proposal' }),
+  review({ proposal: [] }),
+  review({ proposal: { projekt: proposalWith().project } }),
+  review({ proposal: proposalWith({ project: {} }) }),
+  review({ proposal: projectWith({ confidense: 1 }) }),
+  review({ proposal: projectWith({ confidence: 2 }) }),
+  review({ proposal: projectWith({ confidence: 'high' }) }),
+  review({ proposal: projectWith({ slug: ' projects/shop' }) }),
+  review({ proposal: projectWith({ slug: '' }) }),
+  review({ proposal: projectWith({ title: 'two\nlines' }) }),
+  review({ proposal: projectWith({ evidence: [] }) }),
+  review({ proposal: projectWith({ evidence: ['README.md', 'README.md'] }) }),
+  review({ proposal: projectWith({ includes: ['a', 'b', 'a'] }) }),
+  review({ proposal: proposalWith({ domains: Array.from({ length: 201 }, () => ({})) }) }),
+  review({ proposal: proposalWith({ domains: [{ slug: 'domains/x' }] }) }),
+  review({ proposal: proposalWith({ relations: [{ from: 'a', to: 'b', type: 'depend_on', why: 'because', evidence: ['README.md'], confidence: 0.5 }] }) }),
+  review({ proposal: proposalWith({ relations: [{ from: 'a', to: 'b', type: 'depends_on', why: 'x'.repeat(301), evidence: ['README.md'], confidence: 0.5 }] }) }),
+  review({ proposal: proposalWith({ relation: [] }) }),
+  review({ proposal: proposalWith({ competencyAnswers: { scope: { ...ANSWER, status: 'done' }, domains: ANSWER, abilities: ANSWER, evidence: ANSWER, impact: ANSWER } }) }),
+  review({ proposal: proposalWith({ competencyAnswers: { scope: ANSWER } }) }),
+  review({ proposal: deep }),
+  review({ qualification: {} }),
+  review({ qualification: 'a packet' }),
+  review({ qualification: qualificationWith({ contract: 'constructionQualification:v2' }) }),
+  review({ qualification: qualificationWith({ qualificationId: '' }) }),
+  review({ qualification: qualificationWith({ subject: { projectSlug: 'projects/shop', graphDigest: 'sha256:abc', sourceDigest: DIGEST } }) }),
+  review({ qualification: qualificationWith({ subject: { projectSlug: 7, graphDigest: DIGEST, sourceDigest: DIGEST } }) }),
+  review({ qualification: qualificationWith({ extra: true }) }),
+  review({ qualification: qualificationWith({ acceptance: { decision: 'accepted', decidedBy: 'someone', decidedAt: 'yesterday', planDigest: DIGEST, planRevision: 1, acceptedGapIds: [] } }) }),
+  review({ proposal: projectWith({ confidence: 2 }), qualification: {} }),
 ]);
 add('survey', 'index-project-retired', { vault: 'miniature-repo' }, [call('index_project', { rootPath: '$PARENT' })]);
 

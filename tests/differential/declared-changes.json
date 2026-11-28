@@ -6365,25 +6365,9 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 60,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 60,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 60,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -6391,7 +6375,7 @@
       "id": 60,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -6653,25 +6637,9 @@
       "case": "graph/graph-selection-tangle",
       "where": "answer",
       "id": 7,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 7,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 7,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -6679,7 +6647,7 @@
       "id": 7,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -6781,25 +6749,9 @@
       "case": "graph/graph-selection-edge-names",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-edge-names",
@@ -6807,111 +6759,7 @@
       "id": 5,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-empty",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-empty",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-empty",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-empty",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-empty-and-one",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-empty-and-one",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-empty-and-one",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-empty-and-one",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -6919,7 +6767,7 @@
       "id": 8,
       "path": "result.content[0].text#/status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -6927,15 +6775,7 @@
       "id": 8,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -6943,7 +6783,7 @@
       "id": 8,
       "path": "result.structuredContent.status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -6951,15 +6791,7 @@
       "id": 8,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -6967,7 +6799,7 @@
       "id": 9,
       "path": "result.content[0].text#/status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -6975,15 +6807,7 @@
       "id": 9,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -6991,7 +6815,7 @@
       "id": 9,
       "path": "result.structuredContent.status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -6999,15 +6823,7 @@
       "id": 9,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 7,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-chain",
@@ -7015,15 +6831,7 @@
       "id": 7,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 7,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-chain",
@@ -7031,15 +6839,7 @@
       "id": 7,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 7,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-hub",
@@ -7047,15 +6847,7 @@
       "id": 7,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 7,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-hub",
@@ -7063,7 +6855,7 @@
       "id": 7,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-miniature-repo",
@@ -7071,15 +6863,7 @@
       "id": 5,
       "path": "result.content[0].text#/validation",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-miniature-repo",
@@ -7087,7 +6871,7 @@
       "id": 5,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-miniature-repo",
@@ -7095,15 +6879,7 @@
       "id": 5,
       "path": "result.structuredContent.validation",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-miniature-repo",
@@ -7111,15 +6887,7 @@
       "id": 5,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -7127,7 +6895,7 @@
       "id": 4,
       "path": "result.content[0].text#/status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -7135,15 +6903,7 @@
       "id": 4,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -7151,7 +6911,7 @@
       "id": 4,
       "path": "result.structuredContent.status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -7159,15 +6919,7 @@
       "id": 4,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 58,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7175,15 +6927,7 @@
       "id": 58,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 58,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7191,15 +6935,7 @@
       "id": 58,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 59,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7207,15 +6943,7 @@
       "id": 59,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 59,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7223,15 +6951,7 @@
       "id": 59,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 61,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7239,15 +6959,7 @@
       "id": 61,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 61,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7255,15 +6967,7 @@
       "id": 61,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 62,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7271,15 +6975,7 @@
       "id": 62,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 62,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7287,15 +6983,7 @@
       "id": 62,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 63,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7303,15 +6991,7 @@
       "id": 63,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 63,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7319,15 +6999,7 @@
       "id": 63,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 64,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7335,15 +7007,7 @@
       "id": 64,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 64,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -7351,23 +7015,7 @@
       "id": 64,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 17,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 17,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -7375,23 +7023,7 @@
       "id": 17,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 17,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 17,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -7399,23 +7031,7 @@
       "id": 17,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 18,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 18,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -7423,23 +7039,7 @@
       "id": 18,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 18,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 18,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -7447,15 +7047,7 @@
       "id": 18,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -7463,15 +7055,7 @@
       "id": 5,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -7479,15 +7063,7 @@
       "id": 5,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -7495,15 +7071,7 @@
       "id": 6,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -7511,15 +7079,7 @@
       "id": 6,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -7527,15 +7087,7 @@
       "id": 8,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -7543,15 +7095,7 @@
       "id": 8,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -7559,7 +7103,7 @@
       "id": 2,
       "path": "result.content[0].text#/status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -7567,15 +7111,7 @@
       "id": 2,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -7583,7 +7119,7 @@
       "id": 2,
       "path": "result.structuredContent.status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -7591,7 +7127,7 @@
       "id": 2,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-edge-names",
@@ -7613,25 +7149,9 @@
       "case": "graph/query-ontology-edge-names",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-edge-names",
-      "where": "answer",
-      "id": 2,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-edge-names",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-edge-names",
@@ -7639,7 +7159,7 @@
       "id": 2,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-miniature-repo",
@@ -7647,15 +7167,7 @@
       "id": 2,
       "path": "result.content[0].text#/validation",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-miniature-repo",
@@ -7663,7 +7175,7 @@
       "id": 2,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-miniature-repo",
@@ -7671,15 +7183,7 @@
       "id": 2,
       "path": "result.structuredContent.validation",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-miniature-repo",
@@ -7687,23 +7191,7 @@
       "id": 2,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -7711,23 +7199,7 @@
       "id": 4,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -7735,71 +7207,7 @@
       "id": 4,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-empty",
-      "where": "answer",
-      "id": 11,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-empty",
-      "where": "answer",
-      "id": 11,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-empty-and-one",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-empty-and-one",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7807,7 +7215,7 @@
       "id": 14,
       "path": "result.content[0].text#/status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7815,7 +7223,7 @@
       "id": 14,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7823,7 +7231,7 @@
       "id": 14,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7831,7 +7239,7 @@
       "id": 14,
       "path": "result.structuredContent.status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7839,7 +7247,7 @@
       "id": 14,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7847,7 +7255,7 @@
       "id": 14,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7855,7 +7263,7 @@
       "id": 15,
       "path": "result.content[0].text#/status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7863,7 +7271,7 @@
       "id": 15,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7871,7 +7279,7 @@
       "id": 15,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7879,7 +7287,7 @@
       "id": 15,
       "path": "result.structuredContent.status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7887,7 +7295,7 @@
       "id": 15,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -7895,7 +7303,7 @@
       "id": 15,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-chain",
@@ -7903,7 +7311,7 @@
       "id": 10,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-chain",
@@ -7911,7 +7319,7 @@
       "id": 10,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-chain",
@@ -7919,7 +7327,7 @@
       "id": 10,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-chain",
@@ -7927,7 +7335,7 @@
       "id": 10,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-edge-names",
@@ -7935,7 +7343,7 @@
       "id": 8,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-edge-names",
@@ -7943,7 +7351,7 @@
       "id": 8,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-edge-names",
@@ -7951,7 +7359,7 @@
       "id": 8,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-edge-names",
@@ -7959,7 +7367,7 @@
       "id": 8,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-hub",
@@ -7967,7 +7375,7 @@
       "id": 10,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-hub",
@@ -7975,7 +7383,7 @@
       "id": 10,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-hub",
@@ -7983,7 +7391,7 @@
       "id": 10,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-hub",
@@ -7991,15 +7399,7 @@
       "id": 10,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-miniature-repo",
@@ -8007,7 +7407,7 @@
       "id": 8,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-miniature-repo",
@@ -8015,15 +7415,7 @@
       "id": 8,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-miniature-repo",
@@ -8031,7 +7423,7 @@
       "id": 8,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-miniature-repo",
@@ -8039,7 +7431,7 @@
       "id": 8,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -8047,7 +7439,7 @@
       "id": 7,
       "path": "result.content[0].text#/status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -8055,7 +7447,7 @@
       "id": 7,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -8063,7 +7455,7 @@
       "id": 7,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -8071,7 +7463,7 @@
       "id": 7,
       "path": "result.structuredContent.status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -8079,7 +7471,7 @@
       "id": 7,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-one-node",
@@ -8087,7 +7479,7 @@
       "id": 7,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8095,7 +7487,7 @@
       "id": 83,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8103,7 +7495,7 @@
       "id": 83,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8111,7 +7503,7 @@
       "id": 83,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8119,7 +7511,7 @@
       "id": 83,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8127,7 +7519,7 @@
       "id": 84,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8135,7 +7527,7 @@
       "id": 84,
       "path": "result.content[0].text#/nextActions/0",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8143,7 +7535,7 @@
       "id": 84,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8151,7 +7543,7 @@
       "id": 84,
       "path": "result.structuredContent.nextActions[0]",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8159,7 +7551,7 @@
       "id": 85,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8167,7 +7559,7 @@
       "id": 85,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8175,7 +7567,7 @@
       "id": 85,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -8183,15 +7575,7 @@
       "id": 85,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 25,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -8199,7 +7583,7 @@
       "id": 25,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -8207,15 +7591,7 @@
       "id": 25,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 25,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -8223,7 +7599,7 @@
       "id": 25,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -8231,15 +7607,7 @@
       "id": 25,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 26,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -8247,7 +7615,7 @@
       "id": 26,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -8255,15 +7623,7 @@
       "id": 26,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 26,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -8271,7 +7631,7 @@
       "id": 26,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -8279,7 +7639,7 @@
       "id": 26,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -8287,7 +7647,7 @@
       "id": 12,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -8295,7 +7655,7 @@
       "id": 12,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -8303,7 +7663,7 @@
       "id": 12,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -8311,7 +7671,7 @@
       "id": 12,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -8319,7 +7679,7 @@
       "id": 13,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -8327,7 +7687,7 @@
       "id": 13,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -8335,7 +7695,7 @@
       "id": 13,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -8343,7 +7703,7 @@
       "id": 13,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8351,7 +7711,7 @@
       "id": 7,
       "path": "result.content[0].text#/status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8359,7 +7719,7 @@
       "id": 7,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8367,7 +7727,7 @@
       "id": 7,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8375,7 +7735,7 @@
       "id": 7,
       "path": "result.structuredContent.status",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8383,7 +7743,7 @@
       "id": 7,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8391,15 +7751,7 @@
       "id": 7,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-miniature-repo",
@@ -8407,7 +7759,7 @@
       "id": 3,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-miniature-repo",
@@ -8415,15 +7767,7 @@
       "id": 3,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-miniature-repo",
@@ -8431,7 +7775,7 @@
       "id": 3,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-miniature-repo",
@@ -8439,15 +7783,7 @@
       "id": 3,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -8455,7 +7791,7 @@
       "id": 5,
       "path": "result.content[0].text#/health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -8463,15 +7799,7 @@
       "id": 5,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -8479,7 +7807,7 @@
       "id": 5,
       "path": "result.structuredContent.health",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -8487,7 +7815,7 @@
       "id": 5,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -8783,7 +8111,7 @@
       "id": 10,
       "path": "result.content[0].text#/summary/nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -8791,7 +8119,7 @@
       "id": 10,
       "path": "result.content[0].text#/nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -8799,7 +8127,7 @@
       "id": 10,
       "path": "result.structuredContent.summary.nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -8807,7 +8135,7 @@
       "id": 10,
       "path": "result.structuredContent.nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -8815,7 +8143,7 @@
       "id": 11,
       "path": "result.content[0].text#/summary/nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -8823,7 +8151,7 @@
       "id": 11,
       "path": "result.content[0].text#/nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -8831,7 +8159,7 @@
       "id": 11,
       "path": "result.structuredContent.summary.nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-atlas-ontology",
@@ -8839,7 +8167,7 @@
       "id": 11,
       "path": "result.structuredContent.nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8847,7 +8175,7 @@
       "id": 9,
       "path": "result.content[0].text#/summary/nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8855,7 +8183,7 @@
       "id": 9,
       "path": "result.content[0].text#/nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8863,7 +8191,7 @@
       "id": 9,
       "path": "result.structuredContent.summary.nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-atlas-ontology",
@@ -8871,7 +8199,7 @@
       "id": 9,
       "path": "result.structuredContent.nextReads",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: growth_plan's next reads (the reads each node's own Uncertainty section asks for) need the body reader of slice 11; the Rust answer carries none yet. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-chain",
@@ -9199,15 +8527,7 @@
       "id": 4,
       "path": "result.content[0].text#/validation",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "git/staleness-through-validate-vault",
@@ -9215,7 +8535,7 @@
       "id": 4,
       "path": "result.content[0].text#/checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "git/staleness-through-validate-vault",
@@ -9223,15 +8543,7 @@
       "id": 4,
       "path": "result.structuredContent.validation",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "git/staleness-through-validate-vault",
@@ -9239,7 +8551,7 @@
       "id": 4,
       "path": "result.structuredContent.checks",
       "change": 37,
-      "reason": "Row 37: the vault_validation and meaning_assessment checks, the validation object and the status they raise come from the tool layer that slices 9 and 11 hand over; the Rust answer carries none of them yet. A named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-walks-storefront",
@@ -11061,25 +10373,9 @@
       "case": "evidence/agent-brief-operations",
       "where": "answer",
       "id": 10,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 10,
       "path": "result.content[0].text#/health/validation",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/health/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-operations",
@@ -11087,7 +10383,7 @@
       "id": 10,
       "path": "result.content[0].text#/health/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-operations",
@@ -11095,15 +10391,7 @@
       "id": 10,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-operations",
@@ -11111,15 +10399,7 @@
       "id": 10,
       "path": "result.structuredContent.health.validation",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.health.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-operations",
@@ -11127,7 +10407,7 @@
       "id": 10,
       "path": "result.structuredContent.health.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-operations",
@@ -11135,7 +10415,7 @@
       "id": 10,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-storefront",
@@ -11165,33 +10445,9 @@
       "case": "evidence/agent-brief-storefront",
       "where": "answer",
       "id": 4,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/health/validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/health/status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 4,
       "path": "result.content[0].text#/health/checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-storefront",
@@ -11199,31 +10455,7 @@
       "id": 4,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.health.validation",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.health.status",
-      "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-storefront",
@@ -11231,7 +10463,7 @@
       "id": 4,
       "path": "result.structuredContent.health.checks",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/agent-brief-storefront",
@@ -11239,7 +10471,7 @@
       "id": 4,
       "path": "result.structuredContent.nextActions",
       "change": 37,
-      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/find-evidence-edge-names",
@@ -13306,62 +12538,6 @@
       "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     },
     {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 15,
-      "path": "result.content[0].text",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-miniature",
-      "where": "answer",
-      "id": 15,
-      "path": "result.structuredContent",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-polyglot",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-polyglot",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-polyglot",
-      "where": "answer",
-      "id": 6,
-      "path": "result.isError",
-      "change": 46,
-      "reason": "analyze_repo_structure parts this build does not answer yet: the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
-    },
-    {
       "case": "survey/index-project-retired",
       "where": "answer",
       "id": 1,
@@ -13520,6 +12696,86 @@
       "path": "result.content[0].text",
       "change": 49,
       "reason": "A method whose body is on the line that declares it (`open(): void {}`, `public String label() { return x; }`) is outlined and can be read by its name. The script server's line patterns need the opening brace to end the line, so it listed neither, and it counted the declaration itself as a call of that name, naming the class around it as a caller (row 49)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-edge-hostile",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/skipped",
+      "change": 59,
+      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-edge-hostile",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.skipped",
+      "change": 59,
+      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/skipped/1/reason",
+      "change": 60,
+      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.skipped[1].reason",
+      "change": 60,
+      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/skipped/2/reason",
+      "change": 60,
+      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.skipped[2].reason",
+      "change": 60,
+      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/skipped",
+      "change": 61,
+      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.skipped",
+      "change": 61,
+      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/skipped",
+      "change": 61,
+      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.skipped",
+      "change": 61,
+      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
     }
   ]
 }

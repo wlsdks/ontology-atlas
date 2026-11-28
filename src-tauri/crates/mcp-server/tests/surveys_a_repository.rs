@@ -124,8 +124,16 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
     let (_scene, root) = repository();
     for (arguments, words) in [
         (
-            r#"{"view":"analysis"}"#,
-            "The structural analysis view is not answered by this build",
+            r#"{"proposal":{"concepts":[]}}"#,
+            "proposal is missing required field \"project\"",
+        ),
+        (
+            r#"{"qualification":{"contract":"constructionQualification:v2"}}"#,
+            "qualification is missing required field \"qualificationId\"",
+        ),
+        (
+            r#"{"proposal":{"project":{"slug":"projects/shop","title":"Shop","definition":"A shop.","evidence":["README.md"],"confidence":0.8},"domains":[],"capabilities":[],"elements":[],"relations":[],"competencyAnswers":{"scope":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"domains":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"abilities":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"evidence":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"impact":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}}}}}"#,
+            "Reviewing a proposal or a qualification is not answered by this build",
         ),
         (
             r#"{"view":"nonsense"}"#,
@@ -158,6 +166,21 @@ fn source_reads_answer_an_outline_and_a_symbol_as_text_and_refuse_a_credential_f
         text.contains("== refused .env outline: sensitive_path"),
         "{text}"
     );
+}
+
+#[test]
+fn the_analysis_names_what_the_scan_found_and_a_repository_with_cargo_is_refused_by_name() {
+    let (_scene, root) = repository();
+    let result = survey(&root, r#"{"view":"analysis"}"#);
+    assert_ne!(result["isError"], true, "{result}");
+    let answer = &result["structuredContent"];
+    assert_eq!(answer["proposalValidation"]["status"], "not-provided", "{answer}");
+    assert_eq!(answer["proposalValidation"]["canWrite"], false, "{answer}");
+    assert_eq!(answer["rootPath"], root.to_string_lossy().as_ref(), "{answer}");
+    write(&root, "Cargo.toml", "[package]\nname = \"shop\"\n");
+    let refused = survey(&root, r#"{"view":"analysis"}"#);
+    assert_eq!(refused["isError"], true, "{refused}");
+    assert!(text_of(&refused).contains("root Cargo.toml"), "{refused}");
 }
 
 #[cfg(unix)]
