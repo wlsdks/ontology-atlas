@@ -104,6 +104,13 @@ describe('page-by-page diff of the Vite prerender against the Next export', () =
     expect(differencesBetween(nextPage(), vite)).toContain(aspect);
   });
 
+  it("reads the router's scroll restoration script as the router's own, and a script that only looks like it as planted", () => {
+    const restore = '<script>(function(a){const n=JSON.parse(sessionStorage.getItem(a)||"{}")[history.state?.__TSR_key];scrollTo(0,0)})("k")</script>';
+    const flight = `<script>self.__next_f.push([1,"${'x'.repeat(restore.length)}"])</script>`;
+    expect(differencesBetween(nextPage({ headExtra: flight }), page({ headExtra: restore }))).toEqual([]);
+    expect(differencesBetween(nextPage({ headExtra: flight }), page({ headExtra: restore.replace('__TSR_key', '__other') }))).toContain('script only in Vite');
+  });
+
   it('reads JSON-LD blocks by their content, not by key order', () => {
     const reordered = page({
       ld: `<script type="application/ld+json">{"dateModified":"2026-11-01","headline":"Atlas","@type":"TechArticle","@context":"https://schema.org"}</script>`,

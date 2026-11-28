@@ -82,6 +82,8 @@ const canonicalJson = (value) =>
 /** The framework's own inline scripts on Next's side: its flight data, its bundler runtime and its streaming boundaries. */
 const NEXT_INLINE_SCRIPT = /^\s*(?:\(self\.__next_f|self\.__next_f|\(globalThis\["TURBOPACK"\]|requestAnimationFrame\(function\(\)\{\$RT|\$R[A-Z]|\$R\[)/;
 const BOOT_SCRIPT_MARK = 'data-shell';
+/** The history key the router's scroll restoration script reads; no other script of the site mentions it. */
+const ROUTER_SCROLL_KEY = '__TSR_key';
 
 /**
  * What a document's scripts say, sorted into what the diff may ignore and what it must compare:
@@ -110,6 +112,8 @@ export function scriptFindings(document, side) {
       // The record of what the build knew, which the page carries for its first browser render.
     } else if (side === 'vite' && text.startsWith('try{') && text.includes('location.replace')) {
       // The one script at `/` that sends a visitor to a language.
+    } else if (side === 'vite' && text.includes('sessionStorage') && text.includes(ROUTER_SCROLL_KEY)) {
+      // The router's own scroll restoration, inlined before first paint on every page that has a router.
     } else {
       found.unexplained.push(`inline script ${JSON.stringify(text.slice(0, 60))}`);
     }
