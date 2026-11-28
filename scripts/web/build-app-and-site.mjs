@@ -15,8 +15,11 @@ import { pathToFileURL } from 'node:url';
 import { APP_FOLDER, APP_MANIFEST, SITE_FOLDER } from '../lib/web/built-folders.mjs';
 
 const SKIP_TYPECHECK = 'ATLAS_BUILD_SKIP_TYPECHECK';
-/** The committed file Vite's router plugin writes; `.gitattributes` pins its line endings. */
-export const ROUTE_TREE = 'src/app/route-tree.gen.ts';
+/**
+ * The committed files Vite's router plugin writes: the tree of every route, and the installed app's tree without the
+ * website's download and sample pages (`vite.config.ts`). `.gitattributes` pins their line endings.
+ */
+export const ROUTE_TREES = Object.freeze(['src/app/route-tree.gen.ts', 'src/app/app-route-tree.gen.ts']);
 
 /** First loads at or under these sizes, in KB of brotli: what the installed app's map and the download page cost. */
 export const FIRST_LOAD_BUDGET_KB = Object.freeze({ app: 1001, site: 462 });
@@ -71,8 +74,8 @@ export async function build({ only = null, env = process.env, repository = repos
   const wantsApp = only !== 'site';
   const wantsSite = only !== 'app';
   const step = (label, script, args) => run(repository, env, label, script, args);
-  const routeTree = join(repository, ROUTE_TREE);
-  const routeTreeBefore = existsSync(routeTree) ? readFileSync(routeTree, 'utf8') : null;
+  const readTrees = () => ROUTE_TREES.map((tree) => (existsSync(join(repository, tree)) ? readFileSync(join(repository, tree), 'utf8') : null));
+  const treesBefore = readTrees();
 
   const data = firstFailure(await Promise.all([step('docs-vault', 'scripts/docs-vault/build-docs-vault.mjs'), step('messages', 'scripts/i18n/build-messages.mjs')]));
   if (data !== 0) return data;
@@ -107,9 +110,11 @@ export async function build({ only = null, env = process.env, repository = repos
     if (checked !== 0) return checked;
   }
 
-  // The route tree Vite's router plugin writes is committed; a build that changes it means the commit is stale.
-  if (routeTreeBefore !== null && readFileSync(routeTree, 'utf8') !== routeTreeBefore) {
-    console.error(`[build] ${ROUTE_TREE} changed during the build: the committed route tree is out of date. Commit the file the build wrote.`);
+  // The route trees Vite's router plugin writes are committed; a build that changes one means the commit is stale.
+  const treesAfter = readTrees();
+  const stale = ROUTE_TREES.filter((_, index) => treesBefore[index] !== null && treesAfter[index] !== treesBefore[index]);
+  if (stale.length > 0) {
+    console.error(`[build] ${stale.join(', ')} changed during the build: the committed route tree is out of date. Commit the file the build wrote.`);
     return 1;
   }
   return 0;

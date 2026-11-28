@@ -1,50 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildProjectDetailHref,
-  buildProjectDetailUrl,
   buildProjectEditHref,
   buildProjectRuntimeDetailHref,
   buildProjectRuntimeDetailUrl,
   resolveProjectFallbackRoute,
 } from "./detail-href";
-
-describe("buildProjectDetailHref", () => {
-  it("builds /project/<encoded-slug>/", () => {
-    expect(buildProjectDetailHref("foo")).toBe("/project/foo/");
-  });
-
-  it("escapes URL-unsafe characters", () => {
-    expect(buildProjectDetailHref("a/b")).toBe("/project/a%2Fb/");
-    expect(buildProjectDetailHref("foo bar")).toBe("/project/foo%20bar/");
-    expect(buildProjectDetailHref("한글")).toBe(
-      `/project/${encodeURIComponent("한글")}/`,
-    );
-  });
-
-  it("keeps an empty slug", () => {
-    expect(buildProjectDetailHref("")).toBe("/project//");
-  });
-});
-
-describe("buildProjectDetailUrl", () => {
-  it("origin + canonical path", () => {
-    expect(buildProjectDetailUrl("https://example.com", "foo")).toBe(
-      "https://example.com/project/foo/",
-    );
-  });
-
-  it("normalizes a trailing slash on origin", () => {
-    expect(buildProjectDetailUrl("https://example.com/", "foo")).toBe(
-      "https://example.com/project/foo/",
-    );
-  });
-
-  it("encodes the path segment", () => {
-    expect(buildProjectDetailUrl("https://example.com", "한글")).toBe(
-      `https://example.com/project/${encodeURIComponent("한글")}/`,
-    );
-  });
-});
 
 describe("static-export-safe project routes", () => {
   it("sends an arbitrary runtime slug through the static fallback query", () => {
@@ -87,10 +47,7 @@ describe("static-export-safe project routes", () => {
 describe("resolveProjectFallbackRoute", () => {
   it("parses the query detail path", () => {
     expect(
-      resolveProjectFallbackRoute(
-        "/ko/project/fallback/",
-        "?slug=%ED%95%9C%EA%B8%80+%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8",
-      ),
+      resolveProjectFallbackRoute("?slug=%ED%95%9C%EA%B8%80+%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8"),
     ).toEqual({
       mode: "detail",
       slug: "한글 프로젝트",
@@ -101,10 +58,7 @@ describe("resolveProjectFallbackRoute", () => {
 
   it("parses the query full-edit state", () => {
     expect(
-      resolveProjectFallbackRoute(
-        "/en/project/fallback/",
-        "?slug=foo&mode=edit&returnTo=%2Fprojects%2F&saved=1",
-      ),
+      resolveProjectFallbackRoute("?slug=foo&mode=edit&returnTo=%2Fprojects%2F&saved=1"),
     ).toEqual({
       mode: "edit",
       slug: "foo",
@@ -113,31 +67,9 @@ describe("resolveProjectFallbackRoute", () => {
     });
   });
 
-  it("still parses legacy rewritten detail and edit pathnames", () => {
-    expect(resolveProjectFallbackRoute("/ko/project/foo/", "")).toEqual({
-      mode: "detail",
-      slug: "foo",
-      returnTo: undefined,
-      savedNotice: false,
-    });
-    expect(
-      resolveProjectFallbackRoute(
-        "/ko/project/foo/edit/",
-        "?returnTo=%2Fprojects%2F",
-      ),
-    ).toEqual({
-      mode: "edit",
-      slug: "foo",
-      returnTo: "/projects/",
-      savedNotice: false,
-    });
-  });
-
-  it("rejects a direct fallback, empty slug or broken escape", () => {
-    expect(resolveProjectFallbackRoute("/ko/project/fallback/", "")).toBeNull();
-    expect(
-      resolveProjectFallbackRoute("/ko/project/fallback/", "?slug="),
-    ).toBeNull();
-    expect(resolveProjectFallbackRoute("/ko/project/%E0%A4%A/", "")).toBeNull();
+  it("rejects a query with no slug, an empty slug or the fallback's own name", () => {
+    expect(resolveProjectFallbackRoute("")).toBeNull();
+    expect(resolveProjectFallbackRoute("?slug=")).toBeNull();
+    expect(resolveProjectFallbackRoute("?slug=fallback")).toBeNull();
   });
 });

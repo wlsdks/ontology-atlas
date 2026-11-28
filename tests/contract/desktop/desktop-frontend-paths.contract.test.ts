@@ -16,7 +16,8 @@ import { SETTINGS_CATALOG } from "@/widgets/app-settings-menu/model/catalog";
 
 const ROOT = process.cwd();
 
-const routeAddresses = () => routeTreeAddresses(ROOT);
+/** What the app's own bundle routes: `vite.config.ts` generates this tree without the website-only pages. */
+const routeAddresses = () => routeTreeAddresses(ROOT, "app-route-tree.gen.ts");
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
@@ -30,6 +31,13 @@ const appSource = [...sourceFiles("src"), ...sourceFiles("app")].filter(
 
 describe("the app bundle carries every screen the app can open", () => {
   const addresses = routeAddresses();
+
+  it("the app's tree leaves out exactly the website-only pages and nothing else", () => {
+    const everything = routeTreeAddresses(ROOT);
+    const left = [...everything].filter((address) => !addresses.has(address)).sort();
+    expect(left).toEqual(["/$locale/download", "/$locale/sample"]);
+    expect([...addresses].filter((address) => !everything.has(address))).toEqual([]);
+  });
 
   it("the route tree was read: it holds the screens and the not-found catch-all", () => {
     expect(addresses.size).toBeGreaterThan(15);
@@ -80,10 +88,9 @@ describe("what the app folder leaves out has no way in from the app", () => {
     for (const href of [buildProjectRuntimeDetailHref("a b/c"), buildProjectEditHref("a b/c", { returnTo: "/topology" })]) {
       expect(new URL(href, "https://atlas.invalid").pathname).not.toMatch(/\/project\/a/);
     }
-    // Only the address helpers and a text search spell the path form.
+    // Only a text search spells the path form.
     const pathForm = /\/project\/\$\{/;
     const allowed = new Set([
-      "src/entities/project/lib/detail-href.ts",
       // Scores documents whose text mentions the address; it renders no link.
       "src/entities/docs-vault/lib/doc-navigation/related-docs.ts",
     ]);

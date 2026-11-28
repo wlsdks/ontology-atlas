@@ -12,7 +12,6 @@ import { OntologyLiveBaselineInit } from '@/features/vault-ontology';
 import { loadWorkbenchCatalog, useWorkbenchCatalog } from '@/i18n/workbench-catalog';
 import type { AppLocale } from '@/i18n/locales';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
-import { RouteMemory } from '@/shared/ui/routing/route-memory';
 import { AppOnlyPage } from '@/views/app-only';
 import { AcpChatPanelKeeper } from '@/widgets/acp-chat-panel';
 import { BottomTabBar } from '@/widgets/bottom-tab-bar';
@@ -46,13 +45,12 @@ function LocalizedToastProvider({ children }: { children: ReactNode }) {
 
 /**
  * Every app address: the workbench's providers around the screen, and beside it the page a plain
- * browser reads instead (`AppAddressFaces`). The locale root's subset of messages belongs to the
- * website's entry and arrives with the public pages.
+ * browser reads instead (`AppAddressFaces`).
  */
 export function AppLocaleLayout({ locale }: { locale: AppLocale }) {
   return (
     <AppAddressFaces appOnly={<AppOnlyFace locale={locale} />}>
-      <WorkbenchMessagesProvider locale={locale} timeZone={browserTimeZone()} rootMessages={{}}>
+      <WorkbenchMessagesProvider locale={locale} timeZone={browserTimeZone()}>
         <BootPictureRemover />
         <LocaleDocumentChrome locale={locale} />
         <MotionProvider>
@@ -61,7 +59,6 @@ export function AppLocaleLayout({ locale }: { locale: AppLocale }) {
               <LocalizedToastProvider>
                 <TooltipProvider delayDuration={300}>
                   <OntologyLiveBaselineInit />
-                  <RouteMemory />
                   <AcpChatPanelKeeper />
                   <AppShell>
                     <Outlet />

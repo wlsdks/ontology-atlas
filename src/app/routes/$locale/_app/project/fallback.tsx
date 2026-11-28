@@ -20,11 +20,10 @@ export const Route = createFileRoute('/$locale/_app/project/fallback')({
 
 function ProjectFallbackRoute() {
   const search = Route.useSearch();
-  const pathname = Route.useMatch({ select: (match) => match.pathname });
   return (
     <>
       <ScreenTitle head={head} />
-      <Suspense fallback={<RouteLoadingFallback />}><ProjectFallbackScreen pathname={pathname} search={search} /></Suspense>
+      <Suspense fallback={<RouteLoadingFallback />}><ProjectFallbackScreen search={search} /></Suspense>
     </>
   );
 }

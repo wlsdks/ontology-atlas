@@ -42,7 +42,7 @@
 
 /*
  * Korean pages draw Latin from the same subsets as every other locale and the rest, Hangul
- * included, from `Pretendard Variable`: the upstream dynamic subsets (imported by `src/app/main.tsx`), each face
+ * included, from `Pretendard Variable`: the upstream dynamic subsets (imported in `src/app/main.tsx`), each face
  * limited by `unicode-range`, so a page fetches only the subsets its characters fall in. The whole
  * file stays last for the accented Latin and symbols no subset carries.
  */

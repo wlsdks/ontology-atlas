@@ -5,11 +5,11 @@ import { dirname, join } from 'node:path';
 
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { ROUTE_TREE } from '../../../scripts/web/build-app-and-site.mjs';
+import { ROUTE_TREES } from '../../../scripts/web/build-app-and-site.mjs';
 
 /**
- * `pnpm build:app` ends by reading `src/app/route-tree.gen.ts` back and failing if the router plugin
- * changed it. The plugin compares the file on disk with the LF text it generates and rewrites it when
+ * `pnpm build:app` ends by reading the route trees (`ROUTE_TREES`) back and failing if the router plugin
+ * changed one. The plugin compares the file on disk with the LF text it generates and rewrites it when
  * they differ, so a CRLF checkout (Git for Windows ships `core.autocrlf=true`, which the Windows
  * runner uses) makes every build look like a stale commit. `.gitattributes` pins the file to LF:
  * with the `text` attribute unspecified Git converts by `core.autocrlf`, and `eol=lf` "uses the same
@@ -56,13 +56,13 @@ function windowsStyleCheckout(paths: readonly string[]): Record<string, string> 
 }
 
 describe('the committed route tree is checked out byte for byte on Windows and macOS', () => {
-  const checkedOut = windowsStyleCheckout([ROUTE_TREE, CONTROL]);
+  const checkedOut = windowsStyleCheckout([...ROUTE_TREES, CONTROL]);
 
   it('replays a checkout that converts: an unpinned file arrives with CRLF', () => {
     expect(checkedOut[CONTROL]).toBe(CRLF);
   });
 
-  it('keeps the route tree LF there, so the router plugin finds nothing to rewrite', () => {
-    expect(checkedOut[ROUTE_TREE]).toBe(LF);
+  it.each(ROUTE_TREES)('keeps %s LF there, so the router plugin finds nothing to rewrite', (tree) => {
+    expect(checkedOut[tree]).toBe(LF);
   });
 });

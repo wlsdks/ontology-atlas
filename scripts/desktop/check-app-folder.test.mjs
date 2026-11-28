@@ -49,6 +49,17 @@ describe("appFolderProblems", () => {
     assert.match(problems.join("\n"), /sitemap\.xml is a file only the website serves/);
   });
 
+  it("refuses the code of the website's download and sample pages even when a chunk names it", () => {
+    const { folder, put } = makeAppFolder();
+    put("assets/index-a1.js", `import("./map-b2.js");import("./download-e5.js");import("./sample-storefront.manifest-f6.js");const mark="/logo.png",icons="/acp-icons/",row=\`/brand/mascot-\${name}-row-128.png\`;`);
+    put("assets/download-e5.js");
+    put("assets/sample-storefront.manifest-f6.js");
+    const problems = appFolderProblems(folder);
+    assert.equal(problems.length, 2);
+    assert.match(problems.join("\n"), /assets\/download-e5\.js is the code of a page only the website serves/);
+    assert.match(problems.join("\n"), /assets\/sample-storefront\.manifest-f6\.js is the code of a page only the website serves/);
+  });
+
   it("refuses a bundle file no chunk names and a public file no code names, even in a folder a chunk names", () => {
     const { folder, put } = makeAppFolder();
     put("assets/left-over-d4.js");

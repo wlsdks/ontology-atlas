@@ -7,7 +7,6 @@ import { MotionProvider } from '@/app-providers/providers/MotionProvider';
 import { OldBrowserFolderCleanup } from '@/app-providers/providers/OldBrowserFolderCleanup';
 import type { AppLocale } from '@/i18n/locales';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
-import { RouteMemory } from '@/shared/ui/routing/route-memory';
 
 import { BootPictureRemover } from './BootPictureRemover';
 import { LocaleDocumentChrome } from './LocaleDocumentChrome';
@@ -31,7 +30,6 @@ export function SiteLocaleLayout({ locale, messages }: { locale: AppLocale; mess
       <MotionProvider>
         <LocalizedToastProvider>
           <TooltipProvider delayDuration={300}>
-            <RouteMemory />
             <GatewayShell>
               <Outlet />
             </GatewayShell>

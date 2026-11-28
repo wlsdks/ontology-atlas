@@ -31,8 +31,9 @@ to it.
 
 ## One build, thin bridges
 
-Tauri loads the app folder, the Vite bundle minus website-only pages and media
-(`frontendDist`, checked by `scripts/desktop/check-app-folder.mjs`); the website
+Tauri loads the app folder, the Vite bundle without the website's `/download`
+and `/sample` pages and its media (`frontendDist`, checked by
+`scripts/desktop/check-app-folder.mjs`); the website
 is the same bundle plus its prerendered pages, so the installed app and the
 website run one bundle. A bridge calls the native ability
 and answers "no runtime" when there is none, which only a test browser without

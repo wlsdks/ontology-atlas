@@ -113,7 +113,6 @@ fn build_webview_verify_route_reset_script_for(route: &str, locales: &[&str]) ->
     format!(
         r#"(() => {{
   try {{
-    window.localStorage.removeItem("ontology-atlas:last-route");
     window.localStorage.setItem("ontology-atlas:locale", {locale});
   }} catch (_err) {{}}
   const localeRoot = {locale_root};
@@ -559,10 +558,9 @@ mod tests {
     }
 
     #[test]
-    fn webview_verify_route_reset_script_clears_last_route_before_click_navigation() {
+    fn webview_verify_route_reset_script_returns_to_the_locale_root_before_click_navigation() {
         let script = build_webview_verify_route_reset_script("/ko/topology/");
 
-        assert!(script.contains("window.localStorage.removeItem(\"ontology-atlas:last-route\")"));
         assert!(script.contains("window.localStorage.setItem(\"ontology-atlas:locale\", \"ko\")"));
         assert!(script.contains("location.replace(localeRoot)"));
         assert!(script.contains("\"/ko/\""));

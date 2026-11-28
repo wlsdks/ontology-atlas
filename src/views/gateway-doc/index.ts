@@ -1,5 +1,6 @@
 export { GatewayDocPage } from './ui/GatewayDocPage';
 export type { GatewayDocument } from './lib/read-vault-doc';
+export { loadChangelogDocument } from './lib/load-changelog-document';
 export { guideStructuredData } from './lib/guide-structured-data';
 export {
   GUIDE_PAGES,

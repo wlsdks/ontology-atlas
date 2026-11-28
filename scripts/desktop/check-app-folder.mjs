@@ -18,6 +18,11 @@ import { APP_FOLDER } from '../lib/web/built-folders.mjs';
 import { isWebsiteOnlyFile } from '../lib/web/website-only-files.mjs';
 
 const CODE_FILE = /\.(?:html|js|css)$/;
+/**
+ * The chunks of the pages the app's route tree leaves out (`vite.config.ts`): `/download` and `/sample`, and the
+ * sample's two data files. The build names a chunk after its module, then a hash.
+ */
+const WEBSITE_ONLY_CHUNK = /^assets\/(?:download|sample|sample-storefront\.(?:manifest|content))-[\w-]+\.js$/;
 /** Where the build puts what it bundles; every other top-level file or folder came from `public/`. */
 const BUNDLE_FOLDER = 'assets';
 
@@ -70,6 +75,8 @@ export function appFolderProblems(folder) {
     const top = file.split('/')[0];
     if (isWebsiteOnlyFile(file)) {
       problems.push(`${file} is a file only the website serves; the app never asks for it`);
+    } else if (WEBSITE_ONLY_CHUNK.test(file)) {
+      problems.push(`${file} is the code of a page only the website serves; the app's route tree should not reach it`);
     } else if (file === 'index.html') {
       continue;
     } else if (top === BUNDLE_FOLDER) {

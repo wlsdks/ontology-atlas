@@ -329,15 +329,18 @@ folder only in the installed app); the working rule agents load is
 same Vite bundle into a WebView. Nothing is forked, and nothing should be.
 `pnpm build` writes two folders from it: `out/` is the website, with the
 public pages prerendered, and `src-tauri/target/desktop-frontend`
-(`frontendDist`) is the installed app's. The app folder leaves out only what
-the website alone serves (`scripts/lib/web/website-only-files.mjs`): `/download`,
-`/sample`, the gateway's videos and screenshots, Open Graph
-images, `llms*.txt`, the sitemap and `robots.txt`. Tauri compiles that folder
-into the executable, and the updater ships the executable whole, so each of
-those megabytes was paid on every install and update. A path the copy lacks is
-answered with the root `index.html`, which sends the window to the map;
+(`frontendDist`) is the installed app's. The app folder leaves out what the
+website alone serves: the files in `scripts/lib/web/website-only-files.mjs`
+(the gateway's videos and screenshots, Open Graph images, `llms*.txt`, the
+sitemap and `robots.txt`) and the code of the `/download` and `/sample` pages,
+since the app's router is built from `src/app/app-route-tree.gen.ts`, the route
+tree generated without those two files (`vite.config.ts`). Tauri compiles that
+folder into the executable, and the updater ships the executable whole, so each
+of those megabytes was paid on every install and update. A path the folder
+lacks is answered with the root `index.html`, and its router renders the
+not-found screen: `/en/download/` in the app is an address no screen owns.
 `desktop-frontend-paths.contract.test.ts` holds every route in the list below
-to the copy unless the app has no way to it.
+to the app's tree unless the app has no way to it.
 The macOS shell also owns one Rust-native, state-free menu-bar item that opens
 the existing main window or quits. It creates no second window, background
 service, webview tray permission, or website equivalent.
@@ -831,8 +834,8 @@ hidden until a local manifest, or the first part of one, exists. No page of the
 website reads a folder or a manifest, so this state exists only in the app (and
 in a test browser that installs the faked app runtime). The one bundled map is
 `/sample`, a read-only page of the website (`src/views/sample-map`) that imports
-the Storefront sample the build generates with `pnpm docs-vault:build`; it is
-left out of the app's bundle like `/download`.
+the Storefront sample the build generates with `pnpm docs-vault:build`; the
+app's route tree has no `/sample`, like `/download`.
 
 ## Routes
 
@@ -969,10 +972,9 @@ A screen declares the query it reads as the route's `validateSearch`
 (`src/shared/lib/navigation/screen-searches.ts`, or a `*-search.ts` file beside a
 screen under `src/app`) and receives the typed value as its `search` prop; the
 router parses and writes it as text (`src/shared/lib/navigation/atlas-search.ts`).
-`/` starts from the subset `WorkbenchMessagesProvider` is given; the whole
-catalog arrives as one chunk per locale (`src/i18n/workbench-catalog.ts`)
-through that provider: every other workbench route, and `/` in the installed
-app, waits for it. The retired addresses answer from `beforeLoad`
+The whole message catalog arrives as one chunk per locale
+(`src/i18n/workbench-catalog.ts`) through `WorkbenchMessagesProvider`: every
+workbench route waits for it. The retired addresses answer from `beforeLoad`
 (`src/app/routes/-redirects/`).
 
 > Removed in earlier rounds: `/admin/*`, `/review/*`, `/diagnostics/*`,

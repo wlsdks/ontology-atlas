@@ -172,7 +172,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "vault-open-guide:auto:v1", kind: "storage", scope: "global", note: "open-folder guide, one time only" },
   { key: "atlas.download.motion", kind: "storage", scope: "global", note: "The download page's motion pause (`motion-pause.ts`, WCAG 2.2.2): a per-browser convenience, never vault data" },
   { key: "atlas.download.moru-play.best", kind: "storage", scope: "global", note: "The best score in the download page's Play with Moru popup (`moru-play.ts`): a per-browser convenience, never vault data" },
-  { key: "ontology-atlas:last-route", kind: "storage", scope: "global", note: "**Nobody reads it**: route restoration was retired on 2026-07-30 (`locale-redirect.tsx`). It is a dead key rather than a defect, so this registry records only the fact and leaves deletion as a separate matter" },
 
   // Things that *define* the scope (they are the answer to "which vault")
   { key: "docs-vault:current-handle", kind: "storage", scope: "global", note: "IndexedDB: current vault handle" },

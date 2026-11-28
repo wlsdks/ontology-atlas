@@ -11,6 +11,7 @@ export { resolveStaticVaultSource } from './lib/bundled-vault/static-vault-sourc
 export { dogfoodManifest } from './lib/bundled-vault/dogfood-manifest';
 export { DOGFOOD_AGENT_SLUG_PREFIX } from './lib/bundled-vault/dogfood-slug-prefix';
 export { bundledSamples } from './lib/bundled-vault/load-static-vault-source';
+export { loadGatewayChangelog } from './lib/bundled-vault/load-gateway-changelog';
 export { deriveDocumentDetail, type DocumentRef, type VaultDocDetail } from './store/document-detail';
 export { createDocumentStore, type DocumentStore } from './store/document-store';
 export {
