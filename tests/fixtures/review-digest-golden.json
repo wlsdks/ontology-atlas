@@ -1,0 +1,16 @@
+{
+  "recordedFrom": "the script server (mcp/src/schema.mjs reviewCurrentness) on 2026-11-28: each digest is the value it reports as current",
+  "baseDigest": "d80831fda6cd834ec1a76e8659cdc087",
+  "cases": {
+    "identical content keeps the same digest": "d80831fda6cd834ec1a76e8659cdc087",
+    "a rewritten body expires the approval": "3a94b360ba4c1c905cad1c11400602b6",
+    "a moved domain expires the approval": "f7a3bc8b405667f88975341a7ff43fe6",
+    "a changed relation array expires the approval": "7f65c82b339ab8d0a10047d9240dfe09",
+    "a retitled node expires the approval": "becd0b0ae7126a5b5dbec394b987d0ad",
+    "adding a localized display name keeps the approval": "d80831fda6cd834ec1a76e8659cdc087",
+    "the review keys themselves stay outside the digest": "d80831fda6cd834ec1a76e8659cdc087",
+    "moving the node on the map keeps the approval": "d80831fda6cd834ec1a76e8659cdc087",
+    "a recheck mark keeps the approval": "d80831fda6cd834ec1a76e8659cdc087",
+    "trailing whitespace in the body is not a change": "d80831fda6cd834ec1a76e8659cdc087"
+  }
+}
