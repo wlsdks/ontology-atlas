@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { FULL_LANE_COMMANDS } from "../../../scripts/ci/classify-change.mjs";
 
 /**
- * `next build` may skip its type check only where the required Checks gate already ran
+ * `pnpm build` may skip its type check only where the required Checks gate already ran
  * `pnpm typecheck` on the same program: the pull-request browser build, and a release, which
  * `admit-release` accepts only at the head of main (`workflow-security.contract.test.ts`).
  */
@@ -25,9 +25,10 @@ describe("build type-check skip", () => {
     expect(skipping.sort()).toEqual(["e2e.yml", "release-macos.yml"]);
   });
 
-  it("is honoured by the Next config and backed by a typecheck in the gates lane", () => {
-    const nextConfig = readFileSync(path.join(process.cwd(), "next.config.ts"), "utf8");
-    expect(nextConfig).toContain(`ignoreBuildErrors: process.env.${SKIP} === '1'`);
+  it("is honoured by the build script and backed by a typecheck in the gates lane", () => {
+    const buildScript = readFileSync(path.join(process.cwd(), "scripts/web/build-app-and-site.mjs"), "utf8");
+    expect(buildScript).toContain(`const SKIP_TYPECHECK = '${SKIP}'`);
+    expect(buildScript).toContain("env[SKIP_TYPECHECK] !== '1'");
     expect(FULL_LANE_COMMANDS.gates).toContain("pnpm typecheck");
   });
 

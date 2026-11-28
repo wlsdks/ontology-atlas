@@ -37,8 +37,8 @@ function writeFile(root, relativePath, size) {
 }
 
 function writeMinimalArtifacts(root) {
-  writeFile(root, "out/index.html", 1024);
-  writeFile(root, "out/_next/static/chunks/app.js", 2048);
+  writeFile(root, "src-tauri/target/desktop-frontend/index.html", 1024);
+  writeFile(root, "src-tauri/target/desktop-frontend/assets/app.js", 2048);
   writeFile(
     root,
     "src-tauri/target/release/bundle/macos/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
@@ -64,12 +64,12 @@ describe("evaluateDesktopPerformance", () => {
     assert.equal(result.checks.length, 4);
     assert.deepEqual(
       result.checks.filter((check) => check.kind === "metric").map((check) => check.label),
-      ["static export out/ size", "macOS .app bundle size"],
+      ["app folder size", "macOS .app bundle size"],
     );
     assert.equal(result.evidenceBoundary, DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY);
   });
 
-  it("does not fail on total out/ or .app size metrics", () => {
+  it("does not fail on the app folder or .app size metrics", () => {
     const root = makeTempRoot();
     writeMinimalArtifacts(root);
 
@@ -78,20 +78,20 @@ describe("evaluateDesktopPerformance", () => {
       requireApp: true,
       budgets: {
         ...DESKTOP_PERFORMANCE_BUDGETS,
-        outBytes: 1,
+        appFolderBytes: 1,
         appBundleBytes: 1,
       },
     });
 
     assert.equal(result.ok, true);
-    assert.equal(result.checks.find((check) => check.label === "static export out/ size")?.ok, true);
+    assert.equal(result.checks.find((check) => check.label === "app folder size")?.ok, true);
     assert.equal(result.checks.find((check) => check.label === "macOS .app bundle size")?.ok, true);
   });
 
   it("reports a missing app bundle when app artifacts are required", () => {
     const root = makeTempRoot();
-    writeFile(root, "out/index.html", 1024);
-    writeFile(root, "out/_next/static/chunks/app.js", 2048);
+    writeFile(root, "src-tauri/target/desktop-frontend/index.html", 1024);
+    writeFile(root, "src-tauri/target/desktop-frontend/assets/app.js", 2048);
 
     const result = evaluateDesktopPerformance({ root, requireApp: true });
 
@@ -106,7 +106,7 @@ describe("evaluateDesktopPerformance", () => {
     writeMinimalArtifacts(root);
     writeFile(
       root,
-      "out/_next/static/chunks/huge.js",
+      "src-tauri/target/desktop-frontend/assets/huge.js",
       DESKTOP_PERFORMANCE_BUDGETS.maxStaticAssetBytes + 1,
     );
 
@@ -117,17 +117,17 @@ describe("evaluateDesktopPerformance", () => {
 
     assert.equal(result.ok, false);
     assert.equal(largestChunkCheck?.ok, false);
-    assert.equal(largestChunkCheck?.detail, "out/_next/static/chunks/huge.js");
+    assert.equal(largestChunkCheck?.detail, "src-tauri/target/desktop-frontend/assets/huge.js");
   });
 
-  it("fails when the Next static asset total exceeds its budget", () => {
+  it("fails when the bundled asset total exceeds its budget", () => {
     const root = makeTempRoot();
     writeMinimalArtifacts(root);
-    writeFile(root, "out/_next/static/chunks/large.css", DESKTOP_PERFORMANCE_BUDGETS.nextStaticBytes);
+    writeFile(root, "src-tauri/target/desktop-frontend/assets/large.css", DESKTOP_PERFORMANCE_BUDGETS.bundleBytes);
 
     const result = evaluateDesktopPerformance({ root });
     const staticTotalCheck = result.checks.find(
-      (check) => check.label === "Next static asset size",
+      (check) => check.label === "bundled asset size",
     );
 
     assert.equal(result.ok, false);
@@ -136,8 +136,8 @@ describe("evaluateDesktopPerformance", () => {
 
   it("fails closed when no JS/CSS asset can be measured", () => {
     const root = makeTempRoot();
-    writeFile(root, "out/index.html", 1024);
-    fs.mkdirSync(path.join(root, "out", "_next", "static"), { recursive: true });
+    writeFile(root, "src-tauri/target/desktop-frontend/index.html", 1024);
+    fs.mkdirSync(path.join(root, "src-tauri", "target", "desktop-frontend", "assets"), { recursive: true });
 
     const result = evaluateDesktopPerformance({ root });
     const largestChunkCheck = result.checks.find(

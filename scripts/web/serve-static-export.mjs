@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 /**
- * Serves the built static export (`out/`) with zero dependencies. Some e2e specs must measure a
- * layer the dev server lacks, and no package is added to the release surface for one e2e. Usage:
- * `node scripts/web/serve-static-export.mjs [--port=4173] [--dir=out]`.
+ * Serves a built folder with zero dependencies: the site folder the way the website host does, or the
+ * app folder the way the installed app does. Some e2e specs must measure a layer the dev server lacks,
+ * and no package is added to the release surface for one e2e. Usage:
+ * `node scripts/web/serve-static-export.mjs [--port=4173] [--host=127.0.0.1] [--dir=out] [--fallback=index.html]`.
+ * Without `--fallback` a missing path answers `404.html`, as the host does. With it, a missing path
+ * answers that one document with status 200, as Tauri does for every path the app folder lacks.
  */
 import { createServer } from "node:http";
 import { createReadStream } from "node:fs";
@@ -42,7 +45,7 @@ async function resolveExistingInside(rootReal, candidate) {
   }
 }
 
-/** A directory means `index.html` — that is the whole routing of a `trailingSlash: true` export. */
+/** A directory means `index.html`: the whole routing of a site folder whose every page is `<address>/index.html`. */
 export async function resolveStaticExportFile(rootPath, urlPath) {
   let decoded;
   try {
@@ -76,10 +79,18 @@ export async function resolveStaticExportFile(rootPath, urlPath) {
   return html?.info.isFile() ? html.path : null;
 }
 
-export function startStaticExportServer({ root, port, host = "127.0.0.1" }) {
+export function startStaticExportServer({ root, port, host = "127.0.0.1", fallback = null }) {
   const resolvedRoot = path.resolve(root);
   const server = createServer(async (request, response) => {
     const file = await resolveStaticExportFile(resolvedRoot, request.url ?? "/");
+    if (!file && fallback) {
+      const document = await resolveStaticExportFile(resolvedRoot, `/${fallback}`);
+      if (document) {
+        response.writeHead(200, { "content-type": TYPES.get(path.extname(document)), "cache-control": "no-store" });
+        createReadStream(document).pipe(response);
+        return;
+      }
+    }
     if (!file) {
       const notFound = await resolveStaticExportFile(resolvedRoot, "/404.html");
       if (notFound) {
@@ -115,5 +126,5 @@ if (isMain) {
   );
   const port = Number(args.get("port") ?? 4173);
   const root = path.resolve(process.cwd(), args.get("dir") ?? "out");
-  startStaticExportServer({ root, port });
+  startStaticExportServer({ root, port, host: args.get("host") ?? "127.0.0.1", fallback: args.get("fallback") ?? null });
 }

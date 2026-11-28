@@ -8,7 +8,7 @@ import { APP_VERSION_FILE_LIST, readAppVersions, versionMismatches } from "../li
 const root = process.cwd();
 
 /**
- * `/download` derives RELEASE_VERSION from package.json through next.config.ts; this
+ * `/download` derives RELEASE_VERSION from package.json through vite.config.ts; this
  * asserts the derivation still exists, because comparing the value with itself proves nothing.
  */
 const releaseFacts = fs.readFileSync(
@@ -19,10 +19,10 @@ const releaseFactsLiteral = releaseFacts.match(/RELEASE_VERSION\s*=\s*["'`]([^"'
 const releaseFactsDerived = /RELEASE_VERSION\s*=\s*process\.env\.NEXT_PUBLIC_RELEASE_VERSION/.test(
   releaseFacts,
 );
-const nextConfig = fs.readFileSync(path.join(root, "next.config.ts"), "utf8");
-const nextConfigFeedsVersion =
-  /NEXT_PUBLIC_RELEASE_VERSION\s*:\s*releaseVersion/.test(nextConfig) &&
-  /packageJson[\s\S]{0,120}version/.test(nextConfig);
+const viteConfig = fs.readFileSync(path.join(root, "vite.config.ts"), "utf8");
+const viteConfigFeedsVersion = /["']process\.env\.NEXT_PUBLIC_RELEASE_VERSION["']\s*:\s*JSON\.stringify\(packageJson\.version\)/.test(
+  viteConfig,
+);
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-tag -- --tag=vX.Y.Z|vX.Y.Z-beta.N [--github-output]
@@ -95,9 +95,9 @@ if (releaseFactsLiteral) {
     `src/views/download/lib/release/release-facts.ts declares RELEASE_VERSION as the literal "${releaseFactsLiteral}". It must read process.env.NEXT_PUBLIC_RELEASE_VERSION so the download page cannot state a version the app does not have.`,
   );
 }
-if (!releaseFactsDerived || !nextConfigFeedsVersion) {
+if (!releaseFactsDerived || !viteConfigFeedsVersion) {
   fail(
-    "the download page's RELEASE_VERSION is no longer fed from package.json through next.config.ts. Restore that chain rather than typing the version again.",
+    "the download page's RELEASE_VERSION is no longer fed from package.json through vite.config.ts. Restore that chain rather than typing the version again.",
   );
 }
 

@@ -3,12 +3,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readMacosReleaseNames } from "../lib/macos-release-names.mjs";
+import { APP_FOLDER } from "../lib/web/built-folders.mjs";
 
 // Artifact size is not a constraint this product optimizes for. The gate catches only an
 // order-of-magnitude accident (stray dependency, duplicated vendor bundle, unintended generated
 // file); growth of the append-only ledgers in `content.json` is expected.
 export const DESKTOP_PERFORMANCE_BUDGETS = {
-  nextStaticBytes: 64 * 1024 * 1024,
+  bundleBytes: 64 * 1024 * 1024,
   maxStaticAssetBytes: 8 * 1024 * 1024,
 };
 
@@ -75,8 +76,8 @@ export function evaluateDesktopPerformance({
   budgets = DESKTOP_PERFORMANCE_BUDGETS,
 } = {}) {
   const checks = [];
-  const outDir = path.join(root, "out");
-  const nextStaticDir = path.join(outDir, "_next", "static");
+  const outDir = path.join(root, APP_FOLDER);
+  const bundleDir = path.join(outDir, "assets");
   const names = readMacosReleaseNames(root);
   const appBundlePath = path.join(
     root,
@@ -97,24 +98,24 @@ export function evaluateDesktopPerformance({
       evidenceBoundary: DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY,
     };
   }
-  if (!fs.existsSync(nextStaticDir)) {
+  if (!fs.existsSync(bundleDir)) {
     return {
       ok: false,
-      missing: [`${path.relative(root, nextStaticDir)}/`],
+      missing: [`${path.relative(root, bundleDir)}/`],
       checks,
       appBundlePath,
       evidenceBoundary: DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY,
     };
   }
 
-  addSizeMetric(checks, "static export out/ size", directorySize(outDir));
+  addSizeMetric(checks, "app folder size", directorySize(outDir));
   addBudgetCheck(
     checks,
-    "Next static asset size",
-    directorySize(nextStaticDir),
-    budgets.nextStaticBytes,
+    "bundled asset size",
+    directorySize(bundleDir),
+    budgets.bundleBytes,
   );
-  const largest = largestStaticAsset(nextStaticDir);
+  const largest = largestStaticAsset(bundleDir);
   if (largest) {
     checks.push({
       kind: "budget",
@@ -131,7 +132,7 @@ export function evaluateDesktopPerformance({
       actual: null,
       budget: budgets.maxStaticAssetBytes,
       ok: false,
-      detail: "no .js or .css asset found under out/_next/static",
+      detail: `no .js or .css asset found under ${APP_FOLDER}/assets`,
     });
   }
 

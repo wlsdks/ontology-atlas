@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 
 import { buildInputsDigest, builtFrom, isBuildInput, runStaticBuild } from './build-static-export.mjs';
 
-describe('which files the static export is built from', () => {
+describe('which files the app and site folders are built from', () => {
   const CASES = [
     ['src/views/home/ui/Home.tsx', true],
     ['docs/ontology/elements/map.md', true],
@@ -43,8 +43,10 @@ describe('build stamp', () => {
       const edited = buildInputsDigest({ cwd: root, env: {} });
       assert.notEqual(edited, first);
 
-      assert.equal(builtFrom(edited, { cwd: root }), false, 'no out/ yet');
+      assert.equal(builtFrom(edited, { cwd: root }), false, 'no folders yet');
       put('out/index.html', '<html></html>');
+      assert.equal(builtFrom(edited, { cwd: root }), false, 'no stamp, no app folder');
+      put('src-tauri/target/desktop-frontend/index.html', '<html></html>');
       put('out/.build-inputs', `${edited}\n`);
       assert.equal(builtFrom(edited, { cwd: root }), true);
       assert.equal(builtFrom(first, { cwd: root }), false);
@@ -59,21 +61,26 @@ describe('build input stability', () => {
     const root = mkdtempSync(join(tmpdir(), 'build-static-race-'));
     try {
       spawnSync('git', ['init', '-q'], { cwd: root });
-      writeFileSync(join(root, '.gitignore'), 'out/\n');
+      writeFileSync(join(root, '.gitignore'), 'out/\nsrc-tauri/target/\n');
       mkdirSync(join(root, 'src'));
       writeFileSync(join(root, 'src/a.ts'), 'before');
       const env = {};
       const log = () => {};
+      const writeFolders = (text) => {
+        for (const folder of ['out', 'src-tauri/target/desktop-frontend']) {
+          mkdirSync(join(root, folder), { recursive: true });
+          writeFileSync(join(root, folder, 'index.html'), text);
+        }
+      };
       const result = runStaticBuild({ cwd: root, env, log, build: () => {
-        mkdirSync(join(root, 'out'));
-        writeFileSync(join(root, 'out/index.html'), 'built before');
+        writeFolders('built before');
         writeFileSync(join(root, 'src/a.ts'), 'after');
         return 0;
       } });
       assert.equal(result, 1);
       assert.equal(builtFrom(buildInputsDigest({ cwd: root, env }), { cwd: root }), false);
       let builds = 0;
-      const build = () => { builds++; writeFileSync(join(root, 'out/index.html'), 'built after'); return 0; };
+      const build = () => { builds++; writeFolders('built after'); return 0; };
       assert.equal(runStaticBuild({ cwd: root, env, log, build }), 0);
       assert.equal(runStaticBuild({ cwd: root, env, log, build }), 0);
       assert.equal(builds, 1);
