@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { parseSearch } from '@/shared/lib/navigation/atlas-search';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
 import { AGENTS_MODELS_HREF, DESTINATION_HREF, MCP_CONNECTORS_HREF } from '@/shared/config/destinations';
 
 import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab } from './agents-tab-state';
@@ -32,13 +34,13 @@ describe('agents tab state', () => {
 
   it('the models address every door uses is the one this parser reads', () => {
     const models = new URL(AGENTS_MODELS_HREF, 'https://x');
-    expect(parseAgentsTab(models.searchParams.get('tab'))).toBe('models');
+    expect(parseAgentsTab(firstSearchText(parseSearch(models.search).tab) ?? null)).toBe('models');
     expect(models.pathname).toBe(DESTINATION_HREF.agents);
   });
 
   it('the MCP connectors address every door uses opens the MCP tab', () => {
     const connectors = new URL(MCP_CONNECTORS_HREF, 'https://x');
-    expect(parseAgentsTab(connectors.searchParams.get(AGENTS_TAB_PARAM))).toBe('mcp');
+    expect(parseAgentsTab(firstSearchText(parseSearch(connectors.search)[AGENTS_TAB_PARAM]) ?? null)).toBe('mcp');
     expect(connectors.pathname).toBe(DESTINATION_HREF.agents);
   });
 });
