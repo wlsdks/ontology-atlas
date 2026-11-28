@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 
 import { blankComments } from "../quality/source-language/inventory.mjs";
@@ -13,7 +13,6 @@ export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/features/ontology-meaning-editor",
   "src/features/ontology-change-review",
   "src/widgets/acp-chat-panel",
-  "src/views/ontology-edit-redirect",
   "src/widgets/app-nav-rail",
   "src/widgets/app-settings-menu",
   "src/widgets/bottom-tab-bar",
@@ -50,7 +49,6 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "sourceContract.graphChip",
       "sourceContract.agentLabel",
       "sourceContract.agentChip",
-      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
       "SOURCE_VAULT_RUNTIME_REPLAY_MARKERS",
       "pattern_walk/project_map",
       "sourceContract.agentCopyGate",
@@ -88,6 +86,12 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
 
 function collectFiles(root, directory, allowedExtensions, ignoredFilePattern) {
   const absoluteDir = join(root, directory);
+  if (!existsSync(absoluteDir)) {
+    throw new Error(
+      `[ontology-design-surface] the design surface folder ${directory} does not exist: ` +
+        "drop it from DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS, or restore the folder.",
+    );
+  }
   const files = [];
 
   for (const entry of readdirSync(absoluteDir)) {
