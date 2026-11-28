@@ -15,7 +15,8 @@ import { pathToFileURL } from 'node:url';
 import { APP_FOLDER, APP_MANIFEST, SITE_FOLDER } from '../lib/web/built-folders.mjs';
 
 const SKIP_TYPECHECK = 'ATLAS_BUILD_SKIP_TYPECHECK';
-const ROUTE_TREE = 'src/app/route-tree.gen.ts';
+/** The committed file Vite's router plugin writes; `.gitattributes` pins its line endings. */
+export const ROUTE_TREE = 'src/app/route-tree.gen.ts';
 
 /** First loads at or under these sizes, in KB of brotli: what the installed app's map and the download page cost. */
 export const FIRST_LOAD_BUDGET_KB = Object.freeze({ app: 1001, site: 462 });
