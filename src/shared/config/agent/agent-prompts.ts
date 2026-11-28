@@ -18,9 +18,9 @@ function vaultRef(vaultPath: string | null | undefined): string {
 }
 
 /**
- * Does not paraphrase the server's write lifecycle, which it publishes in `instructions` and
- * `nextStep`. A single-context agent cannot make `canWrite` true, so the reviewed small batch comes
- * first (step 6).
+ * Does not paraphrase the server's write lifecycle, which it publishes in `instructions` and in the
+ * next call each write answers with. A single session lands meaning in reviewed small batches
+ * (step 6).
  */
 export function buildAgentAnalyzePrompt({
   vaultPath,
@@ -62,29 +62,10 @@ export function buildAgentAnalyzePrompt({
     `   After a batch lands, run validate_vault, and once the shape is`,
     `   settled call connect_project_source and finalize_project_meaning.`,
     `   Answer every warning a tool returns by the repair it names, or say`,
-    `   why you are not. That path is not gated on the qualification below,`,
-    `   so it reaches a vault the person can cite from today.`,
-    `7. The bulk route is a different one, and it belongs to a session that`,
-    `   has an independent evaluation lane. Do not write the proposal wholesale`,
-    `   while proposalValidation.canWrite is false: approval alone does not`,
-    `   make it true, and only the writePlan the server returns authorizes`,
-    `   the plan as a whole.`,
-    `8. On that route, after the human accepts, save the exact proposal you`,
-    `   showed them, unchanged. Their acceptance binds to a digest derived`,
-    `   from that proposal, so resubmitting it verbatim reproduces the same`,
-    `   digest, while re-deriving it produces a different one their`,
-    `   acceptance no longer matches. Releasing it also needs an evaluator`,
-    `   that is not its builder: the server rejects a qualification whose`,
-    `   evaluator is its builder. Do not fabricate an evaluator, and do not`,
-    `   keep calling the server hoping canWrite turns true on its own.`,
-    `9. If you cannot run that lane as a separate context, stop pursuing the`,
-    `   whole plan and say so: the plan is accepted and waiting on an`,
-    `   independent evaluation, and here is where you saved the proposal.`,
-    `   Keep building by the reviewed batches of step 6 meanwhile. Follow`,
-    `   the nextStep the server returns throughout; this server publishes`,
-    `   its full construction lifecycle in its own instructions, so read`,
-    `   that rather than inferring the rest.`,
-    `10. Never use delete_concept, merge_concepts, rename_concept,`,
+    `   why you are not. Each write names what is still unplaced or unread and`,
+    `   the next call to make; follow it, and read the construction card in`,
+    `   this server's own instructions rather than inferring the rest.`,
+    `7. Never use delete_concept, merge_concepts, rename_concept,`,
     `   or absorb_document as part of ordinary synchronization`,
     `   unless the human explicitly requested that operation and reviewed its`,
     `   dry-run or preflight.`,

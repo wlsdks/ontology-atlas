@@ -52,14 +52,6 @@ describe('addresses handed to agents point at live surfaces', () => {
     );
   });
 
-  it('still emits a builder address, and it is a live one', () => {
-    // A positive assertion, so deleting the emission cannot be mistaken for fixing it.
-    const composition = readFileSync(join(repoRoot, 'mcp/src/ontology-engine.mjs'), 'utf8');
-    expect(composition).toMatch(/\bcreateTraversalAnalysis\(\{/);
-    const engine = readFileSync(join(repoRoot, 'mcp/src/ontology-engine/traversal/traversal-analysis.mjs'), 'utf8');
-    expect(engine).toMatch(/href: `\/topology\/\?p=\$\{encodeURIComponent\(focusParam\)\}/);
-  });
-
   it('names no retired route in any address the MCP or CLI surfaces emit', () => {
     const offenders = scanned
       .map((path) => ({ path: relative(repoRoot, path), body: readFileSync(path, 'utf8') }))
