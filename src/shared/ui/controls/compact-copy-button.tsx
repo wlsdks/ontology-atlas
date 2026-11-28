@@ -1,5 +1,3 @@
-"use client";
-
 import { Clipboard } from "lucide-react";
 import { useState, type HTMLAttributes } from "react";
 import type { CopyFeedbackState } from "@/shared/lib/clipboard/use-copy-feedback";

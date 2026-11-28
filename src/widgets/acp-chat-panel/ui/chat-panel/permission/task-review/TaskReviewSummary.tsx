@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { formatValue, FormattedValueView } from '@/features/ontology-change-review';
 

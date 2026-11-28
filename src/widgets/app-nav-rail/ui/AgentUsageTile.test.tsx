@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -16,9 +16,9 @@ const report = (parts: Partial<UsageReport>): UsageReport => ({ sessionId: 's-1'
 
 function renderTile(locale: keyof typeof CATALOGUES = 'en') {
   return render(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
+    <IntlProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
       <AgentUsageTile />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

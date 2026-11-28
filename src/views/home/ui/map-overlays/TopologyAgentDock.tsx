@@ -15,16 +15,13 @@ import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Surface, WidgetEr
 import { ErrorBoundary } from "@/shared/ui/fallbacks/error-boundary";
 import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
 import { AnalysisWorkbench } from "@/widgets/analysis-workbench";
-import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
-import { useTranslations } from 'next-intl';
+import { useMemo, useState, lazy } from "react";
+import { SilentSuspense } from "@/shared/ui/fallbacks/silent-suspense";
+import { useTranslations } from 'use-intl';
 import { subjectSuggestions } from "@/features/acp-session";
 import { createChatDraftStore, reportChatDraftPresence, type ChatDraftPresence } from "../../model/agent/chat-draft-store";
 import { resolveAnalysisFindingTarget } from '../../model/agent/analysis-finding-target';
-const VaultAgentPanel = dynamic(
-  () => import("@/widgets/vault-agent-panel").then((m) => m.VaultAgentPanel),
-  { ssr: false },
-);
+const VaultAgentPanel = lazy(() => import("@/widgets/vault-agent-panel").then((m) => ({ default: m.VaultAgentPanel })));
 
 interface TopologyAgentDockProps {
   vaultAgentPrefill: VaultAgentPrefill | null;
@@ -166,23 +163,25 @@ export function TopologyAgentDock({
         />
       )}
     >
-      <VaultAgentPanel
-        // Never while the coding-agent branch holds the panel, or a URL request raises a second
-        // one.
-        open={keyChatOpen}
-        onClose={closeVaultAgent}
-        vaultPath={gitVaultPath}
-        insight={ontologyInsight}
-        manifest={vault.manifest}
-        screenContext={vaultAgentScreenContext}
-        vaultIsGit={false}
-        canWrite={vault.status === "loaded" && Boolean(vault.handle)}
-        onFocusNode={(slug) => handleSelect(slug)}
-        onOpenFolder={() => void vault.open()}
-        prefillRequest={vaultAgentPrefill ?? askPrefill}
-        takesFocusOnOpen={!conversationReturnedOnItsOwn}
-        putAway={conversationPutAway}
-      />
+      <SilentSuspense>
+        <VaultAgentPanel
+          // Never while the coding-agent branch holds the panel, or a URL request raises a second
+          // one.
+          open={keyChatOpen}
+          onClose={closeVaultAgent}
+          vaultPath={gitVaultPath}
+          insight={ontologyInsight}
+          manifest={vault.manifest}
+          screenContext={vaultAgentScreenContext}
+          vaultIsGit={false}
+          canWrite={vault.status === "loaded" && Boolean(vault.handle)}
+          onFocusNode={(slug) => handleSelect(slug)}
+          onOpenFolder={() => void vault.open()}
+          prefillRequest={vaultAgentPrefill ?? askPrefill}
+          takesFocusOnOpen={!conversationReturnedOnItsOwn}
+          putAway={conversationPutAway}
+        />
+      </SilentSuspense>
     </ErrorBoundary>
     {/* The user's own coding agent, sharing the key branch's slot; it stands beside the map, never
        over it. */}

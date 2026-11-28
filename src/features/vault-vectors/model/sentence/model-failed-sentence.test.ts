@@ -1,4 +1,4 @@
-import { createTranslator } from 'next-intl';
+import { createTranslator } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 import en from '../../../../../messages/en.json';
 import ja from '../../../../../messages/ja.json';

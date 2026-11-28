@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useLayoutEffect, useRef, useState, type RefCallback } from 'react';
 
 export function useInspectorClearance(): RefCallback<HTMLElement> {

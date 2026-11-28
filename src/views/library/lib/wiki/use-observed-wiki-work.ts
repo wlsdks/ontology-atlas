@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { observedWikiWriteEvents, type LibraryWorkEvent } from "@/features/library";

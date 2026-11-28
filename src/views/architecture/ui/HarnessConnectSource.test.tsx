@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
@@ -72,9 +72,9 @@ function runtime(overrides: Partial<ProjectSourceRuntime>): ProjectSourceRuntime
 
 function renderStage(input: { projectSlug: string | null; runtime: ProjectSourceRuntime; onConnected?: () => void }) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <HarnessConnectSource vaultHandle={sidecarOnlyHandle()} projectSlug={input.projectSlug} docs={docs} onConnected={input.onConnected ?? (() => {})} runtime={input.runtime} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

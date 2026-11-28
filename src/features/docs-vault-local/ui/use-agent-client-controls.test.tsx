@@ -2,7 +2,7 @@
 // The row order contract lives beside the Agents rows (`VaultAgentSetupPanel.test.tsx`).
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { useAgentClientControls, type AgentClientControlsProps } from "./use-agent-client-controls";
 import { AGENT_CLIENTS } from "@/entities/vault-session";
 import ko from "../../../../messages/ko.json";
@@ -27,7 +27,7 @@ function Harness(props: AgentClientControlsProps) {
 
 function renderButtons() {
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <Harness
         serverAvailability={{
           kind: "app-bundled",
@@ -40,7 +40,7 @@ function renderButtons() {
         mcpJsonSnippet="{}"
         codexCommand="codex mcp add"
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -73,7 +73,7 @@ describe("useAgentClientControls gives the four clients equal weight", () => {
 describe("useAgentClientControls does not show a failed write as success", () => {
   function renderWithWriter(onWriteConfigs: () => Promise<void>) {
     return render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <Harness
           serverAvailability={{
             kind: "app-bundled",
@@ -86,7 +86,7 @@ describe("useAgentClientControls does not show a failed write as success", () =>
           mcpJsonSnippet="{}"
           codexCommand="codex mcp add"
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
   }
 

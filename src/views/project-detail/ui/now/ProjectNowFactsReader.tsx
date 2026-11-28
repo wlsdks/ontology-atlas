@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import type { VaultDoc } from "@/entities/docs-vault";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";

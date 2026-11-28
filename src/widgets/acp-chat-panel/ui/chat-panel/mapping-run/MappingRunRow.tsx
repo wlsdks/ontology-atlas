@@ -1,7 +1,5 @@
-'use client';
-
 import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import type { LimitInForce } from '@/entities/agent-usage';
 import { isMappingActive, mappingFraction, RollingCount, type MappingFigures, type MappingRun } from '@/features/work-run';

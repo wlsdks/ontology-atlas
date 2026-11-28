@@ -1,5 +1,3 @@
-'use client';
-
 import type { useDocReview } from '../model/use-doc-review';
 import type { useDocAccess } from '../model/use-doc-access';
 import type { useDocWriteActions } from '../model/use-doc-write-actions';
@@ -8,7 +6,7 @@ import type { useDocOutline } from '../model/use-doc-outline';
 import type { useDocsVaultAddress } from '../model/use-docs-vault-url';
 import type { Dispatch, SetStateAction } from 'react';
 import { Link } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { TextCursorInput, Trash2 } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';

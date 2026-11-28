@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import type { ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';

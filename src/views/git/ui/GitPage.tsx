@@ -1,5 +1,3 @@
-"use client";
-
 import { AtlasGitPanel, useAtlasGitContext } from "@/widgets/atlas-git-panel";
 
 export function GitPage() {

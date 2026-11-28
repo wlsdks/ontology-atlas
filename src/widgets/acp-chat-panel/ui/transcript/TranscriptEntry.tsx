@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { Components } from 'react-markdown';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import {
   readToolCommandArgument,

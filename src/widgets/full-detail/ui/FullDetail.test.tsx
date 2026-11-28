@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import koMessages from "../../../../messages/ko.json";
 import { describe, expect, it, vi } from "vitest";
 import { buildFullDetailGroups } from "../lib/full-detail-groups";
@@ -141,7 +141,7 @@ function renderFullDetail(overrides: Partial<Parameters<typeof FullDetail>[0]> =
   const onSelectNode = vi.fn();
   const onClose = vi.fn();
   render(
-    <NextIntlClientProvider locale="ko" messages={messages}>
+    <IntlProvider locale="ko" messages={messages}>
       <FullDetail
         node={{ id: "domain:a", title: "Domain A", kind: "domain", slug: "domains/a", fresh: true }}
         groups={groups}
@@ -151,7 +151,7 @@ function renderFullDetail(overrides: Partial<Parameters<typeof FullDetail>[0]> =
         onClose={onClose}
         {...overrides}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { onSelectNode, onClose };
 }
@@ -159,7 +159,7 @@ function renderFullDetail(overrides: Partial<Parameters<typeof FullDetail>[0]> =
 function renderFullDetailWithContainer(overrides: Partial<Parameters<typeof FullDetail>[0]> = {}) {
   const onSelectNode = vi.fn();
   const { container } = render(
-    <NextIntlClientProvider locale="ko" messages={messages}>
+    <IntlProvider locale="ko" messages={messages}>
       <FullDetail
         node={{ id: "domain:a", title: "Domain A", kind: "domain", slug: "domains/a", fresh: true }}
         groups={buildFullDetailGroups("domain:a", nodes, edges)}
@@ -169,7 +169,7 @@ function renderFullDetailWithContainer(overrides: Partial<Parameters<typeof Full
         onClose={vi.fn()}
         {...overrides}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { container, onSelectNode };
 }

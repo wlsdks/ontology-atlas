@@ -1,7 +1,5 @@
-'use client';
-
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';

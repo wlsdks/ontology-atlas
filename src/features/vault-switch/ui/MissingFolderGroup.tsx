@@ -1,8 +1,6 @@
-'use client';
-
 import { FolderSearch, FolderX } from 'lucide-react';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
-import type { useTranslations } from 'next-intl';
+import type { useTranslations } from 'use-intl';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { computeEditAge } from '@/shared/lib/edit-provenance/edit-age';
 import { cn } from '@/shared/lib/cn';

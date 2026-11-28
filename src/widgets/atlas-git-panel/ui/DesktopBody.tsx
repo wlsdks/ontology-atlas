@@ -1,5 +1,3 @@
-"use client";
-
 import type { CopyFeedbackState } from "@/shared/lib/clipboard/use-copy-feedback";
 import type { GitRemoteState, RemoteAction } from "../lib/remote-state";
 import { stripConventionalPrefix, humanizeStepSubject } from "../lib/step-title";

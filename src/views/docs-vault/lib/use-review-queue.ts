@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale } from 'use-intl';
 import { buildReviewQueue, type ReviewQueueRow, type VaultDoc } from '@/entities/docs-vault';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';

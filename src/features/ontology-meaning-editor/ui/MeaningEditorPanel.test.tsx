@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -38,9 +38,9 @@ function renderPanel(overrides: Partial<ComponentProps<typeof MeaningEditorPanel
     ...overrides,
   };
   render(
-    <NextIntlClientProvider locale={locale} messages={locale === 'en' ? enMessages : koMessages}>
+    <IntlProvider locale={locale} messages={locale === 'en' ? enMessages : koMessages}>
       <MeaningEditorPanel {...props} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return props;
 }
@@ -167,7 +167,7 @@ describe('removing the last relation of a key writes no empty key', () => {
   ): Promise<string> {
     const onApply = vi.fn().mockResolvedValue(undefined);
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <MeaningEditorPanel
           open
           source={{
@@ -185,7 +185,7 @@ describe('removing the last relation of a key writes no empty key', () => {
           onRemoveIncoming={vi.fn()}
           onClose={vi.fn()}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId('meaning-editor-remove'));
     await waitFor(() => expect(onApply).toHaveBeenCalledTimes(1));

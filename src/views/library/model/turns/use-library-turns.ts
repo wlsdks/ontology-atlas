@@ -8,7 +8,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import type { VaultDoc } from "@/entities/docs-vault";
 import {

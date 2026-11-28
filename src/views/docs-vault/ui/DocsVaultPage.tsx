@@ -1,9 +1,7 @@
-'use client';
-
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Link } from '@/i18n/navigation';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { useLocalVault } from '@/entities/vault-session';
 import { useAdoptDocumentText, useDocumentDetail } from '@/features/document-detail';
 import { OntologyStarterCta } from '@/features/docs-vault-local';

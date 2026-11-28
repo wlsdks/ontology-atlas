@@ -1,4 +1,4 @@
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { SourceOutline } from "@/shared/lib/library/source-outline";
 import type { SourceOutlineState } from "../../lib/sources/use-source-outline";

@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const EDGE_FADE = 'var(--tabbar-edge-fade)';

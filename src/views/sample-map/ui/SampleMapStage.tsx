@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Button } from '@/shared/ui/controls/button';
 import { WaitStage } from '@/shared/ui/status/wait-stage';
 import { adoptBodyLabelFont, bodyLabelFontSettled, OntologyMap } from '@/widgets/ontology-map';

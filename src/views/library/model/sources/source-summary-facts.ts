@@ -1,4 +1,4 @@
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import type { CitedPassageState } from "../../lib/sources/use-cited-passage";

@@ -1,8 +1,6 @@
-'use client';
-
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { CalendarClock, Pause, Play } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { cadenceKey, cadenceMinutes, type RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { cn } from '@/shared/lib/cn';

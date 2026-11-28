@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../../../messages/en.json';
@@ -16,9 +16,9 @@ const requests = (count: number): MappingFinishedRequest[] =>
 function renderLines(finished: MappingFinishedRequest[], options: { shownSession?: string | null; canOpen?: boolean; locale?: keyof typeof CATALOGUES } = {}) {
   const on = { onOpen: vi.fn(), onOpenAll: vi.fn() };
   render(
-    <NextIntlClientProvider locale={options.locale ?? 'en'} messages={CATALOGUES[options.locale ?? 'en']}>
+    <IntlProvider locale={options.locale ?? 'en'} messages={CATALOGUES[options.locale ?? 'en']}>
       <MappingRunRequests finished={finished} shownSession={options.shownSession ?? null} canOpen={options.canOpen ?? true} {...on} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return on;
 }

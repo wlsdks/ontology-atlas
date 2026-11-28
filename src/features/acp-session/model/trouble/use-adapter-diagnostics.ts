@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useRef, useState } from 'react';
 
 /** The adapter's install progress is noise; the first lines state the cause. */

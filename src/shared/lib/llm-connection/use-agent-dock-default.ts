@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 
 import { SECRET_PROVIDERS, secretStatus, subscribeSecretChange } from './tauri-secrets';

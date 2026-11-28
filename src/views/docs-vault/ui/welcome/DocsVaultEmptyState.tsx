@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { Network, PanelLeftOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { controlClass } from "@/shared/ui";
 
 export function DocsVaultEmptyState({

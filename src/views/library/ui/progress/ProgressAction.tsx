@@ -1,7 +1,5 @@
-"use client";
-
 import type { ReactNode } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { WorkGlyph } from "@/shared/motion/status-glyphs/WorkGlyph";
 import { Button } from "@/shared/ui";

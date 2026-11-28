@@ -1,5 +1,3 @@
-"use client";
-
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useLatinEyebrow } from "@/shared/lib/locale-text/latin-eyebrow";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";

@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useId, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { permissionIntent, permissionScope, widestPermissionLocality } from '@/features/acp-session';
 import {

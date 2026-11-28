@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { useRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -22,9 +22,9 @@ function Harness({ onAsk, disabled = false }: { onAsk: OnAsk; disabled?: boolean
 
 function mount(onAsk: OnAsk, disabled = false) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <Harness onAsk={onAsk} disabled={disabled} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

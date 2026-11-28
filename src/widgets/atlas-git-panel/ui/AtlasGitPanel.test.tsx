@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import type { OntologyChangeset } from "@/entities/knowledge-graph/lib/ontology-tree";
@@ -42,9 +42,9 @@ afterEach(() => {
 
 function renderPanel(ui: React.ReactElement) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       {ui}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

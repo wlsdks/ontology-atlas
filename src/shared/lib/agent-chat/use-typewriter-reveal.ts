@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePrefersReducedMotion } from '../render-timing/use-prefers-reduced-motion';

@@ -1,9 +1,8 @@
-import type { Metadata } from 'next';
-
 import { SITE_URL } from '@/shared/config';
 import { SITE_NAME } from '@/shared/config/site/site-entity';
 
 import { withBasePath } from './base-path';
+import type { PageMetadata } from './page-metadata';
 
 const SITE_TAGLINE_FALLBACK =
   'Understand what your codebase builds, why it is structured that way, and what a change will affect.';
@@ -12,7 +11,7 @@ const SITE_TAGLINE_FALLBACK =
  * The site's defaults, which every page inherits and a page's own fields replace whole. The root layout and the
  * website's prerender both start from this one list, so a field is stated once.
  */
-export function siteMetadata(): Metadata {
+export function siteMetadata(): PageMetadata {
   return {
     title: SITE_NAME,
     description: SITE_TAGLINE_FALLBACK,
@@ -23,8 +22,8 @@ export function siteMetadata(): Metadata {
     // Not hardcoded: a fork shipping this site's verification code would block its own Console registration.
     // Unset, the tag is not emitted.
     verification: {
-      ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } : {}),
-      ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION ? { other: { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } } : {}),
+      ...(process.env.ATLAS_PUBLIC_GOOGLE_SITE_VERIFICATION ? { google: process.env.ATLAS_PUBLIC_GOOGLE_SITE_VERIFICATION } : {}),
+      ...(process.env.ATLAS_PUBLIC_BING_SITE_VERIFICATION ? { other: { 'msvalidate.01': process.env.ATLAS_PUBLIC_BING_SITE_VERIFICATION } } : {}),
     },
     openGraph: {
       type: 'website',

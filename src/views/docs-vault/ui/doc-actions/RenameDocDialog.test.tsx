@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import koMessages from "../../../../../messages/ko.json";
@@ -17,14 +17,14 @@ const ko = koMessages.docsVault.renameDialog;
 function renderDialog(onConfirm = vi.fn().mockResolvedValue(undefined)) {
   const taken = new Set(["capabilities/agent-connector-setup"]);
   render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <RenameDocDialog
         target={target}
         isTaken={(slug) => taken.has(slug)}
         onCancel={vi.fn()}
         onConfirm={onConfirm}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { onConfirm, input: screen.getByTestId("docs-rename-input") as HTMLInputElement };
 }

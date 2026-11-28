@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { RefreshCw } from 'lucide-react';
 import { Button, buttonVariants } from '@/shared/ui/controls/button';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';

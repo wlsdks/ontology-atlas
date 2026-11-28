@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
@@ -20,9 +20,9 @@ function renderHandle(width = defaultChatWidth(window.innerWidth)) {
   const onWidth = vi.fn();
   const onCommit = vi.fn();
   render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <AcpChatResizeHandle width={width} onWidth={onWidth} onCommit={onCommit} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { handle: screen.getByTestId('acp-chat-resize'), onWidth, onCommit };
 }

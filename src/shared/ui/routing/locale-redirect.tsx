@@ -1,5 +1,3 @@
-'use client';
-
 import { Fragment, useEffect } from 'react';
 import { detectLocale } from '@/i18n/detect-locale';
 import type { AppLocale } from '@/i18n/locales';

@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect, useRef, type RefObject } from "react";
 import {
   copyCanvasAtCssSize,

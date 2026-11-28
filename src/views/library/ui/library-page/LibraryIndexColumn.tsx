@@ -1,5 +1,5 @@
 import { useEffect, useRef, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { createPortal } from "react-dom";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import {

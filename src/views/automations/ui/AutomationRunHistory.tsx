@@ -1,8 +1,6 @@
-'use client';
-
 import { useId, useState, type ReactNode } from 'react';
 import { FileText } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import type { RoundPassEntry } from '@/entities/library-round';
 import { type RoundUnrecorded, type RoundsRunnerValue, undoneReasonKey } from '@/features/library-rounds';
 import { Link } from '@/i18n/navigation';

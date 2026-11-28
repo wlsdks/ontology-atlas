@@ -1,7 +1,5 @@
-'use client';
-
 import type { ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { checkedNothing, type ScheduledRun } from '../model/scheduled-run';
 import type { MoruState } from './WorkRunMoru';

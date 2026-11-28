@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
@@ -28,10 +28,10 @@ function withScope(messages: typeof enMessages, scope: string) {
 function mount(locale: 'en' | 'ko' = 'en', onShowSection = vi.fn()) {
   const messages = locale === 'en' ? withScope(enMessages, 'This computer') : withScope(koMessages as typeof enMessages, '이 컴퓨터');
   render(
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <IntlProvider locale={locale} messages={messages}>
       <PrivacyLead />
       <PrivacyPane onShowSection={onShowSection} onClose={vi.fn()} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return onShowSection;
 }

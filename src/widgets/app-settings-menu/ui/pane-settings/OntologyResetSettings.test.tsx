@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
@@ -34,9 +34,9 @@ const doc = (path: string, kind?: string) => ({
 
 function mount() {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <OntologyResetSettings />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

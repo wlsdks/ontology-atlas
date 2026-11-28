@@ -1,7 +1,5 @@
-"use client";
-
 import { memo } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { WikiProblemContext } from "@/features/library";
 import type { WikiReport } from "@/shared/lib/library/wiki-report.mjs";

@@ -1,5 +1,3 @@
-"use client";
-
 import type { VaultDoc } from "@/entities/docs-vault";
 
 import { useVaultManifest } from "./use-vault-manifest";

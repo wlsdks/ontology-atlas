@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, useState, type RefObject } from 'react';
 
 /** The card's own gap from the window's right edge and from whatever it steps aside for. */

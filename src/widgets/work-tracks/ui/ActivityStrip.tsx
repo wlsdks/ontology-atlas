@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef, type CSSProperties } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { MOTION } from '@/shared/motion';
 import type { ScreenBeat, ScreenTick } from './use-room-copy';
 import styles from './rooms.module.css';

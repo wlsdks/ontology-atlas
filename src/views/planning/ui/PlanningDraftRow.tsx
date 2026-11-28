@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { EXIT_TRANSITION, MOTION, useExitLockout } from '@/shared/motion';

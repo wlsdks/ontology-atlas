@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -147,9 +147,9 @@ const ledgerLines = () =>
 
 function wrapper({ children }: { children: ReactNode }) {
   return (
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       {children}
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 

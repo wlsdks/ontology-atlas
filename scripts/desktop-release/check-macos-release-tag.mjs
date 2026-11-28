@@ -16,11 +16,11 @@ const releaseFacts = fs.readFileSync(
   "utf8",
 );
 const releaseFactsLiteral = releaseFacts.match(/RELEASE_VERSION\s*=\s*["'`]([^"'`]+)["'`]/)?.[1];
-const releaseFactsDerived = /RELEASE_VERSION\s*=\s*process\.env\.NEXT_PUBLIC_RELEASE_VERSION/.test(
+const releaseFactsDerived = /RELEASE_VERSION\s*=\s*process\.env\.ATLAS_PUBLIC_RELEASE_VERSION/.test(
   releaseFacts,
 );
 const viteConfig = fs.readFileSync(path.join(root, "vite.config.ts"), "utf8");
-const viteConfigFeedsVersion = /["']process\.env\.NEXT_PUBLIC_RELEASE_VERSION["']\s*:\s*JSON\.stringify\(packageJson\.version\)/.test(
+const viteConfigFeedsVersion = /["']process\.env\.ATLAS_PUBLIC_RELEASE_VERSION["']\s*:\s*JSON\.stringify\(packageJson\.version\)/.test(
   viteConfig,
 );
 
@@ -92,7 +92,7 @@ try {
 const tagVersion = parsedTag.version;
 if (releaseFactsLiteral) {
   fail(
-    `src/views/download/lib/release/release-facts.ts declares RELEASE_VERSION as the literal "${releaseFactsLiteral}". It must read process.env.NEXT_PUBLIC_RELEASE_VERSION so the download page cannot state a version the app does not have.`,
+    `src/views/download/lib/release/release-facts.ts declares RELEASE_VERSION as the literal "${releaseFactsLiteral}". It must read process.env.ATLAS_PUBLIC_RELEASE_VERSION so the download page cannot state a version the app does not have.`,
   );
 }
 if (!releaseFactsDerived || !viteConfigFeedsVersion) {

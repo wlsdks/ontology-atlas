@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import koMessages from '../../../../messages/ko.json';
 import { DocsVaultUnifiedPalette } from './DocsVaultUnifiedPalette';
 import { buildBodyEntry, type DocsBodyIndex } from '../lib/body-index';
@@ -44,9 +44,9 @@ if (!Element.prototype.scrollIntoView) {
 
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       {ui}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

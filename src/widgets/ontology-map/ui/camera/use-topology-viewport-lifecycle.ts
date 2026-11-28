@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 
 import { DEPTH_DOT_LAYERS, buildDepthDotPattern, buildGridPattern } from "../../render/grid";

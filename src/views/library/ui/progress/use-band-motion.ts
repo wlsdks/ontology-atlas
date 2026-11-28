@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect, useRef } from "react";
 
 import { BandMotion } from "./band-motion";

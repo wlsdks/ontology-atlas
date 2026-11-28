@@ -62,7 +62,7 @@ vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (imp
 }));
 
 // The hook reads `useLocale()` for the starter language, and this test has no intl provider.
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'ko',
   // The key is returned verbatim, so tests check which string was chosen.
   useTranslations: () => (key: string) => key,

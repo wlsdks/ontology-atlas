@@ -1,7 +1,5 @@
-'use client';
-
 import { useMemo, useState, type ReactNode } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { BookOpen, BookText, FileText } from 'lucide-react';
 
 import type { LibrarySourceRow, VaultDoc } from '@/entities/docs-vault';

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useEffectEvent, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { listenForGesturePinch } from "../../interaction/gesture-pinch";

@@ -1,9 +1,9 @@
 import { fireEvent, render } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { useState } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { DocsVaultTabStrip } from "./DocsVaultTabStrip";
 import type { DocTab } from "../../lib/doc-tabs/doc-tabs";
 
@@ -34,7 +34,7 @@ function renderStrip(tabs: DocTab[], activeSlug: string) {
     return key;
   }) as unknown as ReturnType<typeof useTranslations<"docsVault">>;
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <DocsVaultTabStrip
         tabs={tabs}
         activeSlug={activeSlug}
@@ -42,7 +42,7 @@ function renderStrip(tabs: DocTab[], activeSlug: string) {
         onClose={vi.fn()}
         t={t}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -103,7 +103,7 @@ describe("DocsVaultTabStrip keyboard close focus", () => {
       const [tabs, setTabs] = useState(makeTabs(3));
       const [activeSlug, setActiveSlug] = useState("doc-2");
       return (
-        <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <IntlProvider locale="ko" messages={koMessages}>
           <DocsVaultTabStrip
             tabs={tabs}
             activeSlug={activeSlug}
@@ -114,7 +114,7 @@ describe("DocsVaultTabStrip keyboard close focus", () => {
             }}
             t={t}
           />
-        </NextIntlClientProvider>
+        </IntlProvider>
       );
     }
 

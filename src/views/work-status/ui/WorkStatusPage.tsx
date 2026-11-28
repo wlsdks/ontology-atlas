@@ -1,8 +1,6 @@
-'use client';
-
 import { useMemo, useSyncExternalStore } from 'react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { FolderGit2 } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { Link } from '@/i18n/navigation';

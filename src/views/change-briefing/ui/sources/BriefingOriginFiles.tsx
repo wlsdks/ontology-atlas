@@ -1,7 +1,5 @@
-'use client';
-
 import { useRef, useState, type MouseEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Button } from '@/shared/ui';
 import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 import { BriefingFileList } from './BriefingFileList';

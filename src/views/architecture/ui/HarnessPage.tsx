@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useSearchParams } from 'next/navigation';
 
 import { useDataSourceMode, useLocalVault, useOpenFolderManifest } from '@/entities/vault-session';

@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { ArrowUpRight, Check, CircleAlert, Copy, Plug } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { BrandMark } from '@/shared/ui/marks/brand-mark';

@@ -33,7 +33,7 @@ export function buildInputsDigest({ cwd = process.cwd(), env = process.env } = {
   const blobs = git(['hash-object', '--stdin-paths'], { cwd, input: paths.join('\n') }).trim().split('\n');
   const hash = createHash('sha256');
   hash.update(`node ${process.version}\n`);
-  for (const [name, value] of Object.entries(env).filter(([name]) => name.startsWith('NEXT_PUBLIC_')).sort()) {
+  for (const [name, value] of Object.entries(env).filter(([name]) => name.startsWith('ATLAS_PUBLIC_')).sort()) {
     hash.update(`env ${name}=${value}\n`);
   }
   paths.forEach((path, index) => hash.update(`${blobs[index]} ${path}\n`));

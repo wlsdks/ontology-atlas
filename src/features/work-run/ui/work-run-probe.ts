@@ -1,5 +1,3 @@
-'use client';
-
 import { workRuns } from '../model/work-run-store';
 
 type ProbeWindow = { __atlasWorkRuns?: typeof workRuns };

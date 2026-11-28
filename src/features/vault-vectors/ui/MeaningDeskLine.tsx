@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, type MouseEvent } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Cpu } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';

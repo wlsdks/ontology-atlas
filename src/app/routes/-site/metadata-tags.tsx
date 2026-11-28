@@ -1,10 +1,8 @@
 import { cloneElement, type ReactElement } from 'react';
 
 import { absoluteUrl } from '@/shared/config';
-import type { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
+import type { PageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { withTrailingSlash } from '@/shared/lib/public-pages/trailing-slash';
-
-export type PageMetadata = ReturnType<typeof buildPageMetadata>;
 
 type Entry = readonly [key: string, element: ReactElement];
 

@@ -31,7 +31,7 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({ children }: { children?: unknown }) => children,
 }));
 
-vi.mock("next-intl", () => ({
+vi.mock("use-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key}:${JSON.stringify(values)}` : key,
   useLocale: () => "ko",

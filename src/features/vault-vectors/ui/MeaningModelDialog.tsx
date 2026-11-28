@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useId, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { readLocalEndpoint } from '@/shared/lib/llm-connection/local-endpoint';

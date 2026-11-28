@@ -1,5 +1,3 @@
-'use client';
-
 import { Fragment } from 'react';
 
 import { AGENT_ROUND_CAP } from '@/features/vault-agent';

@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from 'next-intl';
+import type { useTranslations } from 'use-intl';
 import { useId } from 'react';
 import { Check } from 'lucide-react';
 import { answerObservation, type RetainedAnswerHead } from '@/features/library';

@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useCallback } from 'react';
 
 import type { NativeErrorLookup } from './native-error';

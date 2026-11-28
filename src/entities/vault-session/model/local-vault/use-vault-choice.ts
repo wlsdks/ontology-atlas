@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useState } from 'react';
 import {
   CURRENT_LOCAL_FS_HANDLE_ID,

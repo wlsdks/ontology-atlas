@@ -1,7 +1,5 @@
-'use client';
-
 import { MoreHorizontal } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { Checkbox, IconButton, ServiceMark, resolveServiceMark } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';

@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useReducer, useRef, useState, type CSSProperties } from 'react';
 import { Check, FileText, RotateCcw, Star, Timer } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { Link } from '@/i18n/navigation';
 import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';

@@ -1,5 +1,3 @@
-"use client";
-
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";

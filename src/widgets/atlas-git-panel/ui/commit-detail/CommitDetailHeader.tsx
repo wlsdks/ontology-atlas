@@ -1,7 +1,5 @@
-"use client";
-
 import { useMemo } from "react";
-import { useFormatter } from "next-intl";
+import { useFormatter } from "use-intl";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { controlClass } from "@/shared/ui";
 import { commitDateOptions, commitHeadlineLines } from "../../lib/commit-headline";

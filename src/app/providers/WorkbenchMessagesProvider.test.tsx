@@ -15,7 +15,7 @@ async function renderAt(pathname: string) {
   mocks.pathname = pathname;
   const catalog = await import('@/i18n/workbench-catalog');
   const load = vi.spyOn(catalog, 'loadWorkbenchCatalog');
-  const { useTranslations } = await import('next-intl');
+  const { useTranslations } = await import('use-intl');
   const { WorkbenchMessagesProvider } = await import('./WorkbenchMessagesProvider');
   function Probe() {
     const t = useTranslations('rootEntry');

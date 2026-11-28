@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { CodeLocationRow } from "./CodeLocationRow";
 
 /** The code paths `elements:` names as evidence, each with a copy button. */

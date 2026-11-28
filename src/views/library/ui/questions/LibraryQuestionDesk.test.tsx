@@ -1,6 +1,6 @@
 import { createHash, webcrypto } from 'node:crypto';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../../../messages/en.json';
 import ko from '../../../../../messages/ko.json';
@@ -83,7 +83,7 @@ function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includ
   onOpenWiki?: (slug: string) => void;
 }) {
   const { doc, raw, source, handle } = fixture(hash, listedMtime);
-  return <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
+  return <IntlProvider locale={locale} messages={locale === 'ko' ? ko : en}>
     <LibraryQuestionDesk docs={[...(includeWiki ? [doc] : []), ...extraPages.map((page) => page.doc)]}
       pageFacts={new Map([...(includeWiki ? [[doc.slug, factsOf(raw)] as const] : []), ...extraPages.map((page) => [page.doc.slug, factsOf(page.raw)] as const)])}
       sources={[source]} sourceHandles={new Map([[path, handle]])} hashes={new Map([[path, currentHash]])}
@@ -93,7 +93,7 @@ function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includ
       onInvalidateReport={onInvalidateReport}
       onFileReport={onFileReport} filingReport={false} fileReportNote={null}
       onBrowse={() => {}} onOpenWiki={onOpenWiki} onOpenSource={onOpenSource} />
-  </NextIntlClientProvider>;
+  </IntlProvider>;
 }
 
 beforeEach(() => {

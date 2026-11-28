@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';

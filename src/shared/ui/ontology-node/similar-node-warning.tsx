@@ -1,5 +1,3 @@
-"use client";
-
 import { motion } from "framer-motion";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { cn } from "@/shared/lib/cn";

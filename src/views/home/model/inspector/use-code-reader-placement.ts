@@ -1,5 +1,3 @@
-"use client";
-
 import { type RefObject, useLayoutEffect, useState } from "react";
 
 import { readerPlacement, type ReaderPlacement } from "@/widgets/code-reader";

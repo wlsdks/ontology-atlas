@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { FLAT_LINE_BITS } from "@/widgets/ontology-map";
 import type { MapEvidence } from "@/features/vault-ontology";
 

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 import { sourceGroupKey, type SourcePick } from "@/widgets/library-sources-overview";

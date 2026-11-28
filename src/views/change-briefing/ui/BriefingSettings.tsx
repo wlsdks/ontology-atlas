@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useId, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Link } from '@/i18n/navigation';
 import { hostOfBaseUrl, readLocalEndpoint, subscribeLocalEndpointChange } from '@/shared/lib/llm-connection/local-endpoint';
 import { Button, Dialog } from '@/shared/ui';

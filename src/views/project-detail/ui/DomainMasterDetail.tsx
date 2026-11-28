@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "framer-motion";
 import { Link } from "@/i18n/navigation";

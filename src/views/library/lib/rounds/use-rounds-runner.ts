@@ -1,7 +1,5 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale } from "use-intl";
 
 import { buildLibraryModel, type VaultDoc, type VaultSourceFile } from "@/entities/docs-vault";
 import {

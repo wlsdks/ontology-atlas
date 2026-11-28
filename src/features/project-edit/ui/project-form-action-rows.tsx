@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { fieldLabel } from "@/shared/ui/control-class";
 import { cn } from "@/shared/lib/cn";

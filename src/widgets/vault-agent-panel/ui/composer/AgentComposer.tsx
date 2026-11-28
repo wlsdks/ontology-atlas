@@ -1,7 +1,5 @@
-'use client';
-
 import type { RefObject } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { COMPOSER_MIN_ROWS } from '@/shared/lib/agent-chat/composer-growth';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';

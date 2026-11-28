@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";

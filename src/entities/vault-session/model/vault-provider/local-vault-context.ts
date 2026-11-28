@@ -1,5 +1,3 @@
-"use client";
-
 import { createContext, useContext } from "react";
 import type { useLocalVaultInternal } from "../local-vault/use-local-vault";
 

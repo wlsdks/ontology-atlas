@@ -1,5 +1,5 @@
 import { fireEvent, render as rtlRender, screen, waitFor, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
@@ -36,9 +36,9 @@ const missingBinaryServer = agentServerUnavailable(
 
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <TooltipProvider>{ui}</TooltipProvider>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -124,7 +124,7 @@ describe('VaultAgentSetupPanel', () => {
 
   it('renders nothing unless the vault is loaded', () => {
     const { container } = rtlRender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TooltipProvider>
           <VaultAgentSetupPanel
             canEditCurrent
@@ -134,7 +134,7 @@ describe('VaultAgentSetupPanel', () => {
             onOpenWorkflowGuide={vi.fn()}
           />
         </TooltipProvider>
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(container).toBeEmptyDOMElement();
   });

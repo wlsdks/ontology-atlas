@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, type ReactNode } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';

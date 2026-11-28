@@ -1,5 +1,5 @@
 import { act, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { Profiler, type ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../../../messages/en.json';
@@ -78,12 +78,12 @@ afterEach(() => {
 describe('the Wiki desk while search by meaning prepares', () => {
   it('is not drawn again by status events; only the line is', async () => {
     render(
-      <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
+      <IntlProvider locale="en" messages={en} timeZone="UTC">
         <LibraryQuestionDesk docs={docs} pageFacts={pageFacts} sources={sources} sourceHandles={empty} hashes={empty}
           vaultRoot={ROOT} vaultScope="folder" agentReady dockOpen={false} visible turnRunning={false} report={null}
           onSummarize={noop} onInvalidateReport={noop} onFileReport={null} filingReport={false} fileReportNote={null}
           onBrowse={noop} onOpenWiki={noop} onOpenSource={noop} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);

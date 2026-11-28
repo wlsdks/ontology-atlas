@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { RefreshCw } from 'lucide-react';
 
 import type { HarnessScanProgress } from '@/entities/agent-files';

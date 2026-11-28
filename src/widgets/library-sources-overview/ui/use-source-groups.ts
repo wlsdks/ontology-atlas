@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect, useState } from "react";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";

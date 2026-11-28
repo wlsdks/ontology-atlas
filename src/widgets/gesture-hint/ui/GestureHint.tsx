@@ -1,9 +1,7 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { AnimatePresence, motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { Hand, Pointer, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";

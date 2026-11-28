@@ -1,5 +1,3 @@
-'use client';
-
 import { useSyncExternalStore } from 'react';
 
 import { mergeUsageReport, pressingLimit, type AgentUsage, type LimitInForce, type UsageReport } from './agent-usage';

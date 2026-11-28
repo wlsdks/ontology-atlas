@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { act, render, renderHook, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,9 +16,9 @@ const ROOT = path.resolve(__dirname, '../../../..');
 
 function IntlWrapper({ children }: { children: ReactNode }) {
   return (
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       {children}
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 

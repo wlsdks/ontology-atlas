@@ -1,4 +1,3 @@
-"use client";
 import type { CanvasBackground, GlyphSet } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import type { OntologyMapProps } from "../OntologyMap";
 

@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { motion } from 'framer-motion';
 
 import { deskSentenceWindow, passageLabelText, type DeskCitation, type DeskClaim, type DeskLead } from '@/features/library';

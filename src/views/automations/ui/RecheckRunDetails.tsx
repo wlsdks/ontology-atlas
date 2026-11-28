@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import {
   type RecheckConcept,
   type RecheckRecord,

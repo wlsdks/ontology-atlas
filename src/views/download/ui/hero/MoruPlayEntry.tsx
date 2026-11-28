@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
@@ -93,7 +91,6 @@ export function MoruPlayEntry({ className }: { className?: string }) {
             style={{ left: -VIEW.left, top: -VIEW.top, width: ENTRY_CELL, height: ENTRY_CELL }}
           >
             {ROWS.map((row) => (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={row}
                 data-moru-row={row}

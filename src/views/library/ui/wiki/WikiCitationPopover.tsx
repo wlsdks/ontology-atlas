@@ -1,8 +1,6 @@
-"use client";
-
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { FileText, FolderOpen } from "lucide-react";
 
 import { passageLabelText } from "@/features/library";

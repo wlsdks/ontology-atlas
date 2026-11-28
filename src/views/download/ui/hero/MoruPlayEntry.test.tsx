@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
@@ -15,9 +15,9 @@ afterEach(() => {
 
 function renderEntry() {
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
+    <IntlProvider locale="en" messages={enMessages} timeZone="UTC">
       <MoruPlayEntry />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return screen.getByRole('button', { name: "I'm Moru, Atlas's little friend. Play a mini game with me" });
 }

@@ -24,7 +24,7 @@ const PARTICLES: Record<EdgeSentenceKey, [JosaKind, JosaKind | null]> = {
   related: ["with", "subject"],
 };
 
-/** A type alias, not an interface: next-intl's values parameter needs the implicit index signature. */
+/** A type alias, not an interface: use-intl's values parameter needs the implicit index signature. */
 export type EdgeSentenceValues = {
   from: string;
   to: string;

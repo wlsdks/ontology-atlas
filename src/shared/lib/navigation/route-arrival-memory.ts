@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useState } from "react";
 
 import { readArrivalMemory, writeArrivalMemory } from "./route-arrival-memory-store";

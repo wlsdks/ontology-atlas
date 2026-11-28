@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useSearchParams } from 'next/navigation';
 import {
   DESTINATION_IDS,

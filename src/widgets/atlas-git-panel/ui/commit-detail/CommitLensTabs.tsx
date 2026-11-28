@@ -1,5 +1,3 @@
-"use client";
-
 import { controlClass } from "@/shared/ui";
 import type { Lens } from "../../lib/document-follow";
 import type { CopyTranslate } from "../../lib/translator";

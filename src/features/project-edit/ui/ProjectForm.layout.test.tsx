@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
@@ -28,7 +28,7 @@ const project: Project = {
 
 function renderCreate() {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <TaxonomyProvider>
         <ProjectForm
           mode="create"
@@ -37,14 +37,14 @@ function renderCreate() {
           onCancel={() => {}}
         />
       </TaxonomyProvider>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
 async function renderEdit() {
   await act(async () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <TaxonomyProvider>
           <ProjectForm
             mode="edit"
@@ -55,7 +55,7 @@ async function renderEdit() {
             onDelete={async () => {}}
           />
         </TaxonomyProvider>
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     await Promise.resolve();
   });

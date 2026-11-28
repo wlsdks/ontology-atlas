@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import messages from '../../../../messages/en.json';
@@ -21,7 +21,7 @@ function mount() {
     outcome: { candidates: [first, second, third], truncated: false, unreadableRoots: [], walkedRoots: [] },
     folders: "vault",
   };
-  const view = (value: FindDocumentsDialogProps) => <NextIntlClientProvider locale="en" messages={{ library: messages.library }}><FindDocumentsDialog {...value} /></NextIntlClientProvider>;
+  const view = (value: FindDocumentsDialogProps) => <IntlProvider locale="en" messages={{ library: messages.library }}><FindDocumentsDialog {...value} /></IntlProvider>;
   return { props, ...render(view(props)), view };
 }
 

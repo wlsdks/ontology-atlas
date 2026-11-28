@@ -62,8 +62,8 @@ function typescriptEntry(repository) {
 const firstFailure = (codes) => codes.find((code) => code !== 0) ?? 0;
 
 export async function build({ only = null, env = process.env, repository = repositoryOf(import.meta.filename) } = {}) {
-  if (env.NEXT_PUBLIC_BASE_PATH) {
-    console.error("[build] NEXT_PUBLIC_BASE_PATH is set, but the website is built to be served at the root of its host: a sub-path needs Vite's base, the router's basepath, the icon links and the boot script to carry it.");
+  if (env.ATLAS_PUBLIC_BASE_PATH) {
+    console.error("[build] ATLAS_PUBLIC_BASE_PATH is set, but the website is built to be served at the root of its host: a sub-path needs Vite's base, the router's basepath, the icon links and the boot script to carry it.");
     return 1;
   }
   const vite = 'node_modules/vite/bin/vite.js';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 /** `[[target|label]]` reads as its label and `[[target]]` as the target's last segment. */
 const WIKILINK = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;

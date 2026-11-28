@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useState } from "react";
 
 import { useVaultAgentRuntime, type VaultAgentRuntime } from "@/widgets/acp-chat-panel";

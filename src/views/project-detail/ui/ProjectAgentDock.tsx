@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";

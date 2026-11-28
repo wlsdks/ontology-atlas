@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from 'next-intl';
+import type { useTranslations } from 'use-intl';
 import { useId, useState, type RefObject } from 'react';
 import type { AnswerObservation } from '@/features/library';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';

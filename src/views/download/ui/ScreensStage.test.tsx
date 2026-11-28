@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
@@ -16,9 +16,9 @@ vi.mock('@/i18n/navigation', () => ({
 describe('ScreensStage', () => {
   it('opens the sample map from the Map row, with no arrow', () => {
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <ScreensStage intro={null} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     const map = screen.getByTestId('gateway-screens-map');

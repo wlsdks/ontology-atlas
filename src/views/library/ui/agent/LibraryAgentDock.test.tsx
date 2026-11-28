@@ -1,5 +1,5 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -49,7 +49,7 @@ function dock(
   extra: Partial<ComponentProps<typeof LibraryAgentDock>> = {},
 ) {
   return (
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <LibraryAgentDock
         {...extra}
         chatWidth={{ width: 420, setWidth: () => {}, commitWidth: () => {} }}
@@ -64,7 +64,7 @@ function dock(
         onClose={() => {}}
         onTerminalToolObservation={onTerminalToolObservation}
       />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 

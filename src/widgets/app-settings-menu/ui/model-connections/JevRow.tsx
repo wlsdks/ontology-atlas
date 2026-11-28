@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { JevCheck } from '@/features/jev-judgment';
 import { secretErrorMessage } from '@/shared/lib/llm-connection/tauri-secrets';
 import {

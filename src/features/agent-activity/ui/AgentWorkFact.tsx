@@ -1,5 +1,3 @@
-'use client';
-
 import { AnimatePresence, motion, useIsPresent } from 'framer-motion';
 import { EXIT_TRANSITION, MOTION, useExitLockout } from '@/shared/motion';
 

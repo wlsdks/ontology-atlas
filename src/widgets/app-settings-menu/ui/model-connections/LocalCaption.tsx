@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { countChatCapableModels } from '@/shared/lib/llm-connection/local-endpoint';
 import { isLoopbackAuthority } from '@/shared/lib/llm-connection/loopback';
 import type { LocalVerifyState } from './local-runner-rules';

@@ -1,7 +1,5 @@
-'use client';
-
 import type { CSSProperties } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import { sessionLoadOf } from '@/shared/lib/work-status/signals/load';
 import type { SessionBoard as Board } from '@/shared/lib/work-status/signals/session-board';

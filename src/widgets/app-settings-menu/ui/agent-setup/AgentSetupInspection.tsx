@@ -1,7 +1,5 @@
-'use client';
-
 import { Bot, CheckCircle2, CircleAlert, Terminal } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Link } from '@/i18n/navigation';
 import { Chip } from '@/shared/ui/controls/controls';
 import { controlClass } from '@/shared/ui/control-class';

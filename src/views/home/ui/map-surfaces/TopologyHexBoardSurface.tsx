@@ -1,7 +1,5 @@
-"use client";
-
 import { useCallback, useMemo, type ComponentProps } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { isMapConcept, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { type MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { useHexRelief, writeHexRelief } from "@/shared/lib/preferences/map-view-preferences";

@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import koMessages from "../../../../messages/ko.json";
@@ -40,9 +40,9 @@ vi.mock("@/i18n/navigation", () => ({
 
 function mount(nodeSelected: boolean) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <FirstRunStarterModule nodeSelected={nodeSelected} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { useRef, useState, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -158,9 +158,9 @@ function fakeVault(seed?: string, rootPath?: string) {
 
 function draw(node: ReactElement) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       {node}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

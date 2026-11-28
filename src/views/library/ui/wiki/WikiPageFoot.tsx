@@ -1,7 +1,5 @@
-"use client";
-
 import { useMemo, useSyncExternalStore, type ReactNode } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { BookText, FileText } from "lucide-react";
 
 import { OntologyMapKindGlyph } from "@/shared/ui";

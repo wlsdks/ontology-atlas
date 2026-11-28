@@ -1,7 +1,5 @@
-'use client';
-
 import { Link } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { FolderOpen, Map as MapIcon, Network, Plus } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { controlClass } from '@/shared/ui';

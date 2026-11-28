@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider, useTranslations } from 'next-intl';
+import { IntlProvider, useTranslations } from 'use-intl';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -39,9 +39,9 @@ function renderComparison(props: Omit<ComponentProps<typeof Comparison>, 'onOpen
 }) {
   const onOpenSource = props.onOpenSource ?? vi.fn();
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <Comparison {...props} onOpenSource={onOpenSource} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { onOpenSource };
 }

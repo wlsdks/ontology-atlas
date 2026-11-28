@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition/meaning-transition-v2';
 
 const archive = vi.hoisted(() => ({ available: true, history: vi.fn(), observe: vi.fn(), read: vi.fn(), translate: (key: string, values?: { count?: number }) => values?.count === undefined ? key : `${key}:${values.count}` }));
-vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => archive.translate }));
+vi.mock('use-intl', () => ({ useLocale: () => 'en', useTranslations: () => archive.translate }));
 vi.mock('@/entities/meaning-transition', () => ({ readMeaningTransitionHistory: archive.history }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({ getTauriVaultRootPath: (handle: { root?: string }) => handle.root ?? null }));
 vi.mock('@/shared/lib/meaning-transition/tauri-meaning-transition-archive', () => ({

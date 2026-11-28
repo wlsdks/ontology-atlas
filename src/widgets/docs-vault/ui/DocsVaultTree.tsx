@@ -1,7 +1,5 @@
-'use client';
-
 import { useMemo, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { ChevronDown, ChevronRight, FileText, Folder } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';

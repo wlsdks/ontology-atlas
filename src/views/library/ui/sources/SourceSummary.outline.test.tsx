@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -75,9 +75,9 @@ function renderPane(
     );
   }
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
+    <IntlProvider locale="en" messages={enMessages} timeZone="UTC">
       <Harness />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

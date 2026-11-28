@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Plus } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';

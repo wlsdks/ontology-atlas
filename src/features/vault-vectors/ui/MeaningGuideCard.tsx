@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, type MouseEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Button } from '@/shared/ui';
 import { MeaningGuidePreview } from './MeaningGuidePreview';
 

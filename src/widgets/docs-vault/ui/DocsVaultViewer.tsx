@@ -1,9 +1,7 @@
-'use client';
-
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import {
   buildDocsVaultHref,
   type VaultDoc,

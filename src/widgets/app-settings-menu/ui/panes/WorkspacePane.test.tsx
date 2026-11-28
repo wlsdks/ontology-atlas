@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
@@ -71,9 +71,9 @@ function mount(locale: 'en' | 'ko' = 'en', onClose = vi.fn()) {
       ? withScope(enMessages, 'This folder')
       : withScope(koMessages as typeof enMessages, '이 폴더');
   render(
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <IntlProvider locale={locale} messages={messages}>
       <WorkspacePane mode="local" onClose={onClose} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return onClose;
 }

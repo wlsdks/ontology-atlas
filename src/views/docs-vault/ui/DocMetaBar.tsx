@@ -1,4 +1,4 @@
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { CircleDashed, FileText, Network, UserRoundPen } from "lucide-react";
 import {
   buildTopologyDeeplinkForDoc,

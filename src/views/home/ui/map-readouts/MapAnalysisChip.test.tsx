@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import en from "../../../../../messages/en.json";
 import type { MapAnalysisChipModel } from "../../lib/map-analysis/map-analysis-chip";
@@ -17,9 +17,9 @@ const model = (offMap: number): MapAnalysisChipModel => ({
 });
 
 const view = (offMap: number, onMapTheRest = () => {}) => (
-  <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
+  <IntlProvider locale="en" messages={en} timeZone="UTC">
     <MapAnalysisChip model={model(offMap)} onMapTheRest={onMapTheRest} />
-  </NextIntlClientProvider>
+  </IntlProvider>
 );
 
 describe("the map analysis chip in the app", () => {
@@ -37,12 +37,12 @@ describe("the map analysis chip in the app", () => {
       id: `a${number}`, number, at: "2026-11-20T10:00:00.000Z", agent, before: null, after: 62, added: 1, changed: 0,
     });
     render(
-      <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
+      <IntlProvider locale="en" messages={en} timeZone="UTC">
         <MapAnalysisChip
           model={{ ...model(38), rows: [row(3, "claude-code"), row(2, "codex-acp"), row(1, "my-review-bot")] }}
           onMapTheRest={() => {}}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId("map-analysis-chip-trigger"));
     const rows = screen.getAllByTestId("map-analysis-row").map((item) => item.textContent ?? "");

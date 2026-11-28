@@ -1,5 +1,3 @@
-"use client";
-
 import { branchFocusTarget, branchTargetLeash } from "./branch-frame/target";
 import { selectionSlideTarget } from "./branch-frame/selection-margin";
 

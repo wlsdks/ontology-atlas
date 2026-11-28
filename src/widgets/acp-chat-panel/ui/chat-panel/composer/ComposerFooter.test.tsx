@@ -1,5 +1,5 @@
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider, useTranslations } from 'next-intl';
+import { IntlProvider, useTranslations } from 'use-intl';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import en from '../../../../../../messages/en.json';
@@ -18,9 +18,9 @@ function Note({ runtimeId }: { runtimeId: string }) {
 
 function renderNote(locale: keyof typeof CATALOGUES = 'en') {
   render(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]}>
+    <IntlProvider locale={locale} messages={CATALOGUES[locale]}>
       <Note runtimeId="claude-acp" />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

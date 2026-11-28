@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import { CopyProjectLinkButton } from "./CopyProjectLinkButton";
@@ -25,9 +25,9 @@ const labels = koMessages.copyProjectLink;
 
 function renderButton() {
   render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <CopyProjectLinkButton slug="임의 프로젝트" />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return screen.getByRole("button", { name: labels.labelIdle });
 }

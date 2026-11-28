@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { HoverAvoidRect } from "./input/topology-pointer-types";
 import type { FlatDialState, FlatRingMemoryStore } from "./loop/topology-loop-contract";

@@ -1,7 +1,5 @@
-'use client';
-
 import { Fragment } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import { Dialog } from '@/shared/ui/surfaces/dialog';

@@ -1,8 +1,6 @@
-"use client";
-
 import { useCallback, useMemo, useState } from "react";
 import { Stethoscope } from "lucide-react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { LintFinding, LintNodeCandidate, WikiProblemContext } from "@/features/library";
 import { isRunActive, useWorkRunStage, type WorkRun } from "@/features/work-run";

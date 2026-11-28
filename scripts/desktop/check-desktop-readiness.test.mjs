@@ -812,12 +812,11 @@ test("desktop readiness verdicts survive deleting comments and comments that nam
     strip("src/views/download/model/macos-release.generated.ts"),
     strip(
       ".github/workflows/deploy-pages.yml",
-      "# NEXT_PUBLIC_BASE_PATH: /ontology-atlas\n# uses: pnpm/action-setup@v4\n# firebase-tools deploy --only hosting\n",
+      "# ATLAS_PUBLIC_BASE_PATH: /ontology-atlas\n# uses: pnpm/action-setup@v4\n# firebase-tools deploy --only hosting\n",
     ),
     strip(".github/workflows/release-macos.yml", "# uses: pnpm/action-setup@v4\n# GITHUB_REF_NAME\n"),
     ["scripts/download/check-macos-download-release.mjs", (source) => `${source}// aarch64|x64|universal\n`],
     ["src/views/download/ui/DownloadPage.tsx", (source) => `${source}// /docs/?intent=local\n`],
-    ["app/(gateway)/[locale]/download/page.tsx", (source) => `${source}// NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING\n`],
     ["src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts", (source) => `${source}// __TAURI_INTERNALS__\n`],
   ]));
 

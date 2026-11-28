@@ -1,5 +1,3 @@
-"use client";
-
 import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import {
   useRef

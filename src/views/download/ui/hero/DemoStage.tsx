@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { Maximize2 } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';

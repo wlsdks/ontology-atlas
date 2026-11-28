@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@/shared/lib/cn";
 import { RowButton } from "@/shared/ui";
 

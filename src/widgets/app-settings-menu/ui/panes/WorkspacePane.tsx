@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { CalendarClock, FolderKanban, HardDrive, History, Plug } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Link } from '@/i18n/navigation';
 import { useLocalVault } from '@/entities/vault-session';
 import { createVaultFileRoundStore } from '@/entities/library-round';

@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { ServiceMark, resolveServiceMark } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';

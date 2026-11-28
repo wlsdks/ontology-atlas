@@ -1,7 +1,5 @@
-"use client";
-
 import type { DragControls } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import type { Project } from "@/entities/project";
 import { useTaxonomy } from "@/features/taxonomy";
 import { badgeClass } from "@/shared/ui/badge-class";

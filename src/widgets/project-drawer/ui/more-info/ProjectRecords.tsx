@@ -1,7 +1,4 @@
-"use client";
-
-import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { ArrowUpRight } from "lucide-react";
 import type { Project } from "@/entities/project";
 import { formatDate } from "@/shared/lib/locale-text/format-date";
@@ -34,14 +31,14 @@ export function ProjectRecords({ project }: { project: Project }) {
           <section>
             <h3 className={CAPTION_CLASS}>{t("screenshotsTitle")}</h3>
             <div className="mt-3 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)]">
-              <Image
+              <img
                 src={project.screenshots[0]}
                 alt={t("screenshotAlt", { name: project.name })}
                 width={1600}
                 height={900}
-                sizes="(min-width: 768px) 480px, 100vw"
+                loading="lazy"
+                decoding="async"
                 className="aspect-[16/9] w-full object-cover"
-                unoptimized
               />
             </div>
           </section>

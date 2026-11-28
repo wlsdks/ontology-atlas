@@ -1,5 +1,3 @@
-"use client";
-
 // Aliased: under HMR a bare `History` can resolve to the DOM's global `History` constructor
 // and throw "Illegal constructor"; an alias cannot collide with a global.
 import {

@@ -1,7 +1,5 @@
-'use client';
-
 import type { RefObject } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { Button, Chip } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';

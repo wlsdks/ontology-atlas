@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo, type CSSProperties } from 'react';
 
 import { AGENT_TOOL_LABELS } from '@/entities/agent-files';

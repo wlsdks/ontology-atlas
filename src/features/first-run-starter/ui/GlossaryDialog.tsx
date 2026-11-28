@@ -1,7 +1,5 @@
-"use client";
-
 import { Fragment, useId } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { Dialog, controlClass } from "@/shared/ui";
 import { FirstRunDialogHeader } from "./FirstRunDialogHeader";
 

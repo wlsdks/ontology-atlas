@@ -8,7 +8,7 @@ import { TopologyRealmLedger, type RealmBoundaryRow } from "./TopologyRealmLedge
 // `RealmBlockExportAction.test.tsx`, so it is stubbed.
 const exportActionProps = vi.hoisted(() => ({ current: null as unknown }));
 // The rows read the screen's language through `shared/lib/locale-text/latin-eyebrow`.
-vi.mock("next-intl", () => ({
+vi.mock("use-intl", () => ({
   useLocale: () => "ko",
   useTranslations: () => (key: string) => key,
 }));

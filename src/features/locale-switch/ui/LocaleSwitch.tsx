@@ -1,6 +1,4 @@
-'use client';
-
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { useTransition } from 'react';
 import { LOCALE_NAME_KEY } from '@/i18n/locales';
 import { usePathname, useRouter } from '@/i18n/navigation';

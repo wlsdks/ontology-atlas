@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import enMessages from '../../../../messages/en.json';
@@ -34,7 +34,7 @@ function renderList(records: LocalFsHandleRecord[], currentKey: string | null = 
   const onForget = vi.fn();
   const onLocate = vi.fn();
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <RecentVaultList
         records={records}
         currentKey={currentKey}
@@ -43,7 +43,7 @@ function renderList(records: LocalFsHandleRecord[], currentKey: string | null = 
         onForget={onForget}
         onLocate={onLocate}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { onOpen, onForget, onLocate };
 }
@@ -187,7 +187,7 @@ describe('RecentVaultList gathers missing folders at the end', () => {
   ) {
     const onForget = vi.fn();
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <RecentVaultList
           records={deadThenLive}
           currentKey="/Users/dana/atlas"
@@ -199,7 +199,7 @@ describe('RecentVaultList gathers missing folders at the end', () => {
           onReviewMissing={onReviewMissing}
           footnote={<p data-testid="release-valve">release valve</p>}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     return { onForget };
   }

@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useState, useSyncExternalStore, type RefCallback } from 'react';
 
 const stages = new Map<string, number>();

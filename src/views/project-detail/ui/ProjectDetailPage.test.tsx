@@ -12,7 +12,7 @@ import {
   renderPage,
   resetProjectDetailMocks,
 } from "../../../../tests/helpers/project-detail-page-harness";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { LocalVaultProvider } from "@/entities/vault-session";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
@@ -26,11 +26,11 @@ describe("ProjectDetailPage", () => {
     mocks.projectsMode = "local";
     mocks.projects = [];
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
         <LocalVaultProvider>
           <ProjectDetailPage slug="missing" />
         </LocalVaultProvider>
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("project-detail-identity")).not.toBeInTheDocument();
     expect(mocks.evidenceReads).toBe(0);

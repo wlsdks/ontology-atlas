@@ -1,10 +1,8 @@
-'use client';
-
 import { AnimatePresence, motion } from 'framer-motion';
 import { FolderOpen, History } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import {
   EXIT_TRANSITION,

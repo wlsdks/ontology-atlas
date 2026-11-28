@@ -1,5 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { describe, expect, it } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -65,9 +65,9 @@ function Harness({ passage }: { passage: CitedPassageState | null }) {
 
 function renderPane(passage: CitedPassageState | null) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <Harness passage={passage} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -237,14 +237,14 @@ describe("the passage a pressed citation shows", () => {
 
     act(() => {
       view.rerender(
-        <NextIntlClientProvider locale="en" messages={enMessages}>
+        <IntlProvider locale="en" messages={enMessages}>
           <Harness
             passage={passageState({
               state: "resolved",
               cited: [{ anchor: "l14", kind: "line", text: "A weekend or public holiday does not count" }],
             })}
           />
-        </NextIntlClientProvider>,
+        </IntlProvider>,
       );
     });
     const settled = screen.getByTestId("library-source-passage");
@@ -257,7 +257,7 @@ describe("the passage a pressed citation shows", () => {
     const first = settled;
     act(() => {
       view.rerender(
-        <NextIntlClientProvider locale="en" messages={enMessages}>
+        <IntlProvider locale="en" messages={enMessages}>
           <Harness
             passage={passageState({
               state: "resolved",
@@ -265,7 +265,7 @@ describe("the passage a pressed citation shows", () => {
               cited: [{ anchor: "l6", kind: "line", text: "Settlement runs on business days." }],
             })}
           />
-        </NextIntlClientProvider>,
+        </IntlProvider>,
       );
     });
     const second = screen.getByTestId("library-source-passage");

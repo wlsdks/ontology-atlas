@@ -1,5 +1,3 @@
-'use client';
-
 import { useLayoutEffect, useRef, useState } from 'react';
 
 import { cn } from '@/shared/lib/cn';

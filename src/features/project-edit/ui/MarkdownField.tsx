@@ -1,9 +1,7 @@
-'use client';
-
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import { MARKDOWN_PROSE_CLASS } from '@/shared/ui/tokens/markdown-prose';

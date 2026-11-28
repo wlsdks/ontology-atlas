@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { holdOrder, rowsInHeldOrder, type HeldOrder } from "../model/held-row-order";

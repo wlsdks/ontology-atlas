@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Plus, X } from 'lucide-react';
 
 import { Checkbox, Chip, IconButton } from '@/shared/ui';

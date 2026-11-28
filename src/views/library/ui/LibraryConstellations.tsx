@@ -1,7 +1,5 @@
-'use client';
-
 import { Bookmark, BookmarkPlus, ChevronDown, ChevronRight, FileText, Orbit, Paperclip, Plus, TriangleAlert } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import type { VaultDoc } from '@/entities/docs-vault';

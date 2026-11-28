@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { useFootprintTrail, type UseFootprintTrailArgs } from "./use-footprint-trail";
 
-vi.mock("next-intl", () => ({
+vi.mock("use-intl", () => ({
   useLocale: () => "en",
   useTranslations: () => (key: string) => key,
 }));

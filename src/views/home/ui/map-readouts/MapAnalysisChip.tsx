@@ -1,7 +1,5 @@
-"use client";
-
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "use-intl";
 
 import { agentProductName } from "@/entities/agent-usage";
 import { useCountUp } from "@/shared/lib/render-timing/use-count-up";

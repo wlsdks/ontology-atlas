@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import koMessages from '../../../../messages/ko.json';
@@ -11,18 +11,18 @@ import { RouteLoadingFallback } from './route-loading-fallback';
  */
 function renderFallback() {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <RouteLoadingFallback />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
 describe('RouteLoadingFallback', () => {
   it('server-renders the waiting character inside the same delayed status before hydration', () => {
     const html = renderToString(
-      <NextIntlClientProvider locale="ko" timeZone="Asia/Seoul" messages={koMessages}>
+      <IntlProvider locale="ko" timeZone="Asia/Seoul" messages={koMessages}>
         <RouteLoadingFallback />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(html).toContain('data-waiting-motion="running"');
     expect(html).toContain('route-loading-in');

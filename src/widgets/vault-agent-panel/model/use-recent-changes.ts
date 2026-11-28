@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, type Dispatch, type SetStateAction } from 'react';
 
 import { gitHistory } from '@/shared/lib/git/tauri-git';

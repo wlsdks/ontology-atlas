@@ -1,7 +1,5 @@
-"use client";
-
 import type { RefObject } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { controlClass } from "@/shared/ui/control-class";
 

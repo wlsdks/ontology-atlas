@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';

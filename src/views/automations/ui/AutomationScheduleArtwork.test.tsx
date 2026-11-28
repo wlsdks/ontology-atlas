@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -27,9 +27,9 @@ const loopEnd = { type: 'loop-end' } as const;
 
 function renderArtwork(reduced: boolean) {
   return render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <AutomationScheduleArtwork arriving={false} engaged={false} reduced={reduced} name="e.g. Ontology check" cadence="Every 6 hours" />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

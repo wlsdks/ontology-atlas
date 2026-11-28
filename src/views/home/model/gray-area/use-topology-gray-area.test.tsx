@@ -7,7 +7,10 @@ import { parseHomeRouteState, type HomeRouteState } from '../route-state/url-sta
 import { useTopologyGrayArea } from './use-topology-gray-area';
 
 const { translate } = vi.hoisted(() => ({ translate: (key: string) => key }));
-vi.mock('next-intl', () => ({ useTranslations: () => translate }));
+vi.mock('use-intl', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('use-intl')>()),
+  useTranslations: () => translate,
+}));
 
 function document(slug: string, frontmatter: VaultDoc['frontmatter']): VaultDoc {
   return { slug, path: `${slug}.md`, title: slug, frontmatter, tags: [], updatedAt: '2026-09-28', linksOut: [] };

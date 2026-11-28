@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -59,9 +59,9 @@ function Harness({ model, segment, stateFilter = null, groupFilter = null }: { m
 
 function mount(model: LibraryUiModel, segment: "sources" | "wiki", stateFilter: string | null = null, groupFilter: SourceGroupFilter | null = null) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <Harness model={model} segment={segment} stateFilter={stateFilter} groupFilter={groupFilter} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

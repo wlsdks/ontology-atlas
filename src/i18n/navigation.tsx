@@ -1,5 +1,3 @@
-'use client';
-
 import { forwardRef, useContext, type ComponentProps, type MouseEvent } from 'react';
 import { createNavigation } from 'next-intl/navigation';
 

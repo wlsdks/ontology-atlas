@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 

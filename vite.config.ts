@@ -19,8 +19,8 @@ const APP_FOLDER = process.env.ATLAS_APP_FOLDER ?? 'src-tauri/target/desktop-fro
 const SITE_FOLDER = process.env.ATLAS_SITE_FOLDER ?? 'src-tauri/target/site-vite';
 
 /**
- * Until the Next build is gone, source files still import `next/*` and `next-intl`; these answer them
- * over TanStack Router and `use-intl` (`src/app/next-shims/`). A specific prefix comes before a general one.
+ * Until slice 4b moves addresses onto the router, source files still import `next/navigation` and
+ * `next-intl/navigation`; these answer them over TanStack Router (`src/app/next-shims/`).
  */
 const nextShims = (name: string) => path.join(root, 'src/app/next-shims', name);
 
@@ -43,11 +43,7 @@ export default defineConfig(({ command, mode }) => ({
   resolve: {
     alias: [
       { find: /^next-intl\/navigation$/, replacement: nextShims('next-intl-navigation.tsx') },
-      { find: /^next-intl\/routing$/, replacement: nextShims('next-intl-routing.ts') },
-      { find: /^next-intl$/, replacement: nextShims('next-intl.ts') },
       { find: /^next\/navigation$/, replacement: nextShims('next-navigation.ts') },
-      { find: /^next\/dynamic$/, replacement: nextShims('next-dynamic.tsx') },
-      { find: /^next\/image$/, replacement: nextShims('next-image.tsx') },
       { find: /^@\/app-providers/, replacement: path.join(root, 'src/app') },
       { find: /^@\/views/, replacement: path.join(root, 'src/views') },
       { find: /^@\/widgets/, replacement: path.join(root, 'src/widgets') },
@@ -59,13 +55,13 @@ export default defineConfig(({ command, mode }) => ({
     ],
   },
   define: {
-    'process.env.NEXT_PUBLIC_RELEASE_VERSION': JSON.stringify(packageJson.version),
+    'process.env.ATLAS_PUBLIC_RELEASE_VERSION': JSON.stringify(packageJson.version),
     // The dev server reloads source without a restart, so it names no producer and keeps no cached rows.
-    'process.env.NEXT_PUBLIC_ROW_PRODUCER': JSON.stringify(command === 'build' ? rowProducerHash() : undefined),
-    'process.env.NEXT_PUBLIC_BASE_PATH': JSON.stringify(process.env.NEXT_PUBLIC_BASE_PATH),
-    'process.env.NEXT_PUBLIC_DOGFOOD_VAULT_PATHS': JSON.stringify(process.env.NEXT_PUBLIC_DOGFOOD_VAULT_PATHS),
-    'process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION': JSON.stringify(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION),
-    'process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION': JSON.stringify(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION),
+    'process.env.ATLAS_PUBLIC_ROW_PRODUCER': JSON.stringify(command === 'build' ? rowProducerHash() : undefined),
+    'process.env.ATLAS_PUBLIC_BASE_PATH': JSON.stringify(process.env.ATLAS_PUBLIC_BASE_PATH),
+    'process.env.ATLAS_PUBLIC_DOGFOOD_VAULT_PATHS': JSON.stringify(process.env.ATLAS_PUBLIC_DOGFOOD_VAULT_PATHS),
+    'process.env.ATLAS_PUBLIC_GOOGLE_SITE_VERIFICATION': JSON.stringify(process.env.ATLAS_PUBLIC_GOOGLE_SITE_VERIFICATION),
+    'process.env.ATLAS_PUBLIC_BING_SITE_VERIFICATION': JSON.stringify(process.env.ATLAS_PUBLIC_BING_SITE_VERIFICATION),
   },
   build: {
     outDir: mode === 'site' ? SITE_FOLDER : APP_FOLDER,

@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
@@ -93,12 +91,10 @@ export function BrandCompanion({ labels, context = 'folder', stilled = false }: 
       <span ref={facing} className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Preserve native 128px cells, including jump headroom, instead of enlarging
           the lossy 64px runtime export. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img ref={ref} src={withBasePath(`/brand/moru-companion.png?v=${timeline.digest}`)} alt="" aria-hidden="true" draggable={false}
         width={timeline.cell * timeline.columns} height={timeline.cell * timeline.rows}
         className="pointer-events-none absolute top-0 left-0 max-w-none"
         style={{ width: timeline.cell * timeline.columns, height: timeline.cell * timeline.rows, imageRendering: 'pixelated' }} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img ref={reactionRef} alt="" aria-hidden="true" draggable={false} hidden
         // Shown only after a press: the player gives it a source on attention (`companionPlayer`).
         fetchPriority="low"
@@ -109,7 +105,6 @@ export function BrandCompanion({ labels, context = 'folder', stilled = false }: 
       <span ref={emote} className={styles.bubble} data-moru-emote="" aria-hidden="true">
         {(['heart', 'note', 'spark'] as const).map(glyph => (
           // These wordless pixel drawings are decoration, never controls or status.
-          // eslint-disable-next-line @next/next/no-img-element
           <img key={glyph} data-glyph={glyph} src={withBasePath(`/brand/moru-emote-${glyph}.svg`)} width={24} height={24} alt="" draggable={false} fetchPriority="low" />
         ))}
       </span>

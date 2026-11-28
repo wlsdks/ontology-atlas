@@ -1,8 +1,6 @@
-'use client';
-
 import { useLayoutEffect, useRef, useSyncExternalStore, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { WidgetErrorFallback } from '@/shared/ui';
 import { ErrorBoundary } from '@/shared/ui/fallbacks/error-boundary';

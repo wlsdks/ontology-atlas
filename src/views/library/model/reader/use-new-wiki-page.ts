@@ -1,5 +1,5 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { buildHumanPage, createWikiFile, deleteWikiFile, writeWikiFile } from "@/features/library";
 import type { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";

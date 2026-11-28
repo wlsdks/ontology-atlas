@@ -1,5 +1,5 @@
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../messages/en.json";
@@ -39,7 +39,7 @@ const RUNTIME = { id: "claude-acp", label: "Claude Agent" };
 
 function dock(open: boolean) {
   return (
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <AcpChatPanelKeeper />
       <ProjectAgentDock
         open={open}
@@ -54,7 +54,7 @@ function dock(open: boolean) {
         onClose={() => {}}
         chatWidth={{ width: 420, setWidth: () => {}, commitWidth: () => {} }}
       />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 

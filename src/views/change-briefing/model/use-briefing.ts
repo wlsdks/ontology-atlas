@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useMemo, useState } from 'react';
 import { gitChangeBriefing, gitSourceBriefing, type ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 import type { BriefingRange } from './briefing-model';

@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { AlertTriangle, Bot } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';

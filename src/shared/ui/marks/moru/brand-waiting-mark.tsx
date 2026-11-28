@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, type Ref } from 'react';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';

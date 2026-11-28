@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 
 import type { LibraryWikiPage } from "@/entities/docs-vault";
 import type { LibraryUiModel, LintFinding } from "@/features/library";

@@ -1,14 +1,14 @@
 import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
 import { NewDocKindDialog } from "./NewDocKindDialog";
 
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       {ui}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

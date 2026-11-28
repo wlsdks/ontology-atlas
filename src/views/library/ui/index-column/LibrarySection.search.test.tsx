@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -103,9 +103,9 @@ function Harness({
 
 function renderWith(props: Parameters<typeof Harness>[0]) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
+    <IntlProvider locale="en" messages={enMessages} timeZone="UTC">
       <Harness {...props} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

@@ -1,5 +1,3 @@
-'use client';
-
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import {
   serializeDocsTreeGroup,

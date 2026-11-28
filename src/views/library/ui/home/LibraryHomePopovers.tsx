@@ -1,5 +1,5 @@
 import type { RefObject, Dispatch, SetStateAction } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { selectCompileBatch, type LibraryUiModel, type RetainedAnswerHead } from "@/features/library";
 import { controlClass } from "@/shared/ui/control-class";
 import { libraryProviderDisclosure } from "../../lib/compile/compile-availability";

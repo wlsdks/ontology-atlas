@@ -1,7 +1,5 @@
-"use client";
-
 import { useMemo } from "react";
-import { useLocale } from "next-intl";
+import { useLocale } from "use-intl";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
 import { useOpenFolderManifest } from "@/entities/vault-session";
 import { useDocumentDetails } from "@/features/document-detail";

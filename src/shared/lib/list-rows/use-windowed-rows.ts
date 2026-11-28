@@ -1,5 +1,3 @@
-"use client";
-
 import { RowHeightIndex } from "./row-height-index";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";

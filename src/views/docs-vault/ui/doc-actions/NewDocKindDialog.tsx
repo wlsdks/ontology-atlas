@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useState, type FormEvent } from "react";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Button, Dialog, OntologyMapKindGlyph, controlClass } from "@/shared/ui";

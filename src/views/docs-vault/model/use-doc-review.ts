@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { VaultConflictError, useLocalVault } from '@/entities/vault-session';
 import { useToast } from '@/shared/ui';
 import { useReviewQueue } from '../lib/use-review-queue';

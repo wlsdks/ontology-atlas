@@ -1,7 +1,5 @@
-'use client';
-
 import { useMemo } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale } from 'use-intl';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import {
   deriveOntologyFromVault,

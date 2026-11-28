@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import type { SecretProvider } from '@/shared/lib/llm-connection/tauri-secrets';
 import { Chip } from '@/shared/ui/controls/controls';
 import { TermHint } from '@/shared/ui/hints/term-hint';

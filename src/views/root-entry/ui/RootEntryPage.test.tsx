@@ -17,7 +17,7 @@ vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', asyn
   useLocalVault: () => mocks.vaultState,
 }));
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'en',
   useTranslations: () => (key: string) => {
     if (key === 'openingLocalVaultPicker') return 'Opening local vault picker';

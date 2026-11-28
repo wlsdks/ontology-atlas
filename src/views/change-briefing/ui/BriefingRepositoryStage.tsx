@@ -1,7 +1,5 @@
-'use client';
-
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { FolderGit2 } from 'lucide-react';
 import { MOTION, STAGGER } from '@/shared/motion';
 import { Button, FeatureStage, FeatureStagePulse, type FeatureStageMotion } from '@/shared/ui';

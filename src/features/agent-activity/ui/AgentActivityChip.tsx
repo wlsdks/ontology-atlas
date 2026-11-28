@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'use-intl';
 import { Bell } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';

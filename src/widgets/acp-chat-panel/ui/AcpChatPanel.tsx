@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { useAgentDoctor } from '@/features/acp-doctor';
 import { authRepairOf, isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';

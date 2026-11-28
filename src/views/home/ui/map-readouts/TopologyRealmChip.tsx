@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowLeft, Orbit } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 

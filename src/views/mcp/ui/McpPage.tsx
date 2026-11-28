@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useSearchParams } from 'next/navigation';
 
 import { AgentSetupSection, SettingsGroupHeading } from '@/widgets/app-settings-menu';

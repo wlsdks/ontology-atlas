@@ -1,9 +1,9 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('next/dynamic', () => ({ default: () => () => null }));
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams('tab=ontology') }));
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key, useFormatter: () => ({ number: String }) }));
+vi.mock('use-intl', () => ({ useTranslations: () => (key: string) => key, useFormatter: () => ({ number: String }) }));
+vi.mock('@/views/docs-vault', () => ({ DocsVaultPage: () => null }));
 vi.mock('@/views/library', () => ({
   LibraryConstellations: () => null, LibraryPage: () => null,
 }));

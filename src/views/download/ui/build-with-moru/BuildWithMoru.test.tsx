@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
@@ -16,9 +16,9 @@ vi.mock('@/i18n/navigation', () => ({
 
 function renderBuild(handheld = false) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <BuildWithMoru handheld={handheld} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

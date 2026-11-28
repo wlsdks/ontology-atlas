@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { Button, Textarea } from '@/shared/ui';
 

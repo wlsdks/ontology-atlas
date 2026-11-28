@@ -6,7 +6,7 @@ import { armMapLayoutMorph } from '@/shared/lib/map-canvas/map-layout-morph-stor
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { checkGrayAreaEvidence, type GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import type { InvestigationSendGuard } from '@/features/acp-session';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { selectTopologyPathRouteState, type HomeRouteState } from '../route-state/url-state';
 import { applyMapView } from '../route-state/use-map-view-sync';

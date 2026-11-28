@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
@@ -116,9 +116,9 @@ function publishWindowsRelease() {
 }
 
 const IntlWrapper = ({ children }: { children: ReactNode }) => (
-  <NextIntlClientProvider locale="en" messages={enMessages}>
+  <IntlProvider locale="en" messages={enMessages}>
     {children}
-  </NextIntlClientProvider>
+  </IntlProvider>
 );
 
 function filledIds() {

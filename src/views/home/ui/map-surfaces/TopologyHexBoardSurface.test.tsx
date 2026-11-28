@@ -1,5 +1,5 @@
 import { render } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
@@ -40,7 +40,7 @@ describe("hex board hub", () => {
       insightNode("document:notes", "document"),
     ];
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <TopologyHexBoardSurface
           nodes={[mapNode("project:atlas", "project", 2), mapNode("domain:map", "domain", 1), mapNode("capability:draw", "capability", 0)]}
           edges={[]}
@@ -53,7 +53,7 @@ describe("hex board hub", () => {
           arrivedByMorph={false}
           navigationSpeed={DEFAULT_MAP_NAVIGATION_SPEED}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(seen.labels?.projectMeta).toBe("4 concepts");
   });

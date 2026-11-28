@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useId, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@/features/library";
 import { cn } from "@/shared/lib/cn";

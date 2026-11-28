@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';

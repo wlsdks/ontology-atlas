@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { MOTION } from '@/shared/motion';
 import type { AgentActivityFeed } from '../model/use-agent-activity-feed';

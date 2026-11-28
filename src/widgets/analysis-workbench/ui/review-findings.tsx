@@ -1,7 +1,5 @@
-'use client';
-
 import { forwardRef, useLayoutEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ChevronLeft } from 'lucide-react';
 
 import type { AnalysisFinding } from '@/entities/analysis-record';

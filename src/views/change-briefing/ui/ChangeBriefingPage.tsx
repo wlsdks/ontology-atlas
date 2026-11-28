@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Settings2 } from 'lucide-react';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useLocalVault, useVaultSessionIdentityScope } from '@/entities/vault-session';

@@ -1,6 +1,4 @@
-'use client';
-
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'use-intl';
 import { RefreshCw } from 'lucide-react';
 
 import {

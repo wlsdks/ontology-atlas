@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import {
   EXIT_TRANSITION,

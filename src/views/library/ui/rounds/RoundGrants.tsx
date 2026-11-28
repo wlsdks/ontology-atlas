@@ -1,7 +1,5 @@
-"use client";
-
 import { Check } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { cn } from "@/shared/lib/cn";
 import { fieldLabel } from "@/shared/ui/control-class";

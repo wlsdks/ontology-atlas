@@ -1,7 +1,5 @@
-"use client";
-
 import { useId } from "react";
-import { useLocale, type useTranslations } from "next-intl";
+import { useLocale, type useTranslations } from "use-intl";
 
 import type { SourceCopyJob } from "@/features/library";
 import { formatSize } from "@/shared/lib/format-size";

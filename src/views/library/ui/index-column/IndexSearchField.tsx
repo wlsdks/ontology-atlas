@@ -1,7 +1,5 @@
-"use client";
-
 import type { ReactNode } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { ListFilter } from "lucide-react";
 
 import { Input } from "@/shared/ui/fields/input";

@@ -1,8 +1,6 @@
-'use client';
-
 import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Blocks, FolderKanban, Library, Map as MapIcon, NotebookPen } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';

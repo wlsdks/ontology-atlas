@@ -1,10 +1,8 @@
-'use client';
-
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { armMapLayoutMorph } from '@/shared/lib/map-canvas/map-layout-morph-store';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import { useRovingRadioGroup } from '@/shared/lib/keyboard/use-roving-radio-group';
 import { controlClass } from '@/shared/ui/control-class';

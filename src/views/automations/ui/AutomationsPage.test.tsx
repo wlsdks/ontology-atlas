@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -57,9 +57,9 @@ function pass(overrides: Partial<RoundPassEntry> = {}): RoundPassEntry {
 
 function renderPage(value: RoundsRunnerValue | null = runner(), onOpenDocumentSchedule = vi.fn(), onEditDocumentSchedule = vi.fn()) {
   return render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <AutomationsPage runner={value} onOpenDocumentSchedule={onOpenDocumentSchedule} onEditDocumentSchedule={onEditDocumentSchedule} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -193,9 +193,9 @@ describe('Automations manager', () => {
     const view = renderPage(runner({ storeStatus: 'missing' }));
     const button = screen.getByTestId('automations-new');
     view.rerender(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <AutomationsPage runner={runner({ rounds: [round], state: { v: 1, rounds: [round] } })} onOpenDocumentSchedule={vi.fn()} onEditDocumentSchedule={vi.fn()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId('automations-new')).toBe(button);
     expect(screen.getByTestId('automations-list-count')).toHaveTextContent('1');

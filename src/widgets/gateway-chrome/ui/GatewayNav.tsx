@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { cn } from '@/shared/lib/cn';

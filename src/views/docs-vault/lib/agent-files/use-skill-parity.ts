@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 
 import { analyzeAgentFiles, WEB_SCAN_ANALYZE_OPTIONS } from '@/entities/agent-files';

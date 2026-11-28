@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import enMessages from "../../../../messages/en.json";
 import { PublicQuickActions } from "./PublicQuickActions";
 
@@ -27,9 +27,9 @@ vi.mock("next/navigation", () => ({
 
 function renderActions(props: { projectSlug?: string | null } = {}) {
   return rtlRender(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <PublicQuickActions {...props} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

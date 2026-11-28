@@ -1,7 +1,5 @@
-"use client";
-
 import { useState, type FormEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { VaultConflictError } from "@/entities/vault-session";
 import { slugify } from "@/shared/lib/vault-document/slugify";

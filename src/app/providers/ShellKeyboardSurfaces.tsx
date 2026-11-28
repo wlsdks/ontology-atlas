@@ -1,7 +1,5 @@
-"use client";
-
-import dynamic from "next/dynamic";
-import { useCallback, useState } from "react";
+import { useCallback, useState, lazy } from "react";
+import { SilentSuspense } from "@/shared/ui/fallbacks/silent-suspense";
 
 import { useShellKeyClaimed } from "@/shared/lib/keyboard/shell-key-claims";
 import {
@@ -17,14 +15,8 @@ import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
  * bails every route out (see `AppShell`). Nothing else is imported from either widget, so neither
  * dialog lands in the chunk every route loads first.
  */
-const ShortcutSheet = dynamic(
-  () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
-  { ssr: false },
-);
-const MountedGlobalSearch = dynamic(
-  () => import("@/widgets/global-search").then((m) => m.MountedGlobalSearch),
-  { ssr: false },
-);
+const ShortcutSheet = lazy(() => import("@/widgets/shortcut-sheet").then((m) => ({ default: m.ShortcutSheet })));
+const MountedGlobalSearch = lazy(() => import("@/widgets/global-search").then((m) => ({ default: m.MountedGlobalSearch })));
 
 /**
  * `?`, Cmd+K and Cmd+, answer on every screen the rail stands on unless a screen claims the key
@@ -83,9 +75,13 @@ export function ShellKeyboardSurfaces({ disabled }: { disabled: boolean }) {
 
   return (
     <>
-      <ShortcutSheet open={sheetLive && sheetOpen} onClose={() => setSheetOpen(false)} />
+      <SilentSuspense>
+        <ShortcutSheet open={sheetLive && sheetOpen} onClose={() => setSheetOpen(false)} />
+      </SilentSuspense>
       {searchLive && searchMounted ? (
-        <MountedGlobalSearch open={searchOpen} onOpenChange={changeSearchOpen} bindHotkey />
+        <SilentSuspense>
+          <MountedGlobalSearch open={searchOpen} onOpenChange={changeSearchOpen} bindHotkey />
+        </SilentSuspense>
       ) : null}
     </>
   );

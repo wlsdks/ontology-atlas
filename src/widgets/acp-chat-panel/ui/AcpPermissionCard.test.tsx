@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
@@ -17,7 +17,7 @@ function card(
   vaultPath: string | null = null,
 ) {
   return (
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <AcpPermissionCard
         pending={{
           request: {
@@ -38,7 +38,7 @@ function card(
         }}
         vaultPath={vaultPath}
       />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 
@@ -140,7 +140,7 @@ describe('always allow: states only the scope the adapter reported', () => {
 describe('ontology write review: offers only one exact decision', () => {
   it('shows the typed change and hides always-allow', () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AcpPermissionCard
           pending={{
             request: {
@@ -167,7 +167,7 @@ describe('ontology write review: offers only one exact decision', () => {
             resolve: vi.fn(),
           }}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
 
     const review = screen.getByTestId('acp-ontology-change-review');
@@ -187,7 +187,7 @@ describe('task-bound meaning review: execution permission and meaning judgment a
     return {
       resolve,
       view: (
-        <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <IntlProvider locale="ko" messages={koMessages}>
           <AcpPermissionCard
             taskReview={taskReview}
             vaultPath="/vault"
@@ -232,7 +232,7 @@ describe('task-bound meaning review: execution permission and meaning judgment a
               resolve,
             }}
           />
-        </NextIntlClientProvider>
+        </IntlProvider>
       ),
     };
   }
@@ -442,7 +442,7 @@ describe('when the vault server asks for itself, the card shows its sentence as 
 
   function consentCard() {
     return (
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AcpPermissionCard
           pending={{
             request: {
@@ -461,7 +461,7 @@ describe('when the vault server asks for itself, the card shows its sentence as 
             resolve: vi.fn(),
           }}
         />
-      </NextIntlClientProvider>
+      </IntlProvider>
     );
   }
 
@@ -508,7 +508,7 @@ describe('permission card: speaks differently inside my project and somewhere en
   });
 
   const statedCard = (statedPaths: string[]) => (
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <AcpPermissionCard
         pending={{
           request: {
@@ -520,7 +520,7 @@ describe('permission card: speaks differently inside my project and somewhere en
         }}
         vaultPath={VAULT}
       />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 
   it('names every file an edit states in its locations and says the folder when all are in it', () => {
@@ -578,7 +578,7 @@ describe('permission card: each of the three buttons returns its own answer', ()
   function withResolve() {
     const resolve = vi.fn();
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AcpPermissionCard
           pending={{
             request: {
@@ -594,7 +594,7 @@ describe('permission card: each of the three buttons returns its own answer', ()
             resolve,
           }}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     return resolve;
   }
@@ -635,7 +635,7 @@ describe('ontology write: a card a person reads in eight sentences', () => {
 
   function writeCard() {
     return (
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AcpPermissionCard
           pending={{
             request: {
@@ -657,7 +657,7 @@ describe('ontology write: a card a person reads in eight sentences', () => {
             resolve: vi.fn(),
           }}
         />
-      </NextIntlClientProvider>
+      </IntlProvider>
     );
   }
 
@@ -719,7 +719,7 @@ describe('permission card: shows the document verdict before writing', () => {
     } | null,
   ) {
     return (
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AcpPermissionCard
           pending={{
             request: {
@@ -740,7 +740,7 @@ describe('permission card: shows the document verdict before writing', () => {
           vaultPath="/vault"
           writeVerdict={verdict}
         />
-      </NextIntlClientProvider>
+      </IntlProvider>
     );
   }
 
@@ -828,7 +828,7 @@ describe('a one-field patch: the decision first, the evidence after', () => {
     frontmatter?: Record<string, unknown>;
   } = {}) {
     render(
-      <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
+      <IntlProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
         <AcpPermissionCard
           vaultPath="/vault"
           onRequestCorrection={onRequestCorrection}
@@ -862,7 +862,7 @@ describe('a one-field patch: the decision first, the evidence after', () => {
             resolve,
           }}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
   }
 
@@ -1035,7 +1035,7 @@ describe('permission card: one answer per ask', () => {
   it('sends only the first answer when a second button is pressed before the card leaves', () => {
     const resolve = vi.fn();
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AcpPermissionCard
           pending={{
             request: {
@@ -1055,7 +1055,7 @@ describe('permission card: one answer per ask', () => {
           }}
           vaultPath={null}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId('acp-permission-allow'));
     fireEvent.click(screen.getByTestId('acp-permission-reject'));

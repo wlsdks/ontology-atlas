@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { ChevronRight, FileText, Settings2, Sparkles } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { Button, Chip, Dialog, RowButton, Select } from '@/shared/ui';

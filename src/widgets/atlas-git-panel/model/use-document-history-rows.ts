@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { gitHistory, type GitCommitInfo } from "@/shared/lib/git/tauri-git";
 import { DOCUMENT_HISTORY_LIMIT, readDocumentHistory } from "../lib/document-history-window";

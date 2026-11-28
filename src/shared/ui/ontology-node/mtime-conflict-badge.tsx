@@ -1,5 +1,3 @@
-"use client";
-
 export interface MtimeConflictBadgeProps {
   message: string;
   className?: string;

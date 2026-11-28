@@ -1,7 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import { CloseButton } from '@/shared/ui/controls/close-button';
 import { controlClass } from '@/shared/ui/control-class';

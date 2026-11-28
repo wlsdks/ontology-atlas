@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useLayoutEffect, useState } from 'react';
 
 import { connectorFingerprint, type ConnectorRecord } from '@/shared/lib/connectors/connector-record';

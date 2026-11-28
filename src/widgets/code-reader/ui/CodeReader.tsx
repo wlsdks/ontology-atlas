@@ -1,7 +1,5 @@
-"use client";
-
 import { useLayoutEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";

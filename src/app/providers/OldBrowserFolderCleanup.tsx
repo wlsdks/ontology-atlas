@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { forgetBrowserFolderRecords } from "@/shared/lib/vault-folder/forget-browser-folder-records";

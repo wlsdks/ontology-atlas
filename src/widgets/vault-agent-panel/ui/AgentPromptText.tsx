@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Read-only view of the instructions sent alongside vault content; the string is the result of the
  * same function as the one actually sent. Draws only content; one row under the composer opens it.

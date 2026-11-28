@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import type { ConstructionReviewProjection } from "@/entities/construction-review";
 import { Surface, controlClass } from "@/shared/ui";

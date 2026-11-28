@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 
 import { registerGatedFrameClient } from '../lib/page-motion/gateway-frame-loop';

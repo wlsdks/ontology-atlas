@@ -1,8 +1,6 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { FolderOpen, HardDrive, Sparkles } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import {

@@ -1,6 +1,4 @@
-'use client';
-
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import { formatSize } from '@/shared/lib/format-size';
 import { MODEL_DOWNLOAD_HOSTS, type VectorProbe } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';

@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { Hash } from "lucide-react";
 
 import { controlClass } from "@/shared/ui/control-class";

@@ -1,4 +1,3 @@
-"use client";
 import type { HoverAvoidRect } from "./topology-pointer-types";
 
 import {

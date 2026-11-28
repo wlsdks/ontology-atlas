@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -8,9 +8,9 @@ import { LibraryConversationDoor } from "./LibraryConversationDoor";
 function draw(activity: Parameters<typeof LibraryConversationDoor>[0]["activity"], open = false) {
   const onToggle = vi.fn();
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <LibraryConversationDoor activity={activity} agentLabel="Claude Agent" open={open} onToggle={onToggle} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { onToggle, chip: screen.getByTestId("library-open-conversation") };
 }

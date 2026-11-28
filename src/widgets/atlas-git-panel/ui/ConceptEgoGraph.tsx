@@ -1,5 +1,3 @@
-"use client";
-
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import type { ConceptEgo, EgoBearing } from "../model/build-concept-ego";

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -62,9 +62,9 @@ function renderHarness() {
   const onOpen = vi.fn();
   const onClose = vi.fn();
   render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <Harness onOpen={onOpen} onClose={onClose} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { onOpen, onClose, field: screen.getByTestId('app-settings-search') };
 }

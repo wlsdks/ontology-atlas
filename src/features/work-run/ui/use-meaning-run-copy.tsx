@@ -1,7 +1,5 @@
-'use client';
-
 import type { ReactNode } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import { MiddleCutName } from '@/shared/ui/middle-cut-name/middle-cut-name';
 import type { MeaningProgress, MeaningRun } from '../model/meaning-run';

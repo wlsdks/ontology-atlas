@@ -1,9 +1,7 @@
-'use client';
-
 import { ChevronLeft, ChevronRight, MapPinned, MessageCircle, Presentation } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type {
   AcpPresentationScene,

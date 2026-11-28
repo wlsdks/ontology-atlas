@@ -1,7 +1,5 @@
-'use client';
-
 import { createContext, useContext, useEffect, useSyncExternalStore, type ReactNode } from 'react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { htmlLangOf, isAppLocale } from '@/i18n/locales';
 import type { StandaloneLocale, StandaloneMessages } from '@/i18n/standalone-messages';
@@ -70,8 +68,8 @@ export function StandaloneLocaleProvider({
     };
   }, [locale]);
   return (
-    <NextIntlClientProvider locale={locale} messages={bundle?.[locale] ?? {}} timeZone="UTC">
+    <IntlProvider locale={locale} messages={bundle?.[locale] ?? {}} timeZone="UTC">
       {children}
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }

@@ -1,5 +1,3 @@
-'use client';
-
 import { startTransition, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { focusMapCanvasWhenReady } from '../map-canvas/focus-map-canvas';

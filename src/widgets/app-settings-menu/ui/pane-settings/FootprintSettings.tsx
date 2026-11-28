@@ -1,9 +1,7 @@
-'use client';
-
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { controlClass } from '@/shared/ui/control-class';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';

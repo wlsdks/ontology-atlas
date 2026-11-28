@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render as rtlRender, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import koMessages from '../../../../messages/ko.json';
 import { TooltipProvider } from '@/shared/ui';
 import { HubRail } from './HubRail';
@@ -46,9 +46,9 @@ function project(overrides: Partial<Project> = {}): Project {
 
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <TooltipProvider>{ui}</TooltipProvider>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

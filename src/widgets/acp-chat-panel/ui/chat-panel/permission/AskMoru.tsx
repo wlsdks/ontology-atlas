@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 
 import { withBasePath } from '@/shared/lib/public-pages/base-path';

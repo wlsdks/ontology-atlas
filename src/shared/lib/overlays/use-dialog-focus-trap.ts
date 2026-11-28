@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, type RefObject } from "react";
 
 const FOCUSABLE_SELECTOR =

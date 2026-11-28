@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { ChevronDown, ClipboardCheck, HardDrive } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { Chip, RowButton, Surface } from "@/shared/ui";
 
 export interface DocsVaultVaultChipProps {

@@ -57,7 +57,7 @@ const KO_MESSAGES: Record<string, string> = {
   'kinds.vault-readme': '저장소 안내',
 };
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'ko',
   useTranslations: (namespace: string) => (key: string, vars?: Record<string, unknown>) => {
     const template = KO_MESSAGES[`${namespace.split('.').pop()}.${key}`];

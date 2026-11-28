@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
 
 import { useWorkRunSnapshot, workCardHoldsSeat } from '../model/use-work-run';

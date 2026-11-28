@@ -1,5 +1,5 @@
 import { act, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
@@ -9,9 +9,9 @@ const LABEL = "The Harness tab: your repository's agent setup";
 
 function renderFilm() {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <HarnessFilm />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

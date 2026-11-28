@@ -1,8 +1,5 @@
-'use client';
-
 import { useEffect, useRef, useState, type ComponentType } from 'react';
-import Image from 'next/image';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
@@ -382,16 +379,16 @@ export function HarnessFilm() {
               className="harness-phone-shots mt-6 grid overflow-hidden opacity-0 [&>*]:[grid-area:1/1]"
             >
               {ACTS.map((act, i) => (
-                <Image
+                <img
                   key={act}
                   ref={(node) => {
                     shots.current[i] = node;
                   }}
                   src={withBasePath(stillSrc(phoneStillName(act), locale))}
-                  unoptimized
                   width={PHONE_STILL.w}
                   height={PHONE_STILL.h}
                   loading="lazy"
+                  decoding="async"
                   alt=""
                   className="block h-auto w-full opacity-0"
                 />
@@ -443,13 +440,13 @@ export function HarnessFilm() {
           {mode === 'still' || mode === 'detail' ? (
             <div className={PAGE_GUTTER}>
               <div className={cn(PAGE_COLUMN, 'mt-6')}>
-                <Image
+                <img
                   data-harness-film-still={mode}
                   src={withBasePath(stillSrc(mode === 'detail' ? phoneStillName(3) : 'harness-film', locale))}
-                  unoptimized
                   width={mode === 'detail' ? PHONE_STILL.w : STILL.w}
                   height={mode === 'detail' ? PHONE_STILL.h : STILL.h}
                   loading="lazy"
+                  decoding="async"
                   alt=""
                   className={cn('block h-auto', mode === 'detail' ? 'harness-phone-shots w-full' : 'max-w-full')}
                 />

@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
 }));
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useTranslations: (namespace: string) => (key: string, values?: { count?: number }) =>
     values?.count === undefined ? `${namespace}.${key}` : `${namespace}.${key}:${values.count}`,
 }));

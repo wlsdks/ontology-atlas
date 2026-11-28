@@ -11,7 +11,7 @@ vi.mock('@/entities/vault-session', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/entities/vault-session')>()),
   useLocalVault: () => localVault,
 }));
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'en',
   useTranslations: () => Object.assign((key: string) => key, { has: () => true }),
 }));

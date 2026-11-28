@@ -14,7 +14,6 @@ import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { SavedConstellationsControl } from "@/widgets/saved-constellations";
 import { SearchHint } from "@/widgets/search-hint";
 import { FolderOpen, History as HistoryIcon, MessageCircle, ScanSearch } from "lucide-react";
-import Image from "next/image";
 import { useState } from "react";
 import { canCopyTopologyPathPacket } from "../../lib/map-canvas/topology-path-chip-state";
 import { useMapToolbarTopReserve } from "../../model/map-canvas/use-map-toolbar-top-reserve";
@@ -161,13 +160,15 @@ export function TopologyCommandChrome({
       )}
     >
       <div className="flex items-center gap-2">
-        <Image
+        <img
           src={withBasePath('/logo.png')}
           alt=""
           aria-hidden="true"
           width={26}
           height={26}
-          priority
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="h-[26px] w-[26px] shrink-0 rounded-chip border border-[color:var(--color-border-soft)] object-cover"
         />
         <div

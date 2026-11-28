@@ -1,5 +1,3 @@
-'use client';
-
 import { AgentsPage } from '@/views/agents';
 import { McpPage } from '@/views/mcp';
 import { useVaultConnectors } from '@/features/mcp-connectors';

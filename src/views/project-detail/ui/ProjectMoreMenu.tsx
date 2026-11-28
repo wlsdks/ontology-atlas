@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { Link } from "@/i18n/navigation";

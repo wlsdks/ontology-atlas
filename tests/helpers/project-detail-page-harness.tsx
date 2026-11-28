@@ -4,7 +4,7 @@
  */
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 
 import { LocalVaultProvider } from "@/entities/vault-session";
 import { vi } from "vitest";
@@ -295,7 +295,7 @@ export function renderPage(
   }
   return render(
     // The read-only line's folder door reads vault context.
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <LocalVaultProvider>
       <ProjectDetailPage
         slug={SLUG}
@@ -303,7 +303,7 @@ export function renderPage(
         initialRelated={overrides.related ?? []}
       />
       </LocalVaultProvider>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

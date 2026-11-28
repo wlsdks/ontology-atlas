@@ -1,5 +1,5 @@
 import { act, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import en from "../../../../../messages/en.json";
@@ -18,7 +18,7 @@ describe("the page foot", () => {
   it("counts the citations the viewer drew, and gives a source the folder does not list no press", () => {
     const painted = createPaintedBody();
     const onOpenSource = vi.fn();
-    render(<NextIntlClientProvider locale="en" messages={en}><Foot painted={painted} onOpenSource={onOpenSource} /></NextIntlClientProvider>);
+    render(<IntlProvider locale="en" messages={en}><Foot painted={painted} onOpenSource={onOpenSource} /></IntlProvider>);
     expect(screen.queryByTestId("wiki-page-foot")).toBeNull();
     act(() => painted.set(new Map([["sources/listed.md", 2], ["sources/gone.md", 1], ["sources/unlisted.md", 1]])));
     const rows = within(screen.getByTestId("wiki-foot-sources")).getAllByTestId("wiki-foot-row");

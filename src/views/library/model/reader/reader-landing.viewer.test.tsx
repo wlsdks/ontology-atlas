@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -26,11 +26,11 @@ async function pressedBlock(raw: string, pick: (lines: number[]) => number = (li
   const line = pick(claims.map((one) => one.line));
   const claim = claims.find((each) => each.line === line)!;
   const { container } = render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <DocsVaultViewer doc={page} vaultSlugs={new Set([page.slug])} onNavigate={() => {}}
         getDocContent={() => Promise.resolve(raw)} markSourceLines linkTargets={new Map([[page.slug, { title: "Returns", kind: null }]])}
         knownOriginalPaths={new Set(["sources/returns.md"])} onCitationPress={() => {}} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   await screen.findByText(/Alpha/u);
   return { claim, block: findClaimBlock(container, claim.line, claimSentence(claim.text)) };

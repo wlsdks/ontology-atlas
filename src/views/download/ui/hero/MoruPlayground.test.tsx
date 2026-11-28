@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
@@ -8,9 +8,9 @@ import { MoruPlayground } from './MoruPlayground';
 
 function renderOpen() {
   render(
-    <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
+    <IntlProvider locale="en" messages={enMessages} timeZone="UTC">
       <MoruPlayground open onClose={() => {}} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return screen.getByRole('dialog', { name: 'Play with Moru' });
 }

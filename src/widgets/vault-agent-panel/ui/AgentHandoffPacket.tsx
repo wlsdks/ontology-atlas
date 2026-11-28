@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { controlClass } from '@/shared/ui';
 import { COPY_FEEDBACK_RESET_MS } from '@/shared/lib/clipboard/use-copy-feedback';

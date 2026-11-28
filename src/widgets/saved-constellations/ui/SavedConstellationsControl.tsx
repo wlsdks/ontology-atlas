@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useId } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Bookmark, BookmarkPlus, CircleAlert, MessageCircle, Pencil, Trash2, X } from 'lucide-react';
 import {
   resolveConstellationCandidate,

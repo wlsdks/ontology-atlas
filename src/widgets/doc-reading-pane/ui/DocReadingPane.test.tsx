@@ -1,6 +1,6 @@
 import { createRef } from "react";
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import koMessages from "../../../../messages/ko.json";
@@ -12,7 +12,7 @@ import { DocReadingPane } from "./DocReadingPane";
  */
 function renderPane(withBackToTop: boolean) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <DocReadingPane
         scrollRef={createRef<HTMLDivElement>()}
         outline={null}
@@ -20,7 +20,7 @@ function renderPane(withBackToTop: boolean) {
       >
         <p>Body</p>
       </DocReadingPane>
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

@@ -1,5 +1,5 @@
 import { fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import {
@@ -16,9 +16,9 @@ const copyTextMock = vi.mocked(copyText);
 
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       {ui}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -38,7 +38,7 @@ function Harness({
   // Each render is a first arrival: a folder seen once draws its bars at once afterwards.
   const [scope] = useState(() => `folder-${(renders += 1)}`);
   return (
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <SourcesOverview
         scope={scope}
         sources={sources}
@@ -50,7 +50,7 @@ function Harness({
         onOpenPage={() => undefined}
         onOpenSource={() => undefined}
       />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 

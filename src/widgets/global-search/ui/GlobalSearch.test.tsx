@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
@@ -25,9 +25,9 @@ beforeAll(() => {
 
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       {ui}
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -591,7 +591,7 @@ describe("GlobalSearch — says \"map\" only on the map", () => {
     ];
     const seen: string[] = [];
     const miss = rtlRender(
-      <NextIntlClientProvider locale="en" messages={messages}>
+      <IntlProvider locale="en" messages={messages}>
         <GlobalSearch
           open
           onMap={onMap}
@@ -601,16 +601,16 @@ describe("GlobalSearch — says \"map\" only on the map", () => {
           projects={twoProjects}
           onSelectProject={() => {}}
         />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "no-such-thing" } });
     seen.push(document.body.innerHTML);
     miss.unmount();
 
     const empty = rtlRender(
-      <NextIntlClientProvider locale="en" messages={messages}>
+      <IntlProvider locale="en" messages={messages}>
         <GlobalSearch open onMap={onMap} onOpenChange={() => {}} nodes={[]} onSelectNode={() => {}} projects={[]} onSelectProject={() => {}} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     seen.push(document.body.innerHTML);
     empty.unmount();

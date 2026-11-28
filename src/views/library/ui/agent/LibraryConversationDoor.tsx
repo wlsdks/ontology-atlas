@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { MessageSquare } from "lucide-react";
 
 import type { AcpTurnActivity } from "@/features/acp-session";

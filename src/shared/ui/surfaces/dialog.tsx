@@ -1,5 +1,3 @@
-"use client";
-
 import { forwardRef, useSyncExternalStore, type ComponentProps, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useIsPresent } from "framer-motion";

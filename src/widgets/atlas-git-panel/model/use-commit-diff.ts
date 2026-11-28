@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { gitCommitDiff } from "@/shared/lib/git/tauri-git";
 import { parseUnifiedDiff, type AtlasGitDiffFile } from "@/shared/lib/git/atlas-git-record";

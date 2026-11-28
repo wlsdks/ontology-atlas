@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useState, type RefObject } from "react";
 import { scheduleStateSync } from "@/shared/lib/render-timing/schedule-state-sync";
 

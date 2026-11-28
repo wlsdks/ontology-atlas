@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale } from 'use-intl';
 
 import {
   acpPermissionVerdict,

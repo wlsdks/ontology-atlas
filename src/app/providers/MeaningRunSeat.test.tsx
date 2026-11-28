@@ -1,5 +1,5 @@
 import { render } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import en from "../../../messages/en.json";
@@ -53,7 +53,7 @@ describe("the long-work seat's words for a model that could not run", () => {
     ["convert", "the model could not be prepared for this computer"],
   ])("name the cause as the desk does (%s)", (detail, cause) => {
     mocks.run = failedRun(detail);
-    render(<NextIntlClientProvider locale="en" messages={en}><MeaningRunSeat /></NextIntlClientProvider>);
+    render(<IntlProvider locale="en" messages={en}><MeaningRunSeat /></IntlProvider>);
     expect(observedFailure()).toBe(`The model could not run on this computer: ${cause}.`);
   });
 });

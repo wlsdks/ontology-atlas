@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { readArrivalMemory, writeArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory-store';
 import { analyseSourceBriefing, sourceModelCapacity, type SourceModelCapacity } from '@/shared/lib/llm-connection/source-briefing';

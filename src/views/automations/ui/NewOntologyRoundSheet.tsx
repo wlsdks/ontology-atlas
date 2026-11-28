@@ -1,7 +1,5 @@
-"use client";
-
 import { Check } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { useId, useState, type ChangeEvent } from "react";
 
 import {

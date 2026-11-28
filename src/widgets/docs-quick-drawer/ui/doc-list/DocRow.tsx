@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { FileText, Star } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useDocumentDetail } from "@/features/document-detail";

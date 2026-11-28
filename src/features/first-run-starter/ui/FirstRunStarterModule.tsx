@@ -1,5 +1,3 @@
-"use client";
-
 import {
   useEffect,
   useRef,
@@ -9,7 +7,7 @@ import {
 } from "react";
 import { ChevronRight, FolderOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { BuildFromCodeDoor } from "./BuildFromCodeDoor";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { Button, StaggeredFadeIn, controlClass } from "@/shared/ui";

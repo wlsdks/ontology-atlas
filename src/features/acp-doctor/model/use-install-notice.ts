@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useState } from 'react';
 
 import { isTerminalInstallStage, listenInstallProgress } from './acp-doctor';

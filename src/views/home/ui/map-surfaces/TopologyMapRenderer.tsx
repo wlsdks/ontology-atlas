@@ -1,5 +1,3 @@
-"use client";
-
 import type { useTopologyAnalysisReview } from "../../model/agent/use-topology-analysis-review";
 import type { useTopologyAuthoring } from "../../model/authoring/use-topology-authoring";
 import type { useTopologyCanvasFocus } from "../../model/use-topology-canvas-focus";

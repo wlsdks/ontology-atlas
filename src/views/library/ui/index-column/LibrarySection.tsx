@@ -1,9 +1,7 @@
-"use client";
-
 import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useLocale, type useTranslations } from "next-intl";
+import { useLocale, type useTranslations } from "use-intl";
 
 import { CloudDownload, FilePlus2, LayoutDashboard, Search, X } from "lucide-react";
 

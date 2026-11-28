@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import type { VaultDoc } from '@/entities/docs-vault';

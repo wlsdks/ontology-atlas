@@ -1,5 +1,3 @@
-"use client";
-
 import {
   useEffect,
   useMemo,
@@ -10,7 +8,7 @@ import {
 } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import type { FailureCopy } from "@/shared/lib/failures/use-failure-sentence";

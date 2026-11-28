@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, type RefObject } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";

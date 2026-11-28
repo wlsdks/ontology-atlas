@@ -1,6 +1,4 @@
-'use client';
-
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'use-intl';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN } from '@/shared/lib/public-pages/gateway-frame';

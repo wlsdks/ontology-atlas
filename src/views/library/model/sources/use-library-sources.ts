@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
 import {
   withoutVaultOwnedMarkdown,

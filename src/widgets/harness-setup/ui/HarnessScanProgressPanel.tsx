@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { HarnessScanProgress } from '@/entities/agent-files';
 import { PAGE_WAIT_LIFT } from '@/shared/ui/tokens/page-frame';

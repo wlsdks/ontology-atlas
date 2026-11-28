@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { EGO_BEARINGS, type ConceptEgo, type EgoBearing } from "../model/build-concept-ego";

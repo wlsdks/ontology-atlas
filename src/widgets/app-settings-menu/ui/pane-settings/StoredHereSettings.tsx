@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { forgetChoices, remove as removeVectors, removeModel, useVectorStatus } from '@/features/vault-vectors';
 import { formatSize } from '@/shared/lib/format-size';
 import { useLocalVault } from '@/entities/vault-session';

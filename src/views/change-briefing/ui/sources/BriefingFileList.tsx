@@ -1,7 +1,5 @@
-'use client';
-
 import { useLayoutEffect, useRef, type MouseEvent, type RefObject } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { Check } from 'lucide-react';
 import { Button, RowButton } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';

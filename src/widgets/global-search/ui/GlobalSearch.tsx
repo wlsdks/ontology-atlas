@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Command } from "cmdk";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -8,7 +6,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useReducedMotion } from "framer-motion";
 import { Search } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { isGraphDrawnKind, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { buildProjectChips } from "../lib/project-chips";

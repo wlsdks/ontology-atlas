@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
@@ -87,7 +85,6 @@ export function BuildMoru({
         );
       })}
       {gestureLive && EMOTE[gesture.motion] ? (
-        // eslint-disable-next-line @next/next/no-img-element -- Moru's own wordless emote, a 24px pixel SVG
         <img
           key={gesture.at}
           src={withBasePath(`/brand/moru-emote-${EMOTE[gesture.motion]}.svg`)}

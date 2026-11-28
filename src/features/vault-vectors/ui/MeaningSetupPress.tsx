@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, type MouseEvent, type ReactNode } from 'react';
 import { Button } from '@/shared/ui';
 import { MeaningModelDialog } from './MeaningModelDialog';

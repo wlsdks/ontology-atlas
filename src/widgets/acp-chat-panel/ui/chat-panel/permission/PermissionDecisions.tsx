@@ -1,7 +1,5 @@
-'use client';
-
 import type { Ref } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import type { PendingPermission, permissionScope } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';

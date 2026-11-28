@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo } from 'react';
 import type { VaultDoc } from '@/entities/docs-vault';
 import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';

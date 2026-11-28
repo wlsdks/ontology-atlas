@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { RowButton } from '@/shared/ui/controls/controls';

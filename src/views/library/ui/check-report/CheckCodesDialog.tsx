@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { useId, useState } from "react";
 
 import { Button, Dialog, DialogBody, DialogFooter } from "@/shared/ui";

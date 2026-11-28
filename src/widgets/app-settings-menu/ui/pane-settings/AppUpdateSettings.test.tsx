@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../../messages/ko.json';
@@ -58,9 +58,9 @@ function makeValue(phase: UpdatePhase, pending: Partial<AppUpdateValue> = {}): A
 function renderAt(phase: UpdatePhase, pending: Partial<AppUpdateValue> = {}) {
   contextValue = makeValue(phase, pending);
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <AppUpdateSettings />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -135,9 +135,9 @@ describe('AppUpdateSettings', () => {
     desktop = false;
     contextValue = makeValue({ kind: 'idle' });
     const { container } = render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <AppUpdateSettings />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -145,9 +145,9 @@ describe('AppUpdateSettings', () => {
   it('renders nothing without an updater state machine', () => {
     contextValue = null;
     const { container } = render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <AppUpdateSettings />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -161,9 +161,9 @@ describe('AppUpdateSettings', () => {
     fireEvent.click(screen.getByTestId('app-settings-update-check'));
     contextValue = makeValue({ kind: 'failed', operation: 'check', message: 'network' });
     view.rerender(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <AppUpdateSettings />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     await screen.findByText(copy.versionUnknownRetried);
     expect(row.textContent).not.toContain(copy.versionUnknown);

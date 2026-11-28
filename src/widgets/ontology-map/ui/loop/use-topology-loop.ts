@@ -1,4 +1,3 @@
-"use client";
 import { useTopologyAppearanceEffects } from "./use-topology-appearance-effects";
 import { useTopologyFrameLoop } from "../frame-loop/use-topology-frame-loop";
 import { useTopologyObserverBindings } from "./use-topology-observer-bindings";

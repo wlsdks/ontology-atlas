@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import { AgentActivityChip } from "./AgentActivityChip";
@@ -55,9 +55,9 @@ function feed(overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed {
 function renderChip(next: Partial<AgentActivityFeed> = {}) {
   mocks.feed = feed(next);
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <AgentActivityChip />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -208,9 +208,9 @@ describe("AgentActivityChip", () => {
     const onOpenNode = vi.fn();
     mocks.feed = feed();
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AgentActivityChip onOpenNode={onOpenNode} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId('agent-activity-status-trigger'));
     const target = screen.getByTestId('agent-activity-target');
@@ -266,15 +266,15 @@ describe("AgentActivityChip", () => {
     mocks.feed = feed({ writing: true, agentName: "Codex", work: { ...feed().work, mode: "live", agentName: "Codex", phase: "planning", startedAt: NOW - 6_000 } });
     const liveWork = { rawAgentName: "codex-acp", phase: "planning" as const, summary: null, targetSlug: null, lastTool: null, updatedAt: NOW, startedAt: NOW - 6_000 };
     const { rerender } = render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AgentActivityChip liveWork={liveWork} conversationOpen />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.queryByTestId("agent-activity-status-trigger")).toBeNull();
     rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AgentActivityChip liveWork={liveWork} conversationOpen={false} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId("agent-activity-status-trigger")).toBeInTheDocument();
     expect(screen.getByTestId("agent-activity-elapsed")).toHaveTextContent("6초");
@@ -283,9 +283,9 @@ describe("AgentActivityChip", () => {
   it("speaks of another agent's work the open conversation panel does not show", () => {
     mocks.feed = feed({ writing: true, agentName: "Claude Code", work: { ...feed().work, mode: "live", agentName: "Claude Code", phase: "editing" } });
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AgentActivityChip conversationOpen />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("Claude Code · 편집 중");
   });
@@ -293,9 +293,9 @@ describe("AgentActivityChip", () => {
   it("folds the status into a dot and elapsed time when the toolbar is narrow, leaving the sentence for assistive technology", () => {
     mocks.feed = feed({ writing: true, agentName: "Codex", work: { ...feed().work, mode: "live", agentName: "Codex", phase: "planning", startedAt: NOW - 6_000 } });
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AgentActivityChip compact />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const status = screen.getByTestId("agent-activity-status-trigger");
     expect(status).toHaveAttribute("data-status-fold", "compact");
@@ -547,9 +547,9 @@ describe('inbox: three tabs', () => {
     const onOpenConversation = vi.fn();
     mocks.feed = { ...feed(), ...seeded() } as AgentActivityFeed;
     render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AgentActivityChip onOpenConversation={onOpenConversation} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     fireEvent.click(screen.getByTestId('agent-activity-bell'));
     fireEvent.click(screen.getByTestId('agent-inbox-ask-door'));

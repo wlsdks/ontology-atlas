@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 import { BookOpen, Check, FilePenLine, Pause, TriangleAlert } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@/features/library";
 import { useDismissibleMenu } from "@/shared/lib/overlays/use-dismissible-menu";
 import { Chip } from "@/shared/ui/controls/controls";

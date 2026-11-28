@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useState } from 'react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'use-intl';
 
 import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';

@@ -1,4 +1,4 @@
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { LintFinding } from "@/features/library";
 import type { WikiReport } from "@/shared/lib/library/wiki-report.mjs";

@@ -1,7 +1,5 @@
-'use client';
-
 import type { ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { cn } from '@/shared/lib/cn';
 import styles from './rooms.module.css';
 

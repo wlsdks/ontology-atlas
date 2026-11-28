@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import { VaultConflictError } from "@/entities/vault-session";
 import { useFailureSentence, type FailureCopy } from "@/shared/lib/failures/use-failure-sentence";

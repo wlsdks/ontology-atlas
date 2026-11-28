@@ -1,5 +1,3 @@
-'use client';
-
 import {
   LOCAL_DEFAULT_BASE_URL,
   type LlmVerifyResult,

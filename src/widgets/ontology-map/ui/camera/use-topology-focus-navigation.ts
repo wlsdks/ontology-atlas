@@ -1,5 +1,3 @@
-"use client";
-
 import { measureEdgeFitObstacle, measureNameObstacles, type PanelInsets } from "../../interaction/free-area";
 import {
   useCallback,

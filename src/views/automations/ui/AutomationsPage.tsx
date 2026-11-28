@@ -1,7 +1,5 @@
-"use client";
-
 import { Plus } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition, type CSSProperties } from "react";
 

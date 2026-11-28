@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react';
 import { Folder, GitCommitHorizontal, MousePointer2, Sparkles, Pointer, Star } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { Button } from '@/shared/ui/controls/button';

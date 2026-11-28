@@ -1,5 +1,3 @@
-"use client";
-
 import type { VaultDoc } from '@/entities/docs-vault';
 import { isRetainedAnswerPath, type LibraryPageFacts } from '@/features/library';
 

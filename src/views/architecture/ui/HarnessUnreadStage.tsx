@@ -1,9 +1,7 @@
-'use client';
-
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, FolderCode, ListChecks, OctagonMinus } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { MOTION, STAGGER } from '@/shared/motion';
 import { FeatureStage, FeatureStagePulse, type FeatureStageMotion } from '@/shared/ui';

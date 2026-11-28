@@ -1,7 +1,5 @@
-'use client';
-
 import { Fragment } from 'react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'use-intl';
 
 import type { PendingPermission } from '@/features/acp-session';
 import { OntologyChangeReview } from '@/features/ontology-change-review';

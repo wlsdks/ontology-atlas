@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 
@@ -20,9 +20,9 @@ function renderState(
   variant?: "empty" | "sparse",
 ) {
   render(
-    <NextIntlClientProvider locale="ko" messages={messages}>
+    <IntlProvider locale="ko" messages={messages}>
       <TopologyNoMatchesState onClearFilters={onClearFilters} variant={variant} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return { onClearFilters };
 }

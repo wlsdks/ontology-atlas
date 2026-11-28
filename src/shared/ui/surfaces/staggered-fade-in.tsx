@@ -1,5 +1,3 @@
-'use client';
-
 import { Children, cloneElement, isValidElement, type CSSProperties, type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { useStaggerOnce } from '@/shared/motion/stagger';

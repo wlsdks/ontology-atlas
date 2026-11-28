@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { buildReviewQueue, type ReviewQueueRow, type VaultDoc } from "@/entities/docs-vault";
 import { useLocalVault } from "@/entities/vault-session";

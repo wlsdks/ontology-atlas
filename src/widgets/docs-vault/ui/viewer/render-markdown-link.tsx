@@ -1,6 +1,6 @@
 import { Link } from '@/i18n/navigation';
 import type { ExtraProps } from 'react-markdown';
-import type { useTranslations } from 'next-intl';
+import type { useTranslations } from 'use-intl';
 import { ExternalLink } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { OntologyMapKindGlyph, controlClass } from '@/shared/ui';

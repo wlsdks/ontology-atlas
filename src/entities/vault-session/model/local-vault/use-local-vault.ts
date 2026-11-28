@@ -1,5 +1,3 @@
-'use client';
-
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { countVaultContents } from '@/shared/lib/vault-folder/vault-shape';

@@ -1,4 +1,4 @@
-import type { useTranslations } from 'next-intl';
+import type { useTranslations } from 'use-intl';
 
 import type { CatalogueVariant } from '@/shared/config/mcp/mcp-catalogue';
 

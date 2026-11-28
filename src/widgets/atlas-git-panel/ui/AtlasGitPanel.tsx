@@ -1,7 +1,5 @@
-"use client";
-
 import { useCallback, useMemo } from "react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "use-intl";
 import { countChangesByStatus, formatSnapshotSummary } from "@/shared/lib/git/atlas-git-changes";
 import { describeChangePath, parseUnifiedDiff, splitConceptChanges } from "@/shared/lib/git/atlas-git-record";
 import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";

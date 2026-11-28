@@ -1,9 +1,6 @@
-'use client';
-
-import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type ComponentType } from 'react';
+import { useFormatter, useTranslations } from 'use-intl';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type ComponentType } from 'react';
 
 import { LibraryConstellations, LibraryPage } from '@/views/library';
 import type { DocsVaultPage } from '@/views/docs-vault';
@@ -26,19 +23,21 @@ type OntologyPageComponent = ComponentType<ComponentProps<typeof DocsVaultPage>>
 
 let loadedOntologyPage: OntologyPageComponent | null = null;
 
-function rememberOntologyPage(module: { DocsVaultPage: typeof DocsVaultPage }): OntologyPageComponent {
-  loadedOntologyPage = module.DocsVaultPage;
-  return module.DocsVaultPage;
+async function loadOntologyPage(): Promise<OntologyPageComponent> {
+  const { DocsVaultPage } = await import('@/views/docs-vault');
+  loadedOntologyPage = DocsVaultPage;
+  return DocsVaultPage;
 }
 
-const LazyOntologyPage = dynamic(
-  () => import('@/views/docs-vault').then(rememberOntologyPage),
-  { loading: () => <RouteLoadingFallback /> },
-);
+const LazyOntologyPage = lazy(async () => ({ default: await loadOntologyPage() }));
 
 function OntologyDocuments() {
   const [Page] = useState<OntologyPageComponent>(() => loadedOntologyPage ?? LazyOntologyPage);
-  return <Page initialCollection="ontology" documentScope="ontology" />;
+  return (
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <Page initialCollection="ontology" documentScope="ontology" />
+    </Suspense>
+  );
 }
 
 type OntologyView = 'documents' | 'sets';
@@ -74,7 +73,7 @@ export function LibraryWorkspace() {
     query.set('ontologyView', 'sets');
     router.replace(`/library/?${query}${window.location.hash}`, { scroll: false });
   }, [params, requested, router]);
-  useEffect(() => whenIdle(() => void import('@/views/docs-vault').then(rememberOntologyPage)), []);
+  useEffect(() => whenIdle(() => void loadOntologyPage()), []);
   const handle = selectOpenVaultHandle(vault.status, vault.handle);
   const [toolsHost, setToolsHost] = useState<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);

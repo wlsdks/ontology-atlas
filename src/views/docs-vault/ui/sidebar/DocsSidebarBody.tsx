@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/entities/knowledge-graph";
 import type { ReviewQueueRow } from "@/entities/docs-vault";

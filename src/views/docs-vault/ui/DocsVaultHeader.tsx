@@ -1,8 +1,6 @@
-'use client';
-
 import type { Dispatch, SetStateAction, ComponentProps } from 'react';
 import { Link } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ArrowLeft, Menu, PanelLeft, Search } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';

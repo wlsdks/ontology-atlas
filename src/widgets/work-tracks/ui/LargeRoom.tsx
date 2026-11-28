@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';

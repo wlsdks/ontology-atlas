@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 import { Plus } from "lucide-react";
 
 import { humanPageSlug } from "@/features/library";

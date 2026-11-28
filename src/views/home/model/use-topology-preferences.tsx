@@ -18,7 +18,7 @@ import {
 } from "@/shared/lib/preferences/map-view-preferences";
 import { useAudiencePlain } from "@/shared/lib/preferences/audience-preference";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import { useCallback, useMemo } from "react";
 
 export function useTopologyPreferences() {

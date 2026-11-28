@@ -1,7 +1,5 @@
-'use client';
-
 import { Bot } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import { controlClass } from '@/shared/ui/control-class';

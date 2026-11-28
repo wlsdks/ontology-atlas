@@ -52,7 +52,7 @@ vi.mock('@/shared/ui/toast/toast', () => ({
   useToast: () => ({ show: mocks.toast }),
 }));
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useLocale: () => 'en',
   useTranslations:
     (namespace: string) => (key: string, values?: Record<string, unknown>) =>

@@ -62,7 +62,7 @@ vi.mock('framer-motion', async (importOriginal) => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock('next-intl', () => ({
+vi.mock('use-intl', () => ({
   useTranslations: () =>
     Object.assign(
       (key: string, values?: { name?: string }) => (values?.name ? `${key}:${values.name}` : key),

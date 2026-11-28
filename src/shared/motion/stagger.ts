@@ -1,5 +1,3 @@
-'use client';
-
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { MOTION, STAGGER } from './tokens';
 

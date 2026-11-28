@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 
-vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string) => key }));
+vi.mock('use-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string) => key }));
 import { CommitInventory } from './CommitInventory';
 
 const data: ChangeBriefing = { status: 'measured', sourceRoot: '/source', head: 'head', line: null, snapshot: 'period', base: null, tip: 'tip', netPaths: [], limit: 10, partialReasons: [], commits: [

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { IntlProvider, useTranslations } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import ko from "../../../../../messages/ko.json";
@@ -48,9 +48,9 @@ const strip = (
   counts: Parameters<typeof model>[1] = {},
 ) => {
   render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <Harness value={model(verdicts, counts)} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return screen.getByTestId("library-status-strip").textContent ?? "";
 };
@@ -161,9 +161,9 @@ describe("LibraryStatusStrip — the next step names its file", () => {
       return <LibraryStatusStrip model={value} indexShowsSourceStates={indexShowsSourceStates} t={t} />;
     }
     render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <Strip />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     return screen.getByTestId("library-status-strip").textContent ?? "";
   };
@@ -197,9 +197,9 @@ describe("LibraryStatusStrip — the next file is the home's press", () => {
       return <LibraryStatusStrip model={value} indexShowsSourceStates onCompileNext={onCompileNext} compileOpen={false} t={t} />;
     }
     render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <Strip />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const press = screen.getByTestId("library-status-compile");
     expect(press.tagName).toBe("BUTTON");
@@ -224,9 +224,9 @@ describe("LibraryStatusStrip — the named file is said once", () => {
       sources,
     } as unknown as LibraryUiModel;
     render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <Harness value={value} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     return screen.getByTestId("library-status-strip").textContent ?? "";
   };
@@ -245,9 +245,9 @@ describe("LibraryStatusStrip — the named file is said once", () => {
 describe("LibraryStatusStrip — a file that cannot be read", () => {
   it("says how many cannot be read instead of calling every source written up", () => {
     render(
-      <NextIntlClientProvider locale="ko" messages={ko}>
+      <IntlProvider locale="ko" messages={ko}>
         <Harness value={{ ...model({ "wiki/a": [] }), sources: [{ state: "compiled" }, { state: "unreadable" }] } as unknown as LibraryUiModel} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const text = screen.getByTestId("library-status-strip").textContent ?? "";
     expect(text).toContain(ko.library.stage.statusUnreadable.replace("{count, number}", "1"));

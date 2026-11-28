@@ -1,8 +1,6 @@
-'use client';
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { controlClass, Tooltip } from '@/shared/ui';
 import type { Project } from '@/entities/project';

@@ -7,7 +7,7 @@
  */
 
 /* For tools without Next's build env; never a version string, since a plausible wrong one goes unchecked. */
-export const RELEASE_VERSION = process.env.NEXT_PUBLIC_RELEASE_VERSION ?? 'unknown';
+export const RELEASE_VERSION = process.env.ATLAS_PUBLIC_RELEASE_VERSION ?? 'unknown';
 export const RELEASE_MIN_MACOS = "macOS 12";
 export const RELEASE_ARCHES = ["aarch64"] as const;
 export type ReleaseArch = (typeof RELEASE_ARCHES)[number];

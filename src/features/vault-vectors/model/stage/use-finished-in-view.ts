@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import type { VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import type { RunStage } from './run-stage';

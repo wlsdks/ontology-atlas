@@ -7,7 +7,7 @@ import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useArrivingOntologyInsight, useOntologyInsight, useVaultConceptFacts, useVaultDocDates, useVaultDocFileDates, useVaultValidationSummary } from "@/features/vault-ontology";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useToast } from "@/shared/ui";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveDeeplinkMissDecision } from "../lib/selection/deeplink-miss-notice";
 import { resolveTopologySelectedOntologyNode } from "../lib/selection/resolve-topology-selected-node";

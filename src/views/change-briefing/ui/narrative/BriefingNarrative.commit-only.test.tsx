@@ -4,7 +4,7 @@ import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 import { writeArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory-store';
 
 const mocks = vi.hoisted(() => ({ repositories: vi.fn(), saved: vi.fn(), pulls: vi.fn(), narrative: vi.fn() }));
-vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string) => key }));
+vi.mock('use-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string) => key }));
 vi.mock('@/i18n/navigation', () => ({ Link: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a> }));
 vi.mock('@/shared/lib/git/tauri-change-briefing', () => ({ gitBriefingRepositories: mocks.repositories, gitBriefingSavedPullDescriptions: mocks.saved, gitBriefingPullDescriptions: mocks.pulls }));
 vi.mock('@/shared/lib/llm-connection/local-endpoint', () => ({ readLocalEndpoint: () => ({ baseUrl: '', model: '' }), subscribeLocalEndpointChange: () => () => {}, isLocalEndpointReady: () => false }));

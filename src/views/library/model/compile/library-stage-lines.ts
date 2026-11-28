@@ -1,4 +1,4 @@
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import { countSourceFormats, newestWikiPage } from "@/entities/docs-vault";
 import type { LibraryUiModel } from "@/features/library";

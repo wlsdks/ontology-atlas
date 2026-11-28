@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
@@ -39,7 +39,7 @@ function renderViewer(
   extraProps: Partial<React.ComponentProps<typeof DocsVaultViewer>> = {},
 ) {
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <DocsVaultViewer
         doc={doc}
         vaultSlugs={new Set([doc.slug])}
@@ -47,7 +47,7 @@ function renderViewer(
         getDocContent={() => Promise.resolve(markdown)}
         {...extraProps}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -535,12 +535,12 @@ describe("DocsVaultViewer in the Library reader", () => {
       getDocContent: () => Promise.resolve("Fact. [[src:sources/a.md#l2]] and [[wiki/settlement]]."),
     };
     const view = render(
-      <NextIntlClientProvider locale="en" messages={enMessages}><DocsVaultViewer {...props} /></NextIntlClientProvider>,
+      <IntlProvider locale="en" messages={enMessages}><DocsVaultViewer {...props} /></IntlProvider>,
     );
     const citation = await screen.findByRole("button", { name: /sources\/a\.md/u });
     const link = screen.getByRole("link", { name: "Settlement reconciliation check" });
     view.rerender(
-      <NextIntlClientProvider locale="en" messages={enMessages}><DocsVaultViewer {...props} /></NextIntlClientProvider>,
+      <IntlProvider locale="en" messages={enMessages}><DocsVaultViewer {...props} /></IntlProvider>,
     );
     expect(screen.getByRole("button", { name: /sources\/a\.md/u })).toBe(citation);
     expect(screen.getByRole("link", { name: "Settlement reconciliation check" })).toBe(link);

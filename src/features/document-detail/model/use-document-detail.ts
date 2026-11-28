@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DocumentRef, VaultDocDetail } from '@/entities/docs-vault';
 import { useGrantedVaultFiles } from '@/entities/vault-session';

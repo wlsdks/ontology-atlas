@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "use-intl";
 import {
   buildNewNodeDoc,
   isWikiPage,

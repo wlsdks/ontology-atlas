@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';

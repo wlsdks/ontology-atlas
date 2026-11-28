@@ -23,7 +23,7 @@ const shellMocks = vi.hoisted(() => ({
 
 /** The shell owns the rail's utility tier, so it stands even when no page injects a slot. */
 
-vi.mock("next-intl", () => ({
+vi.mock("use-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { rich: (key: string) => key }),
   useLocale: () => "ko",
 }));

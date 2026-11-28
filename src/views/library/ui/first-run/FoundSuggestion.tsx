@@ -1,6 +1,4 @@
-"use client";
-
-import type { useTranslations } from "next-intl";
+import type { useTranslations } from "use-intl";
 
 import type { SourceCandidate } from "@/entities/docs-vault";
 import { controlClass } from "@/shared/ui/control-class";

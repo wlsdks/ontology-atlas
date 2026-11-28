@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
@@ -76,7 +76,7 @@ function renderWelcome(showDogfoodHint: boolean) {
   const onOpenDogfoodPath = vi.fn();
   // A real provider: the chooser reads the shared `vaultSwitch` namespace itself.
   return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
     <DesktopVaultWelcome
       status="idle"
       recentVaults={[]}
@@ -86,7 +86,7 @@ function renderWelcome(showDogfoodHint: boolean) {
       showDogfoodHint={showDogfoodHint}
       t={t}
     />
-  </NextIntlClientProvider>,
+  </IntlProvider>,
   );
 }
 
@@ -161,7 +161,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     const onOpen = vi.fn();
     const onOpenDogfoodPath = vi.fn();
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
       <DesktopVaultWelcome
         status="idle"
         recentVaults={[]}
@@ -171,7 +171,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
         showDogfoodHint
         t={t}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /docs\/ontology 선택/ }));
@@ -184,7 +184,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     const onOpen = vi.fn();
     const onOpenDogfoodPath = vi.fn();
     render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
+      <IntlProvider locale="en" messages={enMessages}>
       <DesktopVaultWelcome
         status="idle"
         recentVaults={[]}
@@ -194,7 +194,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
         showDogfoodHint={false}
         t={t}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /이 repo 온톨로지 열기/ }));

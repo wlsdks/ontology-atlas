@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import { Check } from 'lucide-react';
 
 import { describeVaultShape, type VaultShape } from '@/shared/lib/vault-folder/vault-shape';

@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -135,7 +135,7 @@ function scriptedSession(requests: Request[], decisions: Decision[], apply: (req
   };
 }
 
-const wrapper = ({ children }: { children: ReactNode }) => <NextIntlClientProvider locale="ko" messages={ko}>{children}</NextIntlClientProvider>;
+const wrapper = ({ children }: { children: ReactNode }) => <IntlProvider locale="ko" messages={ko}>{children}</IntlProvider>;
 const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
 const lines = () => parseRoundLedger((h.ledger as RoundLedger & { text(): string | null }).text());
 const PAGE = '/vault/wiki/plan.md';

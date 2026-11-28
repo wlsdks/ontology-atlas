@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, type ReactNode, type Ref } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { motion } from 'framer-motion';
 import { BookText, FileText } from 'lucide-react';
 

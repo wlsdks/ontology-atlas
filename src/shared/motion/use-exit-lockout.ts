@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { TargetAndTransition, VariantLabels } from 'framer-motion';

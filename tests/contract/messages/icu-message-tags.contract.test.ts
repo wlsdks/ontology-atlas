@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * next-intl parses `<name>` in a message as a rich-text tag; without a closing partner the message
+ * use-intl parses `<name>` in a message as a rich-text tag; without a closing partner the message
  * fails to render and shows the key path. Only well-formed balanced tags may appear.
  */
 
@@ -34,7 +34,7 @@ describe("i18n messages never use `<` as a literal character", () => {
 
     expect(
       offenders.map(([path, value]) => `${path}: ${value.slice(0, 80)}`),
-      `next-intl reads \`<name>\` inside a message as a rich-text tag. Without its pair\n` +
+      `use-intl reads \`<name>\` inside a message as a rich-text tag. Without its pair\n` +
         `the sentence fails to render and the screen shows the **key path**; the error stays in the console,\n` +
         `so types, lint and unit tests all pass.\n` +
         `To show an angle bracket as text, use quotation marks ("…"), parentheses or 「」.`,

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { describe, expect, it, vi } from "vitest";
 import messages from "../../../../messages/en.json";
 import { LibraryWorkActivityStrip } from "./LibraryWorkActivityStrip";
@@ -7,12 +7,12 @@ import { LibraryWorkActivityStrip } from "./LibraryWorkActivityStrip";
 describe("Library work receipts", () => {
   it("keeps a compact failed receipt actionable without inventing a file target", () => {
     const onOpenConversation = vi.fn();
-    render(<NextIntlClientProvider locale="en" messages={messages}>
+    render(<IntlProvider locale="en" messages={messages}>
       <LibraryWorkActivityStrip compact onOpenConversation={onOpenConversation} onSelect={vi.fn()}
         activity={{ isActive: false, current: null,
           recent: [{ id: "e", kind: "error", phase: "complete", target: null, at: 0 }],
         }} />
-    </NextIntlClientProvider>);
+    </IntlProvider>);
     expect(screen.getByTestId("library-work-activity")).toHaveTextContent("Failed");
     expect(screen.getByTestId("library-work-current")).not.toHaveTextContent("No confirmed file target");
     fireEvent.click(screen.getByRole("button", { name: "Open conversation" }));
@@ -21,12 +21,12 @@ describe("Library work receipts", () => {
 
   it("keeps a pending proposal distinct from a persisted change and opens the exact target", () => {
     const onSelect = vi.fn();
-    render(<NextIntlClientProvider locale="en" messages={messages}>
+    render(<IntlProvider locale="en" messages={messages}>
       <LibraryWorkActivityStrip onSelect={onSelect} activity={{ isActive: true,
         current: { id: "p", kind: "waiting", phase: "active", target: { kind: "wiki", ref: "wiki/research" }, at: 1 },
         recent: [{ id: "w", kind: "write", phase: "complete", target: { kind: "wiki", ref: "wiki/roadmap" }, at: 0 }],
       }} />
-    </NextIntlClientProvider>);
+    </IntlProvider>);
     expect(screen.getByTestId("library-work-current")).toHaveTextContent("Waiting for permission");
     expect(screen.getByTestId("library-work-current")).not.toHaveTextContent("Wiki page changed");
     expect(screen.getByTestId("library-work-history-toggle")).toHaveTextContent(/Recent\s*1/);
@@ -37,11 +37,11 @@ describe("Library work receipts", () => {
   });
 
   it("does not invent a selectable file for an unbound event", () => {
-    render(<NextIntlClientProvider locale="en" messages={messages}>
+    render(<IntlProvider locale="en" messages={messages}>
       <LibraryWorkActivityStrip onSelect={vi.fn()} activity={{ isActive: false, current: null,
         recent: [{ id: "e", kind: "error", phase: "complete", target: null, at: 0 }],
       }} />
-    </NextIntlClientProvider>);
+    </IntlProvider>);
     expect(screen.queryByRole("button", { name: /Failed/ })).not.toBeInTheDocument();
     expect(screen.getByTestId("library-work-activity")).toHaveTextContent("Failed");
   });
@@ -51,11 +51,11 @@ describe("Library work receipts", () => {
     window.addEventListener("keydown", underlyingEscape);
     render(
       <div data-testid="library-reader" tabIndex={-1} onKeyDown={underlyingEscape}>
-        <NextIntlClientProvider locale="en" messages={messages}>
+        <IntlProvider locale="en" messages={messages}>
           <LibraryWorkActivityStrip onSelect={vi.fn()} activity={{ isActive: false, current: null,
             recent: [{ id: "w", kind: "write", phase: "complete", target: { kind: "wiki", ref: "wiki/roadmap" }, at: 0 }],
           }} />
-        </NextIntlClientProvider>
+        </IntlProvider>
       </div>,
     );
     const trigger = screen.getByTestId("library-work-history-toggle");

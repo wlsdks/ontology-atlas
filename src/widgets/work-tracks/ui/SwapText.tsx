@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useRef } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { EXIT_WINDOW_MS, useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';

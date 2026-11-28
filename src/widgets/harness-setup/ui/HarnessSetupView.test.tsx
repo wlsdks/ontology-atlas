@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
@@ -58,9 +58,9 @@ const itemsTitle = () => document.getElementById('harness-items-title')?.textCon
 
 function renderView(props: { initialCategory?: string; reveal?: boolean }) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <HarnessSetupView report={report} sourceRoot="~/repo" {...props} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

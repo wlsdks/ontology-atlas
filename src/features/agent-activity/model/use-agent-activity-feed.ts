@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale } from 'use-intl';
 
 import { useLocalVault, useVaultIdentityScope } from '@/entities/vault-session';
 import {

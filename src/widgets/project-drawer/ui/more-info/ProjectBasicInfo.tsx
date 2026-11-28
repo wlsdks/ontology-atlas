@@ -1,7 +1,5 @@
-"use client";
-
 import { AnimatePresence, motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { ProjectMetaGrid, type Project, type ProjectImpactMode } from "@/entities/project";
 import { CopyProjectLinkButton } from "@/features/project-share";
 import { useTaxonomy } from "@/features/taxonomy";

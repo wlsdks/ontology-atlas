@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { IntlProvider } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -63,7 +63,7 @@ const checkOnly = (turn: { text: string }) => turn.text === CHECK;
 
 function dock(open: boolean, runtime = RUNTIME) {
   return (
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <AcpChatPanelKeeper />
       <LibraryAgentDock
         chatWidth={{ width: 420, setWidth: () => {}, commitWidth: () => {} }}
@@ -79,16 +79,16 @@ function dock(open: boolean, runtime = RUNTIME) {
         turnReadOnly={checkOnly}
         onTurnStopChange={stopReporters.get(runtime.id)}
       />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 
 /** Every other screen: the keeper above the routes stays, the Library is gone. */
 function elsewhere() {
   return (
-    <NextIntlClientProvider locale="en" messages={enMessages}>
+    <IntlProvider locale="en" messages={enMessages}>
       <AcpChatPanelKeeper />
-    </NextIntlClientProvider>
+    </IntlProvider>
   );
 }
 

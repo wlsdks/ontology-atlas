@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, type ReactNode } from 'react';
 import { FileText, Folder, FolderOpen } from 'lucide-react';
 

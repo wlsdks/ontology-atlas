@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
@@ -49,9 +49,9 @@ function draw(next: Partial<VaultConnectorsState>, handle: FileSystemDirectoryHa
     ...next,
   } as VaultConnectorsState;
   return render(
-    <NextIntlClientProvider locale="ko" messages={ko}>
+    <IntlProvider locale="ko" messages={ko}>
       <McpPage connectors={store} handle={handle} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

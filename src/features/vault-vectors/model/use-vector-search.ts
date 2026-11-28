@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useRef } from 'react';
 import { vaultIndexPreference } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import {

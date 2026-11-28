@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { useLocalVaultInternal } from "../local-vault/use-local-vault";
 import { VaultDiffToaster } from "./VaultDiffToaster";

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
@@ -40,9 +40,9 @@ function renderPanel(
   next: BellInbox = inbox,
 ) {
   return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
+    <IntlProvider locale="ko" messages={koMessages}>
       <AgentInboxPanel inbox={next} feed={feed} briefCountsFor={briefCountsFor} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 
@@ -155,9 +155,9 @@ describe('ink and numbers of the panel: only what draws attention is indigo', ()
     // same place rather than from the previous case's press.
     window.localStorage.clear();
     return render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <IntlProvider locale="ko" messages={koMessages}>
         <AgentInboxPanel inbox={history} feed={feed} onOpenNode={vi.fn()} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
   }
 
@@ -232,9 +232,9 @@ describe('time taken: nothing under 1 second is said, and long times follow one 
       ],
     };
     return render(
-      <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
+      <IntlProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
         <AgentInboxPanel inbox={next} feed={feed} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
   }
 

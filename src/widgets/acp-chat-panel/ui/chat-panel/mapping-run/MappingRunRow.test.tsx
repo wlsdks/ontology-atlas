@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -30,7 +30,7 @@ function renderRow(run: MappingRun | null, options: {
 } = {}) {
   const on = handlers();
   render(
-    <NextIntlClientProvider locale={options.locale ?? 'en'} messages={CATALOGUES[options.locale ?? 'en']}>
+    <IntlProvider locale={options.locale ?? 'en'} messages={CATALOGUES[options.locale ?? 'en']}>
       <MappingRunRow
         run={run}
         resting={options.resting === undefined ? figures(96) : options.resting}
@@ -40,7 +40,7 @@ function renderRow(run: MappingRun | null, options: {
         collapsed={options.collapsed ?? false}
         {...on}
       />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
   return on;
 }
@@ -108,7 +108,7 @@ describe('before a press the row offers Start', () => {
     function SwappingRow() {
       const [collapsed, setCollapsed] = useState(true);
       return (
-        <NextIntlClientProvider locale="en" messages={en}>
+        <IntlProvider locale="en" messages={en}>
           <MappingRunRow
             run={null}
             resting={figures(96)}
@@ -120,7 +120,7 @@ describe('before a press the row offers Start', () => {
             onCollapse={() => setCollapsed(true)}
             onExpand={() => setCollapsed(false)}
           />
-        </NextIntlClientProvider>
+        </IntlProvider>
       );
     }
     render(<SwappingRow />);

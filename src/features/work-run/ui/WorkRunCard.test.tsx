@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../messages/en.json';
@@ -21,9 +21,9 @@ const CATALOGUES = { en, ko } as const;
 
 function renderCard(locale: keyof typeof CATALOGUES = 'en') {
   return render(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]}>
+    <IntlProvider locale={locale} messages={CATALOGUES[locale]}>
       <WorkRunCard />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

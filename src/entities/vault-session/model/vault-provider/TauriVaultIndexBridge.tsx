@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";

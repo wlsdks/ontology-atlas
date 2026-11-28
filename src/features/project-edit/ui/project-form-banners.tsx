@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 
 import type { FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";

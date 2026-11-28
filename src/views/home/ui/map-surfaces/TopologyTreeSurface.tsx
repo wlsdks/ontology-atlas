@@ -1,7 +1,5 @@
-"use client";
-
 import { useMemo, type ComponentProps } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { OntologyTreeMap, type OntologyMapEdge, type OntologyMapNode, type TreeMapLabels } from "@/widgets/ontology-map";

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { NextIntlClientProvider, createTranslator } from 'next-intl';
+import { IntlProvider, createTranslator } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RoundPassEntry } from '@/entities/library-round';
@@ -42,9 +42,9 @@ const RUNNING: RunningPass = {
 
 function draw(props: Partial<Parameters<typeof RoundsLedger>[0]> = {}) {
   return render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <IntlProvider locale="en" messages={en}>
       <RoundsLedger entries={[]} locale="en" onOpenPage={() => {}} {...props} />
-    </NextIntlClientProvider>,
+    </IntlProvider>,
   );
 }
 

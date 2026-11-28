@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "use-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";

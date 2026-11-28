@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import { useAnalysisCapture, type AnalysisCaptureContext, type AcpTurnActivity } from '@/features/acp-session';

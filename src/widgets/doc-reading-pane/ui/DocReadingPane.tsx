@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode, RefObject } from "react";
 
 import { cn } from "@/shared/lib/cn";

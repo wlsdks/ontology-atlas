@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlProvider } from 'use-intl';
 import en from '../../../../../messages/en.json';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { retainedAnswerHeads } from '@/features/library';
 import { LibraryQuestions } from './LibraryQuestions';
 
@@ -18,7 +18,7 @@ function Fixture({ onOpen, hashes }: { onOpen: (slug: string) => void; hashes: M
 describe('the retained question entrance', () => {
   it('keeps alternative heads reachable and reports changed evidence on both', () => {
     const onOpen = vi.fn();
-    render(<NextIntlClientProvider locale="en" messages={en}><Fixture onOpen={onOpen} hashes={new Map([['sources/policy.md', 'b'.repeat(64)]])} /></NextIntlClientProvider>);
+    render(<IntlProvider locale="en" messages={en}><Fixture onOpen={onOpen} hashes={new Map([['sources/policy.md', 'b'.repeat(64)]])} /></IntlProvider>);
     expect(screen.getAllByText('2 alternative revisions')).toHaveLength(2);
     expect(screen.getAllByText('Cited sources changed')).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Which policy? (two)' })).toHaveAccessibleDescription('Cited sources changed 2 alternative revisions');
@@ -28,9 +28,9 @@ describe('the retained question entrance', () => {
 
   it('hides its heading from sight when the host already names it, and keeps it for the accessibility tree', () => {
     render(
-      <NextIntlClientProvider locale="en" messages={en}>
+      <IntlProvider locale="en" messages={en}>
         <LibraryQuestions answers={[]} knownSources={new Set()} hashes={new Map()} onOpen={() => {}} onAsk={null} askBlockedReason={null} headingHidden t={((key: string) => key) as never} />
-      </NextIntlClientProvider>,
+      </IntlProvider>,
     );
     const heading = screen.getByRole('heading', { level: 2 });
     expect(heading.className).toContain('sr-only');

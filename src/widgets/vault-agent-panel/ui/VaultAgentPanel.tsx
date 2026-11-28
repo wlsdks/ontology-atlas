@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';

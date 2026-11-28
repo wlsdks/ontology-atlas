@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { RotateCcw, Square, Undo2 } from 'lucide-react';
 
 import { isPressableSuggestion, type ChatSuggestion } from '@/features/acp-session';

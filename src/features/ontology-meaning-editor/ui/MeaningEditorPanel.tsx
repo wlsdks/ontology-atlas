@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { GitBranch, Plus } from 'lucide-react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'use-intl';
 
 import {
   buildOntologyRelationEditPlan,

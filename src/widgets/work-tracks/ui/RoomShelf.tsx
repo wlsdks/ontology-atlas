@@ -1,7 +1,5 @@
-'use client';
-
 import { useId, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'use-intl';
 import type { Track } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION, MOTION_EASE } from '@/shared/motion';

@@ -36,11 +36,11 @@ export default defineConfig({
       ? { reporters: ['default', new VitestTimingsReporter()] }
       : {}),
     /*
-     * ⚠️ Mirrors what `next.config.ts` does at build time. `/download` reads its version from
+     * ⚠️ Mirrors what `vite.config.ts` defines at build time. `/download` reads its version from
      * `package.json` rather than carrying a copy, and without this the tests would see the
      * deliberate `unknown` fallback and fail on a repair that is working correctly.
      */
-    env: { NEXT_PUBLIC_RELEASE_VERSION: packageJson.version, NEXT_PUBLIC_ROW_PRODUCER: rowProducerHash() },
+    env: { ATLAS_PUBLIC_RELEASE_VERSION: packageJson.version, ATLAS_PUBLIC_ROW_PRODUCER: rowProducerHash() },
     // Composes messages/<locale>.json from its parts before any test imports it.
     globalSetup: ['./scripts/i18n/build-messages.mjs'],
     projects: [
@@ -86,10 +86,9 @@ export default defineConfig({
         },
       },
     ],
-    // Externalizing next-intl to Node ESM causes the `next/navigation` subpath
-    // to fail resolving relative to the pnpm virtual store realpath, breaking
-    // test file loading itself (manifested as 15 files failing simultaneously during 2026-07 refactoring). Vite
-    // inlining allows the vite resolver to interpret the subpath.
+    // `@/i18n/navigation` still imports `next-intl/navigation`, and externalizing it to Node ESM fails to
+    // resolve its `next/navigation` subpath from the pnpm virtual store, which broke test file loading itself.
+    // Vite inlining lets Vite's resolver read the subpath. Goes with that import in slice 4b.
     server: {
       deps: {
         inline: ['next-intl'],
