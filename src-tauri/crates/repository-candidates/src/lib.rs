@@ -6,9 +6,12 @@
 pub mod authored_markdown;
 pub mod candidate_text;
 pub mod package_contracts;
+pub mod project_detection;
 pub mod repository_files;
 pub mod scan_limits;
 pub mod scan_tables;
+pub mod semantic_document;
+pub mod semantic_evidence;
 pub mod semantic_excerpt;
 pub mod semantic_risk;
 pub mod toml_lines;

@@ -4285,11 +4285,13 @@ dependencies = [
  "answer-format",
  "confined-files",
  "icu_normalizer",
+ "indexmap 2.14.0",
  "pulldown-cmark",
  "regex",
  "repository-survey",
  "serde",
  "serde_json",
+ "sha2 0.11.1",
  "source-scan",
  "tempfile",
 ]
