@@ -1160,7 +1160,10 @@ mod tests {
         let started = std::time::Instant::now();
         let names = method_names(&head, &member, &[], false);
         assert_eq!(
-            names.iter().map(|(_, name)| name.as_str()).collect::<Vec<_>>(),
+            names
+                .iter()
+                .map(|(_, name)| name.as_str())
+                .collect::<Vec<_>>(),
             ["run"],
             "the digit-led word is no method name, the later one is"
         );

@@ -22,7 +22,12 @@ use support::{call, run_to_end, Program};
 fn git(folder: &Path, args: &[&str]) {
     let null_device = if cfg!(windows) { "NUL" } else { "/dev/null" };
     let output = Command::new("git")
-        .args(["-c", "user.name=test", "-c", "user.email=test@example.invalid"])
+        .args([
+            "-c",
+            "user.name=test",
+            "-c",
+            "user.email=test@example.invalid",
+        ])
         .args(["-c", "commit.gpgsign=false"])
         .args(args)
         .current_dir(folder)
@@ -99,10 +104,19 @@ fn the_map_lists_units_and_entry_points_and_leaves_out_tests_and_ignored_folders
         "the map opens with its size: {text}"
     );
     assert!(text.contains("(left out: test 1 files 1 lines)"), "{text}");
-    assert!(text.contains("\nsrc | 1 | 2 | cli.ts (2) | run, stop | 0 | -\n"), "{text}");
-    assert!(text.contains("\nsrc/order | 1 | 1 | place.ts (1) | Place | 0 | -\n"), "{text}");
+    assert!(
+        text.contains("\nsrc | 1 | 2 | cli.ts (2) | run, stop | 0 | -\n"),
+        "{text}"
+    );
+    assert!(
+        text.contains("\nsrc/order | 1 | 1 | place.ts (1) | Place | 0 | -\n"),
+        "{text}"
+    );
     assert!(text.contains("\ncommand src/cli.ts shop\n"), "{text}");
-    assert!(!text.contains("cache-out"), "a folder Git ignores is not counted: {text}");
+    assert!(
+        !text.contains("cache-out"),
+        "a folder Git ignores is not counted: {text}"
+    );
 }
 
 #[test]
@@ -117,7 +131,10 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
             r#"{"view":"analysis"}"#,
             "The structural analysis view is not answered by this build",
         ),
-        (r#"{"view":"nonsense"}"#, "view must be \"breadth\" or \"analysis\"."),
+        (
+            r#"{"view":"nonsense"}"#,
+            "view must be \"breadth\" or \"analysis\".",
+        ),
         (r#"{"maxDepth":99}"#, "maxDepth must be <= 10."),
         (
             r#"{"sourceOnly":true}"#,
@@ -135,14 +152,28 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
 fn a_link_loop_a_link_out_and_a_credential_name_neither_hang_nor_reach_the_map() {
     let (_scene, root) = repository();
     let outside = tempfile::tempdir().expect("outside");
-    write(outside.path(), "stolen.ts", "export const SECRET_SENTINEL_outside = 1;\n");
+    write(
+        outside.path(),
+        "stolen.ts",
+        "export const SECRET_SENTINEL_outside = 1;\n",
+    );
     std::os::unix::fs::symlink("loop-b", root.join("src/loop-a")).expect("link");
     std::os::unix::fs::symlink("loop-a", root.join("src/loop-b")).expect("link");
     std::os::unix::fs::symlink(outside.path(), root.join("src/out")).expect("link");
-    write(&root, "src/secrets.ts", "export const SECRET_SENTINEL_name = 1;\n");
+    write(
+        &root,
+        "src/secrets.ts",
+        "export const SECRET_SENTINEL_name = 1;\n",
+    );
     let text = text_of(&survey(&root, "{}"));
     assert!(!text.contains("SECRET_SENTINEL"), "{text}");
-    assert!(!text.contains("stolen"), "a link out of the root is never followed: {text}");
+    assert!(
+        !text.contains("stolen"),
+        "a link out of the root is never followed: {text}"
+    );
     assert!(!text.contains("secrets"), "{text}");
-    assert!(text.contains("\nsrc | 1 | 2 | cli.ts (2) | run, stop | 0 | -\n"), "{text}");
+    assert!(
+        text.contains("\nsrc | 1 | 2 | cli.ts (2) | run, stop | 0 | -\n"),
+        "{text}"
+    );
 }

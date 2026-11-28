@@ -5,7 +5,9 @@
 //! to review). `sourceReads` answer from `source-reads`: the reads alone, as text.
 
 use repository_survey::{build_breadth_map, git_ignored_paths, SurveyFiles, SurveyRequest};
-use source_reads::{fit_source_reads, parse_source_reads, read_source_evidence, render_source_reads};
+use source_reads::{
+    fit_source_reads, parse_source_reads, read_source_evidence, render_source_reads,
+};
 
 use super::argument_checks::{
     optional_boolean, optional_non_blank_text, optional_non_negative_integer, optional_text_list,
@@ -86,8 +88,13 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         })?;
         let read = read_source_evidence(target.source_root(), &selectors, &ignore);
         let evidence = fit_source_reads(&target.label, read);
-        context.source_reads().record(target.source_root(), &evidence);
-        return Ok(ToolOutput::text(render_source_reads(&target.label, &evidence)));
+        context
+            .source_reads()
+            .record(target.source_root(), &evidence);
+        return Ok(ToolOutput::text(render_source_reads(
+            &target.label,
+            &evidence,
+        )));
     }
     let wants_analysis = arguments
         .read::<serde_json::Value>("view")?

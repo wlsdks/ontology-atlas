@@ -76,8 +76,7 @@ impl SourceRoot {
             }
             Err(_) => return Err(RepositoryFileRefusal::Unreadable),
         };
-        let before =
-            plain_file::facts_of(&file).map_err(|_| RepositoryFileRefusal::Unreadable)?;
+        let before = plain_file::facts_of(&file).map_err(|_| RepositoryFileRefusal::Unreadable)?;
         if !before.regular {
             return Err(RepositoryFileRefusal::NotRegular);
         }
@@ -122,7 +121,8 @@ mod tests {
         std::fs::create_dir_all(real.join("src")).expect("src");
         std::fs::write(real.join("src/a.ts"), "export const a = 1;\n").expect("file");
         std::os::unix::fs::symlink(real.join("src"), real.join("linked")).expect("link");
-        std::os::unix::fs::symlink(real.join("src/a.ts"), real.join("src/b.ts")).expect("file link");
+        std::os::unix::fs::symlink(real.join("src/a.ts"), real.join("src/b.ts"))
+            .expect("file link");
         let root = root_of(&real);
         assert_eq!(
             root.read_repository_file(&["src", "a.ts"], 1024).as_deref(),

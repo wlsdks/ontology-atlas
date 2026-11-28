@@ -17,8 +17,8 @@ use indexmap::IndexMap;
 use regex::Regex;
 
 use crate::ability_row::{AbilityKind, AbilityRow};
-use crate::declaring_line::declaring_line;
 use crate::declaration_index::{declaration_index, DeclarationIndex};
+use crate::declaring_line::declaring_line;
 use crate::documented_abilities::{documented_abilities, Documents, VocabularyFile};
 use crate::entry_points::{executable_name, EntryPoint};
 use crate::js_pattern::js_regex;
