@@ -3,4 +3,3 @@
 {"id":1,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$VAULT"}}}
 {"id":2,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$VAULT","view":"breadth","maxDepth":2}}}
 {"id":3,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{}}}
-{"id":4,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$VAULT","view":"analysis"}}}

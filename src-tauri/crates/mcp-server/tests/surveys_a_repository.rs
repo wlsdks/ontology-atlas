@@ -120,21 +120,12 @@ fn the_map_lists_units_and_entry_points_and_leaves_out_tests_and_ignored_folders
 }
 
 #[test]
-fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_its_own_words() {
+fn a_retired_part_is_refused_by_name_and_a_bad_argument_by_its_own_words() {
     let (_scene, root) = repository();
     for (arguments, words) in [
-        (
-            r#"{"proposal":{"concepts":[]}}"#,
-            "proposal is missing required field \"project\"",
-        ),
-        (
-            r#"{"qualification":{"contract":"constructionQualification:v2"}}"#,
-            "qualification is missing required field \"qualificationId\"",
-        ),
-        (
-            r#"{"proposal":{"project":{"slug":"projects/shop","title":"Shop","definition":"A shop.","evidence":["README.md"],"confidence":0.8},"domains":[],"capabilities":[],"elements":[],"relations":[],"competencyAnswers":{"scope":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"domains":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"abilities":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"evidence":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}},"impact":{"answer":"a","status":"answered","witnesses":{"concepts":[],"relations":[],"evidence":[],"paths":[]}}}}}"#,
-            "Reviewing a proposal or a qualification is not answered by this build",
-        ),
+        (r#"{"view":"analysis"}"#, "are retired"),
+        (r#"{"proposal":{"concepts":[]}}"#, "are retired"),
+        (r#"{"qualification":{"contract":"constructionQualification:v2"}}"#, "are retired"),
         (
             r#"{"view":"nonsense"}"#,
             "view must be \"breadth\" or \"analysis\".",
@@ -149,6 +140,8 @@ fn a_part_this_build_does_not_answer_is_refused_by_name_and_a_bad_argument_by_it
         assert_eq!(result["isError"], true, "{arguments}");
         assert!(text_of(&result).contains(words), "{arguments}: {result}");
     }
+    let nothing = survey(&root, r#"{"proposal":null}"#);
+    assert_ne!(nothing["isError"], true, "a null proposal is no proposal: {nothing}");
 }
 
 #[test]
@@ -166,31 +159,6 @@ fn source_reads_answer_an_outline_and_a_symbol_as_text_and_refuse_a_credential_f
         text.contains("== refused .env outline: sensitive_path"),
         "{text}"
     );
-}
-
-#[test]
-fn the_analysis_names_what_the_scan_found_and_a_repository_with_cargo_names_its_features() {
-    let (_scene, root) = repository();
-    let result = survey(&root, r#"{"view":"analysis"}"#);
-    assert_ne!(result["isError"], true, "{result}");
-    let answer = &result["structuredContent"];
-    assert_eq!(answer["proposalValidation"]["status"], "not-provided", "{answer}");
-    assert_eq!(answer["proposalValidation"]["canWrite"], false, "{answer}");
-    assert_eq!(answer["rootPath"], root.to_string_lossy().as_ref(), "{answer}");
-    write(
-        &root,
-        "Cargo.toml",
-        "[package]\nname = \"shop\"\n\n[features]\nfast = []\n",
-    );
-    write(&root, "src/lib.rs", "#[cfg(feature = \"fast\")]\nfn quick() {}\n");
-    let with_cargo = survey(&root, r#"{"view":"analysis"}"#);
-    assert_ne!(with_cargo["isError"], true, "{with_cargo}");
-    let evidence = &with_cargo["structuredContent"]["configurationEvidence"];
-    assert_eq!(evidence["status"], "observed", "{evidence}");
-    assert_eq!(evidence["packages"][0]["packageName"], "shop", "{evidence}");
-    let reference = &evidence["packages"][0]["features"][0]["references"][0];
-    assert_eq!(reference["path"], "src/lib.rs", "{evidence}");
-    assert_eq!(reference["line"], 1, "{evidence}");
 }
 
 #[cfg(unix)]

@@ -1,16 +1,17 @@
 # meaning-findings
 
-What a vault's nodes claim that their source does not back, and the schema checks a packet an agent
-hands in is held to. Pure over documents and a source tree seen through `confined-files`; it
-writes nothing and runs no program.
+What a vault's nodes claim that their source does not back. Pure over documents and a source tree
+seen through `confined-files`; it writes nothing and runs no program. Every finding is advisory.
 
 | Question | File |
 |---|---|
-| What is wrong with a field of a packet, and which citation forms may a packet use? | `src/packet_schema.rs` (`PacketFinding`, the field rules, `parse_source_range_citation`) |
-
-The meaning proposal review and the construction qualification are built on `packet_schema`: a
-check for one more field joins it, so a second reading of "a timestamp" or "a source named
-portably" cannot appear.
+| What is a finding? | `src/finding.rs` |
+| Does a node's `path:` name only a folder, so its drift can never be checked? | `src/folder_only_evidence.rs` |
+| Does a dependency's citing file never mention the other side? | `src/dependency_witness.rs` |
+| Is a starter example still in a vault that has real nodes of its kind? | `src/starter_example.rs` |
+| Which repository place does a `path:` name, and does it escape the repository? | `src/repository_path.rs` |
+| Which file paths does a relation's note name? | `src/note_paths.rs` |
+| Which modules does a source file bring in, in every language a vault describes? | `src/module_specifiers.rs` |
 
 Each module has the tests that guard what an agent sees; `cargo test -p meaning-findings` runs
 them.

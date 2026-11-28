@@ -20,8 +20,6 @@ members = [
   "crates/source-scan",
   "crates/repository-survey",
   "crates/source-reads",
-  "crates/repository-candidates",
-  "crates/construction-review",
   "crates/meaning-findings",
   "crates/vault-validation",
   "crates/raw-source-text",

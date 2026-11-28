@@ -1,18 +1,10 @@
 //! `analyze_repo_structure`: the breadth map of the repository, the first call of every
-//! construction. The map is read once on the shared pool by `repository-survey`; this file checks
-//! the arguments the way the JavaScript server does and refuses, by name, the parts of the tool
-//! this build does not answer yet (a proposal or qualification to review). `sourceReads` answer from
-//! `source-reads`: the reads alone, as text. `view: "analysis"` is answered by
-//! `repository-candidates`.
+//! construction. The map is read once on the shared pool by `repository-survey`; `sourceReads`
+//! answer from `source-reads`, the reads alone, as text. The structural analysis
+//! (`view: "analysis"`) and the review of a `proposal` or `qualification` are retired: the call is
+//! refused by name and points to the tools that write a vault.
 
-use construction_review::proposal_validation::ProposalValidation;
-use repository_candidates::analysis_view::narrow_to_view;
-use repository_candidates::repository_analysis::{
-    analyze_repository, AnalysisRequest, RepositoryAnalysis,
-};
-use repository_candidates::repository_files::RepositoryFiles;
 use repository_survey::{build_breadth_map, git_ignored_paths, SurveyFiles, SurveyRequest};
-use serde::Serialize;
 use source_reads::{
     fit_source_reads, parse_source_reads, read_source_evidence, render_source_reads,
 };
@@ -25,12 +17,9 @@ use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
-use crate::schema_check::{check_against_schema, review_schemas, Json};
 
 const IGNORE_MAX_ITEMS: usize = 200;
 const MAX_DEPTH_MAX: f64 = 10.0;
-/// The most a document or source file the analysis reads may weigh and still be opened.
-const ANALYSIS_FILE_BYTES: usize = 2 * 1024 * 1024;
 /// A source file over this many bytes is generated or data, never read as code.
 const SURVEY_FILE_BYTES: usize = 1024 * 1024;
 
@@ -46,11 +35,8 @@ fn is_set(arguments: &Arguments, name: &str) -> bool {
         .is_some_and(|raw| raw.get().trim() != "null")
 }
 
-fn not_answered(what: &str) -> ToolError {
-    ToolError::failed(format!(
-        "{what} is not answered by this build of the server yet; the JavaScript server answers it. Call analyze_repo_structure without it for the breadth map."
-    ))
-}
+/// What a call for a retired part is told.
+const RETIRED: &str = "view \"analysis\", proposal and qualification are retired: the structural analysis and the review of a proposal no longer exist. Call analyze_repo_structure for the breadth map, read the code with sourceReads, then write what you found with add_concepts and add_relations.";
 
 /// The folder the vault lies in below `root`, `/`-separated; `None` when the vault is the root or
 /// outside it.
@@ -85,20 +71,11 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             "sourceOnly requires sourceReads with 1\u{2013}16 exact selectors.",
         ));
     }
-    // The whole contracts are checked first, as the script server does, so a malformed proposal or
-    // qualification is refused with the field to repair; a well-formed one is still not reviewed here.
-    for (name, schema) in [
-        ("proposal", &review_schemas().proposal),
-        ("qualification", &review_schemas().qualification),
-    ] {
-        if is_set(arguments, name) {
-            if let Some(value) = arguments.read::<Json>(name)? {
-                check_against_schema(&value, schema, name)?;
-            }
-        }
-    }
-    if is_set(arguments, "proposal") || is_set(arguments, "qualification") {
-        return Err(not_answered("Reviewing a proposal or a qualification"));
+    let wants_analysis = arguments
+        .read::<serde_json::Value>("view")?
+        .is_some_and(|view| view.as_str() == Some("analysis"));
+    if wants_analysis || is_set(arguments, "proposal") || is_set(arguments, "qualification") {
+        return Err(ToolError::invalid(RETIRED));
     }
     let target = ScanTarget::allow(context, root_path.as_deref())?;
     if let Some(selectors) = arguments.read::<serde_json::Value>("sourceReads")? {
@@ -119,13 +96,6 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             &evidence,
         )));
     }
-    let wants_analysis = arguments
-        .read::<serde_json::Value>("view")?
-        .is_some_and(|view| view.as_str() == Some("analysis"));
-    if wants_analysis {
-        let target = target.require_folder()?;
-        return analysis_answer(&target, &ignore);
-    }
     let source = target.source_with_limit(SURVEY_FILE_BYTES);
     let files = SurveyFiles::new(&source);
     let git_ignored = git_ignored_paths(target.root());
@@ -139,28 +109,4 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         },
     );
     Ok(ToolOutput::text(survey.text))
-}
-
-/// The structural analysis with the validation of a proposal nobody sent, and the note a scan
-/// without a capability candidate carries.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AnalysisAnswer {
-    #[serde(flatten)]
-    analysis: RepositoryAnalysis,
-    proposal_validation: ProposalValidation,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    note: Option<String>,
-}
-
-fn analysis_answer(target: &ScanTarget, ignore: &[String]) -> Result<ToolOutput, ToolError> {
-    let source = target.source_with_limit(ANALYSIS_FILE_BYTES);
-    let files = RepositoryFiles::new(&source, &target.label);
-    let (mut analysis, _imports) = analyze_repository(&files, &AnalysisRequest { ignore });
-    let note = narrow_to_view(&mut analysis);
-    ToolOutput::json(&AnalysisAnswer {
-        analysis,
-        proposal_validation: ProposalValidation::not_provided(),
-        note,
-    })
 }

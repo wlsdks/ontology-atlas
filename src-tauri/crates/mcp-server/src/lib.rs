@@ -23,7 +23,6 @@ pub mod error;
 pub mod protocol;
 mod raw_json;
 pub mod runtime;
-pub mod schema_check;
 pub mod server;
 pub mod suggestions;
 pub mod surface;

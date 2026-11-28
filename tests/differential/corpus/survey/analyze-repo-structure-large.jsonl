@@ -2,4 +2,3 @@
 {"case":"analyze-repo-structure-large","vault":"survey-large"}
 {"id":1,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT"}}}
 {"id":2,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT/src/area-0"}}}
-{"id":3,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","view":"analysis"}}}

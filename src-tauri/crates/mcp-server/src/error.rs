@@ -15,7 +15,7 @@ use thiserror::Error;
 pub use details::{
     AllowedValueDetails, CompactUnavailableDetails, LargeResponseDetails, MissingNodeDetails,
     ProfileMissingDetails, ProfileNotFoundDetails, ProfileRequiredDetails, ReceivedValue,
-    RepairFields, UnknownArgumentDetails, UnknownField, UnknownToolDetails,
+    UnknownArgumentDetails, UnknownField, UnknownToolDetails,
 };
 
 /// The `errorCode` values an agent branches on. The set is shared with the JavaScript server and
@@ -51,7 +51,6 @@ enum Details {
     ProfileRequired(ProfileRequiredDetails),
     LargeResponse(LargeResponseDetails),
     CompactUnavailable(CompactUnavailableDetails),
-    Repair(RepairFields),
 }
 
 /// A handler's failure: a code, the words, and the fields the code derives from the call.

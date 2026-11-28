@@ -8618,38 +8618,6 @@
       "reason": "Row 28 (with row 27): totalEdges counts every edge among all the nodes the walk reaches, once each. Checked: it equals the edges among those nodes in the compiled graph of the vault, where the JavaScript server counted only the edges its search took."
     },
     {
-      "case": "graph/analysis-folder-is-a-link",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.errorCode",
-      "change": 42,
-      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
-    },
-    {
-      "case": "graph/analysis-folder-is-a-link",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.errorCode",
-      "change": 42,
-      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
-    },
-    {
-      "case": "graph/analysis-records-over-a-hundred-files-paged-by-cursor",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.errorCode",
-      "change": 42,
-      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
-    },
-    {
-      "case": "graph/analysis-records-over-a-hundred-files-paged-by-cursor",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.errorCode",
-      "change": 42,
-      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
-    },
-    {
       "case": "graph/query-plan-containment-tangle",
       "where": "answer",
       "id": 1,
@@ -12698,260 +12666,116 @@
       "reason": "A method whose body is on the line that declares it (`open(): void {}`, `public String label() { return x; }`) is outlined and can be read by its name. The script server's line patterns need the opening brace to end the line, so it listed neither, and it counted the declaration itself as a call of that name, naming the class around it as a caller (row 49)."
     },
     {
-      "case": "survey/analyze-repo-structure-edge-hostile",
+      "case": "survey/analyze-repo-structure-retired-parts",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-retired-parts",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-retired-parts",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-retired-parts",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-retired-parts",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-retired-parts",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-retired-parts",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-retired-parts",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-retired-parts",
       "where": "answer",
       "id": 4,
-      "path": "result.content[0].text#/skipped",
-      "change": 59,
-      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
     },
     {
-      "case": "survey/analyze-repo-structure-edge-hostile",
+      "case": "survey/analyze-repo-structure-retired-parts",
       "where": "answer",
       "id": 4,
-      "path": "result.structuredContent.skipped",
-      "change": 59,
-      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
     },
     {
-      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "case": "survey/analyze-repo-structure-retired-parts",
       "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/skipped/1/reason",
-      "change": 60,
-      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
     },
     {
-      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "case": "survey/analyze-repo-structure-retired-parts",
       "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.skipped[1].reason",
-      "change": 60,
-      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+      "id": 5,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
     },
     {
-      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "case": "survey/analyze-repo-structure-retired-parts",
       "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/skipped/2/reason",
-      "change": 60,
-      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
     },
     {
-      "case": "survey/analyze-repo-structure-analysis-workspaces",
+      "case": "survey/analyze-repo-structure-retired-parts",
       "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.skipped[2].reason",
-      "change": 60,
-      "reason": "A skipped row for a malformed `package.json` ends with the JSON parser's own message: V8's wording for the script server (\"Unexpected end of JSON input\"), `serde_json`'s for this build (\"EOF while parsing a value at line 1 column 10\"). The row, its prefix `package-contract-skip: malformed package.json:`, the file named and the count of rows are equal; the parsers do not share a wording and neither is an interface (row 60)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/skipped",
-      "change": 61,
-      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.skipped",
-      "change": 61,
-      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/skipped",
-      "change": 61,
-      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-feature-sliced",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.skipped",
-      "change": 61,
-      "reason": "A dotfile among the entries of a feature-sliced layer folder (`src/widgets/.gitkeep`) is not named in `skipped` as `dotfile/ignore`: the confined reader never lists a hidden name, so the scan cannot know the file is there. The script server lists it and writes the row. Nothing hidden is read by either; only the advisory row is absent (row 61)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/coverage/workspaceMembersEligible",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.coverage.workspaceMembersEligible",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/coverage/workspaceMembersSkipped",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.coverage.workspaceMembersSkipped",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/coverage/packagesDiscovered",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.coverage.packagesDiscovered",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/coverage/packagesScanned",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.coverage.packagesScanned",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/coverage/sourceFilesScanned",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.coverage.sourceFilesScanned",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/coverage/sourceFilesSkipped",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.coverage.sourceFilesSkipped",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/packages",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.packages",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/unsupportedWorkspaceMembers",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.unsupportedWorkspaceMembers",
-      "change": 62,
-      "reason": "In the Cargo feature evidence of `view: \"analysis\"`, a workspace member below a hidden folder and a Rust file named like a credential (`secrets.rs`, `credentials.rs`) are not read. The script server reads both: the hidden member is a package and the file's attributes are counted. Here the member is `manifest-not-found`, and the file is counted as discovered and skipped without being opened, so the evidence is `limited` and says so (row 62)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/skipped",
-      "change": 59,
-      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-hostile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.skipped",
-      "change": 59,
-      "reason": "A symlink under the repository root whose target lies outside it is named as skipped (`python-package-skip: path resolves outside repository root`) whenever the scan would have looked at it as a Python package folder, because the confined reader never opens the target and cannot tell a file from a folder or find an `__init__.py` there. The script server follows the link with `stat` and names it only when the target is a folder holding `__init__.py` (row 59)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-quote-character",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/packages/0/features/0",
-      "change": 63,
-      "reason": "A character literal that holds a double quote (`'\"'`) before an attribute does not open a string in the Cargo feature evidence. The script server takes the quote as the start of a string and misses every attribute up to the next quote, so a feature's references were under-counted; the Rust server reads them (row 63)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-quote-character",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.packages[0].features[0]",
-      "change": 63,
-      "reason": "A character literal that holds a double quote (`'\"'`) before an attribute does not open a string in the Cargo feature evidence. The script server takes the quote as the start of a string and misses every attribute up to the next quote, so a feature's references were under-counted; the Rust server reads them (row 63)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-quote-character",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/configurationEvidence/packages/0/features/1",
-      "change": 63,
-      "reason": "A character literal that holds a double quote (`'\"'`) before an attribute does not open a string in the Cargo feature evidence. The script server takes the quote as the start of a string and misses every attribute up to the next quote, so a feature's references were under-counted; the Rust server reads them (row 63)."
-    },
-    {
-      "case": "survey/analyze-repo-structure-analysis-rust-features-quote-character",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.configurationEvidence.packages[0].features[1]",
-      "change": 63,
-      "reason": "A character literal that holds a double quote (`'\"'`) before an attribute does not open a string in the Cargo feature evidence. The script server takes the quote as the start of a string and misses every attribute up to the next quote, so a feature's references were under-counted; the Rust server reads them (row 63)."
+      "id": 6,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure view analysis, proposal and qualification are retired: the call is refused by name with invalid_arguments, in one sentence that points to the tools that write a vault, where the script server still answers the analysis or reviews the proposal (and refuses a malformed one with the field to repair). Route retired; see the decision record coming in the Node-side slice (row 46)."
     }
   ]
 }

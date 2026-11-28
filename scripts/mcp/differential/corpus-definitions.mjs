@@ -1449,28 +1449,20 @@ add('survey', 'analyze-repo-structure-miniature', { vault: 'miniature-repo' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', symbol: 'placeOrder' }] }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', mode: 'outline' }, { path: 'src/payment/charge.ts', startLine: 1, maxLines: 4 }], view: 'reads' }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: '../outside.ts', mode: 'outline' }, { path: '/etc/hosts', mode: 'outline' }, { path: '.env', mode: 'outline' }] }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', proposal: { concepts: [] } }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', qualification: { scenario: 'x' } }),
   call('analyze_repo_structure', {}),
   call('analyze_repo_structure', { rootPath: '$PARENT/src' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/does-not-exist' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis', ignore: ['src/billing'] }),
-  call('analyze_repo_structure', { rootPath: '$PARENT/src', view: 'analysis' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT/does-not-exist', view: 'analysis' }),
 ]);
 add('survey', 'analyze-repo-structure-vaults', { vault: 'storefront' }, [
   call('analyze_repo_structure', { rootPath: '$VAULT' }),
   call('analyze_repo_structure', { rootPath: '$VAULT', view: 'breadth', maxDepth: 2 }),
   call('analyze_repo_structure', {}),
-  call('analyze_repo_structure', { rootPath: '$VAULT', view: 'analysis' }),
 ]);
 for (const vault of ['edge-names', 'edge-bytes', 'edge-hostile', 'library', 'empty']) {
   add('survey', `analyze-repo-structure-${vault}`, { vault }, [
     call('analyze_repo_structure', { rootPath: '$VAULT' }),
     call('analyze_repo_structure', { rootPath: '$VAULT', view: 'breadth' }),
     call('analyze_repo_structure', { rootPath: '$VAULT', sourceOnly: true }),
-    call('analyze_repo_structure', { rootPath: '$VAULT', view: 'analysis' }),
   ]);
 }
 add('survey', 'analyze-repo-structure-atlas-ontology', { vault: 'atlas-ontology' }, [
@@ -1483,15 +1475,10 @@ add('survey', 'analyze-repo-structure-polyglot', { vault: 'survey-polyglot' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT/src' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/cmd' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/docs' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis', ignore: ['vendor', 'internal'] }),
-  call('analyze_repo_structure', { rootPath: '$PARENT/src', view: 'analysis' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT/cmd', view: 'analysis' }),
 ]);
 add('survey', 'analyze-repo-structure-large', { vault: 'survey-large' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT' }),
   call('analyze_repo_structure', { rootPath: '$PARENT/src/area-0' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
 ]);
 const planted = (name, text, extra = {}) => ({ $: 'write-file', path: `../${name}`, text, ...extra });
 add('survey', 'analyze-repo-structure-hostile-tree', { vault: 'miniature-repo' }, [
@@ -1983,197 +1970,21 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceOnly: true }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/cancel.ts', mode: 'outline' }], maxDepth: 99 }),
   ]);
-// The structural analysis over layouts the miniature repository does not have: a feature-sliced
-// source tree whose README headings the folders answer, workspace packages that import each other,
-// and Python and Go packages whose imports are the only evidence. Each case plants its tree first.
-add('survey', 'analyze-repo-structure-analysis-feature-sliced', { vault: 'miniature-repo' }, [
-  planted('next.config.js', 'module.exports = {};\n'),
-  planted('README.md', '# Atelier\n\nA studio tool.\n\n## Booking\n\nBooking a session with a studio.\n\n## Billing\n\nBilling clients for a session.\n\n## Reporting\n\nA heading nothing else answers to.\n'),
-  planted('docs/booking.md', '# Booking\n\nBooking is responsible for holding a studio slot until the client pays, and it releases the slot when payment fails.\n'),
-  planted('src/features/book-session/index.ts', "export { bookSession } from './model';\n"),
-  planted('src/features/book-session/model.ts', "import { Client } from '../../entities/client';\nexport function bookSession(client: Client) {\n  return client.id;\n}\n"),
-  planted('src/features/bill-client/index.ts', "export function billClient() { return 1; }\n"),
-  planted('src/entities/client/index.ts', 'export interface Client { id: string }\n'),
-  planted('src/entities/session/index.ts', 'export interface Session { id: string }\n'),
-  planted('src/shared/session/index.ts', 'export const session = 1;\n'),
-  planted('src/widgets/calendar/index.tsx', 'export const Calendar = () => null;\n'),
-  planted('src/widgets/.gitkeep', ''),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis', ignore: ['widgets'] }),
-  call('analyze_repo_structure', { rootPath: '$PARENT/src', view: 'analysis' }),
-]);
-add('survey', 'analyze-repo-structure-analysis-workspaces', { vault: 'miniature-repo' }, [
-  planted('package.json', '{\n  "name": "mono",\n  "private": true,\n  "workspaces": ["packages/*", "apps/*"]\n}\n'),
-  planted('packages/ledger/package.json', '{\n  "name": "@mono/ledger",\n  "main": "src/index.ts"\n}\n'),
-  planted('packages/ledger/src/index.ts', 'export const total = (a: number[]) => a.length;\n'),
-  planted('packages/pricing/package.json', '{\n  "name": "@mono/pricing",\n  "main": "src/index.ts",\n  "dependencies": { "@mono/ledger": "*" }\n}\n'),
-  planted('packages/pricing/src/index.ts', "import { total } from '@mono/ledger';\nexport const price = () => total([1]);\n"),
-  planted('apps/web/package.json', '{\n  "name": "@mono/web",\n  "dependencies": { "@mono/pricing": "*", "@mono/ledger": "*" }\n}\n'),
-  planted('apps/web/src/main.ts', "import { price } from '@mono/pricing';\nimport { total } from '@mono/ledger';\nconsole.log(price(), total([]));\n"),
-  planted('apps/broken/package.json', '{ "name": '),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis', ignore: ['apps'] }),
-]);
-add('survey', 'analyze-repo-structure-analysis-python-and-go', { vault: 'miniature-repo' }, [
-  planted('pyproject.toml', '[project]\nname = "kitchen"\nversion = "0.1.0"\n'),
-  planted('kitchen/__init__.py', ''),
-  planted('kitchen/orders.py', 'from kitchen import stock\n\n\ndef take(order):\n    return stock.reserve(order)\n'),
-  planted('kitchen/stock.py', 'def reserve(order):\n    return order\n'),
-  planted('go.mod', 'module example.com/pantry\n\ngo 1.22\n'),
-  planted('cmd/pantry/main.go', 'package main\n\nimport "example.com/pantry/internal/shelf"\n\nfunc main() { shelf.Fill() }\n'),
-  planted('internal/shelf/shelf.go', 'package shelf\n\nimport "example.com/pantry/internal/label"\n\nfunc Fill() { label.Print() }\n'),
-  planted('internal/label/label.go', 'package label\n\nfunc Print() {}\n'),
-  call('analyze_repo_structure', { rootPath: '$PARENT', view: 'analysis' }),
-]);
-// A `proposal` or `qualification` that breaks its whole contract is refused with the field, the
-// rule, the object's shape, one valid example and the repair fields, by both servers. Every input
-// here breaks the contract in exactly one place, so none reaches the review itself.
-const WITNESSES = { concepts: [], relations: [], evidence: [], paths: [] };
-const ANSWER = { answer: 'what it is', status: 'answered', witnesses: WITNESSES };
-const proposalWith = (change = {}) => ({
-  project: { slug: 'projects/shop', title: 'Shop', definition: 'A small shop.', evidence: ['README.md'], confidence: 0.8 },
-  domains: [],
-  capabilities: [],
-  elements: [],
-  relations: [],
-  competencyAnswers: { scope: ANSWER, domains: ANSWER, abilities: ANSWER, evidence: ANSWER, impact: ANSWER },
-  ...change,
-});
-const projectWith = (change) => proposalWith({ project: { ...proposalWith().project, ...change } });
-const DIGEST = `sha256:${'0'.repeat(64)}`;
-const qualificationWith = (change = {}) => ({
-  contract: 'constructionQualification:v1',
-  qualificationId: 'qualification-1',
-  subject: { projectSlug: 'projects/shop', graphDigest: DIGEST, sourceDigest: DIGEST },
-  ...change,
-});
-let deep = 1;
-for (let level = 0; level < 70; level += 1) deep = [deep];
-const review = (args) => call('analyze_repo_structure', { rootPath: '$PARENT', ...args });
-add('survey', 'analyze-repo-structure-malformed-review-inputs', { vault: 'miniature-repo' }, [
-  review({ proposal: {} }),
-  review({ proposal: 'a proposal' }),
-  review({ proposal: [] }),
-  review({ proposal: { projekt: proposalWith().project } }),
-  review({ proposal: proposalWith({ project: {} }) }),
-  review({ proposal: projectWith({ confidense: 1 }) }),
-  review({ proposal: projectWith({ confidence: 2 }) }),
-  review({ proposal: projectWith({ confidence: 'high' }) }),
-  review({ proposal: projectWith({ slug: ' projects/shop' }) }),
-  review({ proposal: projectWith({ slug: '' }) }),
-  review({ proposal: projectWith({ title: 'two\nlines' }) }),
-  review({ proposal: projectWith({ evidence: [] }) }),
-  review({ proposal: projectWith({ evidence: ['README.md', 'README.md'] }) }),
-  review({ proposal: projectWith({ includes: ['a', 'b', 'a'] }) }),
-  review({ proposal: proposalWith({ domains: Array.from({ length: 201 }, () => ({})) }) }),
-  review({ proposal: proposalWith({ domains: [{ slug: 'domains/x' }] }) }),
-  review({ proposal: proposalWith({ relations: [{ from: 'a', to: 'b', type: 'depend_on', why: 'because', evidence: ['README.md'], confidence: 0.5 }] }) }),
-  review({ proposal: proposalWith({ relations: [{ from: 'a', to: 'b', type: 'depends_on', why: 'x'.repeat(301), evidence: ['README.md'], confidence: 0.5 }] }) }),
-  review({ proposal: proposalWith({ relation: [] }) }),
-  review({ proposal: proposalWith({ competencyAnswers: { scope: { ...ANSWER, status: 'done' }, domains: ANSWER, abilities: ANSWER, evidence: ANSWER, impact: ANSWER } }) }),
-  review({ proposal: proposalWith({ competencyAnswers: { scope: ANSWER } }) }),
-  review({ proposal: deep }),
-  review({ qualification: {} }),
-  review({ qualification: 'a packet' }),
-  review({ qualification: qualificationWith({ contract: 'constructionQualification:v2' }) }),
-  review({ qualification: qualificationWith({ qualificationId: '' }) }),
-  review({ qualification: qualificationWith({ subject: { projectSlug: 'projects/shop', graphDigest: 'sha256:abc', sourceDigest: DIGEST } }) }),
-  review({ qualification: qualificationWith({ subject: { projectSlug: 7, graphDigest: DIGEST, sourceDigest: DIGEST } }) }),
-  review({ qualification: qualificationWith({ extra: true }) }),
-  review({ qualification: qualificationWith({ acceptance: { decision: 'accepted', decidedBy: 'someone', decidedAt: 'yesterday', planDigest: DIGEST, planRevision: 1, acceptedGapIds: [] } }) }),
-  review({ proposal: projectWith({ confidence: 2 }), qualification: {} }),
-]);
-// The Cargo feature evidence of the analysis: a root package and literal workspace members, a
-// feature table that continues over lines, every attribute form, polarity and role the evidence
-// names, and the members and predicates it cannot use.
-const analysis = (extra = {}, root = '$PARENT') => call('analyze_repo_structure', { rootPath: root, view: 'analysis', ...extra });
-add('survey', 'analyze-repo-structure-analysis-rust-features', { vault: 'miniature-repo' }, [
-  planted('Cargo.toml', '[package]\nname = "atlas-shop"\nversion = "0.1.0"\n\n[workspace]\nmembers = ["crates/core", "crates/cli", "crates/missing", "crates/*", "../outside", "/abs/path", "crates\\win", "crates/core", "crates/nopackage", "crates/./cli", " crates/padded"]\n\n[features]\ndefault = ["fast"]\nfast = []\nslow = ["fast", "dep:tokio"]\ntls = [ # comment\n  "dep:rustls",\n]\nunused = []\n"quoted" = []\n'),
-  planted('src/lib.rs', [
-    '#![cfg(not(feature = "slow"))]',
-    '//! # [cfg(feature = "slow")] in a doc comment',
-    '#[cfg(feature = "fast")]',
-    'pub fn fast() {}',
-    '',
-    '#[cfg(all(feature = "fast", feature = "tls"))]',
-    'pub fn both() {}',
-    '#[cfg_attr(feature = "tls", derive(Debug))]',
-    'pub struct Tls;',
-    '#[cfg(feature = NAME)]',
-    'pub fn computed() {}',
-    '#[cfg(feature = "undeclared")]',
-    'pub fn undeclared() {}',
-    '// #[cfg(feature = "slow")]',
-    '/* #[cfg(feature = "slow")] /* nested #[cfg(feature = "slow")] */ still a comment #[cfg(feature = "slow")] */',
-    'const S: &str = "#[cfg(feature = \\"slow\\")]\n   still a string";',
-    'const R: &str = r#"#[cfg(feature = "slow")]"#;',
-    '#[cfg(',
-    '    feature = "fast"',
-    ')]',
-    'pub fn spread() {}',
-    '#[cfg(any(feature = "slow",',
-    '          feature = "fast"))]',
-    'pub fn any() {}',
-    '#[cfg(feature="unused")] #[cfg(not( feature = "unused" ))]',
-    'pub fn twice() {}',
-    '#[derive(Debug)] #[cfg(feature = "quoted")]',
-    'pub struct Quoted;',
-    '',
-  ].join('\n')),
-  planted('src/lexer_test.rs', '#[cfg(feature = "fast")]\nfn in_a_test_name() {}\n'),
-  planted('src/test_util.rs', '#[cfg(feature = "fast")]\nfn util() {}\n'),
-  planted('src/contest.rs', '#[cfg(feature = "fast")]\nfn not_a_test() {}\n'),
-  planted('src/checks.test.rs', '#[cfg(feature = "slow")]\nfn dotted() {}\n'),
-  planted('tests/integration.rs', '#[cfg(feature = "fast")]\nfn it() {}\n'),
-  planted('examples/demo.rs', '#[cfg(feature = "slow")]\nfn demo() {}\n'),
-  planted('benches/speed.rs', '#[cfg(not(feature = "fast"))]\nfn bench() {}\n'),
-  planted('build.rs', '#[cfg(feature = "tls")]\nfn main() {}\n'),
-  planted('src/skipped/target/ignored.rs', '#[cfg(feature = "fast")]\nfn built() {}\n'),
-  planted('src/notes.txt', '#[cfg(feature = "fast")]\n'),
-  planted('crates/core/Cargo.toml', '[package]\nname = "core"\n\n[features]\nfast = []\nextra = ["fast"]\n'),
-  planted('crates/core/src/lib.rs', '#[cfg(feature = "extra")]\nfn extra() {}\n#[cfg(feature = "fast")]\nfn fast() {}\n'),
-  planted('crates/cli/Cargo.toml', '[package]\nname = "cli"\n[features]\nverbose = []\n'),
-  planted('crates/cli/src/main.rs', 'fn main() {\n    #[cfg(feature = "verbose")]\n    println!("v");\n}\n'),
-  planted('crates/nopackage/Cargo.toml', '[workspace]\nmembers = []\n'),
-  analysis(),
-  analysis({ ignore: ['crates'] }),
-  analysis({}, '$PARENT/crates/core'),
-  analysis({}, '$PARENT/crates/nopackage'),
-]);
-add('survey', 'analyze-repo-structure-analysis-rust-features-hostile', { vault: 'miniature-repo' }, [
-  { $: 'write-file', path: '../../outside/Cargo.toml', text: '[package]\nname = "outside"\n' },
-  planted('real-in/Cargo.toml', '[package]\nname = "real-in"\n[features]\nf = []\n'),
-  planted('real-in/src/lib.rs', '#[cfg(feature = "f")]\nfn f() {}\n'),
-  { $: 'symlink', path: '../link-out', target: '../outside' },
-  { $: 'symlink', path: '../link-in', target: 'real-in' },
-  planted('zz-tools/.hidden/Cargo.toml', '[package]\nname = "hidden"\n'),
-  planted('Cargo.toml', '[package]\r\nname = "hostile"\r\n[workspace]\r\nmembers = [\r\n  "link-out",\r\n  "link-in",\r\n  "zz-tools/.hidden",\r\n  "real-in",\r\n]\r\n[features]\r\na-secret = []\r\nf = []\r\nbig = ["' + 'x'.repeat(513) + '"]\r\n' + Array.from({ length: 50 }, (_, index) => `feature-${String(index).padStart(2, '0')} = []`).join('\r\n') + '\r\n'),
-  planted('src/lib.rs', '#[cfg(feature = "f")]\nfn lifetime<\'a>(x: &\'a str) -> &\'a str { x }\n#[cfg(feature = "f")]\nfn after_lifetime() {}\n'),
-  planted('src/secrets.rs', '#[cfg(feature = "a-secret")]\nfn secret() {}\n'),
-  planted('src/credentials.rs', '#[cfg(feature = "a-secret")]\nfn credential() {}\n'),
-  planted('src/wide.rs', `#[cfg(feature = "f")]\n${'// filler\n'.repeat(30000)}`),
-  planted('src/binary.rs', '#[cfg(feature = "f")]\n\u0000\u0000fn b() {}\n'),
-  { $: 'write-file', path: '../src/latin1.rs', base64: 'I1tjZmcoZmVhdHVyZSA9ICJmIildCmZuIGEoKSB7IC8qIP8gKi8gfQo=' },
-  analysis(),
-]);
-// A character literal holding a double quote does not open a string: the attributes after it are read.
-add('survey', 'analyze-repo-structure-analysis-rust-features-quote-character', { vault: 'miniature-repo' }, [
-  planted('Cargo.toml', '[package]\nname = "quoted"\n[features]\nf = []\ng = []\n'),
-  planted('src/lib.rs', 'fn quote() -> char { \'"\' }\n#[cfg(feature = "f")]\nfn after_the_quote() {}\nfn escaped() -> char { \'\\\'\' }\n#[cfg(feature = "g")]\nfn after_the_escape() {}\n'),
-  analysis(),
-]);
-add('survey', 'analyze-repo-structure-analysis-rust-features-unreadable-manifests', { vault: 'miniature-repo' }, [
-  planted('Cargo.toml', '[package]\nname = "open"\n[features]\na = ["b"\n'),
-  analysis(),
-  planted('Cargo.toml', '[workspace]\nmembers = ["a", "b"]\n'),
-  planted('a/Cargo.toml', '[package]\nname = "a"\n[features]\nz = ["y"\n'),
-  planted('b/Cargo.toml', '# no tables at all\n'),
-  analysis(),
-  { $: 'write-file', path: '../Cargo.toml', text: '[package]\nname = "big"\n', size: 300000 },
-  analysis(),
-  { $: 'remove', path: '../Cargo.toml' },
-  { $: 'mkdir', path: '../Cargo.toml' },
-  analysis(),
+// The parts of `analyze_repo_structure` that are retired. The script server still answers each;
+// the Rust server refuses by name, in one sentence, and `null` still means "not sent".
+const retired = (args) => call('analyze_repo_structure', { rootPath: '$PARENT', ...args });
+add('survey', 'analyze-repo-structure-retired-parts', { vault: 'miniature-repo' }, [
+  retired({ view: 'analysis' }),
+  retired({ view: 'analysis', ignore: ['src/billing'] }),
+  retired({ proposal: {} }),
+  retired({ proposal: { concepts: [] } }),
+  retired({ qualification: { scenario: 'x' } }),
+  retired({ proposal: {}, qualification: {} }),
+  retired({ proposal: null }),
+  retired({ qualification: null }),
+  retired({ view: 'nonsense', proposal: {} }),
+  retired({ maxDepth: 99, view: 'analysis' }),
+  retired({ sourceOnly: true, proposal: {} }),
 ]);
 add('survey', 'index-project-retired', { vault: 'miniature-repo' }, [call('index_project', { rootPath: '$PARENT' })]);
 

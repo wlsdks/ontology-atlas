@@ -857,13 +857,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "construction-review"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "cookie"
 version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3028,7 +3021,6 @@ dependencies = [
  "analysis-archive-format",
  "answer-format",
  "confined-files",
- "construction-review",
  "hardened-git",
  "indexmap 2.14.0",
  "mcp-server",
@@ -3036,7 +3028,6 @@ dependencies = [
  "ontology-graph",
  "raw-source-text",
  "regex",
- "repository-candidates",
  "repository-survey",
  "serde",
  "serde_json",
@@ -4300,24 +4291,6 @@ name = "regex-syntax"
 version = "0.8.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d902046e6a28a1e4c3cab97258a0ce11e994903f01c2d97a9447a0b3df85f4f6"
-
-[[package]]
-name = "repository-candidates"
-version = "0.1.0"
-dependencies = [
- "answer-format",
- "confined-files",
- "icu_normalizer",
- "indexmap 2.14.0",
- "pulldown-cmark",
- "regex",
- "repository-survey",
- "serde",
- "serde_json",
- "sha2 0.11.1",
- "source-scan",
- "tempfile",
-]
 
 [[package]]
 name = "repository-survey"
