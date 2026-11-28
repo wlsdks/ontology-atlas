@@ -63,6 +63,7 @@ impl From<RepositoryFileRefusal> for RefusalReason {
             RepositoryFileRefusal::NotFound => Self::NotFound,
             RepositoryFileRefusal::ThroughLink => Self::SymlinkPath,
             RepositoryFileRefusal::NotRegular => Self::NonRegularFile,
+            RepositoryFileRefusal::HiddenOrCredential => Self::SensitivePath,
             RepositoryFileRefusal::TooLarge => Self::FileTooLarge,
             RepositoryFileRefusal::Changed => Self::FileChanged,
             RepositoryFileRefusal::Unreadable => Self::UnsafeRead,

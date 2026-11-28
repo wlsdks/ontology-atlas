@@ -4,15 +4,16 @@
 //! absolute, `..`); this read refuses what the disk can plant at an allowed name, the same way
 //! [`crate::VaultRoot::read_raw_source`] does for a vault source: a link anywhere on the path, a
 //! pipe, a folder, a file over the size the caller allows, a file that changes while it is read,
-//! and (on Windows, where a junction looks like a folder) a path that resolves somewhere other
-//! than where it is spelled.
+//! a path that resolves somewhere other than where it is spelled (on Windows a junction looks like
+//! a folder), and a path whose real spelling is hidden or a credential name (a Kelvin sign opens
+//! `private_key.txt` on a case-insensitive disk).
 
 use std::fs;
 use std::io::Read;
 
 use crate::os_error::OsErrorCode;
 use crate::plain_file;
-use crate::raw_source_read::spells_real_path;
+use crate::raw_source_read::{real_spelling, RealSpelling};
 use crate::scan_root::SourceRoot;
 use crate::stable_read::FileStamp;
 
@@ -26,6 +27,10 @@ pub enum RepositoryFileRefusal {
     ThroughLink,
     #[error("not a regular file")]
     NotRegular,
+    /// The file the path opens is spelled by the disk as a hidden or credential name (a lookalike
+    /// letter on a case-insensitive disk opens `private_key.txt`).
+    #[error("the file is hidden or named like a credential")]
+    HiddenOrCredential,
     #[error("larger than the allowed size")]
     TooLarge,
     #[error("the file changed while it was read")]
@@ -65,7 +70,7 @@ impl SourceRoot {
             }
         }
         let owned: Vec<String> = parts.iter().map(|part| (*part).to_string()).collect();
-        let spells_the_real_path = || spells_real_path(self.as_path(), &file_path, &owned);
+        let spelling = || real_spelling(self.as_path(), &file_path, &owned);
         let mut file = match plain_file::open_read(&file_path) {
             Ok(file) => file,
             Err(error) if plain_file::is_link_refusal(&error) => {
@@ -83,8 +88,10 @@ impl SourceRoot {
         if before.size > max_bytes {
             return Err(RepositoryFileRefusal::TooLarge);
         }
-        if !spells_the_real_path() {
-            return Err(RepositoryFileRefusal::ThroughLink);
+        match spelling() {
+            RealSpelling::AsNamed => {}
+            RealSpelling::Elsewhere => return Err(RepositoryFileRefusal::ThroughLink),
+            RealSpelling::Private => return Err(RepositoryFileRefusal::HiddenOrCredential),
         }
         let mut bytes = Vec::with_capacity(usize::try_from(before.size).unwrap_or(0));
         file.by_ref()
@@ -95,7 +102,7 @@ impl SourceRoot {
         if bytes.len() as u64 != before.size || FileStamp::of(before) != FileStamp::of(after) {
             return Err(RepositoryFileRefusal::Changed);
         }
-        if !spells_the_real_path() {
+        if spelling() != RealSpelling::AsNamed {
             return Err(RepositoryFileRefusal::Changed);
         }
         Ok(bytes)
@@ -174,5 +181,40 @@ mod tests {
             root.read_repository_file(&["src", "none.ts"], 1024),
             Err(RepositoryFileRefusal::NotFound)
         );
+    }
+
+    /// Plants `src/<real>` and names it as `src/<lookalike>`. A case-insensitive disk (APFS, NTFS)
+    /// opens the lookalike as the real file; a case-sensitive one does not find it. Either way the
+    /// bytes of the credential are not returned.
+    fn lookalike_answer(real: &str, lookalike: &str) -> Result<Vec<u8>, RepositoryFileRefusal> {
+        let base = tempfile::tempdir().expect("temp dir");
+        let folder = std::fs::canonicalize(base.path()).expect("real");
+        std::fs::create_dir_all(folder.join("src")).expect("src");
+        std::fs::write(folder.join("src").join(real), "KEY = 1\n").expect("credential");
+        // The real name itself is refused on every disk: the file is a credential as spelled.
+        assert_eq!(
+            root_of(&folder).read_repository_file(&["src", real], 1024),
+            Err(RepositoryFileRefusal::HiddenOrCredential),
+            "{real}"
+        );
+        let disk_folds = folder.join("src").join(lookalike).exists();
+        let answer = root_of(&folder).read_repository_file(&["src", lookalike], 1024);
+        let expected = if disk_folds {
+            RepositoryFileRefusal::HiddenOrCredential
+        } else {
+            RepositoryFileRefusal::NotFound
+        };
+        assert_eq!(answer, Err(expected), "{lookalike}");
+        answer
+    }
+
+    #[test]
+    fn a_lookalike_name_that_the_disk_opens_as_a_credential_is_not_read() {
+        // A Kelvin sign is the letter K after Unicode normalization and lower-casing; a long s
+        // (U+017F) is the letter s to the disk's case folding and to nothing the name rule folds,
+        // so only the real spelling of the opened file shows it.
+        lookalike_answer("private_key.txt", "private_\u{212a}ey.txt").unwrap_err();
+        lookalike_answer("secret.ts", "\u{17f}ecret.ts").unwrap_err();
+        lookalike_answer("tls.key", "tls.KEY").unwrap_err();
     }
 }

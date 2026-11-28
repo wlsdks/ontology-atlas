@@ -13520,6 +13520,14 @@
       "path": "result.content[0].text",
       "change": 49,
       "reason": "A method whose body is on the line that declares it (`open(): void {}`, `public String label() { return x; }`) is outlined and can be read by its name. The script server's line patterns need the opening brace to end the line, so it listed neither, and it counted the declaration itself as a call of that name, naming the class around it as a caller (row 49)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-source-reads-hostile-files",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text",
+      "change": 50,
+      "reason": "A name that a case-insensitive disk (APFS, NTFS) opens as a credential file is refused as `sensitive_path`: a Kelvin sign is the letter K there, so a name spelled with one opens `private_key.py`. The script server lower-cases ASCII letters only, passes the name and outlines the credential file (row 50)."
     }
   ]
 }

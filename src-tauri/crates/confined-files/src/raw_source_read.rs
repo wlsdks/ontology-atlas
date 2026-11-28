@@ -18,11 +18,9 @@
 use std::fs;
 use std::io::Read;
 
-use icu_normalizer::ComposingNormalizerBorrowed;
-
 use crate::os_error::OsErrorCode;
 use crate::plain_file;
-use crate::private_names::{is_credential_name, is_hidden_name};
+use crate::private_names::{folded_name, is_credential_name, is_hidden_name};
 use crate::real_paths::real_path;
 use crate::slug_rules::VAULT_SOURCES_DIR;
 use crate::stable_read::FileStamp;
@@ -149,6 +147,10 @@ pub enum RawSourceReadRefusal {
     ThroughLink,
     #[error("not a regular file")]
     NotRegular,
+    /// The file the path opens is spelled by the disk as a hidden or credential name (a lookalike
+    /// letter on a case-insensitive disk opens `private_key.txt`).
+    #[error("the file is hidden or named like a credential")]
+    HiddenOrCredential,
     /// More bytes than the caller allows, by the file's size.
     #[error("larger than {max_bytes} bytes")]
     TooLarge { max_bytes: u64 },
@@ -187,7 +189,7 @@ impl VaultRoot {
                 Err(_) => return Err(RawSourceReadRefusal::Unreadable),
             }
         }
-        let spells_the_real_path = || self.real_parts_equal(&file_path, &path.parts);
+        let spelling = || real_spelling(self.path(), &file_path, &path.parts);
         let mut file = match plain_file::open_read(&file_path) {
             Ok(file) => file,
             Err(error) if plain_file::is_link_refusal(&error) => {
@@ -205,8 +207,10 @@ impl VaultRoot {
         if before.size > max_bytes {
             return Err(RawSourceReadRefusal::TooLarge { max_bytes });
         }
-        if !spells_the_real_path() {
-            return Err(RawSourceReadRefusal::ThroughLink);
+        match spelling() {
+            RealSpelling::AsNamed => {}
+            RealSpelling::Elsewhere => return Err(RawSourceReadRefusal::ThroughLink),
+            RealSpelling::Private => return Err(RawSourceReadRefusal::HiddenOrCredential),
         }
         let mut bytes = Vec::with_capacity(usize::try_from(before.size).unwrap_or(0));
         file.by_ref()
@@ -217,41 +221,59 @@ impl VaultRoot {
         if bytes.len() as u64 != before.size || FileStamp::of(before) != FileStamp::of(after) {
             return Err(RawSourceReadRefusal::Changed);
         }
-        if !spells_the_real_path() {
+        if spelling() != RealSpelling::AsNamed {
             return Err(RawSourceReadRefusal::Changed);
         }
         Ok(bytes)
     }
-
-    /// Whether the real path of `file` is the vault's real path followed by `parts`, each part
-    /// spelled as named or as the disk spells it with another letter case.
-    fn real_parts_equal(&self, file: &std::path::Path, parts: &[String]) -> bool {
-        spells_real_path(self.path(), file, parts)
-    }
 }
 
-/// Whether the real path of `file` is the real path of `root` followed by `parts`, each part
-/// spelled as named or as the disk spells it.
-pub(crate) fn spells_real_path(
+/// What the disk's spelling of a file's path says about the name it was asked by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RealSpelling {
+    /// The real path is the root's followed by the named parts, each as named or in another
+    /// letter case or Unicode form.
+    AsNamed,
+    /// The real path is somewhere else, or could not be resolved: a link, a junction, a moved file.
+    Elsewhere,
+    /// A part of the real path, as the disk spells it, is hidden or named like a credential.
+    Private,
+}
+
+/// How the real path of `file` spells the parts it was named by below the real path of `root`. A
+/// case-insensitive disk opens `private_\u{212a}ey.txt` as `private_key.txt`, so the policy that
+/// judged the typed name is asked again of every part as the disk spells it.
+pub(crate) fn real_spelling(
     root: &std::path::Path,
     file: &std::path::Path,
     parts: &[String],
-) -> bool {
+) -> RealSpelling {
     let (Ok(real_root), Ok(real_file)) = (real_path(root), real_path(file)) else {
-        return false;
+        return RealSpelling::Elsewhere;
     };
     let Ok(below) = real_file.strip_prefix(&real_root) else {
-        return false;
+        return RealSpelling::Elsewhere;
     };
     let real_parts: Vec<String> = below
         .components()
         .map(|part| part.as_os_str().to_string_lossy().into_owned())
         .collect();
-    real_parts.len() == parts.len()
+    if real_parts
+        .iter()
+        .any(|part| is_hidden_name(part) || is_credential_name(part))
+    {
+        return RealSpelling::Private;
+    }
+    let same = real_parts.len() == parts.len()
         && real_parts
             .iter()
             .zip(parts)
-            .all(|(real, named)| same_part(real, named))
+            .all(|(real, named)| same_part(real, named));
+    if same {
+        RealSpelling::AsNamed
+    } else {
+        RealSpelling::Elsewhere
+    }
 }
 
 /// Whether the disk's spelling of a part is the name's: the same text, or the same text in another
@@ -259,11 +281,7 @@ pub(crate) fn spells_real_path(
 /// decomposed when a Korean or accented name came from a decomposing program, and finds it by
 /// either form).
 fn same_part(real: &str, named: &str) -> bool {
-    if real == named {
-        return true;
-    }
-    let nfc = ComposingNormalizerBorrowed::new_nfc();
-    nfc.normalize(real).to_lowercase() == nfc.normalize(named).to_lowercase()
+    real == named || folded_name(real) == folded_name(named)
 }
 
 #[cfg(test)]

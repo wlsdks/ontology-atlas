@@ -1,6 +1,8 @@
 //! Names that are never read as evidence: hidden files (a leading `.`) and files named like a
 //! credential. The same rule the browser bundle asks before it requests a file from the app.
 
+use icu_normalizer::ComposingNormalizerBorrowed;
+
 const CREDENTIAL_STEMS: [&str; 9] = [
     "credential",
     "credentials",
@@ -14,11 +16,25 @@ const CREDENTIAL_STEMS: [&str; 9] = [
 ];
 const KEY_EXTENSIONS: [&str; 6] = [".pem", ".key", ".p12", ".pfx", ".jks", ".keystore"];
 
+/// A name as a case-insensitive, normalization-insensitive disk sees it: composed (NFC), then
+/// lower-cased in full. APFS and NTFS open `private_\u{212a}ey.txt` (a Kelvin sign) as
+/// `private_key.txt`, and macOS finds a decomposed name by its composed form; a rule that compares
+/// the typed letters would pass the lookalike while the disk opens the credential.
+pub(crate) fn folded_name(name: &str) -> String {
+    if name.is_ascii() {
+        return name.to_ascii_lowercase();
+    }
+    ComposingNormalizerBorrowed::new_nfc()
+        .normalize(name)
+        .to_lowercase()
+}
+
 /// Whether one file or folder name is a credential: `secret`, `credentials.json`, `id_rsa`,
 /// `private_key.txt` (a stem, then at most one extension) or anything ending `.pem`, `.key`,
-/// `.p12`, `.pfx`, `.jks` or `.keystore`, in any ASCII letter case.
+/// `.p12`, `.pfx`, `.jks` or `.keystore`, in any letter case and in any Unicode form that folds to
+/// those letters.
 pub fn is_credential_name(name: &str) -> bool {
-    let lowered = name.to_ascii_lowercase();
+    let lowered = folded_name(name);
     if KEY_EXTENSIONS
         .iter()
         .any(|extension| lowered.ends_with(extension))
@@ -71,6 +87,10 @@ mod tests {
             "release.jks",
             "debug.keystore",
             "a.b.key",
+            // A Kelvin sign folds to the letter K on a case-insensitive disk (APFS, NTFS), so the
+            // disk opens these as `private_key.txt` and `tls.key`.
+            "private_\u{212a}ey.txt",
+            "tls.\u{212a}EY",
         ] {
             assert!(is_credential_name(name), "{name}");
         }
@@ -91,8 +111,6 @@ mod tests {
             "private--key",
             "id_ed25519x",
             "README.md",
-            // A Kelvin sign is not the letter K to this rule.
-            "tls.\u{212a}EY",
         ] {
             assert!(!is_credential_name(name), "{name}");
         }

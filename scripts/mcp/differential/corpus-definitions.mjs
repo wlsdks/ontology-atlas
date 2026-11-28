@@ -1891,6 +1891,7 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   planted('src/node_modules/pkg/index.ts', 'export const pkg = 1;\n'),
   planted('src/secrets.ts', 'export const SECRET_SENTINEL_no = 1;\n'),
   planted('src/id_rsa.py', 'KEY = 1\n'),
+  planted('src/private_key.py', 'KEY = 2\n'),
   planted('src/payment/caf\u00e9.ts', 'export function cafe() {}\n'),
   planted('src/order/weird\nname.ts', 'export function weird() {}\n'),
   planted('notes.txt', 'plain text\n'),
@@ -1972,6 +1973,11 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/cancel.ts', symbol: 'a'.repeat(3000) }] }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceOnly: true }),
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/cancel.ts', mode: 'outline' }], maxDepth: 99 }),
+  // A Kelvin sign is the letter K to a case-insensitive disk (APFS, NTFS), so the script server
+  // opens `src/private_key.py` by this name (row 50).
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [
+    { path: 'src/private_\u212aey.py', mode: 'outline' },
+  ] }),
 ]);
 add('survey', 'index-project-retired', { vault: 'miniature-repo' }, [call('index_project', { rootPath: '$PARENT' })]);
 

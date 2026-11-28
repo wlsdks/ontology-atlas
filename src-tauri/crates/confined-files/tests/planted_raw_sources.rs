@@ -194,3 +194,20 @@ mod windows {
         );
     }
 }
+
+/// A long s (U+017F) is the letter s to a case-insensitive disk's folding and to no rule the name
+/// check applies, so `sources/\u{17f}ecret.md` is a document by its name and `secret.md` by the
+/// disk. The read asks again of the spelling the disk gives the opened file.
+#[test]
+fn a_lookalike_name_that_the_disk_opens_as_a_credential_is_not_read() {
+    let planted = planted();
+    let sources = planted.root.path().join("sources");
+    fs::write(sources.join("secret.md"), "TOKEN").expect("credential");
+    let disk_folds = sources.join("\u{17f}ecret.md").exists();
+    let expected = if disk_folds {
+        RawSourceReadRefusal::HiddenOrCredential
+    } else {
+        RawSourceReadRefusal::NotFound
+    };
+    assert_eq!(read(&planted, "sources/\u{17f}ecret.md"), Err(expected));
+}
