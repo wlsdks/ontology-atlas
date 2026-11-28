@@ -1,10 +1,11 @@
 //! `analyze_repo_structure`: the breadth map of the repository, the first call of every
 //! construction. The map is read once on the shared pool by `repository-survey`; this file checks
 //! the arguments the way the JavaScript server does and refuses, by name, the parts of the tool
-//! this build does not answer yet (exact source reads, the structural analysis view, and a
-//! proposal or qualification to review).
+//! this build does not answer yet (the structural analysis view, and a proposal or qualification
+//! to review). `sourceReads` answer from `source-reads`: the reads alone, as text.
 
 use repository_survey::{build_breadth_map, git_ignored_paths, SurveyFiles, SurveyRequest};
+use source_reads::{fit_source_reads, parse_source_reads, read_source_evidence, render_source_reads};
 
 use super::argument_checks::{
     optional_boolean, optional_non_blank_text, optional_non_negative_integer, optional_text_list,
@@ -75,8 +76,18 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         return Err(not_answered("Reviewing a proposal or a qualification"));
     }
     let target = ScanTarget::allow(context, root_path.as_deref())?;
-    if is_sent(arguments, "sourceReads") {
-        return Err(not_answered("sourceReads"));
+    if let Some(selectors) = arguments.read::<serde_json::Value>("sourceReads")? {
+        let selectors = parse_source_reads(&selectors).map_err(|refusal| {
+            if refusal.names_a_wrong_value {
+                ToolError::invalid(refusal.message)
+            } else {
+                ToolError::failed(refusal.message)
+            }
+        })?;
+        let read = read_source_evidence(target.source_root(), &selectors, &ignore);
+        let evidence = fit_source_reads(&target.label, read);
+        context.source_reads().record(target.source_root(), &evidence);
+        return Ok(ToolOutput::text(render_source_reads(&target.label, &evidence)));
     }
     let wants_analysis = arguments
         .read::<serde_json::Value>("view")?
