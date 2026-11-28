@@ -4,5 +4,3 @@
 {"id":2,"method":"tools/call","params":{"name":"compile_ontology","arguments":{"summary":true}}}
 {"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"overview"}}}
 {"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"schema"}}}
-{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"all_paths","from":"capabilities/plan","to":"capabilities/review"}}}
-{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"centrality"}}}

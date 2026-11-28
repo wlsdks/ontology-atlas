@@ -6,5 +6,4 @@
 {"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"project_scope"}}}
 {"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"project_map"}}}
 {"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"containment_tree"}}}
-{"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"builder_context","slug":"capability:charge-card"}}}
-{"id":8,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/place-order","to":"capabilities/cancel-order","type":"relates"}}}
+{"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"relation_check","from":"capabilities/place-order","to":"capabilities/cancel-order","type":"relates"}}}

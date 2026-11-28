@@ -152,7 +152,7 @@ export function createProfileQueries({
       narrowedToFit: {
         requestedItemLimit,
         itemLimit,
-        next: `Lists were cut to ${itemLimit} per domain to keep this answer under ${PROJECT_MAP_TEXT_CHARS} characters; query_ontology({operation:"domain_profile", slug}) lists one domain in full.`,
+        next: `Lists were cut to ${itemLimit} per domain to keep this answer under ${PROJECT_MAP_TEXT_CHARS} characters; query_ontology({operation:"node_profile", slug}) lists one domain in full.`,
       },
     };
   }

@@ -16,11 +16,12 @@ const TOOL_INVENTORY_PLACEHOLDER = '__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__';
 
 // The two guide topics below live here because nothing else in the server
 // needs them; `connection_info({guide})` hands them back verbatim.
-const WORKFLOWS_SECTION_EN = `## Starting a known coding task — the shortest bounded handoff
+const WORKFLOWS_SECTION_EN = `## Starting a known coding task
 
-1. \`connection_info\` — prove the resolved vault and repository roots.
-2. \`query_ontology({operation:'agent_brief',project:'SLUG',detail:'compact',task:'...'})\` — receive currentness, one broad capability whose persisted Definition/Includes/Excludes are compatible with the task, cited element/path anchors, explicit unknowns, and one bounded full-body read. Conflicting or tied claims return no capability. Compact v3 may also return reviewed task-navigation coordinates after checking only their named files against current bound source.
-3. When \`focus.taskNavigation.status\` is \`ready\`, read its primary, supporting, focused-test, and verified manifest coordinates together in one source batch before any repository inventory or broad search. Add named positive and negative regression tests with exact observable output, run the focused check once, then the returned full check once without overlapping test runs. Broaden only when source contradicts the reviewed evidence. Otherwise run the returned full-body read and preserve navigation as unknown. Do not call \`workspace_brief\`, \`list_concepts\`, or full \`agent_brief\` first; those are for whole-vault orientation and duplicate this task handoff.`;
+1. \`connection_info\` \u2014 prove the resolved vault and repository roots.
+2. \`query_ontology({operation:'agent_brief',project:'SLUG'})\` \u2014 receive the project's currentness, its readiness and the nodes to read first. Then \`get_concepts({slugs:[...], body:'full'})\` for the nodes it names: the body is where the definition, \`## Includes\`, \`## Excludes\` and \`## Uncertainty\` live.
+3. Read the code those nodes cite with \`read_source\` in one batch before any repository inventory or broad search. Add named positive and negative regression tests with exact observable output, run the focused check once, then the full check once without overlapping test runs. Broaden only when source contradicts what the node says.
+4. Do not call \`workspace_brief\` or \`list_concepts\` first; those are for whole-vault orientation.`;
 
 const WRITE_SAFETY_SECTION_EN = `## Write tools — safety patterns
 
