@@ -8,16 +8,18 @@ const sharedProbe = readFileSync(
   'utf8',
 );
 const appProbe = readFileSync(resolve(repoRoot, 'src-tauri/src/project_source/mod.rs'), 'utf8');
-const mcpSource = readFileSync(
-  resolve(repoRoot, 'mcp/src/project-source/project-source-inventory-limits.mjs'),
-  'utf8',
-);
 
-function mcpConstant(name: string): string {
-  const match = new RegExp(`^export const ${name} = (.+);$`, 'm').exec(mcpSource);
-  expect(match, `${name} is not exported by mcp/src/project-source/project-source-inventory-limits.mjs`).toBeTruthy();
-  return match![1]!.trim();
-}
+/**
+ * What the script server's probe hashes, recorded 2026-11-28 from its inventory-limits module. A
+ * receipt minted under one rule reads as changed under another, so the Rust crate must keep these
+ * values for as long as receipts minted by either side are read.
+ */
+const RECORDED_PROBE = {
+  version: 'inventory-v3',
+  maxDepth: '20',
+  maxHashBytes: '32 * 1024 * 1024',
+  pruneDirNames: ['.cache', '.git', '.next', '.turbo', 'build', 'coverage', 'dist', 'node_modules', 'target'],
+};
 
 function sharedConstant(name: string): string {
   const match = new RegExp(`^pub const ${name}: [^=]+= (.+);$`, 'm').exec(sharedProbe);
@@ -28,29 +30,23 @@ function sharedConstant(name: string): string {
 /**
  * The app and the Rust MCP server measure a source folder with one crate
  * (`src-tauri/crates/project-source`), so one folder has one `inventory-v3` fingerprint whoever
- * asks. The JavaScript probe is the second implementation until it is removed, and what it
- * hashes must be the same: a receipt one side minted reads as changed on the other when any of
- * this differs.
+ * asks, and what it hashes must stay what the JavaScript probe hashed: a receipt minted by the
+ * older side reads as changed on the newer when any of this differs.
  */
-describe('source inventory rule: the app, the Rust MCP server and the JavaScript probe agree on one', () => {
-  it('the fingerprint version is one word on both sides', () => {
-    expect(mcpConstant('SOURCE_INVENTORY_VERSION')).toBe("'inventory-v3'");
-    expect(sharedConstant('SOURCE_INVENTORY_VERSION')).toBe('"inventory-v3"');
+describe('source inventory rule: the shared crate keeps the rule the JavaScript probe recorded', () => {
+  it('the fingerprint version is the recorded word', () => {
+    expect(sharedConstant('SOURCE_INVENTORY_VERSION')).toBe(`"${RECORDED_PROBE.version}"`);
   });
 
-  it('the depth cap is one number on both sides', () => {
-    expect(mcpConstant('SOURCE_INVENTORY_MAX_DEPTH')).toBe('20');
-    expect(sharedConstant('SOURCE_INVENTORY_MAX_DEPTH')).toBe('20');
+  it('the depth cap is the recorded number', () => {
+    expect(sharedConstant('SOURCE_INVENTORY_MAX_DEPTH')).toBe(RECORDED_PROBE.maxDepth);
   });
 
-  it('the hashed-bytes cap is one number on both sides', () => {
-    expect(mcpConstant('SOURCE_INVENTORY_MAX_HASH_BYTES')).toBe('32 * 1024 * 1024');
-    expect(sharedConstant('SOURCE_INVENTORY_MAX_HASH_BYTES')).toBe('32 * 1024 * 1024');
+  it('the hashed-bytes cap is the recorded number', () => {
+    expect(sharedConstant('SOURCE_INVENTORY_MAX_HASH_BYTES')).toBe(RECORDED_PROBE.maxHashBytes);
   });
 
-  it('the pruned directory names are the same set on both sides', () => {
-    const mcpMatch = /export const SOURCE_PRUNE_DIR_NAMES = new Set\(\[([\s\S]*?)\]\)/.exec(mcpSource);
-    expect(mcpMatch, 'SOURCE_PRUNE_DIR_NAMES is not a Set literal any more').toBeTruthy();
+  it('the pruned directory names are the recorded set', () => {
     const sharedMatch = /pub const SOURCE_PRUNE_DIR_NAMES: \[&str; \d+\] = \[([\s\S]*?)\];/.exec(sharedProbe);
     expect(sharedMatch, 'SOURCE_PRUNE_DIR_NAMES is not an array literal any more').toBeTruthy();
 
@@ -61,8 +57,8 @@ describe('source inventory rule: the app, the Rust MCP server and the JavaScript
         .filter(Boolean)
         .sort();
 
-    expect(names(mcpMatch![1]!)).toEqual(names(sharedMatch![1]!));
-    expect(names(mcpMatch![1]!)).toContain('node_modules');
+    expect(names(sharedMatch![1]!)).toEqual(RECORDED_PROBE.pruneDirNames);
+    expect(names(sharedMatch![1]!)).toContain('node_modules');
   });
 
   /**

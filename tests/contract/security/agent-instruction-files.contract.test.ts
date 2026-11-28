@@ -4,11 +4,20 @@ import { describe, expect, it } from "vitest";
 
 import { standingApproval } from "@/features/acp-session/model/permissions/standing-approval";
 import { AGENT_FILE_RULES } from "@/entities/agent-files";
-import { unwritableSlugIssue } from "../../../mcp/src/schema.mjs";
 import { CASES } from "../../fixtures/agent-files-cases.mjs";
+import golden from "../../fixtures/unwritable-slug-golden.json";
+
+/** What the script server answered for each slug (recorded 2026-11-28): refused at all, and refused as instructions. */
+const recorded = golden.slugs as Record<string, { refused: boolean; asInstructions: boolean }>;
+function serverVerdict(slug: string) {
+  const verdict = recorded[slug];
+  if (!verdict) throw new Error(`no recorded verdict for ${JSON.stringify(slug)}; record it in unwritable-slug-golden.json`);
+  return verdict;
+}
 
 const instructionRecords = CASES.flatMap((c) => c.expected.records).filter((record) => record.kind === "instructions");
 
+// The server's answers are the recorded ones; the app side runs live.
 describe("vault write tools refuse every file the agent-files classifier calls instructions", () => {
   it("has a shared case for every instruction rule the classifier defines", () => {
     const ruled = AGENT_FILE_RULES.filter((rule) => rule.kind === "instructions").map((rule) => rule.id);
@@ -17,7 +26,7 @@ describe("vault write tools refuse every file the agent-files classifier calls i
 
   it("refuses a write to each instruction file in the shared cases", () => {
     for (const { path } of instructionRecords) {
-      expect(unwritableSlugIssue(path.replace(/\.md$/, "")), path).not.toBeNull();
+      expect(serverVerdict(path.replace(/\.md$/, "")).refused, path).toBe(true);
     }
   });
 });
@@ -40,7 +49,7 @@ describe("auto-approve refuses every file the vault write tools refuse as instru
 
   it("agrees with the server on every instruction stem in any letter case", () => {
     for (const slug of stemVariants) {
-      const serverRefusesAsInstructions = /instructions/.test(unwritableSlugIssue(slug) ?? "");
+      const serverRefusesAsInstructions = serverVerdict(slug).asInstructions;
       expect(standingApproval(vaultEdit(`${slug}.md`), context) === null, slug).toBe(serverRefusesAsInstructions);
     }
   });
@@ -48,7 +57,7 @@ describe("auto-approve refuses every file the vault write tools refuse as instru
   it("agrees with the server on invisible and control characters", () => {
     for (const code of [0x00, 0x07, 0x1b, 0x7f, 0x85, 0xad, 0x200b, 0x200e, 0x202e, 0x2028, 0x2029, 0x2060, 0xfeff, 0x41]) {
       const slug = `notes/a${String.fromCodePoint(code)}b`;
-      const serverRefuses = unwritableSlugIssue(slug) !== null;
+      const serverRefuses = serverVerdict(slug).refused;
       expect(standingApproval(vaultEdit(`${slug}.md`), context) === null, code.toString(16)).toBe(serverRefuses);
     }
   });
@@ -61,13 +70,13 @@ describe("the Rust server names the same instruction files as the vault write to
   );
   const list = /AGENT_INSTRUCTION_FILE_STEMS: \[&str; \d+\] = \[([^\]]*)\]/.exec(source)?.[1] ?? "";
   const rustStems = [...list.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
-  const refusedAsInstructions = (stem: string) => /instructions/.test(unwritableSlugIssue(stem) ?? "");
+  const refusedAsInstructions = (stem: string) => serverVerdict(stem).asInstructions;
 
   it("reads a non-empty list from the Rust source", () => {
     expect(rustStems.length).toBeGreaterThan(0);
   });
 
-  it("lists exactly the stems the JavaScript server refuses as instructions", () => {
+  it("lists exactly the stems the script server refused as instructions", () => {
     const pool = new Set([
       ...rustStems,
       ...["agents", "agents.override", "claude", "claude.local", "gemini", "readme", "copilot-instructions", "notes"],

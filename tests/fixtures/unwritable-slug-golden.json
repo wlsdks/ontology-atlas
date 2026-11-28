@@ -1,0 +1,161 @@
+{
+  "recordedFrom": "the script server (mcp/src/schema.mjs unwritableSlugIssue) on 2026-11-28, over the instruction files of agent-files-cases.mjs, stem spellings and control characters",
+  "slugs": {
+    ".github/copilot-instructions": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "AGENTS": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "AGENTS.OVERRIDE": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "CLAUDE": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "CLAUDE.LOCAL": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "GEMINI": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "NOTES": {
+      "refused": false,
+      "asInstructions": false
+    },
+    "README": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "agents": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "agents.override": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "claude": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "claude.local": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "cli/AGENTS": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "copilot-instructions": {
+      "refused": false,
+      "asInstructions": false
+    },
+    "docs/agents": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "docs/agents.override": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "docs/claude": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "docs/claude.local": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "docs/gemini": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "docs/notes": {
+      "refused": false,
+      "asInstructions": false
+    },
+    "docs/readme": {
+      "refused": false,
+      "asInstructions": false
+    },
+    "gemini": {
+      "refused": true,
+      "asInstructions": true
+    },
+    "notes": {
+      "refused": false,
+      "asInstructions": false
+    },
+    "notes/a\u0000b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a\u0007b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a\u001bb": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/aAb": {
+      "refused": false,
+      "asInstructions": false
+    },
+    "notes/ab": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/ab": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a­b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a​b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a‎b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a‮b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a⁠b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "notes/a﻿b": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "readme": {
+      "refused": true,
+      "asInstructions": false
+    },
+    "src/AGENTS": {
+      "refused": true,
+      "asInstructions": true
+    }
+  }
+}

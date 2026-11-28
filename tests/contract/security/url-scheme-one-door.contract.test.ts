@@ -117,9 +117,9 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
   });
 
   it('keeps the agent surfaces free of a second address vocabulary', () => {
-    // `mcp/` and `cli/` are what hand an address to an agent, so a uid or node link would land there
+    // `mcp/`, `cli/` and the Rust MCP server are what hand an address to an agent, so a uid or node link would land there
     // first; they mint no second address vocabulary.
-    for (const file of [...sourceFiles('mcp/src'), ...sourceFiles('cli/src')]) {
+    for (const file of [...sourceFiles('mcp/src'), ...sourceFiles('cli/src'), ...sourceFiles('src-tauri/crates/mcp-server/src')]) {
       expect(
         readFileSync(file, 'utf8'),
         `${file.slice(repoRoot.length + 1)} must not mint an ontology-atlas:// address`,

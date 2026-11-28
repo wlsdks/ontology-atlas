@@ -31,6 +31,11 @@ export function advertisedToolNames(): string[] {
     .filter((name) => !retired.has(name));
 }
 
+/** The names the server groups its tools by: the read tools and the retired tools with their replacements. */
+export function serverRegistry(): { readTools: string[]; retiredTools: { name: string; replacement: string }[] } {
+  return readSurfaceJson('registry.json');
+}
+
 /** What the server says when a client connects: the text of `initialize.instructions`. */
 export function serverInstructions(): string {
   return readFileSync(join(SURFACE_DIRECTORY, 'instructions.txt'), 'utf8');
