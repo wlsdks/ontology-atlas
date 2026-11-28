@@ -22,6 +22,9 @@ fn reason_sentence(slug: &str, reason: &UnwritableReason) -> String {
         UnwritableReason::ColonInSegment { segment } => format!(
             "slug \"{slug}\" has the segment \"{segment}\" with a colon, which on Windows names a data stream or a drive: a write tool never names one. Drop the colon."
         ),
+        UnwritableReason::DeviceName { segment } => format!(
+            "slug \"{slug}\" has the segment \"{segment}\", which Windows opens as a device (CON, PRN, AUX, NUL, COM0 to COM9, LPT0 to LPT9, with or without an extension) and not as a file: a write tool never names one, so the vault works on every system. Rename the segment."
+        ),
         UnwritableReason::AgentInstructionFile { file_name } => format!(
             "slug \"{slug}\" names {file_name}.md, a file coding agents load as their instructions (AGENTS.md, AGENTS.override.md, CLAUDE.md, CLAUDE.local.md or GEMINI.md, in any letter case, because macOS and Windows open those as one file). A write tool never creates, edits or deletes one; a person edits it by hand. Name the node for what it means instead, such as \"domains/agent-runtime\"."
         ),

@@ -2000,10 +2000,13 @@ add('writes', 'patch-concept-batch', { vault: 'storefront' }, [
   call('patch_concept', { patches: [{ slug: 'capabilities/cart', frontmatter: { uid: 'x' } }] }),
   call('get_concepts', { slugs: ['capabilities/cart', 'capabilities/checkout'], body: 'full' }),
 ]);
+add('safety', 'audit-lines-for-a-loose-name', { vault: 'loose-names' }, [
+  call('remove_relation', { from: 'a', to: 'b', type: 'depends_on', confirm: true }),
+  call('delete_concept', { slug: 'Domains/C', confirm: true }),
+]);
 add('safety', 'write-refused-by-a-reserved-referrer', { vault: 'reserved-referrer' }, [
   call('rename_concept', { oldSlug: 'capabilities/target', newSlug: 'capabilities/goal', confirm: true }),
   call('merge_concepts', { fromSlug: 'capabilities/target', intoSlug: 'capabilities/other', confirm: true }),
-  call('delete_concept', { slug: 'capabilities/target', force: true, confirm: true }),
   call('get_concepts', { slugs: ['capabilities/target'] }),
 ]);
 add('writes', 'patch-concept-preserves-bytes-of-odd-files', { vault: 'edge-bytes' }, [
@@ -2137,6 +2140,16 @@ add('library', 'absorb-document', { vault: 'library' }, [
   call('absorb_document', { filePath: '' }),
   call('absorb_document', { filePath: '$VAULT/sources/data.csv', confirm: true }),
 ]);
+add('library', 'absorb-document-folders', { vault: 'library' }, [
+  { $: 'write-file', path: '../outside/.ssh/notes.md', text: '# Notes\n\nSome prose about annotating.\n' },
+  { $: 'write-file', path: '../outside/secrets/notes.md', text: '# Notes\n\nSome prose about annotating.\n' },
+  { $: 'write-file', path: '.github/AGENTS.md', text: '# Rules\n\nSome prose about annotating.\n' },
+  call('absorb_document', { filePath: '$PARENT/outside/.ssh/notes.md', allowOutsideRepo: true }),
+  call('absorb_document', { filePath: '$PARENT/outside/secrets/notes.md', allowOutsideRepo: true }),
+  call('absorb_document', { filePath: '$PARENT/outside/.ssh/notes.md', allowOutsideRepo: true, confirm: true }),
+  call('absorb_document', { filePath: '$VAULT/.github/AGENTS.md' }),
+  call('absorb_document', { filePath: '$VAULT/.github/AGENTS.md', confirm: true }),
+]);
 add('library', 'absorb-document-hostile-paths', { vault: 'edge-hostile' }, [
   call('absorb_document', { filePath: '$VAULT/escape-file.md', confirm: true }),
   call('absorb_document', { filePath: '$VAULT/escape-file.md', allowOutsideRepo: true, confirm: true }),
@@ -2215,6 +2228,13 @@ add('safety', 'hostile-slugs-on-writes', { vault: 'edge-hostile' }, [
   ...HOSTILE_SLUGS.slice(0, 12).map((slug) => call('merge_concepts', { fromSlug: slug, intoSlug: 'capabilities/normal', confirm: true })),
   ...HOSTILE_SLUGS.slice(0, 12).map((slug) => call('add_relations', { relations: [{ from: slug, to: 'capabilities/normal', type: 'relates', why: 'x' }] })),
   call('list_concepts', { summary: true }),
+]);
+add('safety', 'write-names-a-windows-device', { vault: 'storefront' }, [
+  call('add_concepts', { concepts: [{ slug: 'elements/con', kind: 'element', title: 'Con' }] }),
+  call('add_concepts', { concepts: [{ slug: 'nul', kind: 'document', title: 'Nul' }] }),
+  call('add_concepts', { concepts: [{ slug: 'elements/aux.v2', kind: 'element', title: 'Aux' }] }),
+  call('add_concepts', { concepts: [{ slug: 'elements/console', kind: 'element', title: 'Console' }] }),
+  call('list_concepts', { limit: 1 }),
 ]);
 add('safety', 'writes-through-symlinks', { vault: 'edge-hostile' }, [
   call('patch_concept', { slug: 'escape-file', body: 'overwritten through a link' }),
@@ -2356,6 +2376,10 @@ add('safety', 'write-with-consent-kind-change', { vault: 'storefront', env: { OA
   call('rename_concept', { oldSlug: 'capabilities/faq', newKind: 'element', domain: 'domains/order', confirm: true }),
   call('rename_concept', { oldSlug: 'capabilities/cart', newKind: 'element', newSlug: 'elements/cart', domain: 'domains/order', body: 'Replaced.', confirm: true }),
   call('list_concepts', { limit: 1 }),
+]);
+add('safety', 'write-with-consent-absorb-outside-the-repository', { vault: 'library', env: { OATLAS_WRITE_CONSENT: 'true' }, capabilities: { elicitation: { form: {} } }, elicit: 'decline' }, [
+  call('absorb_document', { filePath: '$PARENT/outside/absorb-me.md', allowOutsideRepo: true, confirm: true }),
+  call('absorb_document', { filePath: '$PARENT/outside/absorb-me.md', allowOutsideRepo: true, confirm: false }),
 ]);
 add('safety', 'consent-question-open-while-a-read-arrives', { vault: 'storefront', env: { OATLAS_WRITE_CONSENT: '1' }, capabilities: { elicitation: { form: {} } }, elicit: 'none' }, [
   call('add_concepts', { concepts: [{ slug: 'elements/asked', kind: 'element', title: 'Asked' }] }, { noWait: true }),

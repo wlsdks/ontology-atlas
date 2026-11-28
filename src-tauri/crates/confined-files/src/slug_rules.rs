@@ -7,6 +7,8 @@ use std::sync::OnceLock;
 use icu_normalizer::ComposingNormalizerBorrowed;
 use regex::Regex;
 
+use crate::plain_parts::is_not_a_file_name;
+
 /// The vault folder of raw sources: every file below it is a source, never a node.
 pub const VAULT_SOURCES_DIR: &str = "sources";
 
@@ -41,6 +43,11 @@ pub enum UnwritableReason {
         "the segment {segment:?} has a colon, which on Windows names a data stream or a drive"
     )]
     ColonInSegment { segment: String },
+    /// A segment Windows opens as a device (`CON`, `NUL`, `COM1`, with or without an extension)
+    /// and not as a file. Refused on every system, so a vault that moves between them keeps
+    /// working: see [`crate::plain_parts`] for the source of the names.
+    #[error("the segment {segment:?} is a Windows device name")]
+    DeviceName { segment: String },
     /// A file coding agents load as their instructions, in any letter case.
     #[error("{file_name}.md is a file coding agents load as their instructions")]
     AgentInstructionFile { file_name: String },
@@ -93,8 +100,8 @@ fn nfkc_lowercase(text: &str) -> String {
 }
 
 /// Why a write tool may not create, edit or delete the file `slug` names, or `None` when it may:
-/// an invisible character, a Windows short-name ending, a hidden segment, an agent instruction
-/// file in any letter case, or the vault README.
+/// an invisible character, a Windows short-name ending, a hidden segment, a Windows device name,
+/// an agent instruction file in any letter case, or the vault README.
 pub fn unwritable_slug_reason(slug: &str) -> Option<UnwritableReason> {
     if let Some(found) = invisible_character().find(slug) {
         let code_point = found.as_str().chars().next().map_or(0, u32::from);
@@ -120,6 +127,16 @@ pub fn unwritable_slug_reason(slug: &str) -> Option<UnwritableReason> {
                 segment: (*segment).to_string(),
             });
         }
+    }
+    // A colon has its own rule above (Windows only); `is_not_a_file_name` would also refuse it
+    // everywhere.
+    if let Some(segment) = segments
+        .iter()
+        .find(|segment| !segment.contains(':') && is_not_a_file_name(segment))
+    {
+        return Some(UnwritableReason::DeviceName {
+            segment: (*segment).to_string(),
+        });
     }
     let last = segments.last().copied().unwrap_or("");
     let stem = nfkc_lowercase(last);
@@ -173,6 +190,40 @@ mod tests {
     #[test]
     fn a_colon_is_a_plain_character_off_windows() {
         assert_eq!(unwritable_slug_reason("notes/a:b"), None);
+    }
+
+    /// Microsoft, "Naming Files, Paths, and Namespaces": CON, PRN, AUX, NUL, COM0 to COM9 and LPT0 to
+    /// LPT9 are reserved, "also avoid these names followed immediately by an extension".
+    #[test]
+    fn a_windows_device_name_is_refused_in_any_segment_on_every_system() {
+        for slug in ["nul", "domains/con", "con/notes", "elements/AUX.v2", "notes/com1", "lpt9.txt"] {
+            assert!(
+                matches!(
+                    unwritable_slug_reason(slug),
+                    Some(UnwritableReason::DeviceName { .. })
+                ),
+                "{slug}"
+            );
+        }
+        for slug in ["domains/console", "elements/nulls", "notes/com10", "domains/icon", "axis/aux-tool"] {
+            assert_eq!(unwritable_slug_reason(slug), None, "{slug}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_opens_a_device_name_with_an_extension_as_the_device() {
+        // Microsoft: "NUL.txt and NUL.tar.gz are both equivalent to NUL"; the same rule as the refusal
+        // above, run where the claim holds, with trailing spaces the API strips from a segment.
+        for slug in ["notes/NUL.txt", "notes/nul .md", "notes/Com\u{b2}"] {
+            assert!(
+                matches!(
+                    unwritable_slug_reason(slug),
+                    Some(UnwritableReason::DeviceName { .. })
+                ),
+                "{slug}"
+            );
+        }
     }
 
     #[test]
