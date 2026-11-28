@@ -167,14 +167,14 @@ mod tests {
 
     #[test]
     fn a_failure_carries_the_code_the_message_and_the_derived_fields() {
-        let error = ToolError::unknown_tool("nope", None, &["add_concepts", "git_status"]);
+        let error = ToolError::unknown_tool("nope", None, &["add_concepts", "validate_vault"]);
         assert_eq!(
             written(&CallToolResult::failure(&error)),
             concat!(
-                r#"{"content":[{"type":"text","text":"Error: Unknown tool: nope. Allowed tools: add_concepts, git_status."}],"#,
+                r#"{"content":[{"type":"text","text":"Error: Unknown tool: nope. Allowed tools: add_concepts, validate_vault."}],"#,
                 r#""structuredContent":{"ok":false,"errorCode":"unknown_tool","#,
-                r#""error":"Unknown tool: nope. Allowed tools: add_concepts, git_status.","receivedTool":"nope","#,
-                r#""allowedTools":["add_concepts","git_status"]},"isError":true}"#
+                r#""error":"Unknown tool: nope. Allowed tools: add_concepts, validate_vault.","receivedTool":"nope","#,
+                r#""allowedTools":["add_concepts","validate_vault"]},"isError":true}"#
             )
         );
     }

@@ -5,7 +5,7 @@ use vault_document::{DisplayTitle, LoadedDocument};
 
 use vault_document::frontmatter::Value;
 
-/// One node in `list_concepts` and `query_concepts`. A key the file does not hold is left out.
+/// One node in `list_concepts`. A key the file does not hold is left out.
 #[derive(Serialize)]
 pub struct ConceptRow<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -23,6 +23,11 @@ pub struct ConceptRow<'a> {
     /// Milliseconds since the epoch: sortable, and the way to tell a node changed.
     #[serde(skip_serializing_if = "Option::is_none")]
     mtime: Option<f64>,
+    /// Where `mentions` found its text, and how well that fits.
+    #[serde(rename = "matchedIn", skip_serializing_if = "Option::is_none")]
+    matched_in: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    score: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     summary: Option<String>,
     #[serde(rename = "summaryTruncated", skip_serializing_if = "Option::is_none")]
@@ -41,9 +46,18 @@ impl<'a> ConceptRow<'a> {
             capabilities: frontmatter.get("capabilities"),
             elements: frontmatter.get("elements"),
             mtime: document.modified_ms(),
+            matched_in: None,
+            score: None,
             summary: None,
             summary_truncated: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_mention(mut self, matched_in: &'static str, score: f64) -> Self {
+        self.matched_in = Some(matched_in);
+        self.score = Some(score);
+        self
     }
 
     #[must_use]
