@@ -2,7 +2,7 @@
 
 use answer_format::collation::compare_text;
 use serde::Serialize;
-use vault_document::{find_backlinks, Backlink, ReferenceIndex};
+use vault_document::{find_backlinks, AmbiguousReferences, Backlink, ReferenceIndex};
 
 use super::argument_checks::required_non_blank_text;
 use super::read_vault::read_vault;
@@ -23,7 +23,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let read = read_vault(context)?;
     let documents = read.vault.documents();
     let index = ReferenceIndex::new(documents);
-    let mut matches = find_backlinks(documents, &index, &slug)
+    let mut matches = find_backlinks(documents, &index, &slug, AmbiguousReferences::Ignore)
         .map_err(|error| ToolError::failed(error.to_string()))?;
     matches.sort_by(|left, right| compare_text(left.slug, right.slug));
     ToolOutput::json(&Backlinks {

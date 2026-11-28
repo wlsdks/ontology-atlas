@@ -13,7 +13,7 @@ use serde::Serialize;
 use thiserror::Error;
 
 pub use details::{
-    AllowedValueDetails, CompactUnavailableDetails, LargeResponseDetails, MissingNodeDetails,
+    AllowedValueDetails, CompactUnavailableDetails, ConflictDetails, UnknownFieldDetails, LargeResponseDetails, MissingNodeDetails,
     ProfileMissingDetails, ProfileNotFoundDetails, ProfileRequiredDetails, ReceivedValue,
     RetiredToolDetails, UnknownArgumentDetails, UnknownField, UnknownToolDetails,
 };
@@ -54,6 +54,8 @@ enum Details {
     ProfileRequired(ProfileRequiredDetails),
     LargeResponse(LargeResponseDetails),
     CompactUnavailable(CompactUnavailableDetails),
+    Conflict(ConflictDetails),
+    UnknownFields(UnknownFieldDetails),
 }
 
 /// A handler's failure: a code, the words, and the fields the code derives from the call.
@@ -83,6 +85,15 @@ impl ToolError {
     /// An argument the call got wrong.
     pub fn invalid(message: impl Into<String>) -> Self {
         Self::new(ErrorCode::InvalidArguments, message)
+    }
+
+    /// The failure of one row of a batch: the row's name leads its words unless they already name it.
+    #[must_use]
+    pub fn naming_row(mut self, row_name: &str) -> Self {
+        if !self.message.contains(row_name) {
+            self.message = format!("{row_name} {}", self.message);
+        }
+        self
     }
 
     pub fn code(&self) -> ErrorCode {

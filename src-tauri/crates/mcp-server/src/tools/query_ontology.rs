@@ -365,6 +365,7 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
         component_types,
         executable_only: flag("executableOnly"),
         after_action_id: text("afterActionId"),
+        touching: None,
     };
     let analysis = AnalysisArguments {
         record_id,
@@ -495,7 +496,7 @@ fn refusal(error: QueryError, operation: &str) -> ToolError {
 
 /// The vault's own list of references that are intentional code, read for the operations that
 /// would otherwise propose to turn them into nodes.
-fn read_ignore_patterns(context: &CallContext<'_>) -> Result<Vec<String>, ToolError> {
+pub(super) fn read_ignore_patterns(context: &CallContext<'_>) -> Result<Vec<String>, ToolError> {
     let text = open_root(context)?
         .read_top_file(".ontology-atlasignore")
         .map_err(|error| ToolError::failed(error.to_string()))?;

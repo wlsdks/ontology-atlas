@@ -393,6 +393,11 @@ impl VaultSidecar {
         let mut file = plain_file::create_new(&temporary)?;
         let written = (|| -> Result<(), SidecarError> {
             plain_facts(&file)?;
+            if let Ok(existing) = std::fs::metadata(&path) {
+                // The replacement keeps the file's permission bits: a log the person made group
+                // readable stays so.
+                file.set_permissions(existing.permissions())?;
+            }
             file.write_all(text.as_bytes())?;
             file.sync_all()?;
             if required != current_revision(&path)? {
@@ -664,6 +669,22 @@ mod tests {
 
         assert_eq!(std::fs::read_to_string(&secret).expect("secret"), "keep\n");
         assert!(!outside.path().join("created-by-the-link").exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_replaced_file_keeps_the_permission_bits_it_had() {
+        use std::os::unix::fs::PermissionsExt;
+        let vault = vault();
+        let sidecar = sidecar(&vault);
+        sidecar.append_line("log.jsonl", "one").expect("appends");
+        let file = vault.path().join(SIDECAR_FOLDER).join("log.jsonl");
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o644)).expect("chmod");
+        sidecar
+            .replace_text("log.jsonl", "two\n", None)
+            .expect("replaces");
+        let mode = std::fs::metadata(&file).expect("metadata").permissions().mode() & 0o777;
+        assert_eq!(mode, 0o644);
     }
 
     #[cfg(unix)]

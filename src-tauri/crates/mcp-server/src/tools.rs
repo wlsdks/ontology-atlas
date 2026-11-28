@@ -40,6 +40,7 @@ mod vault_facts;
 mod vault_repository;
 mod vault_validation_facts;
 mod vault_validation_report;
+mod writes;
 
 pub use compiled_graph::KeptGraph;
 
@@ -94,16 +95,16 @@ pub fn call(
 /// The handler of `tool`, or `None` while this build does not port it.
 pub fn write_handler(tool: WriteTool) -> Option<WriteHandler> {
     match tool {
-        WriteTool::AddConcept
-        | WriteTool::AddConcepts
-        | WriteTool::AddRelation
-        | WriteTool::AddRelations
-        | WriteTool::RemoveRelation
-        | WriteTool::PatchConcept
-        | WriteTool::RenameConcept
-        | WriteTool::MergeConcepts
-        | WriteTool::DeleteConcept
-        | WriteTool::AbsorbDocument
+        WriteTool::PatchConcept => Some(writes::patch_concept),
+        WriteTool::AddConcepts => Some(writes::add_concepts),
+        WriteTool::AddConcept => Some(writes::add_concept),
+        WriteTool::AddRelations => Some(writes::add_relations),
+        WriteTool::AddRelation => Some(writes::add_relation),
+        WriteTool::RemoveRelation => Some(writes::remove_relation),
+        WriteTool::RenameConcept => Some(writes::rename_concept),
+        WriteTool::MergeConcepts => Some(writes::merge_concepts),
+        WriteTool::DeleteConcept => Some(writes::delete_concept),
+        WriteTool::AbsorbDocument
         | WriteTool::ConnectProjectSource
         | WriteTool::FinalizeProjectMeaning => None,
         #[cfg(feature = "test-hooks")]
