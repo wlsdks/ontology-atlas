@@ -15440,6 +15440,54 @@
       "reason": "Without a surveyable repository the Depth sentence that counts capabilities citing lines an earlier session recorded is not ported: coverage stays absent as when the survey found no ability and no area (row 65), where the script server still said it."
     },
     {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/repoRoot",
+      "change": 67,
+      "reason": "With the repository root missing the script server listed every cited path as drift and every concept as missing, and asked for each to be patched away. The Rust server says once that the root is missing (`repoRoot`) and reports `pathDrift` and `evidenceDrift` as not checked, with a row for no path (row 67 of the specification's table)."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/evidenceDrift",
+      "change": 67,
+      "reason": "With the repository root missing the script server listed every cited path as drift and every concept as missing, and asked for each to be patched away. The Rust server says once that the root is missing (`repoRoot`) and reports `pathDrift` and `evidenceDrift` as not checked, with a row for no path (row 67 of the specification's table)."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/pathDrift",
+      "change": 67,
+      "reason": "With the repository root missing the script server listed every cited path as drift and every concept as missing, and asked for each to be patched away. The Rust server says once that the root is missing (`repoRoot`) and reports `pathDrift` and `evidenceDrift` as not checked, with a row for no path (row 67 of the specification's table)."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.repoRoot",
+      "change": 67,
+      "reason": "With the repository root missing the script server listed every cited path as drift and every concept as missing, and asked for each to be patched away. The Rust server says once that the root is missing (`repoRoot`) and reports `pathDrift` and `evidenceDrift` as not checked, with a row for no path (row 67 of the specification's table)."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.evidenceDrift",
+      "change": 67,
+      "reason": "With the repository root missing the script server listed every cited path as drift and every concept as missing, and asked for each to be patched away. The Rust server says once that the root is missing (`repoRoot`) and reports `pathDrift` and `evidenceDrift` as not checked, with a row for no path (row 67 of the specification's table)."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.pathDrift",
+      "change": 67,
+      "reason": "With the repository root missing the script server listed every cited path as drift and every concept as missing, and asked for each to be patched away. The Rust server says once that the root is missing (`repoRoot`) and reports `pathDrift` and `evidenceDrift` as not checked, with a row for no path (row 67 of the specification's table)."
+    },
+    {
       "case": "shell/every-tool-in-read-only-mode",
       "where": "answer",
       "id": 16,
@@ -15486,6 +15534,30 @@
       "path": "result.structuredContent.error",
       "change": 39,
       "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-hostile-tree",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "The tree plants `src/payment/cafe` plus a combining accent as a decomposed file name. The script server prints it as stored; the Rust server prints every surveyed name composed (NFC), so the survey, a vault `path:` and Git's status spell one file one way (row 68 of the specification's table). The answer is a plain sentence, so the whole text is named."
+    },
+    {
+      "case": "survey/analyze-repo-structure-hostile-tree",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "The tree plants `src/payment/cafe` plus a combining accent as a decomposed file name. The script server prints it as stored; the Rust server prints every surveyed name composed (NFC), so the survey, a vault `path:` and Git's status spell one file one way (row 68 of the specification's table). The answer is a plain sentence, so the whole text is named."
+    },
+    {
+      "case": "survey/analyze-repo-structure-hostile-tree",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 68,
+      "reason": "The tree plants `src/payment/cafe` plus a combining accent as a decomposed file name. The script server prints it as stored; the Rust server prints every surveyed name composed (NFC), so the survey, a vault `path:` and Git's status spell one file one way (row 68 of the specification's table). The answer is a plain sentence, so the whole text is named."
     }
   ]
 }
