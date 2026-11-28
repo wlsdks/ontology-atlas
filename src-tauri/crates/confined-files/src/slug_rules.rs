@@ -44,8 +44,10 @@ pub enum UnwritableReason {
     )]
     ColonInSegment { segment: String },
     /// A segment Windows opens as a device (`CON`, `NUL`, `COM1`, with or without an extension)
-    /// and not as a file. Refused on every system, so a vault that moves between them keeps
-    /// working: see [`crate::plain_parts`] for the source of the names.
+    /// and not as a file. Refused on every system for a file a write creates, so a vault that
+    /// moves between them keeps working: see [`crate::plain_parts`] for the source of the names.
+    /// A file that already has such a name is not refused: it is already there, and a rename or a
+    /// delete is the way out of it ([`device_name_reason`]).
     #[error("the segment {segment:?} is a Windows device name")]
     DeviceName { segment: String },
     /// A file coding agents load as their instructions, in any letter case.
@@ -100,8 +102,9 @@ fn nfkc_lowercase(text: &str) -> String {
 }
 
 /// Why a write tool may not create, edit or delete the file `slug` names, or `None` when it may:
-/// an invisible character, a Windows short-name ending, a hidden segment, a Windows device name,
-/// an agent instruction file in any letter case, or the vault README.
+/// an invisible character, a Windows short-name ending, a hidden segment, a colon on Windows, an
+/// agent instruction file in any letter case, or the vault README. A Windows device name is not
+/// among them: it bars a file from being created ([`device_name_reason`]), not from being edited.
 pub fn unwritable_slug_reason(slug: &str) -> Option<UnwritableReason> {
     if let Some(found) = invisible_character().find(slug) {
         let code_point = found.as_str().chars().next().map_or(0, u32::from);
@@ -128,16 +131,6 @@ pub fn unwritable_slug_reason(slug: &str) -> Option<UnwritableReason> {
             });
         }
     }
-    // A colon has its own rule above (Windows only); `is_not_a_file_name` would also refuse it
-    // everywhere.
-    if let Some(segment) = segments
-        .iter()
-        .find(|segment| !segment.contains(':') && is_not_a_file_name(segment))
-    {
-        return Some(UnwritableReason::DeviceName {
-            segment: (*segment).to_string(),
-        });
-    }
     let last = segments.last().copied().unwrap_or("");
     let stem = nfkc_lowercase(last);
     if AGENT_INSTRUCTION_FILE_STEMS.contains(&stem.as_str()) {
@@ -146,6 +139,20 @@ pub fn unwritable_slug_reason(slug: &str) -> Option<UnwritableReason> {
         });
     }
     (segments.len() == 1 && stem == "readme").then_some(UnwritableReason::VaultReadme)
+}
+
+/// The segment of `slug` that Windows opens as a device, when a write would create the file it
+/// names. Only a new file is refused: a vault may already hold `elements/aux.md` (made on another
+/// system, or before the rule), and refusing its edits would leave a reference to it dangling
+/// after a rename and make the file impossible to rename or delete.
+pub(crate) fn device_name_reason(slug: &str) -> Option<UnwritableReason> {
+    // A colon has its own rule in `unwritable_slug_reason` (Windows only); `is_not_a_file_name`
+    // would also refuse it everywhere.
+    slug.split(['\\', '/'])
+        .find(|segment| !segment.contains(':') && is_not_a_file_name(segment))
+        .map(|segment| UnwritableReason::DeviceName {
+            segment: segment.to_string(),
+        })
 }
 
 #[cfg(test)]
@@ -195,18 +202,19 @@ mod tests {
     /// Microsoft, "Naming Files, Paths, and Namespaces": CON, PRN, AUX, NUL, COM0 to COM9 and LPT0 to
     /// LPT9 are reserved, "also avoid these names followed immediately by an extension".
     #[test]
-    fn a_windows_device_name_is_refused_in_any_segment_on_every_system() {
+    fn a_windows_device_name_bars_a_new_file_in_any_segment_on_every_system_and_no_edit() {
         for slug in ["nul", "domains/con", "con/notes", "elements/AUX.v2", "notes/com1", "lpt9.txt"] {
             assert!(
                 matches!(
-                    unwritable_slug_reason(slug),
+                    device_name_reason(slug),
                     Some(UnwritableReason::DeviceName { .. })
                 ),
                 "{slug}"
             );
+            assert_eq!(unwritable_slug_reason(slug), None, "{slug}: a file that exists stays editable");
         }
         for slug in ["domains/console", "elements/nulls", "notes/com10", "domains/icon", "axis/aux-tool"] {
-            assert_eq!(unwritable_slug_reason(slug), None, "{slug}");
+            assert_eq!(device_name_reason(slug), None, "{slug}");
         }
     }
 
@@ -218,7 +226,7 @@ mod tests {
         for slug in ["notes/NUL.txt", "notes/nul .md", "notes/Com\u{b2}"] {
             assert!(
                 matches!(
-                    unwritable_slug_reason(slug),
+                    device_name_reason(slug),
                     Some(UnwritableReason::DeviceName { .. })
                 ),
                 "{slug}"

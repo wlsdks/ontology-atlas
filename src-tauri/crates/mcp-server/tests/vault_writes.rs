@@ -148,6 +148,34 @@ fn a_rename_moves_the_file_and_every_reference_to_it_and_answers_with_the_keys_t
     assert!(other.contains("[[minutes]]"), "{other}");
 }
 
+/// A file already named like a Windows device is a file to look after, not one to refuse: a rename
+/// reaches it as a referrer, and it can be renamed and deleted. Only a new file takes the name
+/// `nul` or `aux` from nobody.
+#[test]
+fn a_file_that_already_has_a_device_name_is_still_a_referrer_and_can_be_renamed_and_deleted() {
+    let mut vault = Vault::start();
+    let referrer = |slug: &str| format!("---\nuid: 33333333-3333-4333-8333-33333333333{}\nslug: {slug}\nkind: document\ntitle: T\nrelates: [notes]\n---\n\nBody.\n", slug.len());
+    vault.plant("aux.md", &referrer("aux"));
+    vault.plant("con.md", &referrer("con"));
+    let renamed = vault.call(
+        "rename_concept",
+        r#"{"oldSlug":"notes","newSlug":"minutes","confirm":true}"#,
+    );
+    assert_eq!(renamed["ok"], true);
+    let updated: Vec<&str> = renamed["backlinkUpdates"]["updates"]
+        .as_array()
+        .expect("updates")
+        .iter()
+        .filter_map(|update| update["slug"].as_str())
+        .collect();
+    assert!(updated.contains(&"aux"), "{renamed}");
+    assert!(vault.file("aux.md").is_some_and(|text| text.contains("relates: [minutes]")));
+    assert_eq!(vault.call("rename_concept", r#"{"oldSlug":"aux","newSlug":"port","confirm":true}"#)["ok"], true);
+    assert!(vault.file("port.md").is_some() && vault.file("aux.md").is_none());
+    assert_eq!(vault.call("delete_concept", r#"{"slug":"con","confirm":true,"force":true}"#)["ok"], true);
+    assert!(vault.file("con.md").is_none());
+}
+
 #[test]
 fn a_batch_that_names_one_node_twice_in_different_spellings_is_refused_as_a_repeat() {
     let mut vault = Vault::start();
