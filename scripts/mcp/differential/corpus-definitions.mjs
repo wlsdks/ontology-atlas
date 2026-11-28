@@ -1893,6 +1893,9 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   planted('src/id_rsa.py', 'KEY = 1\n'),
   planted('src/private_key.py', 'KEY = 2\n'),
   planted('src/con.ts', 'export function device() {}\n'),
+  planted('src/sig/split.ts', `export function split(a = '${'\u{1f600}'.repeat(80)}') {}\n`),
+  planted('src/sig/even.ts', `export function even(a = '${'\u{1f600}'.repeat(80)}') {}\n`),
+  planted('src/sig/space.ts', '\u0085\u00a0\u2003export function space() {}\u0085\n'),
   planted('src/payment/caf\u00e9.ts', 'export function cafe() {}\n'),
   planted('src/order/weird\nname.ts', 'export function weird() {}\n'),
   planted('notes.txt', 'plain text\n'),
@@ -1981,6 +1984,15 @@ add('survey', 'analyze-repo-structure-source-reads-hostile-files', { vault: 'min
   ] }),
   // Windows opens `con.ts` as the console, so the name is refused on every system (row 51).
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/con.ts', mode: 'outline' }] }),
+  // A signature is the declaration's line trimmed as JavaScript trims it (U+FEFF goes, U+0085
+  // stays) and cut to 160 UTF-16 units: the cut of `split` falls inside an emoji, that of `even`
+  // between two.
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [
+    { path: 'src/crlf/bom.ts', mode: 'outline' },
+    { path: 'src/sig/split.ts', mode: 'outline' },
+    { path: 'src/sig/even.ts', mode: 'outline' },
+    { path: 'src/sig/space.ts', mode: 'outline' },
+  ] }),
 ]);
 add('survey', 'index-project-retired', { vault: 'miniature-repo' }, [call('index_project', { rootPath: '$PARENT' })]);
 

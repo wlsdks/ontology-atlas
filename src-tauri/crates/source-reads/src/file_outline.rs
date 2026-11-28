@@ -8,9 +8,10 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 use repository_survey::{is_js_space, js_regex};
-use source_scan::{outline_text, DeclarationKind, SourceLanguage, OUTLINE_DECLARATION_LIMIT};
+use source_scan::{
+    outline_signature, outline_text, DeclarationKind, SourceLanguage, OUTLINE_DECLARATION_LIMIT,
+};
 
-const SIGNATURE_CHARACTERS: usize = 160;
 const LINE_CHARACTERS: usize = 1000;
 
 /// What a declaration is, in the words an outline row uses.
@@ -129,10 +130,6 @@ pub fn is_line_scanned(path: &str) -> bool {
     matches!(language_of(path).1, Some(Scanner::Ruby | Scanner::CSharp))
 }
 
-fn signature_of(line: &str) -> String {
-    line.trim().chars().take(SIGNATURE_CHARACTERS).collect()
-}
-
 fn indent_of(line: &str) -> usize {
     line.chars()
         .take_while(|character| matches!(character, ' ' | '\t'))
@@ -244,7 +241,7 @@ impl Collector {
             line: index + 1,
             kind,
             name: name.to_string(),
-            signature: signature_of(line),
+            signature: outline_signature(line),
         });
     }
 }

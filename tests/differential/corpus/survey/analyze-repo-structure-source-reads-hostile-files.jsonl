@@ -18,6 +18,9 @@
 {"$":"write-file","path":"../src/id_rsa.py","text":"KEY = 1\n"}
 {"$":"write-file","path":"../src/private_key.py","text":"KEY = 2\n"}
 {"$":"write-file","path":"../src/con.ts","text":"export function device() {}\n"}
+{"$":"write-file","path":"../src/sig/split.ts","text":"export function split(a = '😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀') {}\n"}
+{"$":"write-file","path":"../src/sig/even.ts","text":"export function even(a = '😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀') {}\n"}
+{"$":"write-file","path":"../src/sig/space.ts","text":"  export function space() {}\n"}
 {"$":"write-file","path":"../src/payment/café.ts","text":"export function cafe() {}\n"}
 {"$":"write-file","path":"../src/order/weird\nname.ts","text":"export function weird() {}\n"}
 {"$":"write-file","path":"../notes.txt","text":"plain text\n"}
@@ -51,3 +54,4 @@
 {"id":24,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","sourceReads":[{"path":"src/order/cancel.ts","mode":"outline"}],"maxDepth":99}}}
 {"id":25,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","sourceReads":[{"path":"src/private_Key.py","mode":"outline"}]}}}
 {"id":26,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","sourceReads":[{"path":"src/con.ts","mode":"outline"}]}}}
+{"id":27,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$PARENT","sourceReads":[{"path":"src/crlf/bom.ts","mode":"outline"},{"path":"src/sig/split.ts","mode":"outline"},{"path":"src/sig/even.ts","mode":"outline"},{"path":"src/sig/space.ts","mode":"outline"}]}}}

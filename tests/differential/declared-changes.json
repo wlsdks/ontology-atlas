@@ -13536,6 +13536,14 @@
       "path": "result.content[0].text",
       "change": 51,
       "reason": "A file named like a Windows device (`con.ts`, `NUL.txt`, `COM1`) is refused as `not_a_file_name` on every system before the disk is asked, because Windows opens such a name as the device, not the file. The script server reads it wherever the name is an ordinary file (row 51)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-source-reads-hostile-files",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text",
+      "change": 52,
+      "reason": "An outline signature is cut to 160 UTF-16 units without cutting through a surrogate pair: the script server keeps the first half of an emoji at the cut, a lone surrogate that its answer shows as U+FFFD, and the Rust server stops before that emoji (row 52). The trim (U+FEFF removed, U+0085 kept) and every other cut are equal."
     }
   ]
 }
