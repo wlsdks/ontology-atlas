@@ -30,14 +30,14 @@ use serde::Serialize;
 
 use crate::compiled_graph::CompiledGraph;
 
-pub use operation::{Operation, PendingOperation};
+pub use operation::Operation;
 pub use query_error::QueryError;
 pub use relation_set::RELATION_TYPE_VALUES;
 pub use request::{Direction, QueryRequest, SEARCH_BUDGET_MAX};
 pub use selection::{
-    is_match_nodes, match_nodes, parse_ignore_patterns, LineSpan, NodeSort, OutsideFacts,
-    SelectionArguments, SelectionOperation, SelectionRequest, StaleSummary, UncertaintyRead,
-    VaultValidationFacts,
+    is_match_nodes, match_nodes, parse_ignore_patterns, project_holdings, LineSpan, NodeSort,
+    OutsideFacts, ProjectHoldings, SelectionArguments, SelectionOperation, SelectionRequest,
+    StaleSummary, UncertaintyRead, VaultValidationFacts,
 };
 pub use walks::WalkOperation;
 
@@ -76,8 +76,8 @@ pub struct QueryAnswer<'a> {
     compiled_summary: CompiledSummary<'a>,
 }
 
-/// Answers the call from `graph`. An operation no module answers yet is refused by name, and so is
-/// the one that reads an analysis record, which the tool layer answers from the vault's files.
+/// Answers the call from `graph`. The operation that reads an analysis record is refused by name:
+/// the tool layer answers it from the vault's files.
 pub fn run<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
@@ -94,9 +94,6 @@ pub fn run<'a>(
             return Err(QueryError::NotAGraphOperation(
                 Operation::AnalysisRecord.name(),
             ));
-        }
-        Operation::Pending(operation) => {
-            return Err(QueryError::NotAnsweredYet(operation.name()));
         }
     };
     let counts = graph.edge_counts();

@@ -2,7 +2,7 @@
 //! defaults from here and so does `query_plan`, so a plan never describes a call the operation
 //! would not run and a default is changed in one place.
 
-use crate::query::operation::{Operation, PendingOperation};
+use crate::query::operation::Operation;
 use crate::query::request::{Direction, QueryRequest};
 use crate::query::selection::SelectionOperation;
 use crate::query::walks::WalkOperation;
@@ -99,6 +99,7 @@ pub const RECOMMEND_RELATIONS_LIMIT: usize = 50;
 pub const GROWTH_PLAN_LIMIT: usize = 25;
 pub const MAINTENANCE_PLAN_LIMIT: usize = 25;
 pub const WORKSPACE_BRIEF_LIMIT: usize = 10;
+pub const AGENT_BRIEF_LIMIT: usize = 5;
 
 /// `health` has no `limit`: it cuts each of its lists by a limit of its own.
 pub const HEALTH_COMPONENT_LIMIT: usize = 5;
@@ -139,9 +140,9 @@ pub fn default_limit(operation: Operation) -> Option<usize> {
             SelectionOperation::GrowthPlan => Some(GROWTH_PLAN_LIMIT),
             SelectionOperation::MaintenancePlan => Some(MAINTENANCE_PLAN_LIMIT),
             SelectionOperation::WorkspaceBrief => Some(WORKSPACE_BRIEF_LIMIT),
+            SelectionOperation::AgentBrief => Some(AGENT_BRIEF_LIMIT),
             SelectionOperation::Health => None,
         },
         Operation::QueryPlan | Operation::AnalysisRecord => None,
-        Operation::Pending(PendingOperation::AgentBrief) => None,
     }
 }
