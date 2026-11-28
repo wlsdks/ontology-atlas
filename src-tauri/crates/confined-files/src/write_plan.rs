@@ -11,6 +11,8 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
+use icu_normalizer::ComposingNormalizerBorrowed;
+
 use crate::atomic_write::{
     file_holds_text, modified_time_of, permission_bits_of, write_atomically, AtomicWrite, Expectation, WriteError,
 };
@@ -258,15 +260,24 @@ fn without_deletes_of_written_files(plan: Vec<PlanEntry>) -> Vec<PlanEntry> {
         .collect()
 }
 
+/// The spelling two names share when a disk may open one as the other: letters without case, and
+/// composed Unicode, because macOS opens `e` plus U+0301 as the precomposed U+00E9.
+fn spelling_a_disk_may_fold(path: &Path) -> String {
+    ComposingNormalizerBorrowed::new_nfc()
+        .normalize(&path.to_string_lossy())
+        .to_lowercase()
+}
+
 /// Whether two paths of one plan name the same file. The same path always does. Another spelling
-/// does only when it differs by letter case and both paths exist as one file (device and inode on
-/// Unix, volume and file index on Windows): a case-insensitive disk opens `auth.md` as `Auth.md`,
+/// does only when it differs by letter case or Unicode normalization and both paths exist as one
+/// file (device and inode on Unix, volume and file index on Windows): a case-insensitive or
+/// normalization-insensitive disk opens `auth.md` as `Auth.md` and `e\u{301}.md` as `\u{e9}.md`,
 /// and a case-sensitive one holds two files, which stay two.
 fn names_one_file(first: &Path, second: &Path) -> bool {
     if first == second {
         return true;
     }
-    if first.to_string_lossy().to_lowercase() != second.to_string_lossy().to_lowercase() {
+    if spelling_a_disk_may_fold(first) != spelling_a_disk_may_fold(second) {
         return false;
     }
     match (plain_file::facts_at(first), plain_file::facts_at(second)) {
@@ -524,4 +535,26 @@ fn put_back(
             ..AtomicWrite::default()
         },
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The disk decides whether `e` plus U+0301 and U+00E9 are one name (macOS: yes; Linux and NTFS:
+    /// two files), and the plan must agree with it either way, so a case-only rename on one never
+    /// deletes the file it just wrote and two files on the other are never merged.
+    #[test]
+    fn two_names_that_differ_only_in_unicode_normalization_are_one_file_exactly_when_the_disk_says() {
+        let folder = tempfile::tempdir().expect("folder");
+        let composed = folder.path().join("caf\u{e9}.md");
+        let decomposed = folder.path().join("cafe\u{301}.md");
+        std::fs::write(&composed, "x").expect("file");
+        let disk_folds = decomposed.exists();
+        assert_eq!(names_one_file(&composed, &decomposed), disk_folds);
+        if !disk_folds {
+            std::fs::write(&decomposed, "y").expect("a second file");
+            assert!(!names_one_file(&composed, &decomposed));
+        }
+    }
 }
