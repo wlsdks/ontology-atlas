@@ -11,12 +11,14 @@ use vault_edit::{
 
 use super::answer_fields::{output, Fields};
 use super::patch_document::source_refusal;
-use super::redirect_support::{backlink_updates, entered, rewrite_entries, warnings};
+use super::referrer_rewrites::{backlink_updates, entered, rewrite_entries, warnings};
 use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_aftermath::{counts_after, post_write_maintenance};
 use super::write_gates::{require_not_reserved, PreviewState};
-use super::write_support::{effect, identity_refusal, require_current};
+use super::concept_effect::effect;
+use super::expected_mtime::require_current;
+use super::node_identity::identity_refusal;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::{ErrorCode, ToolError};

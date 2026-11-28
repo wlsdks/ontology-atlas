@@ -8,18 +8,17 @@ use vault_edit::{
 };
 
 use super::answer_fields::{output, Fields};
-use super::object_checks::{allowed_keys, non_blank, plain_object};
+use super::object_checks::{allowed_keys, member, non_blank, plain_object};
 use super::patch_document::{patch_document, source_refusal};
-use super::relation_support::{
-    containment_notice, key_of, kind_of, notes_of, notes_value, relation_type, set_note,
-    stored_containment_type,
-};
+use super::relation_notes::{notes_of, notes_value, set_note};
+use super::relation_types::{containment_notice, key_of, kind_of, relation_type, stored_containment_type};
 use super::sent_setting::Sent;
 use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_aftermath::post_write_maintenance;
-use super::write_gates::{member, require_not_reserved, PreviewState};
-use super::write_support::{effect, require_current};
+use super::write_gates::{require_not_reserved, PreviewState};
+use super::concept_effect::effect;
+use super::expected_mtime::require_current;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::ToolError;

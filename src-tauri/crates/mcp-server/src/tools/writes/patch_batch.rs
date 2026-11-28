@@ -7,14 +7,15 @@ use confined_files::ConfinedPath;
 use vault_edit::Setting;
 
 use super::answer_fields::{output, Fields};
-use super::object_checks::{allowed_keys, non_blank, plain_object};
+use super::object_checks::{allowed_keys, has_key, member, non_blank, plain_object};
 use super::patch_concept::check_title;
 use super::patch_document::{apply_patches, plan_patch};
 use super::sent_setting::Sent;
 use super::vault_view::VaultView;
 use super::write_aftermath::{findings_on_written, measure_coverage, share_counts, source_state};
-use super::write_gates::{has_key, member, require_not_reserved, require_valid_frontmatter_patch};
-use super::write_support::{effect, modified_ms};
+use super::write_gates::{require_not_reserved, require_valid_frontmatter_patch};
+use super::concept_effect::effect;
+use super::expected_mtime::modified_ms;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, NodeWrite, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::{ErrorCode, ToolError};
@@ -114,18 +115,21 @@ fn checked_patches(
         return Err(wrong_size());
     }
     let mut patches: Vec<Patch> = Vec::with_capacity(items.len());
+    let mut named: Vec<String> = Vec::with_capacity(items.len());
     for (index, item) in items.iter().enumerate() {
         let label = format!("patches[{index}]");
         let members = plain_object(item, &label)?;
         allowed_keys(members, &label, &PATCH_KEYS)?;
         let patch = check_patch(members, &label)?;
-        if patches.iter().any(|earlier| earlier.slug == patch.slug) {
+        // The node a name means, so `domains/b` and `Domains/B` are one node named twice.
+        let node = view.resolve(&patch.slug)?.unwrap_or_else(|| patch.slug.clone());
+        if named.contains(&node) {
             return Err(ToolError::failed(format!(
-                "{label}.slug repeats \"{}\": send one patch per node.",
-                patch.slug
+                "{label}.slug repeats \"{node}\": send one patch per node."
             )));
         }
-        require_not_reserved(view.document(&patch.slug), "patch_concept")?;
+        require_not_reserved(view.document(&node), "patch_concept")?;
+        named.push(node);
         patches.push(patch);
     }
     Ok(patches)

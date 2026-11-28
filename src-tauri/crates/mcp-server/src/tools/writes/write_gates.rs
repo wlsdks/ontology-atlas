@@ -9,7 +9,7 @@ use vault_document::schema::{
 use vault_document::LoadedDocument;
 use vault_edit::{Setting, CREATABLE_KINDS};
 
-use super::object_checks::{non_blank, optional_text_list};
+use super::object_checks::{has_key, member, non_blank, optional_text_list};
 use crate::error::ToolError;
 
 const GRAPH_REF_ARRAY_MAX_ITEMS: usize = 500;
@@ -17,17 +17,6 @@ const CREATED_BY_KEY: &str = "created_by";
 const EVIDENCE_CHECKED_KEY: &str = "evidence_checked";
 const HUMAN_ONLY_REVIEW_KEYS: [&str; 3] = ["reviewed_by", "reviewed_at", "reviewed_digest"];
 const REVIEW_STATE_CONFIRMED: &str = "confirmed";
-
-pub fn has_key(members: &[(String, Setting)], key: &str) -> bool {
-    members.iter().any(|(held, _)| held == key)
-}
-
-pub fn member<'a>(members: &'a [(String, Setting)], key: &str) -> Option<&'a Setting> {
-    members
-        .iter()
-        .find(|(held, _)| held == key)
-        .map(|(_, value)| value)
-}
 
 /// `evidence_checked` says an agent reread the concept against its code at that commit, and only
 /// the desktop app's recheck writes it after the read; from a write tool it would clear a stale

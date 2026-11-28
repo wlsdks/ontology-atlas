@@ -10,9 +10,8 @@ use confined_files::{ConfinedPath, PlanEntry};
 
 use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
-use super::write_support::{
-    identity_refusal, modified_ms, require_current, SessionUids,
-};
+use super::expected_mtime::{modified_ms, require_current};
+use super::node_identity::{identity_refusal, SessionUids};
 use crate::error::ToolError;
 use crate::write_checkpoint::Permit;
 

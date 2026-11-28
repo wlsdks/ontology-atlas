@@ -8,6 +8,17 @@ use vault_edit::Setting;
 use crate::error::{ToolError, UnknownField};
 use crate::suggestions::closest_allowed_value;
 
+pub fn has_key(members: &[(String, Setting)], key: &str) -> bool {
+    members.iter().any(|(held, _)| held == key)
+}
+
+pub fn member<'a>(members: &'a [(String, Setting)], key: &str) -> Option<&'a Setting> {
+    members
+        .iter()
+        .find(|(held, _)| held == key)
+        .map(|(_, value)| value)
+}
+
 pub fn non_blank<'a>(value: Option<&'a Setting>, name: &str) -> Result<&'a str, ToolError> {
     let Some(text) = value
         .and_then(Setting::as_text)

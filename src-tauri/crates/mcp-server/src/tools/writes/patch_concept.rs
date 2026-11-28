@@ -3,14 +3,14 @@
 use vault_edit::Setting;
 
 use super::answer_fields::{output, Fields};
-use super::object_checks::plain_object;
+use super::object_checks::{member, plain_object};
 use super::patch_batch;
 use super::patch_document::patch_document;
 use super::sent_setting::Sent;
 use super::vault_view::VaultView;
 use super::write_aftermath::{findings_on_written, measure_coverage, share_counts, source_state};
-use super::write_gates::{member, require_not_reserved, require_valid_frontmatter_patch};
-use super::write_support::{effect};
+use super::write_gates::{require_not_reserved, require_valid_frontmatter_patch};
+use super::concept_effect::effect;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::ToolError;
