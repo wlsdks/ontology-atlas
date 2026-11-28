@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 use answer_format::utf16;
 use answer_format::whitespace::trim;
+use serde::Serialize;
 use serde_json::{Map, Value};
 use vault_document::schema::is_node_uid;
 
@@ -39,10 +40,30 @@ pub struct ConstellationFacts {
     pub updated_at: String,
 }
 
-/// What an item is: where it is kept and whether it points at an ontology node.
+/// What an item points at: an ontology node by its uid, or a source or wiki page by its path.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(untagged)]
+pub enum Target {
+    Ontology {
+        kind: &'static str,
+        uid: String,
+        #[serde(rename = "lastKnownPath")]
+        last_known_path: String,
+    },
+    Reference {
+        kind: String,
+        path: String,
+    },
+}
+
+/// What an item is: where it is kept and what it points at.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Item {
+    pub id: String,
     pub folder_id: Option<String>,
+    pub order: u64,
+    pub label: String,
+    pub target: Target,
     pub ontology: bool,
 }
 
@@ -235,7 +256,7 @@ fn item_of(value: &Value, folder_ids: &HashSet<&str>) -> Result<(String, Item, S
     let target = fields
         .get("target")
         .filter(|target| matches!(target, Value::Object(_) | Value::Array(_)));
-    let (Some(id), Some(folder_id), true, Some(_), Some(target)) = (
+    let (Some(id), Some(folder_id), true, Some(order), Some(target)) = (
         id,
         folder_id,
         label_fits,
@@ -246,11 +267,17 @@ fn item_of(value: &Value, folder_ids: &HashSet<&str>) -> Result<(String, Item, S
     };
     let invalid_target = || "A collection target is invalid.".to_string();
     let target = target.as_object().ok_or_else(invalid_target)?;
-    let (ontology, target_key) = match text_of(target, "kind") {
-        Some(kind @ ("source" | "wiki")) if is_exact_vault_path(target.get("path")) => (
-            false,
-            format!("{kind}:{}", text_of(target, "path").unwrap_or_default()),
-        ),
+    let (target, target_key) = match text_of(target, "kind") {
+        Some(kind @ ("source" | "wiki")) if is_exact_vault_path(target.get("path")) => {
+            let path = text_of(target, "path").unwrap_or_default();
+            (
+                Target::Reference {
+                    kind: kind.to_string(),
+                    path: path.to_string(),
+                },
+                format!("{kind}:{path}"),
+            )
+        }
         Some("ontology")
             if target
                 .get("uid")
@@ -258,9 +285,16 @@ fn item_of(value: &Value, folder_ids: &HashSet<&str>) -> Result<(String, Item, S
                 .is_some_and(is_node_uid)
                 && is_exact_vault_path(target.get("lastKnownPath")) =>
         {
+            let uid = text_of(target, "uid").unwrap_or_default();
             (
-                true,
-                format!("ontology:{}", text_of(target, "uid").unwrap_or_default()),
+                Target::Ontology {
+                    kind: "ontology",
+                    uid: uid.to_string(),
+                    last_known_path: text_of(target, "lastKnownPath")
+                        .unwrap_or_default()
+                        .to_string(),
+                },
+                format!("ontology:{uid}"),
             )
         }
         _ => return Err(invalid_target()),
@@ -269,8 +303,12 @@ fn item_of(value: &Value, folder_ids: &HashSet<&str>) -> Result<(String, Item, S
     Ok((
         id.to_string(),
         Item {
+            id: id.to_string(),
             folder_id,
-            ontology,
+            order,
+            label: text_of(fields, "label").unwrap_or_default().to_string(),
+            ontology: matches!(target, Target::Ontology { .. }),
+            target,
         },
         placement,
     ))

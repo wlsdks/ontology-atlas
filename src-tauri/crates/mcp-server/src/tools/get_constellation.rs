@@ -1,15 +1,18 @@
 //! `get_constellation`: the saved constellations of the vault (task-scoped node sets a person
-//! kept). With no `id` it lists them. With an `id` it answers whether the saved file can be read
-//! and whether that constellation exists; reading one constellation's members, relations and
-//! dependencies is not ported yet. Read-only.
+//! kept). With no `id` it lists them. With an `id` it answers one constellation: which of its
+//! members still resolve to a node, how those nodes relate, and which declared dependencies cross
+//! its boundary. Read-only.
 
 use saved_constellations::{
-    list_constellations, read_saved_collections, CollectionsSource, Constellation, Status,
+    constellation_context, list_constellations, read_saved_collections, select_constellation,
+    CollectionsSource, Constellation, ContextFault, ContextRequest, SavedCollections, Status,
 };
+use vault_document::LoadedVault;
 use answer_format::pagination::Pagination;
 use serde::Serialize;
 use vault_document::frontmatter::Value as FrontmatterValue;
 
+use super::read_vault::open_root;
 use super::argument_checks::{
     argument, non_blank_text, optional_non_negative_integer, optional_positive_integer,
 };
@@ -20,6 +23,7 @@ use crate::error::{ErrorCode, ToolError};
 
 const DEFAULT_LIMIT: usize = 50;
 const MAX_LIMIT: f64 = 100.0;
+const DEFAULT_RELATION_LIMIT: usize = 100;
 const MAX_RELATION_LIMIT: f64 = 200.0;
 
 const LIST_CONTRACT: &str = "savedConstellationList:v1";
@@ -45,6 +49,15 @@ struct UnavailableContext<'a> {
     availability: &'static str,
     source: &'a CollectionsSource,
     guidance: &'static str,
+}
+
+#[derive(Serialize)]
+struct ContextAnswer<'a> {
+    contract: &'static str,
+    availability: &'static str,
+    source: &'a CollectionsSource,
+    #[serde(flatten)]
+    context: saved_constellations::ConstellationContext<'a>,
 }
 
 #[allow(
@@ -114,11 +127,16 @@ fn list(
 }
 
 fn one(
-    source: &CollectionsSource,
-    constellations: Option<Vec<Constellation>>,
+    context: &CallContext<'_>,
+    saved: &SavedCollections,
     id: &str,
+    request: &ContextRequest,
 ) -> Result<ToolOutput, ToolError> {
-    let Some(all) = constellations else {
+    let root = open_root(context)?;
+    let vault = LoadedVault::load(&root, context.documents())
+        .map_err(|error| ToolError::failed(error.to_string()))?;
+    let source = &saved.source;
+    let Some(collections) = &saved.collections else {
         return ToolOutput::json(&UnavailableContext {
             contract: CONTEXT_CONTRACT,
             availability: source.availability,
@@ -130,16 +148,27 @@ fn one(
             ),
         });
     };
-    if !all.iter().any(|constellation| constellation.id == id) {
+    let Some(selection) = select_constellation(collections, id) else {
         return Err(ToolError::new(
             ErrorCode::NotFound,
             format!("Saved constellation not found: {id}. Call get_constellation with no id to see the IDs in this vault."),
         ));
-    }
-    Err(ToolError::failed(
-        "Reading the members of one saved constellation is not ported to the Rust server yet; \
-         call get_constellation with no id to list the saved constellations.",
-    ))
+    };
+    let answer = constellation_context(&selection, vault.documents(), request).map_err(|fault| {
+        match fault {
+            ContextFault::OffsetPastTotal(total) => ToolError::invalid(format!(
+                "offset must be less than or equal to the total matching rows ({total}); Received: {}.",
+                request.offset
+            )),
+            ContextFault::Unreadable(error) => ToolError::failed(error.to_string()),
+        }
+    })?;
+    ToolOutput::json(&ContextAnswer {
+        contract: CONTEXT_CONTRACT,
+        availability: source.availability,
+        source,
+        context: answer,
+    })
 }
 
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
@@ -170,6 +199,16 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let constellations = saved.collections.as_ref().map(list_constellations);
     match id {
         None => list(&saved.source, constellations, offset, limit),
-        Some(id) => one(&saved.source, constellations, &id),
+        Some(id) => one(
+            context,
+            &saved,
+            &id,
+            &ContextRequest {
+                offset,
+                limit,
+                relation_limit: relation_limit.map_or(DEFAULT_RELATION_LIMIT, count),
+                dependency_limit: dependency_limit.map_or(DEFAULT_RELATION_LIMIT, count),
+            },
+        ),
     }
 }

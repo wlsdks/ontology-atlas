@@ -13,14 +13,6 @@
       "case": "evidence/agent-brief-operations",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text#/health/validation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
       "path": "result.content[0].text#/nextActions",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -30,14 +22,6 @@
       "where": "answer",
       "id": 2,
       "path": "result.structuredContent.health.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.health.validation",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
@@ -2173,23 +2157,7 @@
       "case": "git/staleness-through-validate-vault",
       "where": "answer",
       "id": 4,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
       "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.validation",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
@@ -3125,23 +3093,7 @@
       "case": "graph/graph-selection-miniature-repo",
       "where": "answer",
       "id": 3,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 3,
       "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.validation",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
@@ -8045,23 +7997,7 @@
       "case": "graph/query-ontology-miniature-repo",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text#/validation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 2,
       "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.validation",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
@@ -11594,8 +11530,8 @@
       "where": "answer",
       "id": 8,
       "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+      "change": 69,
+      "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
     },
     {
       "case": "safety/confined-source-reads-on",
@@ -13950,22 +13886,6 @@
     {
       "case": "safety/repository-whose-config-would-run-code",
       "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "safety/repository-whose-config-would-run-code",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "safety/repository-whose-config-would-run-code",
-      "where": "answer",
       "id": 2,
       "path": "result.content[0].text#/checks",
       "change": 37,
@@ -13975,41 +13895,9 @@
       "case": "safety/repository-whose-config-would-run-code",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text#/validation/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "safety/repository-whose-config-would-run-code",
-      "where": "answer",
-      "id": 2,
       "path": "result.structuredContent.checks",
       "change": 37,
       "reason": "The meaning_assessment check needs the project-source tool layer (row 37)."
-    },
-    {
-      "case": "safety/repository-whose-config-would-run-code",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.validation.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "safety/scan-roots-outside-the-vault-and-repository",
-      "where": "answer",
-      "id": 44,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "safety/scan-roots-outside-the-vault-and-repository",
-      "where": "answer",
-      "id": 44,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
     },
     {
       "case": "safety/scan-roots-with-a-separate-repository",
@@ -27811,198 +27699,6 @@
       "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
     },
     {
-      "case": "meaning/validate-vault-hostile-git",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-hostile-git",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-hostile-git",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-hostile-git",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-hostile-git",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-hostile-git",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-hostile-git",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-hostile-git",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-wiki-in-validate-vault-library",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "meaning/validate-wiki-in-validate-vault-library",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "shell/repo-root-missing",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "shell/repo-root-missing",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "writes/writes-on-miniature-repo-evidence-nodes",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "writes/writes-on-miniature-repo-evidence-nodes",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 44,
@@ -28101,22 +27797,6 @@
     {
       "case": "library/project-source-connect-and-disconnect",
       "where": "answer",
-      "id": 7,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "library/project-source-connect-and-disconnect",
-      "where": "answer",
-      "id": 7,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "library/project-source-connect-and-disconnect",
-      "where": "answer",
       "id": 13,
       "path": "result.content[0].text",
       "change": 110,
@@ -28161,14 +27841,6 @@
       "path": "result.content[0].text#/health/checks",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/health/validation/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
     },
     {
       "case": "evidence/agent-brief-operations",
@@ -28270,14 +27942,6 @@
       "case": "evidence/agent-brief-operations",
       "where": "answer",
       "id": 1,
-      "path": "result.structuredContent.health.validation.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
       "path": "result.structuredContent.meaningAssessment",
       "change": 120,
       "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
@@ -28350,14 +28014,6 @@
       "case": "evidence/agent-brief-operations",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text#/health/validation/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
       "path": "result.content[0].text#/nextActions/0/count",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -28385,14 +28041,6 @@
       "path": "result.content[0].text#/nextActions/0/message",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.health.validation.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
     },
     {
       "case": "evidence/agent-brief-operations",
@@ -28502,25 +28150,9 @@
       "case": "git/staleness-through-validate-vault",
       "where": "answer",
       "id": 1,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 1,
       "path": "result.structuredContent.coverage.nextAction",
       "change": 121,
       "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
     },
     {
       "case": "git/staleness-through-validate-vault",
@@ -28534,41 +28166,9 @@
       "case": "git/staleness-through-validate-vault",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text#/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 2,
       "path": "result.structuredContent.coverage.nextAction",
       "change": 121,
       "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/validation/finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.validation.finalizeGate",
-      "change": 97,
-      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
     },
     {
       "case": "meaning/validate-vault-miniature-repo",
@@ -28745,6 +28345,22 @@
       "path": "result.structuredContent.coverage.nextAction",
       "change": 121,
       "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "library/finalize-project-meaning-after-reads",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: Rust counts the build depth as `abilities`, `areas` and `reads`, and has no `rules`, `roles` or `nextAction`; the script server writes `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
+    },
+    {
+      "case": "library/finalize-project-meaning-after-reads",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: Rust counts the build depth as `abilities`, `areas` and `reads`, and has no `rules`, `roles` or `nextAction`; the script server writes `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
     }
   ]
 }

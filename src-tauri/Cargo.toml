@@ -29,6 +29,7 @@ members = [
   "crates/document-absorption",
   "crates/wiki-pages",
   "crates/project-source",
+  "crates/project-meaning",
   "crates/mcp-server",
 ]
 

@@ -129,6 +129,16 @@ impl Claims {
 /// Every claim the documents make: a node's `path:`, the code paths of its `elements:`, the paths
 /// the project's competency answers cite, and an element whose title is a raw code path.
 pub fn derive_witness_claims(project_slug: &str, documents: &[&LoadedDocument]) -> Vec<WitnessClaim> {
+    derive_witness_claims_with_body(project_slug, documents, None)
+}
+
+/// The same claims when the project's body is `project_body` instead of the file's: what a
+/// competency section about to be written would claim.
+pub fn derive_witness_claims_with_body(
+    project_slug: &str,
+    documents: &[&LoadedDocument],
+    project_body: Option<&str>,
+) -> Vec<WitnessClaim> {
     let mut claims = Claims {
         claims: Vec::new(),
         seen: HashSet::new(),
@@ -159,7 +169,9 @@ pub fn derive_witness_claims(project_slug: &str, documents: &[&LoadedDocument]) 
                 || document.frontmatter().text("slug") == Some(project_slug))
     });
     if let Some(project) = project {
-        if let Ok(body) = project.body() {
+        let file_body = project.body();
+        let body = project_body.map(std::borrow::Cow::Borrowed).or_else(|| file_body.ok());
+        if let Some(body) = body {
             for (index, path) in competency_evidence_paths(&body).iter().enumerate() {
                 claims.add(
                     format!("competency-evidence:{}", index + 1),

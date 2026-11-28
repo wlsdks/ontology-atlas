@@ -3053,6 +3053,7 @@ dependencies = [
  "mcp-server",
  "meaning-findings",
  "ontology-graph",
+ "project-meaning",
  "project-source",
  "raw-source-text",
  "regex",
@@ -4035,6 +4036,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "project-meaning"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "indexmap 2.14.0",
+ "ontology-graph",
+ "project-source",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "vault-document",
 ]
 
 [[package]]

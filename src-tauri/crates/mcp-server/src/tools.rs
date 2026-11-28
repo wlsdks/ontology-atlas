@@ -94,7 +94,7 @@ pub fn write_handler(tool: WriteTool) -> Option<WriteHandler> {
         WriteTool::AbsorbDocument => Some(writes::absorb_document),
         WriteTool::ConnectProjectSource => Some(writes::connect_project_source),
         WriteTool::DisconnectProjectSource => Some(writes::disconnect_project_source),
-        WriteTool::FinalizeProjectMeaning => None,
+        WriteTool::FinalizeProjectMeaning => Some(writes::finalize_project_meaning),
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => Some(test_hooks::write_through_checkpoint),
     }

@@ -37,12 +37,12 @@ static COMMENT: LazyLock<Regex> = LazyLock::new(|| pattern(r"^\s*(?://|#|\*|/\*)
 
 /// Whether a paragraph's prose states a rule. Code spans are left out: an identifier such as
 /// `default` or an error code holding `must` names code, not a condition.
-fn states_rule(paragraph: &str) -> bool {
+pub(crate) fn states_rule(paragraph: &str) -> bool {
     RULE_WORDS.is_match(&CODE_SPAN.replace_all(paragraph, " "))
 }
 
 /// The paragraphs before the first `## ` heading.
-fn pre_section_paragraphs(body: &str) -> Vec<String> {
+pub(crate) fn pre_section_paragraphs(body: &str) -> Vec<String> {
     let mut paragraphs = Vec::new();
     let mut current: Vec<&str> = Vec::new();
     let mut close = |current: &mut Vec<&str>| {
