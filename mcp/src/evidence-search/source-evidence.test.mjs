@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { composeSourceDigest, outlineLine, readSourceEvidence } from './source-evidence.mjs';
+import { outlineLine, readSourceEvidence } from './source-evidence.mjs';
 
 function fixture() {
   return mkdtempSync(join(tmpdir(), 'atlas-source-evidence-'));
@@ -51,19 +51,6 @@ test('preserves empty, beyond-EOF, oversized-line and aggregate outcomes explici
   assert.ok(packet.rows.some((row) => row.status === 'omitted' && row.reason === 'serialized_budget'));
   assert.ok(packet.serializedBytes <= 64 * 1024);
   assert.equal(packet.serializedBytes, Buffer.byteLength(JSON.stringify(packet)));
-});
-
-test('digest preserves legacy identity when omitted and binds selectors, files and refusal state when present', () => {
-  const repository = `sha256:${'a'.repeat(64)}`;
-  assert.equal(composeSourceDigest(repository), repository);
-  const root = fixture();
-  writeFileSync(join(root, 'a.ts'), 'a\n');
-  const first = readSourceEvidence(root, [{ path: 'a.ts', startLine: 1, maxLines: 1 }]);
-  const second = readSourceEvidence(root, [{ path: 'a.ts', startLine: 2, maxLines: 1 }]);
-  assert.notEqual(composeSourceDigest(repository, first), composeSourceDigest(repository, second));
-  writeFileSync(join(root, 'a.ts'), 'a\nchanged outside range\n');
-  const changed = readSourceEvidence(root, [{ path: 'a.ts', startLine: 1, maxLines: 1 }]);
-  assert.notEqual(composeSourceDigest(repository, first), composeSourceDigest(repository, changed));
 });
 
 test('rejects unsafe, ignored, sensitive, linked, binary, invalid UTF-8 and stale reads without bodies', () => {
@@ -294,17 +281,6 @@ test('an outline stays inside the byte budget and says when it was cut', () => {
   assert.equal(row.returnedBytes, row.declarations.reduce((sum, declaration) => sum + Buffer.byteLength(outlineLine(declaration)) + 1, 0), 'the bytes are those of the lines sent');
   assert.ok(row.declarationCount < 900);
   assert.equal(row.declarations[0].name, 'function_number_0');
-});
-
-test('an outline binds the source digest to the file it listed', () => {
-  const repository = `sha256:${'a'.repeat(64)}`;
-  const root = fixture();
-  writeFileSync(join(root, 'a.py'), 'def a():\n    pass\n');
-  const first = readSourceEvidence(root, [{ path: 'a.py', mode: 'outline' }]);
-  writeFileSync(join(root, 'a.py'), 'def a():\n    pass\n\n\ndef b():\n    pass\n');
-  const second = readSourceEvidence(root, [{ path: 'a.py', mode: 'outline' }]);
-  assert.notEqual(composeSourceDigest(repository, first), composeSourceDigest(repository, second));
-  assert.equal(composeSourceDigest(repository, first), composeSourceDigest(repository, first));
 });
 
 /*

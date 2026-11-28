@@ -104,7 +104,7 @@ export const ROOTED_READ_SCHEMA = Object.freeze({
     analyze_repo_structure: {
       id: 'analyze',
       name: 'analyze_repo_structure',
-      args: { rootPath: '/absolute/repository', proposal: '<complete proposal object>' },
+      args: { rootPath: '/absolute/repository', sourceReads: [{ path: 'src/index.ts', mode: 'outline' }] },
     },
   },
   example: {
