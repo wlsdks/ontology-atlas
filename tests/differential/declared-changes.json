@@ -2,46 +2,6 @@
   "about": "The differences between the Node server and the Rust server that the specification declares, one entry per request or path, each naming its row of the table in docs/specs/2026-11-27-mcp-server-in-rust.md. A run fails when an entry no longer differs. Unlike the other known-difference lists this one grows with the table; an entry without a row and a reason is refused.",
   "differences": [
     {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/health/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.health.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/health/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
       "case": "evidence/agent-brief-storefront",
       "where": "answer",
       "id": 1,
@@ -69,22 +29,6 @@
       "case": "evidence/agent-brief-storefront",
       "where": "answer",
       "id": 1,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.health.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
       "path": "result.structuredContent.health.validation.problems[0].issues[3].message",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
@@ -104,14 +48,6 @@
       "path": "result.structuredContent.health.validation.summary.byCode.rule-without-read-lines.remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "evidence/find-evidence-edge-names",
@@ -2146,22 +2082,6 @@
       "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
     },
     {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
       "case": "graph/analysis-folder-is-a-link",
       "where": "answer",
       "id": 1,
@@ -2412,166 +2332,6 @@
     {
       "case": "graph/graph-selection-atlas-ontology",
       "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
       "id": 6,
       "path": "result.content[0].text#/nextReads",
       "change": 37,
@@ -2648,62 +2408,6 @@
       "path": "result.structuredContent.matches",
       "change": 32,
       "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-edge-names",
@@ -2717,14 +2421,6 @@
       "case": "graph/graph-selection-edge-names",
       "where": "answer",
       "id": 3,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 3,
       "path": "result.structuredContent.components.components[0].nodes",
       "change": 25,
       "reason": "The nodes of a health component are in the order of the graph, the collation of slugs (row 25); the JavaScript server sorted them by UTF-16 code unit."
@@ -2732,38 +2428,6 @@
     {
       "case": "graph/graph-selection-edge-names",
       "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
       "id": 8,
       "path": "result.content[0].text#/matches",
       "change": 32,
@@ -2792,54 +2456,6 @@
       "path": "result.structuredContent.matches",
       "change": 32,
       "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-limited-lists",
@@ -3084,54 +2700,6 @@
     {
       "case": "graph/graph-selection-miniature-repo",
       "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
       "id": 8,
       "path": "result.content[0].text#/matches",
       "change": 32,
@@ -3146,86 +2714,6 @@
       "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
     },
     {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
       "case": "graph/graph-selection-refusals",
       "where": "answer",
       "id": 15,
@@ -3237,25 +2725,9 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 43,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 43,
       "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 43,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -3333,14 +2805,6 @@
       "case": "graph/graph-selection-storefront",
       "where": "answer",
       "id": 11,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 11,
       "path": "result.content[0].text#/validation/problems/0/issues/3/message",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
@@ -3360,14 +2824,6 @@
       "path": "result.content[0].text#/validation/summary/byCode/rule-without-read-lines/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 11,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -3397,14 +2853,6 @@
       "case": "graph/graph-selection-storefront",
       "where": "answer",
       "id": 12,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 12,
       "path": "result.content[0].text#/validation/problems/0/issues/3/message",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
@@ -3429,14 +2877,6 @@
       "case": "graph/graph-selection-storefront",
       "where": "answer",
       "id": 12,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 12,
       "path": "result.structuredContent.validation.problems[0].issues[3].message",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
@@ -3456,70 +2896,6 @@
       "path": "result.structuredContent.validation.summary.byCode.rule-without-read-lines.remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 19,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 19,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 19,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 19,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 20,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 20,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 20,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 20,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-storefront",
@@ -3572,38 +2948,6 @@
     {
       "case": "graph/graph-selection-tangle",
       "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
       "id": 12,
       "path": "result.content[0].text#/matches",
       "change": 32,
@@ -3616,54 +2960,6 @@
       "path": "result.structuredContent.matches",
       "change": 32,
       "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-tangle",
@@ -3808,38 +3104,6 @@
       "path": "result.structuredContent.nextReviewAction.id",
       "change": 31,
       "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-walks-atlas-ontology",
@@ -7796,86 +7060,6 @@
     {
       "case": "graph/query-ontology-atlas-ontology",
       "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.status",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
       "id": 6,
       "path": "result.content[0].text#/nextReads",
       "change": 37,
@@ -7909,25 +7093,9 @@
       "case": "graph/query-ontology-edge-names",
       "where": "answer",
       "id": 2,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-edge-names",
-      "where": "answer",
-      "id": 2,
       "path": "result.content[0].text#/components/components/0/nodes",
       "change": 25,
       "reason": "The nodes of a health component are in the order of the graph, the collation of slugs (row 25); the JavaScript server sorted them by UTF-16 code unit. The outside checks of row 33 also differ in this answer and are hidden behind this entry."
-    },
-    {
-      "case": "graph/query-ontology-edge-names",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-edge-names",
@@ -7984,54 +7152,6 @@
       "path": "result.structuredContent.errorCode",
       "change": 29,
       "reason": "A walk called without the argument it needs is a wrong call the caller fixes, so its code is invalid_arguments (row 29)."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -8149,14 +7269,6 @@
       "case": "graph/query-ontology-storefront",
       "where": "answer",
       "id": 4,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 4,
       "path": "result.content[0].text#/validation/problems/0/issues/3/message",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
@@ -8176,14 +7288,6 @@
       "path": "result.content[0].text#/validation/summary/byCode/rule-without-read-lines/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-ontology-storefront",
@@ -8213,14 +7317,6 @@
       "case": "graph/query-ontology-storefront",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/health/validation/problems/0/issues/3/message",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
@@ -8245,22 +7341,6 @@
       "case": "graph/query-ontology-storefront",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.health",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
       "path": "result.structuredContent.health.validation.problems[0].issues[3].message",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
@@ -8280,14 +7360,6 @@
       "path": "result.structuredContent.health.validation.summary.byCode.rule-without-read-lines.remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/query-plan-containment-tangle",
@@ -13882,22 +12954,6 @@
       "path": "result.structuredContent.errorCode",
       "change": 38,
       "reason": "A read_source refusal carries the code that names its cause (row 38)."
-    },
-    {
-      "case": "safety/repository-whose-config-would-run-code",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "The meaning_assessment check needs the project-source tool layer (row 37)."
-    },
-    {
-      "case": "safety/repository-whose-config-would-run-code",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "The meaning_assessment check needs the project-source tool layer (row 37)."
     },
     {
       "case": "safety/scan-roots-with-a-separate-repository",
@@ -21190,25 +20246,9 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 44,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 44,
       "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 44,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -21222,25 +20262,9 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 45,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 45,
       "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 45,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -21254,25 +20278,9 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 46,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 46,
       "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 46,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -21286,25 +20294,9 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 47,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 47,
       "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 47,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -21318,25 +20310,9 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 48,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 48,
       "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 48,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -21350,25 +20326,9 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 49,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 49,
       "path": "result.content[0].text#/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 66,
       "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 49,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -21558,1793 +20518,49 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 68,
-      "path": "result.content[0].text#/health/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
       "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/0/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/0/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/0/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/0/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/1",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/1/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/1/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/1/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/1/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/2/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/2/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/3/severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/3/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/3/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/3/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/4/severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/4/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/4/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/4/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/5/severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/5/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/5/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/5/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/6/sample",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/6",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/6/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/6/severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/6/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/6/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/6/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/tool",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/args",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/score",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/from",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/ref",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/relation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/inferredKind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/suggestedSlug",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/didYouMean",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/reason",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/proposedAction",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/0/node",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/tool",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/args",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/score",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/from",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/ref",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/relation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/inferredKind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/suggestedSlug",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/didYouMean",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/reason",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/proposedAction",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/7/sample/1/node",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/score",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/from",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/ref",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/relation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/inferredKind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/suggestedSlug",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/didYouMean",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/reason",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/proposedAction",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/node",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/tool",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/0/args",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/score",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/from",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/ref",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/relation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/inferredKind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/suggestedSlug",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/didYouMean",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/reason",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/proposedAction",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/node",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/tool",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions/8/sample/1/args",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.content[0].text#/nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.health.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
     },
     {
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 68,
       "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[0].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[0].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[0].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[0].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[1]",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[1].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[1].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[1].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[1].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[2].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[2].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[3].severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[3].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[3].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[3].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[4].severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[4].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[4].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[4].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[5].severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[5].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[5].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[5].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[6].sample",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[6]",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[6].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[6].severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[6].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[6].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[6].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].tool",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].args",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].score",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].from",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].ref",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].relation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].inferredKind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].suggestedSlug",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].didYouMean",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].reason",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].proposedAction",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[0].node",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].tool",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].args",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].score",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].from",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].ref",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].relation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].inferredKind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].suggestedSlug",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].didYouMean",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].reason",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].proposedAction",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[7].sample[1].node",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].severity",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].score",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].from",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].ref",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].relation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].inferredKind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].suggestedSlug",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].didYouMean",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].reason",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].proposedAction",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].node",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].tool",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[0].args",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].score",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].from",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].ref",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].relation",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].inferredKind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].suggestedSlug",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].didYouMean",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].reason",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].proposedAction",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].node",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].tool",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions[8].sample[1].args",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.nextActions",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.content[0].text#/health/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
     },
     {
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 69,
       "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.content[0].text#/nextActions/0/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.content[0].text#/nextActions/0/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.content[0].text#/nextActions/0/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.content[0].text#/nextActions/0/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.structuredContent.health.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
     },
     {
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 69,
       "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.structuredContent.nextActions[0].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.structuredContent.nextActions[0].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.structuredContent.nextActions[0].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
-      "path": "result.structuredContent.nextActions[0].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/health/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
     },
     {
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 70,
       "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/0/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/0/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/0/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/0/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/1",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/1/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/1/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/1/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/1/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/2/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/nextActions/2/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.health.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
     },
     {
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 70,
       "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[0].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[0].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[0].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[0].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[1]",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[1].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[1].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[1].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[1].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[2].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.structuredContent.nextActions[2].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.checks",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
     },
     {
       "case": "graph/graph-walks-storefront",
@@ -28011,134 +25227,6 @@
       "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
     },
     {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/nextActions/0/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/nextActions/0/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/nextActions/0/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/nextActions/0/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.nextActions[0].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.nextActions[0].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.nextActions[0].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.nextActions[0].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/nextActions/0/count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/nextActions/0/id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/nextActions/0/kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/nextActions/0/message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.nextActions[0].count",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.nextActions[0].id",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.nextActions[0].kind",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.nextActions[0].message",
-      "change": 37,
-      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
       "case": "git/staleness-through-validate-vault",
       "where": "answer",
       "id": 1,
@@ -29170,6 +26258,198 @@
       "path": "vault/.ontology-atlas/activity.jsonl",
       "change": 135,
       "reason": "Row 135: below the folder the server merely started in, which can be a home folder, every hidden folder above an `absorb_document` file is refused; the script server read `.claude/CLAUDE.md` there."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.error",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.error",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/graph-refuses-identity-merged-collision",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.error",
+      "change": 23,
+      "reason": "The refusal for a merged uid that another node owns names the file that lists it (row 23); the JavaScript server wrote \"unknown\"."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-invalid",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-invalid",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-invalid",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-missing",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-missing",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-refuses-identity-uid-missing",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.errorCode",
+      "change": 23,
+      "reason": "A vault whose nodes cannot be told apart is refused with a tool_error whatever the sentence says (row 23); the JavaScript server classified the refusal by its words and answered invalid_arguments."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/health/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/health/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text#/health/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.health.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.health.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.structuredContent.health.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 20,
+      "path": "result.content[0].text#/health/validation/summary/byCode/rule-without-read-lines/remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 20,
+      "path": "result.content[0].text#/health/validation/problems/0/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 20,
+      "path": "result.content[0].text#/health/validation/problems/1/issues/3/message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 20,
+      "path": "result.structuredContent.health.validation.summary.byCode.rule-without-read-lines.remedy",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 20,
+      "path": "result.structuredContent.health.validation.problems[0].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 20,
+      "path": "result.structuredContent.health.validation.problems[1].issues[3].message",
+      "change": 66,
+      "reason": "A finding names its node and its files only. What to do about a code is said once in summary.byCode for that code, as remedy, because the same repair sentence made up 47 percent of the message characters of a page. A page holds more rows for the characters it spends, so its row count, its hint and its next offset follow."
     }
   ]
 }

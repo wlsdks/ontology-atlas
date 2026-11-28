@@ -503,6 +503,9 @@ for (const vault of ['identity-uid-missing', 'identity-uid-invalid', 'identity-u
     call('compile_ontology', {}),
     call('query_ontology', { operation: 'overview' }),
     call('query_ontology', { operation: 'neighbors', slug: 'capabilities/a' }),
+    call('query_ontology', { operation: 'health' }),
+    call('query_ontology', { operation: 'workspace_brief' }),
+    call('query_ontology', { operation: 'agent_brief' }),
   ]);
 }
 // A vote that two names tie for is settled the same way on every machine.
