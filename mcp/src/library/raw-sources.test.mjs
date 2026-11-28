@@ -13,7 +13,7 @@ import {
 } from '../../../tests/fixtures/raw-source-vault.mjs';
 import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 
-const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
+const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'javascript-server.mjs');
 const FOLDED_SLUG = 'ſources/Planning/roadmap';
 const call = (id, name, args = {}) => ({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } });
 

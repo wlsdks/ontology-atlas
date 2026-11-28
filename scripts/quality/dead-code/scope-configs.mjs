@@ -33,7 +33,7 @@ export const SCOPE_CONFIGS = Object.freeze({
   }),
   mcp: Object.freeze({
     cwd: 'mcp',
-    runtime: source([], ['src/**/*.{js,mjs}', 'scripts/**/*.mjs', '!src/**/*.test.mjs']),
+    runtime: source(['src/javascript-server.mjs'], ['src/**/*.{js,mjs}', 'scripts/**/*.mjs', '!src/**/*.test.mjs']),
     verification: source(['src/**/*.test.mjs'], ['src/**/*.test.mjs'], WITHOUT_MANIFEST),
   }),
 });

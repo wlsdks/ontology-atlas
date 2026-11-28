@@ -1,227 +1,109 @@
 #!/usr/bin/env node
 /**
- * ontology-atlas-mcp: the local ontology read/write server. This file is wiring:
- * it attaches the two request handlers to the transport and routes each tool
- * name to the `tools/*` workflow that owns it. `TOOLS_FOR_LIST`
- * in `server/registry.mjs` is the authority on the tool surface.
+ * ontology-atlas-mcp from a source checkout. The server is the Rust program `pnpm mcp:build-binary`
+ * builds into `src-tauri/binaries/`; this file only starts it, so every agent config that names
+ * `node <checkout>/mcp/src/index.js` keeps working. It holds no server logic and imports nothing
+ * from this package: a checkout that has not built the program must still be able to say so.
  *
- * Environment: OATLAS_VAULT (vault root, default cwd); OATLAS_REPO_ROOT
- * (repository root, default the vault's git top-level, else cwd).
- * Run: node /absolute/path/to/ontology-atlas/mcp/src/index.js, or register the
- * app's bundled server in `.mcp.json` (see README).
+ * "Older than the checkout" is the program's modification time against the newest file of the
+ * crates it is built from (the `mcp-server` crate and every crate it names by path), the workspace
+ * manifest and the lockfile. An embedded source hash would need the build to record it and this
+ * file to read every source on each start; the modification time costs one stat per file, needs
+ * nothing from the build, and errs toward asking for a rebuild, which `cargo` makes a no-op when
+ * nothing changed. A pull, a branch switch or an edit all move a source's time past the program's.
+ *
+ * Arguments, environment and the standard streams pass through unchanged. The program exits when
+ * its input closes, so an agent that dies without signalling this file still ends it.
  */
+import { spawn } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
 
-/**
- * MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) supports the same protocol versions as
- * its predecessor, so older clients still negotiate; pinned in `integration.test.mjs`.
- */
+const PROGRAM = 'ontology-atlas-mcp';
+const SERVER_CRATE = 'mcp-server';
+const checkout = path.resolve(import.meta.dirname, '..', '..');
+const workspace = path.join(checkout, 'src-tauri');
 
-import { server } from './server/instance.mjs';
-import {
-  READ_ONLY_MODE,
-  READ_TOOL_NAMES,
-  isRetiredAndGone,
-  RETIRED_TOOL_REPLACEMENTS,
-  TOOLS_FOR_LIST,
-  TOOL_BY_NAME,
-  WRITE_CONSENT_MODE,
-} from './server/registry.mjs';
-import {
-  error,
-  formatUnknownToolError,
-  ok,
-  retiredToolError,
-} from './server/rpc.mjs';
-import { VAULT_ROOT } from './server/runtime.mjs';
-import { normalizeToolArguments } from './server/validate.mjs';
-import { withVaultReadSnapshot, withVaultWriteSnapshot } from './vault/documents/document-cache.mjs';
-import { logWrite } from './server/write-log.mjs';
-import { absorbDocumentTool } from './tools/absorb.mjs';
-import { getConstellationTool } from './tools/constellations.mjs';
-import {
-  compileOntologyTool,
-  queryOntologyTool,
-} from './tools/graph.mjs';
-import {
-  deleteConcept,
-  mergeConcepts,
-  renameConcept,
-} from './tools/lifecycle.mjs';
-import {
-  connectConsentArguments,
-  connectProjectSourceTool,
-  disconnectProjectSourceTool,
-  finalizeProjectMeaningTool,
-} from './tools/project-source.mjs';
-import {
-  connectionInfoTool,
-  findBacklinksTool,
-  findNeighborsTool,
-  findPathTool,
-  getConcept,
-  getConceptsBatch,
-  listConcepts,
-  listKindsTool,
-  readSourceTool,
-} from './tools/read.mjs';
-import { analyzeRepoStructureTool } from './tools/repo-analysis/analyze-structure.mjs';
-import { inferImportsTool } from './tools/repo-analysis/infer-imports.mjs';
-import { inspectArchitectureTool } from './tools/repo-analysis/inspect-architecture.mjs';
-import {
-  validateVaultTool,
-  validateWikiTool,
-} from './tools/validate-vault.mjs';
-import {
-  addConcept,
-  addConceptsBatch,
-  patchConcept,
-} from './tools/writes/write-concepts.mjs';
-import {
-  addRelation,
-  addRelationsBatch,
-  removeRelation,
-} from './tools/writes/write-relations.mjs';
-import {
-  CONSENT_DECLINED,
-  requestWriteConsent,
-} from './server/write-consent.mjs';
-import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+const TRIPLES = {
+  'darwin arm64': 'aarch64-apple-darwin',
+  'darwin x64': 'x86_64-apple-darwin',
+  'win32 x64': 'x86_64-pc-windows-msvc',
+  'linux x64': 'x86_64-unknown-linux-gnu',
+  'linux arm64': 'aarch64-unknown-linux-gnu',
+};
 
-// v2 takes a method string, not a schema object (a schema throws at startup).
-server.setRequestHandler('tools/list', async () => ({ tools: TOOLS_FOR_LIST }));
-
-
-// A read tool sees one snapshot of the vault: its helpers share one stamp pass. Any
-// other call reads every file fresh once, on its first load, and stamp-checks after.
-server.setRequestHandler('tools/call', async (request) => {
-  const { name } = request.params;
-  // Nothing runs, so nothing is read, snapshotted or asked of a person first.
-  if (isRetiredAndGone(name)) return error(retiredToolError(name));
-  return withRetiredToolNote(
-    name,
-    await (READ_TOOL_NAMES.has(name)
-      ? withVaultReadSnapshot(() => callTool(request))
-      : withVaultWriteSnapshot(() => callTool(request))),
-  );
-});
-
-function withRetiredToolNote(name, response) {
-  const replacement = RETIRED_TOOL_REPLACEMENTS.get(name);
-  if (!replacement || response.isError) return response;
-  const note = { type: 'text', text: `${name} is retired from tools/list and will be removed; its replacement is ${replacement}.` };
-  return { ...response, content: [...(response.content ?? []), note] };
+function say(...lines) {
+  for (const line of lines) process.stderr.write(`[${PROGRAM}] ${line}\n`);
 }
 
-async function callTool(request) {
-  const { name } = request.params;
-  try {
-    // Reject a known write tool even when the caller's cached tools/list still shows
-    // it; unknown names reach the unknown-tool error below.
-    if (READ_ONLY_MODE && TOOL_BY_NAME.has(name) && !READ_TOOL_NAMES.has(name)) {
-      throw new Error(
-        `Tool "${name}" is unavailable: server is in read-only mode (OATLAS_READ_ONLY). Only read tools are exposed.`,
-      );
-    }
-    const args = normalizeToolArguments(request.params.arguments, name);
+const BUILD_ADVICE = 'Run `pnpm mcp:build-binary` in the checkout, then restart your agent.';
 
-    // The write checkpoint sits before the switch, so a tool added later is covered
-    // by not being in the read set, not by someone remembering to guard it.
-    let consented = false;
-    if (WRITE_CONSENT_MODE && TOOL_BY_NAME.has(name) && !READ_TOOL_NAMES.has(name)) {
-      const consent = await requestWriteConsent({
-        server,
-        toolName: name,
-        // The card names the folder a connect would bind, not "inferred from this vault".
-        args: name === 'connect_project_source' ? connectConsentArguments(args) : args,
-        enabled: true,
-      });
-      if (!consent.allowed) {
-        // A refusal is a normal outcome: the agent is told nothing changed and why, so
-        // it reports back instead of retrying.
-        const error = new Error(consent.message);
-        error.code = consent.reason;
-        error.declinedByHuman = consent.reason === CONSENT_DECLINED;
-        throw error;
-      }
-      consented = consent.asked;
-    }
+function refuseNotBuilt() {
+  say(
+    'The MCP server is now a compiled program, and this checkout has not built it.',
+    BUILD_ADVICE,
+    'Your agent config is unchanged and will work after the build.',
+  );
+  process.exit(1);
+}
 
-    switch (name) {
-      case 'connection_info':
-        return ok(connectionInfoTool(args));
-      case 'list_concepts':
-        return ok(listConcepts(args));
-      case 'get_constellation':
-        return ok(getConstellationTool(args));
-      case 'get_concept':
-        return ok(getConcept(args));
-      case 'get_concepts':
-        return ok(getConceptsBatch(args));
-      case 'finalize_project_meaning':
-        // The handler logs the body it writes; the receipt itself gets no activity line.
-        return ok(finalizeProjectMeaningTool(args));
-      case 'connect_project_source':
-        return ok(logWrite(name, args, connectProjectSourceTool(args, { consented })));
-      case 'disconnect_project_source':
-        return ok(logWrite(name, args, disconnectProjectSourceTool(args)));
-      case 'add_concept':
-        return ok(logWrite(name, args, addConcept(args)));
-      case 'add_concepts':
-        return ok(logWrite(name, args, addConceptsBatch(args)));
-      case 'add_relation':
-        return ok(logWrite(name, args, addRelation(args)));
-      case 'remove_relation':
-        return ok(logWrite(name, args, removeRelation(args)));
-      case 'add_relations':
-        return ok(logWrite(name, args, addRelationsBatch(args)));
-      case 'patch_concept': {
-        const result = patchConcept(args);
-        if (!Array.isArray(result.patches)) return ok(logWrite(name, args, result));
-        // One audit line per patched node, in the single-patch format.
-        for (const row of result.patches) logWrite(name, { slug: row.slug }, row);
-        return ok(result);
-      }
-      case 'find_backlinks':
-        return ok(findBacklinksTool(args));
-      case 'find_neighbors':
-        return ok(findNeighborsTool(args));
-      case 'find_path':
-        return ok(findPathTool(args));
-      case 'list_kinds':
-        return ok(listKindsTool());
-      case 'compile_ontology':
-        return ok(compileOntologyTool(args));
-      case 'query_ontology':
-        return ok(await queryOntologyTool(args));
-      case 'validate_vault':
-        return ok(validateVaultTool(args));
-      case 'read_source':
-        return ok(readSourceTool(args));
-      case 'validate_wiki':
-        return ok(validateWikiTool(args));
-      case 'inspect_architecture':
-        return ok(inspectArchitectureTool(args));
-      case 'analyze_repo_structure':
-        return ok(analyzeRepoStructureTool(args));
-      case 'infer_imports':
-        return ok(inferImportsTool(args));
-      case 'rename_concept':
-        return ok(logWrite(name, args, renameConcept(args)));
-      case 'merge_concepts':
-        return ok(logWrite(name, args, mergeConcepts(args)));
-      case 'delete_concept':
-        return ok(logWrite(name, args, deleteConcept(args)));
-      case 'absorb_document':
-        return ok(logWrite(name, args, absorbDocumentTool(args)));
-      default:
-        throw new Error(formatUnknownToolError(name));
-    }
-  } catch (err) {
-    return error(err);
+function refuseStale() {
+  say('The built MCP server is older than this checkout, so it was not started.', BUILD_ADVICE);
+  process.exit(1);
+}
+
+/** The crate folders `crate` is built from: itself and every crate its manifests name by `path`. */
+function crateFolders(crate, found = new Set()) {
+  const folder = path.join(workspace, 'crates', crate);
+  if (found.has(folder) || !existsSync(path.join(folder, 'Cargo.toml'))) return found;
+  found.add(folder);
+  const manifest = readFileSync(path.join(folder, 'Cargo.toml'), 'utf8');
+  for (const [, dependency] of manifest.matchAll(/\bpath\s*=\s*"\.\.\/([^"/]+)"/g)) {
+    crateFolders(dependency, found);
+  }
+  return found;
+}
+
+/** Every file of `folder` that can change what is built; a crate's own tests and notes cannot. */
+function* buildInputs(folder) {
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    if (entry.isDirectory() && (entry.name === 'tests' || entry.name === 'target')) continue;
+    if (entry.isFile() && entry.name.endsWith('.md')) continue;
+    const full = path.join(folder, entry.name);
+    if (entry.isDirectory()) yield* buildInputs(full);
+    else yield full;
   }
 }
 
+/** The newest modification time among the build inputs, or null when this is not a full checkout. */
+function newestSourceMs() {
+  const folders = crateFolders(SERVER_CRATE);
+  if (folders.size === 0) return null;
+  const files = [path.join(workspace, 'Cargo.toml'), path.join(workspace, 'Cargo.lock')];
+  for (const folder of folders) files.push(...buildInputs(folder));
+  return Math.max(...files.filter(existsSync).map((file) => statSync(file).mtimeMs));
+}
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error(`[ontology-atlas-mcp] connected. vault=${VAULT_ROOT}`);
+const triple = TRIPLES[`${process.platform} ${process.arch}`];
+const program = triple
+  ? path.join(workspace, 'binaries', `${PROGRAM}-${triple}${process.platform === 'win32' ? '.exe' : ''}`)
+  : null;
+
+if (!program || !existsSync(program)) refuseNotBuilt();
+const sourceMs = newestSourceMs();
+if (sourceMs !== null && statSync(program).mtimeMs < sourceMs) refuseStale();
+
+const child = spawn(program, process.argv.slice(2), { stdio: 'inherit' });
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, () => child.kill(signal));
+child.on('error', (error) => {
+  say(`Could not start ${program}: ${error.message}`, BUILD_ADVICE);
+  process.exit(1);
+});
+child.on('exit', (code, signal) => {
+  if (signal) {
+    process.removeAllListeners(signal);
+    process.kill(process.pid, signal);
+  } else {
+    process.exit(code ?? 1);
+  }
+});

@@ -15,7 +15,7 @@ import { answerModeOf } from './tool-answer-modes.mjs';
 import { TOOL_OUTPUT_CONTRACT_BY_NAME } from './registry.mjs';
 
 const HOST_VALIDATOR = new AjvJsonSchemaValidator();
-const SERVER_ENTRY = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
+const SERVER_ENTRY = join(dirname(fileURLToPath(import.meta.url)), '..', 'javascript-server.mjs');
 
 function writeVaultFile(root, slug, text) {
   const file = join(root, `${slug}.md`);

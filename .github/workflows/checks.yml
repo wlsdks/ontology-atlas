@@ -103,8 +103,8 @@ jobs:
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    # budget: 260s
-    timeout-minutes: 6
+    # budget: 600s (260 s before the MCP program was built here; the cold build is not timed yet)
+    timeout-minutes: 12
     env:
       CI_LANE_REPORT: ci-lane-report.jsonl
       ACTIVE: ${{ needs.plan.outputs.gates }}
@@ -143,6 +143,17 @@ jobs:
       - name: Install MCP dependencies
         if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
         run: pnpm --dir mcp install --frozen-lockfile
+
+      # Contract tests start the server through `mcp/src/index.js`, which starts this Rust program.
+      - name: Cache Rust build
+        if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
+
+      - name: Build the MCP program
+        if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
+        run: pnpm mcp:build-binary -- --skip-verify
 
       # `licenses:check` and `notice:check` run `cargo metadata` side by side; without this step both
       # auto-install the `rust-toolchain.toml` channel at once and one fails renaming the other's download.
@@ -204,8 +215,9 @@ jobs:
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    # budget: 310s (a full run's shard 1 also carries the whole-graph commands)
-    timeout-minutes: 7
+    # budget: 600s (310 s before the MCP program was built here; a full run's shard 1 also carries the
+    # whole-graph commands; the cold build is not timed yet)
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
@@ -252,6 +264,17 @@ jobs:
       - name: Install MCP dependencies
         if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
         run: pnpm --dir mcp install --frozen-lockfile
+
+      # Contract tests start the server through `mcp/src/index.js`, which starts this Rust program.
+      - name: Cache Rust build
+        if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
+
+      - name: Build the MCP program
+        if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
+        run: pnpm mcp:build-binary -- --skip-verify
 
       - name: Run affected unit and contract evidence (shard ${{ matrix.shard }}/3)
         if: env.ACTIVE == 'true'
@@ -441,8 +464,8 @@ jobs:
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    # budget: 390s
-    timeout-minutes: 9
+    # budget: 700s (390 s before the MCP program was built here; the cold build is not timed yet)
+    timeout-minutes: 14
     env:
       CI_LANE_REPORT: ci-lane-report.jsonl
       ACTIVE: ${{ needs.plan.outputs.mcp != 'skip' }}
@@ -478,6 +501,17 @@ jobs:
       - name: Install MCP dependencies
         if: env.ACTIVE == 'true'
         run: pnpm --dir mcp install --frozen-lockfile
+
+      # Contract tests start the server through `mcp/src/index.js`, which starts this Rust program.
+      - name: Cache Rust build
+        if: env.ACTIVE == 'true'
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
+
+      - name: Build the MCP program
+        if: env.ACTIVE == 'true'
+        run: pnpm mcp:build-binary -- --skip-verify
 
       - name: Run affected MCP and CLI boundary evidence
         if: env.ACTIVE == 'true'

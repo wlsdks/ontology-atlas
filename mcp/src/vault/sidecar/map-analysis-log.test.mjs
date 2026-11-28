@@ -25,7 +25,7 @@ import {
 import { appendVaultSidecarLine, readVaultSidecarTail } from './vault-sidecar.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', '..', 'index.js');
+const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', '..', 'javascript-server.mjs');
 
 /** A handler file of the fixture: one ability the survey counts. */
 const handlerPath = (area, part) => `src/area-${area}-${'commerce-'.repeat(9)}area/module-${part}-${'handler-'.repeat(8)}folder/handler.js`;

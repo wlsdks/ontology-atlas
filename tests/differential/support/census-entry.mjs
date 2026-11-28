@@ -11,7 +11,7 @@ const families = JSON.parse(readFileSync(path.join(repoRoot, 'tests', 'different
 const failed = [];
 
 for (const file of Object.keys(families.files)) {
-  if (!/\.m?js$/.test(file) || /\.test\.mjs$/.test(file) || file === 'mcp/src/index.js') continue;
+  if (!/\.m?js$/.test(file) || /\.test\.mjs$/.test(file) || file === 'mcp/src/index.js' || file === 'mcp/src/javascript-server.mjs') continue;
   try {
     await import(pathToFileURL(path.join(repoRoot, file)).href);
   } catch (error) {

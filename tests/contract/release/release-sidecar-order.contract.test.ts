@@ -69,12 +69,11 @@ describe("release workflow — the sidecar is built before the first cargo call"
   });
 
   /**
-   * The sidecar is baked by `bun build --compile` from `mcp/`, which is not a pnpm
-   * workspace member: the runner ships neither bun nor `mcp/node_modules`. Each job
-   * starts on a clean runner, so each job that bakes the sidecar, directly or through a
-   * build script, installs both before that step.
+   * The sidecar is the `mcp-server` crate built by cargo (`pnpm mcp:build-binary`), so each job that
+   * bakes it, directly or through a build script, installs the pinned Rust toolchain first, and no
+   * job installs Bun for the server.
    */
-  it("every job that bakes the sidecar installs bun and the MCP dependencies first", () => {
+  it("every job that bakes the sidecar installs the Rust toolchain first and no job installs bun", () => {
     const bakes = [SIDECAR_STEP, "--phase=build", "desktop:build:windows"];
     const baking = jobBlocks(workflow)
       .map(({ name, block }) => ({
@@ -83,18 +82,21 @@ describe("release workflow — the sidecar is built before the first cargo call"
         bakeAt: Math.min(...bakes.map((marker) => block.indexOf(marker)).filter((at) => at > -1)),
       }))
       .filter((job) => Number.isFinite(job.bakeAt));
-    expect(baking.map((job) => job.name)).toEqual(["test-macos", "test-windows", "build-macos", "build-windows"]);
+    expect(baking.map((job) => job.name)).toEqual([
+      "test-release-gates",
+      "build-mcp-programs",
+      "test-macos",
+      "test-windows",
+      "build-macos",
+      "build-windows",
+    ]);
 
     for (const { name, block, bakeAt } of baking) {
-      for (const [label, marker] of [
-        ["the bun install", "oven-sh/setup-bun"],
-        ["the bundled MCP dependency install", "pnpm --dir mcp install"],
-      ]) {
-        const at = block.indexOf(marker);
-        expect(at, `${name} bakes the sidecar without ${label}`).toBeGreaterThan(-1);
-        expect(at, `${name}: ${label} comes after the sidecar is baked`).toBeLessThan(bakeAt);
-      }
+      const at = block.indexOf("dtolnay/rust-toolchain");
+      expect(at, `${name} bakes the sidecar without installing Rust`).toBeGreaterThan(-1);
+      expect(at, `${name}: Rust is installed after the sidecar is baked`).toBeLessThan(bakeAt);
     }
+    expect(workflow, "the release workflow installs bun").not.toContain("oven-sh/setup-bun");
   });
 
   it("every job builds the sidecar before its own first cargo call", () => {

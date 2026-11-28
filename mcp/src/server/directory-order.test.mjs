@@ -5,7 +5,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const SERVER = join(REPO_ROOT, 'mcp', 'src', 'index.js');
+const SERVER = join(REPO_ROOT, 'mcp', 'src', 'javascript-server.mjs');
 // Bun and Node list one directory in different orders; reversing every listing
 // stands in for the other runtime.
 const REVERSED_DIRECTORY_LISTINGS = `data:text/javascript,${encodeURIComponent(`

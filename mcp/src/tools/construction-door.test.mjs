@@ -16,7 +16,7 @@ import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 import { renderProjectCompetencyMarkdown } from '../project-meaning/project-meaning-receipt.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'index.js');
+const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'javascript-server.mjs');
 
 function repository() {
   const root = mkdtempSync(join(tmpdir(), 'atlas-construction-door-'));

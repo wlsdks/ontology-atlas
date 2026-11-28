@@ -1,47 +1,41 @@
 #!/usr/bin/env node
 /**
- * Packs the MCP server into an `.mcpb` bundle and proves it boots (fail-closed: unpack, start,
- * initialize, list tools, read a concept). Flags: --check, --keep-dir, --tag=<vX.Y.Z>,
- * --also-node=<path>. The manifest's `>=20` floor rests on a hand test of Node 20, 22, 24, 25.
+ * Packs the compiled Rust MCP program into an `.mcpb` bundle and proves the one program this
+ * machine can run boots from the unpacked artifact (fail-closed: unpack, start, initialize, list
+ * tools, read a concept).
+ *
+ *   node scripts/packaging/build-mcp-bundle.mjs [--tag=<vX.Y.Z>] [--program=<triple>=<path> ...] [--check]
+ *
+ * A program comes from `--program`, or else from `src-tauri/binaries/` (what `pnpm mcp:build-binary`
+ * placed). A host picks by operating system only, so a system given two architectures starts a
+ * script that picks by architecture; two programs for one system and architecture are refused.
  */
-import { spawn, spawnSync } from 'node:child_process';
-import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { parseJsonRpcResponses } from '../../mcp/scripts/json-rpc-lines.mjs';
 import {
-  BUNDLE_ENTRY_POINT,
-  BUNDLE_SERVER_DIR,
-  bundleFileList,
   bundleManifest,
-  bundlePackageJson,
+  bundleProgramPath,
+  bundleProgramsByPlatform,
+  bundleSelectorPath,
+  bundleSelectorScript,
+  bundleProgramProblems,
   bundleProvenance,
-  dependencyClosure,
-  importsTypedModule,
-  isBundleBallast,
-  isTypedModule,
-  pointAtStrippedModules,
-  strippedName,
 } from '../lib/packaging/mcp-bundle.mjs';
+import { PROGRAM_TARGET_TRIPLES, hostProgramTriple, sidecarPath } from './rust-mcp-program.mjs';
+import { verifyMcpBinary } from './verify-mcp-binary.mjs';
 
 const ROOT = process.cwd();
 const MCP_DIR = path.join(ROOT, 'mcp');
 const OUTPUT_DIR = path.join(ROOT, '.tmp', 'mcp-bundle');
-const MCP_SURFACE = path.join(ROOT, 'docs', '.generated', 'mcp-surface.json');
 const VERIFY_VAULT = path.join(ROOT, 'docs', 'ontology');
-// The generated surface record is the machine-owned count `pnpm docs:surface:check`
-// keeps current by asking the running server for `tools/list`.
-const TOOL_INVENTORY_COUNT = JSON.parse(readFileSync(MCP_SURFACE, 'utf8')).mcp.toolCount;
-const VERIFY_CONCEPT = 'capabilities/mcp-tool-server';
 
 const argv = process.argv.slice(2);
 const checkOnly = argv.includes('--check');
-const keepDir = argv.includes('--keep-dir');
 const releaseTag = argv.find((arg) => arg.startsWith('--tag='))?.slice('--tag='.length) ?? null;
-const alsoNode = argv.filter((arg) => arg.startsWith('--also-node=')).map((arg) => arg.slice('--also-node='.length));
 
 function fail(message) {
   console.error(`[mcp-bundle] ✖ ${message}`);
@@ -52,137 +46,45 @@ function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
-/** The commit the artifact was built from — the identity the zip otherwise lacks. */
 function headCommit() {
-  const rev = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' });
-  return rev.status === 0 ? rev.stdout.trim() : 'unknown (not a git checkout)';
+  const result = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' });
+  return result.status === 0 ? result.stdout.trim() : 'unknown';
 }
 
-/**
- * A dependency's real directory, resolved from the package that depends on it —
- * pnpm links `zod` only under the SDK, so a flat lookup in `mcp/node_modules`
- * misses it.
- */
-function resolvePackageDir(name, fromDir) {
-  const require = createRequire(path.join(fromDir, 'package.json'));
-  try {
-    return path.dirname(require.resolve(`${name}/package.json`));
-  } catch {
-    // A package whose `exports` map does not expose `./package.json` — both MCP
-    // SDK packages are like this. Resolve its entry point instead and walk up to
-    // the directory whose manifest carries that name.
-  }
-  try {
-    let directory = path.dirname(require.resolve(name));
-    for (let depth = 0; depth < 12; depth += 1) {
-      const manifest = packageManifest(directory);
-      if (manifest?.name === name) return directory;
-      const parent = path.dirname(directory);
-      if (parent === directory) break;
-      directory = parent;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function packageManifest(directory) {
-  const file = path.join(directory, 'package.json');
-  return existsSync(file) ? readJson(file) : null;
-}
-
-/** A host supplies its own Node, which may not strip types. */
-function stripTypedModules(stageServerDir, declaredFiles) {
-  const typed = declaredFiles.filter(isTypedModule);
-  if (typed.length > 0) {
-    const compiled = spawnSync(
-      'pnpm',
-      [
-        'exec',
-        'tsc',
-        '--ignoreConfig',
-        ...typed.map((file) => path.join(MCP_DIR, file)),
-        '--target',
-        'es2022',
-        '--module',
-        'nodenext',
-        '--moduleResolution',
-        'nodenext',
-        '--rootDir',
-        MCP_DIR,
-        '--outDir',
-        stageServerDir,
-      ],
-      { cwd: ROOT, encoding: 'utf8' },
-    );
-    if (compiled.status !== 0) {
-      fail(`could not strip types from ${typed.join(', ')}:\n${compiled.stderr || compiled.stdout}`);
-    }
-    for (const file of typed) {
-      if (!existsSync(path.join(stageServerDir, strippedName(file)))) fail(`type stripping produced no ${strippedName(file)}`);
-    }
-  }
-
-  for (const entry of readdirSync(stageServerDir, { recursive: true, withFileTypes: true })) {
-    const file = path.join(entry.parentPath, entry.name);
-    if (entry.isFile() && isTypedModule(entry.name)) fail(`the bundle would carry a typed module: ${path.relative(stageServerDir, file)}`);
-    if (!entry.isFile() || !/\.(?:mjs|js)$/.test(entry.name)) continue;
-    const before = readFileSync(file, 'utf8');
-    const after = pointAtStrippedModules(before);
-    if (importsTypedModule(after)) fail(`${path.relative(stageServerDir, file)} still imports a typed module`);
-    if (after !== before) writeFileSync(file, after);
-  }
-}
-
-export function stage(pkg) {
-  const stageDir = mkdtempSync(path.join(tmpdir(), 'ontology-atlas-mcpb-'));
-  const serverDir = path.join(stageDir, BUNDLE_SERVER_DIR);
-  mkdirSync(serverDir, { recursive: true });
-
-  for (const file of pkg.files) {
-    if (isTypedModule(file)) continue; // compiled below
-    if (bundleFileList(pkg.files).includes(file) === false) continue; // excluded fixtures
-    const source = path.join(MCP_DIR, file);
-    if (!existsSync(source)) fail(`mcp/package.json declares a file that is missing: ${file}`);
-    const destination = path.join(serverDir, file);
-    mkdirSync(path.dirname(destination), { recursive: true });
-    cpSync(source, destination, { recursive: true });
-  }
-  writeFileSync(
-    path.join(serverDir, 'package.json'),
-    `${JSON.stringify(bundlePackageJson({ version: pkg.version }), null, 2)}\n`,
-  );
-  // manifest.json and the image label both say MIT; the artifact should carry the
-  // licence that claim refers to.
-  cpSync(path.join(ROOT, 'LICENSE'), path.join(serverDir, 'LICENSE'));
-  stripTypedModules(serverDir, pkg.files);
-
-  const { packages, missing } = dependencyClosure({
-    rootDependencies: pkg.dependencies,
-    rootDir: MCP_DIR,
-    resolvePackageDir,
-    readManifest: packageManifest,
-  });
-  if (missing.length > 0) {
-    fail(`runtime dependencies are not installed (${missing.join(', ')}) — run \`pnpm --dir mcp install --frozen-lockfile\``);
-  }
-  for (const { name, dir } of packages) {
-    // dereference: pnpm's node_modules entries are symlinks into its store.
-    // The filter drops each dependency's own tests and source maps; a host needs
-    // the code and the licence, and nothing else.
-    cpSync(dir, path.join(serverDir, 'node_modules', name), {
-      recursive: true,
-      dereference: true,
-      filter: (source) => !isBundleBallast(path.relative(dir, source)),
+/** `{ triple, file }` for each program: the `--program` flags, else every program `mcp:build-binary` placed. */
+function programsToBundle() {
+  const given = argv.filter((arg) => arg.startsWith('--program=')).map((arg) => arg.slice('--program='.length));
+  if (given.length > 0) {
+    return given.map((entry) => {
+      const split = entry.indexOf('=');
+      if (split < 0) fail(`--program wants <triple>=<path>, received ${entry}`);
+      return { triple: entry.slice(0, split), file: path.resolve(entry.slice(split + 1)) };
     });
   }
+  return PROGRAM_TARGET_TRIPLES.map((triple) => ({ triple, file: sidecarPath(ROOT, triple) })).filter(({ file }) => existsSync(file));
+}
 
+function stage(programs, pkg) {
+  const stageDir = mkdtempSync(path.join(tmpdir(), 'ontology-atlas-mcpb-'));
+  mkdirSync(path.join(stageDir, 'server'), { recursive: true });
+  for (const { triple, file } of programs) {
+    const destination = path.join(stageDir, bundleProgramPath(triple));
+    copyFileSync(file, destination);
+    chmodSync(destination, 0o755);
+  }
+  for (const [platform, platformTriples] of bundleProgramsByPlatform(programs.map(({ triple }) => triple))) {
+    if (platformTriples.length < 2) continue;
+    const selector = path.join(stageDir, bundleSelectorPath(platform));
+    writeFileSync(selector, bundleSelectorScript(platformTriples));
+    chmodSync(selector, 0o755);
+  }
+  // manifest.json and the image label both say MIT; the artifact should carry the licence that claim refers to.
+  copyFileSync(path.join(ROOT, 'LICENSE'), path.join(stageDir, 'server', 'LICENSE'));
   writeFileSync(
     path.join(stageDir, 'manifest.json'),
-    `${JSON.stringify(bundleManifest({ version: pkg.version, description: pkg.description }), null, 2)}\n`,
+    `${JSON.stringify(bundleManifest({ version: pkg.version, description: pkg.description, triples: programs.map(({ triple }) => triple) }), null, 2)}\n`,
   );
-  return { stageDir, closure: packages.map(({ name }) => name) };
+  return stageDir;
 }
 
 function zip(stageDir, artifact) {
@@ -192,87 +94,33 @@ function zip(stageDir, artifact) {
   if (zipped.status !== 0) fail(`zip failed: ${zipped.stderr || zipped.stdout}`);
 }
 
-/** Start the unpacked bundle the way a host does and require a real answer. */
-async function verifyUnpacked(entry, nodeBinary) {
-  const requests = [
-    { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'mcp-bundle-verify', version: '0' } } },
-    { jsonrpc: '2.0', method: 'notifications/initialized' },
-    { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
-    { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'get_concepts', arguments: { slugs: [VERIFY_CONCEPT] } } },
-  ];
-
-  return await new Promise((resolve, reject) => {
-    const child = spawn(nodeBinary, [entry], {
-      env: { ...process.env, OATLAS_VAULT: VERIFY_VAULT },
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    let stdout = '';
-    let stderr = '';
-    let settled = false;
-    const deadline = setTimeout(() => finish(new Error('bundle did not answer within 25s')), 25_000);
-
-    function finish(error, result) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(deadline);
-      child.kill();
-      if (error) reject(new Error(`${error.message}${stderr ? `\n${stderr.slice(0, 800)}` : ''}`));
-      else resolve(result);
-    }
-
-    child.on('error', (error) => finish(new Error(`could not spawn ${nodeBinary}: ${error.message}`)));
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk;
-    });
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk;
-      const messages = parseJsonRpcResponses(stdout);
-      const initialize = messages.find((message) => message.id === 1)?.result;
-      const tools = messages.find((message) => message.id === 2)?.result?.tools;
-      const concept = messages.find((message) => message.id === 3)?.result;
-      if (!initialize || !tools || !concept) return;
-      if (concept.isError || concept.structuredContent?.concepts?.[0]?.ok !== true) return finish(new Error('the bundle started but could not read the verification vault'));
-      // Equality, not a floor: a floor of 32 let six tools disappear while the
-      // published description still claimed the full surface.
-      if (tools.length !== TOOL_INVENTORY_COUNT) {
-        return finish(new Error(`the bundle advertised ${tools.length} tools, the inventory declares ${TOOL_INVENTORY_COUNT}`));
-      }
-      finish(null, {
-        version: initialize.serverInfo?.version ?? 'unknown',
-        toolCount: tools.length,
-        nodeVersion: null,
-      });
-    });
-
-    for (const request of requests) child.stdin.write(`${JSON.stringify(request)}\n`);
-  });
-}
-
-async function main() {
+function main() {
   const pkg = readJson(path.join(MCP_DIR, 'package.json'));
-  for (const file of pkg.files) {
-    if (!existsSync(path.join(MCP_DIR, file))) fail(`mcp/package.json declares a file that is missing: ${file}`);
-  }
-  if (!statSync(VERIFY_VAULT, { throwIfNoEntry: false })?.isDirectory()) {
-    fail(`verification vault is missing: ${path.relative(ROOT, VERIFY_VAULT)}`);
-  }
+  const programs = programsToBundle();
+  const problems = bundleProgramProblems(programs.map(({ triple }) => triple));
+  if (problems.length > 0) fail(problems.join('\n  '));
+  for (const { file } of programs) if (!statSync(file, { throwIfNoEntry: false })?.isFile()) fail(`program is missing: ${file}`);
+  if (!statSync(VERIFY_VAULT, { throwIfNoEntry: false })?.isDirectory()) fail(`verification vault is missing: ${path.relative(ROOT, VERIFY_VAULT)}`);
   if (checkOnly) {
-    console.log(`[mcp-bundle] inputs current · ${pkg.files.length} declared files · v${pkg.version} ✓`);
+    console.log(`[mcp-bundle] inputs current · ${programs.length} program(s) · v${pkg.version} ✓`);
     return 0;
   }
 
-  const { stageDir, closure } = stage(pkg);
+  const stageDir = stage(programs, pkg);
+  const host = hostProgramTriple();
+  // A static musl program starts on a glibc Linux of the same architecture.
+  const bootable = [host, host?.replace(/-gnu$/, '-musl')];
+  const booted = programs.find(({ triple }) => bootable.includes(triple));
+  if (!booted) fail(`none of the programs (${programs.map(({ triple }) => triple).join(', ')}) runs on this machine (${host}), so none could be booted before the artifact was written`);
   writeFileSync(
-    path.join(stageDir, BUNDLE_SERVER_DIR, 'BUILD-PROVENANCE.txt'),
+    path.join(stageDir, 'server', 'BUILD-PROVENANCE.txt'),
     bundleProvenance({
       version: pkg.version,
       commit: headCommit(),
       tag: releaseTag,
       builtAt: new Date().toISOString(),
-      // Written before the boot check, so it names the runtimes this build will
-      // witness rather than claiming a result it does not have yet. A failed
-      // boot never produces an artifact, so the two cannot disagree.
-      witnessedRuntimes: [`node ${process.versions.node}`, ...alsoNode],
+      triples: programs.map(({ triple }) => triple),
+      bootedTriple: booted.triple,
     }),
   );
   const artifact = path.join(OUTPUT_DIR, `ontology-atlas-mcp-${pkg.version}.mcpb`);
@@ -281,36 +129,33 @@ async function main() {
   const unpacked = mkdtempSync(path.join(tmpdir(), 'ontology-atlas-mcpb-installed-'));
   const unzipped = spawnSync('unzip', ['-q', artifact, '-d', unpacked], { encoding: 'utf8' });
   if (unzipped.status !== 0) fail(`could not unpack the artifact: ${unzipped.stderr || unzipped.stdout}`);
-
-  const entry = path.join(unpacked, BUNDLE_ENTRY_POINT);
-  const verified = await verifyUnpacked(entry, process.execPath);
-  const witnessed = [`node ${process.versions.node}`];
-  for (const binary of alsoNode) {
-    const extra = await verifyUnpacked(entry, binary);
-    witnessed.push(`node ${extra.nodeVersion ?? binary}`);
+  const manifest = readJson(path.join(unpacked, 'manifest.json'));
+  for (const { triple } of programs) {
+    if (!existsSync(path.join(unpacked, bundleProgramPath(triple)))) fail(`the artifact lacks ${bundleProgramPath(triple)}`);
   }
-
-  const sha256 = createHash('sha256').update(readFileSync(artifact)).digest('hex');
-  const bytes = statSync(artifact).size;
-
-  if (!keepDir) {
+  // Booted the way a host starts it: the command the manifest names for this system, which for a
+  // system with two architectures is the selector, so the boot also proves it picks this machine's.
+  const hostCommand = manifest.server.mcp_config.platform_overrides[process.platform]?.command;
+  if (!hostCommand) fail(`the manifest names no command for ${process.platform}`);
+  const bootedFrom = hostCommand.replace('${__dirname}', unpacked);
+  return verifyMcpBinary({ binaryPath: bootedFrom, vaultPath: VERIFY_VAULT }).then((verified) => {
+    const sha256 = createHash('sha256').update(readFileSync(artifact)).digest('hex');
+    const bytes = statSync(artifact).size;
     rmSync(stageDir, { recursive: true, force: true });
     rmSync(unpacked, { recursive: true, force: true });
-  }
-
-  writeFileSync(
-    `${artifact}.provenance.json`,
-    `${JSON.stringify({ version: pkg.version, commit: headCommit(), tag: releaseTag, sha256, witnessed }, null, 2)}\n`,
-  );
-
-  console.log(`[mcp-bundle] ${path.relative(ROOT, artifact)}`);
-  console.log(`[mcp-bundle] ${bytes} bytes · v${verified.version} · ${verified.toolCount} tools · vendored ${closure.join(', ')}`);
-  console.log(`[mcp-bundle] sha256 ${sha256}`);
-  console.log(`[mcp-bundle] booted from the unpacked artifact under ${witnessed.join(', ')} and read one real concept ✓`);
-  if (keepDir) console.log(`[mcp-bundle] staged ${stageDir}\n[mcp-bundle] unpacked ${unpacked}`);
-  return 0;
+    writeFileSync(
+      `${artifact}.provenance.json`,
+      `${JSON.stringify({ version: pkg.version, commit: headCommit(), tag: releaseTag, sha256, programs: programs.map(({ triple }) => triple), booted: booted.triple }, null, 2)}\n`,
+    );
+    console.log(`[mcp-bundle] ${path.relative(ROOT, artifact)}`);
+    console.log(`[mcp-bundle] ${bytes} bytes · v${verified.version} · ${verified.toolCount} tools · ${manifest.compatibility.platforms.join(', ')}`);
+    console.log(`[mcp-bundle] sha256 ${sha256}`);
+    console.log(`[mcp-bundle] booted ${booted.triple} from the unpacked artifact and read one real concept ✓`);
+    return 0;
+  });
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
   process.exitCode = await main();
 }
+

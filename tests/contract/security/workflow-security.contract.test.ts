@@ -364,7 +364,7 @@ describe("workflow security contract", () => {
 
   it("runs the release tests beside the builds without secrets, and staging still waits for them", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
-    for (const jobName of ["test-release-gates", "test-macos", "test-windows"]) {
+    for (const jobName of ["test-release-gates", "test-macos", "test-windows", "build-mcp-programs"]) {
       const header = jobHeader(release, jobName);
       const block = jobBlock(release, jobName);
       expect(header, `${jobName} admission dependency`).toMatch(/needs:\s*admit-release/);
@@ -388,6 +388,7 @@ describe("workflow security contract", () => {
       "build-macos",
       "sign-macos",
       "build-windows",
+      "build-mcp-programs",
       "audit-rust",
     ]);
     const condition = /^    if: (.+)$/m.exec(stage)![1];

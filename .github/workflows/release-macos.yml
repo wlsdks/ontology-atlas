@@ -111,9 +111,9 @@ jobs:
     name: Verify release gates
     needs: admit-release
     runs-on: ubuntu-latest
-    # budget: 200s (v2.2.3: these steps took 104 s on the macOS runner; no Linux run of
-    # this job measured yet)
-    timeout-minutes: 5
+    # budget: 1200s (v2.2.3: these steps took 104 s on the macOS runner; the MCP program is built
+    # from a cold target here, which no run has timed yet)
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -139,6 +139,21 @@ jobs:
       - name: Install bundled MCP server dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
+      # The release gate starts the server the way an agent does, through `mcp/src/index.js`,
+      # which starts the Rust program this step builds.
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
+        with:
+          toolchain: 1.100.0
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
+
+      - name: Build the MCP program
+        run: pnpm mcp:build-binary
+
       - name: MCP release gate
         run: pnpm dogfood:release-gate
 
@@ -147,6 +162,76 @@ jobs:
 
       - name: Desktop runtime split tests
         run: pnpm test:desktop:runtime
+
+  # The `.mcpb` bundle carries a program for each system and architecture it has carried, each
+  # built on a runner of that architecture (no cross-compiling): the macOS arm64 and Windows x64
+  # programs come from the app builds. A static musl program starts on any Linux of its
+  # architecture, where one built by the gate job links the runner's glibc. No secret is read here.
+  build-mcp-programs:
+    name: Build the ${{ matrix.target }} MCP program for the bundle
+    needs: admit-release
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+            artifact: linux-x64
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-24.04-arm
+            artifact: linux-arm64
+          - target: x86_64-apple-darwin
+            runner: macos-15-intel
+            artifact: macos-x64
+    # budget: 1200s (a cold musl build of the server crates; no run has timed it yet)
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+          pnpm --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
+        with:
+          toolchain: 1.100.0
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
+
+      - name: Install the musl C compiler
+        if: ${{ endsWith(matrix.target, '-musl') }}
+        run: sudo apt-get install --no-install-recommends -y musl-tools
+
+      - name: Build the MCP program
+        run: pnpm mcp:build-binary -- --target ${{ matrix.target }}
+        env:
+          CC_x86_64_unknown_linux_musl: musl-gcc
+          CC_aarch64_unknown_linux_musl: musl-gcc
+
+      - name: Upload the MCP program
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ontology-atlas-mcp-program-${{ matrix.artifact }}
+          path: src-tauri/binaries/ontology-atlas-mcp-${{ matrix.target }}
+          if-no-files-found: error
+          retention-days: 1
 
   # Only what needs macOS stays on the macOS runner.
   test-macos:
@@ -178,11 +263,6 @@ jobs:
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
         with:
           toolchain: 1.100.0
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -235,11 +315,6 @@ jobs:
         with:
           toolchain: 1.100.0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -247,7 +322,7 @@ jobs:
         run: pnpm --dir mcp install --frozen-lockfile
 
       - name: Windows release contract tests
-        run: node --test scripts/lib/packaging/mcp-binary.test.mjs scripts/download/stage-windows-release-assets.test.mjs scripts/packaging/verify-mcp-binary.test.mjs
+        run: node --test scripts/lib/packaging/mcp-binary.test.mjs scripts/download/stage-windows-release-assets.test.mjs scripts/packaging/verify-mcp-binary.test.mjs scripts/packaging/rust-mcp-program.test.mjs
 
       - name: Build and verify Windows MCP sidecar
         run: pnpm mcp:build-binary
@@ -305,26 +380,8 @@ jobs:
         with:
           toolchain: 1.100.0
 
-      # `bun build --compile` bakes the sidecar and embeds this runtime; the runner does not ship
-      # bun. Toolchain installations are gathered at the top.
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      # `mcp/` is not a pnpm workspace member and uses its own `node_modules`, which the root
-      # install does not populate on a runner. There is exactly one pinned dependency.
-      #
-      # Reason for `--frozen-lockfile`: the `package-lock.json` in this folder is **npm's**,
-      # and pnpm does not read it. Running without a lock file causes the runner to resolve fresh
-      # from the registry every release — meaning the sidecar's dependency tree could change without
-      # a commit, and that binary ships with the app. Commit `mcp/pnpm-lock.yaml` and freeze it,
-      # so we can answer via diff what was shipped.
-      - name: Install bundled MCP server dependencies
-        run: pnpm --dir mcp install --frozen-lockfile
 
       - name: Desktop readiness
         run: pnpm desktop:check
@@ -593,16 +650,8 @@ jobs:
         with:
           toolchain: 1.100.0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Install bundled MCP server dependencies
-        run: pnpm --dir mcp install --frozen-lockfile
 
       # A registry timeout (three on 2026-09-04) retries; a real advisory still fails on the
       # last attempt. The app and the bundled MCP server have separate lockfiles.
@@ -705,6 +754,14 @@ jobs:
           $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
           node scripts/download/stage-windows-release-assets.mjs "--version=$packageVersion"
 
+      - name: Upload the Windows MCP program
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ontology-atlas-mcp-program-windows-x64
+          path: src-tauri/binaries/ontology-atlas-mcp-x86_64-pc-windows-msvc.exe
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Upload workflow artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -756,9 +813,9 @@ jobs:
   # and verified here; nothing is visible to users yet.
   stage-macos:
     name: Stage Draft Desktop Release
-    if: ${{ always() && needs.admit-release.result == 'success' && needs.test-release-gates.result == 'success' && needs.test-macos.result == 'success' && needs.test-windows.result == 'success' && needs.check-release-credentials.result == 'success' && needs.build-macos.result == 'success' && needs.sign-macos.result == 'success' && needs.build-windows.result == 'success' && needs.audit-rust.result == 'success' }}
+    if: ${{ always() && needs.admit-release.result == 'success' && needs.test-release-gates.result == 'success' && needs.test-macos.result == 'success' && needs.test-windows.result == 'success' && needs.check-release-credentials.result == 'success' && needs.build-macos.result == 'success' && needs.sign-macos.result == 'success' && needs.build-windows.result == 'success' && needs.build-mcp-programs.result == 'success' && needs.audit-rust.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: [admit-release, test-release-gates, test-macos, test-windows, check-release-credentials, build-macos, sign-macos, build-windows, audit-rust]
+    needs: [admit-release, test-release-gates, test-macos, test-windows, check-release-credentials, build-macos, sign-macos, build-windows, build-mcp-programs, audit-rust]
     # budget: 120s
     timeout-minutes: 3
     permissions:
@@ -820,17 +877,49 @@ jobs:
             --dir=release-assets --out=release-assets/latest.json \
             --tag="${RELEASE_TAG}" --commit="${RELEASE_SHA}" --repo="${GITHUB_REPOSITORY}"
 
+      # Downloaded beside, not inside, `release-assets`: the updater manifest builder and the upload
+      # globs below must never see a bare program.
+      - name: Download the Windows MCP program
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ontology-atlas-mcp-program-windows-x64
+          path: .tmp/mcp-programs/windows
+
+      - name: Download the Linux MCP programs
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: ontology-atlas-mcp-program-linux-*
+          merge-multiple: true
+          path: .tmp/mcp-programs/linux
+
+      - name: Download the Intel macOS MCP program
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ontology-atlas-mcp-program-macos-x64
+          path: .tmp/mcp-programs/macos-x64
+
       - name: Build the MCP ecosystem bundle
         # The MCPB artifact is what makes Atlas publishable to the official MCP
         # Registry without an npm package: the registry verifies the release
-        # asset's URL and SHA-256 and hosts no files itself. The build boots the
-        # unpacked bundle before it writes an artifact, so a bundle that cannot
-        # start never reaches a release. Built after the updater manifest so the
-        # manifest builder, which splits architectures by folder, never sees this
-        # one.
+        # asset's URL and SHA-256 and hosts no files itself. The macOS arm64 program is the one
+        # inside the signed and notarized app, so the bundle carries the signature the
+        # app carries; the Intel one is built unsigned on an Intel runner. A host picks
+        # a program by operating system alone, so macOS and Linux each start a script that
+        # picks by architecture. The build boots the program the manifest names for this
+        # runner from the unpacked artifact before it writes it, so a bundle that cannot
+        # start never reaches a release. Built after the updater manifest so the manifest
+        # builder, which splits architectures by folder, never sees this one.
         run: |
-          pnpm --dir mcp install --frozen-lockfile
-          pnpm mcp:build-bundle -- --tag="${RELEASE_TAG}"
+          mkdir -p .tmp/mcp-programs/macos
+          tar -xzf release-assets/ontology-atlas-macos-aarch64/*.app.tar.gz -C .tmp/mcp-programs/macos --wildcards '*/Contents/MacOS/ontology-atlas-mcp'
+          macos_program="$(find .tmp/mcp-programs/macos -type f -name ontology-atlas-mcp | head -n 1)"
+          test -n "$macos_program"
+          pnpm mcp:build-bundle -- --tag="${RELEASE_TAG}" \
+            --program=aarch64-apple-darwin="$macos_program" \
+            --program=x86_64-pc-windows-msvc=.tmp/mcp-programs/windows/ontology-atlas-mcp-x86_64-pc-windows-msvc.exe \
+            --program=x86_64-apple-darwin=.tmp/mcp-programs/macos-x64/ontology-atlas-mcp-x86_64-apple-darwin \
+            --program=x86_64-unknown-linux-musl=.tmp/mcp-programs/linux/ontology-atlas-mcp-x86_64-unknown-linux-musl \
+            --program=aarch64-unknown-linux-musl=.tmp/mcp-programs/linux/ontology-atlas-mcp-aarch64-unknown-linux-musl
           mkdir -p release-assets/mcp
           cp .tmp/mcp-bundle/*.mcpb release-assets/mcp/
           cd release-assets/mcp

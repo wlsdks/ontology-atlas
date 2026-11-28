@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 import { once } from 'node:events';
 import test from 'node:test';
 
-const SERVER = resolve('mcp/src/index.js');
+const SERVER = resolve('mcp/src/javascript-server.mjs');
 
 test('stdio transport tolerates a bounded burst while stdout is backpressured', async () => {
   const vault = mkdtempSync(join(tmpdir(), 'ontology-atlas-stdio-budget-'));

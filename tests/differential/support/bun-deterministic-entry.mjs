@@ -6,4 +6,4 @@ import { installFixedClock } from './deterministic-inputs.mjs';
 
 installFixedClock();
 
-await import('../../../mcp/src/index.js');
+await import('../../../mcp/src/javascript-server.mjs');

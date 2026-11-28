@@ -158,7 +158,7 @@ test('fresh MCP readers keep edited answers unconfirmed until explicit finalizat
   const root = mkdtempSync(join(tmpdir(), 'atlas-meaning-recovery-'));
   const vaultRoot = join(root, 'vault');
   const sourceRoot = join(root, 'source');
-  const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'index.js');
+  const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'javascript-server.mjs');
   const call = async (calls) => {
     const { responses } = await runJsonRpcProcess({
       command: process.execPath, args: [serverEntry], timeoutMs: 30_000,

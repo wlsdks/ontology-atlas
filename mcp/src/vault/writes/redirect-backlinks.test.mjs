@@ -526,7 +526,7 @@ test("without targetKind a same-slug call stays a no-op, and a rename keeps the 
  * docs/records/decisions/2026-11-19-wiki-page-describes-at-any-status-afd11e09-c68a-465a-83fa-d8abd8cabdfc.md.
  * These drive the real tools, so the server's own loader and write path are what is measured.
  */
-const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), "../..", "index.js");
+const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), "../..", "javascript-server.mjs");
 
 async function testAsync(name, body) {
   try {

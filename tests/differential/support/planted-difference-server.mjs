@@ -34,7 +34,7 @@ const targetId = options.id === undefined ? undefined : JSON.parse(options.id);
 
 const child = spawn(
   process.execPath,
-  ['--import', path.join(here, 'deterministic-preload.mjs'), path.join(repoRoot, 'mcp', 'src', 'index.js')],
+  ['--import', path.join(here, 'deterministic-preload.mjs'), path.join(repoRoot, 'mcp', 'src', 'javascript-server.mjs')],
   { stdio: ['pipe', 'pipe', 'inherit'], env: process.env, cwd: process.cwd() },
 );
 process.stdin.pipe(child.stdin);

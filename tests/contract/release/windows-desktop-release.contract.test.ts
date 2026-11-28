@@ -42,7 +42,7 @@ describe('Windows desktop beta release contract', () => {
     expect(workflow).toContain('ontology-atlas-windows-x64');
     expect(workflow).toContain('(Get-Content package.json | ConvertFrom-Json).version');
     expect(releaseWorkflow).toContain(
-      'needs: [admit-release, test-release-gates, test-macos, test-windows, check-release-credentials, build-macos, sign-macos, build-windows, audit-rust]',
+      'needs: [admit-release, test-release-gates, test-macos, test-windows, check-release-credentials, build-macos, sign-macos, build-windows, build-mcp-programs, audit-rust]',
     );
     expect(workflowJob(releaseWorkflow, 'test-windows')).toContain('run: pnpm test:desktop:bridge');
     expect(workflowJob(releaseWorkflow, 'test-windows')).toContain('runs-on: windows-2022');

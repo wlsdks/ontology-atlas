@@ -5,46 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-import {
-  assessMcpExactCaseSurvey,
-  compareMcpContracts,
-} from './verify-mcp-binary.mjs';
-
-const MCP_VERSION = JSON.parse(fs.readFileSync(new URL('../../mcp/package.json', import.meta.url), 'utf8')).version;
-
-const contractFixture = () => ({
-  initialize: { serverInfo: { version: MCP_VERSION } },
-  tools: [
-    {
-      name: 'connection_info',
-      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-      outputSchema: { type: 'object', properties: { toolCount: { type: 'number' } } },
-    },
-  ],
-  callResults: {
-    3: { structuredContent: { toolCount: 35 } },
-    4: { structuredContent: { kinds: [] } },
-    5: { structuredContent: { errors: 0 } },
-  },
-});
-
-test('source/bundled parity accepts exact first-contact contracts', () => {
-  const source = contractFixture();
-  const bundled = structuredClone(source);
-
-  assert.deepEqual(compareMcpContracts(source, bundled), { ok: true, mismatches: [] });
-});
-
-test('source/bundled parity rejects schema drift instead of trusting tool count', () => {
-  const source = contractFixture();
-  const bundled = structuredClone(source);
-  bundled.tools[0].inputSchema.additionalProperties = true;
-
-  assert.deepEqual(compareMcpContracts(source, bundled), {
-    ok: false,
-    mismatches: ['tools/list schemas'],
-  });
-});
+import { assessMcpExactCaseSurvey } from './verify-mcp-binary.mjs';
 
 test('exact-case verifier rejects a breadth map that spells the README another way', () => {
   assert.deepEqual(assessMcpExactCaseSurvey('Breadth map of /r: 1 product units.\nreadme.md: Purpose.\n'), {

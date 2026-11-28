@@ -15,7 +15,7 @@ import test from 'node:test';
 import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'index.js');
+const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'javascript-server.mjs');
 
 const plugin = (name, from) => `import { Plugin } from '${from}';\nexport class ${name} implements Plugin {\n  apply(token: string) {\n    if (!token) throw new Error('${name}: no token');\n    return true;\n  }\n}\n`;
 
