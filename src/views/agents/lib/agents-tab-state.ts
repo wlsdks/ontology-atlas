@@ -12,7 +12,7 @@ const DEFAULT_AGENTS_TAB: AgentsTab = 'agents';
 
 export const AGENTS_TAB_PARAM = 'tab';
 
-export { agentsSearch, type AgentsSearch } from '@/shared/lib/navigation/screen-searches';
+export type { AgentsSearch } from '@/shared/lib/navigation/screen-searches';
 
 function isAgentsTab(value: string): value is AgentsTab {
   return (AGENTS_TABS as readonly string[]).includes(value);

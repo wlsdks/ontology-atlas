@@ -17,8 +17,8 @@ import {
   clearVaultScopedRouteState,
   isDeeplinkRouteState,
   VAULT_SCOPED_HOME_QUERY_KEYS,
-  HOME_QUERY_KEYS,
 } from "./url-state";
+import { HOME_QUERY_KEYS } from "@/shared/lib/navigation/screen-searches";
 import { ONTOLOGY_DEEPLINK_ASK_KEY } from "@/entities/knowledge-graph";
 import { parseSearch } from "@/shared/lib/navigation/atlas-search";
 

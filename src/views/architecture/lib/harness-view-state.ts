@@ -30,7 +30,7 @@ export function parseHarnessView(raw: string | null | undefined): HarnessView {
  */
 const BLUEPRINT_ONLY_PARAMS = ['role', 'stage'] as const;
 
-export { harnessSearch, type HarnessSearch } from '@/shared/lib/navigation/screen-searches';
+export type { HarnessSearch } from '@/shared/lib/navigation/screen-searches';
 
 export function resolveAddressView(search: HarnessSearch): HarnessView {
   const raw = firstSearchText(search.view);
