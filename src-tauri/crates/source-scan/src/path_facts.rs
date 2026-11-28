@@ -3,7 +3,8 @@
 //! A resolver tries several candidates per specifier (`a.ts`, `a.tsx`, `a/index.ts`...). A path
 //! whose parent is not a folder is absent without a probe, and every answer is remembered, so a
 //! scan costs one disk call per distinct path whose parent exists however often a module is
-//! imported. A path the root refuses to show (credential-named, `.git`, outside, through a link
+//! imported (a census is asked every path, so its record of what a scan looked at is complete).
+//! A path the root refuses to show (credential-named, `.git`, outside, through a link
 //! that leaves) is absent: a scan never learns that it exists. Whether a file exists is the one
 //! question asked through hidden folders (`.generated`), so an import into one is placed.
 
@@ -97,6 +98,9 @@ impl<'files> PathFacts<'files> {
     }
 
     fn parent_is_not_a_folder(&self, path: &Path) -> bool {
+        if self.files.answers_from_census() {
+            return false;
+        }
         match path.parent() {
             Some(parent) if parent.starts_with(self.root()) && parent != self.root() => {
                 !self.is_directory(parent)

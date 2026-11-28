@@ -66,6 +66,9 @@ fn is_test_set(set: &str) -> bool {
 /// `src/<set>/java` and `src/<set>/kotlin` folders of the root and of module folders up to two
 /// levels below it.
 fn discover_source_roots(facts: &PathFacts<'_>, ignore: &IgnoredNames) -> Vec<PathBuf> {
+    if facts.files().answers_from_census() {
+        return Vec::new();
+    }
     let mut modules: Vec<PathBuf> = vec![facts.root().to_path_buf()];
     let mut frontier: Vec<PathBuf> = vec![facts.root().to_path_buf()];
     for _ in 0..MODULE_DEPTH {
@@ -169,6 +172,7 @@ pub fn place_jvm_imports(
         declared_in: &declared_in,
         source_roots: &source_roots,
         roots_holding: &mut roots_holding,
+        narrow_by_folder: !facts.files().answers_from_census(),
     };
     for source in sources {
         let from = &source.path;
@@ -228,6 +232,9 @@ struct TypeResolver<'a, 'facts, 'files> {
     declared_in: &'a HashMap<String, Vec<PathBuf>>,
     source_roots: &'a [PathBuf],
     roots_holding: &'a mut HashMap<String, Vec<PathBuf>>,
+    /// A census is never asked about a folder the walk did not reach, so a type file is looked
+    /// for under every source root instead of under the roots that hold its package folder.
+    narrow_by_folder: bool,
 }
 
 impl TypeResolver<'_, '_, '_> {
@@ -275,7 +282,12 @@ impl TypeResolver<'_, '_, '_> {
                 return declared.clone();
             }
             let folder = parts.get(..length - 1).unwrap_or_default();
-            for root in self.roots_with_folder(folder) {
+            let roots = if self.narrow_by_folder {
+                self.roots_with_folder(folder)
+            } else {
+                self.source_roots.to_vec()
+            };
+            for root in roots {
                 for extension in JVM_EXTENSIONS {
                     let mut file = root.clone();
                     for part in named {

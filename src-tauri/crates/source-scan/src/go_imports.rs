@@ -285,9 +285,21 @@ fn list_go_files(
     layout: &GoLayout<'_, '_>,
     ignore: &IgnoredNames,
     max_files: usize,
+    scoped_folders: Option<&[String]>,
 ) -> (Vec<PathBuf>, bool, usize) {
     let detection_limit = max_files + 1;
     let mut files: Vec<PathBuf> = Vec::new();
+    let scopes: Option<Vec<PathBuf>> = scoped_folders.map(|folders| {
+        folders
+            .iter()
+            .map(|folder| resolve_below(layout.facts.root(), folder))
+            .collect()
+    });
+    let in_scope = |path: &Path| {
+        scopes
+            .as_ref()
+            .is_none_or(|folders| folders.iter().any(|folder| path.starts_with(folder)))
+    };
     let admit = |entry: &Entry<'_>| {
         let name = entry.name;
         if ignore.has(name)
@@ -300,7 +312,7 @@ fn list_go_files(
         }
         match entry.kind {
             EntryKind::Directory => !layout.in_nested_module(entry.path),
-            _ => extension_of(name) == Some(GO_EXTENSION),
+            _ => extension_of(name) == Some(GO_EXTENSION) && in_scope(entry.path),
         }
     };
     let report = walk_sorted(
@@ -334,10 +346,13 @@ pub struct GoScan {
     pub credential_named_files: usize,
 }
 
+/// `scoped_folders` limits the files to those inside one of the folders (a census lists only the
+/// folders the scan's own walk reaches); `None` reads the whole module.
 pub fn scan_go_packages(
     facts: &PathFacts<'_>,
     ignore: &IgnoredNames,
     max_files: usize,
+    scoped_folders: Option<&[String]>,
 ) -> Option<GoScan> {
     let module_path = read_root_module(facts)?;
     let mut evidence = GoPackageEvidence {
@@ -369,7 +384,7 @@ pub fn scan_go_packages(
         facts,
         nested_module: RefCell::default(),
     };
-    let (files, limited, credential_named_files) = list_go_files(&layout, ignore, max_files);
+    let (files, limited, credential_named_files) = list_go_files(&layout, ignore, max_files, scoped_folders);
     evidence.files_scanned = files.len();
     evidence.file_scan_limited = limited;
     let mut targets: HashMap<String, Option<String>> = HashMap::new();

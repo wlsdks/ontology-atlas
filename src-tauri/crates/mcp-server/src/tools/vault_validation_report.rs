@@ -17,7 +17,7 @@ use vault_validation::{
 };
 
 use super::import_scan_target::ScanTarget;
-use super::kept_survey::kept_survey;
+use super::kept_survey::survey_from_disk;
 use super::vault_repository::{locate, locate_from, Located};
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
@@ -41,7 +41,7 @@ pub fn build_report(
     let source = target.source_with_limit(WITNESS_TEXT_MAX_BYTES);
 
     let measured = grounded.then(|| {
-        let survey = kept_survey(context, &target, &[]);
+        let survey = survey_from_disk(context, &target, &[]);
         let reads = context.source_reads().reads_under(target.source_root());
         measure_against_survey(documents, &survey, &reads, &source)
     });
