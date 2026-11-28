@@ -2,14 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  edgeTargetKindLabel,
-  edgeTargetKindMatches,
   judgeRelationCheck,
   nodeDegree,
   nodeMatchesFilters,
 } from './match-rules.mjs';
 
-const anyNode = { kind: null, domain: null, slugContains: null, minDegree: null, maxDegree: null, minInDegree: null, minOutDegree: null, hasIncoming: null, hasOutgoing: null };
+const anyNode = { kind: null, domain: null, hasIncoming: null, hasOutgoing: null };
 const node = { slug: 'capabilities/Login', kind: 'capability', domain: 'domains/auth', inDegree: 2, outDegree: 1 };
 const matches = (filters, subject = node) => nodeMatchesFilters(subject, { ...anyNode, ...filters });
 
@@ -30,46 +28,11 @@ test('kind and domain must be equal when given', () => {
   assert.equal(matches({ domain: 'domains/billing' }), false);
 });
 
-test('the slug filter is a lower-case substring test against the lower-cased slug', () => {
-  assert.equal(matches({ slugContains: 'login' }), true);
-  assert.equal(matches({ slugContains: 'logout' }), false);
-});
-
-test('degree bounds are inclusive and a bound of zero is still a bound', () => {
-  assert.equal(matches({ minDegree: 3 }), true);
-  assert.equal(matches({ minDegree: 4 }), false);
-  assert.equal(matches({ maxDegree: 3 }), true);
-  assert.equal(matches({ maxDegree: 2 }), false);
-  assert.equal(matches({ minInDegree: 2 }), true);
-  assert.equal(matches({ minInDegree: 3 }), false);
-  assert.equal(matches({ minOutDegree: 1 }), true);
-  assert.equal(matches({ minOutDegree: 2 }), false);
-  assert.equal(matches({ maxDegree: 0 }, { slug: 'lonely' }), true);
-  assert.equal(matches({ maxDegree: 0 }), false);
-});
-
 test('hasIncoming and hasOutgoing keep nodes that do, or deliberately do not, have that direction', () => {
   assert.equal(matches({ hasIncoming: true }), true);
   assert.equal(matches({ hasIncoming: false }), false);
   assert.equal(matches({ hasOutgoing: true }, { slug: 'sink', inDegree: 1 }), false);
   assert.equal(matches({ hasOutgoing: false }, { slug: 'sink', inDegree: 1 }), true);
-});
-
-test('an edge target kind is the node kind for a resolved edge and a pseudo kind for the other two', () => {
-  const resolved = { resolved: true };
-  const external = { resolved: false, external: true };
-  const dangling = { resolved: false, external: false };
-  assert.equal(edgeTargetKindMatches(resolved, { kind: 'element' }, 'element'), true);
-  assert.equal(edgeTargetKindMatches(resolved, { kind: 'element' }, 'external'), false);
-  assert.equal(edgeTargetKindMatches(resolved, undefined, 'element'), false);
-  assert.equal(edgeTargetKindMatches(external, null, 'external'), true);
-  assert.equal(edgeTargetKindMatches(external, null, 'unresolved'), false);
-  assert.equal(edgeTargetKindMatches(dangling, null, 'unresolved'), true);
-  assert.equal(edgeTargetKindMatches(dangling, null, 'element'), false);
-  assert.equal(edgeTargetKindLabel(resolved, { kind: 'element' }), 'element');
-  assert.equal(edgeTargetKindLabel(resolved, {}), 'unknown');
-  assert.equal(edgeTargetKindLabel(external, null), 'external');
-  assert.equal(edgeTargetKindLabel(dangling, null), 'unresolved');
 });
 
 const edge = { from: 'a', to: 'b', via: 'elements', resolved: true };

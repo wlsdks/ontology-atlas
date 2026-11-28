@@ -170,7 +170,6 @@ describe('queryCompiledOntology', () => {
     const inputs = [
       { operation: 'neighbors', slug: 'capabilities/a', limit: 1 },
       { operation: 'path', from: 'capabilities/a', to: 'capabilities/c' },
-      { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/c', searchBudget: 1 },
       { operation: 'cycles', limit: 1, searchBudget: 3 },
       { operation: 'node_profile', slug: 'capabilities/a', limit: 1 },
     ];
@@ -420,128 +419,6 @@ describe('queryCompiledOntology', () => {
     );
   });
 
-  it('returns all bounded simple paths between two nodes', () => {
-    const result = queryCompiledOntology(artifact(), {
-      operation: 'all_paths',
-      from: 'capabilities/session',
-      to: 'auth-domain',
-      maxHops: 3,
-    });
-
-    assert.equal(result.operation, 'all_paths');
-    assert.equal(result.found, true);
-    assert.equal(result.totalPaths, 2);
-    assert.equal(result.totalPathsExact, true);
-    assert.equal(result.exhaustive, true);
-    assert.equal(result.truncatedByBudget, false);
-    assert.equal(result.searchBudget, 5000);
-    assert.equal(result.limit, 25);
-    assert.equal(result.shortestHopCount, 2);
-    assert.deepEqual(result.evidence, {
-      status: 'complete',
-      reason: 'complete',
-      totalPathsExact: true,
-      pathsComplete: true,
-      nextStep: 'use',
-      recommendation: 'Safe to treat paths and totalPaths as complete for the requested bounds.',
-      suggestedQuery: {
-        operation: 'all_paths',
-        from: 'capabilities/session',
-        to: 'domains/auth',
-        direction: 'undirected',
-        maxHops: 3,
-        limit: 25,
-        searchBudget: 5000,
-      },
-    });
-    assert.deepEqual(result.byLength, { 2: 2 });
-    assert.deepEqual(
-      result.paths.map((row) => ({
-          hops: row.hops,
-          titles: row.nodes.map((node) => node.title),
-          relations: row.edges.map((edge) => edge.via),
-        })),
-      [
-        {
-          hops: ['capabilities/session', 'capabilities/login', 'domains/auth'],
-          titles: ['Session', 'Login', 'Auth'],
-          relations: ['dependencies', 'dependencies'],
-        },
-        {
-          hops: ['capabilities/session', 'capabilities/login', 'domains/auth'],
-          titles: ['Session', 'Login', 'Auth'],
-          relations: ['dependencies', 'domain'],
-        },
-      ],
-    );
-
-    const branchingGraph = compileOntology(
-      [
-        doc('a', { kind: 'capability', title: 'A', relates: ['b', 'c', 'e', 'f'] }),
-        doc('b', { kind: 'capability', title: 'B', relates: ['d'] }),
-        doc('c', { kind: 'capability', title: 'C', relates: ['d'] }),
-        doc('e', { kind: 'capability', title: 'E', relates: ['d'] }),
-        doc('f', { kind: 'capability', title: 'F', relates: ['d'] }),
-        doc('d', { kind: 'capability', title: 'D' }),
-      ],
-      { includeIndexes: true },
-    );
-    const exactLimit = queryCompiledOntology(branchingGraph, {
-      operation: 'all_paths',
-      from: 'a',
-      to: 'd',
-      maxHops: 2,
-      limit: 4,
-    });
-    assert.equal(exactLimit.totalPaths, 4);
-    assert.equal(exactLimit.totalPathsExact, true);
-    assert.equal(exactLimit.exhaustive, true);
-    assert.equal(exactLimit.limited, false);
-    assert.equal(exactLimit.paths.length, 4);
-    assert.equal(exactLimit.evidence.status, 'complete');
-    assert.equal(exactLimit.evidence.reason, 'complete');
-    assert.equal(exactLimit.evidence.pathsComplete, true);
-
-    const truncated = queryCompiledOntology(branchingGraph, {
-      operation: 'all_paths',
-      from: 'a',
-      to: 'd',
-      maxHops: 2,
-      limit: 2,
-    });
-    assert.equal(truncated.totalPaths, 4);
-    assert.equal(truncated.limited, true);
-    assert.equal(truncated.paths.length, 2);
-    assert.equal(truncated.evidence.status, 'partial');
-    assert.equal(truncated.evidence.reason, 'limit');
-    assert.equal(truncated.evidence.totalPathsExact, true);
-    assert.equal(truncated.evidence.pathsComplete, false);
-    assert.equal(truncated.evidence.nextStep, 'narrow');
-    assert.equal(truncated.evidence.suggestedQuery.operation, 'query_plan');
-    assert.equal(truncated.evidence.saferQuery.operation, 'all_paths');
-    assert.equal(truncated.evidence.saferQuery.limit, 2);
-
-    const budgeted = queryCompiledOntology(branchingGraph, {
-      operation: 'all_paths',
-      from: 'a',
-      to: 'd',
-      maxHops: 2,
-      limit: 4,
-      searchBudget: 2,
-    });
-    assert.equal(budgeted.searchBudget, 2);
-    assert.equal(budgeted.expandedStates, 2);
-    assert.equal(budgeted.truncatedByBudget, true);
-    assert.equal(budgeted.exhaustive, false);
-    assert.equal(budgeted.totalPathsExact, false);
-    assert.equal(budgeted.limited, true);
-    assert.equal(budgeted.evidence.status, 'partial');
-    assert.equal(budgeted.evidence.reason, 'search_budget');
-    assert.equal(budgeted.evidence.totalPathsExact, false);
-    assert.equal(budgeted.evidence.pathsComplete, false);
-    assert.equal(budgeted.evidence.saferQuery.searchBudget, 2);
-  });
-
   it('plans bounded graph queries before execution', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'query_plan',
@@ -589,16 +466,6 @@ describe('queryCompiledOntology', () => {
       { distance: 3, frontierNodes: 1, candidateEdges: 1, newNodes: 0 },
     ]);
 
-    const allPathsPlan = queryCompiledOntology(artifact(), {
-      operation: 'query_plan',
-      targetOperation: 'all_paths',
-      from: 'capabilities/session',
-      to: 'auth-domain',
-      maxHops: 3,
-    });
-    assert.equal(allPathsPlan.normalized.limit, 25);
-    assert.equal(allPathsPlan.normalized.searchBudget, 5000);
-
     const projectMapPlan = queryCompiledOntology(artifact(), {
       operation: 'query_plan',
       targetOperation: 'project_map',
@@ -618,48 +485,10 @@ describe('queryCompiledOntology', () => {
     });
     assert.deepEqual(projectMapPlan.indexesUsed, ['compiled_artifact']);
 
-    const centralityPlan = queryCompiledOntology(artifact(), {
-      operation: 'query_plan',
-      targetOperation: 'centrality',
-      types: ['depends_on'],
-      limit: 3,
-    });
-    assert.equal(centralityPlan.operation, 'query_plan');
-    assert.equal(centralityPlan.targetOperation, 'centrality');
-    assert.deepEqual(centralityPlan.normalized, {
-      targetOperation: 'centrality',
-      types: ['dependencies'],
-      limit: 3,
-      iterations: 20,
-    });
-    assert.deepEqual(centralityPlan.indexesUsed, ['edge.type filter', 'edges', 'nodes']);
-    assert.deepEqual(centralityPlan.estimate, {
-      strategy: 'page_rank_centrality',
-      nodeScans: 3,
-      edgeScans: 2,
-      iterations: 20,
-      danglingNodes: 1,
-      rankingWorkUnits: 100,
-      resultUpperBound: 3,
-      costClass: 'low',
-    });
-    assert.deepEqual(centralityPlan.execution, {
-      shouldRun: true,
-      nextStep: 'run',
-      recommendation: 'Run suggestedQuery as planned.',
-      suggestedQuery: {
-        operation: 'centrality',
-        iterations: 20,
-        limit: 3,
-        types: ['dependencies'],
-      },
-    });
-
     const matchNodesPlan = queryCompiledOntology(artifact(), {
       operation: 'query_plan',
       targetOperation: 'match_nodes',
       kind: 'capability',
-      minInDegree: 1,
       hasOutgoing: true,
       sort: 'inDegree',
       limit: 5,
@@ -671,62 +500,21 @@ describe('queryCompiledOntology', () => {
       limit: 5,
       kind: 'capability',
       domain: null,
-      slugContains: null,
-      minDegree: null,
-      maxDegree: null,
-      minInDegree: 1,
-      minOutDegree: null,
       hasIncoming: null,
       hasOutgoing: true,
       sort: 'inDegree',
     });
     assert.equal(matchNodesPlan.estimate.nodeScans, 3);
-    assert.equal(matchNodesPlan.estimate.totalMatches, 1);
-    assert.equal(matchNodesPlan.estimate.resultUpperBound, 1);
+    assert.equal(matchNodesPlan.estimate.totalMatches, 2);
+    assert.equal(matchNodesPlan.estimate.resultUpperBound, 2);
     assert.deepEqual(matchNodesPlan.execution.suggestedQuery, {
       operation: 'match_nodes',
       limit: 5,
       kind: 'capability',
-      minInDegree: 1,
       hasOutgoing: true,
       sort: 'inDegree',
     });
 
-    const matchEdgesPlan = queryCompiledOntology(artifact(), {
-      operation: 'query_plan',
-      targetOperation: 'match_edges',
-      fromKind: 'capability',
-      type: 'depends_on',
-      toKind: 'domain',
-      includeExternal: true,
-      limit: 5,
-    });
-    assert.equal(matchEdgesPlan.targetOperation, 'match_edges');
-    assert.deepEqual(matchEdgesPlan.normalized, {
-      targetOperation: 'match_edges',
-      types: ['dependencies'],
-      relationTypes: ['depends_on'],
-      limit: 5,
-      from: null,
-      to: null,
-      fromKind: 'capability',
-      toKind: 'domain',
-      includeExternal: true,
-      includeUnresolved: false,
-    });
-    assert.deepEqual(matchEdgesPlan.indexesUsed, ['edge.type filter', 'edges']);
-    assert.equal(matchEdgesPlan.estimate.edgeScans, 4);
-    assert.equal(matchEdgesPlan.estimate.totalMatches, 1);
-    assert.equal(matchEdgesPlan.estimate.resultUpperBound, 1);
-    assert.deepEqual(matchEdgesPlan.execution.suggestedQuery, {
-      operation: 'match_edges',
-      limit: 5,
-      fromKind: 'capability',
-      toKind: 'domain',
-      includeExternal: true,
-      includeUnresolved: false,
-      types: ['dependencies'],
-    });
   });
 
   it('returns a safer executable query when query_plan detects expensive traversal', () => {
@@ -750,7 +538,7 @@ describe('queryCompiledOntology', () => {
 
     const result = queryCompiledOntology(graph, {
       operation: 'query_plan',
-      targetOperation: 'all_paths',
+      targetOperation: 'path',
       from: 'capabilities/start',
       to: 'capabilities/target',
       maxHops: 4,
@@ -762,120 +550,27 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.execution.nextStep, 'narrow');
     assert.match(result.execution.recommendation, /Narrow the query/);
     assert.deepEqual(result.execution.suggestedQuery, {
-      operation: 'all_paths',
+      operation: 'path',
       from: 'capabilities/start',
       to: 'capabilities/target',
       direction: 'undirected',
       maxHops: 4,
-      searchBudget: 5000,
       limit: 100,
     });
     assert.deepEqual(result.execution.saferQuery, {
-      operation: 'all_paths',
+      operation: 'path',
       from: 'capabilities/start',
       to: 'capabilities/target',
       direction: 'undirected',
       maxHops: 3,
-      searchBudget: 1000,
-      limit: 10,
+      limit: 100,
       types: ['depends_on', 'relates'],
     });
   });
 
-  it('ranks graph centrality for core nodes and bridges', () => {
-    const result = queryCompiledOntology(artifact(), {
-      operation: 'centrality',
-      types: ['depends_on'],
-      limit: 3,
-    });
-
-    assert.equal(result.operation, 'centrality');
-    assert.deepEqual(result.parameters, {
-      types: ['dependencies'],
-      iterations: 20,
-      limit: 3,
-    });
-    assert.equal(result.graph.nodes, 3);
-    assert.equal(result.graph.resolvedEdges, 2);
-    assert.deepEqual(result.rankings.pageRank.map((row) => row.slug), [
-      'domains/auth',
-      'capabilities/login',
-      'capabilities/session',
-    ]);
-    assert.equal(result.rankings.pageRank[0].pageRank, 0.474412);
-    assert.deepEqual(result.rankings.bridges.map((row) => [row.slug, row.bridgeScore]), [
-      ['capabilities/login', 1],
-      ['domains/auth', 0],
-      ['capabilities/session', 0],
-    ]);
-    assert.deepEqual(result.rankings.hubs.map((row) => row.slug), [
-      'capabilities/login',
-      'capabilities/session',
-      'domains/auth',
-    ]);
-  });
-
-  it('keeps page rank finite and normalized with many dangling nodes', () => {
-    const danglingDocs = Array.from({ length: 75 }, (_, index) =>
-      doc(`elements/dangling-${index}`, {
-        kind: 'element',
-        title: `Dangling ${index}`,
-      }),
-    );
-    const graph = compileOntology(
-      [
-        doc('domains/core', { kind: 'domain', title: 'Core' }),
-        doc('capabilities/query', {
-          kind: 'capability',
-          title: 'Query',
-          dependencies: ['domains/core'],
-        }),
-        doc('elements/query-engine', {
-          kind: 'element',
-          title: 'Query Engine',
-          dependencies: ['capabilities/query'],
-        }),
-        ...danglingDocs,
-      ],
-      { includeIndexes: true },
-    );
-
-    const result = queryCompiledOntology(graph, {
-      operation: 'centrality',
-      types: ['dependencies'],
-      limit: 100,
-    });
-    const totalPageRank = result.rankings.pageRank.reduce((sum, row) => sum + row.pageRank, 0);
-
-    assert.equal(result.graph.nodes, 78);
-    assert.equal(result.graph.resolvedEdges, 2);
-    assert.equal(result.rankings.pageRank.length, 78);
-    assert.equal(result.rankings.pageRank.every((row) => Number.isFinite(row.pageRank)), true);
-    assert.equal(Math.abs(totalPageRank - 1) < 0.0001, true);
-  });
-
-  it('rejects invalid iterations instead of defaulting or clamping them', () => {
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'centrality', iterations: '20' }),
-      /iterations must be a positive integer/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'centrality', iterations: 1.5 }),
-      /iterations must be a positive integer/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'communities', iterations: 0 }),
-      /iterations must be a positive integer/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'communities', iterations: 101 }),
-      /iterations must be <= 100/,
-    );
-  });
-
   it('rejects invalid query limits instead of defaulting or clamping them', () => {
     assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'centrality', limit: '10' }),
+      () => queryCompiledOntology(artifact(), { operation: 'overview', limit: '10' }),
       /limit must be a positive integer/,
     );
     assert.throws(
@@ -887,12 +582,7 @@ describe('queryCompiledOntology', () => {
       /limit must be a positive integer/,
     );
     assert.throws(
-      () => queryCompiledOntology(artifact(), {
-        operation: 'all_paths',
-        from: 'capabilities/login',
-        to: 'domains/auth',
-        limit: 501,
-      }),
+      () => queryCompiledOntology(artifact(), { operation: 'match_nodes', limit: 501 }),
       /limit must be <= 500/,
     );
     assert.throws(
@@ -1958,91 +1648,6 @@ describe('queryCompiledOntology', () => {
     assert.equal(exactLimit.limited, false);
   });
 
-  it('returns persisted builder context with direct Workshop URL, layout, and safe agent handoff', () => {
-    const docs = [
-      doc('domains/auth', {
-        slug: 'auth-domain',
-        kind: 'domain',
-        title: 'Auth',
-        canvasPosition: { x: 120, y: 80 },
-      }, 11),
-      doc('capabilities/login', {
-        kind: 'capability',
-        title: 'Login',
-        domain: 'auth-domain',
-        canvasPosition: { x: 360, y: 80 },
-      }, 12),
-      doc('capabilities/session', {
-        kind: 'capability',
-        title: 'Session',
-        dependencies: ['capabilities/login'],
-      }, 13),
-    ];
-    const graph = compileOntology(docs, { includeIndexes: true });
-    const result = queryCompiledOntology(
-      graph,
-      {
-        operation: 'builder_context',
-        slug: 'auth-domain',
-        direction: 'incoming',
-        depth: 1,
-      },
-      { sourceDocs: docs },
-    );
-
-    assert.equal(result.operation, 'builder_context');
-    assert.equal(result.source, 'persisted_vault');
-    assert.equal(result.focus, 'domains/auth');
-    assert.deepEqual(result.builder, {
-      href: '/topology/?p=domain%3Aauth&workbench=edit',
-      focusParam: 'domain:auth',
-      unsavedDraftsIncluded: false,
-    });
-    assert.deepEqual(
-      result.nodes.map((row) => ({
-        slug: row.slug,
-        distance: row.distance,
-        canvasPosition: row.canvasPosition,
-        expected_mtime: row.expected_mtime,
-      })),
-      [
-        {
-          slug: 'domains/auth',
-          distance: 0,
-          canvasPosition: { x: 120, y: 80 },
-          expected_mtime: 11,
-        },
-        {
-          slug: 'capabilities/login',
-          distance: 1,
-          canvasPosition: { x: 360, y: 80 },
-          expected_mtime: 12,
-        },
-      ],
-    );
-    const roundTrip = queryCompiledOntology(
-      graph,
-      {
-        operation: 'builder_context',
-        slug: result.builder.focusParam,
-        direction: 'incoming',
-        depth: 1,
-      },
-      { sourceDocs: docs },
-    );
-    assert.equal(roundTrip.focus, result.focus);
-    assert.equal(roundTrip.builder.focusParam, result.builder.focusParam);
-    assert.equal(roundTrip.builder.href, result.builder.href);
-    assert.deepEqual(result.agentHandoff.writeTools, [
-      'add_concepts',
-      'relation_check',
-      'add_relations',
-      'patch_concept',
-    ]);
-    assert.match(result.agentHandoff.constraints.join('\n'), /unsaved Workshop drafts/i);
-    assert.match(result.agentHandoff.constraints.join('\n'), /expected_mtime/);
-  });
-
   it('returns graph overview aggregates for dashboard-style use', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'overview',
@@ -2285,99 +1890,31 @@ describe('queryCompiledOntology', () => {
     const result = queryCompiledOntology(artifact(), { operation: 'agent_brief' });
     const relationCall = result.firstCalls.find((call) => call.arguments.operation === 'relation_check');
 
-    assert.deepEqual(result.docs.workflowGuide, {
-      path: 'docs/AGENT-GRAPH-WORKFLOW.md',
-      title: 'Agent Graph Workflow',
-      description: 'MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    assert.deepEqual(result.docs, {
+      workflowGuide: {
+        path: 'docs/AGENT-GRAPH-WORKFLOW.md',
+        title: 'Agent Graph Workflow',
+        description: 'MCP-connected use and verification checks.',
+      },
     });
-    assert.deepEqual(result.docs.modeComparison.map((mode) => mode.id), [
-      'mcp_connected',
-      'graph_db_pack',
-      'mcp_unavailable',
-    ]);
-    assert.ok(result.docs.modeComparison.find((mode) => mode.id === 'mcp_connected').gives.includes('structured repair fields'));
-    assert.match(result.docs.modeComparison.find((mode) => mode.id === 'mcp_unavailable').gives, /write nothing to the vault/);
-    assert.deepEqual(result.docs.graphScanProofChecklist.map((row) => row.id), [
-      'report_scan_scope',
-      'prove_node_rows',
-      'prove_edge_rows',
-      'prove_path_completeness',
-    ]);
-    assert.ok(result.docs.graphScanProofChecklist[0].evidence.includes('totalMatches'));
-    assert.ok(result.docs.graphScanProofChecklist[1].evidence.includes('node_profile'));
-    assert.ok(result.docs.graphScanProofChecklist[2].evidence.includes('relation_check'));
-    assert.ok(result.docs.graphScanProofChecklist[3].evidence.includes('evidence.pathsComplete'));
+    for (const retired of ['graphDbQueryPack', 'traversalStrategy', 'playbooks', 'resultContracts', 'meaningRepair']) {
+      assert.equal(Object.hasOwn(result, retired), false, `${retired} is no longer in the brief`);
+    }
     assert.match(result.handoffPrompt, /ontology-atlas MCP server/);
     assert.match(result.handoffPrompt, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);
-    assert.match(result.handoffPrompt, /Graph DB query pack for local markdown graph scans/);
     assert.match(result.handoffPrompt, /Kind classification contract before writing frontmatter/);
     assert.match(result.handoffPrompt, /Do not classify from the label alone/);
-    assert.match(result.handoffPrompt, /classify from evidence in this order/);
-    assert.match(result.handoffPrompt, /project: top-level product or system scope root/);
-    assert.match(result.handoffPrompt, /domain: shared vocabulary boundary/);
-    assert.match(result.handoffPrompt, /capability: user-visible behavior/);
-    assert.match(result.handoffPrompt, /element: concrete implementation part/);
-    assert.match(result.handoffPrompt, /unknown: temporary review signal/);
-    assert.match(result.handoffPrompt, /High-confidence gate/);
     assert.match(result.handoffPrompt, /Containment spine/);
-    assert.match(result.handoffPrompt, /Color contract/);
     assert.match(result.handoffPrompt, /source path, symbol, route, command, or MCP tool evidence/);
-    assert.match(result.handoffPrompt, /why not the nearest adjacent kind/);
     assert.match(result.handoffPrompt, /similar_nodes/);
-    assert.match(result.handoffPrompt, /MATCH \(n:capability\) WHERE degree\(n\) >= 2/);
-    assert.match(result.handoffPrompt, /query_ontology \{"operation":"explain_relation"/);
-    assert.match(result.handoffPrompt, /Investigation playbooks/);
+    assert.match(result.handoffPrompt, /Write guardrails/);
+    assert.match(result.handoffPrompt, /relation_check/);
     assert.match(result.handoffPrompt, /When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault/);
+    assert.doesNotMatch(result.handoffPrompt, /Graph DB query pack|Investigation playbooks|Traversal strategy|Result contracts/);
+    assert.doesNotMatch(result.handoffPrompt, /all_paths|match_edges|domain_matrix|centrality/);
     assert.doesNotMatch(result.handoffPrompt, /cli\/src\/index\.mjs/);
     assert.equal(Object.hasOwn(result, 'cliFallbackCommands'), false);
-    assert.deepEqual(result.graphDbQueryPack.map((item) => item.id), [
-      'graph_facets',
-      'node_scan',
-      'edge_scan',
-      'domain_coupling',
-      'path_evidence',
-      'business_questions',
-    ]);
-    assert.deepEqual(result.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
-      'facets',
-      'schema',
-      'query_plan',
-      'match_nodes',
-      'query_plan',
-      'match_edges',
-      'domain_matrix',
-      'query_plan',
-      'centrality',
-      'query_plan',
-      'all_paths',
-      'explain_relation',
-      'facets',
-      'query_plan',
-      'match_nodes',
-      'domain_matrix',
-      'query_plan',
-      'match_nodes',
-      'query_plan',
-      'match_edges',
-    ]);
-    assert.equal(result.graphDbQueryPack[0].calls[0].arguments.operation, 'facets');
-    assert.equal(result.graphDbQueryPack[1].calls[0].arguments.targetOperation, 'match_nodes');
-    assert.equal(result.graphDbQueryPack[2].calls[0].arguments.targetOperation, 'match_edges');
-    assert.equal(result.graphDbQueryPack[3].calls[1].arguments.targetOperation, 'centrality');
-    assert.equal(result.graphDbQueryPack[4].calls[0].arguments.targetOperation, 'all_paths');
-    assert.equal(result.graphDbQueryPack[5].calls[0].arguments.operation, 'facets');
-    assert.equal(result.graphDbQueryPack[5].calls[1].arguments.targetOperation, 'match_nodes');
-    assert.equal(result.graphDbQueryPack[5].calls[4].arguments.targetOperation, 'match_nodes');
-    assert.equal(result.graphDbQueryPack[5].calls[4].arguments.kind, 'capability');
-    assert.equal(result.graphDbQueryPack[5].calls[6].arguments.targetOperation, 'match_edges');
-    assert.match(result.handoffPrompt, /Traversal strategy/);
-    assert.match(result.handoffPrompt, /plan_before_enumeration/);
-    assert.match(result.handoffPrompt, /Write guardrails/);
-    assert.match(result.handoffPrompt, /Result contracts/);
-    assert.match(result.handoffPrompt, /totalPathsExact/);
-    assert.match(result.handoffPrompt, /relation_check/);
-    assert.match(result.handoffPrompt, /add_relations/);
     assert.ok(relationCall);
     assert.equal(relationCall.tool, 'query_ontology');
     assert.deepEqual(relationCall.arguments, {
@@ -2387,51 +1924,6 @@ describe('queryCompiledOntology', () => {
       type: 'depends_on',
     });
 
-    const refactorPlaybook = result.playbooks.find((playbook) => playbook.id === 'refactor_impact');
-    const traversalPlaybook = result.playbooks.find((playbook) => playbook.id === 'graph_traversal');
-    assert.ok(refactorPlaybook);
-    assert.ok(refactorPlaybook.evidence.some((item) => item.includes('blast radius')));
-    assert.ok(refactorPlaybook.stopWhen.some((item) => item.includes('relation_check')));
-    assert.deepEqual(refactorPlaybook.calls.at(-1), relationCall);
-    const onboardingPlaybook = result.playbooks.find((playbook) => playbook.id === 'onboarding_map');
-    assert.ok(onboardingPlaybook);
-    assert.ok(onboardingPlaybook.evidence.some((item) => item.includes('Graph DB-style node scan')));
-    assert.ok(onboardingPlaybook.stopWhen.some((item) => item.includes('query_plan(match_nodes)')));
-    assert.deepEqual(onboardingPlaybook.calls.map((call) => call.arguments.operation), [
-      'workspace_brief',
-      'domain_matrix',
-      'query_plan',
-      'match_nodes',
-      'node_profile',
-    ]);
-    assert.equal(onboardingPlaybook.calls[2].arguments.targetOperation, 'match_nodes');
-    assert.equal(onboardingPlaybook.calls[3].arguments.kind, 'capability');
-    const couplingPlaybook = result.playbooks.find((playbook) => playbook.id === 'coupling_audit');
-    assert.ok(couplingPlaybook);
-    assert.deepEqual(couplingPlaybook.calls.map((call) => call.arguments.operation), [
-      'health',
-      'domain_matrix',
-      'query_plan',
-      'centrality',
-      'query_plan',
-      'match_edges',
-    ]);
-    assert.equal(couplingPlaybook.calls[4].arguments.targetOperation, 'match_edges');
-    assert.ok(traversalPlaybook);
-    assert.ok(traversalPlaybook.evidence.some((item) => item.includes('all_paths')));
-    assert.ok(traversalPlaybook.stopWhen.some((item) => item.includes('query_plan')));
-    assert.deepEqual(traversalPlaybook.calls.map((call) => call.arguments.operation), [
-      'schema',
-      'query_plan',
-      'all_paths',
-      'pattern_walk',
-      'project_map',
-    ]);
-    assert.equal(traversalPlaybook.calls[1].arguments.targetOperation, 'all_paths');
-    assert.equal(traversalPlaybook.calls[1].arguments.searchBudget, 1000);
-    assert.equal(traversalPlaybook.calls[2].arguments.searchBudget, 1000);
-    assert.equal(traversalPlaybook.calls[3].arguments.slug, '<project-slug>');
-    assert.deepEqual(traversalPlaybook.calls[3].arguments.pattern, ['domains', 'capabilities']);
     const relationGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'preflight_relation');
     const renameGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'preflight_rename');
     const syncGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'post_change_sync');
@@ -2454,15 +1946,6 @@ describe('queryCompiledOntology', () => {
       tool: 'validate_vault',
       arguments: {},
     });
-    assert.deepEqual(result.traversalStrategy.map((strategy) => strategy.id), [
-      'plan_before_enumeration',
-      'bounded_path_evidence',
-      'containment_cross_check',
-    ]);
-    assert.deepEqual(result.traversalStrategy[0].calls[0].arguments, traversalPlaybook.calls[1].arguments);
-    assert.deepEqual(result.traversalStrategy[1].calls[0].arguments, traversalPlaybook.calls[2].arguments);
-    assert.ok(result.traversalStrategy[1].evidence.some((item) => item.includes('evidence.pathsComplete')));
-    assert.ok(result.traversalStrategy[1].stopWhen.some((item) => item.includes('evidence.saferQuery')));
     assert.deepEqual(result.relationDecisionGuide.map((row) => row.decision), [
       'skip_existing',
       'review_inverse',
@@ -2470,31 +1953,7 @@ describe('queryCompiledOntology', () => {
       'review_new_schema',
     ]);
     assert.ok(result.relationDecisionGuide.some((row) => row.decision === 'review_inverse' && row.severity === 'warn'));
-    assert.deepEqual(result.resultContracts[0].operation, 'all_paths');
-    assert.deepEqual(result.resultContracts[0].mustReport, [
-      'limit',
-      'searchBudget',
-      'expandedStates',
-      'exhaustive',
-      'truncatedByBudget',
-      'totalPathsExact',
-      'evidence.status',
-      'evidence.reason',
-      'evidence.pathsComplete',
-    ]);
-    assert.ok(result.resultContracts[0].partialWhen.includes('totalPathsExact=false'));
-    assert.ok(result.resultContracts[0].partialWhen.includes('evidence.status=partial'));
-    assert.match(result.resultContracts[0].policy, /partial evidence/);
-    assert.deepEqual(result.resultContracts[1].operation, 'match_nodes');
-    assert.ok(result.resultContracts[1].mustReport.includes('followUp.focusSlug'));
-    assert.match(result.resultContracts[1].policy, /scan candidates/);
-    assert.match(result.resultContracts[1].policy, /node_profile/);
-    assert.deepEqual(result.resultContracts[2].operation, 'match_edges');
-    assert.ok(result.resultContracts[2].mustReport.includes('followUp.focusEdge'));
-    assert.match(result.resultContracts[2].policy, /explain_relation/);
-    assert.match(result.resultContracts[2].policy, /relation_check/);
     assert.ok(result.writePolicy.some((line) => line.includes('relation_check before add_relations')));
-    assert.ok(result.writePolicy.some((line) => line.includes('all_paths') && line.includes('totalPathsExact')));
     assert.ok(result.writePolicy.some((line) => line.includes('match_nodes') && line.includes('followUp')));
     assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
     assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
@@ -2559,7 +2018,6 @@ describe('queryCompiledOntology', () => {
 
     const result = queryCompiledOntology(graph, { operation: 'agent_brief', project: 'project-b' });
     assert.equal(result.projectSlug, 'project-b');
-    assert.equal(result.graphDbQueryPack.find((pack) => pack.id === 'business_questions').calls[0].arguments.operation, 'facets');
     assert.throws(
       () => queryCompiledOntology(graph, { operation: 'agent_brief', project: 'domain-b' }),
       /project must resolve to a project node/,
@@ -2570,7 +2028,7 @@ describe('queryCompiledOntology', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'match_nodes',
       kind: 'capability',
-      minInDegree: 1,
+      hasIncoming: true,
       sort: 'inDegree',
     });
 
@@ -2578,12 +2036,7 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(result.filters, {
       kind: 'capability',
       domain: null,
-      slugContains: null,
-      minDegree: null,
-      maxDegree: null,
-      minInDegree: 1,
-      minOutDegree: null,
-      hasIncoming: null,
+      hasIncoming: true,
       hasOutgoing: null,
       sort: 'inDegree',
     });
@@ -2608,11 +2061,12 @@ describe('queryCompiledOntology', () => {
     assert.match(result.followUp.reason, /match_nodes is a scan/);
     assert.deepEqual(
       result.followUp.calls.map((call) => call.arguments.operation),
-      ['node_profile', 'match_edges', 'match_edges', 'blast_radius'],
+      ['node_profile', 'neighbors', 'neighbors', 'blast_radius'],
     );
     assert.deepEqual(result.followUp.calls[1].arguments, {
-      operation: 'match_edges',
-      from: 'capabilities/login',
+      operation: 'neighbors',
+      slug: 'capabilities/login',
+      direction: 'outgoing',
       includeExternal: true,
       includeUnresolved: true,
       limit: 20,
@@ -2627,32 +2081,6 @@ describe('queryCompiledOntology', () => {
     assert.equal(outbound.totalMatches, 2);
     assert.equal(outbound.limited, true);
     assert.deepEqual(outbound.nodes.map((node) => node.slug), ['capabilities/login']);
-
-    const slugSearch = queryCompiledOntology(artifact(), {
-      operation: 'match_nodes',
-      slugContains: 'AUTH',
-      sort: 'slug',
-    });
-    assert.deepEqual(slugSearch.nodes.map((node) => node.slug), ['domains/auth']);
-  });
-
-  it('rejects invalid match_nodes degree filters instead of coercing them', () => {
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_nodes', minDegree: -1 }),
-      /minDegree must be a non-negative integer/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_nodes', maxDegree: 1.5 }),
-      /maxDegree must be a non-negative integer/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_nodes', minInDegree: '1' }),
-      /minInDegree must be a non-negative integer/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_nodes', minOutDegree: 1.5 }),
-      /minOutDegree must be a non-negative integer/,
-    );
   });
 
   it('rejects invalid match_nodes sort instead of defaulting to degree', () => {
@@ -2667,25 +2095,6 @@ describe('queryCompiledOntology', () => {
       () => queryCompiledOntology(artifact(), { operation: 'match_nodes', kind: 'capabilty' }),
       /kind must be one of:[\s\S]*Received: "capabilty"\.[\s\S]*Did you mean "capability"\?/,
     );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_edges', fromKind: 'capabilty' }),
-      /fromKind must be one of:[\s\S]*Received: "capabilty"\.[\s\S]*Did you mean "capability"\?/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_edges', toKind: 'externl' }),
-      /toKind must be one of:[\s\S]*Received: "externl"\.[\s\S]*Did you mean "external"\?/,
-    );
-  });
-
-  it('rejects typoed match_edges relation type filters with nearest-value hints', () => {
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_edges', type: 'depend_on' }),
-      /type must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_edges', relation: 'depend_on' }),
-      /relation must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
-    );
   });
 
   it('rejects invalid optional scalar filters instead of ignoring them', () => {
@@ -2698,16 +2107,12 @@ describe('queryCompiledOntology', () => {
       /domain must be a non-empty string/,
     );
     assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_nodes', slugContains: ' auth' }),
-      /slugContains must not have leading or trailing whitespace/,
-    );
-    assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'similar_nodes', title: 'Login\0' }),
       /title must not contain a null byte/,
     );
     assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_edges', from: ' capabilities/login' }),
-      /from must not have leading or trailing whitespace/,
+      () => queryCompiledOntology(artifact(), { operation: 'neighbors', slug: 'capabilities/login', limit: -1 }),
+      /limit must be a positive integer/,
     );
   });
 
@@ -2717,99 +2122,13 @@ describe('queryCompiledOntology', () => {
       /hasIncoming must be a boolean/,
     );
     assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'match_edges', includeExternal: 'true' }),
+      () => queryCompiledOntology(artifact(), { operation: 'neighbors', slug: 'capabilities/login', includeExternal: 'true' }),
       /includeExternal must be a boolean/,
-    );
-    assert.throws(
-      () => queryCompiledOntology(artifact(), { operation: 'topological_order', includeIsolated: 1 }),
-      /includeIsolated must be a boolean/,
     );
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'maintenance_plan', executableOnly: null }),
       /executableOnly must be a boolean/,
     );
-  });
-
-  it('matches compiled edges by graph pattern filters', () => {
-    const result = queryCompiledOntology(artifact(), {
-      operation: 'match_edges',
-      fromKind: 'capability',
-      type: 'depends_on',
-      toKind: 'domain',
-    });
-
-    assert.equal(result.operation, 'match_edges');
-    assert.deepEqual(result.filters, {
-      from: null,
-      to: null,
-      fromKind: 'capability',
-      toKind: 'domain',
-      types: ['dependencies'],
-      relationTypes: ['depends_on'],
-      includeExternal: false,
-      includeUnresolved: false,
-    });
-    assert.equal(result.totalMatches, 1);
-    assert.deepEqual(
-      result.edges.map((edge) => ({
-        from: edge.from,
-        to: edge.to,
-        via: edge.via,
-        relationType: edge.relationType,
-        fromKind: edge.fromNode.kind,
-        toKind: edge.toKind,
-      })),
-      [
-        {
-          from: 'capabilities/login',
-          to: 'domains/auth',
-          via: 'dependencies',
-          relationType: 'depends_on',
-          fromKind: 'capability',
-          toKind: 'domain',
-        },
-      ],
-    );
-    assert.deepEqual(result.followUp.focusEdge, {
-      from: 'capabilities/login',
-      to: 'domains/auth',
-      via: 'dependencies',
-      relationType: 'depends_on',
-    });
-    assert.match(result.followUp.reason, /match_edges is a scan/);
-    assert.deepEqual(
-      result.followUp.calls.map((call) => call.arguments.operation),
-      ['explain_relation', 'path', 'relation_check'],
-    );
-    assert.deepEqual(result.followUp.calls[0].arguments, {
-      operation: 'explain_relation',
-      from: 'capabilities/login',
-      to: 'domains/auth',
-      direction: 'undirected',
-      types: ['depends_on'],
-      maxHops: 5,
-      limit: 10,
-    });
-
-    const external = queryCompiledOntology(artifact(), {
-      operation: 'match_edges',
-      from: 'capabilities/login',
-      toKind: 'external',
-      includeExternal: true,
-    });
-    assert.equal(external.totalMatches, 1);
-    assert.deepEqual(external.edges.map((edge) => edge.to), ['src/auth/login.ts']);
-    assert.equal(external.edges[0].toNode, null);
-    assert.equal(external.followUp, undefined);
-
-    const limited = queryCompiledOntology(artifact(), {
-      operation: 'match_edges',
-      fromKind: 'capability',
-      limit: 2,
-    });
-    assert.equal(limited.totalMatches, 3);
-    assert.equal(limited.limited, true);
-    assert.equal(limited.edges.length, 2);
   });
 
   it('returns a compiled node profile for detail views', () => {
@@ -3314,209 +2633,6 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.hotspots[0].slug, 'capabilities/login');
   });
 
-  it('returns a domain profile with boundary and external references', () => {
-    const profiled = compileOntology(
-      [
-        doc('project', {
-          kind: 'project',
-          title: 'Project',
-          domains: ['domains/auth'],
-        }),
-        doc('domains/auth', {
-          kind: 'domain',
-          title: 'Auth',
-        }),
-        doc('domains/billing', {
-          kind: 'domain',
-          title: 'Billing',
-        }),
-        doc('capabilities/login', {
-          kind: 'capability',
-          title: 'Login',
-          domain: 'domains/auth',
-          depends_on: ['capabilities/invoice'],
-          elements: ['elements/token', 'src/auth/login.ts'],
-        }),
-        doc('capabilities/session', {
-          kind: 'capability',
-          title: 'Session',
-          domain: 'domains/auth',
-          depends_on: ['capabilities/login'],
-        }),
-        doc('capabilities/invoice', {
-          kind: 'capability',
-          title: 'Invoice',
-          domain: 'domains/billing',
-        }),
-        doc('elements/token', {
-          kind: 'element',
-          title: 'Token',
-        }),
-      ],
-      { includeIndexes: true },
-    );
-
-    const result = queryCompiledOntology(profiled, {
-      operation: 'domain_profile',
-      slug: 'domains/auth',
-    });
-
-    assert.equal(result.operation, 'domain_profile');
-    assert.equal(result.domain, 'domains/auth');
-    assert.deepEqual(result.parents.projects.map((project) => project.slug), ['project']);
-    assert.deepEqual(result.summary, {
-      nodes: 4,
-      capabilities: 2,
-      elements: 1,
-      internalEdges: 4,
-      boundaryEdges: 1,
-      externalEdges: 1,
-      unresolvedEdges: 0,
-    });
-    assert.deepEqual(result.capabilities.nodes.map((node) => node.slug), [
-      'capabilities/login',
-      'capabilities/session',
-    ]);
-    assert.deepEqual(result.elements.nodes.map((node) => node.slug), ['elements/token']);
-    assert.deepEqual(result.edges.boundary.edges.map((edge) => `${edge.from}->${edge.to}:${edge.toScope}`), [
-      'capabilities/login->capabilities/invoice:boundary',
-    ]);
-    assert.deepEqual(result.edges.external.edges.map((edge) => `${edge.from}->${edge.to}:${edge.toScope}`), [
-      'capabilities/login->src/auth/login.ts:external',
-    ]);
-  });
-
-  it('returns a domain-to-domain dependency matrix', () => {
-    const matrix = compileOntology(
-      [
-        doc('project', {
-          kind: 'project',
-          title: 'Project',
-          domains: ['domains/auth', 'domains/billing'],
-        }),
-        doc('domains/auth', {
-          kind: 'domain',
-          title: 'Auth',
-        }),
-        doc('domains/billing', {
-          kind: 'domain',
-          title: 'Billing',
-        }),
-        doc('capabilities/login', {
-          kind: 'capability',
-          title: 'Login',
-          domain: 'domains/auth',
-          depends_on: ['capabilities/invoice'],
-          elements: ['elements/token', 'src/auth/login.ts'],
-        }),
-        doc('capabilities/session', {
-          kind: 'capability',
-          title: 'Session',
-          domain: 'domains/auth',
-          depends_on: ['capabilities/login'],
-        }),
-        doc('capabilities/invoice', {
-          kind: 'capability',
-          title: 'Invoice',
-          domain: 'domains/billing',
-        }),
-        doc('elements/token', {
-          kind: 'element',
-          title: 'Token',
-        }),
-      ],
-      { includeIndexes: true },
-    );
-
-    const result = queryCompiledOntology(matrix, {
-      operation: 'domain_matrix',
-      project: 'project',
-    });
-
-    assert.equal(result.operation, 'domain_matrix');
-    assert.equal(result.project, 'project');
-    assert.deepEqual(result.summary, {
-      domains: 2,
-      nodes: 7,
-      assignedNodes: 6,
-      unassignedNodes: 1,
-      crossDomainEdges: 1,
-      selfDomainEdges: 5,
-      externalEdges: 1,
-      unresolvedEdges: 0,
-    });
-    assert.deepEqual(
-      result.domains.map((domain) => ({
-        slug: domain.slug,
-        nodes: domain.nodes,
-        outgoing: domain.outgoing,
-        incoming: domain.incoming,
-        selfEdges: domain.selfEdges,
-        externalEdges: domain.externalEdges,
-      })),
-      [
-        {
-          slug: 'domains/auth',
-          nodes: 4,
-          outgoing: 1,
-          incoming: 0,
-          selfEdges: 4,
-          externalEdges: 1,
-        },
-        {
-          slug: 'domains/billing',
-          nodes: 2,
-          outgoing: 0,
-          incoming: 1,
-          selfEdges: 1,
-          externalEdges: 0,
-        },
-      ],
-    );
-    assert.deepEqual(
-      result.connections.rows.map((row) => ({
-        from: row.from,
-        to: row.to,
-        count: row.count,
-        byRelation: row.byRelation,
-        byRelationType: row.byRelationType,
-      })),
-      [
-        {
-          from: 'domains/auth',
-          to: 'domains/billing',
-          count: 1,
-          byRelation: { dependencies: 1 },
-          byRelationType: { depends_on: 1 },
-        },
-      ],
-    );
-
-    const filtered = queryCompiledOntology(matrix, {
-      operation: 'domain_matrix',
-      project: 'project',
-      types: ['depends_on'],
-    });
-
-    assert.deepEqual(filtered.filters, {
-      types: ['dependencies'],
-      relationTypes: ['depends_on'],
-    });
-    assert.deepEqual(filtered.summary, {
-      domains: 2,
-      nodes: 7,
-      assignedNodes: 6,
-      unassignedNodes: 1,
-      crossDomainEdges: 1,
-      selfDomainEdges: 1,
-      externalEdges: 0,
-      unresolvedEdges: 0,
-    });
-    assert.deepEqual(filtered.connections.rows[0].byRelation, { dependencies: 1 });
-    assert.deepEqual(filtered.connections.rows[0].byRelationType, { depends_on: 1 });
-    assert.equal(filtered.connections.rows[0].examples[0].relationType, 'depends_on');
-  });
-
   /**
    * The `cycles` operation runs longest when there are none: the path-enumerating DFS stopped
    * early only after finding a cycle, so a healthy graph exhausted the path space
@@ -3668,90 +2784,6 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.totalCyclesExact, false);
     assert.ok(result.totalCycles > 0 && result.totalCycles < 84, `found ${result.totalCycles} of 84`);
     assert.equal(result.evidence.reason, 'search_budget');
-  });
-
-  it('returns prerequisite-first topological order for dependency edges', () => {
-    const ordered = compileOntology(
-      [
-        doc('capabilities/app', {
-          kind: 'capability',
-          title: 'App',
-          depends_on: ['capabilities/auth', 'capabilities/ui'],
-        }),
-        doc('capabilities/auth', {
-          kind: 'capability',
-          title: 'Auth',
-          depends_on: ['capabilities/storage'],
-        }),
-        doc('capabilities/storage', {
-          kind: 'capability',
-          title: 'Storage',
-        }),
-        doc('capabilities/ui', {
-          kind: 'capability',
-          title: 'UI',
-        }),
-        doc('capabilities/unrelated', {
-          kind: 'capability',
-          title: 'Unrelated',
-        }),
-      ],
-      { includeIndexes: true },
-    );
-
-    const result = queryCompiledOntology(ordered, {
-      operation: 'topological_order',
-    });
-
-    assert.equal(result.operation, 'topological_order');
-    assert.equal(result.acyclic, true);
-    assert.equal(result.totalNodes, 4);
-    assert.equal(result.selectedEdges, 3);
-    assert.deepEqual(
-      result.layers.map((layer) => ({
-        rank: layer.rank,
-        nodes: layer.nodes.map((node) => node.slug),
-      })),
-      [
-        { rank: 0, nodes: ['capabilities/storage', 'capabilities/ui'] },
-        { rank: 1, nodes: ['capabilities/auth'] },
-        { rank: 2, nodes: ['capabilities/app'] },
-      ],
-    );
-    assert.deepEqual(result.order.map((row) => row.slug), [
-      'capabilities/storage',
-      'capabilities/ui',
-      'capabilities/auth',
-      'capabilities/app',
-    ]);
-
-    const withIsolated = queryCompiledOntology(ordered, {
-      operation: 'topological_order',
-      includeIsolated: true,
-      limit: 2,
-    });
-    assert.equal(withIsolated.totalNodes, 5);
-    assert.equal(withIsolated.limited, true);
-    assert.deepEqual(withIsolated.order.map((row) => row.slug), [
-      'capabilities/storage',
-      'capabilities/ui',
-    ]);
-
-    const cyclic = queryCompiledOntology(
-      compileOntology(
-        [
-          doc('capabilities/a', { kind: 'capability', title: 'A', depends_on: ['capabilities/b'] }),
-          doc('capabilities/b', { kind: 'capability', title: 'B', depends_on: ['capabilities/a'] }),
-        ],
-        { includeIndexes: true },
-      ),
-      { operation: 'topological_order' },
-    );
-    assert.equal(cyclic.acyclic, false);
-    assert.deepEqual(cyclic.blocked.map((row) => row.slug), [
-      'capabilities/a',
-      'capabilities/b',
-    ]);
   });
 
   it('recommends missing parent-to-child domain containment relations', () => {

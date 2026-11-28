@@ -11,8 +11,6 @@ import { readFileSync } from 'node:fs';
 
 import { collectSourceUnits } from '../analyze/survey/source-units.mjs';
 import { outlineSource } from './source-outline.mjs';
-import { blankLiterals, importLines } from './code-text.mjs';
-import { typeTiesOf } from './type-ties.mjs';
 
 const MAX_INDEXED_BYTES = 256 * 1024;
 // Declarations and a small filter of the identifiers a file names are kept for
@@ -125,68 +123,11 @@ function factsOf(file) {
         .map(({ name, line, kind }) => ({ name: Buffer.from(name).toString(), line, kind }))
       : [],
     names: identifierFilter(text),
-    family: null,
   };
   DECLARATIONS.delete(file.abs);
   DECLARATIONS.set(file.abs, facts);
   if (DECLARATIONS.size > FILE_LIMIT) DECLARATIONS.delete(DECLARATIONS.keys().next().value);
   return facts;
-}
-
-/**
- * What the family count reads of one file, built the first time it is asked
- * for and kept with the file's facts. Declarations and class headers come from
- * the text with comments and strings blanked (`code-text`), so a class shown in
- * a docstring is no class; the general index above keeps reading the plain
- * outline. A file the blanking could not read with certainty, past the size
- * cap, with an outline that stopped early or an import cut at a cap is
- * `truncated`, and the count withholds what it could hold.
- */
-function familyFactsOf(file, facts) {
-  if (facts.family) return facts.family;
-  const capped = file.size > MAX_INDEXED_BYTES;
-  const family = { declarations: [], goImports: [], defaultImports: [], capped, truncated: capped, importsCut: false };
-  const text = capped ? '' : textOf(file);
-  if (text) {
-    const blanked = blankLiterals(text, file.path);
-    const outlined = outlineSource(blanked.code, file.path);
-    const outline = outlined.declarations
-      .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export');
-    const { ties, goImports, defaultImports, expressions, importsCut } = typeTiesOf(outline, blanked.code, file.path, {
-      partial: Boolean(outlined.truncated) || blanked.uncertain,
-      importLines: () => importLines(text, blanked),
-    });
-    // A copy: a substring would keep the whole file text alive.
-    const declarations = outline.map(({ name, line, kind }, index) => ({ name: Buffer.from(name).toString(), line, kind, ...ties.get(index) }));
-    // A class expression takes the place of what the outline listed on its line (a `const`, or a class named `extends`).
-    const replaced = new Set(expressions.map((expression) => expression.line));
-    family.declarations = replaced.size === 0 ? declarations : [
-      ...declarations.filter((declaration) => !replaced.has(declaration.line)),
-      ...expressions,
-    ].sort((a, b) => a.line - b.line);
-    family.goImports = goImports;
-    family.defaultImports = defaultImports;
-    family.importsCut = importsCut;
-    family.truncated = Boolean(outlined.truncated) || importsCut || blanked.uncertain;
-  }
-  facts.family = family;
-  return family;
-}
-
-/**
- * Each product file as the family count reads it (`familyFactsOf`), from the
- * same cache the index uses.
- *
- * @param {string} rootPath absolute repository root
- * @param {{ ignore?: string[], files?: object[] }} [options]
- * @returns {Generator<{ path: string, declarations: object[], goImports: string[][], defaultImports: string[], truncated: boolean, capped: boolean, importsCut: boolean, mayName: (name: string) => boolean }>}
- */
-export function* declarationsByFile(rootPath, { ignore = [], files } = {}) {
-  for (const file of files ?? productFiles(rootPath, ignore)) {
-    const facts = factsOf(file);
-    const family = familyFactsOf(file, facts);
-    yield { path: file.path, ...family, mayName: (name) => mayName(facts, name) };
-  }
 }
 
 /** False only when the file certainly never names `name` as a whole identifier. */
@@ -202,23 +143,6 @@ export function productFiles(rootPath, ignore = []) {
     return collectSourceUnits(rootPath, { ignore }).files.filter((file) => file.class === 'product');
   } catch {
     return [];
-  }
-}
-
-/**
- * Product source files under `rootPath` and whether the walk stopped at its
- * file cap before reaching them all.
- *
- * @param {string} rootPath absolute repository root
- * @param {string[]} [ignore]
- * @returns {{ files: object[], truncated: boolean }}
- */
-export function productWalk(rootPath, ignore = []) {
-  try {
-    const collection = collectSourceUnits(rootPath, { ignore });
-    return { files: collection.files.filter((file) => file.class === 'product'), truncated: Boolean(collection.truncated) };
-  } catch {
-    return { files: [], truncated: true };
   }
 }
 

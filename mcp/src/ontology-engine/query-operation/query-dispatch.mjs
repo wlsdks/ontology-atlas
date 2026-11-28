@@ -9,14 +9,8 @@ export function dispatchOntologyQuery(queries, query = {}, allowedOperations = [
   if (operation === 'path') {
     return queries.path(query.from, query.to, query);
   }
-  if (operation === 'all_paths') {
-    return queries.allPaths(query.from, query.to, query);
-  }
   if (operation === 'query_plan') {
     return queries.queryPlan(query);
-  }
-  if (operation === 'centrality') {
-    return queries.centrality(query);
   }
   if (operation === 'communities') {
     return queries.communities(query);
@@ -40,10 +34,7 @@ export function dispatchOntologyQuery(queries, query = {}, allowedOperations = [
     return queries.blastRadius(query.slug, query);
   }
   if (operation === 'subgraph') {
-    return queries.subgraph(query.slug ?? query.seed, query);
-  }
-  if (operation === 'builder_context') {
-    return queries.builderContext(query.slug ?? query.seed, query);
+    return queries.subgraph(query.slug, query);
   }
   if (operation === 'overview') {
     return queries.overview(query);
@@ -57,17 +48,8 @@ export function dispatchOntologyQuery(queries, query = {}, allowedOperations = [
   if (operation === 'match_nodes') {
     return queries.matchNodes(query);
   }
-  if (operation === 'match_edges') {
-    return queries.matchEdges(query);
-  }
   if (operation === 'node_profile') {
     return queries.nodeProfile(query.slug, query);
-  }
-  if (operation === 'domain_profile') {
-    return queries.domainProfile(query.slug ?? query.domain, query);
-  }
-  if (operation === 'domain_matrix') {
-    return queries.domainMatrix(query);
   }
   if (operation === 'project_scope') {
     return queries.projectScope(query.slug ?? query.project, query);
@@ -89,9 +71,6 @@ export function dispatchOntologyQuery(queries, query = {}, allowedOperations = [
   }
   if (operation === 'cycles') {
     return queries.cycles(query);
-  }
-  if (operation === 'topological_order') {
-    return queries.topologicalOrder(query);
   }
   if (operation === 'recommend_relations') {
     return queries.recommendRelations(query);

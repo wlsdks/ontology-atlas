@@ -7,8 +7,6 @@ import { normalizeLimit } from '../query-operation/query-primitives.mjs';
 
 export function createBriefQueries({
   agentWorkflowGuide,
-  agentModeComparison,
-  graphScanProofChecklist,
   nodeBySlug,
   nodes,
   edges,
@@ -151,219 +149,6 @@ export function createBriefQueries({
     });
     const healthGateCall = agentToolCall('query_ontology', { operation: 'health', limit });
     const validateVaultGateCall = agentToolCall('validate_vault', {});
-    const traversalBudget = {
-      maxHops: 1,
-      limit: 10,
-      searchBudget: 1000,
-      types: ['depends_on', 'relates', 'domain', 'capabilities', 'contains'],
-    };
-    const traversalPlanCall = agentToolCall('query_ontology', {
-      operation: 'query_plan',
-      targetOperation: 'all_paths',
-      from: impactSlug,
-      to: pathTargetSlug,
-      ...traversalBudget,
-    });
-    const traversalAllPathsCall = agentToolCall('query_ontology', {
-      operation: 'all_paths',
-      from: impactSlug,
-      to: pathTargetSlug,
-      ...traversalBudget,
-    });
-    const graphDbQueryPack = [
-      {
-        id: 'graph_facets',
-        intent: 'MATCH graph RETURN kind/domain/degree/relation facets LIMIT 10',
-        goal: 'Read kind, domain, degree, relation, and schema-pattern buckets before choosing a narrower graph query.',
-        calls: [
-          agentToolCall('query_ontology', {
-            operation: 'facets',
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'schema',
-            limit: 20,
-          }),
-        ],
-      },
-      {
-        id: 'node_scan',
-        intent: 'MATCH (n:capability) WHERE degree(n) >= 2 RETURN n ORDER BY degree(n) DESC LIMIT 10',
-        goal: 'Find high-degree capability nodes as onboarding or refactor starting points.',
-        calls: [
-          agentToolCall('query_ontology', {
-            operation: 'query_plan',
-            targetOperation: 'match_nodes',
-            kind: 'capability',
-            minDegree: 2,
-            sort: 'degree',
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'match_nodes',
-            kind: 'capability',
-            minDegree: 2,
-            sort: 'degree',
-            limit: 10,
-          }),
-        ],
-      },
-      {
-        id: 'edge_scan',
-        intent: 'MATCH ()-[r:depends_on]->() RETURN r LIMIT 20',
-        goal: 'Scan dependency edges before treating coupling rows as proof.',
-        calls: [
-          agentToolCall('query_ontology', {
-            operation: 'query_plan',
-            targetOperation: 'match_edges',
-            types: ['depends_on'],
-            limit: 20,
-          }),
-          agentToolCall('query_ontology', { operation: 'match_edges', types: ['depends_on'], limit: 20 }),
-        ],
-      },
-      {
-        id: 'domain_coupling',
-        intent: 'MATCH (domain)-[depends_on|relates]->(domain) RETURN coupling_matrix LIMIT 6',
-        goal: 'Compare domain coupling and centrality before making boundary claims.',
-        calls: [
-          agentToolCall('query_ontology', { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 }),
-          agentToolCall('query_ontology', {
-            operation: 'query_plan',
-            targetOperation: 'centrality',
-            types: ['depends_on', 'relates'],
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', { operation: 'centrality', types: ['depends_on', 'relates'], limit: 10 }),
-        ],
-      },
-      {
-        id: 'path_evidence',
-        intent: 'MATCH p=(from)-[:depends_on|relates*..3]-(to) RETURN p LIMIT 10',
-        goal: 'Collect bounded path evidence and relation explanation before writing or refactoring.',
-        calls: [
-          agentToolCall('query_ontology', {
-            operation: 'query_plan',
-            targetOperation: 'all_paths',
-            from: impactSlug,
-            to: pathTargetSlug,
-            maxHops: 3,
-            types: ['depends_on', 'relates'],
-            searchBudget: 1000,
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'all_paths',
-            from: impactSlug,
-            to: pathTargetSlug,
-            maxHops: 3,
-            types: ['depends_on', 'relates'],
-            searchBudget: 1000,
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'explain_relation',
-            from: impactSlug,
-            to: pathTargetSlug,
-            direction: 'undirected',
-            maxHops: 5,
-            types: ['depends_on', 'relates'],
-            limit: 10,
-          }),
-        ],
-      },
-      {
-        id: 'business_questions',
-        intent: 'MATCH business questions TO outcomes, domain boundaries, capability claims, and implementation evidence',
-        goal: 'Answer the business ontology lens questions with executable graph evidence instead of treating paths or APIs as the ontology root.',
-        calls: [
-          agentToolCall('query_ontology', {
-            operation: 'facets',
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'query_plan',
-            targetOperation: 'match_nodes',
-            kind: 'domain',
-            sort: 'degree',
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'match_nodes',
-            kind: 'domain',
-            sort: 'degree',
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 }),
-          agentToolCall('query_ontology', {
-            operation: 'query_plan',
-            targetOperation: 'match_nodes',
-            kind: 'capability',
-            sort: 'degree',
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'match_nodes',
-            kind: 'capability',
-            sort: 'degree',
-            limit: 10,
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'query_plan',
-            targetOperation: 'match_edges',
-            fromKind: 'capability',
-            toKind: 'element',
-            types: ['elements', 'depends_on', 'relates'],
-            limit: 20,
-          }),
-          agentToolCall('query_ontology', {
-            operation: 'match_edges',
-            fromKind: 'capability',
-            toKind: 'element',
-            types: ['elements', 'depends_on', 'relates'],
-            limit: 20,
-          }),
-        ],
-      },
-    ];
-    const containmentCrossCheckCalls = [
-      agentToolCall('query_ontology', {
-        operation: 'pattern_walk',
-        slug: projectSlug,
-        pattern: ['domains', 'capabilities'],
-        direction: 'outgoing',
-        limit: 20,
-      }),
-      agentToolCall('query_ontology', { operation: 'project_map', project: projectSlug, limit: 10, itemLimit: 20 }),
-    ];
-    const traversalStrategy = [
-      {
-        id: 'plan_before_enumeration',
-        priority: 'first',
-        goal: 'Estimate traversal cost before enumerating paths.',
-        useWhen: 'The question needs more than one shortest route or may touch high-degree hubs.',
-        evidence: ['query_plan.execution.nextStep', 'query_plan.execution.suggestedQuery', 'query_plan.execution.saferQuery when present'],
-        stopWhen: ['execution.nextStep is narrow or review and the saferQuery still lacks maxHops/types/searchBudget bounds.'],
-        calls: [traversalPlanCall],
-      },
-      {
-        id: 'bounded_path_evidence',
-        priority: 'evidence',
-        goal: 'Enumerate bounded alternatives without turning traversal into an unbounded graph scan.',
-        useWhen: 'A write, refactor, or architecture answer depends on whether multiple paths explain the relation.',
-        evidence: ['all_paths.evidence.status', 'all_paths.evidence.reason', 'all_paths.evidence.pathsComplete', 'all_paths.totalPathsExact'],
-        stopWhen: ['evidence.status is partial, evidence.pathsComplete is false, or totalPathsExact is false; follow evidence.suggestedQuery or evidence.saferQuery before writing.'],
-        calls: [traversalAllPathsCall],
-      },
-      {
-        id: 'containment_cross_check',
-        priority: 'confirm',
-        goal: 'Cross-check path evidence against project/domain containment instead of trusting edge proximity alone.',
-        useWhen: 'The answer changes ownership, domain boundaries, or add_relations direction.',
-        evidence: ['pattern_walk rows for project -> domains -> capabilities', 'project_map domain placement and boundary edges'],
-        stopWhen: ['pattern_walk and project_map disagree on project/domain placement.'],
-        calls: containmentCrossCheckCalls,
-      },
-    ];
     const relationDecisionGuide = [
       {
         decision: 'skip_existing',
@@ -384,48 +169,6 @@ export function createBriefQueries({
         decision: 'review_new_schema',
         severity: 'warn',
         meaning: 'This creates a new schema pattern; explain why the relation type belongs before writing.',
-      },
-    ];
-    const resultContracts = [
-      {
-        operation: 'all_paths',
-        mustReport: [
-          'limit',
-          'searchBudget',
-          'expandedStates',
-          'exhaustive',
-          'truncatedByBudget',
-          'totalPathsExact',
-          'evidence.status',
-          'evidence.reason',
-          'evidence.pathsComplete',
-        ],
-        partialWhen: ['exhaustive=false', 'truncatedByBudget=true', 'totalPathsExact=false', 'evidence.status=partial', 'evidence.pathsComplete=false'],
-        policy: 'Treat paths as partial evidence unless evidence.pathsComplete is true; treat totalPaths as partial evidence unless totalPathsExact is true; follow evidence.suggestedQuery or narrow maxHops/types before using paths as write evidence.',
-      },
-      {
-        operation: 'match_nodes',
-        mustReport: [
-          'totalMatches',
-          'limited',
-          'nodes.length',
-          'followUp.focusSlug',
-          'followUp.calls',
-        ],
-        partialWhen: ['limited=true', 'nodes.length=0', 'followUp missing because no rows were returned'],
-        policy: 'Treat match_nodes rows as scan candidates, not evidence; run the followUp node_profile, incoming/outgoing match_edges, and blast_radius calls before using a node row for onboarding or refactor decisions.',
-      },
-      {
-        operation: 'match_edges',
-        mustReport: [
-          'totalMatches',
-          'limited',
-          'edges.length',
-          'followUp.focusEdge',
-          'followUp.calls',
-        ],
-        partialWhen: ['limited=true', 'edges.length=0', 'followUp missing because the first row is external/unresolved or no rows were returned'],
-        policy: 'Treat match_edges rows as scan candidates, not proof; run the followUp explain_relation, path, and relation_check calls before using an edge row as write, refactor, or coupling evidence.',
       },
     ];
     const entrypoints = overviewResult.hubs.slice(0, limit).map((node) => ({
@@ -481,123 +224,6 @@ export function createBriefQueries({
         }),
         relationPreflightCall,
       ],
-      graphDbQueryPack,
-      traversalStrategy,
-      playbooks: [
-        {
-          id: 'refactor_impact',
-          goal: 'Before changing a node or module, estimate dependency blast radius and cite affected slugs.',
-          evidence: [
-            'Target node profile, incoming blast radius groups, and the highest-risk affected slugs.',
-            'Whether an existing path already explains the proposed relation.',
-            'The relation_check recommendation.decision before any add_relations.',
-          ],
-          stopWhen: [
-            'health reports failing checks or actionable nextActions.',
-            'relation_check returns skip_existing, review_inverse, or review_new_schema.',
-            'blast radius crosses domains that are outside the requested change.',
-          ],
-          calls: [
-            agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
-            agentToolCall('query_ontology', {
-              operation: 'query_plan',
-              targetOperation: 'blast_radius',
-              slug: impactSlug,
-              depth: 2,
-            }),
-            agentToolCall('query_ontology', { operation: 'node_profile', slug: impactSlug, depth: 2, limit: 12 }),
-            agentToolCall('query_ontology', { operation: 'blast_radius', slug: impactSlug, depth: 2, direction: 'incoming' }),
-            pathPreflightCall,
-            relationPreflightCall,
-          ],
-        },
-        {
-          id: 'onboarding_map',
-          goal: 'Build a compact project/domain map before editing an unfamiliar vault.',
-          evidence: [
-            'Workspace status, project/domain map, and the main high-degree entrypoints.',
-            'Domain coupling rows that explain where codebase knowledge clusters.',
-            'Graph DB-style node scan results that surface high-degree capability starting points.',
-            'One concrete hub profile to anchor the first mental model.',
-          ],
-          stopWhen: [
-            'workspace_brief reports unresolved graph health issues.',
-            'query_plan(match_nodes) asks for a narrower kind/domain/limit before scanning.',
-            'node_profile cannot resolve the selected high-degree entrypoint.',
-          ],
-          calls: [
-            agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
-            agentToolCall('query_ontology', { operation: 'domain_matrix', limit: 10 }),
-            agentToolCall('query_ontology', {
-              operation: 'query_plan',
-              targetOperation: 'match_nodes',
-              kind: 'capability',
-              minDegree: 2,
-              sort: 'degree',
-              limit: 10,
-            }),
-            agentToolCall('query_ontology', {
-              operation: 'match_nodes',
-              kind: 'capability',
-              minDegree: 2,
-              sort: 'degree',
-              limit: 10,
-            }),
-            agentToolCall('query_ontology', { operation: 'node_profile', slug: impactSlug, depth: 2, limit: 12 }),
-          ],
-        },
-        {
-          id: 'coupling_audit',
-          goal: 'Find high-coupling nodes and relation patterns before a modularity review.',
-          evidence: [
-            'Domain-to-domain coupling hot spots.',
-            'Central nodes and dependency edges that create boundary pressure.',
-            'Any cycles, disconnected components, or health failures that weaken the audit.',
-          ],
-          stopWhen: [
-            'health fails or reports dependency cycles.',
-            'centrality and match_edges point to conflicting boundary conclusions.',
-          ],
-          calls: [
-            agentToolCall('query_ontology', { operation: 'health', limit }),
-            agentToolCall('query_ontology', { operation: 'domain_matrix', limit: 10 }),
-            agentToolCall('query_ontology', {
-              operation: 'query_plan',
-              targetOperation: 'centrality',
-              types: ['depends_on', 'relates'],
-              limit: 10,
-            }),
-            agentToolCall('query_ontology', { operation: 'centrality', types: ['depends_on', 'relates'], limit: 10 }),
-            agentToolCall('query_ontology', {
-              operation: 'query_plan',
-              targetOperation: 'match_edges',
-              types: ['depends_on'],
-              limit: 20,
-            }),
-            agentToolCall('query_ontology', { operation: 'match_edges', types: ['depends_on'], limit: 20 }),
-          ],
-        },
-        {
-          id: 'graph_traversal',
-          goal: 'Use graph-database-style traversal evidence when one shortest path is not enough.',
-          evidence: [
-            'Schema patterns that make the traversal legal and meaningful.',
-            'Bounded all_paths alternatives with the edges that distinguish them.',
-            'Pattern-walk containment evidence and the project_map domain placement.',
-          ],
-          stopWhen: [
-            'query_plan marks all_paths as high cost for the requested bounds.',
-            'all_paths returns too many plausible paths to justify a single edge without narrowing types or hops.',
-            'pattern_walk and project_map disagree on project/domain containment.',
-          ],
-          calls: [
-            agentToolCall('query_ontology', { operation: 'schema', limit: 20 }),
-            traversalPlanCall,
-            traversalAllPathsCall,
-            ...containmentCrossCheckCalls,
-          ],
-        },
-      ],
       writeGuardrails: [
         {
           id: 'preflight_relation',
@@ -631,26 +257,22 @@ export function createBriefQueries({
         'Use uid as the permanent node identity and slug as its current human-readable address; graph relations and graph-operation inputs remain slug-based.',
         'Run read tools first and cite returned slugs/edges before editing.',
         'Run relation_check before add_relations to confirm matchingEdges, inverseEdges, and schema pattern. For a new depends_on, require approvalGate.writeAllowed=false until observable ability, rationale, explicit human approval, and why are present; do not expect proposedAction args.',
-        'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat incomplete paths as partial evidence.',
-        'For match_nodes and match_edges, report totalMatches/limited plus followUp details, then run the followUp calls before treating scan rows as evidence.',
+        'For match_nodes, report totalMatches/limited plus followUp details, then run the followUp calls before treating scan rows as evidence.',
         'Follow relationDecisionGuide: skip_existing blocks duplicate writes; safe_to_add is schema-only; review_inverse and review_new_schema require explicit justification before writing.',
         'Run find_backlinks before rename_concept or merge_concepts so backlink rewrites are intentional.',
         'Run health, cycles, growth_plan, maintenance_plan, and validate_vault after code changes or vault writes before handing the graph to another agent.',
         'Use add_concepts/add_relations/patch_concept/merge_concepts only after the intended ontology change is clear.',
         'Treat Definition/Includes lists as bounded positive claims, not exhaustive inventories. Never say only/all/every/exactly unless the full node body explicitly states completeness and cites a source-backed product boundary; otherwise say "the vault names/models these items" and preserve Excludes/Uncertainty limits.',
         'When a source body says bounded packet, static packet, bounded excerpt, or selected evidence, preserve it in the same atomic claim as a measurement qualifier; never detach only/one/none/unmeasured/absent from it.',
-        'Structural readiness is not semantic qualification: inspect projectSource.currentness, meaningAssessment.status, competency question witnesses, and meaningRepair before claiming a project is ontology-ready.',
+        'Structural readiness is not semantic qualification: inspect projectSource.currentness, meaningAssessment.status and competency question witnesses before claiming a project is ontology-ready.',
         'The nested project-source receipt is the last measured snapshot; the outer projectSource.currentness is the current graph comparison. Treat ontology_changed, stale, unavailable, or review_required as unresolved.',
         'Ordinary synchronization must not call delete_concept, merge_concepts, rename_concept, absorb_document, or a git commit of the vault. These require an explicit human request plus dry-run or preflight review and conflict guards.',
-        'Never finalize project meaning or repair competency answers automatically. Require independent qualification, explicit human approval, the returned writePlan, expected_mtime, validation, compile, and post-write health checks.',
+        'Never finalize project meaning or repair competency answers without the owner reading them: finalize_project_meaning needs expected_mtime, a passing validate_vault and a complete compile.',
         'After code changes introduce or rename a domain, capability, element, or relation, sync the vault before finishing.',
       ],
-      resultContracts,
       relationDecisionGuide,
       docs: {
         workflowGuide: agentWorkflowGuide,
-        modeComparison: agentModeComparison,
-        graphScanProofChecklist: graphScanProofChecklist,
       },
     };
     brief.handoffPrompt = buildAgentBriefHandoffPrompt(brief);

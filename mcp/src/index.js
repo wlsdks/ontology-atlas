@@ -63,7 +63,6 @@ import {
   readSourceTool,
 } from './tools/read.mjs';
 import { analyzeRepoStructureTool } from './tools/repo-analysis/analyze-structure.mjs';
-import { indexProjectTool } from './tools/repo-analysis/index-project.mjs';
 import { inferImportsTool } from './tools/repo-analysis/infer-imports.mjs';
 import { inspectArchitectureTool } from './tools/repo-analysis/inspect-architecture.mjs';
 import {
@@ -194,8 +193,6 @@ async function callTool(request) {
         return ok(analyzeRepoStructureTool(args));
       case 'infer_imports':
         return ok(inferImportsTool(args));
-      case 'index_project':
-        return ok(indexProjectTool(args));
       case 'rename_concept':
         return ok(logWrite(name, args, renameConcept(args)));
       case 'merge_concepts':

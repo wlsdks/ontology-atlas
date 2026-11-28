@@ -67,7 +67,6 @@ function readLines(row) {
   if (row.contextOmitted?.length > 0) {
     lines.push(`Context left out: ${row.contextOmitted.map((part) => `${part.role} ${t(part.symbol, 120)} ${t(part.path)}:L${part.line}`).join(', ')}`);
   }
-  if (row.family) lines.push(`Family: ${row.family}`);
   if (row.deciding) lines.push(`Deciding: ${row.deciding}`);
   if (!row.requestComplete) lines.push('Cut: the requested lines stopped at the 8 KiB range limit.');
   if (row.next) lines.push(`Next lines: ${readCall([row.next])}`);

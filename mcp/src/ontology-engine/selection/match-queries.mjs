@@ -1,6 +1,5 @@
-import { buildMatchEdgesFollowUp, buildMatchNodesFollowUp } from '../briefs/agent-responses.mjs';
+import { buildMatchNodesFollowUp } from '../briefs/agent-responses.mjs';
 import {
-  edgeAllowed,
   normalizeLimit,
   normalizeOptionalBoolean,
   normalizeRelationType,
@@ -9,8 +8,6 @@ import {
   summarizeNode,
 } from '../query-operation/query-primitives.mjs';
 import {
-  edgeTargetKindLabel,
-  edgeTargetKindMatches,
   judgeRelationCheck,
   nodeDegree,
   nodeMatchesFilters,
@@ -28,11 +25,8 @@ export function createMatchQueries({
   compareNodeRows,
   formatCompiledEdge,
   nearbySchemaPatterns,
-  normalizeEdgeTargetKind,
-  normalizeMatchEdgesTypes,
   normalizeNodeKind,
   normalizeNodeSort,
-  normalizeNonNegativeInteger,
   normalizeOptionalString,
   publicRelationTypes,
   roundScore,
@@ -44,20 +38,12 @@ export function createMatchQueries({
     const limit = normalizeLimit(options.limit);
     const kind = normalizeNodeKind(options.kind, 'kind');
     const domain = normalizeOptionalString(options.domain, 'domain');
-    const slugContains =
-      normalizeOptionalString(options.slugContains, 'slugContains')?.toLowerCase() || null;
-    const minDegree = normalizeNonNegativeInteger(options.minDegree, 'minDegree');
-    const maxDegree = normalizeNonNegativeInteger(options.maxDegree, 'maxDegree');
-    const minInDegree = normalizeNonNegativeInteger(options.minInDegree, 'minInDegree');
-    const minOutDegree = normalizeNonNegativeInteger(options.minOutDegree, 'minOutDegree');
     const hasIncoming = normalizeOptionalBoolean(options.hasIncoming, 'hasIncoming', null);
     const hasOutgoing = normalizeOptionalBoolean(options.hasOutgoing, 'hasOutgoing', null);
     const sort = normalizeNodeSort(options.sort);
     const rows = [];
 
-    const filters = {
-      kind, domain, slugContains, minDegree, maxDegree, minInDegree, minOutDegree, hasIncoming, hasOutgoing,
-    };
+    const filters = { kind, domain, hasIncoming, hasOutgoing };
 
     for (const node of nodes) {
       if (!nodeMatchesFilters(node, filters)) continue;
@@ -81,59 +67,6 @@ export function createMatchQueries({
       totalMatches: rows.length,
       limited: rows.length > limit,
       nodes: page,
-      ...(followUp ? { followUp } : {}),
-    };
-  }
-
-  function matchEdges(options = {}) {
-    const limit = normalizeLimit(options.limit);
-    const typeSet = normalizeMatchEdgesTypes(options);
-    const fromInput = normalizeOptionalString(options.from, 'from');
-    const toInput = normalizeOptionalString(options.to, 'to');
-    const from = fromInput ? resolve(fromInput, 'from') : null;
-    const to = toInput ? resolve(toInput, 'to') : null;
-    const fromKind = normalizeNodeKind(options.fromKind, 'fromKind');
-    const toKind = normalizeEdgeTargetKind(options.toKind, 'toKind');
-    const includeExternal = normalizeOptionalBoolean(options.includeExternal, 'includeExternal', false);
-    const includeUnresolved = normalizeOptionalBoolean(options.includeUnresolved, 'includeUnresolved', false);
-    const matches = [];
-
-    for (const edge of [...edges].sort(compareEdges)) {
-      if (!edgeAllowed(edge, typeSet, includeExternal, includeUnresolved)) continue;
-      if (from && edge.from !== from) continue;
-      if (to && edge.to !== to) continue;
-
-      const fromNode = nodeBySlug.get(edge.from);
-      const toNode = edge.resolved ? nodeBySlug.get(edge.to) : null;
-      if (fromKind && fromNode?.kind !== fromKind) continue;
-      if (toKind && !edgeTargetKindMatches(edge, toNode, toKind)) continue;
-
-      matches.push({
-        ...formatCompiledEdge(edge),
-        fromNode: summarizeNode(fromNode),
-        toNode: summarizeNode(toNode),
-        toKind: edgeTargetKindLabel(edge, toNode),
-      });
-    }
-
-    const page = matches.slice(0, limit);
-    const followUp = buildMatchEdgesFollowUp(page[0]);
-
-    return {
-      operation: 'match_edges',
-      filters: {
-        from,
-        to,
-        fromKind,
-        toKind,
-        types: typeSet ? [...typeSet].sort() : null,
-        relationTypes: publicRelationTypes(typeSet),
-        includeExternal,
-        includeUnresolved,
-      },
-      totalMatches: matches.length,
-      limited: matches.length > limit,
-      edges: page,
       ...(followUp ? { followUp } : {}),
     };
   }
@@ -260,5 +193,5 @@ export function createMatchQueries({
     };
   }
 
-  return { matchNodes, matchEdges, relationCheck, similarNodes };
+  return { matchNodes, relationCheck, similarNodes };
 }

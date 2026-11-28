@@ -42,65 +42,6 @@ export function createTraversalAnalysis({
   roundScore,
   uniqueEdges,
 }) {
-  function centrality(options = {}) {
-    const limit = normalizeLimit(options.limit, 10);
-    const iterations = normalizeIterations(options.iterations);
-    const typeSet = normalizeTypes(options.types);
-    const resolvedEdges = edges.filter((edge) => edge.resolved && typeAllowed(edge.via, typeSet));
-    const outgoingNeighbors = new Map(nodes.map((node) => [node.slug, new Set()]));
-    const incomingNeighbors = new Map(nodes.map((node) => [node.slug, new Set()]));
-    const outgoingEdgesBySlug = new Map(nodes.map((node) => [node.slug, []]));
-
-    for (const edge of resolvedEdges) {
-      outgoingNeighbors.get(edge.from)?.add(edge.to);
-      incomingNeighbors.get(edge.to)?.add(edge.from);
-      outgoingEdgesBySlug.get(edge.from)?.push(edge);
-    }
-
-    const pageRank = pageRankScores(nodes, outgoingEdgesBySlug, iterations);
-    const rows = nodes
-      .map((node) => {
-        const inDegree = incomingNeighbors.get(node.slug)?.size || 0;
-        const outDegree = outgoingNeighbors.get(node.slug)?.size || 0;
-        return {
-          ...summarizeNode(node),
-          inDegree,
-          outDegree,
-          degree: inDegree + outDegree,
-          pageRank: roundScore(pageRank.get(node.slug) || 0),
-          bridgeScore: inDegree * outDegree,
-        };
-      })
-      .sort(compareCentralityRows);
-
-    return {
-      operation: 'centrality',
-      graph: {
-        nodes: nodes.length,
-        edges: edges.length,
-        resolvedEdges: resolvedEdges.length,
-        graphHash: artifact?.graphHash,
-      },
-      parameters: {
-        types: typeSet ? [...typeSet].sort() : null,
-        iterations,
-        limit,
-      },
-      rankings: {
-        pageRank: rows.slice(0, limit),
-        bridges: [...rows]
-          .sort((a, b) => b.bridgeScore - a.bridgeScore || compareCentralityRows(a, b))
-          .slice(0, limit),
-        authorities: [...rows]
-          .sort((a, b) => b.inDegree - a.inDegree || compareCentralityRows(a, b))
-          .slice(0, limit),
-        hubs: [...rows]
-          .sort((a, b) => b.outDegree - a.outDegree || compareCentralityRows(a, b))
-          .slice(0, limit),
-      },
-    };
-  }
-
   function explainRelation(fromInput, toInput, options = {}) {
     const from = resolve(fromInput, 'from');
     const to = resolve(toInput, 'to');
@@ -511,51 +452,5 @@ export function createTraversalAnalysis({
     };
   }
 
-  function builderContext(slugOrAlias, options = {}) {
-    const focus = resolve(normalizeBuilderFocusInput(slugOrAlias), 'slug');
-    const focusNode = nodeBySlug.get(focus);
-    const focusParam = builderFocusParam(focusNode);
-    const direction = normalizeDirection(options.direction, 'both');
-    const depth = normalizeDepth(options.depth, 1);
-    const slice = subgraph(focus, { ...options, direction, depth });
-    const rows = slice.nodes.map((row) => {
-      const sourceDoc = sourceDocFor(row.slug);
-      return {
-        ...row,
-        node: summarizeNode(row.node),
-        canvasPosition: normalizeCanvasPosition(sourceDoc?.frontmatter?.canvasPosition),
-        expected_mtime: row.node?.mtime ?? sourceDoc?.mtime ?? null,
-      };
-    });
-
-    return {
-      operation: 'builder_context',
-      source: 'persisted_vault',
-      focus,
-      builder: {
-        // App-relative and locale-less: the caller adds the workbench origin, locale prefix and base path.
-        href: `/topology/?p=${encodeURIComponent(focusParam)}&workbench=edit`,
-        focusParam,
-        unsavedDraftsIncluded: false,
-      },
-      direction,
-      depth,
-      totalNodes: slice.totalNodes,
-      totalEdges: slice.totalEdges,
-      limited: slice.limited,
-      nodes: rows,
-      edges: slice.edges,
-      agentHandoff: {
-        writeTools: ['add_concepts', 'relation_check', 'add_relations', 'patch_concept'],
-        constraints: [
-          'Only persisted vault documents are visible; unsaved Workshop drafts must be saved before MCP can inspect them.',
-          'Run relation_check before add_relations when introducing a new edge pattern.',
-          'Use patch_concept with the row expected_mtime when changing canvasPosition or other existing frontmatter.',
-          'Re-run builder_context after writes to verify the persisted graph and Workshop handoff.',
-        ],
-      },
-    };
-  }
-
-  return { centrality, explainRelation, reachability, patternWalk, impact, blastRadius, subgraph, builderContext };
+  return { explainRelation, reachability, patternWalk, impact, blastRadius, subgraph };
 }

@@ -4,7 +4,6 @@
  */
 
 import {
-  COMPETENCY_ANSWERS_GUIDE_EN,
   CONSTRUCTION_CARD_EN,
   CONSTRUCTION_GUIDE_EN,
   CONSTRUCTION_GUIDE_TOPICS,
@@ -29,6 +28,8 @@ import {
   READ_ONLY_MODE,
   TOOLS_FOR_LIST,
 } from '../server/registry.mjs';
+import { QUERY_GUIDE_EN } from '../server/query-guide.mjs';
+import { retiredGuideError } from '../server/retired-arguments.mjs';
 import { structuredRowErrorDetails } from '../server/rpc.mjs';
 import {
   REPO_RESOLUTION,
@@ -434,10 +435,12 @@ const CONSTRUCTION_GUIDE_TEXT = {
   construction: CONSTRUCTION_GUIDE_EN,
   write_safety: WRITE_SAFETY_SECTION_EN,
   workflows: WORKFLOWS_SECTION_EN,
-  competency: COMPETENCY_ANSWERS_GUIDE_EN,
+  query: QUERY_GUIDE_EN,
 };
 
 function connectionInfoTool({ guide } = {}) {
+  const retiredGuide = retiredGuideError(guide);
+  if (retiredGuide) throw retiredGuide;
   requireOptionalEnum(guide, 'guide', [...CONSTRUCTION_GUIDE_TOPICS]);
   const toolNames = TOOLS_FOR_LIST.map((tool) => tool.name);
   const toolsetHash = createHash('sha256')

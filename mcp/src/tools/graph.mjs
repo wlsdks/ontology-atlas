@@ -2,11 +2,8 @@
 
 export { compileOntologyTool, queryOntologyTool };
 
-import { buildCompactAgentBrief } from '../agent-brief/agent-brief-compact.mjs';
-import { buildMeaningRepairReviewPage } from '../meaning/meaning-repair.mjs';
 import { readOntologyAtlasIgnore } from '../vault/sidecar/ontology-atlas-ignore.mjs';
 import { queryCompiledOntology, refreshAgentBriefHandoffPrompt } from '../ontology-engine.mjs';
-import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-source-witnesses.mjs';
 import { COMPILED_ONTOLOGY_CACHE, REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../server/runtime.mjs';
 import {
   requireOptionalBoolean,
@@ -15,7 +12,7 @@ import {
 } from '../server/validate.mjs';
 import { attachVaultValidation } from './result-attachments.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
-import { scopedAgentBriefInput, privateCurrentProjectSourceAccess } from './agent-brief/agent-brief-scope.mjs';
+import { scopedAgentBriefInput } from './agent-brief/agent-brief-scope.mjs';
 import {
   attachMeaningReadiness,
   attachProjectMeaning,
@@ -85,31 +82,12 @@ function analysisRecords() {
 
 async function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
-  if (args.operation === 'analysis_history') {
-    const { listAnalysisRecords } = await analysisRecords();
-    return listAnalysisRecords(VAULT_ROOT, { limit: args.limit ?? 30, cursor: args.analysisCursor ?? null, mode: args.analysisMode ?? null, project: args.project ?? null });
-  }
   if (args.operation === 'analysis_record') {
     const { readAnalysisRecord } = await analysisRecords();
     return readAnalysisRecord(VAULT_ROOT, args.recordId);
   }
   const { artifact, docs: loadedDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = readOntologyAtlasIgnore(VAULT_ROOT);
-  if (args.operation === 'meaning_repair_review') {
-    const agentBrief = queryCompiledOntology(artifact, {
-      operation: 'agent_brief',
-      project: args.project,
-    }, { ontologyAtlasIgnorePatterns });
-    const validatedBrief = attachVaultValidation(agentBrief, { operation: 'agent_brief' }, loadedDocs);
-    const context = projectMeaningContext(
-      artifact,
-      validatedBrief.projectSlug,
-      validatedBrief.readiness?.status,
-      null,
-      loadedDocs,
-    );
-    return buildMeaningRepairReviewPage(context.meaningRepairInput, args);
-  }
   // `maintenance_plan` alone needs Git history (summary freshness) and bodies (the
   // empty-bridge audit and meaning-gap items), which a compiled artifact lacks, so
   // only that operation loads them, sharing the documents read for compilation.
@@ -125,7 +103,6 @@ async function queryOntologyTool(args = {}) {
   const queryArtifact = agentBriefInput?.scopedArtifact ?? artifact;
   const queryResult = agentBriefInput?.result ?? queryCompiledOntology(artifact, args, {
     ontologyAtlasIgnorePatterns,
-    ...(args.operation === 'builder_context' ? { sourceDocs: loadedDocs } : {}),
     ...(maintenanceDocs ? { sourceDocs: maintenanceDocs } : {}),
     ...(growthDocs ? { sourceDocs: growthDocs, sourceRoot: REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null } : {}),
     ...(maintenanceFreshness?.checked ? { staleSummaries: maintenanceFreshness.stale } : {}),
@@ -153,27 +130,7 @@ async function queryOntologyTool(args = {}) {
     : attached;
   if (args.operation === 'agent_brief') {
     result = refreshAgentBriefHandoffPrompt(result);
-    if (args.detail === 'compact') {
-      const sourceAccess = privateCurrentProjectSourceAccess(
-        result.projectSlug,
-        result.projectSource,
-        agentBriefInput.scope.graphHash,
-        { currentWitnesses: deriveProjectSourceWitnessesFromDocs({ projectSlug: result.projectSlug, docs: agentBriefInput.scope.docs }) },
-      );
-      result = buildCompactAgentBrief({
-        brief: result,
-        artifact: queryArtifact,
-        docs: agentBriefInput.scope.docs,
-        sourceRoot: sourceAccess?.rootPath ?? null,
-        confirmSourceCurrent: sourceAccess?.confirmCurrent ?? null,
-        sourceAccessRequired: (result.projectSource?.status === 'verified_current'
-          && result.projectSource?.currentness === 'current')
-          || result.projectSource?.live?.status === 'witnesses_supported',
-        task: args.task,
-      });
-    }
   }
-  if (result?.contract === 'agentBriefCompact:v3') return result;
   return {
     ...result,
     compiledSummary: {

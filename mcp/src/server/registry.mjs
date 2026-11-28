@@ -15,7 +15,6 @@ import { ABSORB_DOCUMENT_TOOL } from './tool-definitions/absorb-document.mjs';
 import { ANALYZE_REPO_STRUCTURE_TOOL } from './tool-definitions/analyze-repo-structure.mjs';
 import { GET_CONSTELLATION_TOOL } from './tool-definitions/constellations.mjs';
 import { COMPILE_ONTOLOGY_TOOL, QUERY_ONTOLOGY_TOOL } from './tool-definitions/graph.mjs';
-import { INDEX_PROJECT_TOOL } from './tool-definitions/index-project.mjs';
 import { INFER_IMPORTS_TOOL } from './tool-definitions/infer-imports.mjs';
 import { INSPECT_ARCHITECTURE_TOOL } from './tool-definitions/inspect-architecture.mjs';
 import {
@@ -75,7 +74,6 @@ const TOOLS = [
   READ_SOURCE_TOOL,
   INSPECT_ARCHITECTURE_TOOL,
   INFER_IMPORTS_TOOL,
-  INDEX_PROJECT_TOOL,
   ANALYZE_REPO_STRUCTURE_TOOL,
   RENAME_CONCEPT_TOOL,
   MERGE_CONCEPTS_TOOL,
@@ -101,7 +99,6 @@ const READ_TOOL_NAMES = new Set([
   'inspect_architecture',
   'analyze_repo_structure',
   'infer_imports',
-  'index_project',
 ]);
 
 const DESTRUCTIVE_TOOL_NAMES = new Set([
@@ -147,7 +144,7 @@ const CONSTRUCTION_TOOL_NAMES = new Set([
   'patch_concept', 'validate_vault', 'compile_ontology', 'connect_project_source', 'finalize_project_meaning',
 ]);
 
-// A retired name stays out of tools/list. The first seven below still run and add a note naming
+// A retired name stays out of tools/list. The first six below still run and add a note naming
 // the tool that replaces them. The rest no longer run: the call is answered with `tool_retired`
 // and the replacement, because each one's job is done by the call named here or by the agent's own
 // command (see `isRetiredAndGone`).

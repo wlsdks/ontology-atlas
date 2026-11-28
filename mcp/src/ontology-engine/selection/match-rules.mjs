@@ -6,33 +6,15 @@ export function nodeDegree(node) {
 /** Whether a node meets every filter given to `match_nodes`; a null filter means "any". */
 export function nodeMatchesFilters(
   node,
-  { kind, domain, slugContains, minDegree, maxDegree, minInDegree, minOutDegree, hasIncoming, hasOutgoing },
+  { kind, domain, hasIncoming, hasOutgoing },
 ) {
   const inDegree = node.inDegree || 0;
   const outDegree = node.outDegree || 0;
-  const degree = inDegree + outDegree;
   if (kind && node.kind !== kind) return false;
   if (domain && node.domain !== domain) return false;
-  if (slugContains && !node.slug.toLowerCase().includes(slugContains)) return false;
-  if (minDegree !== null && degree < minDegree) return false;
-  if (maxDegree !== null && degree > maxDegree) return false;
-  if (minInDegree !== null && inDegree < minInDegree) return false;
-  if (minOutDegree !== null && outDegree < minOutDegree) return false;
   if (hasIncoming !== null && (inDegree > 0) !== hasIncoming) return false;
   if (hasOutgoing !== null && (outDegree > 0) !== hasOutgoing) return false;
   return true;
-}
-
-/** Whether an edge ends at a node of `toKind`; an external or unresolved edge ends at the pseudo kinds of those names. */
-export function edgeTargetKindMatches(edge, toNode, toKind) {
-  if (edge.resolved) return toNode?.kind === toKind;
-  if (edge.external) return toKind === 'external';
-  return toKind === 'unresolved';
-}
-
-/** The kind a result row reports for where an edge ends. */
-export function edgeTargetKindLabel(edge, toNode) {
-  return edge.resolved ? toNode?.kind || 'unknown' : edge.external ? 'external' : 'unresolved';
 }
 
 function relationCheckRecommendation({ existing, inverse, matchedPattern, fromKind, relation, toKind }) {

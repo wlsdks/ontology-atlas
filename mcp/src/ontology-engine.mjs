@@ -3,7 +3,6 @@ import { createArtifactContext } from './ontology-engine/graph-context/artifact-
 import { createContextOperations } from './ontology-engine/graph-context/context-operations.mjs';
 import { createQueryPlanner } from './ontology-engine/query-operation/query-planner.mjs';
 import { createClusterQueries } from './ontology-engine/selection/cluster-queries.mjs';
-import { createDomainMatrixQueries } from './ontology-engine/selection/domain-matrix-queries.mjs';
 import { createGraphSummaryQueries } from './ontology-engine/selection/graph-summary-queries.mjs';
 import { createMatchQueries } from './ontology-engine/selection/match-queries.mjs';
 import { createProfileQueries } from './ontology-engine/selection/profile-queries.mjs';
@@ -14,13 +13,11 @@ import { createScopeLookups } from './ontology-engine/traversal/scope-lookups.mj
 import { createMaintenanceQueries } from './ontology-engine/maintenance/maintenance-queries.mjs';
 import { createBriefQueries } from './ontology-engine/briefs/brief-queries.mjs';
 import { createHealthQuery } from './ontology-engine/maintenance/health-query.mjs';
-import { builderFocusParam, normalizeBuilderFocusInput, normalizeCanvasPosition } from './ontology-engine/traversal/builder-focus.mjs';
 import {
   buildDependencyImpactQualification,
   qualifyDeclaredDependencyEdges,
 } from './ontology-engine/traversal/dependency-qualification.mjs';
 import {
-  pageRankScores,
   propagateCommunityLabels,
   roundScore,
   similarityScore,
@@ -28,7 +25,6 @@ import {
 } from './ontology-engine/traversal/graph-measures.mjs';
 import { annotateMaintenanceAction, compareMaintenanceActions } from './ontology-engine/maintenance/maintenance-actions.mjs';
 import {
-  compareCentralityRows,
   compareNodeRows,
   degreeBucket,
   sortLineageRows,
@@ -36,9 +32,6 @@ import {
 } from './ontology-engine/selection/node-ranking.mjs';
 import {
   normalizeDependencyImpactTypes,
-  normalizeEdgeTargetKind,
-  normalizeIterations,
-  normalizeMatchEdgesTypes,
   normalizeNodeKind,
   normalizeNodeSort,
   normalizeNonNegativeInteger,
@@ -61,10 +54,7 @@ import { limitLayers } from './ontology-engine/traversal/topology-shape.mjs';
 import { dispatchOntologyQuery } from './ontology-engine/query-operation/query-dispatch.mjs';
 import { createTraversalQueries } from './ontology-engine/traversal/traversal-queries.mjs';
 import { createTraversalAnalysis } from './ontology-engine/traversal/traversal-analysis.mjs';
-import {
-  buildAgentBriefHandoffPrompt,
-  MCP_UNAVAILABLE_GUIDANCE,
-} from './ontology-engine/briefs/agent-responses.mjs';
+import { buildAgentBriefHandoffPrompt } from './ontology-engine/briefs/agent-responses.mjs';
 
 import { defaultBody } from './schema.mjs';
 
@@ -94,50 +84,8 @@ const AGENT_WORKFLOW_GUIDE = Object.freeze({
   path: 'docs/AGENT-GRAPH-WORKFLOW.md',
   title: 'Agent Graph Workflow',
   description:
-    'MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    'MCP-connected use and verification checks.',
 });
-const AGENT_MODE_COMPARISON = Object.freeze([
-  Object.freeze({
-    id: 'mcp_connected',
-    label: 'MCP-connected',
-    when: 'Claude Code, Codex, Cursor, or another MCP client is registered and restarted.',
-    gives: 'direct read/write tools, structured repair fields, result contracts, and write guardrails.',
-  }),
-  Object.freeze({
-    id: 'graph_db_pack',
-    label: 'Graph DB pack',
-    when: 'The user wants database-style graph exploration without running a database server.',
-    gives: 'bounded query plans, node/edge scans, domain matrix, path evidence, and proof follow-ups.',
-  }),
-  Object.freeze({
-    id: 'mcp_unavailable',
-    label: 'MCP unavailable',
-    when: 'The ontology-atlas MCP server is not connected in this session.',
-    gives: MCP_UNAVAILABLE_GUIDANCE,
-  }),
-]);
-const GRAPH_SCAN_PROOF_CHECKLIST = Object.freeze([
-  Object.freeze({
-    id: 'report_scan_scope',
-    label: 'Report scan scope',
-    evidence: ['totalMatches', 'limited', 'row count'],
-  }),
-  Object.freeze({
-    id: 'prove_node_rows',
-    label: 'Prove node rows',
-    evidence: ['node_profile', 'blast_radius'],
-  }),
-  Object.freeze({
-    id: 'prove_edge_rows',
-    label: 'Prove edge rows',
-    evidence: ['explain_relation', 'path', 'relation_check'],
-  }),
-  Object.freeze({
-    id: 'prove_path_completeness',
-    label: 'Prove path completeness',
-    evidence: ['evidence.pathsComplete', 'totalPathsExact'],
-  }),
-]);
 export {
   EDGE_TARGET_KIND_VALUES,
   NODE_KIND_VALUES,
@@ -187,9 +135,7 @@ const MAINTENANCE_KINDS = new Set(MAINTENANCE_KIND_VALUES);
 export const QUERY_ONTOLOGY_OPERATIONS = Object.freeze([
   'neighbors',
   'path',
-  'all_paths',
   'query_plan',
-  'centrality',
   'communities',
   'similar_nodes',
   'explain_relation',
@@ -198,15 +144,11 @@ export const QUERY_ONTOLOGY_OPERATIONS = Object.freeze([
   'impact',
   'blast_radius',
   'subgraph',
-  'builder_context',
   'overview',
   'schema',
   'facets',
   'match_nodes',
-  'match_edges',
   'node_profile',
-  'domain_profile',
-  'domain_matrix',
   'project_scope',
   'project_map',
   'relation_check',
@@ -214,20 +156,17 @@ export const QUERY_ONTOLOGY_OPERATIONS = Object.freeze([
   'lineage',
   'containment_tree',
   'cycles',
-  'topological_order',
   'recommend_relations',
   'growth_plan',
   'maintenance_plan',
   'agent_brief',
-  'meaning_repair_review',
-  'analysis_history',
   'analysis_record',
   'workspace_brief',
   'health',
 ]);
 export const QUERY_PLAN_TARGET_OPERATIONS = Object.freeze(
   QUERY_ONTOLOGY_OPERATIONS.filter((operation) => (
-    !['query_plan', 'meaning_repair_review', 'analysis_history', 'analysis_record'].includes(operation)
+    !['query_plan', 'analysis_record'].includes(operation)
   )),
 );
 
@@ -295,7 +234,7 @@ export function createOntologyEngine(artifact, options = {}) {
     outgoing,
     incoming,
   });
-  const { allPaths, filteredEdges, neighbors, path, pathNodes } = traversalQueries;
+  const { filteredEdges, neighbors, path, pathNodes } = traversalQueries;
   traversalEdges = traversalQueries.traversalEdges;
   const queryPlan = createQueryPlanner({
     artifact,
@@ -307,9 +246,6 @@ export function createOntologyEngine(artifact, options = {}) {
     traversalEstimate,
     targetOperations: QUERY_PLAN_TARGET_OPERATIONS,
     normalizeDependencyImpactTypes,
-    normalizeEdgeTargetKind,
-    normalizeIterations,
-    normalizeMatchEdgesTypes,
     normalizeNodeKind,
     normalizeNodeSort,
     normalizeNonNegativeInteger,
@@ -319,42 +255,31 @@ export function createOntologyEngine(artifact, options = {}) {
   });
 
   const {
-    centrality,
     explainRelation,
     reachability,
     patternWalk,
     impact,
     blastRadius,
     subgraph,
-    builderContext,
   } = createTraversalAnalysis({
-    artifact,
     nodes,
     edges,
     nodeBySlug,
-    sourceDocFor,
     resolve,
     path,
     pathNodes,
     traversalEdges,
     buildDependencyImpactQualification,
-    builderFocusParam,
     commonNeighborRows,
-    compareCentralityRows,
     countBy: countEdges,
     nearestDomainFor,
-    normalizeBuilderFocusInput,
-    normalizeCanvasPosition,
     normalizeDependencyImpactTypes,
-    normalizeIterations,
     normalizePattern,
     normalizeTraversalDirection,
-    pageRankScores,
     patternLayer,
     qualifyDeclaredDependencyEdges,
     relationVerdict,
     resolvedEdgesBetween,
-    roundScore,
     uniqueEdges,
   });
 
@@ -382,25 +307,21 @@ export function createOntologyEngine(artifact, options = {}) {
     artifact, nodes, edges, referencedOnlyByRef, countBy: countEdges, degreeBucket, schemaPatterns,
     topHubs,
   });
-  const { matchNodes, matchEdges, relationCheck, similarNodes } = createMatchQueries({
+  const { matchNodes, relationCheck, similarNodes } = createMatchQueries({
     edges, nodes, nodeBySlug, resolve, traversalEdges, compareEdges, compareNodeRows,
-    formatCompiledEdge, nearbySchemaPatterns, normalizeEdgeTargetKind, normalizeMatchEdgesTypes,
+    formatCompiledEdge, nearbySchemaPatterns,
     normalizeNodeKind, normalizeNodeSort, normalizeNonNegativeInteger, normalizeOptionalString,
     publicRelationTypes, roundScore, schemaPatterns, similarityScore, writeRelationType,
   });
-  const { nodeProfile, domainProfile, projectScope, projectMap } = createProfileQueries({
+  const { nodeProfile, projectScope, projectMap } = createProfileQueries({
     nodeBySlug, outgoing, incoming, resolveWithGrowthHint, aliasesFor, collectContainmentScope,
     collectLineage, compareEdges, containmentChildren, containmentParentsFor, countBy: countEdges,
     domainMapRow, intersectSlugSets, limitedNodeList, partitionScopeEdges, profileEdgeGroup,
     resolveDomainRoot, resolveProjectRoot, scopeEdgeGroup, sortedNodesInScope, topHubs,
   });
-  const { domainMatrix } = createDomainMatrixQueries({
-    nodes, edges, nodeBySlug, collectContainmentScope, nearestDomainFor, normalizeOptionalString,
-    publicRelationCountObject, publicRelationTypes, resolveProjectRoot, sortedNodesInScope,
-  });
   const { components, communities, connectedComponentGroups, componentGroupOnlyHasKinds } =
     createClusterQueries({
-      nodes, edges, nodeBySlug, traversalEdges, countBy: countEdges, normalizeIterations,
+      nodes, edges, nodeBySlug, traversalEdges, countBy: countEdges,
       propagateCommunityLabels, undirectedAdjacencyFrom,
     });
   const { maintenancePlan } = createMaintenanceQueries({
@@ -414,7 +335,6 @@ export function createOntologyEngine(artifact, options = {}) {
 
   const { workspaceBrief, agentBrief } = createBriefQueries({
     agentWorkflowGuide: AGENT_WORKFLOW_GUIDE,
-    agentModeComparison: AGENT_MODE_COMPARISON, graphScanProofChecklist: GRAPH_SCAN_PROOF_CHECKLIST,
     nodeBySlug, nodes, edges, growthPlan, health: (...args) => health(...args), overview, projectMap,
     projectRootSlugs, resolve, workspaceNextActions,
   });
@@ -430,9 +350,7 @@ export function createOntologyEngine(artifact, options = {}) {
     resolve,
     neighbors,
     path,
-    allPaths,
     queryPlan,
-    centrality,
     communities,
     similarNodes,
     explainRelation,
@@ -441,15 +359,11 @@ export function createOntologyEngine(artifact, options = {}) {
     impact,
     blastRadius,
     subgraph,
-    builderContext,
     overview,
     schema,
     facets,
     matchNodes,
-    matchEdges,
     nodeProfile,
-    domainProfile,
-    domainMatrix,
     projectScope,
     projectMap,
     relationCheck,
@@ -457,7 +371,6 @@ export function createOntologyEngine(artifact, options = {}) {
     lineage,
     containmentTree,
     cycles,
-    topologicalOrder,
     recommendRelations,
     growthPlan,
     maintenancePlan,

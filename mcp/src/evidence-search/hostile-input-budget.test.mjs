@@ -5,14 +5,10 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
 import { zipFile } from '../../../tests/fixtures/source-passage-cases.mjs';
-import { authoredMarkdownLines } from '../analyze/candidates/authored-markdown.mjs';
 import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from '../library/source-text.mjs';
-import { noteReadFamilies } from '../construction/read-family.mjs';
-import { blankLiterals } from './code-text.mjs';
-import { declarationIndex } from './declaration-index.mjs';
 import { importsOf } from './import-bindings.mjs';
 import { readSourceEvidence } from './source-evidence.mjs';
 
@@ -122,30 +118,6 @@ describe('hostile source text costs time linear in its size', () => {
         resolveTargetPath: () => 'src/target.rs',
       }));
     }
-  });
-});
-
-describe('hostile Markdown costs the survey time linear in its size', () => {
-  it('reads the authored lines of each hostile Markdown shape within the budget', (t) => {
-    const cases = [
-      ['unclosed links', `${'[a]( '.repeat(399)}\n`.repeat(60)],
-      ['brackets nested 15,000 deep', `${'['.repeat(15_000)}a${']'.repeat(15_000)}`],
-      ['emphasis delimiters that never match', '*a_ '.repeat(8_000)],
-      ['block quotes nested 25,000 deep', `${'> '.repeat(25_000)}x`],
-      ['backtick runs of every length to 500', Array.from({ length: 500 }, (_, index) => `e${'`'.repeat(index + 1)}`).join('')],
-      ['10,000 link definitions then a reference', `${Array.from({ length: 10_000 }, (_, index) => `[${index}]: u\n`).join('')}[0]`],
-      ['headings holding NUL below a fence', `\`\`\`\nfence\n\`\`\`\n${'# a\0 <b>x</b>\n'.repeat(9_400)}`, DENSE_BUDGET_MS],
-      ['unterminated processing instructions', `x ${'<? '.repeat(21_800)}`],
-      ['quotes each followed by a lazy line', '> # h\nx\n'.repeat(6_000), DENSE_BUDGET_MS],
-      ['a lazy paragraph 19 quotes deep', `${'> '.repeat(19)}a\n${'b\n'.repeat(12_000)}`, DENSE_BUDGET_MS],
-    ];
-    for (const [name, text, budgetMs = MARKDOWN_BUDGET_MS] of cases) {
-      let lines = [];
-      assertWithinBudget(t, name, () => { lines = authoredMarkdownLines(text); }, budgetMs);
-      assert.equal(lines.length, text.split('\n').length, `${name} must keep one entry per line`);
-    }
-    const headings = authoredMarkdownLines(`\`\`\`\nfence\n\`\`\`\n## Usage\0 <b>x</b>\n`);
-    assert.equal(headings[3], '## Usage\0 x', 'a heading holding NUL is read from its own line');
   });
 });
 
@@ -378,139 +350,5 @@ describe('oversized files are named, not read', () => {
     });
     assert.deepEqual(findings.map((finding) => finding.code), ['dependency-unjudged']);
     assert.match(findings[0].message, /src\/lib\.rs/);
-  });
-});
-
-/*
- * A family line once matched every interface against every type: 3,200
- * interfaces and 10,640 types took 2.8 s and 429 MB for one read row, and each
- * Go interface body was found by splitting the file again, so a 247 KiB file
- * of 400 interfaces took 500 ms to index. Method sets are indexed once, an
- * interface's members are its package's types and its importers', and past a
- * cap there is no family.
- */
-describe('a family costs time linear in the types and interfaces that could join it', () => {
-  const GO_MOD = 'module example.com/tool\n\ngo 1.22\n';
-  const method = (type, name) => `\nfunc (t *${type}) ${name}(s string) error {\n\treturn nil\n}\n`;
-  const goRepo = ({ faceFiles, facesPerFile, typeFiles, typesPerFile }) => {
-    const files = { 'go.mod': GO_MOD };
-    for (let f = 0; f < faceFiles; f += 1) {
-      files[`faces/f${f}.go`] = `package faces\n${Array.from({ length: facesPerFile }, (_, i) => `\ntype Face${f}x${i} interface {\n\tOpen(s string) error\n\tClose(s string) error\n}\n`).join('')}`;
-    }
-    for (let f = 0; f < typeFiles; f += 1) {
-      files[`faces/t${f}.go`] = `package faces\n${Array.from({ length: typesPerFile }, (_, i) => `\ntype T${f}x${i} struct{}\n${method(`T${f}x${i}`, 'Open')}${method(`T${f}x${i}`, 'Close')}`).join('')}`;
-    }
-    return repoWith(files);
-  };
-  const familyRead = (root) => {
-    const packet = readSourceEvidence(root, [{ path: 'faces/t0.go', symbol: 'T0x0.Open' }]);
-    return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
-  };
-  const blankRuns = (copies) => {
-    const one = `package faces\n${Array.from({ length: 400 }, (_, i) => `${'\n'.repeat(560)}type Face${i} interface {\n\tOpen(s string) error\n\tClose(s string) error\n}\n`).join('')}`;
-    return () => {
-      const files = { 'go.mod': GO_MOD };
-      for (let f = 0; f < copies; f += 1) files[`faces/f${f}.go`] = one.replace('package faces', `package faces // ${f}`);
-      declarationIndex(repoWith(files));
-    };
-  };
-  const classRepo = (classes) => {
-    const files = { 'package.json': '{"name":"x"}', 'src/base.ts': 'export interface Plugin {\n  apply(v: number): number;\n}\n' };
-    for (let at = 0; at < classes; at += 1) {
-      files[`src/p${at}.ts`] = `import { Plugin } from './base';\nexport class P${at} implements Plugin {\n  apply(v: number) {\n    if (v) return 1;\n    return 0;\n  }\n}\n`;
-    }
-    const root = repoWith(files);
-    const packet = readSourceEvidence(root, [{ path: 'src/p0.ts', symbol: 'apply' }]);
-    return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
-  };
-  // Every member in one file, each with the read method, and a read of that file: each member's span is looked up.
-  const oneFile = (classes) => {
-    const members = Array.from({ length: classes }, (_, at) => `export class P${at} extends Base {\n  apply(v: number) {\n    return v > 1 ? 1 : 0;\n  }\n}\n`).join('');
-    const root = repoWith({
-      'package.json': '{"name":"x"}',
-      'src/base.ts': 'export class Base {\n  apply(v: number) {\n    return v;\n  }\n}\n',
-      'src/impl.ts': `import { Base } from './base';\n\n${members}`,
-    });
-    const packet = readSourceEvidence(root, [{ path: 'src/impl.ts', symbol: 'P0.apply' }]);
-    const reads = new Map([['src/impl.ts', [{ startLine: 1, endLine: 2 }]]]);
-    return () => {
-      const row = noteReadFamilies(structuredClone(packet), { root, reads }).rows[0];
-      assert.match(row.family ?? '', new RegExp(`^This family has at least ${classes} members`));
-    };
-  };
-
-  // A base module whose text the default-export scan reads: a default export followed by a run of blanks and a letter.
-  const defaultScan = (tail) => {
-    const root = repoWith({
-      'package.json': '{"name":"x"}',
-      'src/base.ts': `export class Plugin {\n  apply(v: number) {\n    return v;\n  }\n}\n${tail}`,
-      'src/p0.ts': "import { Plugin } from './base';\nexport class P0 extends Plugin {\n  apply(v: number) {\n    return v ? 1 : 0;\n  }\n}\n",
-      'src/p1.ts': "import { Plugin } from './base';\nexport class P1 extends Plugin {\n  apply(v: number) {\n    return v ? 2 : 0;\n  }\n}\n",
-    });
-    const packet = readSourceEvidence(root, [{ path: 'src/p0.ts', symbol: 'P0.apply' }]);
-    return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
-  };
-  const blankRunsAfterDefault = (lines) => defaultScan(`export default Plugin${' '.repeat(1900)}x\n`.repeat(lines));
-
-  // Many names for the base, against files whose class header cannot be read and that the names are checked in.
-  const aliasRepo = (aliases, openFiles) => {
-    const files = {
-      'package.json': '{"name":"x"}',
-      'src/base.ts': 'export class Plugin {\n  apply(v: number) {\n    return v;\n  }\n}\n',
-      'src/p0.ts': "import { Plugin } from './base';\nexport class P0 extends Plugin {\n  apply(v: number) {\n    return v ? 1 : 0;\n  }\n}\n",
-      'src/p1.ts': "import { Plugin } from './base';\nexport class P1 extends Plugin {\n  apply(v: number) {\n    return v ? 2 : 0;\n  }\n}\n",
-      'src/other.ts': 'export default class Other {}\n',
-    };
-    for (let f = 0; f * 50 < aliases; f += 1) {
-      const names = Array.from({ length: Math.min(50, aliases - f * 50) }, (_, i) => `Plugin as Q${f}x${i}`);
-      files[`src/alias${f}.ts`] = `import {\n  ${names.join(',\n  ')},\n} from './base';\n`;
-    }
-    const filler = `// ${'lorem ipsum dolor sit amet '.repeat(6)}\n`.repeat(1400);
-    for (let f = 0; f < openFiles; f += 1) files[`src/open${f}.ts`] = `import Other from './other';\n\nexport class Open${f} extends mixin(Other) {\n  run() {\n    return 1;\n  }\n}\n${filler}`;
-    const root = repoWith(files);
-    const packet = readSourceEvidence(root, [{ path: 'src/p0.ts', symbol: 'P0.apply' }]);
-    return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
-  };
-  const lexed = (path, text) => () => blankLiterals(text, path);
-  const lexerShapes = (size) => [
-    ['a line of unclosed regular expression classes', lexed('a.ts', `x = ${'(/['.repeat(size)}\n`)],
-    ['templates nested in their own parts', lexed('a.ts', '`${'.repeat(size))],
-    ['Rust escapes that never close', lexed('a.rs', `${"'\\".repeat(size)}\n`)],
-    ['block comments that never close', lexed('a.go', '/*'.repeat(size))],
-    ['Python triple quotes that never close', lexed('a.py', `x = """${'a\\'.repeat(size)}`)],
-  ];
-
-  it('notes one read row against thousands of interfaces and types within the budget', (t) => {
-    assertWithinBudget(t, '3,200 interfaces and 10,640 types', familyRead(goRepo({ faceFiles: 8, facesPerFile: 400, typeFiles: 80, typesPerFile: 133 })), 1000);
-    assertWithinBudget(t, '16 interfaces and 4,000 types in their package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 })), 1000);
-    assertWithinBudget(t, '500 classes naming one base', classRepo(500), 1000);
-    assertWithinBudget(t, 'one file of 180 members, each with the read method', oneFile(180), 1000);
-    assertWithinBudget(t, 'a base module of a default export, 100,000 blanks and a letter', defaultScan(`export default Plugin${' '.repeat(100_000)}x\n`), 1000);
-    assertWithinBudget(t, 'a 96 KiB base module of default exports each followed by 1,900 blanks', blankRunsAfterDefault(50), 1000);
-    assertWithinBudget(t, 'a base module of 11,000 export lists that never close', defaultScan('export {\n'.repeat(11_000)), 1000);
-    assertWithinBudget(t, '2,000 names for the base against 8 files with an unreadable header', aliasRepo(2000, 8), 1000);
-    assertWithinBudget(t, '250 names for the base against 16 files with an unreadable header', aliasRepo(250, 16), 1000);
-    for (const [name, run] of lexerShapes(100_000)) assertWithinBudget(t, `blanking ${name}`, run, 1000);
-    assertWithinBudget(t, 'a 247 KiB Go file of 400 interfaces between blank runs', blankRuns(1));
-  });
-
-  it('doubling the interfaces, types, classes or interface files about doubles the time', (t) => {
-    const pairs = [
-      ['interfaces and types', familyRead(goRepo({ faceFiles: 4, facesPerFile: 400, typeFiles: 40, typesPerFile: 133 })), familyRead(goRepo({ faceFiles: 8, facesPerFile: 400, typeFiles: 80, typesPerFile: 133 }))],
-      ['types in the interfaces\' package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 20, typesPerFile: 100 })), familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 }))],
-      ['classes naming one base', classRepo(200), classRepo(400)],
-      ['members in one file', oneFile(90), oneFile(180)],
-      ['default exports followed by blank runs', blankRunsAfterDefault(25), blankRunsAfterDefault(50)],
-      ['files with an unreadable header checked against 60 names', aliasRepo(60, 8), aliasRepo(60, 16)],
-      ['names for the base against 8 such files', aliasRepo(30, 8), aliasRepo(60, 8)],
-      ...lexerShapes(50_000).map(([name, small], at) => [`blanking ${name}`, small, lexerShapes(100_000)[at][1]]),
-      ['Go files of interfaces between blank runs', blankRuns(1), blankRuns(2)],
-    ];
-    for (const [name, small, large] of pairs) {
-      const smallMs = fastestRunMs(small);
-      const largeMs = fastestRunMs(large);
-      t.diagnostic(`${name}: ${smallMs.toFixed(1)} ms -> ${largeMs.toFixed(1)} ms`);
-      assert.ok(largeMs < smallMs * 3 + 30, `${name}: doubled input took ${largeMs.toFixed(0)} ms against ${smallMs.toFixed(0)} ms`);
-    }
   });
 });

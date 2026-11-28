@@ -11,6 +11,7 @@ import {
   formatAllowedValueError,
 } from '../suggestions.mjs';
 import { requireTopLevelNonBlankStrings } from './advertised-input-schema.mjs';
+import { retiredArgumentError } from './retired-arguments.mjs';
 import { TOOL_BY_NAME, TOOL_INPUT_CONTRACT_BY_NAME } from './registry.mjs';
 import { BODY_DELIVERY_MODES } from './tool-schemas/vault-node-shapes.mjs';
 
@@ -21,6 +22,8 @@ function normalizeToolArguments(args, toolName) {
   }
   const tool = TOOL_BY_NAME.get(toolName);
   if (tool) {
+    const retired = retiredArgumentError(toolName, args);
+    if (retired) throw retired;
     const allowed = new Set(Object.keys(tool.inputSchema?.properties ?? {}));
     const unknown = Object.keys(args).filter((key) => !allowed.has(key));
     if (unknown.length > 0) {

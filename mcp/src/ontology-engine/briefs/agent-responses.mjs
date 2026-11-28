@@ -4,7 +4,7 @@ import { publicRelationType } from '../query-operation/query-primitives.mjs';
  * What an agent does when the server cannot be reached. There is no write path around MCP: the
  * Markdown is readable without it, and only the person can restore the connection.
  */
-export const MCP_UNAVAILABLE_GUIDANCE =
+const MCP_UNAVAILABLE_GUIDANCE =
   "read the vault's Markdown files directly, write nothing to the vault, and tell the person the Atlas connection is missing; the app's Connect a coding agent dialog restores it.";
 
 export function agentToolCall(tool, args) {
@@ -28,8 +28,9 @@ export function buildMatchNodesFollowUp(node) {
       id: 'outgoing_edges',
       label: 'Inspect outgoing edges from the first match.',
       ...agentToolCall('query_ontology', {
-        operation: 'match_edges',
-        from: slug,
+        operation: 'neighbors',
+        slug,
+        direction: 'outgoing',
         includeExternal: true,
         includeUnresolved: true,
         limit: 20,
@@ -39,8 +40,9 @@ export function buildMatchNodesFollowUp(node) {
       id: 'incoming_edges',
       label: 'Inspect incoming edges into the first match.',
       ...agentToolCall('query_ontology', {
-        operation: 'match_edges',
-        to: slug,
+        operation: 'neighbors',
+        slug,
+        direction: 'incoming',
         limit: 20,
       }),
     },
@@ -64,58 +66,6 @@ export function buildMatchNodesFollowUp(node) {
   };
 }
 
-export function buildMatchEdgesFollowUp(edge) {
-  if (!edge?.from || !edge?.to || edge.resolved === false || edge.external === true) return null;
-  const relation = edge.via === 'dependencies' ? 'depends_on' : edge.via;
-  const calls = [
-    {
-      id: 'explain_relation',
-      label: 'Explain why the first matched edge exists.',
-      ...agentToolCall('query_ontology', {
-        operation: 'explain_relation',
-        from: edge.from,
-        to: edge.to,
-        direction: 'undirected',
-        types: [relation],
-        maxHops: 5,
-        limit: 10,
-      }),
-    },
-    {
-      id: 'path_evidence',
-      label: 'Find a shortest path between the edge endpoints.',
-      ...agentToolCall('query_ontology', {
-        operation: 'path',
-        from: edge.from,
-        to: edge.to,
-        maxHops: 5,
-      }),
-    },
-    {
-      id: 'relation_preflight',
-      label: 'Preflight this relation before writing a duplicate or inverse edge.',
-      ...agentToolCall('query_ontology', {
-        operation: 'relation_check',
-        from: edge.from,
-        to: edge.to,
-        type: relation,
-      }),
-    },
-  ];
-
-  return {
-    focusEdge: {
-      from: edge.from,
-      to: edge.to,
-      via: edge.via,
-      relationType: publicRelationType(edge.via),
-    },
-    reason:
-      'match_edges is a scan; explain and preflight the first edge before treating it as write or refactor evidence.',
-    calls,
-  };
-}
-
 function formatAgentToolCall(call) {
   return `${call.tool} ${JSON.stringify(call.arguments)}`;
 }
@@ -124,38 +74,12 @@ export function buildAgentBriefHandoffPrompt(brief) {
   const firstCalls = brief.firstCalls
     .map((call, index) => `${index + 1}. ${formatAgentToolCall(call)}`)
     .join('\n');
-  const playbooks = brief.playbooks
-    .map((playbook) => {
-      const calls = playbook.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
-      const evidence = playbook.evidence.map((item) => `   evidence: ${item}`).join('\n');
-      const stopWhen = playbook.stopWhen.map((item) => `   stop if: ${item}`).join('\n');
-      return `- ${playbook.id}: ${playbook.goal}\n  calls: ${calls}\n${evidence}\n${stopWhen}`;
-    })
-    .join('\n');
-  const graphDbQueryPack = Array.isArray(brief.graphDbQueryPack)
-    ? brief.graphDbQueryPack
-        .map((item) => {
-          const calls = item.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
-          return `- ${item.id}: ${item.intent}\n  goal: ${item.goal}\n  calls: ${calls}`;
-        })
-        .join('\n')
-    : '';
   const guardrails = brief.writeGuardrails
     .map((guardrail) => {
       const calls = guardrail.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
       return `- ${guardrail.id}: ${guardrail.goal}\n  calls: ${calls}`;
     })
     .join('\n');
-  const traversalStrategy = Array.isArray(brief.traversalStrategy)
-    ? brief.traversalStrategy
-        .map((strategy) => {
-          const calls = strategy.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
-          const evidence = strategy.evidence.map((item) => `   evidence: ${item}`).join('\n');
-          const stopWhen = strategy.stopWhen.map((item) => `   stop if: ${item}`).join('\n');
-          return `- ${strategy.id}: ${strategy.goal}\n  use when: ${strategy.useWhen}\n  calls: ${calls}\n${evidence}\n${stopWhen}`;
-        })
-        .join('\n')
-    : '';
   const entrypoints = brief.entrypoints.length > 0
     ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.uid} · ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
     : '- <no concrete entrypoint; start with workspace_brief and health>';
@@ -170,13 +94,13 @@ export function buildAgentBriefHandoffPrompt(brief) {
     'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
     'Identity contract: uid is the permanent identity; slug is the current human-readable address. Keep graph relations, URLs, and graph-operation inputs slug-based.',
     `Current readiness: ${brief.readiness.status} ${brief.readiness.score}/100; graph ${brief.graph.nodes ?? 0} nodes, ${brief.graph.edges ?? 0} edges; status ${brief.status}.`,
-    'Semantic readiness is a separate fail-closed contract. Before claiming the ontology is current or qualified, inspect projectSource.currentness/topGap, meaningAssessment.status and competency question witnesses, and meaningRepair. Structural readiness alone is not approval to write or finalize meaning.',
-    'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    'Semantic readiness is a separate fail-closed contract. Before claiming the ontology is current or qualified, inspect projectSource.currentness/topGap, meaningAssessment.status and competency question witnesses. Structural readiness alone is not approval to write or finalize meaning.',
+    'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains MCP-connected use and verification checks.',
     `When the ontology-atlas MCP server is unavailable: ${MCP_UNAVAILABLE_GUIDANCE}`,
     '',
     'Business-to-code ontology lens:',
     '- Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
-    `- business domains: ${businessDomains.length > 0 ? businessDomains.join(', ') : 'none in top entrypoints; run workspace_brief and domain_matrix before making business boundary claims'}`,
+    `- business domains: ${businessDomains.length > 0 ? businessDomains.join(', ') : 'none in top entrypoints; run workspace_brief before making business boundary claims'}`,
     `- capability outcomes: ${capabilityOutcomes.length > 0 ? capabilityOutcomes.join(', ') : 'none in top entrypoints; inspect project/domain containment before promoting source folders to capabilities'}`,
     `- implementation evidence: ${implementationEvidence.length > 0 ? `${implementationEvidence.join(', ')} proves or supports capability behavior` : 'attach source paths, APIs, routes, commands, or MCP tools only after domain/capability meaning is clear'}; do not treat paths, APIs, routes, or commands as the ontology root.`,
     ...(decisionQuestions.length > 0
@@ -188,9 +112,6 @@ export function buildAgentBriefHandoffPrompt(brief) {
     '',
     'Suggested graph entrypoints:',
     entrypoints,
-    '',
-    'Graph DB query pack for local markdown graph scans:',
-    graphDbQueryPack,
     '',
     'Kind classification contract before writing frontmatter:',
     '- Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization.',
@@ -208,20 +129,11 @@ export function buildAgentBriefHandoffPrompt(brief) {
     '- Color contract: kind hue communicates ontology layer, while domain tint communicates ownership; a wrong color is evidence that kind/domain should be rechecked.',
     '- Before writing, report source path, symbol, route, command, or MCP tool evidence; then state why not the nearest adjacent kind.',
     '',
-    'Investigation playbooks:',
-    playbooks,
-    '',
-    'Traversal strategy:',
-    traversalStrategy,
-    '',
     'Write guardrails:',
     guardrails,
     '',
     'Relation decision policy:',
     ...brief.relationDecisionGuide.map((row) => `- ${row.decision}: ${row.meaning}`),
-    '',
-    'Result contracts:',
-    ...brief.resultContracts.map((contract) => `- ${contract.operation}: report ${contract.mustReport.join(', ')}; ${contract.policy}`),
     '',
     'Write policy:',
     ...brief.writePolicy.map((line) => `- ${line}`),

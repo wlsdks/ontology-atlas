@@ -98,50 +98,6 @@ export function createProfileQueries({
     };
   }
 
-  function domainProfile(slugOrAlias, options = {}) {
-    const limit = normalizeLimit(options.limit, 100);
-    const itemLimit = normalizeLimit(options.itemLimit, 20, 'itemLimit');
-    const domain = resolveDomainRoot(slugOrAlias);
-    const included = collectContainmentScope(domain);
-    const scopedNodes = sortedNodesInScope(included);
-    const capabilities = scopedNodes.filter((node) => node.kind === 'capability');
-    const elements = scopedNodes.filter((node) => node.kind === 'element');
-    const edgesByScope = partitionScopeEdges(included);
-    const parentProjects = containmentParentsFor(domain)
-      .filter(({ next }) => nodeBySlug.get(next)?.kind === 'project')
-      .map(({ next, edge }) => ({
-        slug: next,
-        via: edge.via,
-        node: summarizeNode(nodeBySlug.get(next)),
-      }));
-
-    return {
-      operation: 'domain_profile',
-      domain,
-      node: summarizeNode(nodeBySlug.get(domain)),
-      parents: {
-        projects: parentProjects,
-      },
-      summary: {
-        nodes: scopedNodes.length,
-        capabilities: capabilities.length,
-        elements: elements.length,
-        internalEdges: edgesByScope.internal.length,
-        boundaryEdges: edgesByScope.boundary.length,
-        externalEdges: edgesByScope.external.length,
-        unresolvedEdges: edgesByScope.unresolved.length,
-      },
-      capabilities: limitedNodeList(capabilities, itemLimit),
-      elements: limitedNodeList(elements, itemLimit),
-      hotspots: topHubs(scopedNodes, itemLimit),
-      edges: {
-        boundary: scopeEdgeGroup(edgesByScope.boundary, included, limit),
-        external: scopeEdgeGroup(edgesByScope.external, included, limit),
-        unresolved: scopeEdgeGroup(edgesByScope.unresolved, included, limit),
-      },
-    };
-  }
-
   function projectScope(slugOrAlias, options = {}) {
     const limit = normalizeLimit(options.limit, 200);
     const project = resolveProjectRoot(slugOrAlias);
@@ -248,5 +204,5 @@ export function createProfileQueries({
     };
   }
 
-  return { nodeProfile, domainProfile, projectScope, projectMap };
+  return { nodeProfile, projectScope, projectMap };
 }

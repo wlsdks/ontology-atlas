@@ -3,8 +3,6 @@ import test from 'node:test';
 
 import {
   normalizeDependencyImpactTypes,
-  normalizeIterations,
-  normalizeMatchEdgesTypes,
   normalizeNodeKind,
   normalizeNodeSort,
   normalizeNonNegativeInteger,
@@ -28,13 +26,6 @@ test('a count is absent or a non-negative integer', () => {
   assert.equal(normalizeNonNegativeInteger(0, 'n'), 0);
   assert.throws(() => normalizeNonNegativeInteger(-1, 'n'), /n must be a non-negative integer/);
   assert.throws(() => normalizeNonNegativeInteger(1.5, 'n'), /n must be a non-negative integer/);
-});
-
-test('iterations default to 20 and stay within 1 to 100', () => {
-  assert.equal(normalizeIterations(undefined), 20);
-  assert.equal(normalizeIterations(100), 100);
-  assert.throws(() => normalizeIterations(0), /iterations must be a positive integer\./);
-  assert.throws(() => normalizeIterations(101), /iterations must be <= 100\./);
 });
 
 test('a node sort defaults to degree and names the allowed values for a bad one', () => {
@@ -67,13 +58,6 @@ test('a relation pattern is a non-empty list of relation names, cut at 20 steps'
   assert.throws(() => normalizePattern([]), /pattern \(non-empty string array\) is required for pattern_walk\./);
   assert.throws(() => normalizePattern([3]), /pattern must be an array of strings\./);
   assert.equal(normalizePattern(Array.from({ length: 25 }, () => 'relates')).length, 20);
-});
-
-test('edge matching takes either a list of types or one relation, never a malformed one', () => {
-  assert.equal(normalizeMatchEdgesTypes({}), null);
-  assert.equal(normalizeMatchEdgesTypes({ relation: 'relates' }).size, 1);
-  assert.throws(() => normalizeMatchEdgesTypes({ type: 3 }), /type must be a string\./);
-  assert.throws(() => normalizeMatchEdgesTypes({ relation: ' relates' }), /relation must not have leading or trailing whitespace\./);
 });
 
 test('dependency impact accepts dependencies alone', () => {
