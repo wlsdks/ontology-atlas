@@ -13304,6 +13304,254 @@
       "path": "result.structuredContent.sha256",
       "change": 41,
       "reason": "read_source on a hostile or damaged source: a damaged DOCX or XLSX is named by path and format, a character reference that names no character is kept as written instead of stopping the read, a text file with a NUL byte is binary, and a path longer than 4096 bytes is refused before the disk is asked (row 41)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 11,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 11,
+      "path": "result.isError",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 13,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 13,
+      "path": "result.isError",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-miniature",
+      "where": "answer",
+      "id": 15,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-polyglot",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-polyglot",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-polyglot",
+      "where": "answer",
+      "id": 6,
+      "path": "result.isError",
+      "change": 46,
+      "reason": "analyze_repo_structure parts this build does not answer yet: exact source reads (`sourceReads` and `sourceOnly` with selectors), the structural analysis view (`view: \"analysis\"`) and a `proposal` or `qualification` to review. The call is refused by name with `tool_error` and says the JavaScript server answers it and that the call without the argument gives the breadth map; the JavaScript server answers each in full (row 46)."
+    },
+    {
+      "case": "survey/index-project-retired",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content",
+      "change": 45,
+      "reason": "index_project is a retired tool name: the JavaScript server still runs the structural analysis under it, the Rust server answers it as an unknown tool, so a name no tool list advertises cannot start a scan (row 45)."
+    },
+    {
+      "case": "survey/index-project-retired",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent",
+      "change": 45,
+      "reason": "index_project is a retired tool name: the JavaScript server still runs the structural analysis under it, the Rust server answers it as an unknown tool, so a name no tool list advertises cannot start a scan (row 45)."
+    },
+    {
+      "case": "survey/index-project-retired",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 45,
+      "reason": "index_project is a retired tool name: the JavaScript server still runs the structural analysis under it, the Rust server answers it as an unknown tool, so a name no tool list advertises cannot start a scan (row 45)."
+    },
+    {
+      "case": "survey/analyze-repo-structure-celery-task",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 47,
+      "reason": "A Python task decorator (@task, @shared_task, @periodic_task) below the first line of a file is a background worker. The script server asks the whole file for a pattern anchored at the start of the file, so it never reads one in the middle; the Rust server asks each line, as the per-line reader below it was meant to (row 47)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/filesScanned",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/externalImports/0/from",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/externalImports/0/spec",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/externalImports/1/from",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/externalImports/1/spec",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/externalImports/2/spec",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/externalImports",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.filesScanned",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.externalImports[0].from",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.externalImports[0].spec",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.externalImports[1].from",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.externalImports[1].spec",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.externalImports[2].spec",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
+    },
+    {
+      "case": "imports/infer-imports-ignored-environments",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.externalImports",
+      "change": 48,
+      "reason": "The scan skips one list of folder names for every repository read: besides build output and caches it skips editor settings (.idea, .vscode), Python caches (__pycache__, .pytest_cache) and virtual environments (.venv, venv). The script server skipped those names for the survey and the exact reads but not for the import scan, so a virtual environment inside a source folder passed for the product own modules and external imports (row 48)."
     }
   ]
 }

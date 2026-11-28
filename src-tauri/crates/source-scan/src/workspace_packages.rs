@@ -45,6 +45,33 @@ struct Pattern {
     exclude: bool,
 }
 
+/// A package the repository declares as part of its workspace, below the root.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclaredMember {
+    /// Below the repository root, `/`-separated.
+    pub path: String,
+    pub name: Option<String>,
+}
+
+/// The packages `files` declares as one workspace besides the root itself, for a reader that
+/// only needs where each lies and what it is called. `ignore` names folders skipped on top of
+/// the defaults.
+pub fn declared_workspace_members(
+    files: &dyn SourceFiles,
+    ignore: &[String],
+) -> Vec<DeclaredMember> {
+    let facts = PathFacts::new(files);
+    discover_workspace_packages(&facts, &IgnoredNames::with_defaults(ignore))
+        .packages
+        .into_iter()
+        .filter(|package| package.path != ".")
+        .map(|package| DeclaredMember {
+            path: package.path,
+            name: package.name,
+        })
+        .collect()
+}
+
 pub fn discover_workspace_packages(
     facts: &PathFacts<'_>,
     ignore: &IgnoredNames,

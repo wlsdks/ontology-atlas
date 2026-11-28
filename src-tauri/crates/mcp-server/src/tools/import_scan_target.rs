@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use confined_files::{DiskSource, EntryKind, ScanRoots, SourceFiles};
+use confined_files::{DiskSource, EntryKind, ScanRoots, SourceFiles, SourceRoot};
 use source_scan::{scan_imports, ImportScan, ImportScanOptions, SOURCE_FILE_MAX_BYTES};
 
 use crate::dispatch::CallContext;
@@ -13,6 +13,7 @@ use crate::error::ToolError;
 pub struct ScanTarget {
     pub label: String,
     root: std::path::PathBuf,
+    allowed: SourceRoot,
     source: DiskSource,
 }
 
@@ -39,6 +40,7 @@ impl ScanTarget {
         Ok(Self {
             label,
             root: allowed.as_path().to_path_buf(),
+            allowed,
             source,
         })
     }
@@ -52,6 +54,17 @@ impl ScanTarget {
             )));
         }
         Ok(self)
+    }
+
+    /// The real folder the scan reads.
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
+    /// The same folder read with its own file size cap, for a reader that treats a larger file as
+    /// data rather than code.
+    pub fn source_with_limit(&self, max_file_bytes: usize) -> DiskSource {
+        DiskSource::new(&self.allowed, max_file_bytes)
     }
 
     pub fn scan(&self, options: &ImportScanOptions) -> ImportScan {
