@@ -68,10 +68,13 @@ function summarizeWrite(name, args, result) {
         ? { target: args.projectSlug, summary: `finalize_project_meaning ${args.projectSlug} competency answers` }
         : null;
     case 'connect_project_source':
-      if (!result?.changed) return null;
-      return args.disconnect === true
+      return result?.changed
+        ? { target: result.projectSlug, summary: `connect_project_source ${result.mode} ${result.binding?.kind ?? ''}`.trim() }
+        : null;
+    case 'disconnect_project_source':
+      return result?.changed
         ? { target: result.projectSlug, summary: `disconnect_project_source ${result.removed} removed` }
-        : { target: result.projectSlug, summary: `connect_project_source ${result.mode} ${result.binding?.kind ?? ''}`.trim() };
+        : null;
     case 'rename_concept':
       if (result?.dryRun) return null;
       return args.newKind === undefined

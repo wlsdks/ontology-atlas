@@ -70,11 +70,12 @@ export function describeWrite(toolName, args) {
     case 'absorb_document':
       return named('filePath') ? `Absorb ${path('filePath')} into typed nodes` : 'Absorb a document into typed nodes';
     case 'connect_project_source':
-      if (a.disconnect === true) return 'Disconnect a source folder from this vault';
       if (!named('projectSlug')) return 'Connect a source folder to this vault';
       return named('rootPath')
         ? `Connect ${text('projectSlug')} to the source folder ${path('rootPath')}`
         : `Connect ${text('projectSlug')} to the source folder inferred from this vault's location`;
+    case 'disconnect_project_source':
+      return 'Disconnect a source folder from this vault';
     case 'finalize_project_meaning': {
       const project = named('projectSlug') ? text('projectSlug') : 'the project';
       const receipt = `re-measure the source folder connected to ${project} and write its project meaning receipt`;

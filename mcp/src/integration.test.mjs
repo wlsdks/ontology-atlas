@@ -9576,7 +9576,6 @@ await test("retired names — each cut or folded tool answers tool_retired with 
     find_evidence: /list_concepts\(\{ mentions: "text" \}\)/,
     find_orphans: /query_ontology\(\{ operation: 'match_nodes', hasIncoming: false \}\)/,
     query_concepts: /list_concepts\(\{ filter \}\)/,
-    disconnect_project_source: /connect_project_source\(\{ projectSlug, disconnect: true, confirm \}\)/,
     replace_relation: /remove_relation\(\{ from, to, type, replaceWith: \{ to, type, why \}, confirm \}\)/,
     reclassify_concept: /rename_concept\(\{ oldSlug, newKind, domain, body, confirm \}\)/,
   };

@@ -26,7 +26,7 @@ code it describes, measures it, and writes the source receipt that
 enclosing the vault, otherwise the nearest ancestor carrying a project
 manifest — then tells you how many of the ontology's declared `path:` claims
 actually exist inside it before anything is written. `confirm: true` binds;
-`connect_project_source` with `disconnect: true` undoes it. Until this
+`disconnect_project_source` undoes it. Until this
 landed, the app could say "no code folder is connected" and name
 `connect_source` as the next action while nothing outside the macOS folder
 picker could perform it.
@@ -269,7 +269,7 @@ explicit choices rather than defaults.
 path plus aligned `nodeSummaries[]`, so dependency-cycle diagnostics are readable
 without extra node lookups.
 
-#### Write tools (10)
+#### Write tools (11)
 
 All destructive dry-runs (relation remove or replace, rename or reclassify,
 merge, delete, absorb and disconnecting a project source) expose the same agent decision
@@ -307,14 +307,15 @@ contract: `previewReady`, `canConfirm`, `wouldChange`, and
 7. **remove_relation** `{ from, to, type, replaceWith?, confirm?, expected_mtime? }` — one exact typed relation and its rationale, dry-run first; an absent relation is an explicit no-op blocker. With `replaceWith: { to, type, why? }` the relation is replaced in one source-file write, its rationale moving with it (the retired `replace_relation`)
 8. **absorb_document** `{ filePath, confirm?, allowOutsideRepo? }` — classifies a local agent-instruction document, writes accepted policy nodes, backs up the source, then rewrites it as a slim pointer. Canonical paths outside `repoRoot`, including symlink escapes, are blocked until a reviewed dry-run is repeated with `allowOutsideRepo:true`
 9. **finalize_project_meaning** `{ projectSlug, expected_mtime, answers? }` — post-write finalization for one explicit project. With `answers` (five rows, one per fixed competency question) the server writes the project body's `## Competency answers` section from them and finalizes in one call; without, it reads the section already in the project Markdown. After current vault validation and a complete project scope, it resolves every typed witness against the current graph/source inventory, measuring a cited file the stored source receipt does not cover inside the already connected folder, and stores a versioned receipt with optimistic-concurrency protection. The receipt stores no raw answers or private source coordinates; the answers themselves live in the project Markdown. `ok: true` means the writes succeeded, not that the ontology or source is verified; callers read the returned categorical `meaningAssessment` or a fresh explicit-project `agent_brief`.
-10. **connect_project_source** `{ projectSlug, rootPath?, confirm?, repair?, disconnect? }` — dry-run/confirm binding of one project to a local source folder, with a measured source receipt; private absolute paths stay in the gitignored vault sidecar. With `disconnect: true` it removes that binding and receipt instead, without touching ontology Markdown or other projects (the retired `disconnect_project_source`).
+10. **connect_project_source** `{ projectSlug, rootPath?, confirm?, repair? }` — dry-run/confirm binding of one project to a local source folder, with a measured source receipt; private absolute paths stay in the gitignored vault sidecar.
+11. **disconnect_project_source** `{ projectSlug, confirm? }` — dry-run/confirm removal of one project's binding and receipt, without touching ontology Markdown or other projects.
 
-#### Retired from tools/list (17)
+#### Retired from tools/list (16)
 
 These names are left out of `tools/list` because another tool, or the agent's own
 command, does their whole job. The first seven still answer when called, so an agent
 following older instructions keeps working, and each answer ends with a note naming the
-replacement. The last ten no longer run: the call answers `tool_retired` with the
+replacement. The last nine no longer run: the call answers `tool_retired` with the
 replacement in `replacement` and the name in `retiredTool`, and nothing is read or written.
 
 | Retired | Call instead |
@@ -333,7 +334,6 @@ replacement in `replacement` and the name in `retiredTool`, and nothing is read 
 | `find_evidence({ title })` (answers `tool_retired`) | `list_concepts({ mentions: title })` |
 | `find_orphans()` (answers `tool_retired`) | `query_ontology({ operation: 'match_nodes', hasIncoming: false })` |
 | `query_concepts({ filter })` (answers `tool_retired`) | `list_concepts({ filter })` |
-| `disconnect_project_source({ projectSlug })` (answers `tool_retired`) | `connect_project_source({ projectSlug, disconnect: true })` |
 | `replace_relation({ from, oldTo, oldType, newTo, newType, why })` (answers `tool_retired`) | `remove_relation({ from, to: oldTo, type: oldType, replaceWith: { to: newTo, type: newType, why } })` |
 | `reclassify_concept({ slug, newKind })` (answers `tool_retired`) | `rename_concept({ oldSlug: slug, newKind })` |
 

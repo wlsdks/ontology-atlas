@@ -121,3 +121,17 @@ test('destructive and approval limits keep their meaning in tools/list', () => {
     assert.match(TOOL_BY_NAME.get(name).description, /infer_imports\.moduleEdges.*(human approval|the user's acceptance) first/, name);
   }
 });
+
+test('unbinding a folder is its own tool: connect refuses `disconnect`, and the unbinding tool refuses a folder', () => {
+  const sensitiveFolder = '/Users/me/' + '.ssh';
+  assert.throws(
+    () => normalizeToolArguments({ projectSlug: 'projects/shop', disconnect: true, rootPath: sensitiveFolder }, 'connect_project_source'),
+    /Unknown argument "disconnect" for connect_project_source/,
+  );
+  assert.throws(
+    () => normalizeToolArguments({ projectSlug: 'projects/shop', confirm: true, rootPath: sensitiveFolder }, 'disconnect_project_source'),
+    /Unknown argument "rootPath" for disconnect_project_source/,
+  );
+  assert.equal(TOOL_BY_NAME.get('disconnect_project_source').annotations.destructiveHint, true);
+  assert.equal(TOOL_BY_NAME.get('connect_project_source').annotations.destructiveHint, false);
+});

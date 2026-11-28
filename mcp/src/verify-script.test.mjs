@@ -205,7 +205,7 @@ describe('live local first-contact probes', () => {
         repoRoot: '/repo',
         sameRoot: false,
         restartRequiredForRootChange: true,
-        server: { toolCount: 23, toolNames: [] },
+        server: { toolCount: 24, toolNames: [] },
       }),
     ];
 
@@ -235,7 +235,7 @@ describe('live local first-contact probes', () => {
         repoRoot: '/repo',
         sameRoot: false,
         restartRequiredForRootChange: true,
-        server: { toolCount: 23, toolNames: [] },
+        server: { toolCount: 24, toolNames: [] },
       }),
     ];
 
@@ -434,9 +434,9 @@ function structuredValueRepairDetails(text) {
 
 describe('verify.mjs first-contact gates', () => {
   it('publishes finalize_project_meaning as a non-destructive non-idempotent write tool', () => {
-    assert.equal(EXPECTED_TOOLS.length, 23);
+    assert.equal(EXPECTED_TOOLS.length, 24);
     assert.equal(EXPECTED_READ_TOOLS.length, 13);
-    assert.equal(EXPECTED_WRITE_TOOLS.length, 10);
+    assert.equal(EXPECTED_WRITE_TOOLS.length, 11);
     assert.ok(EXPECTED_WRITE_TOOLS.includes('finalize_project_meaning'));
     assert.equal(EXPECTED_READ_TOOLS.includes('finalize_project_meaning'), false);
     assert.equal(EXPECTED_DESTRUCTIVE_TOOLS.includes('finalize_project_meaning'), false);

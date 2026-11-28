@@ -2,7 +2,7 @@
   "name": "ontology-atlas-mcp",
   "version": "2.7.15",
   "packageManager": "pnpm@10.34.9",
-  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. Current surface: 23 tools (13 read + 10 write).",
+  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. Current surface: 24 tools (13 read + 11 write).",
   "keywords": [
     "mcp",
     "model-context-protocol",

@@ -221,6 +221,7 @@
     "compile": "Rebuild the map from the files",
     "absorb": "Sort a document into candidates",
     "connectSource": "Connect a source",
+    "disconnectSource": "Disconnect a source",
     "judgeMeaning": "Judge the recorded meaning"
   },
   "toolKind": {

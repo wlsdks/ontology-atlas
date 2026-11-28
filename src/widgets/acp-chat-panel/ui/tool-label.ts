@@ -43,6 +43,7 @@ const VAULT_TOOL_KEYS: Readonly<Record<string, string>> = {
   compile_ontology: 'compile',
   absorb_document: 'absorb',
   connect_project_source: 'connectSource',
+  disconnect_project_source: 'disconnectSource',
   finalize_project_meaning: 'judgeMeaning',
 };
 

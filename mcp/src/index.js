@@ -49,6 +49,7 @@ import {
 } from './tools/lifecycle.mjs';
 import {
   connectProjectSourceTool,
+  disconnectProjectSourceTool,
   finalizeProjectMeaningTool,
 } from './tools/project-source.mjs';
 import {
@@ -157,6 +158,8 @@ async function callTool(request) {
         return ok(finalizeProjectMeaningTool(args));
       case 'connect_project_source':
         return ok(logWrite(name, args, connectProjectSourceTool(args)));
+      case 'disconnect_project_source':
+        return ok(logWrite(name, args, disconnectProjectSourceTool(args)));
       case 'add_concept':
         return ok(logWrite(name, args, addConcept(args)));
       case 'add_concepts':

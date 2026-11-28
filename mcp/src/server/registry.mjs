@@ -25,6 +25,7 @@ import {
 import { LIST_CONCEPTS_TOOL } from './tool-definitions/list-concepts.mjs';
 import {
   CONNECT_PROJECT_SOURCE_TOOL,
+  DISCONNECT_PROJECT_SOURCE_TOOL,
   FINALIZE_PROJECT_MEANING_TOOL,
 } from './tool-definitions/project-source.mjs';
 import {
@@ -57,6 +58,7 @@ const TOOLS = [
   GET_CONCEPTS_TOOL,
   FINALIZE_PROJECT_MEANING_TOOL,
   CONNECT_PROJECT_SOURCE_TOOL,
+  DISCONNECT_PROJECT_SOURCE_TOOL,
   ADD_CONCEPT_TOOL,
   ADD_CONCEPTS_TOOL,
   ADD_RELATION_TOOL,
@@ -102,8 +104,8 @@ const READ_TOOL_NAMES = new Set([
 ]);
 
 const DESTRUCTIVE_TOOL_NAMES = new Set([
-  // `disconnect: true` removes the binding and its receipt.
-  'connect_project_source',
+  // Removes the binding and its receipt.
+  'disconnect_project_source',
   'delete_concept',
   'merge_concepts',
   'rename_concept',
@@ -163,7 +165,6 @@ const RETIRED_TOOL_REPLACEMENTS = new Map([
   ['find_evidence', 'list_concepts({ mentions: "text" })'],
   ['find_orphans', "query_ontology({ operation: 'match_nodes', hasIncoming: false })"],
   ['query_concepts', 'list_concepts({ filter })'],
-  ['disconnect_project_source', 'connect_project_source({ projectSlug, disconnect: true, confirm })'],
   ['replace_relation', 'remove_relation({ from, to, type, replaceWith: { to, type, why }, confirm })'],
   ['reclassify_concept', 'rename_concept({ oldSlug, newKind, domain, body, confirm })'],
 ]);

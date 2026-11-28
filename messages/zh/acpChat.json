@@ -221,6 +221,7 @@
     "compile": "根据文件重建地图",
     "absorb": "把文档整理成候选",
     "connectSource": "连接代码文件夹",
+    "disconnectSource": "断开代码文件夹",
     "judgeMeaning": "判定已记录的语义"
   },
   "toolKind": {

@@ -221,6 +221,7 @@
     "compile": "파일에서 지도 다시 만들기",
     "absorb": "문서를 후보로 정리",
     "connectSource": "코드 폴더 연결",
+    "disconnectSource": "코드 폴더 연결 끊기",
     "judgeMeaning": "기록된 의미 판정"
   },
   "toolKind": {

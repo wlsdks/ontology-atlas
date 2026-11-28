@@ -176,7 +176,7 @@ test('the question names the targets each tool actually receives', () => {
     [describeWrite('merge_concepts', { fromSlug: 'elements/x', intoSlug: 'elements/y' }), ['elements/x', 'elements/y']],
     [describeWrite('remove_relation', { from: 'a', to: 'b', type: 'relates', replaceWith: { to: 'c', type: 'relates' } }), ['a', 'b', 'c']],
     [describeWrite('rename_concept', { oldSlug: 'capabilities/a', newKind: 'element' }), ['capabilities/a', 'kind']],
-    [describeWrite('connect_project_source', { projectSlug: 'atlas', disconnect: true }), ['Disconnect']],
+    [describeWrite('disconnect_project_source', { projectSlug: 'atlas' }), ['Disconnect']],
     [describeWrite('absorb_document', { filePath: '/repo/AGENTS.md' }), ['"/repo/AGENTS.md"']],
   ];
   for (const [card, targets] of cards) {

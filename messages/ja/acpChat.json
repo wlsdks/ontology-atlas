@@ -221,6 +221,7 @@
     "compile": "ファイルからマップを再構築",
     "absorb": "文書を候補に仕分ける",
     "connectSource": "コードフォルダを接続",
+    "disconnectSource": "コードフォルダの接続を解除",
     "judgeMeaning": "記録された意味を判定"
   },
   "toolKind": {

@@ -19,8 +19,7 @@
     "read_source",
     "inspect_architecture",
     "analyze_repo_structure",
-    "infer_imports",
-    "index_project"
+    "infer_imports"
   ],
   "retiredTools": [
     {
@@ -80,10 +79,6 @@
       "replacement": "list_concepts({ filter })"
     },
     {
-      "name": "disconnect_project_source",
-      "replacement": "connect_project_source({ projectSlug, disconnect: true, confirm })"
-    },
-    {
       "name": "replace_relation",
       "replacement": "remove_relation({ from, to, type, replaceWith: { to, type, why }, confirm })"
     },
@@ -125,6 +120,9 @@
       "projectSlug",
       "rootPath"
     ],
+    "disconnect_project_source": [
+      "projectSlug"
+    ],
     "add_concept": [
       "slug",
       "title",
@@ -154,21 +152,13 @@
     ],
     "query_ontology": [
       "recordId",
-      "analysisCursor",
       "slug",
-      "seed",
       "candidateSlug",
       "title",
       "from",
-      "project",
-      "task",
-      "expectedGraphHash",
-      "expectedSourceFingerprint",
-      "reviewRevision",
-      "cursor",
       "to",
+      "project",
       "domain",
-      "slugContains",
       "afterActionId"
     ],
     "validate_vault": [
@@ -186,9 +176,6 @@
       "afterReviewId",
       "focusPath",
       "focusAfterEdgeId"
-    ],
-    "index_project": [
-      "rootPath"
     ],
     "analyze_repo_structure": [
       "rootPath"

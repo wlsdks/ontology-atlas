@@ -265,10 +265,12 @@ describe("diagnosis is executable", () => {
     }
   });
 
-  it("registers the reversal inside the write, not as a second tool", () => {
+  it("registers the reversal, not just the write", () => {
+    const toolNames = new Set(SURFACE.mcp.tools.map((tool) => tool.name));
+    expect(toolNames.has("connect_project_source")).toBe(true);
+    expect(toolNames.has("disconnect_project_source")).toBe(true);
     const connect = SURFACE.mcp.tools.find((tool) => tool.name === "connect_project_source");
-    expect(connect?.arguments).toContain("disconnect");
-    expect(SURFACE.mcp.tools.some((tool) => tool.name === "disconnect_project_source")).toBe(false);
+    expect(connect?.arguments).not.toContain("disconnect");
   });
 });
 
