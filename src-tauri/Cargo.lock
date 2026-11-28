@@ -498,6 +498,7 @@ dependencies = [
  "serde_json",
  "source-reads",
  "source-scan",
+ "tempfile",
  "vault-document",
 ]
 

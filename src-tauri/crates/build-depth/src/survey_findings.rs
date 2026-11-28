@@ -277,3 +277,236 @@ pub(crate) fn survey_findings(
     findings.extend(not_mapped_line_findings(documents, coverage));
     findings
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(
+        clippy::disallowed_methods,
+        clippy::indexing_slicing,
+        reason = "a test plants the repository and the vault the findings read"
+    )]
+
+    use std::path::Path;
+    use std::sync::Arc;
+
+    use confined_files::{DiskSource, ScanRoots, SourceRoot, VaultRoot};
+    use repository_survey::{Survey, SurveyAsked, SurveyCache, SurveyFiles};
+    use vault_document::{DocumentCache, LoadedVault};
+
+    use super::*;
+    use crate::area_coverage::NotMappedArea;
+    use crate::not_mapped_lines::summary_line;
+
+    struct Scene {
+        _folder: tempfile::TempDir,
+        root: SourceRoot,
+        survey: Arc<Survey>,
+        vault: LoadedVault,
+    }
+
+    fn write(root: &Path, name: &str, text: &str) {
+        let file = root.join(name);
+        std::fs::create_dir_all(file.parent().expect("a parent")).expect("folder");
+        std::fs::write(file, text).expect("write");
+    }
+
+    fn scene(sources: &[(&str, &str)], nodes: &[(String, String)]) -> Scene {
+        let folder = tempfile::tempdir().expect("temp dir");
+        let base = folder.path().canonicalize().expect("real");
+        let (repository, vault) = (base.join("repo"), base.join("vault"));
+        std::fs::create_dir_all(&repository).expect("repository");
+        for (name, text) in sources {
+            write(&repository, name, text);
+        }
+        for (name, text) in nodes {
+            write(&vault, name, text);
+        }
+        let root = ScanRoots::new(repository.clone(), repository.clone())
+            .expect("roots")
+            .allow(&repository, "rootPath")
+            .expect("allowed");
+        let survey = {
+            let source = DiskSource::new(&root, 1024 * 1024);
+            let asked = SurveyAsked {
+                label: "repo".to_string(),
+                ignore: Vec::new(),
+                vault_exclusion: None,
+            };
+            SurveyCache::default().survey(&root, &SurveyFiles::new(&source), &asked)
+        };
+        let vault = LoadedVault::load(
+            &VaultRoot::open(&vault).expect("vault root"),
+            &DocumentCache::new(),
+        )
+        .expect("vault");
+        Scene {
+            _folder: folder,
+            root,
+            survey,
+            vault,
+        }
+    }
+
+    fn findings_of(scene: &Scene, reads: &ReadsUnder) -> Vec<(String, Issue)> {
+        let source = DiskSource::new(&scene.root, 1024 * 1024);
+        survey_findings(
+            scene.vault.documents(),
+            &SurveyEvidence {
+                source: &source,
+                collection: &scene.survey.collection,
+                reads,
+            },
+            None,
+        )
+    }
+
+    fn slugs_with(findings: &[(String, Issue)], code: &str) -> Vec<String> {
+        findings
+            .iter()
+            .filter(|(_, issue)| issue.code == code)
+            .map(|(slug, _)| slug.clone())
+            .collect()
+    }
+
+    fn message_of(findings: &[(String, Issue)], code: &str) -> String {
+        findings
+            .iter()
+            .find(|(_, issue)| issue.code == code)
+            .and_then(|(_, issue)| issue.message.clone())
+            .expect("a message")
+    }
+
+    const CODE: &str = "export function run() { return 1; }\n";
+
+    fn node(slug: &str, path: &str, more: &str, body: &str) -> (String, String) {
+        (
+            format!("{slug}.md"),
+            format!("---\nkind: capability\ntitle: {slug}\npath: {path}\n{more}---\n{body}\n"),
+        )
+    }
+
+    #[test]
+    fn a_relation_note_between_nodes_nobody_read_is_a_finding_and_between_read_ones_it_is_not() {
+        let unread = "## Uncertainty\n\n- Outlined only, not read.\n";
+        let scene = scene(
+            &[("src/order.ts", CODE), ("src/refund.ts", CODE)],
+            &[
+                node(
+                    "capabilities/order",
+                    "src/order.ts",
+                    "depends_on: [capabilities/refund]\nrelation_notes:\n  capabilities/refund: \"Order asks refund for the window\"\n",
+                    unread,
+                ),
+                node("capabilities/refund", "src/refund.ts", "", unread),
+            ],
+        );
+
+        let none_read = findings_of(&scene, &ReadsUnder::default());
+        assert_eq!(
+            slugs_with(&none_read, "relation-note-on-unread"),
+            ["capabilities/order"]
+        );
+        let message = message_of(&none_read, "relation-note-on-unread");
+        assert!(
+            message.contains("capabilities/order -> capabilities/refund"),
+            "{message}"
+        );
+        assert!(message.contains("says it was not read"), "{message}");
+
+        let mut reads = ReadsUnder::default();
+        for path in ["src/order.ts", "src/refund.ts"] {
+            reads.reads.insert(path.to_string(), Vec::new());
+        }
+        assert!(slugs_with(&findings_of(&scene, &reads), "relation-note-on-unread").is_empty());
+    }
+
+    #[test]
+    fn a_path_on_a_file_without_code_is_a_finding_and_names_the_files_beside_it() {
+        let scene = scene(
+            &[
+                ("src/empty.ts", "// nothing is declared here yet\n"),
+                ("src/order.ts", CODE),
+            ],
+            &[
+                node("capabilities/empty", "src/empty.ts", "", "Body."),
+                node("capabilities/order", "src/order.ts", "", "Body."),
+            ],
+        );
+        let findings = findings_of(&scene, &ReadsUnder::default());
+        assert_eq!(
+            slugs_with(&findings, "path-without-code"),
+            ["capabilities/empty"]
+        );
+        assert_eq!(
+            message_of(&findings, "path-without-code"),
+            "path: src/empty.ts holds no code; nearby: src/order.ts"
+        );
+    }
+
+    #[test]
+    fn six_nodes_on_one_path_are_each_a_finding_and_five_are_not() {
+        let sources = [("src/shared.ts", CODE)];
+        let nodes_of = |count: usize| -> Vec<(String, String)> {
+            (1..=count)
+                .map(|at| node(&format!("capabilities/shared-{at}"), "src/shared.ts", "", "Body."))
+                .collect()
+        };
+
+        let six = scene(&sources, &nodes_of(6));
+        let findings = findings_of(&six, &ReadsUnder::default());
+        assert_eq!(slugs_with(&findings, "path-shared").len(), 6);
+        let message = message_of(&findings, "path-shared");
+        assert!(
+            message.starts_with("6 nodes share path: src/shared.ts ("),
+            "{message}"
+        );
+
+        let five = scene(&sources, &nodes_of(5));
+        assert!(slugs_with(&findings_of(&five, &ReadsUnder::default()), "path-shared").is_empty());
+    }
+
+    #[test]
+    fn a_project_whose_not_mapped_summary_is_not_the_measured_one_is_a_finding() {
+        let area = repository_survey::AreaRow {
+            path: "src".to_string(),
+            files: 2,
+            lines: 20,
+            own: false,
+            rest: false,
+            members: Vec::new(),
+            main_files: Vec::new(),
+            abilities: 4,
+            ability_files: Vec::new(),
+        };
+        let coverage = AreaCoverage {
+            counted: 3,
+            abilities: 9,
+            uncovered: 4,
+            not_mapped: vec![NotMappedArea {
+                area: &area,
+                abilities: 4,
+                uncovered: 4,
+                uncovered_files: Vec::new(),
+            }],
+        };
+        let project = |summary: &str| {
+            scene(
+                &[],
+                &[(
+                    "projects/shop.md".to_string(),
+                    format!("---\nkind: project\ntitle: Shop\n---\nA shop.\n\n## Uncertainty\n\n- {summary}\n"),
+                )],
+            )
+        };
+
+        let stale = project("Not mapped yet: 1 of 3 areas, 2 of 9 abilities.");
+        let found = not_mapped_line_findings(stale.vault.documents(), Some(&coverage));
+        assert_eq!(
+            slugs_with(&found, "not-mapped-line-mismatch"),
+            ["projects/shop"]
+        );
+
+        let current = project(&summary_line(&coverage));
+        assert!(not_mapped_line_findings(current.vault.documents(), Some(&coverage)).is_empty());
+    }
+}
