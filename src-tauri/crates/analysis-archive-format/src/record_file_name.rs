@@ -1,9 +1,25 @@
 //! The name of a record file: its moment and its id, so the newest record sorts last and the name
 //! alone says which record it holds: `2026-11-27T09-15-30-123Z-<uuid>.md`.
 
-use super::field_checks::is_uuid;
-
 const STAMP_LENGTH: usize = 24;
+
+/// Whether `text` is a version 4 UUID in lower case, `8-4-4-4-12`.
+pub fn is_uuid_v4(text: &str) -> bool {
+    let groups: Vec<&str> = text.split('-').collect();
+    let lengths_fit = groups.len() == 5
+        && groups
+            .iter()
+            .zip([8_usize, 4, 4, 4, 12])
+            .all(|(group, length)| group.len() == length);
+    let lower_hex = text
+        .bytes()
+        .all(|byte| byte == b'-' || byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte));
+    let version_four = groups.get(2).is_some_and(|group| group.starts_with('4'));
+    let variant = groups
+        .get(3)
+        .is_some_and(|group| group.starts_with(['8', '9', 'a', 'b']));
+    lengths_fit && lower_hex && version_four && variant
+}
 
 /// The name the record made at `created_at` with `id` is kept under.
 pub fn record_file_name(created_at: &str, id: &str) -> String {
@@ -18,7 +34,7 @@ pub fn is_record_file_name(name: &str) -> bool {
     let (Some(stamp), Some(id)) = (stem.get(..STAMP_LENGTH), stem.get(STAMP_LENGTH + 1..)) else {
         return false;
     };
-    stem.as_bytes().get(STAMP_LENGTH) == Some(&b'-') && is_stamp(stamp) && is_uuid(id)
+    stem.as_bytes().get(STAMP_LENGTH) == Some(&b'-') && is_stamp(stamp) && is_uuid_v4(id)
 }
 
 /// `YYYY-MM-DDTHH-MM-SS-mmmZ`.
@@ -59,6 +75,9 @@ mod tests {
             format!("2026-11-27T09-15-30-123-{ID}.md"),
             format!("2026-11-27T09-15-30-123Z-{}.md", ID.to_uppercase()),
             format!("2026-11-27T09:15:30.123Z-{ID}.md"),
+            "2026-11-27T09-15-30-123Z-0a1b2c3d-4e5f-3a6b-8c7d-9e0f1a2b3c4d.md".to_string(),
+            "2026-11-27T09-15-30-123Z-0a1b2c3d-4e5f-4a6b-7c7d-9e0f1a2b3c4d.md".to_string(),
+            "2026-11-27T09-15-30-123Z-\u{e9}a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4.md".to_string(),
             "notes.md".to_string(),
             format!(".{name}"),
         ] {

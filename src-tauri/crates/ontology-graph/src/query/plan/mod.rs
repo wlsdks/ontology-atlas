@@ -23,15 +23,16 @@ use crate::compiled_graph::CompiledGraph;
 use crate::query::node_resolution::resolve;
 use crate::query::operation::Operation;
 use crate::query::operation_defaults::{
-    ALL_PATHS_LIMIT, ALL_PATHS_SEARCH_BUDGET, BUILDER_CONTEXT, CENTRALITY_LIMIT, DEPENDENCY_IMPACT,
-    EXPLAIN_RELATION_LIMIT, MATCH_EDGES_LIMIT, MATCH_NODES_LIMIT, NEIGHBORS_LIMIT, PATH_MAX_HOPS,
-    REACHABILITY, SUBGRAPH,
+    default_limit, neighbors_direction, ALL_PATHS_SEARCH_BUDGET, BUILDER_CONTEXT, CENTRALITY_LIMIT,
+    DEPENDENCY_IMPACT, ITERATIONS, MATCH_EDGES_LIMIT, MATCH_NODES_LIMIT, NEIGHBORS_LIMIT,
+    PATH_MAX_HOPS, REACHABILITY, SUBGRAPH,
 };
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, public_relation_type, RelationSet};
 use crate::query::request::{Direction, QueryRequest};
 use crate::query::selection::SelectionOperation;
-use crate::query::selection::{count_matching_nodes, scan_edges, DEFAULT_ITERATIONS};
+use crate::query::selection::{count_matching_nodes, scan_edges};
+use crate::query::walks::expansion_start::expansion_start;
 use crate::query::walks::impact::refuse_structural_types;
 use crate::query::walks::neighbors::count_filtered_edges;
 use crate::query::walks::WalkOperation;
@@ -129,8 +130,13 @@ fn check_kind(
     }
 }
 
-/// The head every plan states: the operation, the relations, and the rows. `limit` is stated only
-/// where the operation has a default to state, or the call named one.
+/// The rows an operation would list: the call's `limit`, or the operation's default when it has
+/// one. A plan states no `limit` for an operation that has none and was sent none.
+fn limit_of(target: Operation, request: &QueryRequest) -> Option<usize> {
+    request.limit.or_else(|| default_limit(target))
+}
+
+/// The head every plan states: the operation, the relations, and the rows.
 fn head(target: Operation, types: ArgumentValue, limit: Option<usize>) -> PlannedArguments {
     let mut arguments = PlannedArguments::default();
     arguments.put("targetOperation", ArgumentValue::text(target.name()));
@@ -141,7 +147,7 @@ fn head(target: Operation, types: ArgumentValue, limit: Option<usize>) -> Planne
 
 fn read_neighbors(graph: &CompiledGraph, request: &QueryRequest) -> Result<Reading, QueryError> {
     let center = resolve(graph, request.slug.as_deref(), "slug")?;
-    let direction = request.direction_undirected_as_both(Direction::Both);
+    let direction = neighbors_direction(request);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let limit = request.limit.unwrap_or(NEIGHBORS_LIMIT);
     let rows = count_filtered_edges(graph, center, request, types.as_ref());
@@ -198,11 +204,7 @@ fn read_paths(
     let direction = Direction::for_paths(request.direction);
     let max_hops = request.max_hops.unwrap_or(PATH_MAX_HOPS);
     let enumerates = target == WalkOperation::AllPaths;
-    let limit = match target {
-        WalkOperation::AllPaths => Some(request.limit.unwrap_or(ALL_PATHS_LIMIT)),
-        WalkOperation::ExplainRelation => Some(request.limit.unwrap_or(EXPLAIN_RELATION_LIMIT)),
-        _ => request.limit,
-    };
+    let limit = limit_of(Operation::Walk(target), request);
     let search_budget = if enumerates {
         Some(request.search_budget(ALL_PATHS_SEARCH_BUDGET)?)
     } else {
@@ -271,8 +273,7 @@ fn read_expansion(
         WalkOperation::BuilderContext => &BUILDER_CONTEXT,
         _ => &DEPENDENCY_IMPACT,
     };
-    let name = request.slug.as_deref().or(request.seed.as_deref());
-    let start = resolve(graph, name, "slug")?;
+    let start = expansion_start(graph, request, defaults)?;
     let dependencies_only = matches!(target, WalkOperation::Impact | WalkOperation::BlastRadius);
     let types = if dependencies_only {
         refuse_structural_types(request)?;
@@ -420,7 +421,7 @@ fn read_match_edges(graph: &CompiledGraph, request: &QueryRequest) -> Result<Rea
 fn read_centrality(graph: &CompiledGraph, request: &QueryRequest) -> Result<Reading, QueryError> {
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let limit = request.limit.unwrap_or(CENTRALITY_LIMIT);
-    let iterations = request.iterations.unwrap_or(DEFAULT_ITERATIONS);
+    let iterations = request.iterations.unwrap_or(ITERATIONS);
     let mut has_outgoing = vec![false; graph.nodes().len()];
     let mut resolved = 0_usize;
     for edge in graph.edges() {
@@ -469,11 +470,14 @@ fn read_whole_graph(
     target: Operation,
 ) -> Result<Reading, QueryError> {
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
-    let mut arguments = head(target, public_names(types.as_ref()), request.limit);
+    let mut arguments = head(
+        target,
+        public_names(types.as_ref()),
+        limit_of(target, request),
+    );
     let selected = &request.selection.arguments;
     let sent_text = |name| match name {
         "slug" => request.slug.as_deref(),
-        "seed" => request.seed.as_deref(),
         "from" => request.from.as_deref(),
         "to" => request.to.as_deref(),
         "project" => request.project.as_deref(),
@@ -481,7 +485,7 @@ fn read_whole_graph(
         "domain" => selected.domain.as_deref(),
         _ => None,
     };
-    for name in ["slug", "seed", "from", "to", "project", "kind", "domain"] {
+    for name in ["slug", "from", "to", "project", "kind", "domain"] {
         if let Some(text) = sent_text(name) {
             arguments.put(name, ArgumentValue::text(text));
         }

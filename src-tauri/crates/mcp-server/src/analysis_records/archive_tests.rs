@@ -1,11 +1,14 @@
 //! The archive against records the app's own writer made (`fixtures/`), and against the files a
 //! vault from Git or a sync client can hold: cut short, too large, linked, copied twice.
 
+use std::time::{Duration, Instant};
+
+use analysis_archive_format::{ARCHIVE_FOLDER, MAX_RECORD_BYTES};
 use serde::Serialize;
 
-use super::analysis_archive::{AnalysisArchive, ArchiveError, HistoryQuery};
+use super::analysis_archive::{AnalysisArchive, ArchiveError, HistoryLimit, HistoryQuery};
 use super::analysis_record::AnalysisMode;
-use super::archive_limits::{ARCHIVE_FOLDER, MAX_RECORD_BYTES};
+use super::record_text::parse_record;
 
 const RUN: &str = include_str!("fixtures/run-written-by-the-app.txt");
 const REVIEW: &str = include_str!("fixtures/review-written-by-the-app.txt");
@@ -25,9 +28,17 @@ fn archive(vault: &tempfile::TempDir) -> AnalysisArchive {
     AnalysisArchive::new(vault.path().to_path_buf())
 }
 
-fn query(limit: usize) -> HistoryQuery {
+fn limit(pages: usize) -> HistoryLimit {
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "a test page is at most a hundred"
+    )]
+    HistoryLimit::from_sent(Some(pages as f64)).expect("a limit the archive accepts")
+}
+
+fn query(pages: usize) -> HistoryQuery {
     HistoryQuery {
-        limit,
+        limit: limit(pages),
         ..HistoryQuery::default()
     }
 }
@@ -81,6 +92,97 @@ fn a_run_holding_line_separators_is_read_where_the_script_reader_refused_it() {
         record.contains("Line two with \u{2028} separator"),
         "{record}"
     );
+}
+
+#[test]
+fn a_history_limit_is_a_whole_number_from_one_to_a_hundred_and_nothing_else() {
+    for refused in [
+        Some(0.0),
+        Some(101.0),
+        Some(1.5),
+        Some(-1.0),
+        Some(f64::NAN),
+        None,
+    ] {
+        assert_eq!(
+            HistoryLimit::from_sent(refused),
+            Err(ArchiveError::InvalidLimit),
+            "{refused:?}"
+        );
+    }
+    assert_eq!(
+        HistoryLimit::from_sent(Some(100.0)).map(HistoryLimit::get),
+        Ok(100)
+    );
+    assert_eq!(
+        HistoryLimit::from_sent(Some(1.0)).map(HistoryLimit::get),
+        Ok(1)
+    );
+}
+
+#[test]
+fn a_metadata_line_the_format_cannot_hold_is_refused_in_the_one_sentence_whatever_it_holds() {
+    // The same sentence for a line that is not JSON, one nested a level too deep for the reader,
+    // and a string with half of a surrogate pair; a record the app wrote never holds one.
+    let nested = |levels: usize| {
+        let note = format!("note: {}{}", "[".repeat(levels), "]".repeat(levels));
+        RUN.replacen(
+            "mode: \"architecture\"",
+            &format!("mode: \"architecture\"\n{note}"),
+            1,
+        )
+    };
+    let refusal = |text: &str| {
+        parse_record(text)
+            .err()
+            .map(|fault| fault.to_string())
+            .unwrap_or_default()
+    };
+    let unsupported = "Analysis metadata must use the supported JSON flow values.";
+    assert_eq!(
+        refusal(&RUN.replacen("mode: \"architecture\"", "mode: architecture", 1)),
+        unsupported
+    );
+    assert_eq!(refusal(&nested(128)), unsupported);
+    assert_eq!(
+        refusal(&nested(127)),
+        "run has missing or unsupported fields.",
+        "a value nested 127 levels is read; the field is what the format does not know"
+    );
+    let half = RUN.replace("Which module owns checkout? \u{1f600}", "\\ud83d");
+    assert_ne!(half, RUN);
+    assert_eq!(refusal(&half), unsupported);
+}
+
+#[test]
+fn a_basis_of_five_thousand_documents_is_checked_for_repeats_in_well_under_a_tenth_of_a_second() {
+    let documents: Vec<String> = (0..5000)
+        .map(|index| {
+            format!(
+                "{{\"slug\":\"capabilities/n{index:04}\",\"digest\":\"sha256:{:064x}\"}}",
+                index
+            )
+        })
+        .collect();
+    let basis = format!(
+        "basis: {{\"graphHash\":\"sha256:{:064x}\",\"sourceFingerprint\":\"fp-1\",\"profileHash\":\"sha256:2a14fad1970b2ebc76d1c9f592d5e0e330a6ee92c6901982018a792bf0265392\",\"documents\":[{}]}}",
+        0,
+        documents.join(",")
+    );
+    let before = RUN
+        .lines()
+        .find(|line| line.starts_with("basis: "))
+        .expect("basis line");
+    let text = RUN.replacen(before, &basis, 1);
+    let started = Instant::now();
+    let read = parse_record(&text);
+    let took = started.elapsed();
+    assert!(
+        read.is_ok(),
+        "five thousand is the bound, and is allowed: {:?}",
+        read.err()
+    );
+    assert!(took < Duration::from_millis(100), "{took:?}");
 }
 
 #[test]
@@ -168,7 +270,7 @@ fn pages_follow_the_cursor_over_a_hundred_and_five_files_without_a_gap_or_a_repe
         "{first}"
     );
     let rest = HistoryQuery {
-        limit: 100,
+        limit: limit(100),
         cursor: Some(cursor.to_string()),
         ..HistoryQuery::default()
     };
@@ -233,10 +335,6 @@ fn a_record_is_found_by_its_id_and_a_wrong_id_says_why() {
         Some(ArchiveError::NotFound)
     );
     assert!(archive(&empty).history(&query(30)).is_ok());
-    assert_eq!(
-        archive(&empty).history(&query(0)).err(),
-        Some(ArchiveError::InvalidLimit)
-    );
     let cursor = HistoryQuery {
         cursor: Some("../x".to_string()),
         ..query(30)
@@ -286,4 +384,25 @@ fn a_link_where_the_archive_or_a_record_belongs_reads_nothing_outside_the_vault(
         "{history}"
     );
     assert!(history.contains("\"returned\":0"), "{history}");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_pipe_at_a_record_name_is_a_problem_and_never_holds_the_call() {
+    let vault = app_vault();
+    let folder = vault.path().join(".ontology-atlas").join(ARCHIVE_FOLDER);
+    let pipe = "2026-11-24T09-00-00-000Z-11111111-2222-4333-8444-999999999999.md";
+    let made = std::process::Command::new("mkfifo")
+        .arg(folder.join(pipe))
+        .status()
+        .expect("run mkfifo");
+    assert!(made.success());
+    let history = written(&archive(&vault).history(&query(30)).expect("lists"));
+    assert!(
+        history.contains(&format!(
+            "{{\"fileName\":\"{pipe}\",\"reason\":\"Analysis record is not a bounded, independent regular file.\"}}"
+        )),
+        "{history}"
+    );
+    assert!(history.contains("\"returned\":2"), "{history}");
 }

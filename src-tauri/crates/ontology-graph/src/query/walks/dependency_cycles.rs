@@ -14,13 +14,10 @@ use serde::Serialize;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::edge_rows::CompiledEdge;
 use crate::query::node_summary::{summaries, NodeSummary};
+use crate::query::operation_defaults::{CYCLES_LIMIT, CYCLES_MAX_HOPS, CYCLES_SEARCH_BUDGET};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
-
-const DEFAULT_CYCLE_LIMIT: usize = 20;
-pub const DEFAULT_CYCLE_DEPTH: usize = 8;
-pub const DEFAULT_SEARCH_BUDGET: usize = 5000;
 
 /// A loop of dependencies, rotated to start at its lowest node and closed by repeating it.
 pub struct DependencyCycle {
@@ -295,13 +292,13 @@ pub fn cycles<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<CyclesAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_CYCLE_LIMIT);
+    let limit = request.limit.unwrap_or(CYCLES_LIMIT);
     let max_depth = request
         .max_hops
         .or(request.depth)
-        .unwrap_or(DEFAULT_CYCLE_DEPTH);
+        .unwrap_or(CYCLES_MAX_HOPS);
     let types = RelationSet::dependencies_unless_named(request.types.as_deref())?;
-    let search_budget = request.search_budget(DEFAULT_SEARCH_BUDGET)?;
+    let search_budget = request.search_budget(CYCLES_SEARCH_BUDGET)?;
 
     let search = find_cycles(graph, types.as_ref(), max_depth, limit, search_budget);
 

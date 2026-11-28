@@ -9397,14 +9397,6 @@
       "case": "graph/analysis-records-with-line-separators",
       "where": "answer",
       "id": 2,
-      "path": "result.isError",
-      "change": 42,
-      "reason": "A record whose header holds U+2028 or U+2029, which the app's own writer can produce, is read and listed (row 42); the JavaScript reader refused it as not JSON."
-    },
-    {
-      "case": "graph/analysis-records-with-line-separators",
-      "where": "answer",
-      "id": 2,
       "path": "result.structuredContent.ok",
       "change": 42,
       "reason": "Row 42: a record with line separators in its header is read, so the answer is the record, where the JavaScript server refused it with \"Analysis metadata must use the supported JSON flow values.\""
