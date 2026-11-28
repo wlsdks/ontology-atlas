@@ -471,7 +471,7 @@ describe('VaultAgentSetupPanel', () => {
       'tools/list includes finalize_project_meaning and query_ontology',
       'MCP-connected proof:',
       'query_ontology({"operation":"workspace_brief","limit":5})',
-      'query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
+      'query_ontology({"operation":"match_nodes","kind":"capability","sort":"degree","limit":10})',
       'Post-change ontology sync:',
       'Read-first run order from a codebase root:',
       'open Agents > MCP and press the connect button for your agent',
