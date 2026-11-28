@@ -36,12 +36,10 @@ impl Sent<'_> {
     }
 }
 
-/// Where the file an `absorb_document` call names really is: the card shows that, not the name the
+/// What `tool` will do, called with `arguments`, in one line without a final stop. `absorbed` is
+/// where the file an `absorb_document` call names really is: the card shows that, not the name the
 /// agent typed, which can be a link to somewhere else.
-pub type FindDocument<'a> = &'a dyn Fn(&str) -> Option<AbsorbedPlace>;
-
-/// What `tool` will do, called with `arguments`, in one line without a final stop.
-pub fn summary(tool: WriteTool, arguments: &Arguments, find_document: FindDocument<'_>) -> String {
+pub fn summary(tool: WriteTool, arguments: &Arguments, absorbed: Option<&AbsorbedPlace>) -> String {
     let sent = Sent(arguments);
     match tool {
         WriteTool::AddConcept => match sent.named("slug") {
@@ -65,7 +63,7 @@ pub fn summary(tool: WriteTool, arguments: &Arguments, find_document: FindDocume
             Some(slug) => format!("Delete concept {slug}"),
             None => "Delete one concept".to_string(),
         },
-        WriteTool::AbsorbDocument => absorb_document(&sent, find_document),
+        WriteTool::AbsorbDocument => absorb_document(&sent, absorbed),
         WriteTool::ConnectProjectSource => connect_project_source(&sent),
         WriteTool::DisconnectProjectSource => {
             "Disconnect a source folder from this vault".to_string()
@@ -78,11 +76,11 @@ pub fn summary(tool: WriteTool, arguments: &Arguments, find_document: FindDocume
 
 /// `absorb_document` rewrites a file, so the card names the file it will really rewrite, and says
 /// when that file is not in the repository.
-fn absorb_document(sent: &Sent<'_>, find_document: FindDocument<'_>) -> String {
+fn absorb_document(sent: &Sent<'_>, absorbed: Option<&AbsorbedPlace>) -> String {
     let Some(typed) = sent.0.string("filePath") else {
         return "Absorb a document into typed nodes".to_string();
     };
-    match find_document(&typed) {
+    match absorbed {
         Some(place) => {
             let path = shown(&quote(&place.path().to_string_lossy()));
             let outside = if place.is_outside_repository() {
@@ -244,7 +242,7 @@ mod tests {
     }
 
     fn said(tool: WriteTool, text: &str) -> String {
-        summary(tool, &arguments(text), &|_| None)
+        summary(tool, &arguments(text), None)
     }
 
     /// Each expected line is what the JavaScript server's `describeWrite` returns for the call.
@@ -303,9 +301,8 @@ mod tests {
 
     fn absorb_card(repository: &std::path::Path, typed: &std::path::Path) -> String {
         let call = format!(r#"{{"filePath":{}}}"#, quote(&typed.to_string_lossy()));
-        summary(WriteTool::AbsorbDocument, &arguments(&call), &|requested| {
-            AbsorbedPlace::locate(requested, repository).ok()
-        })
+        let place = AbsorbedPlace::locate(&typed.to_string_lossy(), repository).ok();
+        summary(WriteTool::AbsorbDocument, &arguments(&call), place.as_ref())
     }
 
     #[test]

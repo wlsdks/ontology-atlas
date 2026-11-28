@@ -22,7 +22,7 @@
 use std::sync::MutexGuard;
 
 use confined_files::{
-    apply_all_or_nothing, AbsorbedFile, Applied, ApplyOptions, ConfinedPath, PlanEntry, Reservations, SlugError,
+    apply_all_or_nothing, AbsorbedFile, AbsorbedPlace, Applied, ApplyOptions, ConfinedPath, PlanEntry, Reservations, SlugError,
     VaultRoot, WritablePath, WriteError, WriteErrorClass,
 };
 
@@ -56,8 +56,8 @@ pub struct Permit<'a> {
     context: &'a CallContext<'a>,
     tool: WriteTool,
     vault: VaultRoot,
-    /// A person answered yes to the card for this call.
-    consented: bool,
+    /// What a person said yes to on the card for this call; `None` when none was asked.
+    approval: Option<consent::Approval>,
     /// Held until the permit is dropped, which `dispatch` does after the audit lines are written.
     _write_lock: MutexGuard<'a, ()>,
 }
@@ -70,14 +70,14 @@ impl<'a> Permit<'a> {
         arguments: &Arguments,
     ) -> Result<Self, ToolError> {
         refuse_in_read_only_mode(context, tool.name())?;
-        let consented = consent::ask_before_writing(context, tool, arguments)?;
+        let approval = consent::ask_before_writing(context, tool, arguments)?;
         // After the question, which can take minutes: nothing else waits behind a person's answer.
         let write_lock = context.lock_writes();
         Ok(Self {
             context,
             tool,
             vault: open_vault(context)?,
-            consented,
+            approval,
             _write_lock: write_lock,
         })
     }
@@ -98,7 +98,25 @@ impl<'a> Permit<'a> {
     /// Whether a person accepted the consent card for this call, which names what it does: a call
     /// that was not asked (consent off, or a preview) has no such yes.
     pub fn consented(&self) -> bool {
-        self.consented
+        self.approval.is_some()
+    }
+
+    /// Refuses a file other than the one the card showed. The card names where the typed path
+    /// really led when it was asked; a link retargeted while the person decided leads elsewhere
+    /// now, and a yes to the first file is no yes to the second. A call that was not asked has no
+    /// card to differ from.
+    pub fn ensure_card_named(&self, found: &AbsorbedPlace) -> Result<(), ToolError> {
+        let Some(approval) = &self.approval else {
+            return Ok(());
+        };
+        if approval.absorbed_place.as_ref() == Some(found) {
+            return Ok(());
+        }
+        Err(ToolError::new(
+            ErrorCode::Conflict,
+            "The file this path leads to is not the one the question named, so nothing was \
+             rewritten. Run absorb_document again to be asked about the file it leads to now.",
+        ))
     }
 
     /// The file a slug names, as a path this write may change.

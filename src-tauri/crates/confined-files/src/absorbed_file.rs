@@ -42,6 +42,8 @@ pub enum AbsorbedFileRefusal {
     DeviceName { name: String },
     #[error("{} is {bytes} bytes; absorb_document reads at most {max} bytes", .path.display())]
     TooLarge { path: PathBuf, bytes: u64, max: u64 },
+    #[error("{} is not where it was when it was checked: a folder above it now leads elsewhere, so it is not read", .0.display())]
+    Moved(PathBuf),
     #[error("{} is a link, has more than one name or is not a regular file, so it is not rewritten", .0.display())]
     NotPlainFile(PathBuf),
     #[error("{} is not UTF-8 text, so rewriting it would change bytes that were not read", .0.display())]
@@ -175,6 +177,11 @@ impl AbsorbedPlace {
         let facts = plain_file::facts_of(&file).map_err(io)?;
         if !facts.plain {
             return Err(AbsorbedFileRefusal::NotPlainFile(path));
+        }
+        // `O_NOFOLLOW` judged the last name only: a folder above it swapped for a link since
+        // `locate` would lead the open somewhere else, so the handle says where it really is.
+        if plain_file::path_of(&file).map_err(io)? != path {
+            return Err(AbsorbedFileRefusal::Moved(path));
         }
         if facts.size > ABSORBED_FILE_MAX_BYTES {
             return Err(AbsorbedFileRefusal::TooLarge {
@@ -423,6 +430,37 @@ mod tests {
             let refusal = place.read().expect_err(name);
             assert!(matches!(refusal, AbsorbedFileRefusal::NotPlainFile(_)), "{name}: {refusal}");
         }
+    }
+
+    /// `O_NOFOLLOW` judges the last name only. A folder above the file swapped for a link after
+    /// the check opens another file whose last name is plain; the handle's own path shows it.
+    #[cfg(unix)]
+    #[test]
+    fn a_folder_swapped_for_a_link_after_the_name_check_is_refused_not_read() {
+        let repository = folder();
+        let elsewhere = folder();
+        let file = nested(repository.path(), &["docs"], "AGENTS.md", "# A\n");
+        written(elsewhere.path(), "AGENTS.md", "SECRET");
+        let place = AbsorbedPlace::locate(&file, repository.path()).expect("passes the name check");
+        std::fs::rename(repository.path().join("docs"), repository.path().join("docs.moved")).expect("move");
+        std::os::unix::fs::symlink(elsewhere.path(), repository.path().join("docs")).expect("link");
+        let refusal = place.read().expect_err("the handle is another file's");
+        assert!(matches!(refusal, AbsorbedFileRefusal::Moved(_)), "{refusal}");
+    }
+
+    /// The handle's path is what Windows says it is: `GetFinalPathNameByHandleW` returns the
+    /// normalized, long-name path whatever letter case or short name opened it (Microsoft,
+    /// "GetFinalPathNameByHandleW", `FILE_NAME_NORMALIZED`), which is what `real_path` returns.
+    #[cfg(windows)]
+    #[test]
+    fn a_file_opened_by_a_path_in_other_letter_case_is_the_file_that_was_checked() {
+        let repository = folder();
+        let file = written(repository.path(), "AGENTS.md", "# A\n");
+        let place = AbsorbedPlace::locate(&file, repository.path()).expect("located");
+        let shouted = place.path().to_string_lossy().to_uppercase();
+        let handle = plain_file::open_read(Path::new(&shouted)).expect("opens by any case");
+        assert_eq!(plain_file::path_of(&handle).expect("final path"), place.path());
+        assert!(place.read().is_ok());
     }
 
     /// A copy with the same text and time has another identity, which is all a swap changes.

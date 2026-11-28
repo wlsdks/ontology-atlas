@@ -17,7 +17,7 @@
 
 use std::fs::{File, Metadata};
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// What an open handle says about its file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -115,6 +115,21 @@ mod platform {
         error.raw_os_error() == Some(rustix::io::Errno::LOOP.raw_os_error())
     }
 
+    /// `fcntl(F_GETPATH)` fills the path the kernel holds for the vnode.
+    #[cfg(target_vendor = "apple")]
+    pub(super) fn path_of(file: &File) -> io::Result<PathBuf> {
+        use std::os::unix::ffi::OsStringExt;
+        let path = rustix::fs::getpath(file).map_err(io::Error::from)?;
+        Ok(PathBuf::from(std::ffi::OsString::from_vec(path.into_bytes())))
+    }
+
+    /// The link `/proc/self/fd/<n>` names the file the descriptor is open on, every folder resolved.
+    #[cfg(not(target_vendor = "apple"))]
+    pub(super) fn path_of(file: &File) -> io::Result<PathBuf> {
+        use std::os::fd::AsRawFd;
+        std::fs::read_link(format!("/proc/self/fd/{}", file.as_raw_fd()))
+    }
+
     pub(super) fn facts(metadata: &Metadata, _file: &File) -> io::Result<FileFacts> {
         Ok(facts_of_metadata(metadata))
     }
@@ -201,7 +216,7 @@ mod platform {
         FileAttributeTagInfo, FileBasicInfo, GetFileInformationByHandle,
         GetFileInformationByHandleEx, BY_HANDLE_FILE_INFORMATION, FILE_ATTRIBUTE_DIRECTORY,
         FILE_ATTRIBUTE_REPARSE_POINT, FILE_ATTRIBUTE_TAG_INFO, FILE_BASIC_INFO,
-        FILE_FLAG_OPEN_REPARSE_POINT,
+        FILE_FLAG_OPEN_REPARSE_POINT, GetFinalPathNameByHandleW,
     };
 
     use super::*;
@@ -247,6 +262,37 @@ mod platform {
     /// A link is opened as itself on Windows and refused by [`facts`], never by the open.
     pub(super) fn is_link_refusal(_: &io::Error) -> bool {
         false
+    }
+
+    /// `GetFinalPathNameByHandleW` with `VOLUME_NAME_DOS` and `FILE_NAME_NORMALIZED` (both zero)
+    /// returns the path of the opened file with every link resolved, as `\\?\C:\...`
+    /// (Microsoft, "GetFinalPathNameByHandleW"). The prefix is dropped as [`real_path`] drops it.
+    ///
+    /// [`real_path`]: crate::real_paths::real_path
+    pub(super) fn path_of(file: &File) -> io::Result<PathBuf> {
+        use std::os::windows::ffi::OsStringExt;
+        let mut buffer = vec![0u16; 1024];
+        loop {
+            // SAFETY: the handle stays open for the call, and `buffer` is as long as the length passed.
+            let length = unsafe {
+                GetFinalPathNameByHandleW(
+                    file.as_raw_handle(),
+                    buffer.as_mut_ptr(),
+                    buffer.len() as u32,
+                    0,
+                )
+            } as usize;
+            if length == 0 {
+                return Err(io::Error::last_os_error());
+            }
+            // A result longer than the buffer is the length needed, with the final nul.
+            if length >= buffer.len() {
+                buffer.resize(length + 1, 0);
+                continue;
+            }
+            let path = PathBuf::from(std::ffi::OsString::from_wide(&buffer[..length]));
+            return Ok(dunce::simplified(&path).to_path_buf());
+        }
     }
 
     /// The facts of the file at `path`, following a link, from a handle opened for the look.
@@ -338,6 +384,13 @@ pub(crate) fn create_new(path: &Path) -> io::Result<File> {
 /// Whether an open failed because the name is a link the open refused to follow.
 pub(crate) fn is_link_refusal(error: &io::Error) -> bool {
     platform::is_link_refusal(error)
+}
+
+/// The path the open handle `file` leads to with every link resolved, asked of the kernel, not
+/// derived from the name that was opened: a folder swapped for a link after a path was checked
+/// shows here, which `O_NOFOLLOW` on the last component does not catch.
+pub(crate) fn path_of(file: &File) -> io::Result<PathBuf> {
+    platform::path_of(file)
 }
 
 /// The facts of the file at `path`, following a link. On Unix one `stat` and no open.
