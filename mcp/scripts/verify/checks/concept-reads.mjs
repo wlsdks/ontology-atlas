@@ -298,10 +298,10 @@ export function listConceptsFilterFailure(parsed) {
     return 'list_concepts filter response missing nodes array';
   }
   if (parsed.nodes.length > parsed.total) {
-    return `list_concepts filter response row count exceeds total: matches ${parsed.nodes.length}, total ${parsed.total}`;
+    return `list_concepts filter response row count exceeds total: rows ${parsed.nodes.length}, total ${parsed.total}`;
   }
   if (!parsed.limited && parsed.nodes.length !== parsed.total) {
-    return `list_concepts filter response row count mismatch: matches ${parsed.nodes.length}, total ${parsed.total}`;
+    return `list_concepts filter response row count mismatch: rows ${parsed.nodes.length}, total ${parsed.total}`;
   }
   for (const [index, row] of parsed.nodes.entries()) {
     const failure = readMatchRowFailure('list_concepts filter', row, index);
