@@ -28,6 +28,7 @@ members = [
   "crates/saved-constellations",
   "crates/document-absorption",
   "crates/wiki-pages",
+  "crates/project-source",
   "crates/mcp-server",
 ]
 
@@ -104,6 +105,8 @@ vault-index = { path = "crates/vault-index" }
 hardened-git = { path = "crates/hardened-git" }
 source-scan = { path = "crates/source-scan" }
 confined-files = { path = "crates/confined-files" }
+# The probe and fingerprint of a connected source folder, one for this app and the MCP server.
+project-source = { path = "crates/project-source" }
 # Where the analysis records are kept and what a record file is called, which `mcp-server` reads by too.
 analysis-archive-format = { path = "crates/analysis-archive-format" }
 # The built-in bge-m3 model: candle reads `pytorch_model.bin` without executing it; tokenizers and

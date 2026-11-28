@@ -79,19 +79,27 @@ fn an_ability_a_node_names_or_a_line_excludes_is_placed_and_the_rest_is_listed_a
         measure_against_survey(loaded.documents(), &survey, &ReadsUnder::default(), &source);
     let coverage = serde_json::to_value(measured.coverage.expect("abilities were found").page(0))
         .expect("serializes");
-    let breadth = &coverage["breadth"];
+    let abilities = &coverage["abilities"];
 
-    assert_eq!(breadth["abilities"], 4);
+    assert_eq!(abilities["surveyed"], 4);
     assert_eq!(
-        breadth["node"], 1,
+        abilities["onNode"], 1,
         "place-order is at src/cli.ts and names its one ability"
     );
-    assert_eq!(breadth["named"], 1, "admin names the ability by its title");
     assert_eq!(
-        breadth["excluded"], 1,
+        abilities["named"], 1,
+        "admin names the ability by its title"
+    );
+    assert_eq!(
+        abilities["excluded"], 1,
         "one line of the project says why `legacy` is left out"
     );
-    assert_eq!(breadth["unplaced"]["pagination"]["total"], 1);
-    assert_eq!(breadth["unplaced"]["rows"][0]["name"], "report");
-    assert!(coverage.get("reads").is_none());
+    assert_eq!(abilities["unplaced"], 1);
+    assert_eq!(coverage["unplacedOffset"]["total"], 1);
+    assert_eq!(coverage["unplaced"][0]["name"], "report");
+    assert_eq!(
+        coverage["reads"],
+        serde_json::json!({ "capabilities": 1, "read": 0, "unread": 1 }),
+        "no body cites lines and nothing was served, so the capability the measure counts is unread"
+    );
 }

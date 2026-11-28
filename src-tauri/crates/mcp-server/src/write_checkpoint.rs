@@ -56,6 +56,8 @@ pub struct Permit<'a> {
     context: &'a CallContext<'a>,
     tool: WriteTool,
     vault: VaultRoot,
+    /// A person answered yes to the card for this call.
+    consented: bool,
     /// Held until the permit is dropped, which `dispatch` does after the audit lines are written.
     _write_lock: MutexGuard<'a, ()>,
 }
@@ -68,13 +70,14 @@ impl<'a> Permit<'a> {
         arguments: &Arguments,
     ) -> Result<Self, ToolError> {
         refuse_in_read_only_mode(context, tool.name())?;
-        consent::ask_before_writing(context, tool, arguments)?;
+        let consented = consent::ask_before_writing(context, tool, arguments)?;
         // After the question, which can take minutes: nothing else waits behind a person's answer.
         let write_lock = context.lock_writes();
         Ok(Self {
             context,
             tool,
             vault: open_vault(context)?,
+            consented,
             _write_lock: write_lock,
         })
     }
@@ -90,6 +93,12 @@ impl<'a> Permit<'a> {
     /// The vault to read from.
     pub fn vault(&self) -> &VaultRoot {
         &self.vault
+    }
+
+    /// Whether a person accepted the consent card for this call, which names what it does: a call
+    /// that was not asked (consent off, or a preview) has no such yes.
+    pub fn consented(&self) -> bool {
+        self.consented
     }
 
     /// The file a slug names, as a path this write may change.

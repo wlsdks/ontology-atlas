@@ -11593,6 +11593,14 @@
       "case": "safety/confined-source-reads-on",
       "where": "answer",
       "id": 8,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/confined-source-reads-on",
+      "where": "answer",
+      "id": 8,
       "path": "result.structuredContent.ok",
       "change": 69,
       "reason": "With no usable census `validate_vault` refuses a repository-grounded report with the census's message, and with one it measures coverage and path drift against the census and dates no evidence; the JavaScript server surveys the disk and runs both drift checks from it (row 69)."
@@ -11769,14 +11777,6 @@
       "case": "safety/handler-fails-on-a-folder-named-like-a-node",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/problems/18/issues/3/message",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/problems/4/issues/3/message",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
@@ -11817,30 +11817,6 @@
       "case": "safety/handler-fails-on-a-folder-named-like-a-node",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/problemsHint",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/problemsPagination/nextOffset",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/problemsPagination/returned",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
@@ -11850,30 +11826,6 @@
       "where": "answer",
       "id": 5,
       "path": "result.structuredContent.problems",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsHint",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsPagination.nextOffset",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsPagination.returned",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
     },
@@ -11930,14 +11882,6 @@
       "where": "answer",
       "id": 5,
       "path": "result.structuredContent.problems[17].issues[3].message",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-folder-named-like-a-node",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problems[18].issues[3].message",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
     },
@@ -12273,14 +12217,6 @@
       "case": "safety/handler-fails-on-a-link-to-itself",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/problems/18/issues/3/message",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/problems/4/issues/3/message",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
@@ -12321,30 +12257,6 @@
       "case": "safety/handler-fails-on-a-link-to-itself",
       "where": "answer",
       "id": 5,
-      "path": "result.content[0].text#/problemsHint",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/problemsPagination/nextOffset",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/problemsPagination/returned",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
       "path": "result.content[0].text#/summary/byCode/rule-without-read-lines/remedy",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
@@ -12354,30 +12266,6 @@
       "where": "answer",
       "id": 5,
       "path": "result.structuredContent.problems",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsHint",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsPagination.nextOffset",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problemsPagination.returned",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
     },
@@ -12434,14 +12322,6 @@
       "where": "answer",
       "id": 5,
       "path": "result.structuredContent.problems[17].issues[3].message",
-      "change": 66,
-      "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
-    },
-    {
-      "case": "safety/handler-fails-on-a-link-to-itself",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.problems[18].issues[3].message",
       "change": 66,
       "reason": "Row 66: the message of a finding of validate_vault names the node and the target, and the repair sentence of its code is stated once in summary.byCode.<code>.remedy."
     },
@@ -14070,6 +13950,22 @@
     {
       "case": "safety/repository-whose-config-would-run-code",
       "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/repository-whose-config-would-run-code",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/repository-whose-config-would-run-code",
+      "where": "answer",
       "id": 2,
       "path": "result.content[0].text#/checks",
       "change": 37,
@@ -14079,9 +13975,41 @@
       "case": "safety/repository-whose-config-would-run-code",
       "where": "answer",
       "id": 2,
+      "path": "result.content[0].text#/validation/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/repository-whose-config-would-run-code",
+      "where": "answer",
+      "id": 2,
       "path": "result.structuredContent.checks",
       "change": 37,
       "reason": "The meaning_assessment check needs the project-source tool layer (row 37)."
+    },
+    {
+      "case": "safety/repository-whose-config-would-run-code",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.validation.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/scan-roots-outside-the-vault-and-repository",
+      "where": "answer",
+      "id": 44,
+      "path": "result.content[0].text#/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "safety/scan-roots-outside-the-vault-and-repository",
+      "where": "answer",
+      "id": 44,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
     },
     {
       "case": "safety/scan-roots-with-a-separate-repository",
@@ -15431,30 +15359,6 @@
     {
       "case": "shell/every-tool-in-read-only-mode",
       "where": "answer",
-      "id": 15,
-      "path": "result.content[0].text",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-in-read-only-mode",
-      "where": "answer",
-      "id": 15,
-      "path": "result.structuredContent.error",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-in-read-only-mode",
-      "where": "answer",
-      "id": 15,
-      "path": "result.structuredContent.errorCode",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-in-read-only-mode",
-      "where": "answer",
       "id": 16,
       "path": "result.content[0].text",
       "change": 39,
@@ -15472,30 +15376,6 @@
       "case": "shell/every-tool-in-read-only-mode",
       "where": "answer",
       "id": 16,
-      "path": "result.structuredContent.errorCode",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-with-empty-arguments-profile-construction",
-      "where": "answer",
-      "id": 15,
-      "path": "result.content[0].text",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-with-empty-arguments-profile-construction",
-      "where": "answer",
-      "id": 15,
-      "path": "result.structuredContent.error",
-      "change": 39,
-      "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
-    },
-    {
-      "case": "shell/every-tool-with-empty-arguments-profile-construction",
-      "where": "answer",
-      "id": 15,
       "path": "result.structuredContent.errorCode",
       "change": 39,
       "reason": "read_source checks path, from, limit and sheet as its advertised schema says (path text that is not blank, whole numbers, from and sheet at least 1, limit 1 to 1000), by name and before the path is looked at; the JavaScript server accepted and clamped the numbers and read a missing or non-text path as a path outside sources/ (row 39)."
@@ -20173,486 +20053,6 @@
     {
       "case": "library/absorb-document",
       "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/postWriteMaintenance/summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.postWriteMaintenance.summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/postWriteMaintenance/summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.postWriteMaintenance.summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document",
-      "where": "answer",
       "id": 8,
       "path": "result.content[0].text",
       "change": 86,
@@ -21290,246 +20690,6 @@
     {
       "case": "library/absorb-document-hostile-paths",
       "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/postWriteMaintenance/summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.postWriteMaintenance.summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "library/absorb-document-hostile-paths",
-      "where": "answer",
       "id": 6,
       "path": "result.content[0].text",
       "change": 86,
@@ -21691,748 +20851,12 @@
       "reason": "Row 86: absorb_document refuses a source file that is hidden, credential-named, not Markdown or a device name, so nothing is read past the name and no backup or rewrite follows; the script server accepted it. The activity line the script server wrote for that call is absent too."
     },
     {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.content[0].text#/postWriteMaintenance/summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.actions",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.byKind",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.byPhase",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.bySeverity",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.cursor",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.filters",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.graphHash",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.limited",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.nextAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.nextExecutableAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.nextReviewAction",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.operation",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.sideEffect",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.stepsAboutTouched",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "safety/write-guards-on-every-writer",
-      "where": "answer",
-      "id": 14,
-      "path": "result.structuredContent.postWriteMaintenance.summary",
-      "change": 85,
-      "reason": "Row 85: absorb_document's postWriteMaintenance is the short answer row 72 gives the other writers (nextAction and stepsAboutTouched), not the head of the whole vault's maintenance plan."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/validation/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "git/staleness-through-validate-vault",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.validation.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "meaning/validate-vault-miniature-repo",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "shell/repo-root-missing",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "shell/repo-root-missing",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "writes/writes-on-miniature-repo-evidence-nodes",
-      "where": "answer",
-      "id": 4,
-      "path": "result.content[0].text#/coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "writes/writes-on-miniature-repo-evidence-nodes",
-      "where": "answer",
-      "id": 4,
-      "path": "result.structuredContent.coverage",
-      "change": 96,
-      "reason": "Row 96: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.isError",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.operation",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.sideEffect",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.projectUid",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.projectSlug",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.status",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.readiness",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.graph",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.health",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
       "case": "evidence/agent-brief-operations",
       "where": "answer",
       "id": 1,
       "path": "result.structuredContent.nextActions",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.entrypoints",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.firstCalls",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.writeGuardrails",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.docs",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.handoffPrompt",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.projectSource",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.projectSourceRemedy",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.meaningAssessment",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.compiledSummary",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.ok",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.errorCode",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.error",
-      "change": 95,
-      "reason": "Row 95: agent_brief is not answered by the Rust server yet; the call is refused."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "evidence/agent-brief-operations",
-      "where": "answer",
-      "id": 2,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "evidence/agent-brief-storefront",
-      "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-ambiguous-and-dangling",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-atlas-ontology",
-      "where": "answer",
-      "id": 11,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-chain",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-edge-names",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 8,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-hub",
-      "where": "answer",
-      "id": 8,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-miniature-repo",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-one-node",
-      "where": "answer",
-      "id": 6,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -23262,14 +21686,6 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 68,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
       "path": "result.content[0].text#/nextActions/0/id",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -24001,14 +22417,6 @@
       "path": "result.structuredContent.health.validation.summary.byCode.dependency-both-ways.remedy",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 68,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -24750,14 +23158,6 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 69,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
       "path": "result.content[0].text#/nextActions/0/id",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -24806,14 +23206,6 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 69,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 69,
       "path": "result.structuredContent.nextActions[0].id",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -24857,14 +23249,6 @@
       "path": "result.content[0].text#/health/validation/summary/byCode/dependency-both-ways/remedy",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
     },
     {
       "case": "graph/graph-selection-rich",
@@ -24974,14 +23358,6 @@
       "case": "graph/graph-selection-rich",
       "where": "answer",
       "id": 70,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-rich",
-      "where": "answer",
-      "id": 70,
       "path": "result.structuredContent.nextActions[0].id",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
@@ -25067,38 +23443,6 @@
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
     },
     {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 19,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 19,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 20,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-storefront",
-      "where": "answer",
-      "id": 20,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
       "case": "graph/graph-selection-tangle",
       "where": "answer",
       "id": 4,
@@ -25113,38 +23457,6 @@
       "path": "result.structuredContent.checks",
       "change": 37,
       "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 9,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 9,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 10,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/graph-selection-tangle",
-      "where": "answer",
-      "id": 10,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
     },
     {
       "case": "graph/graph-walks-storefront",
@@ -29499,54 +27811,6 @@
       "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
     },
     {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-atlas-ontology",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-miniature-repo",
-      "where": "answer",
-      "id": 3,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text#/growth/nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
-      "case": "graph/query-ontology-storefront",
-      "where": "answer",
-      "id": 5,
-      "path": "result.structuredContent.growth.nextReadsReason",
-      "change": 98,
-      "reason": "Row 98: nextReadsReason is `no_bodies` whenever no node of the vault has a body; Rust says it only for a vault with no document, because the reads come from outside the graph."
-    },
-    {
       "case": "meaning/validate-vault-hostile-git",
       "where": "answer",
       "id": 1,
@@ -29817,6 +28081,670 @@
       "path": "result.structuredContent.dependencyOrder.blocked",
       "change": 24,
       "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/coverage",
+      "change": 121,
+      "reason": "Row 121: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.coverage",
+      "change": 121,
+      "reason": "Row 121: Rust counts the build depth as `breadth`, `areas` and `reads` with the unplaced rows inside `breadth`, and has no `rules`, `roles`, `abilityEdges` or `nextAction`; the script server writes `abilities`, `areas`, `reads`, `rules`, `roles`, `abilityEdges`, ten `unplaced` rows with `unplacedOffset`, and one `nextAction`."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text#/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 7,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 110,
+      "reason": "Row 110: the sentence of a connect that cannot measure its folder ends in the operating system's own words; the script server prints its library's text (`ENOENT: no such file or directory, lstat '<path>'`, `EACCES: permission denied, scandir '<path>'`), Rust prints `No such file or directory (os error 2)` or `Permission denied (os error 13)`. Both refuse the same calls with the same code."
+    },
+    {
+      "case": "library/project-source-connect-and-disconnect",
+      "where": "answer",
+      "id": 13,
+      "path": "result.structuredContent.error",
+      "change": 110,
+      "reason": "Row 110: the sentence of a connect that cannot measure its folder ends in the operating system's own words; the script server prints its library's text (`ENOENT: no such file or directory, lstat '<path>'`, `EACCES: permission denied, scandir '<path>'`), Rust prints `No such file or directory (os error 2)` or `Permission denied (os error 13)`. Both refuse the same calls with the same code."
+    },
+    {
+      "case": "library/project-source-connect-hostile-roots",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 110,
+      "reason": "Row 110: the sentence of a connect that cannot measure its folder ends in the operating system's own words; the script server prints its library's text (`ENOENT: no such file or directory, lstat '<path>'`, `EACCES: permission denied, scandir '<path>'`), Rust prints `No such file or directory (os error 2)` or `Permission denied (os error 13)`. Both refuse the same calls with the same code."
+    },
+    {
+      "case": "library/project-source-connect-hostile-roots",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.error",
+      "change": 110,
+      "reason": "Row 110: the sentence of a connect that cannot measure its folder ends in the operating system's own words; the script server prints its library's text (`ENOENT: no such file or directory, lstat '<path>'`, `EACCES: permission denied, scandir '<path>'`), Rust prints `No such file or directory (os error 2)` or `Permission denied (os error 13)`. Both refuse the same calls with the same code."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/handoffPrompt",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/health/checks",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/health/validation/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/meaningAssessment",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/count",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/id",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/kind",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/message",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/target",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/projectSource",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/projectSourceRemedy",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/readiness/healthChecks",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.handoffPrompt",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.health.checks",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.health.validation.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.meaningAssessment",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].count",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].id",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].kind",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].message",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].target",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.projectSource",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.projectSourceRemedy",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.readiness.healthChecks",
+      "change": 120,
+      "reason": "Row 120: agent_brief leaves out the three project-source fields (projectSource, projectSourceRemedy, meaningAssessment) and the handoff sentence that points at them; the health check count follows from the meaning_assessment check of row 37. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/health/validation/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/nextActions/0/count",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/nextActions/0/id",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/nextActions/0/kind",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/nextActions/0/message",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.health.validation.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.nextActions[0].count",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.nextActions[0].id",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.nextActions[0].kind",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-operations",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.nextActions[0].message",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/count",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/id",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/kind",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/nextActions/0/message",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].count",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].id",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].kind",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.nextActions[0].message",
+      "change": 37,
+      "reason": "Row 37: the meaning_assessment check (and the status it raises) needs the project-source tool layer of slice 11; the vault_validation check and its brief are now written by Rust. A named gap, not a wanted change."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/validation/finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "git/staleness-through-validate-vault",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.validation.finalizeGate",
+      "change": 97,
+      "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "meaning/validate-vault-miniature-repo",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/coverage",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "shell/repo-root-missing",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.coverage",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/coverage/nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
+    },
+    {
+      "case": "writes/writes-on-miniature-repo-evidence-nodes",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.coverage.nextAction",
+      "change": 121,
+      "reason": "Row 121: the coverage of a vault carries no nextAction, no rules and no roles (the build-depth measure of Rust does not read role placement or rule judgement); areas also carries keepLines and mapNext, which the script server does not. A named gap, not a wanted change."
     }
   ]
 }

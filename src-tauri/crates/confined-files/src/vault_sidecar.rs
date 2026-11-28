@@ -371,6 +371,22 @@ impl VaultSidecar {
         Ok(())
     }
 
+    /// Creates the file with `text` unless it is already there, and says whether it did. An
+    /// existing file is never read, followed or changed.
+    pub fn create_text_exclusive(&self, filename: &str, text: &str) -> Result<bool, SidecarError> {
+        let filename = one_name(filename)?;
+        let folder = self.folder(true)?.ok_or(Unsafe::EntryChangedWhileOpened)?;
+        let mut file = match plain_file::create_new(&folder.join(filename)) {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => return Ok(false),
+            Err(error) => return Err(open_error(error)),
+        };
+        self.still_inside()?;
+        file.write_all(text.as_bytes())?;
+        file.sync_all()?;
+        Ok(true)
+    }
+
     /// Replaces the file with `text`: a new file beside it, flushed, then renamed over it and the
     /// folder flushed. It is refused if the file is not at `expected` (what an earlier read
     /// returned; the file as it is now when `None`) when the rename is about to happen, so a line

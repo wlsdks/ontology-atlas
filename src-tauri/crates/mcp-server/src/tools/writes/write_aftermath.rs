@@ -4,9 +4,7 @@
 
 use build_depth::{measure_against_survey, Coverage};
 use meaning_findings::WITNESS_TEXT_MAX_BYTES;
-use ontology_graph::{
-    run_query, Operation, QueryRequest, SelectionOperation,
-};
+use ontology_graph::{run_query, Operation, QueryRequest, SelectionOperation};
 use vault_document::LoadedDocument;
 use vault_edit::Setting;
 
@@ -16,13 +14,15 @@ use super::vault_view::VaultView;
 use crate::audit::{AbilityShare, AreaShare, ShareCounts};
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
-use crate::write_checkpoint::Permit;
 use crate::tools::import_scan_target::ScanTarget;
 use crate::tools::kept_survey::kept_survey;
 use crate::tools::query_ontology::read_ignore_patterns;
+use crate::write_checkpoint::Permit;
 
-/// Steps each check scans before the plan is narrowed to the written nodes.
-const FINDING_SCAN_LIMIT: usize = 100;
+/// Steps about the written nodes that a build write turns into finding lines.
+const FINDING_STEPS_MAX: usize = 100;
+/// Steps about the touched nodes that a write looks through for the one to name next.
+const NEXT_ACTION_WINDOW: usize = 5;
 /// Further subjects a grouped finding line names before it counts the rest.
 const FINDING_SUBJECTS_MAX: usize = 8;
 
@@ -44,26 +44,58 @@ fn text_of<'a>(action: &'a Setting, key: &str) -> &'a str {
         .unwrap_or_default()
 }
 
-/// The steps about `slugs`, as the plan words them. A plan that cannot be made is no steps: a
-/// measurement never fails the write.
-fn steps_about(context: &CallContext<'_>, slugs: &[String], limit: usize) -> Vec<Setting> {
-    let attempt = || -> Option<Vec<Setting>> {
+/// The first `limit` steps about `slugs`, as the plan words them, and how many steps there are in
+/// all. A plan that cannot be made is no steps: a measurement never fails the write.
+struct StepsAbout {
+    page: Vec<Setting>,
+    total: usize,
+}
+
+fn steps_about(context: &CallContext<'_>, slugs: &[String], limit: usize) -> StepsAbout {
+    let attempt = || -> Option<StepsAbout> {
         let graph = context.compiled_graph().read(context).ok()?;
-        let mut request = QueryRequest::new(Operation::Selection(SelectionOperation::MaintenancePlan));
+        let mut request =
+            QueryRequest::new(Operation::Selection(SelectionOperation::MaintenancePlan));
         request.limit = Some(limit);
         request.selection.arguments.touching = Some(slugs.to_vec());
         request.selection.outside.ignore_patterns = read_ignore_patterns(context).ok()?;
         let answer = run_query(&graph, &request).ok()?;
         let text = answer_format::json::to_string(&answer).ok()?;
-        match parse(&text).ok()? {
-            Setting::Map(members) => members.into_iter().find_map(|(key, value)| match value {
-                Setting::List(actions) if key == "actions" => Some(actions),
-                _ => None,
-            }),
-            _ => None,
+        let Setting::Map(members) = parse(&text).ok()? else {
+            return None;
+        };
+        let mut page = None;
+        let mut total = None;
+        for (key, value) in members {
+            match (key.as_str(), value) {
+                ("actions", Setting::List(actions)) => page = Some(actions),
+                ("summary", summary) => {
+                    total = match summary.member("filteredActions") {
+                        Some(Setting::Number(count)) => Some(*count),
+                        _ => None,
+                    };
+                }
+                _ => {}
+            }
         }
+        Some(StepsAbout {
+            page: page?,
+            total: total_steps(total?)?,
+        })
     };
-    attempt().unwrap_or_default()
+    attempt().unwrap_or(StepsAbout {
+        page: Vec::new(),
+        total: 0,
+    })
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "a count of steps the plan wrote as a whole number"
+)]
+fn total_steps(count: f64) -> Option<usize> {
+    (count.is_finite() && count >= 0.0 && count.fract() == 0.0).then_some(count as usize)
 }
 
 fn json_text(value: &Setting) -> String {
@@ -91,7 +123,10 @@ fn subject_of(action: &Setting) -> String {
 }
 
 fn finding_line(action: &Setting) -> String {
-    let cycle = match action.member("cycle").and_then(|cycle| cycle.member("nodes")) {
+    let cycle = match action
+        .member("cycle")
+        .and_then(|cycle| cycle.member("nodes"))
+    {
         Some(Setting::List(nodes)) => {
             let names: Vec<&str> = nodes.iter().filter_map(Setting::as_text).collect();
             format!(" {}.", names.join(" -> "))
@@ -142,11 +177,23 @@ pub fn findings_on_written(context: &CallContext<'_>, written: &[String]) -> Vec
     if written.is_empty() {
         return Vec::new();
     }
-    let steps = steps_about(context, written, FINDING_SCAN_LIMIT);
+    let steps = steps_about(context, written, FINDING_STEPS_MAX).page;
+    let is_executable =
+        |action: &Setting| matches!(action.member("executable"), Some(Setting::Bool(true)));
+    // A dangling reference is both a compile issue and a call that resolves it, in the same
+    // words; the call says the same and also names the repair, so the issue adds only noise.
+    let with_call: Vec<&str> = steps
+        .iter()
+        .filter(|action| is_executable(action))
+        .map(|action| text_of(action, "reason"))
+        .collect();
     let mut kinds: Vec<(&str, Vec<&Setting>)> = Vec::new();
     for action in &steps {
         let kind = text_of(action, "kind");
         if SETTLED_MAP_REVIEW_KINDS.contains(&kind) {
+            continue;
+        }
+        if !is_executable(action) && with_call.contains(&text_of(action, "reason")) {
             continue;
         }
         match kinds.iter_mut().find(|(held, _)| *held == kind) {
@@ -200,18 +247,18 @@ fn compact_action(action: &Setting) -> Setting {
 /// The one step that comes next for the nodes a write touched: a call that settles one, else the
 /// first judgement that is left, and how many steps there are about them.
 pub fn post_write_maintenance(context: &CallContext<'_>, touched: &[String]) -> Setting {
-    let steps = steps_about(context, touched, 5);
-    let is_executable = |action: &&Setting| matches!(action.member("executable"), Some(Setting::Bool(true)));
+    let steps = steps_about(context, touched, NEXT_ACTION_WINDOW);
+    let is_executable =
+        |action: &&Setting| matches!(action.member("executable"), Some(Setting::Bool(true)));
     let next = steps
+        .page
         .iter()
         .find(is_executable)
-        .or_else(|| steps.first())
+        .or_else(|| steps.page.first())
         .map(compact_action);
-    #[allow(clippy::cast_precision_loss, reason = "a count of steps")]
-    let count = steps.len() as f64;
     Fields::new()
         .with("nextAction", next.unwrap_or(Setting::Null))
-        .with("stepsAboutTouched", Setting::Number(count))
+        .with("stepsAboutTouched", count(steps.total))
         .into_setting()
 }
 
@@ -241,22 +288,72 @@ struct Count {
     value: fn(&Coverage) -> Option<usize>,
 }
 
-const COUNTS: [Count; 12] = [
-    Count { name: "abilities.surveyed", value: |c| Some(c.breadth.abilities) },
-    Count { name: "abilities.onNode", value: |c| Some(c.breadth.node) },
-    Count { name: "abilities.named", value: |c| Some(c.breadth.named) },
-    Count { name: "abilities.excluded", value: |c| Some(c.breadth.excluded) },
-    Count { name: "abilities.unplaced", value: |c| Some(c.breadth.unplaced.len()) },
-    Count { name: "areas.counted", value: |c| c.areas.as_ref().map(|a| a.counted) },
-    Count { name: "areas.notMapped", value: |c| c.areas.as_ref().map(|a| a.not_mapped) },
-    Count { name: "areas.abilities", value: |c| c.areas.as_ref().map(|a| a.abilities) },
-    Count { name: "areas.uncovered", value: |c| c.areas.as_ref().map(|a| a.uncovered) },
+const COUNTS: [Count; 15] = [
+    Count {
+        name: "abilities.surveyed",
+        value: |c| Some(c.breadth.abilities),
+    },
+    Count {
+        name: "abilities.onNode",
+        value: |c| Some(c.breadth.node),
+    },
+    Count {
+        name: "abilities.named",
+        value: |c| Some(c.breadth.named),
+    },
+    Count {
+        name: "abilities.excluded",
+        value: |c| Some(c.breadth.excluded),
+    },
+    Count {
+        name: "abilities.unplaced",
+        value: |c| Some(c.breadth.unplaced.len()),
+    },
+    Count {
+        name: "areas.counted",
+        value: |c| c.areas.as_ref().map(|a| a.counted),
+    },
+    Count {
+        name: "areas.notMapped",
+        value: |c| c.areas.as_ref().map(|a| a.not_mapped),
+    },
+    Count {
+        name: "areas.abilities",
+        value: |c| c.areas.as_ref().map(|a| a.abilities),
+    },
+    Count {
+        name: "areas.uncovered",
+        value: |c| c.areas.as_ref().map(|a| a.uncovered),
+    },
     Count {
         name: "areas.mappedPercent",
-        value: |c| c.areas.as_ref().and_then(|a| a.mapped_percent).map(usize::from),
+        value: |c| {
+            c.areas
+                .as_ref()
+                .and_then(|a| a.mapped_percent)
+                .map(usize::from)
+        },
     },
-    Count { name: "reads.capabilities", value: |c| c.reads.as_ref().map(|r| r.capabilities) },
-    Count { name: "reads.read", value: |c| c.reads.as_ref().map(|r| r.read) },
+    Count {
+        name: "reads.capabilities",
+        value: |c| c.reads.as_ref().map(|r| r.capabilities),
+    },
+    Count {
+        name: "reads.read",
+        value: |c| c.reads.as_ref().map(|r| r.read),
+    },
+    Count {
+        name: "reads.unread",
+        value: |c| c.reads.as_ref().map(|r| r.unread),
+    },
+    Count {
+        name: "abilityEdges.edges",
+        value: |c| c.ability_edges.map(|e| e.edges),
+    },
+    Count {
+        name: "abilityEdges.capabilitiesWithoutEdge",
+        value: |c| c.ability_edges.map(|e| e.capabilities_without_edge),
+    },
 ];
 
 /// The counts a write moved, as `{ changed: { "section.field": [before, after] } }`, and nothing
@@ -275,7 +372,11 @@ pub fn coverage_change(before: Option<&Coverage>, after: Option<&Coverage>) -> O
             })
         })
         .collect();
-    (!moved.is_empty()).then(|| Fields::new().with("changed", Setting::Map(moved)).into_setting())
+    (!moved.is_empty()).then(|| {
+        Fields::new()
+            .with("changed", Setting::Map(moved))
+            .into_setting()
+    })
 }
 
 /// The counts one map analysis line carries, from the coverage after the write.
@@ -336,7 +437,9 @@ pub fn source_state(context: &CallContext<'_>) -> SourceState {
         vault_below
             .as_deref()
             .filter(|folder| !folder.is_empty())
-            .is_none_or(|folder| !(row.path == folder || row.path.starts_with(&format!("{folder}/"))))
+            .is_none_or(|folder| {
+                !(row.path == folder || row.path.starts_with(&format!("{folder}/")))
+            })
     });
     SourceState {
         commit: tree.head.commit().map(|commit| commit.as_str().to_string()),
@@ -354,7 +457,6 @@ mod tests {
         Coverage {
             breadth: Breadth {
                 abilities: 4,
-                not_listed: 0,
                 node,
                 named: 0,
                 excluded: 0,
@@ -362,13 +464,16 @@ mod tests {
                     .map(|at| UnplacedRow {
                         kind: "command",
                         name: format!("n{at}"),
+                        path: String::new(),
                         evidence: String::new(),
-                        symbol: None,
+                        members: None,
+                        member_count: None,
                     })
                     .collect(),
             },
             areas: None,
             reads: None,
+            ability_edges: None,
         }
     }
 

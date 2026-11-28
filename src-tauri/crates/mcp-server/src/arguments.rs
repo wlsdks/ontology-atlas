@@ -40,6 +40,19 @@ impl Arguments {
         self
     }
 
+    /// These arguments with `key` set to the string `value`, the rest as sent.
+    #[must_use]
+    pub fn with_text(&self, key: &str, value: &str) -> Self {
+        let mut fields = self.fields.clone();
+        if let Ok(raw) = RawValue::from_string(answer_format::json::quote(value)) {
+            fields.insert(key.to_string(), raw);
+        }
+        Self {
+            fields,
+            malformed: self.malformed.clone(),
+        }
+    }
+
     /// Takes `key` out of the arguments, as if it had not been sent.
     pub fn remove(&mut self, key: &str) {
         self.fields.shift_remove(key);

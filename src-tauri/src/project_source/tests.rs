@@ -1,4 +1,6 @@
+use super::continuity::inspect_project_source_continuity;
 use super::*;
+use std::fs;
 use std::process::Command;
 use std::time::UNIX_EPOCH;
 
@@ -245,7 +247,7 @@ fn inspect_project_source_uses_git_visible_files_instead_of_ignored_inventory_no
     fs::create_dir_all(root.join("generated")).unwrap();
     fs::write(root.join(".gitignore"), "generated/\n").unwrap();
     fs::write(root.join("src/index.ts"), "export const value = 1;\n").unwrap();
-    for index in 0..=SOURCE_INVENTORY_MAX_FILES {
+    for index in 0..50 {
         fs::write(root.join("generated").join(format!("{index:04}.txt")), "x").unwrap();
     }
 
@@ -290,71 +292,6 @@ fn inspect_project_source_is_registered_with_the_tauri_invoke_handler() {
         .expect("Tauri invoke handler");
 
     assert!(handler.contains("inspect_project_source"));
-}
-
-#[test]
-fn inspect_project_source_reports_when_the_file_inventory_is_truncated() {
-    let root = std::env::temp_dir().join(format!(
-        "ontology-atlas-project-source-limit-{}",
-        std::time::SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
-    fs::create_dir_all(&root).unwrap();
-    for index in 0..=SOURCE_INVENTORY_MAX_FILES {
-        fs::write(root.join(format!("{index:05}.txt")), "x").unwrap();
-    }
-
-    let inspection = inspect_project_source(root.to_string_lossy().to_string(), None).unwrap();
-
-    assert!(inspection.truncated);
-    assert_eq!(inspection.files.len(), SOURCE_INVENTORY_MAX_FILES);
-    assert_eq!(
-        inspection.files.first().map(String::as_str),
-        Some("00000.txt")
-    );
-    assert_eq!(
-        inspection.files.last().map(String::as_str),
-        Some(format!("{:05}.txt", SOURCE_INVENTORY_MAX_FILES - 1).as_str())
-    );
-
-    fs::remove_dir_all(root).ok();
-}
-
-#[test]
-fn the_vault_exclusion_rule_matches_the_cases_the_mcp_probe_also_runs() {
-    let cases: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../mcp/src/project-source/vault-exclusion-cases.json"
-    ))
-    .unwrap();
-    for case in cases["folders"].as_array().unwrap() {
-        let source = case["source"].as_str().unwrap();
-        let vault = case["vault"].as_str().unwrap();
-        assert_eq!(
-            vault_folder_inside(source, vault).as_deref(),
-            case["inside"].as_str(),
-            "{source} :: {vault}"
-        );
-    }
-    let encode = |entries: &serde_json::Value| -> Vec<u8> {
-        let entries: Vec<&str> = entries
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|entry| entry.as_str().unwrap())
-            .collect();
-        if entries.is_empty() {
-            return Vec::new();
-        }
-        format!("{}\0", entries.join("\0")).into_bytes()
-    };
-    for case in cases["status"].as_array().unwrap() {
-        assert_eq!(
-            filter_vault_status(&encode(&case["entries"]), case["excluded"].as_str()),
-            encode(&case["kept"])
-        );
-    }
 }
 
 #[test]

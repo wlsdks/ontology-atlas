@@ -2177,11 +2177,13 @@ add('library', 'project-source-connect-and-disconnect', { vault: 'miniature-repo
   call('connect_project_source', { projectSlug: 'domains/order', rootPath: '$PARENT' }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT/does-not-exist', confirm: true }),
 ]);
+// The vault itself comes first: a probe of the vault reads the size and time of every file in it, so
+// once a connect has written the binding file the probe would hold a time no second run can repeat.
 add('library', 'project-source-connect-hostile-roots', { vault: 'edge-hostile', revisionsDependOnPlace: true }, [
+  call('connect_project_source', { projectSlug: 'hostile', rootPath: '$VAULT', confirm: true }),
   call('connect_project_source', { projectSlug: 'hostile', rootPath: '$PARENT/outside', confirm: true }),
   call('connect_project_source', { projectSlug: 'hostile', rootPath: '/etc', confirm: true }),
   call('connect_project_source', { projectSlug: 'hostile', rootPath: '$VAULT/escape-dir', confirm: true }),
-  call('connect_project_source', { projectSlug: 'hostile', rootPath: '$VAULT', confirm: true }),
 ]);
 add('library', 'finalize-project-meaning', { vault: 'miniature-repo' }, [
   call('finalize_project_meaning', { projectSlug: 'miniature-shop', expected_mtime: mtimeOf('miniature-shop.md') }),
