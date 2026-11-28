@@ -148,8 +148,11 @@ function validateByCodeAggregate(byCode) {
     if (!Number.isInteger(entry.count) || entry.count < 0) {
       return `validate_vault response missing byCode count: ${code}`;
     }
-    if (!Array.isArray(entry.files)) {
-      return `validate_vault response missing byCode files: ${code}`;
+    if (entry.files !== undefined && !Array.isArray(entry.files)) {
+      return `validate_vault response malformed byCode files: ${code}`;
+    }
+    if (entry.remedy !== undefined && (typeof entry.remedy !== 'string' || entry.remedy.length === 0)) {
+      return `validate_vault response malformed byCode remedy: ${code}`;
     }
   }
   return null;
