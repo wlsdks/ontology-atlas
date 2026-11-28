@@ -21,7 +21,7 @@ request, then `src/dispatch.rs` for the checks every call passes.
 | `src/surface.rs` + `surface/` | The generated tool list the program embeds and sends as written |
 | `src/suggestions.rs` | The nearest allowed name for "did you mean" |
 | `src/tools.rs` | The handlers. A read tool joins `call`; a write tool joins `write_handler`, which names every `WriteTool` with no catch-all |
-| `tests/` | `protocol_table.rs` runs the program as an agent does; `oracle.rs` compares it with the JavaScript server on the rows that are not declared changes |
+| `tests/` | `protocol_table.rs` runs the program as an agent does; `oracle.rs` compares it with the JavaScript server on the rows that are not declared changes; `plan_answers.rs` states in full the `query_plan` answers the declared rows excuse whole (`plan_answers/`: one `<case>.tsv` of answers per case, `vaults/` the planted vaults) |
 
 Rules this crate keeps:
 
