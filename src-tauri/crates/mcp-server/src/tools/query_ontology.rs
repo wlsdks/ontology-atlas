@@ -21,6 +21,7 @@ use crate::dispatch::CallContext;
 use vault_document::slug_not_found_hint;
 
 use super::read_vault::open_root;
+use super::vault_validation_facts::{stale_summaries, validation_facts};
 use crate::error::{ErrorCode, MissingNodeDetails, ReceivedValue, ToolError};
 
 const NODE_KINDS: [&str; 6] = [
@@ -559,6 +560,15 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         "growth_plan" | "maintenance_plan" | "workspace_brief"
     ) {
         request.selection.outside.ignore_patterns = read_ignore_patterns(context)?;
+    }
+    match request.operation.name() {
+        "health" | "workspace_brief" => {
+            request.selection.outside.validation = Some(validation_facts(context)?);
+        }
+        "maintenance_plan" => {
+            request.selection.outside.stale_summaries = stale_summaries(context)?;
+        }
+        _ => {}
     }
     let graph = context.compiled_graph().read(context)?;
     let answer = ontology_graph::run_query(&graph, &request)

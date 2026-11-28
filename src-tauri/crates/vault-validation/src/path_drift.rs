@@ -66,7 +66,13 @@ fn is_present(source: &dyn SourceFiles, path: &str) -> bool {
     source.kind(Path::new(path)).map_or(true, |kind| kind.is_some())
 }
 
-pub fn path_drift(documents: &[LoadedDocument], source: &dyn SourceFiles) -> PathDrift {
+/// The drift of `documents` against the repository `source` reads, which the answer names
+/// `repo_root_label`.
+pub fn path_drift(
+    documents: &[LoadedDocument],
+    source: &dyn SourceFiles,
+    repo_root_label: &str,
+) -> PathDrift {
     let mut drifts: Vec<Drift> = Vec::new();
     let (mut nodes_scanned, mut paths_checked) = (0, 0);
     for document in documents {
@@ -143,7 +149,7 @@ pub fn path_drift(documents: &[LoadedDocument], source: &dyn SourceFiles) -> Pat
         "no frontmatter path:/elements: source paths to check.".to_string()
     };
     PathDrift {
-        repo_root: source.root().to_string_lossy().into_owned(),
+        repo_root: repo_root_label.to_string(),
         checked: true,
         nodes_scanned,
         paths_checked,

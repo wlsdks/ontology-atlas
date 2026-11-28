@@ -56,22 +56,72 @@ struct Pagination {
     next_offset: Option<usize>,
 }
 
+/// The answer: where the page lies, then the frame with the page's rows.
 #[derive(Serialize)]
-struct PageAnswer<'a> {
+pub struct ValidationPage<'a> {
+    #[serde(rename = "nextCall", skip_serializing_if = "Option::is_none")]
+    next_call: Option<NextCall>,
     #[serde(rename = "problemsPagination")]
     pagination: Pagination,
     #[serde(rename = "problemsHint", skip_serializing_if = "Option::is_none")]
     hint: Option<String>,
-    #[serde(flatten)]
-    frame: Frame<'a>,
+    scanned: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    coverage: &'a Option<String>,
+    problems: Vec<Problem>,
+    summary: ProblemSummary,
+    #[serde(rename = "summaryFreshness")]
+    summary_freshness: &'a SummaryFreshness,
+    #[serde(rename = "evidenceDrift")]
+    evidence_drift: &'a EvidenceDrift,
+    #[serde(rename = "pathDrift")]
+    path_drift: &'a PathDrift,
 }
 
 /// Which rows a caller asked for, and the arguments to repeat in the next call's text.
 pub struct PageRequest<'a> {
-    pub offset: usize,
+    offset: usize,
     /// `None` when the caller named no limit: the page is then also held to its size.
-    pub limit: Option<usize>,
-    pub repo_root: Option<&'a str>,
+    limit: Option<usize>,
+    repo_root: Option<&'a str>,
+    brief: bool,
+}
+
+impl<'a> PageRequest<'a> {
+    /// The page a caller of `validate_vault` named.
+    pub const fn asked(offset: usize, limit: Option<usize>, repo_root: Option<&'a str>) -> Self {
+        Self {
+            offset,
+            limit,
+            repo_root,
+            brief: false,
+        }
+    }
+
+    /// The first page another tool's answer carries: a few rows, no size cut, and the next call
+    /// named as a call to make.
+    pub const fn brief() -> Self {
+        Self {
+            offset: 0,
+            limit: Some(BRIEF_PAGE_LIMIT),
+            repo_root: None,
+            brief: true,
+        }
+    }
+}
+
+const BRIEF_PAGE_LIMIT: usize = 20;
+
+/// The call that reads the rest of the rows.
+#[derive(Serialize)]
+pub struct NextCall {
+    tool: &'static str,
+    arguments: NextCallArguments,
+}
+
+#[derive(Serialize)]
+struct NextCallArguments {
+    offset: usize,
 }
 
 fn pretty_bytes<T: Serialize>(value: &T) -> usize {
@@ -173,12 +223,12 @@ fn sampled(by_code: &TalliesByCode) -> TalliesByCode {
     )
 }
 
-/// The page `request` names of `list`, as the JSON text of the answer.
-pub fn page_validation(
-    frame: &ValidationFrame,
+/// The page `request` names of `list`.
+pub fn page_validation<'a>(
+    frame: &'a ValidationFrame,
     list: &ProblemList,
     request: &PageRequest<'_>,
-) -> Result<String, serde_json::Error> {
+) -> ValidationPage<'a> {
     let total = list.problems.len();
     let start = request.offset.min(total);
     let limit = request.limit.unwrap_or(DEFAULT_PAGE_LIMIT);
@@ -191,7 +241,7 @@ pub fn page_validation(
     let wanted: Vec<Problem> = list.problems.iter().skip(start).take(limit).cloned().collect();
     let mut rows = fold_repeated_guidance(wanted);
     let mut stopped_for_size = false;
-    if request.limit.is_none() {
+    if request.limit.is_none() && !request.brief {
         let empty = Frame {
             scanned: frame.scanned,
             coverage: &frame.coverage,
@@ -233,24 +283,27 @@ pub fn page_validation(
         };
         let next = match next_offset {
             Some(offset) => {
-                let mut arguments = serde_json::Map::new();
-                arguments.insert("offset".into(), offset.into());
+                let mut arguments = format!("{{\"offset\":{offset}");
                 if let Some(root) = request.repo_root {
-                    arguments.insert("repoRoot".into(), root.into());
+                    arguments.push_str(&format!(",\"repoRoot\":{}", answer_format::json::quote(root)));
                 }
-                if let Some(named) = request.limit {
-                    arguments.insert("limit".into(), named.into());
+                if let Some(named) = request.limit.filter(|_| !request.brief) {
+                    arguments.push_str(&format!(",\"limit\":{named}"));
                 }
-                format!(
-                    ". The next page: validate_vault({}).",
-                    serde_json::Value::Object(arguments)
-                )
+                format!(". The next page: validate_vault({arguments}}}).")
             }
             None => ".".to_string(),
         };
         format!("{shown}{size}{next}")
     });
-    let answer = PageAnswer {
+    let next_call = (request.brief && next_offset.is_some()).then(|| NextCall {
+        tool: "validate_vault",
+        arguments: NextCallArguments {
+            offset: next_offset.unwrap_or_default(),
+        },
+    });
+    ValidationPage {
+        next_call,
         pagination: Pagination {
             offset: start,
             limit,
@@ -260,17 +313,14 @@ pub fn page_validation(
             next_offset,
         },
         hint,
-        frame: Frame {
-            scanned: frame.scanned,
-            coverage: &frame.coverage,
-            problems: &rows,
-            summary: &summary,
-            summary_freshness: &frame.summary_freshness,
-            evidence_drift: &frame.evidence_drift,
-            path_drift: &frame.path_drift,
-        },
-    };
-    answer_format::json::to_string_indented(&answer, 2)
+        scanned: frame.scanned,
+        coverage: &frame.coverage,
+        problems: rows,
+        summary,
+        summary_freshness: &frame.summary_freshness,
+        evidence_drift: &frame.evidence_drift,
+        path_drift: &frame.path_drift,
+    }
 }
 
 #[cfg(test)]

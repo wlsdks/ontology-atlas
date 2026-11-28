@@ -3024,6 +3024,7 @@ dependencies = [
  "hardened-git",
  "indexmap 2.14.0",
  "mcp-server",
+ "meaning-findings",
  "ontology-graph",
  "raw-source-text",
  "regex",
@@ -3037,6 +3038,7 @@ dependencies = [
  "thiserror 2.0.21",
  "uuid",
  "vault-document",
+ "vault-validation",
 ]
 
 [[package]]
@@ -6401,6 +6403,7 @@ dependencies = [
  "confined-files",
  "hardened-git",
  "meaning-findings",
+ "regex",
  "serde",
  "serde_json",
  "sha2 0.11.1",

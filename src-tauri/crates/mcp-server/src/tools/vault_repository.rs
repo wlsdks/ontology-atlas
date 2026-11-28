@@ -36,6 +36,13 @@ pub struct NoRepository {
     vault_root: String,
 }
 
+impl NoRepository {
+    /// Why there is no repository, as the answers name it.
+    pub fn reason(&self) -> &'static str {
+        self.reason
+    }
+}
+
 pub enum Located {
     Found(Box<VaultRepository>),
     Missing(NoRepository),
@@ -46,6 +53,15 @@ pub enum Located {
 /// to run `git init` on a machine that has no git. A `git` that is there and cannot start is an
 /// error with the operating system's words.
 pub fn locate(context: &CallContext<'_>, operation: &'static str) -> Result<Located, ToolError> {
+    locate_from(context, operation, &context.config().repo_root)
+}
+
+/// [`locate`] for a repository root the call named, not the one the server was started for.
+pub fn locate_from(
+    context: &CallContext<'_>,
+    operation: &'static str,
+    repo_root: &std::path::Path,
+) -> Result<Located, ToolError> {
     let config = context.config();
     let missing =
         |reason: &'static str, repo_root: &std::path::Path, vault_root: &std::path::Path| {
@@ -57,19 +73,19 @@ pub fn locate(context: &CallContext<'_>, operation: &'static str) -> Result<Loca
                 vault_root: vault_root.to_string_lossy().into_owned(),
             }))
         };
-    let facts = match Repository::at(&config.repo_root).facts() {
+    let facts = match Repository::at(repo_root).facts() {
         Ok(Some(facts)) => facts,
         Ok(None) => {
             return missing(
                 "not-a-git-repository",
-                &config.repo_root,
+                repo_root,
                 &config.vault_root,
             )
         }
         Err(GitReadError::Run(GitRunError::Spawn(cause)))
             if cause.kind() == std::io::ErrorKind::NotFound =>
         {
-            return missing("git-not-available", &config.repo_root, &config.vault_root)
+            return missing("git-not-available", repo_root, &config.vault_root)
         }
         Err(other) => return Err(ToolError::failed(other.to_string())),
     };

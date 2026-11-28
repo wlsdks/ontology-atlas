@@ -139,6 +139,7 @@ const FAMILY: [(&str, &[&str]); 10] = [
             "confined-files",
             "hardened-git",
             "meaning-findings",
+            "regex",
             "serde",
             "serde_json",
             "sha2",

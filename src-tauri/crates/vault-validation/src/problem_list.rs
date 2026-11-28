@@ -63,12 +63,10 @@ pub struct ProblemList {
 pub fn list_problems(files: &[String], mut issues: HashMap<String, Vec<Issue>>) -> ProblemList {
     let mut ordered: Vec<(&String, bool)> = files
         .iter()
-        .filter(|slug| issues.get(*slug).is_some_and(|found| !found.is_empty()))
-        .map(|slug| {
-            let has_error = issues[slug]
-                .iter()
-                .any(|issue| issue.severity == Severity::Error);
-            (slug, has_error)
+        .filter_map(|slug| {
+            let found = issues.get(slug).filter(|found| !found.is_empty())?;
+            let has_error = found.iter().any(|issue| issue.severity == Severity::Error);
+            Some((slug, has_error))
         })
         .collect();
     ordered.sort_by(|left, right| {
@@ -84,22 +82,20 @@ pub fn list_problems(files: &[String], mut issues: HashMap<String, Vec<Issue>>) 
         let found = issues.remove(slug).unwrap_or_default();
         let mut seen: Vec<&'static str> = Vec::new();
         for issue in &found {
-            let at = match by_code.iter().position(|(code, _)| *code == issue.code) {
-                Some(at) => at,
-                None => {
-                    by_code.push((
-                        issue.code,
-                        CodeTally {
-                            severity: issue.severity,
-                            count: 0,
-                            files: Vec::new(),
-                            files_omitted: None,
-                        },
-                    ));
-                    by_code.len() - 1
-                }
+            if !by_code.iter().any(|(code, _)| *code == issue.code) {
+                by_code.push((
+                    issue.code,
+                    CodeTally {
+                        severity: issue.severity,
+                        count: 0,
+                        files: Vec::new(),
+                        files_omitted: None,
+                    },
+                ));
+            }
+            let Some((_, tally)) = by_code.iter_mut().find(|(code, _)| *code == issue.code) else {
+                continue;
             };
-            let tally = &mut by_code[at].1;
             if issue.severity == Severity::Error {
                 tally.severity = Severity::Error;
             }

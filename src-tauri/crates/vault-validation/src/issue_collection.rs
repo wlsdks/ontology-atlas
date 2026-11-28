@@ -11,7 +11,9 @@ use meaning_findings::{
 };
 use vault_document::{Issue, LoadedDocument, ReferenceIndex, VaultIssues};
 
+use crate::dependency_both_ways::two_way_dependency_findings;
 use crate::node_revisions::contained_slugs;
+use crate::rule_without_read_lines::rule_cite_findings;
 
 /// The findings by slug, and every slug that can be listed: the documents, then the raw sources.
 #[derive(Debug, Default)]
@@ -44,7 +46,7 @@ pub fn collect_issues(
 ) -> IssueCollection {
     let mut by_slug: HashMap<String, Vec<Issue>> = HashMap::new();
     for document in documents {
-        by_slug.insert(document.slug().to_string(), document.issues().to_vec());
+        by_slug.insert(document.slug().to_string(), document.issues_at_slug());
     }
     let mut add = |slug: String, issue: Issue| by_slug.entry(slug).or_default().push(issue);
     let mut whole_vault: Vec<(String, Vec<Issue>)> =
@@ -74,6 +76,12 @@ pub fn collect_issues(
     }
     for finding in starter_example_findings(documents) {
         let (slug, issue) = advisory(finding);
+        add(slug, issue);
+    }
+    let depth_findings = rule_cite_findings(documents, source)
+        .into_iter()
+        .chain(two_way_dependency_findings(documents));
+    for (slug, issue) in depth_findings {
         add(slug, issue);
     }
     let mut collection = IssueCollection {
