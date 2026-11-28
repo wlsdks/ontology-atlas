@@ -1,12 +1,12 @@
 /**
  * Facts the repository knows before any build: the version (from `package.json` through
- * next.config.ts, since importing the manifest drags it into the bundle), minimum macOS
+ * the `define` in `vite.config.ts`, since importing the manifest drags it into the bundle), minimum macOS
  * (`src-tauri/tauri.conf.json`) and the DMG name `scripts/download/check-macos-download-release.mjs`
  * enforces. Per-build size and checksum come from `lib/release-state.ts`, and
  * release-facts.test.ts catches drift.
  */
 
-/* For tools without Next's build env; never a version string, since a plausible wrong one goes unchecked. */
+/* For tools that run outside the Vite build, where `vite.config.ts` defines nothing; never a version string, since a plausible wrong one goes unchecked. */
 export const RELEASE_VERSION = process.env.ATLAS_PUBLIC_RELEASE_VERSION ?? 'unknown';
 export const RELEASE_MIN_MACOS = "macOS 12";
 export const RELEASE_ARCHES = ["aarch64"] as const;

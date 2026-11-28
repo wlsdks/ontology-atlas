@@ -15,7 +15,7 @@ function readJson(relativePath: string): Record<string, unknown> {
 }
 
 describe("release-facts", () => {
-  /* Proves the `next.config.ts` chain is wired; `check-macos-release-tag.mjs` forbids a literal. */
+  /* Proves the `define` in `vite.config.ts` is wired to `package.json`; `check-macos-release-tag.mjs` forbids a literal. */
   it("is fed from package.json rather than carrying its own copy", () => {
     const pkg = readJson("package.json");
     expect(RELEASE_VERSION).not.toBe("unknown");
