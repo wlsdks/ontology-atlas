@@ -12,7 +12,7 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { APP_FOLDER, APP_MANIFEST, SITE_FOLDER, VITE_FOLDER_ENV } from '../lib/web/built-folders.mjs';
+import { APP_FOLDER, APP_MANIFEST, SITE_FOLDER } from '../lib/web/built-folders.mjs';
 
 const SKIP_TYPECHECK = 'ATLAS_BUILD_SKIP_TYPECHECK';
 const ROUTE_TREE = 'src/app/route-tree.gen.ts';
@@ -30,7 +30,7 @@ function run(repository, env, label, script, args = []) {
   return new Promise((resolveRun) => {
     const child = spawn(process.execPath, [resolve(repository, script), ...args], {
       cwd: repository,
-      env: { ...env, ...VITE_FOLDER_ENV },
+      env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     const say = (stream, write) => {
