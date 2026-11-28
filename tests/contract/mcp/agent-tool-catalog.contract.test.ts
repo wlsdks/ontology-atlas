@@ -24,6 +24,11 @@ import { AGENT_READ_TOOLS, AGENT_TOOLS, AGENT_WRITE_TOOLS } from '@/features/vau
 const ANSWERED_BY_ANOTHER_TOOL = new Map<string, { tool: string; arguments: readonly string[] }>([
   ['find_orphans', { tool: 'query_ontology', arguments: ['kind', 'excludeKinds'] }],
 ]);
+/**
+ * Arguments the server takes that the app agent does not: the predicate `filter` of `list_concepts`
+ * has one implementation, the server's, and the app does not carry a port of it.
+ */
+const SERVER_ONLY_ARGUMENTS = new Set(['filter']);
 const COMPARED_TOOLS = AGENT_TOOLS.filter((tool) => !ANSWERED_BY_ANOTHER_TOOL.has(tool.name));
 
 const DEFINITIONS_DIR = join(__dirname, '../../../mcp/src/server/tool-definitions');
@@ -198,7 +203,7 @@ describe('agent tool catalog matches the MCP server definition', () => {
     (_name, tool) => {
       const mcp = readMcpToolShape(tool.name);
       const ours = Object.keys(tool.parameters.properties ?? {});
-      expect([...ours].sort()).toEqual([...mcp.propertyNames].sort());
+      expect([...ours].sort()).toEqual([...mcp.propertyNames.filter((name) => !SERVER_ONLY_ARGUMENTS.has(name))].sort());
     },
   );
 

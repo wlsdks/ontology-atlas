@@ -8,7 +8,6 @@ import {
   wrapUntrusted,
   type ConceptEvidenceInput,
 } from './concept-evidence-pack';
-import { parseConceptFilter, type ConceptFilter } from './concept-filter';
 import { findAgentTool } from './tool-catalog';
 import type { NormalizedToolCall } from '../providers/provider-adapter';
 import { AGENT_TOOL_RESULT_CHAR_CAP } from '../agent-turn';
@@ -410,35 +409,13 @@ export function createToolExecutor(port: VaultReadPort) {
         const domain = stringOrUndefined(args.domain);
         const since = numberOrUndefined(args.since);
         const mentions = stringOrUndefined(args.mentions);
-        const filterText = stringOrUndefined(args.filter);
         const wantSummary = args.summary === true;
         const offset = Math.max(numberOrUndefined(args.offset) ?? 0, 0);
         const limit = Math.min(Math.max(numberOrUndefined(args.limit) ?? 100, 1), 500);
-        let parsedFilter: ConceptFilter | null = null;
-        if (filterText) {
-          try {
-            parsedFilter = parseConceptFilter(filterText);
-          } catch (error) {
-            return {
-              content: JSON.stringify({
-                ok: false,
-                errorCode: 'invalid_arguments',
-                error: error instanceof Error ? error.message : String(error),
-              }),
-              isError: true,
-              outcome: 'args-invalid',
-              target: filterText,
-              summary: '필터를 읽지 못해 중단함',
-              readSlugs: [],
-              vaultChars: 0,
-            };
-          }
-        }
         const narrowed = port.docs
           .filter((doc) => (kind ? doc.kind === kind : true))
           .filter((doc) => (domain ? doc.domain === domain : true))
-          .filter((doc) => (since === undefined ? true : (doc.mtime ?? 0) > since))
-          .filter((doc) => (parsedFilter ? parsedFilter.match(doc) : true));
+          .filter((doc) => (since === undefined ? true : (doc.mtime ?? 0) > since));
         const needle = mentions?.toLowerCase();
         // A title that holds the text outranks a slug that holds it; slug order breaks ties.
         const mentionRank = (doc: VaultReadDoc) => (doc.title.toLowerCase().includes(needle!) ? 0 : doc.slug.toLowerCase().includes(needle!) ? 1 : 2);
@@ -463,7 +440,6 @@ export function createToolExecutor(port: VaultReadPort) {
         const hasMore = offset + rows.length < filtered.length;
         const packed = pack({
           ...(mentions ? { query: mentions } : {}),
-          ...(parsedFilter ? { filter: filterText } : {}),
           rows,
           returned: rows.length,
           total: filtered.length,

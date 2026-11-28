@@ -189,7 +189,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'list_concepts',
     description:
-      'List nodes, optionally narrowed by kind, domain, a predicate (`filter`) or text (`mentions`, best title match first; use it before adding a concept to avoid a near-duplicate). Use `summary: true` to get a one-paragraph preview per row instead of N follow-up reads. For large vaults, resume with the MCP pagination contract.',
+      'List nodes, optionally narrowed by kind, domain or text (`mentions`, best title match first; use it before adding a concept to avoid a near-duplicate). Use `summary: true` to get a one-paragraph preview per row instead of N follow-up reads. For large vaults, resume with the MCP pagination contract.',
     effect: 'read',
     parameters: {
       type: 'object',
@@ -211,10 +211,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
         mentions: {
           type: 'string',
           description: 'Text to find, case-insensitive. Keeps the nodes whose title or slug contains it, best match first.',
-        },
-        filter: {
-          type: 'string',
-          description: 'Predicate over frontmatter: `key=value`, `key!=value` (keys kind, domain, slug, title, created_by) and `has(key)` for a relation key, joined with AND, OR, NOT and parentheses.',
         },
         offset: {
           type: 'integer',
