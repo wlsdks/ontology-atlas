@@ -38316,6 +38316,86 @@
       "path": "result.structuredContent.finalizeGate",
       "change": 97,
       "reason": "Row 97: finalizeGate is absent in Rust until finalize_project_meaning is ported; the gate reads its rule and role measures."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 44,
+      "path": "result.content[0].text#/dependencyOrder/blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 44,
+      "path": "result.structuredContent.dependencyOrder.blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 45,
+      "path": "result.content[0].text#/dependencyOrder/blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 45,
+      "path": "result.structuredContent.dependencyOrder.blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 47,
+      "path": "result.content[0].text#/dependencyOrder/blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 47,
+      "path": "result.structuredContent.dependencyOrder.blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text#/dependencyOrder/blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.dependencyOrder.blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text#/dependencyOrder/blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.dependencyOrder.blocked",
+      "change": 24,
+      "reason": "Row 24: the dependencyOrder of health cuts `blocked` at `limit`, where the script server lists every blocked node; one limit bounds the answer, so a graph of fifty thousand nodes in one tangle does not answer with fifty thousand rows."
     }
   ]
 }
