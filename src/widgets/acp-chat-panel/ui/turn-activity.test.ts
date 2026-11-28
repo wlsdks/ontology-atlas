@@ -50,7 +50,7 @@ describe('turnActivity', () => {
   });
 
   it.each([
-    ['mcp__atlas-vault__find_evidence', 'other', 'searching'],
+    ['mcp__atlas-vault__validate_vault', 'other', 'searching'],
     ['mcp__atlas-vault__patch_concept', 'other', 'writing'],
     ['mcp__atlas-vault__delete_concept', 'other', 'writing'],
     ['Edit', 'edit', 'writing'],

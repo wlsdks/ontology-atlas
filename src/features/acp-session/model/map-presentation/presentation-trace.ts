@@ -69,13 +69,10 @@ const PRESENTATION_READ_TOOLS = new Set([
   'list_concepts',
   'get_concept',
   'get_concepts',
-  'find_evidence',
   'find_backlinks',
   'find_neighbors',
   'find_path',
   'list_kinds',
-  'find_orphans',
-  'query_concepts',
   'compile_ontology',
   'query_ontology',
 ]);

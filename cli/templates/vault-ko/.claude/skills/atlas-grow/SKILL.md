@@ -21,9 +21,9 @@ description: 다음 한 걸음. 이 볼트에 무엇을 더하면 값이 가장 
 받은 후보를 그대로 옮기지 않는다. 하나씩 셋을 통과해야 남는다.
 
 - **실재하는가** — 이름만 그럴듯한 게 아니라 코드나 문서에 근거가 있나.
-   `find_evidence({ title })` 로 확인한다. 코드 폴더가 묶여 있으면
+   `list_concepts({ mentions })` 로 확인한다. 코드 폴더가 묶여 있으면
    `analyze_repo_structure` · `infer_imports` 가 근거를 준다.
-- **이미 있는가** — `query_concepts({ filter })` 로 비슷한 이름을 먼저 찾는다.
+- **이미 있는가** — `list_concepts({ filter })` 로 비슷한 이름을 먼저 찾는다.
    있으면 새로 만들지 말고 그것을 `patch_concept`(`expected_mtime` 함께)로 채운다.
 - **뜻이 있는가** — 자리 말고 다른 이유가 있어야 element 다. 파일 하나마다
    노드 하나를 만들면 그건 지도가 아니라 파일 목록이다.

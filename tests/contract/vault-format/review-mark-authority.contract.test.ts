@@ -168,7 +168,7 @@ describe('review marks — only a path that proves a person writes a human judgm
     ['add_relation', { from: 'capabilities/reserved', to: 'capabilities/open', type: 'relates', why: 'a reason' }],
     ['remove_relation', { from: 'capabilities/reserved', to: 'capabilities/open', type: 'relates', confirm: true }],
     ['rename_concept', { oldSlug: 'capabilities/reserved', newSlug: 'capabilities/renamed', confirm: true }],
-    ['reclassify_concept', { slug: 'capabilities/reserved', newKind: 'document', confirm: true }],
+    ['rename_concept', { oldSlug: 'capabilities/reserved', newKind: 'document', confirm: true }],
     ['merge_concepts', { fromSlug: 'capabilities/reserved', intoSlug: 'capabilities/open', confirm: true }],
     ['delete_concept', { slug: 'capabilities/reserved', confirm: true, force: true }],
   ])('refuses %s on a reserved node', (tool, args) => {

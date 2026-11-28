@@ -31,9 +31,7 @@ const WRITE_KIND_BY_TOOL: Readonly<Record<string, AgentWriteKind>> = {
   absorb_document: "added",
   patch_concept: "edited",
   rename_concept: "edited",
-  reclassify_concept: "edited",
   merge_concepts: "edited",
-  replace_relation: "edited",
   delete_concept: "removed",
   remove_relation: "removed",
 };

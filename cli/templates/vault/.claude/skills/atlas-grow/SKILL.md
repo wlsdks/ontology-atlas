@@ -21,10 +21,10 @@ people go look for themselves; with a wrong one they decide on it.
 Do not relay the candidates as they arrive. Each one must survive three tests.
 
 - **Does it exist** — is there evidence in code or docs, or does it merely
-   sound plausible? Check with `find_evidence({ title })`. If a source folder is
+   sound plausible? Check with `list_concepts({ mentions })`. If a source folder is
    bound, `analyze_repo_structure` and `infer_imports` supply the evidence.
 - **Is it already here** — search near-names first with
-   `query_concepts({ filter })`. If it exists, do not create a second one; fill
+   `list_concepts({ filter })`. If it exists, do not create a second one; fill
    the existing node with `patch_concept` (pass `expected_mtime`).
 - **Does it carry meaning** — an element needs a reason beyond its location.
    One node per file is not a map, it is a file listing.

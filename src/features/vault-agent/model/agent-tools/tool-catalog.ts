@@ -189,7 +189,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'list_concepts',
     description:
-      'List nodes, optionally filtered by kind and/or domain. Use `summary: true` to get a one-paragraph preview per row instead of N follow-up reads. For large vaults, resume with the MCP pagination contract.',
+      'List nodes, optionally narrowed by kind, domain, a predicate (`filter`) or text (`mentions`, best title match first; use it before adding a concept to avoid a near-duplicate). Use `summary: true` to get a one-paragraph preview per row instead of N follow-up reads. For large vaults, resume with the MCP pagination contract.',
     effect: 'read',
     parameters: {
       type: 'object',
@@ -208,6 +208,14 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           minimum: 0,
           description: 'Non-negative mtime threshold (ms). Filter to nodes changed after this.',
         },
+        mentions: {
+          type: 'string',
+          description: 'Text to find, case-insensitive. Keeps the nodes whose title or slug contains it, best match first.',
+        },
+        filter: {
+          type: 'string',
+          description: 'Predicate over frontmatter: `key=value`, `key!=value` (keys kind, domain, slug, title, created_by) and `has(key)` for a relation key, joined with AND, OR, NOT and parentheses.',
+        },
         offset: {
           type: 'integer',
           minimum: 0,
@@ -224,29 +232,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           description: 'Max rows. Defaults to 100, max 500.',
         },
       },
-    },
-  },
-  {
-    name: 'find_evidence',
-    description:
-      'Search the vault by title (case-insensitive substring), ranked. Use this before adding a concept to avoid creating a near-duplicate. The vault also holds ordinary markdown (notes, memos) that is not a graph node — every row says which it is via `isNode`, and non-nodes rank below nodes of equal relevance.',
-    effect: 'read',
-    parameters: {
-      type: 'object',
-      properties: {
-        title: { type: 'string', description: 'Concept title to search for.' },
-        limit: {
-          type: 'integer',
-          minimum: 1,
-          maximum: 500,
-          description: 'Return only the top-N matches.',
-        },
-        nodesOnly: {
-          type: 'boolean',
-          description: 'Return only graph nodes (docs with a `kind:`). Default false.',
-        },
-      },
-      required: ['title'],
     },
   },
   {
@@ -311,27 +296,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
         },
       },
       required: ['from', 'to'],
-    },
-  },
-  {
-    name: 'find_orphans',
-    description: 'Nodes with no edges at all — the usual starting point for "what is unfinished here".',
-    effect: 'read',
-    parameters: {
-      type: 'object',
-      properties: {
-        kind: {
-          type: 'string',
-          enum: NODE_KIND_VALUES,
-          description: 'Restrict to one kind. Omit for all kinds.',
-        },
-        excludeKinds: {
-          type: 'array',
-          maxItems: NODE_KIND_VALUES.length,
-          items: { type: 'string', enum: NODE_KIND_VALUES },
-          description: "Kinds to exclude. Defaults to ['project', 'vault-readme'].",
-        },
-      },
     },
   },
   {

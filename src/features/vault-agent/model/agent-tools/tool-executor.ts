@@ -8,6 +8,7 @@ import {
   wrapUntrusted,
   type ConceptEvidenceInput,
 } from './concept-evidence-pack';
+import { parseConceptFilter, type ConceptFilter } from './concept-filter';
 import { findAgentTool } from './tool-catalog';
 import type { NormalizedToolCall } from '../providers/provider-adapter';
 import { AGENT_TOOL_RESULT_CHAR_CAP } from '../agent-turn';
@@ -222,7 +223,7 @@ export function createToolExecutor(port: VaultReadPort) {
         payload: {
           slug: slugInput,
           found: false,
-          hint: 'No concept with that name. Use list_concepts() to see every slug, or find_evidence({title}) to search by title. Do not guess a different slug.',
+          hint: 'No concept with that name. Use list_concepts() to see every slug, or list_concepts({mentions}) to search by title. Do not guess a different slug.',
         },
       };
     }
@@ -408,14 +409,41 @@ export function createToolExecutor(port: VaultReadPort) {
         const kind = stringOrUndefined(args.kind);
         const domain = stringOrUndefined(args.domain);
         const since = numberOrUndefined(args.since);
+        const mentions = stringOrUndefined(args.mentions);
+        const filterText = stringOrUndefined(args.filter);
         const wantSummary = args.summary === true;
         const offset = Math.max(numberOrUndefined(args.offset) ?? 0, 0);
         const limit = Math.min(Math.max(numberOrUndefined(args.limit) ?? 100, 1), 500);
-        const filtered = port.docs
+        let parsedFilter: ConceptFilter | null = null;
+        if (filterText) {
+          try {
+            parsedFilter = parseConceptFilter(filterText);
+          } catch (error) {
+            return {
+              content: JSON.stringify({
+                ok: false,
+                errorCode: 'invalid_arguments',
+                error: error instanceof Error ? error.message : String(error),
+              }),
+              isError: true,
+              outcome: 'args-invalid',
+              target: filterText,
+              summary: '필터를 읽지 못해 중단함',
+              readSlugs: [],
+              vaultChars: 0,
+            };
+          }
+        }
+        const narrowed = port.docs
           .filter((doc) => (kind ? doc.kind === kind : true))
           .filter((doc) => (domain ? doc.domain === domain : true))
           .filter((doc) => (since === undefined ? true : (doc.mtime ?? 0) > since))
-          .sort((a, b) => a.slug.localeCompare(b.slug, 'en'));
+          .filter((doc) => (parsedFilter ? parsedFilter.match(doc) : true));
+        const needle = mentions?.toLowerCase();
+        // A title that holds the text outranks a slug that holds it; slug order breaks ties.
+        const mentionRank = (doc: VaultReadDoc) => (doc.title.toLowerCase().includes(needle!) ? 0 : doc.slug.toLowerCase().includes(needle!) ? 1 : 2);
+        const filtered = (needle ? narrowed.filter((doc) => mentionRank(doc) < 2) : [...narrowed])
+          .sort((a, b) => (needle ? mentionRank(a) - mentionRank(b) : 0) || a.slug.localeCompare(b.slug, 'en'));
         if (offset > filtered.length) {
           return {
             content: JSON.stringify({
@@ -434,6 +462,8 @@ export function createToolExecutor(port: VaultReadPort) {
         const rows = await listRows(filtered.slice(offset, offset + limit), wantSummary);
         const hasMore = offset + rows.length < filtered.length;
         const packed = pack({
+          ...(mentions ? { query: mentions } : {}),
+          ...(parsedFilter ? { filter: filterText } : {}),
           rows,
           returned: rows.length,
           total: filtered.length,
@@ -457,27 +487,6 @@ export function createToolExecutor(port: VaultReadPort) {
           summary: `읽음: 개념 목록 ${rows.length}개`,
           readSlugs: rows.map((row) => row.slug),
           vaultChars: wantSummary ? rows.reduce((sum, row) => sum + (row.summary?.length ?? 0), 0) : 0,
-        };
-      }
-
-      case 'find_evidence': {
-        const title = stringOrUndefined(args.title);
-        if (!title) return missingArg('title');
-        const needle = title.toLowerCase();
-        const limit = Math.min(Math.max(numberOrUndefined(args.limit) ?? 20, 1), 500);
-        const matches = port.nodes
-          .filter((node) => node.title.toLowerCase().includes(needle))
-          .slice(0, limit)
-          .map(nodeRow);
-        const packed = pack({ query: title, matches });
-        return {
-          content: packed.content,
-          isError: false,
-          outcome: 'ok',
-          target: title,
-          summary: `확인: "${title}" 비슷한 개념 ${matches.length}개`,
-          readSlugs: matches.map((row) => row.slug),
-          vaultChars: 0,
         };
       }
 
@@ -563,35 +572,6 @@ export function createToolExecutor(port: VaultReadPort) {
         };
       }
 
-      case 'find_orphans': {
-        const kind = stringOrUndefined(args.kind);
-        const excludeKinds = new Set(
-          Array.isArray(args.excludeKinds)
-            ? (args.excludeKinds as unknown[]).map((value) => String(value))
-            : ['project', 'vault-readme'],
-        );
-        const connected = new Set<string>();
-        for (const edge of port.edges) {
-          connected.add(edge.from);
-          connected.add(edge.to);
-        }
-        const orphans = port.nodes
-          .filter((node) => resolveNodeAgentTarget(node).documented)
-          .filter((node) => !connected.has(node.id))
-          .filter((node) => (kind ? node.kind === kind : !excludeKinds.has(node.kind)))
-          .map(nodeRow);
-        const packed = pack({ orphans });
-        return {
-          content: packed.content,
-          isError: false,
-          outcome: 'ok',
-          target: kind ?? '',
-          summary: `읽음: 이어진 곳 없는 개념 ${orphans.length}개`,
-          readSlugs: orphans.map((row) => row.slug),
-          vaultChars: 0,
-        };
-      }
-
       case 'validate_vault': {
         const offset = Math.max(numberOrUndefined(args.offset) ?? 0, 0);
         const limit = Math.min(Math.max(numberOrUndefined(args.limit) ?? 100, 1), 500);
@@ -646,7 +626,7 @@ export function createToolExecutor(port: VaultReadPort) {
 
   function notFound(slug: string): ToolExecution {
     return {
-      content: `No concept named "${slug}". Use list_concepts() to see every slug, or find_evidence({title}) to search by title. Do not guess a different slug.`,
+      content: `No concept named "${slug}". Use list_concepts() to see every slug, or list_concepts({mentions}) to search by title. Do not guess a different slug.`,
       isError: true,
       outcome: 'error',
       target: slug,

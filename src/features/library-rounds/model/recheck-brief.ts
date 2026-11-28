@@ -54,7 +54,7 @@ export function recheckBriefHeader(vaultRoot: string, locale: string): string {
     '- When in doubt, answer "unsure": a wrong "accurate" hides an outdated description, while a wrong "unsure" only leaves the concept for a person.',
     '',
     'Hard boundary:',
-    '- Do not call add_concepts, add_relations, patch_concept, rename_concept, merge_concepts, delete_concept, reclassify_concept, remove_relation, replace_relation, absorb_document, git_snapshot or finalize_project_meaning.',
+    '- Do not call add_concepts, add_relations, patch_concept, rename_concept, merge_concepts, delete_concept, remove_relation, absorb_document or finalize_project_meaning.',
     '- Do not edit, create, rename, delete or commit any file. Use no shell. Atlas records the result itself after your reply.',
     '',
     'Answer: end your reply with one fenced JSON block and nothing after it, one entry per concept:',

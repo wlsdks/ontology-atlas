@@ -24,7 +24,7 @@ import { proposeProjectSourceFromInspection } from "../../../src/shared/lib/proj
 const ROOT = path.resolve(__dirname, "../../..");
 const SURFACE = JSON.parse(
   readFileSync(path.join(ROOT, "docs/.generated/mcp-surface.json"), "utf8"),
-) as { mcp: { tools: { name: string }[] }; cli: { commands: string[] } };
+) as { mcp: { tools: { name: string; arguments: string[] }[] }; cli: { commands: string[] } };
 
 /**
  * Every action id the receipt vocabulary can emit. Duplicated here on purpose:
@@ -251,7 +251,7 @@ describe("receipt minting parity", () => {
 describe("diagnosis is executable", () => {
   it("gives every next-action id a registered tool", () => {
     const toolNames = new Set(SURFACE.mcp.tools.map((tool) => tool.name));
-    expect(toolNames.size).toBeGreaterThan(30);
+    expect(toolNames.size).toBeGreaterThan(20);
 
     for (const id of NEXT_ACTION_IDS) {
       const remedy = projectSourceRemedy({ projectSlug: "p", nextAction: { id } });
@@ -265,10 +265,10 @@ describe("diagnosis is executable", () => {
     }
   });
 
-  it("registers the reversal, not just the write", () => {
-    const toolNames = new Set(SURFACE.mcp.tools.map((tool) => tool.name));
-    expect(toolNames.has("connect_project_source")).toBe(true);
-    expect(toolNames.has("disconnect_project_source")).toBe(true);
+  it("registers the reversal inside the write, not as a second tool", () => {
+    const connect = SURFACE.mcp.tools.find((tool) => tool.name === "connect_project_source");
+    expect(connect?.arguments).toContain("disconnect");
+    expect(SURFACE.mcp.tools.some((tool) => tool.name === "disconnect_project_source")).toBe(false);
   });
 });
 

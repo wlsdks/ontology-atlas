@@ -21,8 +21,8 @@ description: 글에서 개념 뽑기. 회의록·기획서·PR 설명에서 개�
 
 후보 이름 하나하나에 대해 둘을 부른다.
 
-- `query_concepts({ filter: '<이름>' })` — 비슷한 이름이 이미 있나
-- `find_evidence({ title: '<이름>' })` — 다른 이름으로 이미 들어와 있나
+- `list_concepts({ filter: '<이름>' })` — 비슷한 이름이 이미 있나
+- `list_concepts({ mentions: '<이름>' })` — 다른 이름으로 이미 들어와 있나
 
 있으면 **새로 만들지 않는다.** 둘 중 하나를 한다 —
 `patch_concept`(`expected_mtime` 함께)로 내용을 채우거나, 관계만 더한다.
