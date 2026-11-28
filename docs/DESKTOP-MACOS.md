@@ -15,11 +15,10 @@ wins over this page.
 
 ## Shell
 
-The app is a Tauri shell around the same static export the website ships
-(`output: 'export'`; `src-tauri/tauri.conf.json` runs `pnpm build` before
-packaging and embeds the copy of `out/` that
-`scripts/desktop/stage-desktop-frontend.mjs` writes without the website-only
-pages and media, `/sample` among them). It reads and writes the user's chosen Markdown
+The app is a Tauri shell around the same Vite bundle the website ships
+(`src-tauri/tauri.conf.json` runs `pnpm build` before packaging and embeds
+`src-tauri/target/desktop-frontend`, the app folder that build writes without
+the website-only pages and media, `/sample` among them). It reads and writes the user's chosen Markdown
 vault through a native bridge in `src-tauri/src/vault/`; it is not a backend,
 sync layer, or second store. `ontology-atlas` stays the repository, CLI, MCP,
 and release-asset name. The surface contract, bridge convention, and routing
@@ -89,7 +88,7 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   `pnpm dogfood:release-gate`.
 - `desktop:release-artifact` is the credentialed local path;
   `scripts/desktop-release/build-macos-release-artifact.mjs` owns the order: build the
-  static export once, route-smoke it, bundle that same export, sign the `.app`, repack the updater archive, package the DMG,
+  app folder once, route-smoke it, bundle that same folder, sign the `.app`, repack the updater archive, package the DMG,
   sign the DMG (`desktop:sign:dmg`), notarize and staple,
   `desktop:verify-release-dmg`, then install-smoke the final DMG. The release
   workflow runs `--phase=build` in `build-macos`, a job that references no

@@ -23,7 +23,7 @@ or a test that parses them pins their path.
 |---|---|
 | Product direction and shipping behavior | `PRODUCT-DIRECTION.md`, `FEATURES.md` (index of `features/`), `../README.md` |
 | Product and design decisions | `PRODUCT-OWNER-OPERATING-SYSTEM.md`, `PRODUCT-DESIGN-OPERATING-SYSTEM.md`, `records/decisions/` (`pnpm decisions:find`) |
-| Architecture and routes | `ARCHITECTURE.md`, then `package.json`, `next.config.ts`, and `app/layout.tsx` |
+| Architecture and routes | `ARCHITECTURE.md`, then `package.json`, `vite.config.ts`, and `src/app/routes/` |
 | Ontology model and quality | `ONTOLOGY-ATLAS-SPEC.md`, `ONTOLOGY-QUALITY.md`, `FOUNDATIONS.md`, `GLOSSARY.md` |
 | Agent and terminal surfaces | `../mcp/README.md`, `../cli/README.md`, `AGENT-GRAPH-WORKFLOW.md` |
 | Verification and release | `DEVELOPMENT-CHECKS.md`, `DESKTOP-MACOS.md`, `TROUBLESHOOTING.md` |
