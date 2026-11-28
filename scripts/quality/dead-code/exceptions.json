@@ -308,12 +308,6 @@
       "witness": "scripts/design/look/open-vault.mjs"
     },
     {
-      "key": "scripts:runtime:exports:scripts/lib/dogfood-walk/rpc-client.mjs:SERVER",
-      "reason": "The dogfood-walk summaries test locates the server through this constant; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "scripts/lib/dogfood-walk/summaries.test.mjs",
-      "witness": "SERVER"
-    },
-    {
       "key": "scripts:runtime:exports:scripts/migrations/2026-08-02-add-node-uids.mjs:description",
       "reason": "The migration runner imports every migration module dynamically and lists its description.",
       "consumer": "scripts/vault/migrate-vault.mjs",

@@ -4026,7 +4026,7 @@ describe('project_map answer size', () => {
     assert.ok(JSON.stringify(result, null, 2).length <= 40_000, `answered ${JSON.stringify(result, null, 2).length} characters`);
     assert.equal(result.narrowedToFit.requestedItemLimit, 60);
     assert.ok(result.narrowedToFit.itemLimit < 60);
-    assert.match(result.narrowedToFit.next, /domain_profile/);
+    assert.match(result.narrowedToFit.next, /node_profile/);
   });
 
   it('leaves a map that fits as it was asked for', () => {

@@ -9,7 +9,7 @@
     "git": 14,
     "imports": 35,
     "evidence": 19,
-    "survey": 26,
+    "survey": 27,
     "meaning": 38,
     "writes": 13,
     "library": 45
@@ -27,6 +27,7 @@
     "mcp/src/analyze/abilities/operator-abilities.mjs": "survey",
     "mcp/src/analyze/abilities/sibling-families.mjs": "survey",
     "mcp/src/analyze/abilities/sibling-families.test.mjs": "survey",
+    "mcp/src/analyze/default-ignore.mjs": "survey",
     "mcp/src/analyze/repo-text.mjs": "survey",
     "mcp/src/analyze/survey/breadth-map.mjs": "survey",
     "mcp/src/analyze/survey/breadth-map.test.mjs": "survey",
