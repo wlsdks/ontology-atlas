@@ -34,8 +34,12 @@ async function visit(page: Page, stop: (typeof STOPS)[number]): Promise<void> {
   await waitForDomQuiet(page);
 }
 
+/** A client-side navigation through the router's own history: the router sets `__TSR_ROUTER__` for its devtools. */
 async function routerPush(page: Page, url: string): Promise<void> {
-  await page.evaluate((to) => (window as unknown as { next: { router: { push: (u: string) => void } } }).next.router.push(to), url);
+  await page.evaluate(
+    (to) => (window as unknown as { __TSR_ROUTER__: { history: { push: (u: string) => void } } }).__TSR_ROUTER__.history.push(to),
+    url,
+  );
 }
 
 async function mapHoldsTheFolder(page: Page, hangTimeout?: number): Promise<void> {
@@ -60,9 +64,6 @@ async function census(cdp: CDPSession): Promise<{ nodes: number; listeners: numb
 }
 
 test("three tours of every destination leave the map's DOM and listeners flat", async ({ page }) => {
-  // The tour pushes through Next's `window.next.router` and visits /guide/, which the Vite build
-  // gets in slice 2 with the public pages; until then the folder run leaves this one out.
-  test.skip(Boolean(process.env.ATLAS_E2E_APP_FOLDER), "needs /guide/ and a router handle the Vite app folder lacks until its public pages exist");
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 949 });
   await installDesktopRailRuntime(page, DOCS, undefined, { replaceFixture: true });
