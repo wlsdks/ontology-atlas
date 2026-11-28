@@ -124,6 +124,14 @@ export function formatReport(report) {
   return lines.join('\n');
 }
 
+/** The number in `--name=<kilobytes>`; a word or an empty value is an error, since `NaN` would pass every size. */
+function kilobytesOf(argument) {
+  const [name, value] = [argument.slice(0, argument.indexOf('=')), argument.slice(argument.indexOf('=') + 1)];
+  const kilobytes = Number(value);
+  if (value.trim() === '' || !Number.isFinite(kilobytes) || kilobytes <= 0) throw new Error(`${name} needs a positive number of kilobytes, not "${value}"`);
+  return kilobytes;
+}
+
 export function main(argv, { log = console.log } = {}) {
   let jsonLimitKb = 50;
   let maxBrotliKb = Infinity;
@@ -133,8 +141,8 @@ export function main(argv, { log = console.log } = {}) {
   const positional = [];
   for (const arg of argv) {
     if (arg === '--') continue;
-    if (arg.startsWith('--json-limit-kb=')) jsonLimitKb = Number(arg.slice(16));
-    else if (arg.startsWith('--max-brotli-kb=')) maxBrotliKb = Number(arg.slice(16));
+    if (arg.startsWith('--json-limit-kb=')) jsonLimitKb = kilobytesOf(arg);
+    else if (arg.startsWith('--max-brotli-kb=')) maxBrotliKb = kilobytesOf(arg);
     else if (arg.startsWith('--app-route=')) appRoute = arg.slice(12);
     else if (arg.startsWith('--manifest=')) manifest = arg.slice(11);
     else if (arg.startsWith('--allow-json=')) allowJson.add(arg.slice(13).replace(/^\/|\/$/g, ''));

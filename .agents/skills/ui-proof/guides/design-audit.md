@@ -27,7 +27,7 @@ the shared `seedFirstRunSeen(page)` helper.
 ## 1. Measure with the script
 
 ```bash
-pnpm build && node scripts/web/serve-static-export.mjs --port=<your port> &
+pnpm build && node scripts/web/serve-built-folder.mjs --port=<your port> &
 pnpm ui:audit -- --url=http://localhost:<your port> --route=<route?guides=off> --wait=<ready selector> [--widths=<affected widths>]
 ```
 

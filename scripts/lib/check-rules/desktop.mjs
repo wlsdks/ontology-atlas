@@ -144,6 +144,7 @@ export const directTests = {
     ['scripts/verify-windows/verify-windows-app-launch.test.mjs', 'scripts/verify-windows/verify-windows-app-launch.test.mjs'],
     ['scripts/web/first-vite-deploy-guard.mjs', 'scripts/web/first-vite-deploy-guard.test.mjs'],
     ['scripts/web/first-vite-deploy-guard.test.mjs', 'scripts/web/first-vite-deploy-guard.test.mjs'],
+    ['scripts/web/first-deploy-accepted-changes.json', 'scripts/web/first-vite-deploy-guard.test.mjs'],
     ['scripts/lib/macos-artifact/macos-dmg-layout.mjs', 'scripts/lib/macos-artifact/macos-dmg-layout.test.mjs'],
     ['scripts/lib/macos-artifact/macos-dmg-layout.test.mjs', 'scripts/lib/macos-artifact/macos-dmg-layout.test.mjs'],
     ['scripts/lib/desktop-release/redact-command.mjs', 'scripts/lib/desktop-release/redact-command.test.mjs'],

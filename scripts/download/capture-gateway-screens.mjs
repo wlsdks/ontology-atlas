@@ -15,7 +15,7 @@
  * Usage (against a static export; the dev server's compile waits make captures flaky):
  *
  *   pnpm build
- *   node scripts/web/serve-static-export.mjs --port=3198 &
+ *   node scripts/web/serve-built-folder.mjs --port=3198 &
  *   pnpm gateway:capture -- --base-url=http://127.0.0.1:3198 [--only=library,git] [--locales=ko,en] [--out=public/gateway]
  *
  * `--only=harness-film` shoots the download page's harness film stills instead

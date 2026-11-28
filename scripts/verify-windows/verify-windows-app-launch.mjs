@@ -9,33 +9,33 @@
  * hands such a process the standard handles its parent names in `STARTUPINFO` (`STARTF_USESTDHANDLES`), which
  * Node sets for piped stdio; a run whose pipes stay empty fails here with that said, not silently.
  *
+ * The document report is judged by `validateWebviewVerifyPayload`, the macOS verifier's own judgement, so a map
+ * that drew no pixels fails here as it does there. On success the script prints `SUCCESS_LINE`, which the
+ * workflow requires as well as the exit code: a script that did not run its entry point also exits 0.
+ *
  *   node scripts/verify-windows/verify-windows-app-launch.mjs --app=<ontology-atlas.exe> --vault=<folder> [--route=/en/topology/]
  */
 import { spawn, spawnSync } from "node:child_process";
-import path from "node:path";
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { validateFixtureVaultGrant } from "../lib/verify-macos/payload-contract.mjs";
+import { validateFixtureVaultGrant, validateWebviewVerifyPayload } from "../lib/verify-macos/payload-contract.mjs";
 import { parseWebviewVerifyPayload } from "../lib/verify-macos/relation-marker-validators.mjs";
 import {
   WEBVIEW_VERIFY_ENV,
   WEBVIEW_VERIFY_ROUTE_ENV,
   WEBVIEW_VERIFY_VAULT_ENV,
-  webviewWorkbenchMarkersForPath,
 } from "../lib/verify-macos/webview-env.mjs";
 
 const DEFAULT_ROUTE = "/en/topology/";
 const DEFAULT_TIMEOUT_MS = 60_000;
 const POLL_MS = 250;
-/** WebView2 serves the app from `http://tauri.localhost`; macOS and Linux use `tauri://localhost`. */
-const APP_ORIGINS = ["http://tauri.localhost", "https://tauri.localhost", "tauri://localhost"];
+
+export const successLine = (route) => `[verify-windows] ${route} rendered in the installed app`;
 
 /** What is still wrong with a launch's output so far; empty once the route has rendered. */
-export function launchProblems(stdout, { route = DEFAULT_ROUTE } = {}) {
+export function launchProblems(stdout, { route = DEFAULT_ROUTE, vault } = {}) {
   const problems = [];
-  const grant = validateFixtureVaultGrant(stdout);
-  if (grant) problems.push(grant);
-
   const arrival = new RegExp(`^\\[ontology-atlas-verify-route\\] route=${route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} arrived=true\\b`, "m");
   if (!arrival.test(stdout.replace(/\r/g, ""))) {
     problems.push(`the app never reported arriving at ${route} ([ontology-atlas-verify-route] … arrived=true)`);
@@ -43,28 +43,13 @@ export function launchProblems(stdout, { route = DEFAULT_ROUTE } = {}) {
 
   const payload = parseWebviewVerifyPayload(stdout);
   if (!payload) {
+    const grant = validateFixtureVaultGrant(stdout);
+    if (grant) problems.push(grant);
     problems.push("the app printed no WebView document report ([ontology-atlas-webview-verify] {…})");
     return problems;
   }
-  let location;
-  try {
-    location = new URL(payload.href);
-  } catch {
-    problems.push(`the WebView reported no address (href=${payload.href ?? "missing"})`);
-    return problems;
-  }
-  if (!APP_ORIGINS.includes(location.origin === "null" ? `${location.protocol}//${location.host}` : location.origin)) {
-    problems.push(`the WebView was at ${location.origin}, not the app's own origin (${APP_ORIGINS.join(" or ")})`);
-  }
-  if (location.pathname !== route) problems.push(`the WebView was at ${location.pathname}, expected ${route}`);
-  if (payload.readyState !== "complete") problems.push(`the document was not complete (readyState=${payload.readyState ?? "unknown"})`);
-  if (!/Ontology Atlas/.test(payload.title ?? "")) problems.push(`the document title was "${payload.title ?? ""}", not the app's`);
-  if (typeof payload.bodyText !== "string" || payload.bodyText.trim() === "") {
-    problems.push("the document body was empty");
-  } else if (!webviewWorkbenchMarkersForPath(route).every((marker) => marker.test(payload.bodyText))) {
-    problems.push(`the document body did not hold the words the ${route} screen draws`);
-  }
-  if (payload.markers?.verificationFixtureVaultError) problems.push(`the fixture vault bootstrap failed: ${payload.markers.verificationFixtureVaultError}`);
+  const error = validateWebviewVerifyPayload(payload, { expectedPath: route, expectedFixtureVault: vault, launchStdout: stdout });
+  if (error) problems.push(error);
   return problems;
 }
 
@@ -92,14 +77,14 @@ export async function verifyWindowsAppLaunch({ app, args = [], vault, route = DE
   child.on("error", (error) => (exit = { code: null, signal: null, error }));
 
   const deadline = Date.now() + timeoutMs;
-  let problems = launchProblems(stdout, { route });
+  let problems = launchProblems(stdout, { route, vault });
   try {
     while (problems.length > 0 && Date.now() < deadline && exit === null) {
       await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-      problems = launchProblems(stdout, { route });
+      problems = launchProblems(stdout, { route, vault });
     }
     // The process may print its last lines and leave in the same tick.
-    if (problems.length > 0) problems = launchProblems(stdout, { route });
+    if (problems.length > 0) problems = launchProblems(stdout, { route, vault });
   } finally {
     endProcessTree(child);
   }
@@ -114,13 +99,23 @@ function argument(argv, name) {
   return argv.find((arg) => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+/** Whether this file is the command Node was started with: real paths, so a drive letter's case or a link does not matter. */
+function isEntryPoint() {
+  if (!process.argv[1]) return false;
+  try {
+    return fs.realpathSync.native(process.argv[1]) === fs.realpathSync.native(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isEntryPoint()) {
   const argv = process.argv.slice(2);
   const route = argument(argv, "route") ?? DEFAULT_ROUTE;
   const timeoutMs = Number(argument(argv, "timeout-ms") ?? DEFAULT_TIMEOUT_MS);
   const result = await verifyWindowsAppLaunch({ app: argument(argv, "app"), vault: argument(argv, "vault"), route, timeoutMs });
   if (result.ok) {
-    console.log(`[verify-windows] ${route} rendered in the installed app`);
+    console.log(successLine(route));
   } else {
     console.error(`[verify-windows] ${route} did not render in the installed app:`);
     for (const problem of result.problems) console.error(`  - ${problem}`);

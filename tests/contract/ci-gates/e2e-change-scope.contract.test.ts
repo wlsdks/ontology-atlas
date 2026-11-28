@@ -118,8 +118,8 @@ describe('E2E impact planning precedes expensive setup', () => {
   it('routes static, web and suite evidence independently', () => {
     const surfaces = jobBlock('surfaces');
     expect(surfaces).toContain("ACTIVE: ${{ needs.changes.outputs.static == 'true' || needs.changes.outputs.web == 'true' }}");
-    expect(stepBlock(surfaces, 'Run static-export evidence')).toContain("if: env.STATIC == 'true'");
-    expect(stepBlock(surfaces, 'Run static-export evidence')).toContain('run-ci-lane.mjs --lane=static');
+    expect(stepBlock(surfaces, 'Run built-folder evidence')).toContain("if: env.STATIC == 'true'");
+    expect(stepBlock(surfaces, 'Run built-folder evidence')).toContain('run-ci-lane.mjs --lane=static');
     // The web lane runs after a red static lane too, so one night shows both verdicts.
     expect(stepBlock(surfaces, 'Run web-surface evidence')).toContain("if: ${{ !cancelled() && env.WEB == 'true' }}");
     expect(stepBlock(surfaces, 'Run web-surface evidence')).toContain('run-ci-lane.mjs --lane=web');
@@ -160,7 +160,7 @@ describe('one immutable build feeds every browser job', () => {
       'name: playwright-timings-${{ needs.changes.outputs.playwright }}-${{ matrix.shard }}',
     );
     expect(readFileSync(join(ROOT, '.github', 'workflows', 'checks.yml'), 'utf8').match(/- name: Upload lane report\n\s+continue-on-error: true\n/g)).toHaveLength(4);
-    expect(build).toContain('name: playwright-export-${{ github.sha }}');
+    expect(build).toContain('name: playwright-built-folders-${{ github.sha }}');
   });
 
   it.each(BROWSER_JOB_IDS)('%s fails if the shared build fails and downloads the same source', (id) => {
@@ -170,6 +170,6 @@ describe('one immutable build feeds every browser job', () => {
     const guard = stepBlock(job, 'Require browser artifact');
     expect(guard).toContain("needs.build.result != 'success'");
     expect(guard).toContain('run: exit 1');
-    expect(stepBlock(job, 'Download static export')).toContain('name: playwright-export-${{ github.sha }}');
+    expect(stepBlock(job, 'Download built folders')).toContain('name: playwright-built-folders-${{ github.sha }}');
   });
 });

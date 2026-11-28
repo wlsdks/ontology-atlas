@@ -16,12 +16,13 @@ function makeAppFolder() {
     fs.writeFileSync(path.join(folder, relativePath), text);
   };
   put("index.html", '<!doctype html><link rel="stylesheet" href="/assets/index-a1.css"><script type="module" src="/assets/index-a1.js"></script>');
-  put("assets/index-a1.js", 'import("./map-b2.js");const mark="/logo.png",icons="/acp-icons/";');
+  put("assets/index-a1.js", `import("./map-b2.js");const mark="/logo.png",icons="/acp-icons/",row=\`/brand/mascot-\${name}-row-128.png\`;`);
   put("assets/map-b2.js", "map()");
   put("assets/index-a1.css", "@font-face{src:url(/assets/mono-c3.woff2)}");
   put("assets/mono-c3.woff2", "font");
   put("logo.png", "png");
   put("acp-icons/claude.svg", "<svg/>");
+  put("brand/mascot-walk-row-128.png", "png");
   return { folder, put };
 }
 
@@ -37,7 +38,7 @@ describe("appFolderProblems", () => {
   it("refuses the website's og-image.png and sitemap.xml and the raw docs-vault copies even when a chunk names them", () => {
     const { folder, put } = makeAppFolder();
     // The page head's code is bundled in the app too, so a chunk spells the address the window never asks for.
-    put("assets/index-a1.js", 'import("./map-b2.js");const mark="/logo.png",icons="/acp-icons/",card="/og-image.png";');
+    put("assets/index-a1.js", `import("./map-b2.js");const mark="/logo.png",icons="/acp-icons/",row=\`/brand/mascot-\${name}-row-128.png\`,card="/og-image.png";`);
     put("og-image.png");
     put("sitemap.xml");
     put("docs-vault/ontology/README.md");
@@ -48,11 +49,22 @@ describe("appFolderProblems", () => {
     assert.match(problems.join("\n"), /sitemap\.xml is a file only the website serves/);
   });
 
-  it("refuses a bundle file no chunk names and a public file no code names", () => {
+  it("refuses a bundle file no chunk names and a public file no code names, even in a folder a chunk names", () => {
     const { folder, put } = makeAppFolder();
     put("assets/left-over-d4.js");
-    put("brand/unused.svg");
-    assert.deepEqual(appFolderProblems(folder).map((problem) => problem.split(" ")[0]), ["assets/left-over-d4.js", "brand/unused.svg"]);
+    // A chunk names `/brand/` to build the mascot's file names; that does not cover every file in the folder.
+    put("brand/old-logo.png");
+    put("unnamed/other.svg");
+    put("acp-icons/notes.md");
+    assert.deepEqual(appFolderProblems(folder).map((problem) => problem.split(" ")[0]), ["acp-icons/notes.md", "assets/left-over-d4.js", "brand/old-logo.png", "unnamed/other.svg"]);
+  });
+
+  it("refuses the brand lockups and the icon credits, which only the repository uses", () => {
+    const { folder, put } = makeAppFolder();
+    put("brand/lockup@2x.png");
+    put("acp-icons/CREDITS.md");
+    assert.deepEqual(appFolderProblems(folder).map((problem) => problem.split(" ")[0]), ["acp-icons/CREDITS.md", "brand/lockup@2x.png"]);
+    assert.match(appFolderProblems(folder).join("\n"), /lockup@2x\.png is a file only the website serves/);
   });
 
   it("refuses a style element or attribute in the document, which the app's policy would ignore", () => {

@@ -7,16 +7,17 @@ import { defineConfig } from 'vite';
 
 import packageJson from './package.json' with { type: 'json' };
 import { rowProducerHash } from './scripts/lib/row-producer.mjs';
+import { APP_FOLDER as DEFAULT_APP_FOLDER, SITE_FOLDER as DEFAULT_SITE_FOLDER } from './scripts/lib/web/built-folders.mjs';
 import { atlasAppFolder } from './scripts/vite/atlas-app-folder';
 import { atlasIndexHtml } from './scripts/vite/atlas-index-html';
 
 const root = __dirname;
 
-/** Where the installed app's files are written. */
-const APP_FOLDER = process.env.ATLAS_APP_FOLDER ?? 'src-tauri/target/desktop-frontend-vite';
+/** Where the installed app's files are written; `ATLAS_APP_FOLDER` names another folder for the perf build only. */
+const APP_FOLDER = process.env.ATLAS_APP_FOLDER ?? DEFAULT_APP_FOLDER;
 
 /** Where the website's files are written: the same bundle with everything in `public/`, then the prerendered pages. */
-const SITE_FOLDER = process.env.ATLAS_SITE_FOLDER ?? 'src-tauri/target/site-vite';
+const SITE_FOLDER = DEFAULT_SITE_FOLDER;
 
 /**
  * Until slice 4b moves addresses onto the router, source files still import `next/navigation` and

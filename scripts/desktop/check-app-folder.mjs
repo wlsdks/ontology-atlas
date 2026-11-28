@@ -6,8 +6,8 @@
  * file only the website serves. Usage: `node scripts/desktop/check-app-folder.mjs [--folder=<path>]`.
  *
  * A file is named when its address appears in the document or a chunk: a hashed file in `assets/` by its
- * name, a file of `public/` by its address or by a folder address the code builds the rest of it from
- * (`/docs-vault/`). A website-only file is refused even when a chunk names it, because the website's page
+ * name, a file of `public/` by its own address or by a prefix the code builds its name after
+ * (`PREFIXES_THE_CODE_BUILDS_NAMES_AFTER`, such as `/brand/mascot-`). A website-only file is refused even when a chunk names it, because the website's page
  * head names `/og-image.png` in code the app bundles too, and the window never asks for it.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -15,11 +15,27 @@ import { join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { APP_FOLDER } from '../lib/web/built-folders.mjs';
-import { isWebsiteOnlyEntry } from '../lib/web/website-only-files.mjs';
+import { isWebsiteOnlyFile } from '../lib/web/website-only-files.mjs';
 
 const CODE_FILE = /\.(?:html|js|css)$/;
 /** Where the build puts what it bundles; every other top-level file or folder came from `public/`. */
 const BUNDLE_FOLDER = 'assets';
+
+/**
+ * The addresses the code builds file names after, and the kind of file it builds there. A chunk that names the
+ * prefix covers the files of that kind below it and nothing else in the folder; any other file is covered only by
+ * its own address, so naming `/brand/` for the mascot's rows does not cover an old logo beside them.
+ */
+const PREFIXES_THE_CODE_BUILDS_NAMES_AFTER = [
+  { prefix: '/brand/mascot-', kind: /\.png$/ }, // `/brand/mascot-${row}-row-128.png`
+  { prefix: '/brand/moru-emote-', kind: /\.svg$/ }, // `/brand/moru-emote-${glyph}.svg`
+  { prefix: '/acp-icons/', kind: /\.svg$/ }, // the registry's `/acp-icons/${agent.id}.svg`
+];
+
+function builtAfterNamedPrefix(file, named) {
+  const address = `/${file}`;
+  return PREFIXES_THE_CODE_BUILDS_NAMES_AFTER.some(({ prefix, kind }) => address.startsWith(prefix) && !address.slice(prefix.length).includes('/') && kind.test(address) && named(prefix));
+}
 
 function filesUnder(folder) {
   const found = [];
@@ -52,18 +68,15 @@ export function appFolderProblems(folder) {
 
   for (const file of files) {
     const top = file.split('/')[0];
-    if (isWebsiteOnlyEntry(top)) {
+    if (isWebsiteOnlyFile(file)) {
       problems.push(`${file} is a file only the website serves; the app never asks for it`);
     } else if (file === 'index.html') {
       continue;
     } else if (top === BUNDLE_FOLDER) {
       const name = file.slice(BUNDLE_FOLDER.length + 1);
       if (!named(name, file)) problems.push(`${file} is in the bundle folder and no chunk or the document names it`);
-    } else {
-      const parts = file.split('/');
-      const addresses = parts.map((_, index) => (index === parts.length - 1 ? `/${file}` : `/${parts.slice(0, index + 1).join('/')}/`));
-      // `/brand/` alone would also match a file at the root named like a folder; only folders come before the last part.
-      if (!addresses.some((address) => named(address))) problems.push(`${file} is a public file that no chunk or the document names`);
+    } else if (!named(`/${file}`) && !builtAfterNamedPrefix(file, named)) {
+      problems.push(`${file} is a public file that no chunk or the document names`);
     }
   }
   return problems;
