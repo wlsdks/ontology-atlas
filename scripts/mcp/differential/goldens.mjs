@@ -139,7 +139,9 @@ export async function runGoldens({ repoRoot, workRoot, cases, values, flags, con
       checked += 1;
       if (differences.length > 0) {
         failures += 1;
-        console.log(`\n${formatDifference(differences[0], { family: caseDef.family, caseName: caseDef.name, labelA: 'golden', labelB: server.label })}`);
+        for (const difference of differences) {
+          console.log(`\n${formatDifference(difference, { family: caseDef.family, caseName: caseDef.name, labelA: 'golden', labelB: server.label })}`);
+        }
       }
     }
   };

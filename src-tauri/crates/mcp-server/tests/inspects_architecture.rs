@@ -128,3 +128,25 @@ fn the_brief_names_the_commit_and_whether_the_tree_changed_and_judges_the_import
     assert_eq!(changed["measured"]["source"]["revision"], head[..12]);
     assert_eq!(changed["measured"]["source"]["dirty"], true);
 }
+
+#[test]
+fn a_vault_without_a_profile_is_named_before_a_root_that_is_not_a_folder() {
+    let scene = tempfile::tempdir().expect("temp dir");
+    let repository = real_path(scene.path());
+    write(&repository, "docs/ontology/README.md", "# Vault\n");
+    let vault = repository.join("docs/ontology");
+    let missing = repository.join("does-not-exist");
+    let arguments = serde_json::json!({ "rootPath": missing.to_string_lossy() }).to_string();
+    let run = run_to_end(
+        Program::Rust,
+        &[
+            ("OATLAS_VAULT", &vault.to_string_lossy()),
+            ("OATLAS_REPO_ROOT", &repository.to_string_lossy()),
+        ],
+        call(1, "inspect_architecture", &arguments).as_bytes(),
+    );
+    let answer: Value = serde_json::from_str(run.lines.first().expect("an answer")).expect("json");
+    let content = &answer["result"]["structuredContent"];
+    assert_eq!(content["errorCode"], "architecture_profile_missing");
+    assert_eq!(content["profileDirectory"], "architecture/");
+}

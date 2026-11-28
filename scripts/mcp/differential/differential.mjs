@@ -12,6 +12,7 @@
  *   ... --goldens[=write|compare]   freeze or check the answers
  *   ... --stats                     corpus size per family
  *   ... --record-expected=<file>    write every difference found as known-difference entries
+ *   ... --record-leaves=<file>      write every differing leaf with both values and whether an entry excuses it
  *   ... --base-ref=<ref>            the branch the lists may only shrink against (default origin/main)
  *
  * Servers: node, node:<checkout>, bun (the twin), bun-shipped, rust, cmd:<command line>.
@@ -26,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { formatDifference } from './compare-runs.mjs';
 import { loadCorpus, requestCount } from './corpus.mjs';
 import { runCoverage } from './coverage.mjs';
+import { entryExcuses } from './declared-entries.mjs';
 import { runDrift } from './drift.mjs';
 import { runGoldens } from './goldens.mjs';
 import {
@@ -73,12 +75,9 @@ function printSummary(byFamily) {
   }
 }
 
-/** Whether a known-difference entry names this difference of this case. */
-function entryMatches(entry, caseName, difference) {
-  return entry.case === caseName
-    && entry.where === difference.where
-    && JSON.stringify(entry.id ?? null) === JSON.stringify(difference.where === 'answer' ? difference.id ?? null : null)
-    && entry.path === (difference.path ?? '');
+function clipValue(text) {
+  const value = String(text ?? '');
+  return value.length > 400 ? `${value.slice(0, 400)}... (${value.length} chars)` : value;
 }
 
 function entryOf(caseName, difference) {
@@ -150,7 +149,7 @@ async function main() {
       const name = `${result.family}/${result.name}`;
       if (result.skipped) console.log(`  skipped   ${name}: ${result.skipped}`);
       else if (result.differences.length === 0) console.log(`  same      ${name} (${result.requests} requests, ${result.ms} ms)`);
-      else if (result.differences.every((d) => known.some((entry) => entryMatches(entry, name, d)))) console.log(`  expected  ${name} ${knownReason}`);
+      else if (result.differences.every((d) => known.some((entry) => entryExcuses(entry, name, d)))) console.log(`  expected  ${name} ${knownReason}`);
       else console.log(`  DIFFERENT ${name}`);
     },
   });
@@ -159,21 +158,23 @@ async function main() {
   let expectedCount = 0;
   const used = new Set();
   const recorded = [];
+  const leaves = [];
   for (const result of results) {
     const name = `${result.family}/${result.name}`;
     const unexpected = [];
     for (const difference of result.differences) {
       recorded.push(entryOf(name, difference));
-      const index = known.findIndex((entry) => entryMatches(entry, name, difference));
-      if (index >= 0) {
-        used.add(index);
-        expectedCount += 1;
-      } else unexpected.push(difference);
+      const excusedBy = known.flatMap((entry, index) => (entryExcuses(entry, name, difference) ? [index] : []));
+      leaves.push({ ...entryOf(name, difference), kind: difference.kind, a: clipValue(difference.a), b: clipValue(difference.b), excused: excusedBy.length > 0 });
+      for (const index of excusedBy) used.add(index);
+      if (excusedBy.length > 0) expectedCount += 1;
+      else unexpected.push(difference);
     }
     if (unexpected.length === 0) continue;
     failures += 1;
-    console.log(`\n${formatDifference(unexpected[0], { family: result.family, caseName: result.name, labelA: result.labelA, labelB: result.labelB })}`);
-    if (unexpected.length > 1) console.log(`  (${unexpected.length - 1} more difference(s) in this case)`);
+    for (const difference of unexpected) {
+      console.log(`\n${formatDifference(difference, { family: result.family, caseName: result.name, labelA: result.labelA, labelB: result.labelB })}`);
+    }
   }
   const stale = known.filter((_, index) => !used.has(index) && cases.some((c) => `${c.family}/${c.name}` === known[index].case));
   for (const entry of stale) {
@@ -186,6 +187,7 @@ async function main() {
     const sorted = recorded.sort((x, y) => differenceKey(x).localeCompare(differenceKey(y), 'en'));
     writeFileSync(values['record-expected'], `${JSON.stringify({ differences: sorted }, null, 2)}\n`);
   }
+  if (values['record-leaves']) writeFileSync(values['record-leaves'], `${JSON.stringify({ differences: leaves }, null, 2)}\n`);
   if (values['summary-json']) {
     writeFileSync(values['summary-json'], JSON.stringify(results.map((r) => ({ family: r.family, name: r.name, requests: r.requests, differences: r.differences.length })), null, 2));
   }

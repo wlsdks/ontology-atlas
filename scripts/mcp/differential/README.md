@@ -12,7 +12,11 @@ For each case, in a folder the harness makes for that run:
 
 - every answer, as the raw line the server wrote: key order, number text (`1.0` is not `1`), string
   escapes, whitespace and the envelope (`jsonrpc`, `id` as written, `result` xor `error`). If the lines
-  differ, the answers are also compared as trees to name the first differing path;
+  differ, the answers are also compared as trees to name every differing path. A string that holds a
+  JSON object or array (`result.content[0].text` does) is compared as that tree too, keys in emitted
+  order, and its paths follow a `#` as a JSON pointer: `result.content[0].text#/checks/2/status`
+  (`~1` for a `/` in a key, `~0` for a `~`; a text inside a text adds another `#`). The same JSON in
+  other text (a space) is a difference at the text's own path;
 - every other line the server wrote on stdout, a last line with no newline, and bytes that are not UTF-8;
 - stderr, the exit code or signal, and a missing answer (the step waits `timeoutMs`);
 - the case folder, the home folder and the worker folder: kind, permission bits, bytes, symlink target,
@@ -98,9 +102,15 @@ Nothing, except what a committed list names:
   the specification's table of declared changes (`change`) and a reason. A run fails when an entry no
   longer differs, and an entry without a row and a reason is refused. An entry with `platform`
   (`process.platform`, such as `win32`) is looked for on that platform only. It grows with the table, so the
-  base-ref check skips it. A difference is reported once per request (the first differing path), so an
-  entry hides the rest of that request's answer; the Rust program's own tests state each declared
-  answer in full.
+  base-ref check skips it. Every differing leaf of a request is reported, and an entry names one path
+  and excuses that path and everything below it (`result.content[0].text#/checks` excuses
+  `.../text#/checks/2/status`, not `#/checks/20`; the boundary is a `.`, `[`, `#` or `/`). Name the leaf
+  a row is about. A tool answer carries the same JSON twice, as the text and as
+  `result.structuredContent`, so a row names both (`result.content[0].text#/edges` and
+  `result.structuredContent.edges`). An entry that names `result.content[0].text` whole still works
+  and excuses every leaf of that answer's text, so `pnpm mcp:differential:check` prints how many such
+  whole-answer entries each list holds (a plain-text refusal counts too); narrow one when the leaves
+  it covers are known. A run also fails on an entry that excuses no difference.
 
 ## Corpus steps
 
@@ -121,4 +131,10 @@ earlier answer, path from the response root, so a client sends back what the ser
 `pnpm test:mcp:differential` runs the harness against the JavaScript server behind a proxy
 (`tests/differential/support/planted-difference-server.mjs`) that plants one difference of each kind in
 turn and fails unless the harness exits 1 naming it. A harness that cannot see a difference proves
-nothing.
+nothing. The same file plants differences in recorded runs, without a server: two leaves of one text
+with one declared (the other must be named), a declared leaf and the path boundary, key order alone,
+the same JSON in other text, a whole-answer entry, and the masking of a written file's time inside a
+text.
+
+`--record-leaves=<file>` writes every differing leaf with both values and whether a declared entry
+excuses it, for the person assigning the unexcused ones to a row.
