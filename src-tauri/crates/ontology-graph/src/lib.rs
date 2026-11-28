@@ -1,6 +1,7 @@
 //! The ontology a vault's documents make: the compiler that reads nodes and edges out of them, the
 //! compiled graph, and the answers `compile_ontology` and `query_ontology` give. See `README.md`.
 
+mod adjacency;
 mod compile_answer;
 mod compile_issue;
 mod compiled_graph;

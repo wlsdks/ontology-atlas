@@ -2,14 +2,16 @@
 //! name reaches, which edges they draw, and what is wrong with the vault that a reader should know.
 
 use std::collections::{HashMap, HashSet};
+use std::ops::Range;
 
 use answer_format::collation::compare_text;
 use answer_format::utf16;
 use answer_format::whitespace::trim;
 use vault_document::frontmatter::{DiagnosticCode, Value};
 use vault_document::schema::{is_node_uid, GRAPH_ARRAY_KEYS};
-use vault_document::{neighbor_refs, normalized_refs, relation_note_for, LoadedDocument};
+use vault_document::{neighbor_refs, normalized_refs, relation_note_for, LoadedDocument, SlugList};
 
+use crate::adjacency::Adjacency;
 use crate::compile_issue::{sort_issues, CompileIssue};
 use crate::compiled_graph::{
     AliasEntry, AmbiguousAlias, CanonicalizationAction, CompiledGraph, Edge, EdgeCounts, EdgeId,
@@ -48,8 +50,8 @@ fn valid_uid(document: &LoadedDocument) -> Option<&str> {
 /// The faults in identity, judged over every node at once so a message names all of them.
 fn identity_faults(nodes: &[&LoadedDocument]) -> Vec<IdentityFault> {
     let mut faults = Vec::new();
-    let mut primary: Vec<(&str, Vec<&str>)> = Vec::new();
-    let mut primary_index: HashMap<&str, usize> = HashMap::new();
+    let mut primary: Vec<(&str, SlugList<'_>)> = Vec::with_capacity(nodes.len());
+    let mut primary_index: HashMap<&str, usize> = HashMap::with_capacity(nodes.len());
     for document in nodes {
         let slug = document.slug();
         match document.frontmatter().get("uid") {
@@ -63,25 +65,33 @@ fn identity_faults(nodes: &[&LoadedDocument]) -> Vec<IdentityFault> {
                 None => faults.push(IdentityFault::InvalidUid {
                     slug: slug.to_string(),
                 }),
-                Some(uid) => {
-                    let at = *primary_index.entry(uid).or_insert_with(|| {
-                        primary.push((uid, Vec::new()));
-                        primary.len() - 1
-                    });
-                    if let Some((_, slugs)) = primary.get_mut(at) {
-                        slugs.push(slug);
+                Some(uid) => match primary_index.get(uid) {
+                    Some(&at) => {
+                        if let Some((_, slugs)) = primary.get_mut(at) {
+                            slugs.push(slug);
+                        }
                     }
-                }
+                    None => {
+                        primary_index.insert(uid, primary.len());
+                        primary.push((uid, SlugList::One(slug)));
+                    }
+                },
             },
         }
     }
     primary.sort_by(|left, right| compare_text(left.0, right.0));
     let mut unique_primary: HashSet<&str> = HashSet::new();
     for (uid, mut slugs) in primary {
-        slugs.sort_by(|left, right| utf16::compare(left, right));
-        if slugs.len() > 1 {
+        slugs
+            .as_mut_slice()
+            .sort_by(|left, right| utf16::compare(left, right));
+        if slugs.as_slice().len() > 1 {
             faults.push(IdentityFault::DuplicateUid {
-                slugs: slugs.into_iter().map(String::from).collect(),
+                slugs: slugs
+                    .as_slice()
+                    .iter()
+                    .map(|slug| (*slug).to_string())
+                    .collect(),
             });
         } else {
             unique_primary.insert(uid);
@@ -137,15 +147,16 @@ fn identity_faults(nodes: &[&LoadedDocument]) -> Vec<IdentityFault> {
 
 /// The names that reach each node: its slug, its last segment and the `slug:` it declares.
 struct AliasTable<'a> {
-    entries: Vec<(&'a str, Vec<&'a str>)>,
+    entries: Vec<(&'a str, SlugList<'a>)>,
     index: HashMap<&'a str, usize>,
 }
 
 impl<'a> AliasTable<'a> {
-    fn new() -> Self {
+    /// A table for the names of `node_count` nodes, each reached by its slug and its last segment.
+    fn new(node_count: usize) -> Self {
         Self {
-            entries: Vec::new(),
-            index: HashMap::new(),
+            entries: Vec::with_capacity(node_count * 2),
+            index: HashMap::with_capacity(node_count * 2),
         }
     }
 
@@ -154,17 +165,17 @@ impl<'a> AliasTable<'a> {
         if key.is_empty() {
             return;
         }
-        let at = match self.index.get(key) {
-            Some(at) => *at,
-            None => {
-                self.entries.push((key, Vec::new()));
-                self.index.insert(key, self.entries.len() - 1);
-                self.entries.len() - 1
+        match self.index.get(key) {
+            Some(&at) => {
+                if let Some((_, slugs)) = self.entries.get_mut(at) {
+                    if !slugs.as_slice().contains(&slug) {
+                        slugs.push(slug);
+                    }
+                }
             }
-        };
-        if let Some((_, slugs)) = self.entries.get_mut(at) {
-            if !slugs.contains(&slug) {
-                slugs.push(slug);
+            None => {
+                self.index.insert(key, self.entries.len());
+                self.entries.push((key, SlugList::One(slug)));
             }
         }
     }
@@ -186,7 +197,7 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
         by_slug.insert(document.slug(), NodeId::from_index(index));
     }
 
-    let mut alias_table = AliasTable::new();
+    let mut alias_table = AliasTable::new(node_documents.len());
     for document in &node_documents {
         let slug = document.slug();
         alias_table.add(slug, slug);
@@ -204,7 +215,9 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
     let mut ambiguous_aliases = Vec::new();
     let mut by_alias: HashMap<&str, NodeId> = HashMap::with_capacity(alias_entries.len());
     for (alias, mut slugs) in alias_entries {
-        slugs.sort_by(|left, right| utf16::compare(left, right));
+        slugs
+            .as_mut_slice()
+            .sort_by(|left, right| utf16::compare(left, right));
         match slugs.as_slice() {
             [only] => {
                 if let Some(node) = by_slug.get(only) {
@@ -214,7 +227,11 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
             }
             _ => ambiguous_aliases.push(AmbiguousAlias {
                 alias: alias.to_string(),
-                slugs: slugs.iter().map(|slug| (*slug).to_string()).collect(),
+                slugs: slugs
+                    .as_slice()
+                    .iter()
+                    .map(|slug| (*slug).to_string())
+                    .collect(),
             }),
         }
     }
@@ -260,7 +277,10 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
     }
 
     let mut canonicalization_actions = Vec::new();
-    let mut edges: Vec<(String, Edge)> = Vec::new();
+    // Each edge with where its order key lies in `order_keys`: the keys of every edge are written
+    // into one text, not one allocation each.
+    let mut edges: Vec<(Range<usize>, Edge)> = Vec::new();
+    let mut order_keys = String::new();
     for document in &node_documents {
         let frontmatter = document.frontmatter();
         let mut keys = Vec::new();
@@ -312,13 +332,22 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
             let resolved_slug =
                 resolved.and_then(|node| ordered.get(node.index()).map(|d| d.slug()));
             let to_name = resolved_slug.unwrap_or(neighbor.reference.as_str());
-            let order_key = format!(
-                "{}:{}:{}:{}",
+            let key_start = order_keys.len();
+            for (part, text) in [
                 document.slug(),
                 neighbor.key,
                 to_name,
-                neighbor.reference
-            );
+                neighbor.reference.as_str(),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                if part > 0 {
+                    order_keys.push(':');
+                }
+                order_keys.push_str(text);
+            }
+            let order_key = key_start..order_keys.len();
             let rationale = relation_note_for(frontmatter, &neighbor.reference, resolved_slug);
             edges.push((
                 order_key,
@@ -332,32 +361,36 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
             ));
         }
     }
-    edges.sort_by(|(left, _), (right, _)| compare_text(left, right));
+    let order_key = |range: &Range<usize>| order_keys.get(range.clone()).unwrap_or_default();
+    edges.sort_by(|(left, _), (right, _)| compare_text(order_key(left), order_key(right)));
     let edges: Vec<Edge> = edges.into_iter().map(|(_, edge)| edge).collect();
+    drop(order_keys);
 
     sort_issues(&mut issues);
 
     let mut nodes: Vec<Node> = ordered.iter().map(|document| node_of(document)).collect();
-    let mut outgoing: Vec<Vec<EdgeId>> = vec![Vec::new(); nodes.len()];
-    let mut incoming: Vec<Vec<EdgeId>> = vec![Vec::new(); nodes.len()];
+    let numbered = || {
+        edges
+            .iter()
+            .enumerate()
+            .map(|(index, edge)| (edge, EdgeId::from_index(index)))
+    };
+    let outgoing = Adjacency::of(nodes.len(), numbered().map(|(edge, id)| (edge.from, id)));
+    let incoming = Adjacency::of(
+        nodes.len(),
+        numbered().filter_map(|(edge, id)| edge.to().map(|to| (to, id))),
+    );
     let mut counts = EdgeCounts::default();
     let mut referenced_only: HashSet<&str> = HashSet::new();
-    for (index, edge) in edges.iter().enumerate() {
-        let id = EdgeId::from_index(index);
+    for edge in &edges {
         if let Some(from) = nodes.get_mut(edge.from.index()) {
             from.out_degree += 1;
-        }
-        if let Some(list) = outgoing.get_mut(edge.from.index()) {
-            list.push(id);
         }
         match edge.target {
             Target::Node(to) => {
                 counts.resolved += 1;
                 if let Some(node) = nodes.get_mut(to.index()) {
                     node.in_degree += 1;
-                }
-                if let Some(list) = incoming.get_mut(to.index()) {
-                    list.push(id);
                 }
             }
             Target::External => {

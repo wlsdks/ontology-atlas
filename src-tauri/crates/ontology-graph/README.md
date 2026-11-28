@@ -7,6 +7,7 @@ It reads documents that `vault-document` already read; it never opens a file.
 |---|---|
 | `graph_compiler.rs` | `compile`: which documents are nodes, what each name reaches, the edges, the issues |
 | `compiled_graph.rs` | `CompiledGraph`, `Node`, `Edge`, `EdgeView`: nodes and edges named by place, not by text |
+| `adjacency.rs` | `Adjacency`: the edges of every node in one list, each node's run found by its offset |
 | `compile_issue.rs` | `CompileIssue`: what compiling noticed and still compiled |
 | `identity_error.rs` | `IdentityError`: the faults in `uid:` that refuse the compile |
 | `graph_hash.rs` | `hash_graph`: the SHA-256 an agent compares to see the graph changed |
