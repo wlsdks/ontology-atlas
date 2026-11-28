@@ -267,27 +267,24 @@ export function strictListConceptsKindFailure(
   });
 }
 
-export function strictGraphKindFilterFailure(
-  response,
-  { field = 'kind', received = 'capabilty', suggestion = 'capability' } = {},
-) {
+export function strictGraphKindFilterFailure(response) {
   if (response?.result?.isError !== true) {
     return 'strict graph kind filter response was not rejected';
   }
   const text = response.result.content?.[0]?.text || '';
-  if (!new RegExp(`${field} must be one of`, 'i').test(text)) {
-    return `strict graph kind filter response did not report the invalid ${field} filter`;
+  if (!/kind must be one of/i.test(text)) {
+    return 'strict graph kind filter response did not report the invalid kind filter';
   }
-  if (!new RegExp(`Received: "${received}"`, 'i').test(text)) {
-    return `strict graph kind filter response did not report the invalid ${field} value`;
+  if (!/Received: "capabilty"/i.test(text)) {
+    return 'strict graph kind filter response did not report the invalid kind value';
   }
-  if (!new RegExp(`Did you mean "${suggestion}"\\?`, 'i').test(text)) {
-    return `strict graph kind filter response did not suggest the closest ${field} value`;
+  if (!/Did you mean "capability"\?/i.test(text)) {
+    return 'strict graph kind filter response did not suggest the closest kind value';
   }
   return structuredValueRepairFailure(response, 'strict graph kind filter', {
-    valueName: field,
-    received,
-    suggestion,
+    valueName: 'kind',
+    received: 'capabilty',
+    suggestion: 'capability',
     allowedValues: NODE_KIND_VALUES,
   });
 }
