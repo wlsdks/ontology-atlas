@@ -1934,25 +1934,22 @@ describe('verify.mjs first-contact gates', () => {
                     'absentEndpoints',
                     'observedPathsByEndpoint',
                     'analysisCall',
-                    'proposalValidation',
+                    'addConceptsStep',
                     'resumeCall',
                   ],
                   properties: {
                     status: { enum: ['required_before_relation_review'] },
                     writeAllowed: { enum: [false] },
                     analysisCall: { properties: { tool: { enum: ['analyze_repo_structure'] } } },
-                    proposalValidation: {
+                    addConceptsStep: {
                       required: [
                         'tool',
-                        'requiredArguments',
-                        'requiredProposalFields',
                         'fieldsAfterKindDecision',
                         'endpointDrafts',
                         'purpose',
                       ],
                       properties: {
-                        tool: { enum: ['analyze_repo_structure'] },
-                        requiredArguments: { items: { enum: ['rootPath', 'proposal'] } },
+                        tool: { enum: ['add_concepts'] },
                         fieldsAfterKindDecision: {
                           required: ['common', 'byKind'],
                           properties: {
@@ -2304,9 +2301,9 @@ describe('verify.mjs first-contact gates', () => {
       },
     ]) {
       const changed = structuredClone(inferImportsTool);
-      const proposalValidation = changed.outputSchema.properties.nextReview
-        .properties.endpointModelling.properties.proposalValidation;
-      mutate(proposalValidation);
+      const addConceptsStep = changed.outputSchema.properties.nextReview
+        .properties.endpointModelling.properties.addConceptsStep;
+      mutate(addConceptsStep);
       assert.equal(
         toolsListSchemaFailure(withInferImportsTool(changed)),
         'infer_imports compact review approval gate drift',

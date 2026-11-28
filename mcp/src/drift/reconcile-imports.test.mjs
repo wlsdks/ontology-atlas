@@ -394,12 +394,10 @@ test('buildNextImportRelationReview — fresh vault exposes one endpoint-modelli
     analysisCall: {
       tool: 'analyze_repo_structure',
       arguments: { rootPath: '/repo' },
-      purpose: 'Refresh repository candidates and evidence only; this call does not create or validate either missing ontology endpoint.',
+      purpose: 'Refresh repository candidates and evidence only; it does not create either missing ontology endpoint.',
     },
-    proposalValidation: {
-      tool: 'analyze_repo_structure',
-      requiredArguments: ['rootPath', 'proposal'],
-      requiredProposalFields: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
+    addConceptsStep: {
+      tool: 'add_concepts',
       fieldsAfterKindDecision: {
         common: ['slug', 'title', 'definition', 'evidence', 'confidence'],
         byKind: {
@@ -423,7 +421,7 @@ test('buildNextImportRelationReview — fresh vault exposes one endpoint-modelli
           kindDecision: 'human_meaning_required',
         },
       ],
-      purpose: 'Build a complete proposal from reviewed product meaning, then pass it with rootPath. Do not infer kind, title, definition, domain, or path from the endpoint slug alone.',
+      purpose: 'After the kind is decided from reviewed product meaning, write each missing endpoint as one add_concepts row (slug, kind, title, body, and domain or path by kind). Do not infer kind, title, definition, domain, or path from the endpoint slug alone.',
     },
     resumeCall: {
       tool: 'infer_imports',

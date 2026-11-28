@@ -2648,8 +2648,8 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
     assert.equal(result.nextReview.decision.questionEligibility, "blocked_missing_vault_endpoints");
     assert.equal(result.nextReview.endpointModelling.analysisCall.tool, "analyze_repo_structure");
     assert.deepEqual(result.nextReview.endpointModelling.analysisCall.arguments, { rootPath: repoRoot });
-    assert.deepEqual(result.nextReview.endpointModelling.proposalValidation.requiredArguments, ["rootPath", "proposal"]);
-    assert.deepEqual(result.nextReview.endpointModelling.proposalValidation.fieldsAfterKindDecision, {
+    assert.equal(result.nextReview.endpointModelling.addConceptsStep.tool, "add_concepts");
+    assert.deepEqual(result.nextReview.endpointModelling.addConceptsStep.fieldsAfterKindDecision, {
       common: ["slug", "title", "definition", "evidence", "confidence"],
       byKind: {
         project: [],
@@ -2658,9 +2658,9 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
         element: ["domain", "path"],
       },
     });
-    assert.equal(result.nextReview.endpointModelling.proposalValidation.endpointDrafts.length, 2);
+    assert.equal(result.nextReview.endpointModelling.addConceptsStep.endpointDrafts.length, 2);
     assert.deepEqual(
-      result.nextReview.endpointModelling.proposalValidation.endpointDrafts.map((draft) => ({
+      result.nextReview.endpointModelling.addConceptsStep.endpointDrafts.map((draft) => ({
         endpoint: draft.endpoint,
         slugCandidate: draft.slugCandidate,
       })),
@@ -2669,7 +2669,7 @@ await test("infer_imports reviewMode next — fresh vault returns one endpoint-m
         { endpoint: "capabilities/beta", slugCandidate: "capabilities/beta" },
       ],
     );
-    assert.ok(result.nextReview.endpointModelling.proposalValidation.endpointDrafts.every(
+    assert.ok(result.nextReview.endpointModelling.addConceptsStep.endpointDrafts.every(
       (draft) => draft.kindDecision === "human_meaning_required",
     ));
     assert.equal(result.nextReview.endpointModelling.resumeCall.tool, "infer_imports");

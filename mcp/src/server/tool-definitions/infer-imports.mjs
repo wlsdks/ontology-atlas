@@ -456,27 +456,10 @@ export const INFER_IMPORTS_TOOL = {
                 required: ['tool', 'arguments', 'purpose'],
                 additionalProperties: false,
               },
-              proposalValidation: {
+              addConceptsStep: {
                 type: 'object',
                 properties: {
-                  tool: { type: 'string', enum: ['analyze_repo_structure'] },
-                  requiredArguments: {
-                    type: 'array',
-                    minItems: 2,
-                    maxItems: 2,
-                    uniqueItems: true,
-                    items: { type: 'string', enum: ['rootPath', 'proposal'] },
-                  },
-                  requiredProposalFields: {
-                    type: 'array',
-                    minItems: 6,
-                    maxItems: 6,
-                    uniqueItems: true,
-                    items: {
-                      type: 'string',
-                      enum: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
-                    },
-                  },
+                  tool: { type: 'string', enum: ['add_concepts'] },
                   fieldsAfterKindDecision: {
                     type: 'object',
                     properties: {
@@ -531,7 +514,7 @@ export const INFER_IMPORTS_TOOL = {
                   },
                   purpose: NON_BLANK_STRING_SCHEMA,
                 },
-                required: ['tool', 'requiredArguments', 'requiredProposalFields', 'fieldsAfterKindDecision', 'endpointDrafts', 'purpose'],
+                required: ['tool', 'fieldsAfterKindDecision', 'endpointDrafts', 'purpose'],
                 additionalProperties: false,
               },
               resumeCall: {
@@ -559,7 +542,7 @@ export const INFER_IMPORTS_TOOL = {
               'absentEndpoints',
               'observedPathsByEndpoint',
               'analysisCall',
-              'proposalValidation',
+              'addConceptsStep',
               'resumeCall',
             ],
             additionalProperties: false,
