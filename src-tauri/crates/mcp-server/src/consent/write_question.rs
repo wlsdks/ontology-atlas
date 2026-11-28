@@ -243,6 +243,8 @@ fn finalize_project_meaning(sent: &Sent<'_>) -> String {
 
 #[cfg(test)]
 mod tests {
+    use confined_files::AbsorbRepository;
+
     use super::*;
 
     fn arguments(text: &str) -> Arguments {
@@ -313,7 +315,7 @@ mod tests {
 
     fn absorb_card(repository: &std::path::Path, typed: &std::path::Path) -> String {
         let call = format!(r#"{{"filePath":{}}}"#, quote(&typed.to_string_lossy()));
-        let place = AbsorbedPlace::locate(&typed.to_string_lossy(), repository).ok();
+        let place = AbsorbedPlace::locate(&typed.to_string_lossy(), AbsorbRepository::Grounded(repository)).ok();
         summary(WriteTool::AbsorbDocument, &arguments(&call), place.as_ref())
     }
 

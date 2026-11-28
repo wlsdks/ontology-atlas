@@ -101,7 +101,6 @@ fn ask_within(
     if !context.can_ask_client() {
         return Err(ConsentRefusal::NoWayToAsk.into());
     }
-    let repository = &context.config().repo_root;
     // The card names the folder a connect would bind, not "inferred from this vault's location".
     let named;
     let shown_arguments = if tool == WriteTool::ConnectProjectSource {
@@ -118,7 +117,7 @@ fn ask_within(
     let absorbed_place = (tool == WriteTool::AbsorbDocument)
         .then(|| arguments.string("filePath"))
         .flatten()
-        .and_then(|requested| AbsorbedPlace::locate(&requested, repository).ok());
+        .and_then(|requested| AbsorbedPlace::locate(&requested, context.config().absorb_repository()).ok());
     let summary = write_question::summary(tool, shown_arguments, absorbed_place.as_ref());
     let message = format!("{summary}. Apply this change to the vault?");
     let question = Question {

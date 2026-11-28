@@ -186,7 +186,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
     let confirm = optional_boolean(arguments, "confirm")?.unwrap_or(false);
     let allow_outside_repo = optional_boolean(arguments, "allowOutsideRepo")?.unwrap_or(false);
     let context = permit.context();
-    let place = AbsorbedPlace::locate(&file_path, &context.config().repo_root).map_err(refusal)?;
+    let place = AbsorbedPlace::locate(&file_path, context.config().absorb_repository()).map_err(refusal)?;
     permit.ensure_card_named(&place)?;
     let source = place.read().map_err(refusal)?;
     let view = VaultView::read(permit)?;

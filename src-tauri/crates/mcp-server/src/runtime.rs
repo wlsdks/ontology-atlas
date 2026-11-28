@@ -181,6 +181,16 @@ impl Config {
         }
     }
 
+    /// The repository `absorb_document` judges a file against: its hidden folders are allowed only
+    /// where the program was pointed at the repository, never in a folder it merely started in.
+    pub fn absorb_repository(&self) -> confined_files::AbsorbRepository<'_> {
+        if self.repo_grounded {
+            confined_files::AbsorbRepository::Grounded(&self.repo_root)
+        } else {
+            confined_files::AbsorbRepository::Guessed(&self.repo_root)
+        }
+    }
+
     pub fn from_environment() -> Result<Self, StartupError> {
         let cwd = std::env::current_dir().unwrap_or_default();
         Self::from_lookup(|name| std::env::var(name).ok(), &cwd)
