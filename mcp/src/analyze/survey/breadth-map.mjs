@@ -17,7 +17,7 @@ import { collectSourceUnits } from './source-units.mjs';
 import { abilitiesByArea, areaLocator, surveyAreas } from './survey-areas.mjs';
 import { repoText as t } from '../repo-text.mjs';
 import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
-import { withoutSpans } from '../text.mjs';
+import { withoutSpans } from '../without-spans.mjs';
 import { compareText } from '../../compare-text.mjs';
 
 const MAIN_FILES_PER_UNIT = 3;

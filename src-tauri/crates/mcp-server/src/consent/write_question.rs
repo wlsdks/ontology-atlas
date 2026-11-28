@@ -74,6 +74,9 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
             None => "Absorb a document into typed nodes".to_string(),
         },
         WriteTool::ConnectProjectSource => connect_project_source(&sent),
+        WriteTool::DisconnectProjectSource => {
+            "Disconnect a source folder from this vault".to_string()
+        }
         WriteTool::FinalizeProjectMeaning => finalize_project_meaning(&sent),
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => "Write one test file".to_string(),
@@ -177,6 +180,7 @@ mod tests {
             (ConnectProjectSource, r#"{}"#, "Connect a source folder to this vault"),
             (ConnectProjectSource, r#"{"projectSlug":"p"}"#, "Connect p to the source folder inferred from this vault's location"),
             (ConnectProjectSource, r#"{"projectSlug":"p","rootPath":"/r"}"#, "Connect p to the source folder \"/r\""),
+            (DisconnectProjectSource, r#"{}"#, "Disconnect a source folder from this vault"),
             (FinalizeProjectMeaning, r#"{"projectSlug":"p"}"#, "Re-measure the source folder connected to p and write its project meaning receipt"),
             (FinalizeProjectMeaning, r#"{"answers":[]}"#, "Write the competency answers section of the project, re-measure the source folder connected to the project and write its project meaning receipt"),
             (FinalizeProjectMeaning, r#"{"projectSlug":"p","answers":[{}]}"#, "Write the competency answers section of p, re-measure the source folder connected to p and write its project meaning receipt"),

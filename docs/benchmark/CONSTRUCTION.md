@@ -1,10 +1,8 @@
 # Construction measurements
 
 Measure the artifact an unfamiliar-repository build produces, as well as the
-cost of producing it. Candidate-discovery accuracy from `eval:meaning-extraction`
-does not measure independent model construction: its definition, citation and
-competency minimums are zero. A valid graph, existing paths, and a recorded
-finalizer receipt are separate from source-backed meaning.
+cost of producing it. A valid graph, existing paths, and a recorded finalizer
+receipt are separate from source-backed meaning.
 
 Run `pnpm benchmark:construction /absolute/path/to/runs.json --json` for a
 read-only report. Without `--json`, it prints a comparison table. It neither

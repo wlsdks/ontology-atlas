@@ -21,7 +21,7 @@ export const CONSTRUCTION_GUIDE_TOPICS = Object.freeze([
   'construction',
   'write_safety',
   'workflows',
-  'competency',
+  'query',
 ]);
 
 export const CONSTRUCTION_CARD_EN = `## Construction card
@@ -76,23 +76,17 @@ Never write both directions between one pair. \`relates\` is for neighbours with
 
 **Coverage.** Each write lists unplaced abilities and shared roles, unread capabilities, rules citing no read lines, and capabilities no ability-to-ability edge touches, each with the next call: make it. Finalize holds \`abilities\`, \`evidence\` and \`impact\` to those lists; \`partial\` with a \`Gap\` is the fallback.`;
 
-/**
- * The repair a finalize_project_meaning refusal ends with when the project body
- * holds no section the parser accepts; `tools/project-source.mjs` imports it.
- */
-export const COMPETENCY_ANSWERS_HINT_EN = 'Call finalize_project_meaning again with `answers`: five rows `{id, status, answer, concepts, relations, evidence, paths, gap}`, one each for scope, domains, abilities, evidence and impact; the server writes the `## Competency answers` section itself.';
-
 const QUESTION_LINES = MEANING_COMPETENCY_QUESTIONS
   .map(({ id, question, requiredWitnesses }) => `- \`${id}\`: ${question} Answered cites ${requiredWitnesses.join(', ')}.`)
   .join('\n');
 
 /**
- * The `competency` guide: what an agent needs to pass `answers`. The server owns the
- * questions and the section layout, so neither is copied here for an agent to copy.
+ * The repair a finalize_project_meaning refusal ends with when the project body
+ * holds no section the parser accepts: the whole answer layout, since the server
+ * owns the questions and the section and an agent should not copy either from
+ * memory. `tools/project-source.mjs` imports it.
  */
-export const COMPETENCY_ANSWERS_GUIDE_EN = `## Competency answers
-
-\`finalize_project_meaning({projectSlug, expected_mtime, answers})\` writes the project's \`## Competency answers\` section from \`answers\` and finalizes in one call. One row per question:
+export const COMPETENCY_ANSWERS_HINT_EN = `Call finalize_project_meaning again with \`answers\`; the server writes the \`## Competency answers\` section itself. One row per question:
 
 ${QUESTION_LINES}
 
@@ -100,18 +94,8 @@ A row is \`{id, status, answer, concepts?, relations?, evidence?, paths?, gap?}\
 - \`status\`: \`answered\` when the witnesses back the whole answer, else \`partial\` or \`visible-gap\` with \`gap\`: one line naming what is missing.
 - \`answer\`: plain sentences; no heading and no "- Label:" line.
 - \`concepts\`: slugs inside this project. \`relations\`: \`{from, to, type}\` with the stored key (\`domains\`, \`capabilities\`, \`elements\`, \`depends_on\`).
-- \`evidence\`, \`paths\`: repository-relative files or folders, such as \`README.md\`; line cites go in the answer. Evidence may be a pinned \`source:<path>#L<a>-L<b>@sha256:<64 hex>\`.
+- \`evidence\`, \`paths\`: repository-relative files or folders, such as \`README.md\`; line cites go in the answer.
 
-Finalize measures each named file inside the folder \`connect_project_source\` bound; it never binds one. An answered \`abilities\`, \`evidence\` or \`impact\` row is held to the coverage each write reports: while it names work, do it or mark the row \`partial\`. A refusal names the row and argument to change, and writes nothing.
+Finalize measures each named file inside the folder \`connect_project_source\` bound; it never binds one. An answered \`abilities\`, \`evidence\` or \`impact\` row is held to the coverage each write reports: while it names work, do it or mark the row \`partial\`.
 
-\`\`\`json
-{"projectSlug":"billing","expected_mtime":1795104500785.9,"answers":[
-  {"id":"scope","status":"answered","answer":"Billing lets an operator invoice a customer.","concepts":["billing"],"evidence":["README.md"]},
-  {"id":"domains","status":"answered","answer":"Invoicing owns what a customer is charged.","concepts":["domains/invoicing"],"relations":[{"from":"billing","to":"domains/invoicing","type":"domains"}],"evidence":["README.md"]},
-  {"id":"abilities","status":"partial","answer":"Invoicing issues one invoice per completed order.","concepts":["capabilities/issue-invoice"],"gap":"Credit notes were not read."},
-  {"id":"evidence","status":"answered","answer":"Invoicing enters at the file its path names.","concepts":["capabilities/issue-invoice"],"evidence":["src/billing/issue-invoice.ts"],"paths":["src/billing/issue-invoice.ts"]},
-  {"id":"impact","status":"visible-gap","answer":"No dependency is declared yet.","gap":"The tax table dependency is unrecorded."}
-]}
-\`\`\`
-
-Without \`answers\`, finalize reads a section already in the body, in the layout it writes.`;
+Example: \`{"projectSlug":"billing","expected_mtime":1795104500785.9,"answers":[{"id":"scope","status":"answered","answer":"Billing lets an operator invoice a customer.","concepts":["billing"],"evidence":["README.md"]}, ...one row for each id above]}\``;

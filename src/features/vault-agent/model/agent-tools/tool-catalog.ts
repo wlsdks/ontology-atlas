@@ -189,7 +189,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'list_concepts',
     description:
-      'List nodes, optionally narrowed by kind, domain, a predicate (`filter`) or text (`mentions`, best title match first; use it before adding a concept to avoid a near-duplicate). Use `summary: true` to get a one-paragraph preview per row instead of N follow-up reads. For large vaults, resume with the MCP pagination contract.',
+      'List nodes, optionally narrowed by kind, domain or text (`mentions`, best title match first; use it before adding a concept to avoid a near-duplicate). Use `summary: true` to get a one-paragraph preview per row instead of N follow-up reads. For large vaults, resume with the MCP pagination contract.',
     effect: 'read',
     parameters: {
       type: 'object',
@@ -211,10 +211,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
         mentions: {
           type: 'string',
           description: 'Text to find, case-insensitive. Keeps the nodes whose title or slug contains it, best match first.',
-        },
-        filter: {
-          type: 'string',
-          description: 'Predicate over frontmatter: `key=value`, `key!=value` (keys kind, domain, slug, title, created_by) and `has(key)` for a relation key, joined with AND, OR, NOT and parentheses.',
         },
         offset: {
           type: 'integer',
@@ -296,6 +292,27 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
         },
       },
       required: ['from', 'to'],
+    },
+  },
+  {
+    name: 'find_orphans',
+    description: 'Nodes with no edges at all — the usual starting point for "what is unfinished here". The MCP server answers the same question as `query_ontology` `match_nodes` with `hasIncoming: false`.',
+    effect: 'read',
+    parameters: {
+      type: 'object',
+      properties: {
+        kind: {
+          type: 'string',
+          enum: NODE_KIND_VALUES,
+          description: 'Restrict to one kind. Omit for all kinds.',
+        },
+        excludeKinds: {
+          type: 'array',
+          maxItems: NODE_KIND_VALUES.length,
+          items: { type: 'string', enum: NODE_KIND_VALUES },
+          description: "Kinds to exclude. Defaults to ['project', 'vault-readme'].",
+        },
+      },
     },
   },
   {

@@ -141,7 +141,7 @@ export const TranscriptEntry = memo(function TranscriptEntry({
 
     const title = canonicalToolTitle(event.title, event.rawInput);
     const rawLabel = withKindFallback(
-      toolLabel(title, VAULT_MCP_SERVER_NAME),
+      toolLabel(title, VAULT_MCP_SERVER_NAME, event.rawInput),
       title,
       VAULT_MCP_SERVER_NAME,
       event.toolKind,

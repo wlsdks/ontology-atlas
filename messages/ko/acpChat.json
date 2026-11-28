@@ -210,6 +210,7 @@
     "addNode": "개념 추가",
     "editNode": "개념 고치기",
     "renameNode": "개념 이름 바꾸기",
+    "reclassifyNode": "개념 종류 바꾸기",
     "mergeNodes": "개념 둘 합치기",
     "addRelation": "관계 추가",
     "readConstellation": "저장한 책갈피 읽기",
@@ -218,9 +219,11 @@
     "checkPages": "문서 점검",
     "deleteNode": "개념 지우기",
     "removeRelation": "관계 지우기",
+    "replaceRelation": "관계 바꾸기",
     "compile": "파일에서 지도 다시 만들기",
     "absorb": "문서를 후보로 정리",
     "connectSource": "코드 폴더 연결",
+    "disconnectSource": "코드 폴더 연결 끊기",
     "judgeMeaning": "기록된 의미 판정"
   },
   "toolKind": {

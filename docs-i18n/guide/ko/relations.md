@@ -66,7 +66,7 @@ MCP 서버는 같은 frontmatter를 읽어 그래프에 관한 질문에 답해�
 - `query_ontology`에 `path`를 주면 두 개념 사이의 최단 경로를 돌려줘요. 단계마다 그 단계를 잇는 키(`via`)와, 기록돼 있다면 이유(`rationale`)를 알려 줘요.
 - `query_ontology`에 `neighbors`를 주면 개념 둘레 한 단계를 방향과 유형으로 걸러서 돌려줘요.
 - `query_ontology`에 `impact`나 `blast_radius`를 주면 "이게 바뀌면 무엇이 영향을 받나요?"에 답해요. 선언된 `depends_on` 관계만 따라가요. 구조는 영향이 아니에요.
-- `query_ontology`에 `domain_matrix`를 주면 도메인 사이의 관계 수를 세요. `depends_on`으로 한정하면 지도의 호가 나타내는 숫자와 같아요.
+- `query_ontology`에 `project_map`을 주면 프로젝트의 도메인과 도메인 사이의 관계를 볼 수 있어요.
 
 관계를 적을 때는 `add_relations`에 관계 목록을 넘기고, 관계마다 `from`, `to`, `type`(`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements`, `domain` 중 하나), `why`를 적어요. `remove_relation`은 기본으로 미리 보기만 하고, `confirm: true`일 때만 써요. `replaceWith`를 함께 넘기면 관계 하나를 다른 관계로 한 번에 바꿔요. `broader`는 아직 `add_relations`의 유형이 아니에요. `broader`를 바꿀 때 에이전트는 `patch_concept`에 새 목록 전체와 파일의 `mtime`을 넘기고, 그다음 `validate_vault`를 실행해요.
 

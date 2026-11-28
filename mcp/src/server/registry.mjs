@@ -15,7 +15,6 @@ import { ABSORB_DOCUMENT_TOOL } from './tool-definitions/absorb-document.mjs';
 import { ANALYZE_REPO_STRUCTURE_TOOL } from './tool-definitions/analyze-repo-structure.mjs';
 import { GET_CONSTELLATION_TOOL } from './tool-definitions/constellations.mjs';
 import { COMPILE_ONTOLOGY_TOOL, QUERY_ONTOLOGY_TOOL } from './tool-definitions/graph.mjs';
-import { INDEX_PROJECT_TOOL } from './tool-definitions/index-project.mjs';
 import { INFER_IMPORTS_TOOL } from './tool-definitions/infer-imports.mjs';
 import { INSPECT_ARCHITECTURE_TOOL } from './tool-definitions/inspect-architecture.mjs';
 import {
@@ -26,6 +25,7 @@ import {
 import { LIST_CONCEPTS_TOOL } from './tool-definitions/list-concepts.mjs';
 import {
   CONNECT_PROJECT_SOURCE_TOOL,
+  DISCONNECT_PROJECT_SOURCE_TOOL,
   FINALIZE_PROJECT_MEANING_TOOL,
 } from './tool-definitions/project-source.mjs';
 import {
@@ -58,6 +58,7 @@ const TOOLS = [
   GET_CONCEPTS_TOOL,
   FINALIZE_PROJECT_MEANING_TOOL,
   CONNECT_PROJECT_SOURCE_TOOL,
+  DISCONNECT_PROJECT_SOURCE_TOOL,
   ADD_CONCEPT_TOOL,
   ADD_CONCEPTS_TOOL,
   ADD_RELATION_TOOL,
@@ -75,7 +76,6 @@ const TOOLS = [
   READ_SOURCE_TOOL,
   INSPECT_ARCHITECTURE_TOOL,
   INFER_IMPORTS_TOOL,
-  INDEX_PROJECT_TOOL,
   ANALYZE_REPO_STRUCTURE_TOOL,
   RENAME_CONCEPT_TOOL,
   MERGE_CONCEPTS_TOOL,
@@ -101,12 +101,11 @@ const READ_TOOL_NAMES = new Set([
   'inspect_architecture',
   'analyze_repo_structure',
   'infer_imports',
-  'index_project',
 ]);
 
 const DESTRUCTIVE_TOOL_NAMES = new Set([
-  // `disconnect: true` removes the binding and its receipt.
-  'connect_project_source',
+  // Removes the binding and its receipt.
+  'disconnect_project_source',
   'delete_concept',
   'merge_concepts',
   'rename_concept',
@@ -147,7 +146,7 @@ const CONSTRUCTION_TOOL_NAMES = new Set([
   'patch_concept', 'validate_vault', 'compile_ontology', 'connect_project_source', 'finalize_project_meaning',
 ]);
 
-// A retired name stays out of tools/list. The first seven below still run and add a note naming
+// A retired name stays out of tools/list. The first six below still run and add a note naming
 // the tool that replaces them. The rest no longer run: the call is answered with `tool_retired`
 // and the replacement, because each one's job is done by the call named here or by the agent's own
 // command (see `isRetiredAndGone`).
@@ -161,12 +160,11 @@ const RETIRED_TOOL_REPLACEMENTS = new Map([
   ['index_project', 'analyze_repo_structure, then infer_imports and validate_vault'],
   ['git_status', 'your own git: `git -C <repoRoot> status -- <vault>` (`connection_info` names both paths)'],
   ['git_history', 'your own git: `git -C <repoRoot> log -- <vault>`'],
-  ['git_snapshot', 'your own git: commit the vault yourself after `git -C <repoRoot> status -- <vault>`'],
+  ['git_snapshot', 'your own git: `git -C <vaultRoot> add -- . && git -C <vaultRoot> commit -m "<why>" -- .`, not during a merge or rebase, and never push'],
   ['list_constellations', 'get_constellation with no `id`'],
   ['find_evidence', 'list_concepts({ mentions: "text" })'],
   ['find_orphans', "query_ontology({ operation: 'match_nodes', hasIncoming: false })"],
   ['query_concepts', 'list_concepts({ filter })'],
-  ['disconnect_project_source', 'connect_project_source({ projectSlug, disconnect: true, confirm })'],
   ['replace_relation', 'remove_relation({ from, to, type, replaceWith: { to, type, why }, confirm })'],
   ['reclassify_concept', 'rename_concept({ oldSlug, newKind, domain, body, confirm })'],
 ]);

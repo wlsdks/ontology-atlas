@@ -6,28 +6,28 @@ title: Repository structure analysis
 display_en: Repository structure analysis
 display_ko: 저장소 구조 분석
 domain: domains/code-evidence
-elements: [elements/bounded-source-read, elements/business-meaning-gate, elements/non-js-implementation-evidence, elements/project-identity-detection, elements/rust-feature-evidence, elements/semantic-evidence-packet, elements/source-declaration-outline, elements/source-element-candidates]
-path: mcp/src/analyze/candidates/repo-structure.mjs
+elements: [elements/bounded-source-read, elements/source-declaration-outline]
+path: mcp/src/tools/repo-analysis/analyze-structure.mjs
 created_by: "agent:claude-code"
-dependencies: [capabilities/construction-qualification-gate, capabilities/import-dependency-inference, elements/bounded-source-read, elements/business-meaning-gate, elements/non-js-implementation-evidence, elements/project-identity-detection, elements/rust-feature-evidence, elements/semantic-evidence-packet, elements/source-element-candidates]
-relation_notes: { capabilities/import-dependency-inference: "You asked for what depends on what: a structure proposal may only cite import endpoints the import scan already observed.", elements/project-identity-detection: "You asked me to turn imports I actually witnessed into dependencies: the scan shows analyze/candidates/repo-structure.mjs importing analyze/candidates/project-detection.mjs.", elements/semantic-evidence-packet: "You asked me to turn imports I actually witnessed into dependencies: the scan shows analyze/candidates/repo-structure.mjs importing analyze/candidates/semantic-evidence.mjs.", elements/non-js-implementation-evidence: "You asked me to turn imports I actually witnessed into dependencies: the scan shows analyze/candidates/repo-structure.mjs importing analyze/candidates/native-evidence.mjs.", elements/business-meaning-gate: "You asked me to turn imports I actually witnessed into dependencies: the scan shows analyze/candidates/repo-structure.mjs importing analyze/candidates/meaning-gate.mjs.", elements/source-element-candidates: "You asked me to turn imports I actually witnessed into dependencies: the scan shows analyze/candidates/repo-structure.mjs importing analyze/candidates/source-elements.mjs.", capabilities/construction-qualification-gate: "You asked me to turn imports I actually witnessed into dependencies: the scan shows analyze/candidates/repo-structure.mjs importing construction-lifecycle.mjs, which is why a bulk plan cannot be released unqualified.", elements/bounded-source-read: "You asked me to add depends_on only where I witnessed the import: mcp/src/tools/repo-analysis/analyze-structure.mjs imports `readSourceEvidence`, `composeSourceDigest` and `validateSourceReadSelectors` from source-evidence.mjs into the analyze tool.", elements/source-declaration-outline: "You asked me to name the role, not the file: listing a file's declarations so the next read is exact is a second role the same capability uses.", elements/rust-feature-evidence: "mcp/src/analyze/candidates/repo-structure.mjs imports `collectRustFeatureConfigurationEvidence` from mcp/src/rust-feature-evidence.mjs, which re-exports it from mcp/src/rust-feature-evidence/collect.mjs, and calls it once per scan to gather the Cargo feature evidence the structure report carries." }
+dependencies: [capabilities/import-dependency-inference, elements/bounded-source-read]
+relation_notes: { capabilities/import-dependency-inference: "You asked for what depends on what: mcp/src/analyze/survey/breadth-map.mjs imports `inferImports` and prints each unit's `imports` and `importedBy` from that scan.", elements/bounded-source-read: "You asked me to add depends_on only where I witnessed the import: mcp/src/tools/repo-analysis/analyze-structure.mjs imports `readSourceEvidence` and `validateSourceReadSelectors` from source-evidence.mjs into the analyze tool.", elements/source-declaration-outline: "You asked me to name the role, not the file: listing a file's declarations so the next read is exact is a second role the same capability uses." }
 ---
 
-Reads a bound code repository and proposes candidate ontology nodes so a person can inspect, correct or reject the modeled meaning.
+Surveys a bound code repository and reads its source on request, so an agent can write ontology nodes from what the code does and a person can inspect, correct or reject the meaning it recorded.
 
 ## Includes
-- Full discovery from package/README and implementation structure, kept separate from accepted business meaning.
+- A breadth map of product units, entry points and the abilities to place, kept separate from accepted business meaning.
 - Bounded source reads by exact lines or declaration outline, with hashes, refusals and continuation coordinates.
-- Opt-in `sourceOnly:true` continuations through `mcp/src/tools/repo-analysis/`: identical sourceEvidence without another candidate scan, delivered as rootPath, delivery, canWrite:false and sourceEvidence.
-- Full analysis and proposal/qualification replay when sourceOnly is omitted or false; lifecycle fields are rejected in source-only mode, including explicit null values.
+- Opt-in `sourceOnly:true` continuations through `mcp/src/tools/repo-analysis/`: the same sourceEvidence without another survey, delivered as rootPath, delivery, canWrite:false and sourceEvidence.
+- The breadth map when sourceOnly is omitted or false; with sourceOnly the call answers its source reads alone.
 - Construction guidance that traces entry-point setup, branch conditions, failures, customization and callees before writing supported rules into node bodies.
 
 ## Excludes
 - Promoting structure, source text, outlines or test names into accepted meaning.
-- Writing a vault or releasing a candidate from a source-only packet.
+- Writing a vault, proposing nodes or releasing a plan; the survey carries no candidates.
 - Adding repository tools to the app's internal local conversation.
 
 ## Uncertainty
-- Re-read the source-only branch and original full path in `mcp/src/tools/repo-analysis/` on 2026-10-03. MCP integration exercised identical evidence, false/omitted full-mode parity, null lifecycle rejection, and escaped/sensitive/symlink/stale-hash refusals. Existing stable source-read unit guards also ran.
-- A frozen calibration read returned 11,105 bytes in full mode and 2,042 bytes in source-only mode with identical sourceEvidence. This does not establish general build speed or meaning quality.
-- Actual ACP construction and source-hidden readers ran on a calibration and a fresh source shape. Their partial answers and citation/condition defects remain audit evidence, not formal candidate qualification or human competency acceptance. Native local source construction and installed-app behavior remain unmeasured.
+- Re-read the source-only branch in `mcp/src/tools/repo-analysis/` on 2026-10-03. MCP integration exercised identical evidence and escaped/sensitive/symlink/stale-hash refusals. Existing stable source-read unit guards also ran. The proposal route that branch once sat beside has since been removed.
+- A frozen calibration read returned 2,042 bytes in source-only mode. This does not establish general build speed or meaning quality.
+- Actual ACP construction and source-hidden readers ran on a calibration and a fresh source shape. Their partial answers and citation/condition defects remain audit evidence, not human competency acceptance. Native local source construction and installed-app behavior remain unmeasured.

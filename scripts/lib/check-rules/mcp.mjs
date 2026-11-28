@@ -83,7 +83,7 @@ export const rules = [
     order: 490,
     command: 'pnpm integration:mcp:repo-analysis',
     reason: 'MCP code-to-vault analysis handler surface changed',
-    matches: [/^mcp\/src\/analyze\/.+(?<!\.test)\.mjs$/, /^mcp\/src\/(?:analyze|infer-imports|architecture\/architecture-profile|meaning\/(?:meaning-(?:evaluation|authority|write-plan)|golden-corpus-scoring|proposal-review\/(?:competency-review|evidence-review|findings|shape))|construction\/(?:construction-(?:qualification|lifecycle)|qualification\/(?:acceptance-review|evidence-review|field-rules|input-schema|result-review|scenario-review|vocabulary)))\.mjs$/, /^mcp\/src\/infer-imports\/(?!.*\.test\.mjs$)(?:[^/]+\/)?[^/]+\.mjs$/, /^mcp\/src\/tools\/repo-analysis\/[^/]+(?<!\.test)\.mjs$/, /^tsconfig\.json$/],
+    matches: [/^mcp\/src\/analyze\/.+(?<!\.test)\.mjs$/, /^mcp\/src\/(?:infer-imports|architecture\/architecture-profile)\.mjs$/, /^mcp\/src\/infer-imports\/(?!.*\.test\.mjs$)(?:[^/]+\/)?[^/]+\.mjs$/, /^mcp\/src\/tools\/repo-analysis\/[^/]+(?<!\.test)\.mjs$/, /^tsconfig\.json$/],
   },
   {
     order: 500,
@@ -148,11 +148,7 @@ export const escalations = [
 
 export const directTests = {
   mcp: [
-    ['mcp/src/analyze.mjs', 'mcp/src/analyze.test.mjs'],
     ['mcp/src/architecture/architecture-profile.mjs', 'mcp/src/architecture/architecture-profile.test.mjs'],
-    ['mcp/src/meaning/meaning-evaluation.mjs', 'mcp/src/meaning/meaning-evaluation.test.mjs'],
-    ['mcp/src/construction/construction-qualification.mjs', 'mcp/src/construction/construction-qualification.test.mjs'],
-    ['mcp/src/construction/construction-lifecycle.mjs', 'mcp/src/construction/construction-lifecycle.test.mjs'],
     ['mcp/src/infer-imports.mjs', 'mcp/src/infer-imports.test.mjs'],
     ['mcp/src/infer-imports/languages/autotools-c.mjs', 'mcp/src/infer-imports/languages/autotools-c.test.mjs'],
     ['mcp/src/infer-imports/languages/go-imports.mjs', 'mcp/src/infer-imports/languages/go-imports.test.mjs'],

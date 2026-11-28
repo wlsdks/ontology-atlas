@@ -19,10 +19,9 @@ something that already exists under a different name**. So the order is not
 
 2. **Check each candidate for duplicates first**
 
-For every candidate name, make two calls.
+For every candidate name, make one call.
 
-- `list_concepts({ filter: '<name>' })` — does a near-name already exist
-- `list_concepts({ mentions: '<name>' })` — is it already here under another name
+- `list_concepts({ mentions: '<name>' })` — is it already here, under this name or another
 
 If it exists, **do not create a new node.** Do one of two things: fill the
 existing node with `patch_concept` (pass `expected_mtime`), or add only the

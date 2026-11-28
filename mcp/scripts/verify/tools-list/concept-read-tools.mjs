@@ -153,8 +153,16 @@ export function conceptReadToolsSchemaFailure(tools) {
     return 'list_concepts outputSchema vaultRoot drift';
   }
   const listNodesSchema = outputPropertyAt(listConceptsTool, ['properties', 'nodes']);
-  if (listNodesSchema?.type !== 'array' || listNodesSchema.items?.type !== 'object' || !sameArray(listNodesSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])) {
+  if (listNodesSchema?.type !== 'array' || listNodesSchema.items?.type !== 'object' || !sameArray(listNodesSchema.items?.required, ['slug', 'title', 'mtime'])) {
     return 'list_concepts outputSchema nodes drift';
+  }
+  // A node row carries `uid` and `kind`; a plain Markdown page found by `mentions` carries `isNode: false` and neither.
+  if (
+    listNodesSchema.items?.oneOf?.length !== 2
+    || !sameArray(listNodesSchema.items.oneOf[0]?.required, ['uid', 'kind'])
+    || listNodesSchema.items.oneOf[1]?.properties?.isNode?.const !== false
+  ) {
+    return 'list_concepts outputSchema node or page row drift';
   }
   if (listNodesSchema.items?.additionalProperties !== false) {
     return 'list_concepts outputSchema node openness drift';

@@ -10,11 +10,6 @@ export const NODE_KIND_VALUES = Object.freeze([
   'document',
   'vault-readme',
 ]);
-export const EDGE_TARGET_KIND_VALUES = Object.freeze([
-  ...NODE_KIND_VALUES,
-  'external',
-  'unresolved',
-]);
 export const RELATION_TYPE_VALUES = Object.freeze([
   'domains',
   'domain',

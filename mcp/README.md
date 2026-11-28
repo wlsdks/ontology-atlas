@@ -1,17 +1,16 @@
 # ontology-atlas-mcp
 
-Versioned ACP diagnostic records are available through
-`query_ontology({operation:"analysis_history", analysisMode:"meaning", limit:30})`
-and `query_ontology({operation:"analysis_record", recordId:"<UUID>"})`. They
-retain exact answers and captured evidence, remain outside the ontology graph,
-and never grant approval. [Analysis record contract](../docs/contracts/analysis-records.md).
+A saved analysis record is read with
+`query_ontology({operation:"analysis_record", recordId:"<UUID>"})`. It retains
+the exact answers and captured evidence, stays outside the ontology graph, and
+never grants approval. [Analysis record contract](../docs/contracts/analysis-records.md).
 
 > The agent interface to Ontology Atlas's shared codebase meaning. Claude Code,
 > Cursor, Codex, and other MCP clients read, query, and maintain a Markdown
 > ontology vault beside the code, while people inspect the same meaning and
 > evidence through files, Git diffs, and the workbench.
 
-For a known task, compact `agent_brief` supplies recorded context, implementation
+For a known task, `agent_brief` supplies recorded context, implementation
 anchors, currentness, and unknowns before the agent inspects source. Declared
 dependencies do not establish complete runtime impact. Host permissions and
 review behavior vary; an MCP connection is not a guarantee that every write is
@@ -207,38 +206,6 @@ CI runner, or a clone you are developing in — point `node` at the checkout:
 Save it as `.mcp.json` for Claude Code / Cursor; Codex reads the same server
 from `.codex/config.toml` or from the global registration below.
 
-Semantic ontology nodes are never written at cold start: an exact
-`constructionQualification:v1` packet, human acceptance, and unchanged
-released `writePlan` are required through the MCP lifecycle.
-
-The lifecycle response also includes a shadow-only `admission` receipt. It
-classifies the current packet as `self_qualified`, `partial_visible_gap`,
-`human_review_required`, or `hard_block`; `self_qualified` is an auto-write
-candidate signal, not write permission. The existing human acceptance and
-digest-bound `writePlan` gate remain authoritative until fresh field trials
-prove that a later automatic-write transition is safe.
-
-Each `constructionQualification:v1` claim also carries non-empty
-`proposalRefs`. Atlas derives the expected `concept:`, `relation:`,
-`competency:`, and `impact:` refs from the exact in-memory `reviewPlan` and
-returns a `proposalCoverage` receipt. Missing or foreign refs, or refs whose
-claims are absent from the passed source-hidden task, fail closed; this binds
-the evaluator handoff to the proposal without claiming that the claim's
-business meaning is true.
-
-Purpose and domain authority is stricter than citation presence. A project
-purpose, proposed domain, or project-to-domain relation at confidence `0.8` or
-higher—and `scope` / `domains` marked `answered`—needs at least two distinct,
-current semantic sources whose prose actually overlaps the claim. Duplicate
-prose, unrelated trusted documents, roadmaps or negated/deprecated text,
-package manifests, and implementation paths do not count as a second meaning
-witness. For a domain, each of the two sources must name the domain and state
-its responsibility explicitly; a workflow description or matching source-path
-name is not a responsibility witness. Unqualified implementation elements stay
-project-scoped instead of being assigned to the sole or token-matching domain.
-With only one authority source, keep confidence below `0.8` and return `partial`
-with an explicit gap; that honest packet remains reviewable.
-
 Open either the codebase root or the vault folder in the agent and restart it.
 A vault-local config can use `OATLAS_VAULT=.` so the vault coordinates stay
 portable. A source checkout launcher is still **source-bound**: it invokes
@@ -276,44 +243,19 @@ repository-local task policy once in the host's instructions. Include the
 expected absolute source and vault roots. A suitable policy is:
 
 > For meaningful code-change tasks, verify Atlas's registered source and vault
-> roots, request one compact brief for the actual task, follow its prescribed
-> full-body reads, then inspect source. Skip Atlas for small unrelated work.
-> Do not repeat the same task query. If context is unavailable, points at the
-> wrong roots, or is stale, disclose that before bounded source fallback.
-> Recorded meaning does not prove runtime behavior or authorize writes.
+> roots, read the project's `agent_brief`, follow its prescribed full-body
+> reads, then inspect source. Skip Atlas for small unrelated work. Do not repeat
+> the same query. If context is unavailable, points at the wrong roots, or is
+> stale, disclose that before bounded source fallback. Recorded meaning does not
+> prove runtime behavior or authorize writes.
 
 The read path is `connection_info`, then
-`query_ontology({operation:"agent_brief", detail:"compact", task:"<actual task>"})`
-with an explicit `project` in multi-project vaults. Use the returned selectors
-for any `get_concepts({body:"full"})` recovery. Keep no-match, omitted qualifiers,
-currentness and verification unknowns visible; source inspection still owns
-implementation verification. No global hook or default telemetry is needed.
-Removing the optional task policy stops this requested routing.
-
-Compact qualifiers keep a prose section together, including conditions or
-evidence limits in later sentences and paragraphs. A section that exceeds the
-budget is omitted whole with explicit coverage and a full-body recovery call.
-The text handoff includes every unknown retained in `focus.unknowns`; that list
-remains a bounded excerpt, not a complete inventory of the vault's uncertainty.
-Ready source navigation also retains the exact prescribed full-body read in the
-text handoff, before its source-reading instructions, so omitted qualifiers can
-be recovered even when the byte budget removes every qualifier from the summary.
-
-The measured boundary is fresh Codex CLI sessions with source MCP, one explicit
-policy delivery per session, and read-only source access. Five frozen cases
-covered meaningful work, unrelated metadata, wrong vault, unavailable MCP and
-stale source. Meaningful and stale cases each used one compact query and its
-full-body follow-up; unrelated work used no Atlas calls. Wrong-root and
-unavailable cases disclosed the problem before source fallback. Source and vault
-files remained unchanged. This proves the observed model-to-tool entry, not
-automatic discovery of a repository instruction file or compliance by every
-model/session. Registration alone is insufficient evidence.
-
-When server startup failed, this host exposed generic MCP discovery without an
-Atlas-specific failure event; the agent disclosed unavailability. Installed-app
-behavior, other hosts, inline visualization, coding benefit and voluntary reuse
-remain outside this proof. Precise human-review links depend on task-bound UI
-support; this MCP-only path does not invent a generic review link.
+`query_ontology({operation:"agent_brief", project:"<slug>"})` with an explicit
+`project` in multi-project vaults, then `get_concepts({slugs, body:"full"})` for
+the nodes it names. Keep currentness and verification unknowns visible; source
+inspection still owns implementation verification. No global hook or default
+telemetry is needed. Removing the optional task policy stops this requested
+routing.
 
 ### Other MCP clients (generic stdio registration)
 
@@ -338,8 +280,7 @@ triple is the same shape shown in the snippets above, standalone:
 
 #### Exact source continuations (`sourceOnly`)
 
-After initial discovery, read an implementation body without another candidate
-analysis by calling the existing `analyze_repo_structure` tool:
+After initial discovery, read an implementation body without another survey by calling the existing `analyze_repo_structure` tool:
 
 ```json
 {
@@ -355,10 +296,8 @@ limits, hashes, outlines and continuation coordinates apply. An outline selects
 the next body read and supplies no citation or behavior proof. Copy a returned
 range/hash citation; request narrower lines before citing narrower numbers.
 
-`sourceOnly` requires one to sixteen selectors and cannot accompany `proposal`
-or `qualification`, including explicit null values. Omit it or set it to false
-for the unchanged full analysis and proposal/qualification lifecycle. Source-only
-results contain no candidates, review/write plan, or meaning acceptance. Reading
+`sourceOnly` requires one to sixteen selectors. Source-only results contain
+no candidates, plan, or meaning acceptance. Reading
 one packet does not establish repository completeness. This source-checkout
 extension does not add source tools to the app's internal local conversation.
 
@@ -366,7 +305,7 @@ extension does not add source tools to the app's internal local conversation.
 
 For a first codebase map, optionally set `"OATLAS_TOOL_PROFILE": "construction"`
 in the server registration's `env` and restart the host. Unset or `full` keeps
-the default 23-tool inventory. An unsupported value refuses startup and names
+the default 24-tool inventory. An unsupported value refuses startup and names
 the valid values. The construction profile advertises 15 tools:
 
 `connection_info`, `list_concepts`, `get_concepts`,
@@ -385,7 +324,7 @@ calls to omitted tools retain their normal behavior. `OATLAS_READ_ONLY=1`
 intersects the profile with the read tools (11 advertised, zero writes), and
 direct writes remain rejected. `OATLAS_WRITE_CONSENT` keeps its existing guard.
 The app's launcher and internal local conversation are unchanged. Smaller tool
-inputs do not establish better construction or semantic qualification. See the
+inputs do not establish better construction. See the
 [measured construction protocol](../docs/benchmark/CONSTRUCTION.md).
 
 #### Read-only registration (`OATLAS_READ_ONLY`)
@@ -406,30 +345,21 @@ bot, an external tool that only needs to *read* the graph — add
 ```
 
 In read-only mode the server advertises **only the 13 read tools** in
-`tools/list` (the 10 write tools — `add_concepts`, `add_relations`,
+`tools/list` (the 11 write tools — `add_concepts`, `add_relations`,
 `patch_concept`, `rename_concept`,
 `merge_concepts`, `delete_concept`, `remove_relation`, `absorb_document`,
-`finalize_project_meaning`, and `connect_project_source` — disappear), and any
+`finalize_project_meaning`, `connect_project_source`, and
+`disconnect_project_source` — disappear), and any
 direct call to a write tool is rejected even if the client cached an older
 tool list. This is the trust-charter-aligned surface for third-party
 registration: a read consumer gets zero paths to the user's disk. Accepted
 truthy values: `1`, `true`, `yes`, `on` (case-insensitive); anything else
 disables read-only filtering without changing the selected discovery profile.
 
-This is also the measured performance profile for a coding session that needs
-Atlas context but will not write ontology Markdown. For a known task, call only
-`connection_info` and compact `agent_brief`, then read the returned exact source
-batch when it is ready. In the matched product A/B this profile reduced pre-edit
-source reads from four to one. The final current treatment rerun against that
-frozen control reduced wall time by
-23.9% and uncached input by 19.1% against its frozen control; two order-reversed
-blind judges preferred it and found no hard failure. The complete two-call wire
-path measured 12,928 characters. The full 36-tool registration failed its
-earlier token gate, so no equivalent performance claim applies when the same
-session needs Atlas writes. Choose the full profile for write authority, not
-for this measured optimization. An unfamiliar repository preserved 10/10
-prospective coordinates, but its coding A/B lacked a local toolchain and did
-not earn a cross-repository speed claim.
+This is also the profile for a coding session that needs Atlas context but will
+not write ontology Markdown. For a known task, call `connection_info`, then
+`agent_brief` for the project, then read the nodes it names with
+`get_concepts({ slugs, body: "full" })` and the source they cite.
 
 Steps for a fourth client:
 
@@ -674,16 +604,17 @@ the evidence row fail closed.
 
 | Tool | What it does |
 |---|---|
-| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. Every response also carries `guide.card` — the construction card — and `guide.topics`; pass `guide: "meta_model" | "construction" | "write_safety" | "workflows" | "competency"` to receive that section's full text in `guideText`, because a host may keep only the first ~2,000 characters of the server `instructions` while tool results arrive whole. `competency` returns the five `answers` rows `finalize_project_meaning` takes, with a complete example call; the server writes the section from them. |
+| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. Every response also carries `guide.card` — the construction card — and `guide.topics`; pass `guide: "meta_model" | "construction" | "write_safety" | "workflows"` to receive that section's full text in `guideText`, because a host may keep only the first ~2,000 characters of the server `instructions` while tool results arrive whole. |
 | `remove_relation` | Removes one exact typed edge and its matching `relation_notes` rationale. When the edge was its key's last entry the key goes with it, and an emptied `relation_notes` is removed too; only a kind's scaffold list (`add_concepts`' empty `elements` on a capability, `capabilities` on a domain, a project's three) returns to `[]`. Dry-run by default; `confirm:true` writes. Supports `expected_mtime` and is idempotent when already absent. `type:"contains"` also finds the typed key `add_relations` stored it under, with a `notice`. With `replaceWith: { to, type, why? }` it replaces the relation instead, in one write: the new target and/or type take its place and its rationale moves with it (a replacement that is `depends_on` needs a `why` or an inherited rationale). `contains` as the old or new `type` maps to the typed key exactly as `add_relations` does. The old `replace_relation` call answers `tool_retired` and names this one. |
-| `list_concepts` | Lists every node in the vault (any `.md` with a `kind:` frontmatter outside `sources/`). Options: enum-validated `kind` (project/domain/capability/element/document/vault-readme; typos fail with nearest-value hints instead of empty lists), `domain` (filter by frontmatter `domain:` slug — combine with `kind` for "all capabilities under auth" in one call), `since` (mtime-based incremental sync — only nodes with `mtime > since` ms; pair with the `mtime` returned in earlier responses for "what changed since I last looked"; strict `>` so re-passing the prior max does not double-fetch), `filter` (a typed predicate, `kind=X AND has(Y) AND NOT ...`: `kind` values and `has(...)` graph keys are enum-validated with nearest-value hints, `has(depends_on)` is canonicalized to `dependencies`, and `created_by` is selectable; the response echoes `filter` and `parsedAs`; **Ask-to-Grow**: when `total=0` it carries a `growthHint` that flags a referenced `kind`/`domain` with no nodes in the census, or a loosen-the-filter nudge), `mentions` (text search over titles, relation keys and bodies: graph nodes only, each row adds `matchedIn` and `score`, ranked title match above relation key above body with a title-token tiebreak, the response echoes `query`, and when nothing matches `growthHint` names a near-titled node or an `add_concepts` scaffold; combine with `kind`/`domain`/`filter`), `summary` (opt-in — when true, each row includes a prose `summary` (max 200 chars, heading/table/code/list/quote skip — same `extractSummaryExcerpt` helper as `get_concepts`) so agents get list + previews in one call without a follow-up `get_concepts` call; default off to keep payload small; a row whose body holds more than the summary shows carries `summaryTruncated: true` and the response carries `summaryHint`), `offset` (zero-based deterministic slug order; resume with `pagination.nextOffset`), `limit` (default 100, max 500). The response always includes `returned`, `limited`, and `pagination: { offset, limit, total, returned, hasMore, nextOffset }`; follow every page until `hasMore` is false before calling the census complete. Every node row includes permanent `uid`, current `slug`, and `mtime` (ms), so callers can retain stable identity across renames and sort/filter "what changed recently" without a follow-up `get_concepts` call. **R11+**: when the vault has frontmatter corruption or whole-vault graph-reference drift, response includes `vaultWarnings: { errorCount, warningCount }` so AI agents can flag it to the user. Every page also carries `census: { total, byKind, referencedOnlyTotal }` for the whole vault, unchanged by `kind`, `domain`, `since` and paging, so `limit: 1` sizes up a vault. `total` / `byKind` count **documented** nodes (a `.md` with `kind:`); `referencedOnlyTotal` counts concepts a relation key names but no document defines yet, which the map draws too, so `total + referencedOnlyTotal` is the number the screen shows. The old `query_concepts` and `find_evidence` calls answer `tool_retired` and name `filter` and `mentions`. |
+| `list_concepts` | Lists every node in the vault (any `.md` with a `kind:` frontmatter outside `sources/`). Options: enum-validated `kind` (project/domain/capability/element/document/vault-readme; typos fail with nearest-value hints instead of empty lists), `domain` (filter by frontmatter `domain:` slug — combine with `kind` for "all capabilities under auth" in one call), `since` (mtime-based incremental sync — only nodes with `mtime > since` ms; pair with the `mtime` returned in earlier responses for "what changed since I last looked"; strict `>` so re-passing the prior max does not double-fetch), `filter` (a typed predicate, `kind=X AND has(Y) AND NOT ...`: `kind` values and `has(...)` graph keys are enum-validated with nearest-value hints, `has(depends_on)` is canonicalized to `dependencies`, and `created_by` is selectable; the response echoes `filter` and `parsedAs`; **Ask-to-Grow**: when `total=0` it carries a `growthHint` that flags a referenced `kind`/`domain` with no nodes in the census, or a loosen-the-filter nudge), `mentions` (text search over titles, relation keys and bodies, plain Markdown pages included as `isNode:false` rows ranked below nodes of equal score; each row adds `matchedIn`, `score` and an `excerpt` of at most 200 characters, ranked title match above relation key above body with a title-token tiebreak, the response echoes `query`, and when nothing matches `growthHint` names a near-titled node or an `add_concepts` scaffold; combine with `kind`/`domain`/`filter`), `summary` (opt-in — when true, each row includes a prose `summary` (max 200 chars, heading/table/code/list/quote skip — same `extractSummaryExcerpt` helper as `get_concepts`) so agents get list + previews in one call without a follow-up `get_concepts` call; default off to keep payload small; a row whose body holds more than the summary shows carries `summaryTruncated: true` and the response carries `summaryHint`), `offset` (zero-based deterministic slug order; resume with `pagination.nextOffset`), `limit` (default 100, max 500). The response always includes `returned`, `limited`, and `pagination: { offset, limit, total, returned, hasMore, nextOffset }`; follow every page until `hasMore` is false before calling the census complete. Every node row includes permanent `uid`, current `slug`, and `mtime` (ms), so callers can retain stable identity across renames and sort/filter "what changed recently" without a follow-up `get_concepts` call. **R11+**: when the vault has frontmatter corruption or whole-vault graph-reference drift, response includes `vaultWarnings: { errorCount, warningCount }` so AI agents can flag it to the user. Every page also carries `census: { total, byKind, referencedOnlyTotal }` for the whole vault, unchanged by `kind`, `domain`, `since` and paging, so `limit: 1` sizes up a vault. `total` / `byKind` count **documented** nodes (a `.md` with `kind:`); `referencedOnlyTotal` counts concepts a relation key names but no document defines yet, which the map draws too, so `total + referencedOnlyTotal` is the number the screen shows. The old `query_concepts` and `find_evidence` calls answer `tool_retired` and name `filter` and `mentions`. |
 | `get_constellation` | With no `id` it lists the saved constellations from `.ontology-atlas/library-collections.json`: `offset` and `limit` (default 50, max 100) page deterministic root-constellation order, rows keep the person's purpose state (`recorded` or `unknown`), timestamps, member counts and the sidecar revision, a missing file is explicit, and a malformed or unsupported file returns `availability: unavailable` and is never replaced or repaired (the old `list_constellations` answers `tool_retired` and names this call). With an `id` it reads one immutable saved constellation ID. The response separates the saved selection and user purpose from current UID-resolved node facts, review currentness, bounded evidence starting points, actual declared internal relations, unresolved members, and direct declared dependencies crossing the scope. Identity resolution uses only a unique current `uid` or unique `merged_uids` claim; `lastKnownPath` and labels are display context and never retarget a deleted or ambiguous identity. Member facts are paged (`offset`, `limit`; max 100); relations and crossing dependencies have independent bounded limits (max 200). Coverage states when pages or edge lists are partial and always says that transitive impact, meaning acceptance, and complete blast radius were not inferred. The tool writes nothing and sends nothing externally. |
 | `get_concepts` | **R+** Reads nodes by exactly one of `slugs[]` or `uids[]` (max 50; max 20 with `body: 'full'`); a one-row array reads one node. Each row carries both identity fields, frontmatter, body, graph `neighbors` (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`), `outgoingEdges[]` (`{to, via}`) and `mtime` (ms — pass to a later `patch_concept` / `delete_concept` as `expected_mtime` to detect concurrent external edits). **`body`: `'excerpt'` (default) or `'full'`**, applied to every row. `excerpt` returns the first prose paragraph only (heading / table / code block / list / quote skip, max 800 chars); `full` returns the entire markdown body as `body` and omits `excerpt` so the same text is not billed twice. Every row carries `bodyInfo: { mode, totalChars, returnedChars, truncated, omittedChars?, hint? }` — **truncation is never silent**, and when it happens the `hint` is the exact follow-up call. Use `full` whenever the answer depends on what the node says (the construction rules put definition / evidence / confidence / scope in the body, and the excerpt cannot reach them). **R11+**: a row includes `warnings: [...]` when its doc has frontmatter issues, graph-array canonicality drift, or dangling outgoing graph references. Output order matches the selected input array. A missing or invalid row returns `{ uid|slug, ok: false, error }` rather than aborting the batch, so later valid identities still resolve. UID misses are exact and never fuzzy; a slug miss carries recovery on the row: a did-you-mean near-slug or an `add_concepts` scaffold in `growthHint`, and for a **referenced-only concept** (the vault names it in a relation key but no document defines it — most of what the map draws) `referencedBy: [{slug, via}]` with a growthHint that says how to materialize it at exactly that slug. A slug under `sources/` names a raw source, never a node: the miss says so and points at `read_source`. |
 | `finalize_project_meaning` | Post-write boundary for one project's accepted competency Markdown. Call it only after the concept/relation writes, `validate_vault`, and a complete compile; pass `projectSlug`, `expected_mtime` and the five `answers` (one per fixed question: `status`, the answer in plain sentences, and its `concepts`, `relations`, `evidence` or `paths` witness lists; the argument description names which lists each question needs). The server writes the project body's `## Competency answers` section from them, replacing one that exists, measures the evidence they name inside the connected folder and finalizes in one call, under one permission card that names every file written; because only that section is replaced in the body as it is on disk, an older `expected_mtime` is accepted. Without `answers` it finalizes the section already in the body and `expected_mtime` is a conflict guard. The server derives the body digest, project graph hash, source fingerprint, and witness inventory itself. Inventory source claims include canonical node `path:` fields plus exact backticked `Evidence` / `Paths` rows inside the single persisted `## Competency answers` section; literal `.` resolves as the bound repository root, arbitrary prose paths are not claims, and every admitted path must still resolve in the bounded source receipt. A pinned `source:<path>#L<start>-L<end>@sha256:<hash>` Evidence value counts while its measured file still hashes to `<hash>`. An `answered` row whose witnesses do not resolve refuses the call with one line per row naming each unresolved concept, relation, evidence value or path and why; whether a row that cites some capabilities answers "each" is left to the person reading the answer. It also refuses an answered row the map cannot back: `evidence` when more than a third of capabilities cite no lines this server process served, still unchanged, that hold a condition (a process that served no reads refuses it; reads under any `rootPath` inside the repository count, cited from either root), or a capability within that third states a rule without such a cite, `abilities` while a surveyed ability is unplaced (a capability or element places it by its `path:` with its name, by its title, or by naming it in code form in its body: `name`, `--flag` or its `path:Lline`, never by a word in passing; or one line in the project's `## Uncertainty` or `## Excludes` excludes it when it points at that ability alone by its `path:Lline` or exact name and says why), and `impact` while a shared role has no element (a callee, constructor or implementation that the symbol reads of two or more capabilities returned, by the lines each capability cites, grouped by its type, at most eight listed with the most shared first; an element places it by its `path:` (when that file holds several listed roles, with its cited symbol or a cite inside the role's listed lines) or by its title, never by a mention in its body, and one line in the project's `## Uncertainty` or `## Excludes` that cites its `path:Lline` or exact name alone and says why excludes it; a restarted server, which keeps no reads, lists none) or below one `depends_on` per two capabilities or one capability-to-capability `depends_on` per three. Each refusal leads with the next call (the exact read, `add_concepts`, `patch_concept` or `add_relations`) and only then offers marking the row `partial` with a `Gap`. For a repository surveyed by area with areas not mapped yet, it also refuses, whatever the answers, while the first `Not mapped yet: N of M areas, R of T abilities.` line of the project's `## Uncertainty` does not carry the measure (a `-`, `*` or `+` list marker before it is fine; the earlier form without abilities is stale; areas holding no abilities need no line), or while such lines stay after every area is mapped, giving the exact lines to `patch_concept` into the project body before finalizing again. It then writes the project body (when `answers` changed it), the re-measured binding in `.ontology-atlas/project-sources.json` (when a cited file needed measuring), and a small receipt in `.ontology-atlas/project-meaning.json`. A body write leaves one line in the local activity log, as `patch_concept` does. It never stores raw answers, witness text, an absolute/private source root, or remote coordinates. The flat response includes categorical `meaningAssessment`; `ok: true` means the receipt was written, **not** that source currentness or project meaning is verified. Each call refreshes `measuredAt`, so the tool is intentionally non-idempotent. |
-| `connect_project_source` | Binds one project node to the local code folder it describes, measures it with the same bounded probe the macOS app uses, and writes the source receipt. This is the tool `nextAction: connect_source` (and `repair_source_binding` / `measure_source` / `remeasure_source`) has always been asking for. Omit `rootPath` and the server infers it — the git repository enclosing the vault wins, otherwise the nearest ancestor folder carrying a project manifest. **Dry-run by default**: without `confirm: true` you get the proposed folder, the inference confidence, and how many declared source claims actually resolve inside it, and nothing is written. Declared claims are canonical node `path:` fields, raw path-shaped element roles, and exact persisted competency `Evidence` / `Paths` rows, including literal `.` for the bound root; ordinary body prose never becomes a witness. Re-running with a different `rootPath` replaces the binding. A vault folder inside the bound repository is left out of the measured fingerprint, so the vault's own writes never make its binding stale; the app's probe (`inspect_project_source` with `vaultRoot`) leaves out the same folder by the same rule, so a receipt either side minted verifies on the other. Blocks on an incomplete project scope (a receipt that cannot stamp a project graph hash could never detect later ontology drift) and refuses to overwrite a malformed sidecar unless `repair: true`. The absolute root lives only in the gitignored `.ontology-atlas/project-sources.json`; it never enters the receipt, the markdown, or any handoff. With `disconnect: true` it removes one project's source binding and receipt instead, the reversal for a folder bound by mistake or a measurement you want to stop trusting: dry-run by default, `confirm:true` writes, other projects' bindings are untouched, no ontology markdown changes, the diagnosis returns to `source_unbound` / `connect_source`, and `rootPath` and `repair` are refused with it (the old `disconnect_project_source` answers `tool_retired` and names this call). |
+| `connect_project_source` | Binds one project node to the local code folder it describes, measures it with the same bounded probe the macOS app uses, and writes the source receipt. This is the tool `nextAction: connect_source` (and `repair_source_binding` / `measure_source` / `remeasure_source`) has always been asking for. Omit `rootPath` and the server infers it — the git repository enclosing the vault wins, otherwise the nearest ancestor folder carrying a project manifest. **Dry-run by default**: without `confirm: true` you get the proposed folder, the inference confidence, and how many declared source claims actually resolve inside it, and nothing is written. Declared claims are canonical node `path:` fields, raw path-shaped element roles, and exact persisted competency `Evidence` / `Paths` rows, including literal `.` for the bound root; ordinary body prose never becomes a witness. Re-running with a different `rootPath` replaces the binding. A vault folder inside the bound repository is left out of the measured fingerprint, so the vault's own writes never make its binding stale; the app's probe (`inspect_project_source` with `vaultRoot`) leaves out the same folder by the same rule, so a receipt either side minted verifies on the other. Blocks on an incomplete project scope (a receipt that cannot stamp a project graph hash could never detect later ontology drift) and refuses to overwrite a malformed sidecar unless `repair: true`. The absolute root lives only in the gitignored `.ontology-atlas/project-sources.json`; it never enters the receipt, the markdown, or any handoff. |
+| `disconnect_project_source` | Removes one project's source binding and receipt — the reversal of `connect_project_source`, for a folder bound by mistake or a measurement you want to stop trusting. Dry-run by default; `confirm:true` writes. Other projects' bindings are untouched and no ontology markdown changes; the diagnosis returns to `source_unbound` / `connect_source`. |
 | `find_backlinks` | Finds every node that points to a given `slug`. Inspects all frontmatter array keys (capabilities / elements / dependencies / relates / …) plus body wikilinks/markdown links. Each match row includes current `slug`, `isNode`, `title`, `domain`, and `mtime`; a node referrer (`isNode: true`) also carries `kind` and, when its `uid:` is valid, `uid` (same shape as `list_concepts`), while a wiki page or other Markdown that links to the target (`isNode: false`) carries neither — agents can retain stable referrer identity and sort/filter "which referrer is in domain X" or "which referrer was touched recently" without follow-up `get_concepts` calls. `delete_concept` previews its backlinks in the same row shape. |
 | `compile_ontology` | **R+** Compiler-style graph artifact for database-like use. Compiles the whole vault into deterministic `nodes[]`, canonical `edges[]`, alias tables, graph issues, graph-array canonicalization actions, stable semantic `graphHash`, `maxMtime`, and optional query indexes (`out`, `in`, `byKind`, `byDomain`, `edgeById`, `aliasToSlug` with `includeIndexes:true`). Canonicalization action `keys` are schema-bound to relation-array frontmatter keys, and action `frontmatter` is relation-array-only so agents can distinguish safe reordering patches from arbitrary frontmatter mutation. Use before advanced reasoning, export, caching, or non-developer graph views. side effect 0. <br>**Large-vault opts (R+):** `summary: true` returns counts + `graphHash` + `byKind`/`byDomain` aggregates (no arrays) — cheap polling for cache invalidation. `nodesLimit`/`nodesOffset` and `edgesLimit`/`edgesOffset` slice arrays with `nodesPagination` / `edgesPagination` meta (`{offset, limit, total, returned, hasMore, nextOffset}`); page-size limits are capped at 500. Avoid token limit overruns in vaults with 100+ nodes. <br>**Bounded by default (2026-09-27):** a call with no argument that asks for arrays (`full`, `includeIndexes`, or a page argument) returns the same summary as `summary: true` plus `delivery: { selection: "summary_default", reason, fullArguments: { full: true }, pageArguments: { nodesLimit: 500, edgesLimit: 500 } }`, the two ways to the rest; the whole artifact was 44 MB (103 MB with indexes) on a 12k-node vault. `full: true` returns every array however large; page arguments still slice nodes and edges. Summary answers carry `skippedNonNodeCount`, the `.md` files passed over for having no `kind:`. |
-| `query_ontology` | **R+** Graph-engine query over the compiled artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus `limit` / `searchBudget` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` metadata and `evidence` guidance), `query_plan` (EXPLAIN-style cost/index estimate plus `execution.shouldRun`, `nextStep`, filter-preserving `suggestedQuery`, filter-aware `estimate.totalMatches` for `match_nodes` / `match_edges`, and safer narrowed payload guidance before a target operation), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges + shortest path + shared-neighbor explanation), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths), `impact` (incoming by default: what depends on this?), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice), `builder_context` (persisted Workshop focus address — `/topology/?p=<focusParam>&workbench=edit`, app-relative and locale-less, so a caller prepends the workbench origin, its own `/en` or `/ko` segment, and any deployment base path; bounded graph neighborhood, `canvasPosition` plus `expected_mtime`, and low-level MCP write handoff; the operation/response field name remains for client compatibility, unsaved UI drafts are explicitly excluded, and the emitted canonical `focusParam` is accepted as the next call's `slug` for round-trip handoff), `overview` (counts, relation distribution, hubs), `schema` (`kind → relation → kind` patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters, `hasIncoming:false` for nodes nothing points to (the old `find_orphans`, which answers `tool_retired`), plus a `followUp` packet for the first returned row: `node_profile`, incoming/outgoing `match_edges`, and `blast_radius`), `match_edges` (graph DB-style edge pattern rows plus a `followUp` packet for the first returned real edge: `explain_relation`, `path`, and `relation_check`), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before `add_relations`), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks: `totalCycles` counts every cycle within `maxHops` and `limit` lists the shortest; bounded by `searchBudget` with `exhaustive` / `truncatedByBudget` / `totalCyclesExact` — a budget-truncated count is a lower bound, and its zero does **not** mean acyclic), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates, plus `nextReads` — the files each node's own `## Uncertainty` section says were not read, with the line ranges it names and the `patch_concept` that would close each one; `reason: 'no_bodies'` when no bodies were loaded), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, cursor resume via `afterActionId`, ready pages with `cursor.found=true` / `cursor.reason=null`, cursor miss `reason`, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable` flags, current-page `nextExecutableAction` / `nextReviewAction`, and `executableOnly` / `phases` / `severities` / `kinds` filters; `phases`, `severities`, and `kinds` are enum-validated), `agent_brief` (Claude Code/Codex handoff prompt, structured `businessOntologyLens` with the business-first `outcome` → `domain` → `capability` → `element` read order, structured `graphDbQueryPack` for graph DB-style node scan / edge scan / graph facets / domain coupling / path evidence / business questions, structured `cliFallbackCommands[]` for connector-less sessions, recipes, graph entrypoints, playbook `evidence[]` and `stopWhen[]` checklists, `traversalStrategy` for plan-first bounded path evidence, write guardrails including post-change `health` / `cycles` / `growth_plan` / `maintenance_plan` / `validate_vault`, `relation_check` decision guide, `resultContracts` for interpreting `all_paths` completeness and `match_nodes` / `match_edges` followUp evidence, and read-first write policy; `business_questions` runs outcome facets, domain node scans, domain coupling, capability node scans, and capability→element evidence edge scans so agents answer outcome / boundary / capability claim / implementation evidence questions before treating paths or APIs as ontology roots; `match_nodes.kind` and `match_edges.fromKind` use the ontology node-kind enum; `match_edges.type` uses the relation-type enum; `match_edges.toKind` also accepts `external` and `unresolved` target kinds. `match_edges.filters`, `match_edges.edges[].relationType`, `followUp.focusEdge.relationType`, and `query_plan(match_edges).normalized` include public names such as `depends_on` alongside canonical frontmatter `types` or `via` values such as `dependencies`, so CLIs and agents can show user-facing relation names without losing executable graph keys. `node_profile.edges.incoming/outgoing.byRelationType` and edge `relationType` expose public names such as `depends_on` for node detail views; `domain_matrix.filters.relationTypes`, `connections.rows[].byRelationType`, and connection examples do the same for coupling views, while canonical `types`, `via`, and `byRelation` stay available for graph-key callers. Typoed values return nearest-value hints instead of empty result sets. `health` / `workspace_brief` / `agent_brief` can tune their internal probes with `componentLimit`, `cycleLimit`, `recommendationLimit`, `orderLimit`, `nodeLimit`, `dependencyTypes`, and `componentTypes`; `agent_brief` forwards the same probe tuning into its embedded readiness checks. Accepts canonical slugs or unique aliases. Use for graph-database-like answers without pulling the full compile payload. side effect 0. |
+| `query_ontology` | **R+** Graph-engine query over the compiled artifact. Operations: `neighbors` (local graph neighborhood with the key each relation is written under), `path` (one compiled-edge route with aligned `nodes[]` summaries), `query_plan` (EXPLAIN-style cost/index estimate plus `execution.shouldRun`, `nextStep`, a filter-preserving `suggestedQuery`, filter-aware `estimate.totalMatches` for `match_nodes`, and narrowed payload guidance before a target operation), `communities` (label-propagation clusters), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges + shortest path + shared-neighbor explanation), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths), `impact` (incoming by default: what depends on this?), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice), `overview` (counts, relation distribution, hubs), `schema` (`kind → relation → kind` patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters, `sort:"degree"` to rank by connections, and `hasIncoming:false` for nodes nothing points to, plus a `followUp` packet for the first returned row: `node_profile` and `blast_radius`), `node_profile` (single node detail dashboard, including a domain), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before `add_relations`), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks: `totalCycles` counts every cycle within `maxHops` and `limit` lists the shortest; bounded by `searchBudget` with `exhaustive` / `truncatedByBudget` / `totalCyclesExact` — a budget-truncated count is a lower bound, and its zero does **not** mean acyclic), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates, plus `nextReads` — the files each node's own `## Uncertainty` section says were not read, with the line ranges it names and the `patch_concept` that would close each one; `reason: 'no_bodies'` when no bodies were loaded), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, cursor resume via `afterActionId`, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable` flags, `nextExecutableAction` / `nextReviewAction`, and `executableOnly` / `phases` / `severities` / `kinds` filters, all enum-validated), `agent_brief` (the project handoff described below), `workspace_brief` and `health` (whole-vault first-contact and health answers), and `analysis_record` (one saved analysis by `recordId`). `match_nodes.kind` and `match_nodes.sort` are enums; typoed values return nearest-value hints instead of empty result sets. `health` / `workspace_brief` / `agent_brief` can tune their internal probes with `componentLimit`, `cycleLimit`, `recommendationLimit`, `orderLimit`, `nodeLimit`, `dependencyTypes`, and `componentTypes`. A retired operation (`all_paths`, `centrality`, `builder_context`, `match_edges`, `domain_profile`, `domain_matrix`, `topological_order`, `meaning_repair_review`, `analysis_history`) answers `invalid_arguments` and names the call that replaces it. Accepts canonical slugs or unique aliases. Use for graph-database-like answers without pulling the full compile payload. side effect 0. |
 
 `query_ontology({operation:"health"})` adds a typed `relationCensus`. Both edge
 count fields use compiled frontmatter declaration records, reciprocal declarations
@@ -691,142 +622,21 @@ may describe one logical relation, and the numeric deduplicated app-map census i
 explicitly unavailable to MCP because the server does not own the loaded UI state.
 
 `agent_brief` is project-scoped end to end. A multi-project vault must pass an
-explicit `project`; Atlas does not silently pick the first project. Omitted
-`detail` and `detail:"full"` return the complete diagnostic contract. For a
-known coding task, `detail:"compact"` requires a request-local `task` of at most
-2,000 characters and returns `structuredContent` plus a handoff text of at most
-12,000 UTF-8 bytes together, measured as
-`Buffer.byteLength(JSON.stringify(structuredContent), "utf8") + Buffer.byteLength(text, "utf8")`.
-The combined connection and compact wire guard is 22,000 characters, including
-the construction card. The compact v3 contract (`agentBriefCompact:v3`) sends each
-channel alone: `content[0].text` is a self-sufficient handoff that adds `Safety:`,
-the verbatim `Repair step 1:` call with its three guards, and the exact `Full:`
-call; `structuredContent` carries the typed facts once, without `handoffPrompt`,
-and adds `readerRules`. Rows no first decision needs (`purpose`, `project.scope`,
-`task.terms`, `meaningRepair.writePolicy`, the five question rows now counted by
-`currentness.meaning.questionCount`, `focus.selectionPolicy`,
-`verification.nextAction`, `fullDetail.reason`, `nextReads[].reason`, each anchor's
-`relation` and `qualifiers.fullBodyRead`) stay in `detail:"full"` or are copies of
-a row that remains. Optional qualifier and uncertainty units fill both channels
-identically. It keeps final source/meaning currentness, `meaningRepairCompact:v2` (repair
-status, conflict guards, the first step verbatim, and the ids of the steps only
-`detail:"full"` repeats), approval and no-auto-write/finalize guards, one broad capability selected only when its
-persisted Definition/Includes/Excludes are compatible with the task, cited
-element/path anchors, explicit impact/verification unknowns, one bounded
-full-body read, and an exact `detail:"full"` follow-up. Desired work must be
-supported by Definition or Includes; explicit non-goals may align with Excludes.
-A desired/negative boundary conflict, an unsupported claim, or a tied top claim
-returns no capability. A compact refusal reports the selector-level reason
-`no_match`, `boundary_conflict`, or `ambiguous`; conflict and ambiguity include
-at most three deterministically ordered, explicitly unselected capability
-candidates plus total/omitted counts and an existing `get_concepts({body:"full"})`
-follow-up. These reasons describe bounded selector evidence: `no_match` does not
-prove that behavior or product scope is absent, and a score tie does not prove
-semantic equivalence. An unrelated term found only in another capability's
-Excludes does not become a boundary conflict. When separate positive and
-non-goal clauses repeat at least two terms backed by the same capability's name
-or Includes claim, the selector refuses that clause-level lexical conflict; one
-shared broad noun does not suffice, and the result does not certify a semantic
-contradiction. Definition prose corroborates but never selects on its
-own: at least one desired word must also reach the capability's own title, slug,
-path, explicit `display_en`/`display_ko` alias, or `Includes`, and one shared word
-is never enough. Recorded display aliases participate as identity claims; they
-do not translate task text or prove acceptance. Korean matching is limited to
-Unicode words, common attached particles, and explicit negative markers such as
-the Korean phrases for out of scope, exclusion, and do not change. Unsupported or same-alias cases remain
-`no_match` or `ambiguous`; this is not general Korean semantic parsing. It does not persist or echo raw task text, treat this
-claim compatibility as behavior proof, inspect raw source generally, or write
-the vault. A selected compact focus also carries at most four complete
-Definition/Includes/Excludes/Uncertainty units from the capability and its
-relevant anchors as `recorded_claims`, never acceptance or verified behavior.
-Rows preserve their verbatim sentence or top-level bullet group, section role,
-node locator and exact full-body read. Any free-standing prose mixed with a
-top-level list keeps the whole section together, whether that prose precedes,
-separates or follows bullets; the projector never guesses which child it scopes.
-Pure lists may remain separate units with indented child context. Coverage counts every eligible unit;
-omissions make the projection explicitly incomplete and require that full-body
-read. The handoff prompt labels every unit with its recorded-claim slug,
-section and role before JSON-quoting the exact text without clipping it. Task
-relevance selects the capability condition, a capability exception and
-non-overlapping uncertainty are reserved, and a complementary anchor condition
-preserves distributed scope. If these complete units exceed the 12,000-byte
-compact budget, it removes whole lower-priority units, increases the honest
-omitted count and keeps the exact full-body recovery; it never clips a retained
-condition. The additive `focus.uncertainty` covers canonical `## Uncertainty`
-sections in the selected project, capability and up to three anchors. Its
-`scope:"selected_task_documents"` is not a claim of complete project knowledge.
-Each `sources` row has `slug`, `status` (`recorded` or `not_recorded`),
-`totalUnits`, `omittedUnits` and `unknownIndexes` into the existing string array
-`focus.unknowns`; `totalUnits = unknownIndexes.length + omittedUnits`. These are
-Markdown-unit counts, not semantic fact counts. `system` rows separately
-attribute currentness/meaning warnings by `code` and `unknownIndex`.
-
-Statements remain whole. At most eight recorded units are considered in document
-round-robin order; an oversized unit is omitted intact so other short units can
-still fit. System warnings, coverage and recovery are reserved before optional
-text. The text handoff quotes statements with their source, including embedded
-newlines. The exact `get_concepts({body:"full"})` next read includes the project
-and every scoped document; refusal candidates remain unselected. A successful
-body recovery requires each row's `ok:true` and `bodyInfo.truncated:false`.
-The existing 40,000-character body cap and missing-row errors can leave recovery
-incomplete; the reader must retain that unknown. Missing Uncertainty sections
-also mean unknown, never absence of risk. Legacy valid v2 payloads without the
-additive field remain readable. If mandatory data cannot fit after
-whole qualifier omissions, the operation fails instead of downgrading
-currentness, meaning repair, system warnings, coverage or recovery.
-
-An element may record human-reviewable
-Evidence coordinates as `Primary implementation`, `Supporting implementation`,
-and `Focused test` bullets. With a current bound source, `taskNavigation:v1`
-checks only those named files, requires each symbol/test to resolve uniquely,
-and returns current line locators plus the element's reviewed non-exhaustive
-Includes/Excludes boundary. Missing, ambiguous, outside-root, symlinked, or
-unrecorded evidence emits no exact target; task text never creates one. A
-coordinate must be a direct hyphen-list field under a top-level `## Evidence`
-section. Fenced/indented code, HTML blocks/comments, quotations, and nested
-example lists cannot supply coordinates. Code blocks, HTML blocks/comments and blockquotes cannot
-supply scope boundaries or runner manifests; genuine nested boundary conditions
-are retained. Example-only elements do not prevent selection of the next
-element with authored coordinates. A
-receipt that is behind the source (`source_changed`) does not by itself hide
-coordinates: the same bounded probe that found the change re-checks every
-recorded witness path against the live inventory, and when all of them still
-resolve the coordinates are verified against the live files and returned with
-`currentness:"live_verified"`, `receipt:"stale"`, and the live revision, while
-`currentness.source` keeps the stale receipt beside a `live` witness summary.
-`current` is reserved for a receipt a person measured; one missing witness
-keeps navigation blocked. After the complete named-file batch, Atlas rechecks
-the same source id, fingerprint, revision, and graph hash (or, for a live
-check, the same live fingerprint and revision). Any mismatch detected by the
-exact-file guards or that final recheck withdraws the batch and downgrades
-outer source/meaning/readiness rather than mixing snapshots. The capability is
-selected from its persisted Definition/Includes/Excludes, its own title, slug,
-and path, and the names of the elements it declares. Only authored paragraphs
-and list items enter claim compatibility and the short Definition statement;
-code blocks, HTML blocks/comments and blockquotes supply neither ownership nor
-exclusions. Legacy Inclusions/Exclusions headings and Included/Excluded list
-fields retain their authored continuations and nested boundaries. Without any
-claim section, the first authored prose paragraph can corroborate the name;
-a literal-only body or an empty claim section never falls back to raw examples
-or unrelated sections. Formatted section headings retain the same complete
-conditions in the handoff; retained units and full-body recovery preserve the
-original Markdown. A ready
-handoff batches any verified runner manifest, asks for separately named
-positive/negative regressions with exact observable output, and avoids
-overlapping full checks.
-For a known task, call compact `agent_brief` directly after `connection_info`;
-when task navigation is ready, read all returned coordinates in one source batch
-before broad search. Otherwise use the bounded body/source follow-up and preserve
-the unknown. Do not precede it with `workspace_brief` or a full inventory unless
-the question needs whole-vault health.
+explicit `project`; Atlas does not silently pick the first project. It returns
+the project's readiness, its recorded meaning, the business-first read order,
+recipes, write guardrails and the next actions. For a known coding task, call it
+directly after `connection_info`, read the nodes it names with
+`get_concepts({ slugs, body: "full" })`, then read the source they cite. Do not
+precede it with `workspace_brief` or a full inventory unless the question needs
+whole-vault health. Declared dependencies do not establish complete runtime
+impact. The retired `detail:"compact"` and `task` arguments answer
+`invalid_arguments` and name this call.
 
 > **Impact truth contract.** `impact` and `blast_radius` follow declared
 > `depends_on` only. Structural relations are rejected and belong to
 > `reachability`/`subgraph`. `blast_radius.risk` and completeness remain
 > `unknown` until relation-level source receipts exist; each returned edge is
 > `review_required` or `declared_with_rationale`, never silently source-backed.
-
-`agent_brief` also exposes guide metadata under `docs.workflowGuide`, the setup mode chooser under `docs.modeComparison`, the graph scan proof steps under `docs.graphScanProofChecklist`, and the business-first read order under `businessOntologyLens`, so agents can read the same mode, proof, and outcome → domain → capability → element contracts without parsing Markdown or prompt prose.
 
 For the selected project, `agent_brief.projectSource` also exposes the versioned,
 categorical code-evidence view saved by the installed app in
@@ -897,76 +707,12 @@ unsafe/corrupt receipts and missing witness inventories retain their fail-closed
 classification. Reads never rewrite the document or receipt, and finalizing
 partial answers still reports `needs_evidence`.
 
-The same handoff preserves capability quantifiers. `Definition` / `Includes`
-lists are bounded positive claims, not exhaustive inventories. The
-`agent_brief.writePolicy` and copyable prompt forbid introducing
-`only` / `all` / `every` / `exactly` unless the full node body explicitly states
-completeness and cites a source-backed boundary. During construction,
-`epistemic-exclusion-boundary` rejects “not named/listed in bounded evidence”
-as `Excludes`; that is an evidence limit for `Uncertainty`, not negative product
-scope.
-
-A source-backed project exclusion under an unfinished scope answer remains the
-`unqualified-project-exclusion` warning. It is one exact `requiredGapId`:
-independent source-aware citation review and explicit human acceptance can
-carry it forward, while leaving it unaccepted still blocks `writePlan`. The
-source-hidden phase keeps raw-source detail partial until that source-aware
-check; absence of raw source is not itself a claim mismatch.
-
-A mandatory warning that cannot become a human gap now blocks the first
-non-writing review instead of waiting for a qualification packet. The response
-still carries the exact review plan for repair, but lifecycle
-`writeEligibility` is `blocked` and the response is not a candidate release.
-Repair `proposal-warning-not-gap-eligible:*` diagnostics before starting the
-source-hidden or source-aware lane.
-
 `recommend_relations` likewise separates missing ownership from a redundant
 inverse. An element with `domain:` and an existing resolved `elements` or
 `contains` parent already has membership plus ownership, so no direct
 domain→element suggestion is emitted. A domain-assigned element with no
 containment parent still receives `missing_domain_containment`, and missing
 domain→capability containment is unchanged.
-
-After a valid first candidate, the agent seals one external ordered manifest of
-claim ids, statements, and exact `proposalRefs`. A source-hidden evaluator and a
-differently identified source-aware citation auditor may then run concurrently
-from that same manifest, without exchanging source or answers. Their scratch
-receipts join only if the hidden output was sealed first and every manifest row
-is unchanged; human acceptance follows the clean join. These receipts improve
-orchestration and auditability without adding an MCP field, identity proof, or
-write authority. If isolation is unavailable, the fail-closed lifecycle remains
-serial.
-
-The source-checkout bootstrap skill includes a read-only scratch helper for
-sealing, hidden/audit packaging, joining, exact acceptance binding, and release
-comparison. It imports the same lifecycle evaluators but never invokes MCP and
-never writes a vault. Proposal meaning, claims, witnesses, CQ answers, axes, and
-source verdicts remain agent-authored; a person still supplies the acceptance
-request digest, plan revision, and exact gap set before any executable response
-can be turned into bounded writer-call data.
-The helper does not let the evaluator author its own human authority: one named
-person must own and approve the exact purpose/CQ set before source-hidden work,
-remain distinct from all construction actors, and later accept the joined
-request that carries the full question projection. This is declared provenance,
-not identity authentication, and does not change the public MCP contract.
-It also rejects any failed CQ before join: required witness kinds must match the
-sealed witnesses used by that answer, while an honest partial/unknown result can
-still reach exact human gap review.
-
-One proposal ref may carry several immutable qualification claims. Ref coverage
-alone is not enough: material `Definition`, `Includes`, `Excludes`, and
-`Uncertainty` assertions are audited separately. Source-use context must not be
-widened, and a measurement limit such as “not measured by this import packet”
-must retain that qualifier instead of becoming an absolute source-absence
-claim.
-
-Import evidence has one intentionally narrow positive use. An exact
-production/value import may support a reviewed direct element-to-element source
-dependency when both endpoint bodies state distinct roles, both paths resolve,
-the direction matches, and the rationale remains at the source/code boundary.
-That still does not establish runtime execution, reverse or transitive impact,
-capability/business dependency, or complete change impact; qualification keeps
-the impact answer partial unless separate current meaning evidence supports it.
 
 Source receipts also retain safe explicit repository-root directory paths from
 frontmatter and persisted competency Evidence/Paths rows. A path need not have a
@@ -982,139 +728,10 @@ source fingerprint, the source dimension stays current while the overall
 assessment fails closed as `review_required`; the gap is
 `competency_source_changed` and the action is `reevaluate_competency`.
 
-When current graph/source evidence can narrow an incomplete `abilities` or
-`evidence` answer, `agent_brief.nextActions[0]` is
-`review_competency_repair` and points to `agent_brief.meaningRepair`
-(the v2 manifest, `meaningRepair:v2`). The compact manifest reports disposition counts while the
-read-only `query_ontology({operation:"meaning_repair_review", ...})` operation
-pages the complete typed evidence: current declarations, typed-containment
-candidates, canonical-path candidates supported by the current source receipt,
-and unresolved targets. Neither contract upgrades a candidate to `answered`,
-writes or finalizes automatically, or exposes a private source root/raw
-inspection inventory. The typed workflow reuses the paged review call → literal
-`get_concepts({body:"full"})` calls → explicit human approval →
-`patch_concept(expected_mtime)` → `validate_vault` →
-`compile_ontology({summary:true})` → reread →
-`finalize_project_meaning(expected_mtime)`. Non-current source, provenance
-change, incomplete scope/receipt, validation or compile errors, human
-non-approval, incomplete review pages, changed review input, unresolved evidence
-promoted to answered, and mtime conflict are hard stops. If prerequisites are
-unavailable, the manifest is `status:"blocked"` and does not replace the existing
-source/health action queue.
-
-`meaningRepair:v2` and every `meaningRepairReviewPage:v1` stay at or below 5 KiB.
-The manifest carries `reviewRevision` and the first literal page call. Each page
-returns the next deterministic project → sorted domains → sorted capabilities
-prefix, a matching `get_concepts({slugs:[...],body:"full"})` call, and an opaque
-stateless cursor when more remains. A page has at most 20 targets and may return
-fewer to keep its byte bound; typed evidence is never truncated. The revision
-binds graph hash, source fingerprint, competency dispositions, typed witness
-rows, and target mtimes. Callers echo expected graph/source/revision on the first
-call, then follow the revision-bound `nextCall` until `hasMore:false`, execute
-each full-body read, and compare
-returned mtimes before requesting human approval. Stale provenance returns a
-blocked page; malformed/foreign cursors fail closed. MCP verification rejects
-missing, duplicate, reordered, oversized, stale, or mismatched page chains.
-
-Compact agent_brief carries `meaningRepairCompact:v2` instead: the same status, questions,
-provenance, reviewRevision and first step (its write policy is the response's `safety`), with `omitted.steps`,
-`omitted.stopConditions` and `omitted.recovery:"fullDetail"` naming what only the full
-packet repeats.
-
-Semantic document discovery is bounded before content enters the packet: the
-combined `docs/`·`site/`·`website/` walk stops at 200 Markdown files or 1,000
-directory entries, generic semantic files stop at 256 KiB before read, broken
-links are diagnosed, and a real directory is visited once even when an
-in-repository symlink points to it.
-
-For direct `apps/*` / `packages/*` workspaces, static `package.json` contracts
-with both a name and description plus package `README.md` files may compete for
-that same six-document packet. Atlas considers at most 48 direct members per
-conventional root, reads no package scripts or dependencies, and keeps this as
-reviewable evidence rather than automatic business meaning. Repository-escaping
-package paths stay out.
-
-Business capability proposals are fail-closed: bounded outcome prose must
-cross-check an implementation witness before a capability candidate is
-emitted. FSD/source/workspace folders that have no such business clue remain
-implementation review evidence, so names such as UI, transport, policy, or
-telemetry do not become business concepts by folder shape alone. The analyzer
-never writes these proposals to the vault.
-
-Initial Markdown evidence comes from authored headings, paragraphs and nested
-list prose. Fenced and indented code, HTML comments/containers and blockquotes
-cannot supply project identity, domain headings or semantic claims. Standalone
-simple HTML title headings remain supported; reStructuredText uses its separate
-extractor. Source recovery always reads the original file bytes.
-
-For Markdown and reStructuredText evidence, the model-visible `headings` and
-`excerpt` prefer the document-title section plus explicitly classified purpose,
-architecture, and ability sections. A document with no named semantic category
-uses the same bounded eligible-section fallback. The risk scan judges only the
-evidence that enters that packet, so an unrelated unselected peer section cannot
-downgrade the claim the agent received. When one selected document mixes current evidence with
-future, negated, or deprecated prose, Atlas keeps the exact current unit in
-`excerpt` and carries each removed policy unit as bounded
-`reviewRequiredEvidence` with its heading, one-based line span, excerpt, and
-risk flags. Those records remain model-visible counterevidence but cannot
-support proposal meaning. Hostile instruction/write content still taints the
-whole selected row, and a split that exceeds its bound fails closed to the
-original row-wide review state. Proposal validation rejects a Definition,
-Includes, Excludes, relation rationale, or `answered` competency that overlaps a
-review unit unless a different current semantic source independently supports
-the same claim; a partial answer may retain it only as an explicit gap.
-
-The fixed 1,200-character excerpt budget gives every selected safe section an
-initial deterministic share; short sections return unused capacity by semantic
-priority and source order. The document, heading, and excerpt caps do not grow.
-Authored document rows also return
-`excerptInfo: {scope:"selected_prose",truncated,firstOmittedLine,nextSourceRead}`.
-A truncated excerpt retains its bounded prefix, adds `excerpt-truncated` to
-`riskFlags`, and has `trust:"claim-review-required"` unless hostile content
-already requires `untrusted-instruction`. Its `nextSourceRead` is
-`{path,startLine,maxLines:200,expectedSha256}`: the original source path, the first
-partly or wholly omitted physical line, and the SHA-256 of the same file bytes
-used for the excerpt. Replay it with
-`analyze_repo_structure({rootPath,sourceOnly:true,sourceReads:[nextSourceRead]})`
-and follow the returned `sourceEvidence.rows[].next` while the condition remains
-unread. The existing complete-line, byte, path and no-follow guards still apply;
-a changed hash or unsafe path returns no replacement citation. An oversized line
-can still be refused. This metadata neither reads source automatically nor
-approves a proposal or write. When selected prose fits, `truncated` is false and
-both nullable fields are null; that does not establish complete document,
-repository or meaning coverage. Package-manifest evidence stays unchanged.
-
-One exact current candidate unit plus one matching implementation witness may
-support only a capability proposal below `0.8` confidence. The path is not a
-second semantic authority and cannot establish a domain, ownership,
-completeness, an answered competency, qualification, approval, or write.
-
-Semantic-document source addresses preserve the exact repository directory
-entry case. A unique lowercase root or workspace `readme.md` therefore remains
-`readme.md` in evidence, plans, and persisted competency citations on every
-filesystem. Exact matches win; ambiguous case-fold matches, missing entries,
-non-files, and repository escapes stay out. Package contracts do not use the
-case-fold fallback and retain their conventional exact-name requirement.
-
-Construction qualification requires executive, employee, and agent scenarios
-while preserving at least four total scenarios. `fde` remains a compatible
-optional audience, but it is unusable unless purpose authority declares the
-exact `audience:fde` decision, the FDE CQ owner is one of the named project
-meaning owners, and a current `audience-authority:fde` witness comes from a
-declared purpose source. That exact witness must also reach a supported claim
-and a verified citation. Merely labeling a technical question `fde` cannot
-qualify it.
-
-Analyzer-generated review and write plans use the same canonical body bytes as
-a later `get_concepts({ body: "full" })` read, including exactly one structural
-leading newline. After an accepted plan is written, clients must full-read every
-released concept and compare bodies byte-for-byte before source connection or
-finalization; trimming the strings would hide transport drift.
-
 | `validate_vault` | **R+** Validate every doc in the vault, return `{ scanned, problems: [{slug, issues}], problemsPagination, summary: { problemFiles, errorFiles, warningFiles, byCode }, pathDrift, evidenceDrift }`. **Paged (2026-09-27):** `problems` is one page of problem files, those with errors first and then by slug; `offset` (default 0) and `limit` (default 100, max 500) choose it, a page left at the default `limit` stops sooner when its text would pass 40,000 characters (a host stops forwarding a larger answer) and writes a code's repair guidance once a page, `problemsPagination` (`{offset, limit, total, returned, hasMore, nextOffset}`) resumes it, and `problemsHint` names the next call with the caller's `repoRoot` and `limit`; both come first in the answer. Follow pages until `hasMore` is false before calling the vault clean. `summary` always counts the whole vault; each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. `pathDrift.drifts` lists every drift. The full report was 30 MB on a 12k-node vault. `evidenceDrift` dates every cited `path:` and every concept document in one Git walk and states each concept `current` / `stale` (cited code changed after the document — read it before trusting the meaning; a document is dated by the first commit at which it held its present bytes, so a commit that only puts earlier bytes back returns the earlier date, while a cited file is dated by its newest commit; a file whose only change since the commit that dates the document is in comments, in the module a JS/TS import or re-export or a Rust `use` names (the bound names still count), or in whitespace outside literals that the language does not read (indentation counts in Python and YAML) is re-read at that commit, every such file in chunks of 256 within 32 MiB per chunk, files of at most 1 MiB, and does not count, while an unreadable, binary, oversized, hidden or credential-named file still does) / `missing` (cited path gone) / `unknown`; `checked: false` names why nothing was dated and never means nothing moved. The public `outputSchema` is the machine-owned canonical issue-code set and restricts both `issues[].code` and `summary.byCode`; identity errors include missing/invalid UID, invalid or non-canonical merge history, and duplicate UID claims. `pathDrift` = vault→code path drift: frontmatter `path:` / `elements:` source paths missing on disk, resolved against `repoRoot` (input param, default active resolved repository root from `connection_info`) → `{ repoRoot, checked, nodesScanned, pathsChecked, drifts: [{slug, kind, key, missingPath, suggestedPath?}], hint }`. **`checked: false` (2026-08-01) means nothing was measured** — the vault is not inside a git repository and no `repoRoot` was given, so the repository it describes is unknown and any number would be noise rather than drift; `drifts` is then empty because it was not looked at, not because it is clean; ontology-slug refs are never flagged; fix via `patch_concept` or remove the stale entry. `suggestedPath` (optional, Track A #3) appears when exactly one existing repo source file shares the missing file's basename — a likely reconcile target ("the source moved here"); ambiguous (>1) or absent matches yield no suggestion. One round-trip whole-vault health check — use for first-contact before writes, before / after a batch write, or to surface issues. Replaces the K-roundtrip pattern of `list_concepts` then per-doc `get_concepts` rows (whose `warnings: [...]` are per-file). When a repository is known, a `coverage` line states what no node places and which entry files were never read, as `add_concepts` does. Its Areas sentence also lists the survey's ability rows for the files it names under `Map next, in one request` (kind, name, `path:Lline` evidence, a family's first eight members with the rest counted), so the request that maps them opens no area survey; a write's `coverage` line names the files and the calls that open their areas instead. A `.md` under `sources/` that carries `kind:` is not a node, so no node code judges it; it appears once, keyed by its path without `.md`, as the warning `kind-under-sources`, whose message names the kind folder to move it into and the `patch_concept` repair for relations that still name it. |
 | `validate_wiki` | **R+** Judge the pages under `wiki/` against the wiki page contract (`docs/ONTOLOGY-ATLAS-SPEC.md` §11): no `kind:`, the seven required frontmatter fields, the five sections in order, a citation on every bullet under `## Facts`, and a cited path both declared in `sources:` and present in the folder. A wiki page is **not** an ontology node — it carries no `kind:` by contract, which is what keeps it out of the graph — so `validate_vault` says nothing about whether one fits its own shape, and this is that answer. Codes: `kind-present`, `missing-field:<key>`, `section-order`, `uncited-fact`, `bad-citation`, `bad-truncation-record` (the optional `sources_truncated:` key — which paths in `sources:` were read only in part — is not a list of paths, or names one the page does not cite), `citation-target-missing`, `describes-target-missing` (an entry in the optional `describes:` list, which names the `kind:` nodes a page is about at any `status` with one `relation_notes` sentence each, resolves as `find_backlinks` resolves, after NFC, to no `kind:` node: a missing slug, an ambiguous tail, a wiki page or the vault README; `describes: []` records that no concept fits), `bad-describes` (`describes:` present but not a list, which no graph reader takes as a link and a rename cannot rewrite), plus `not-a-wiki-page` and `page-missing` for a path that names neither. The folder is judged too, over every page whatever `paths[]` narrowed the report to, and its findings land on the page they concern: `dangling-wikilink` (a `[[wiki/…]]` target not in the folder), `orphan-page` (nothing links here; a folder of one page reports nothing), `shared-source-unlinked` (another page lists a source this one lists and neither links the other; on both). Optional `paths[]` narrows the run, capped at 50 — the same ceiling `get_concepts.uids` uses, because past that asking for the whole folder is one call instead of a list somebody has to assemble. Omitted, it judges every page under `wiki/` except the shipped `_template.md`, whose own citations name a placeholder: the folder decides how many pages there are. **Paged (2026-11-19), as `validate_vault` is:** without `paths[]` it returns `{ pageCount, failingCount, pagination, nextCall?, pagesHint?, summary: { blockingPages, advisoryOnlyPages, byCode }, pages }`, where `pageCount` and `failingCount` count the whole folder and `pages` holds failing pages only, by path, each with `blocking` (whether any problem is more than advisory). `limit` (default 100, max 500) sets the page size, and a page left at the default `limit` stops sooner when the reply would pass 128 KiB but always holds at least one page, cut if a single page is larger. Each page shows at most 20 problems and counts the rest in `problemsOmitted`. `nextCall` resumes after the last page shown (`afterPath`): the walk goes by path alone, which no repair can change, so every page failing for the whole walk is listed once, repairs between calls included; follow it until `pagination.hasMore` is false. A page renamed during the walk appears under its new path only if that path sorts after the cursor, and a page that starts failing behind the walk is found by the next walk: the folder is clean only when `failingCount` is 0. `offset` also works but shifts when a repair removes earlier pages. Messages and `pagesHint` escape control and format characters (`repoText`); paths, `detail.values` and `nextCall.arguments` stay exact. `summary` always counts the whole folder; each `byCode` entry (`severity` `warning` for the advisory codes) names at most 20 `files`, blocking pages first, and says how many more in `filesOmitted`. On `shared-source-unlinked`, a page names at most ten unlinked partners in input order and counts the rest in one more finding (`detail.key` `shared-source-unlinked-more`), so pages written from one document cost linear time. Fitting pages are counted, not listed: the whole report was 228 MB on a 50,000-file vault. With `paths[]`, every named page is listed with its `ok`, unpaged, and `offset`/`limit`/`afterPath` are refused. Each page is `{path, ok, blocking, problems: [{code, message, line?, detail?}], problemsOmitted?}`, with `path` exactly as the folder names it so it round-trips into `paths[]`; **side effect 0.** Call it after writing or editing a page, and before claiming a compile finished. |
 | `read_source` | **R** Read the text of one raw source under `sources/`, cut into the units a wiki citation names: a DOCX by heading (`h:<slug>`; repeated normalized headings receive distinct generated anchors, while paragraphs before the first heading remain `p1`), an XLSX by sheet and row (`s<n>r<m>`), a CSV/TSV by quoted record (`r<n>` names its physical starting line), and a text or HTML file by line (`l<n>`). Each unit carries the exact anchor for `[[src:sources/<file>#<anchor>]]`, so a page cites what it quotes rather than a place it guessed. A PDF returns no text — the agent runtime reads PDFs natively, page by page, and cites `#p<n>`. Nothing is converted and kept: the file is read on request and the text returned once, with its `sha256` (the same `source_hash` a page records). `from` and `limit` page the units (default 200, max 1000); `truncated` plus `next` say where to continue; `sheet` narrows a workbook to one sheet. CSV pagination counts non-empty records, so a next-unit cursor is not a row anchor: a multiline record at `r2` can be followed by `r4`. Quoted newlines and spaces stay in the returned record; an unclosed quoted remainder is retained with a warning note, not certified as valid CSV. DOCX disambiguation reserves all natural heading names before generating suffixes; previously unique anchors remain unchanged. A note names ambiguous legacy heading addresses instead of silently assigning one occurrence to an old ambiguous address. Existing wiki citations are not rewritten, and a byte-hash match does not resolve such ambiguity. The path must sit under `sources/` and is read by the same hardened reader as `sourceReads`: a symbolic link in any segment, a hidden file or credential-like name, a non-regular file, or a file over 100 MiB is refused by name, and one read unpacks each zip entry once, never past the size it declares, at most 64 MiB across a document's entries, and from no more compressed bytes than the file holds. **side effect 0.** It exists so a Compile, Check or ask turn in the app reads a DOCX or XLSX without a shell command, which is what used to raise an execute permission card on a turn that only reads. |
-| `analyze_repo_structure` | **R16** Survey a code repository (default active resolved repository root). **side effect 0** — vault NOT modified. **The default call (no `proposal`, `qualification` or `sourceReads`) returns the breadth map** as one text block with no structured content and no `outputSchema` (a host forwards one of the two and stops forwarding near 56,000 characters, so no answer exceeds 40,000): product size, every product unit (a top-level package, workspace member or module folder; a container folder such as `src/` or `packages/` is split into its children, and a folder over 25 entries is split into its files of 300 lines or more) with its file and line counts, main files with lines, up to six exports, `importedBy` and `imports`, the entry points (executable, command, route, library, plugin), the abilities to place, the floor under the abilities a builder names from the outlines and docs (each entry point; each operation a dispatcher routes by a command name such as `case "whisper":`; each subcommand a cobra, urfave/cli, argparse, click, typer, tyro, commander, yargs or clap parser registers; flag groups as the code groups them (a `metricsCLIFlags` function, a category, an argparse group, else a shared prefix) and lone behaviour switches; settings a configuration type turns on (a nested config section or a boolean such as `PublicMode`, read from the type's own fields; a field whose type is an index such as `Options['x']`, a union or a callback is not a section, and in a React hook or component file an `Options` type is the hook's parameters, so only a `Config` or `Settings` type counts there); background workers and schedulers (tickers, timers, threads, `setInterval`, cron, file watchers; not test code, a thread that reads, writes or waits on a child process's pipes, a timer in a component file, or a timer that keeps a shown time current); each class or function a library entry or public subpackage exports, resolved through the module it is re-exported from, with five or more exports declared one per file in one folder listed as one family and three or more from one module as one `api` row; and features a README or docs heading names that the code also names (a heading of several words by its whole phrase as a folder, file or declared type; a one-word README heading or page title only as a folder; headings about the document such as "Installation" or "Out of scope", test files, dated history pages (specs, records, plans) and the vault's own pages left out). Every row carries `evidence` as `path:Lline`, and a documented row its heading's `doc`; benchmarks, examples, mocks and fixtures left out; a line over 2,000 characters is read as blank, and each detector reads a file once, forward, so the survey's time grows with the bytes it reads. At most 120 rows, shared equally between kinds, a share one kind leaves unused going to the others; a `+N more not listed (kind N)` line counts what each kind left out) and the README purpose plus document pages. Tests, examples, benchmarks, generated, vendored, docs and tooling files are counted apart and stay out of the product size. Files Git ignores and does not track (build output such as `target/`, a generated `next-env.d.ts`) are not walked, so a built checkout and a clean one measure alike; a tracked file counts wherever a pattern would ignore it. A folder outside Git, a nested repository's own ignored files, and every file where Git is missing or does not answer within 5 seconds are walked as before. That Git run cannot fetch: like every MCP Git call it runs with lazy fetching and every transport off. The text content is one row per unit, at most about 12 KB at 400 files and 24 KB on any repository before the abilities section, which comes on top so a longer floor never pushes a unit out; the whole text stays within 30 KB, a family or group showing fewer members first, then fewer rows, shared fairly between kinds and counted on the `+N more not listed` line. It ends with one `Next:` line. A repository whose flat map does not fit is listed by area instead: the product root's folders, the largest split while rows remain so every product area is named, with ability rows going to product-facing kinds first and to every area before any area's second (a module API or a lone export only for an area with no other row, and a folder of view files is no family); migration history is left out and counted like tests; `rootPath` on an area maps it alone. Java and Kotlin files contribute routes (JAX-RS and Spring mappings), mains, scheduled work, message listeners (Kafka, RabbitMQ, JMS, SQS, Pulsar) and class families named by their base type, and file-level import edges, including Java calls into a Kotlin file's top-level functions and types used from the same package and module without an import. It carries no candidates and no suggested relations. `sourceReads` without a proposal returns the reads alone, also as one text block (a header with the counts, then each read's cite, fenced code and the facts below as labelled lines; reads that would pass 40,000 characters are named with the call that returns them), up to sixteen per call: mode `"outline"` for a file's declarations, `symbol` for one declaration's lines with its `cite` (`path:L12-L30`), `callees` (the functions it calls that the repository declares, each with path and line, followed only where the file reaches them in its own language: declared in the same file, imported into it by name or as a module (`pkg.Check(`, `ns.check(`), or in the same Go package. An import is resolved to its module's files once per call and the name is looked up in those files only, so same-named declarations elsewhere never compete; a project-internal import (relative, `@/`, `crate::`) whose module names no file here is followed by name alone and listed with `byName: true`, weaker evidence that is no shared role, and a part served one call deeper carries the same mark when every chain that reaches it has a by-name link (one exact chain clears it, whatever the order); a Go method answers to its bare name, and an implementation wins over typing overload stubs; a call on `self`, `this` or a Go receiver is the owner's own method, found in the owner and then the classes it extends (local or imported) so an override wins over its base; a call on a field (`self.store.save(`) is never the owner's own method, reaches only modules the file imports, and when three to six types in one folder declare it each is listed with `implementation: true`; a call on any other value (`items.includes(`, `map.get(`) is not followed, a line over 2,000 characters is not scanned, a name followed by name alone is not followed past 64 declarations, a package import naming more than eight files names no module, and a file's imports are kept to 256 modules and 1,024 names; after one indexing pass a read costs O(imports + calls)) and `context`: the code that decides the body, so depth does not depend on the reader following calls. Context candidates are the guard around each call in up to two callers (the whole caller when it is 40 lines or fewer, else the 12 lines before the call and the enclosing conditions; a doctest or docstring line is no call site), the owner's header and constructors (a class docstring, `__init__`, `constructor`, or a Go function returning the receiver type: where defaults and a field's resolver are set), each direct callee's body, the implementations a field call reaches that decide something (role `implementation`), the callees of up to six direct callees one call deeper (a callee of eight lines or fewer, such as a lazy accessor, passes through to what it calls; each such part names the call it came through in `via`), and the module-level literal constants the body and the served parts use (role `constant`, one line each, from a share of the budget held back for them); each is ranked by its condition, refusal and literal-default lines, a callee named in the body's own condition or one that throws ranking higher and one call deeper ranking lower, and the best fit within 6 KiB per read, the call's remaining 32 KiB shared evenly across its symbol reads. Every part carries `role`, `path`, `symbol`, `startLine`, `endLine`, `cite` and `text`; `contextOmitted` names up to six parts past the budget, `callers` names who calls the symbol, and `deciding` says when the condition sits in a caller the read did not return, with the read to make. A symbol read of one member of a family carries `family`, one plain line: at least how many members were found in the analysed folder, a few of them with their lines, and how many this session has read. The count is a floor: a tie written in a way this pass cannot follow is not found, while every member it lists is one. Members are counted only inside the folder the read was made in, never in a folder above it, and only from ties the source writes: classes (JavaScript and TypeScript, Python, Rust trait impls) whose header, read across the lines a formatter wraps it over, names a base that resolves through the file's imports (default imports and imports of up to 400 lines included), named and default re-exports and workspace package entries to the same one declaration in the folder, class expressions such as `module.exports = class X extends Base` included; a declaration file and its implementation twin (`x.d.ts` beside `x.js`, `x.mjs`, `x.cjs` or `x.ts`, same class name) are one member, read through its code or a read made on either file, never through a signature served from the declaration file; or Go types in the interface's package or a package importing it whose method set, promoted methods included, has every method of an interface of two or more methods with the same parameter and result types. For the count alone, declarations and class headers are read with comments and strings blanked (one pass, offsets in UTF-16 code units; the general declaration index and import reading keep the plain text), so a subclass shown in a docstring, a template or a comment is no member, and a bare package specifier (`events`, Python's `queue`) never names a local file of that name: only a relative path, a tsconfig `paths` or `baseUrl` entry, a workspace package name or, in Python, a module under a source root does. Declarations that share only a name or a folder are no family, and when any class naming the base, or any Go type in scope, cannot be decided, or a file that could hold a member was cut short (past the size cap, an outline that stopped early, an import statement cut at its cap, a walk that stopped at its file cap) or could not be blanked with certainty (a string or comment open at the end, a quoted string meeting a line break, templates nested past eight levels, a `/` after a name or `)` that could open a regular expression holding a quote), the read gets no line rather than a guessed count, so a sentence about the family can say "k of at least N read" or speak only for the members read, and writes "every" only when every member was read. Nothing refuses on it. `add_concepts` and `patch_concept` say the same rule where the sentence is written. Or `startLine` / `maxLines` for a line range. The server records every line range, symbol read and context part it serves for the rest of the process; outlines are not reads. With a `proposal`, it proposes ontology node candidates from package metadata, README evidence, and source layout as below. Emits schema-folder-prefixed flat slugs while source locations stay in `path`/evidence, so candidates match the starter layout. Semantic evidence includes `trust` and `riskFlags` for instructions, future/negated claims, and deprecated state. Root `ARCHITECTURE.md` plus classified Markdown under bounded `docs/`, `site/`, and `website/` discovery can enter the existing six-document portable packet; archive-like directories and repository-escaping symlinks stay out. A root Rust package `Cargo.toml` contributes one bounded `role:"package-contract"` row containing only allowlisted `[package]` identity/description and `[features]` names/mappings. Its separate `configurationEvidence` packet covers a root package or repo-contained literal direct workspace members: bounded feature declarations plus exact literal `cfg`/`cfg_attr` feature predicate path/line, form, polarity, source role, and raw predicate. It does not evaluate predicates, execute build scripts, expand macros, claim runtime impact, or permit a relation write. Python cold starts likewise accept `README.rst`, a non-executed root `setup.py` with only static `name` / `description` / `python_requires` literals, and top-level packages identified by `__init__.py` as implementation elements. For Python packages it exposes at most 12 implementation boundaries that participate in observed imports as element/path candidates. Direct module/package boundaries remain the base; up to two exact nested security/policy/risk endpoints may reserve slots so risk ownership is not buried in a large import payload. Unused files are not mirrored, ambiguous flat slugs fail closed, and omitted lower-ranked boundaries are reported in `skipped`. A complete proposal may additionally select at most four exact TypeScript, JavaScript, Python, or Rust file endpoints already exposed by the observed import graph when they materially improve change navigation; this never adds those files to the analyzer's automatic candidate list. Package contracts, package folders, configuration predicates, and import endpoints are evidence, never automatic domains, capabilities, or semantic relations. A README H2 heading becomes a domain candidate only when a source folder, package or separate document also names it, or an ability candidate cross-checked against the code declares it as its domain; a heading nothing else answers to ("Credits", "Security Contact"), or one an ability only shares a word with ("Pull Requests"), is not one. Repository-escaping symlinks—including package-internal symlink parents—files over 256 KiB, malformed contracts, and unsupported workspace members are skipped or reported rather than guessed. A call may include the complete project/domain/capability/element/typed-relation `proposal`; `proposalValidation` checks definitions, citations, risk controls, domain/path placement, relation endpoints/types/rationales, confidence, and five typed competency answers. `Excludes` may contain only sourced product/concept boundaries; unknown, unmeasured, or unproven evidence limits belong in `Uncertainty` or a competency gap, and `epistemic-exclusion-boundary` fails closed before such a scope claim can reach a write plan. A TS/JS/Python/Rust `depends_on` backed by an admitted boundary or selectively proposed exact endpoint must match the observed module/file import direction or validation fails. Each answer carries `answered` / `partial` / `visible-gap` status plus concept, relation, evidence, and path witnesses. Unsupported `answered` claims fail closed; every honest warning becomes an exact `requiredGapId`. The first valid proposal call returns only a deterministic non-writing `reviewPlan`, `planDigest`, `planRevision`, authoritative current `sourceDigest`, and eight-phase `constructionLifecycle`; `canWrite` stays false and `writePlan` is absent. A separately identified evaluator must execute the approved CQs, current claim/citation checks, all seven quality axes, complete source-hidden task, and cold-start or prior-CQ regression. Each qualification claim must bind to the exact plan with `proposalRefs`; the lifecycle returns `proposalCoverage` and fails closed on missing, foreign, or source-hidden-uncovered refs. After the user sees the exact plan and gaps, declared human acceptance is bound to the returned digest/revision/gap ids in a `constructionQualification:v1` packet. Only an unchanged second call whose packet is admissible returns `writeEligibility:"executable"`, `canWrite:true`, and a `writePlan` exactly equal to the reviewed rows. Declared approval is provenance, not identity authentication or a truth certificate. The detailed lifecycle packet stays in the MCP response/agent transcript; persisted truth remains the existing project competency body plus finalizer receipt, so past exact gap approval is not reconstructed after restart. Write relations only after every released concept row succeeds, then validate, compile, connect the source, and finalize project meaning. Detects FSD vs generic layout. |
+| `analyze_repo_structure` | **R16** Survey a code repository (default active resolved repository root). **side effect 0** — vault NOT modified. **The default call (no `sourceReads`) returns the breadth map** as one text block with no structured content and no `outputSchema` (a host forwards one of the two and stops forwarding near 56,000 characters, so no answer exceeds 40,000): product size, every product unit (a top-level package, workspace member or module folder; a container folder such as `src/` or `packages/` is split into its children, and a folder over 25 entries is split into its files of 300 lines or more) with its file and line counts, main files with lines, up to six exports, `importedBy` and `imports`, the entry points (executable, command, route, library, plugin), the abilities to place, the floor under the abilities a builder names from the outlines and docs (each entry point; each operation a dispatcher routes by a command name such as `case "whisper":`; each subcommand a cobra, urfave/cli, argparse, click, typer, tyro, commander, yargs or clap parser registers; flag groups as the code groups them (a `metricsCLIFlags` function, a category, an argparse group, else a shared prefix) and lone behaviour switches; settings a configuration type turns on (a nested config section or a boolean such as `PublicMode`, read from the type's own fields; a field whose type is an index such as `Options['x']`, a union or a callback is not a section, and in a React hook or component file an `Options` type is the hook's parameters, so only a `Config` or `Settings` type counts there); background workers and schedulers (tickers, timers, threads, `setInterval`, cron, file watchers; not test code, a thread that reads, writes or waits on a child process's pipes, a timer in a component file, or a timer that keeps a shown time current); each class or function a library entry or public subpackage exports, resolved through the module it is re-exported from, with five or more exports declared one per file in one folder listed as one family and three or more from one module as one `api` row; and features a README or docs heading names that the code also names (a heading of several words by its whole phrase as a folder, file or declared type; a one-word README heading or page title only as a folder; headings about the document such as "Installation" or "Out of scope", test files, dated history pages (specs, records, plans) and the vault's own pages left out). Every row carries `evidence` as `path:Lline`, and a documented row its heading's `doc`; benchmarks, examples, mocks and fixtures left out; a line over 2,000 characters is read as blank, and each detector reads a file once, forward, so the survey's time grows with the bytes it reads. At most 120 rows, shared equally between kinds, a share one kind leaves unused going to the others; a `+N more not listed (kind N)` line counts what each kind left out) and the README purpose plus document pages. Tests, examples, benchmarks, generated, vendored, docs and tooling files are counted apart and stay out of the product size. Files Git ignores and does not track (build output such as `target/`, a generated `next-env.d.ts`) are not walked, so a built checkout and a clean one measure alike; a tracked file counts wherever a pattern would ignore it. A folder outside Git, a nested repository's own ignored files, and every file where Git is missing or does not answer within 5 seconds are walked as before. That Git run cannot fetch: like every MCP Git call it runs with lazy fetching and every transport off. The text content is one row per unit, at most about 12 KB at 400 files and 24 KB on any repository before the abilities section, which comes on top so a longer floor never pushes a unit out; the whole text stays within 30 KB, a family or group showing fewer members first, then fewer rows, shared fairly between kinds and counted on the `+N more not listed` line. It ends with one `Next:` line. A repository whose flat map does not fit is listed by area instead: the product root's folders, the largest split while rows remain so every product area is named, with ability rows going to product-facing kinds first and to every area before any area's second (a module API or a lone export only for an area with no other row, and a folder of view files is no family); migration history is left out and counted like tests; `rootPath` on an area maps it alone. Java and Kotlin files contribute routes (JAX-RS and Spring mappings), mains, scheduled work, message listeners (Kafka, RabbitMQ, JMS, SQS, Pulsar) and class families named by their base type, and file-level import edges, including Java calls into a Kotlin file's top-level functions and types used from the same package and module without an import. It carries no candidates, no suggested relations and no plan. `sourceReads` without a proposal returns the reads alone, also as one text block (a header with the counts, then each read's cite, fenced code and the facts below as labelled lines; reads that would pass 40,000 characters are named with the call that returns them), up to sixteen per call: mode `"outline"` for a file's declarations, `symbol` for one declaration's lines with its `cite` (`path:L12-L30`), `callees` (the functions it calls that the repository declares, each with path and line, followed only where the file reaches them in its own language: declared in the same file, imported into it by name or as a module (`pkg.Check(`, `ns.check(`), or in the same Go package. An import is resolved to its module's files once per call and the name is looked up in those files only, so same-named declarations elsewhere never compete; a project-internal import (relative, `@/`, `crate::`) whose module names no file here is followed by name alone and listed with `byName: true`, weaker evidence that is no shared role, and a part served one call deeper carries the same mark when every chain that reaches it has a by-name link (one exact chain clears it, whatever the order); a Go method answers to its bare name, and an implementation wins over typing overload stubs; a call on `self`, `this` or a Go receiver is the owner's own method, found in the owner and then the classes it extends (local or imported) so an override wins over its base; a call on a field (`self.store.save(`) is never the owner's own method, reaches only modules the file imports, and when three to six types in one folder declare it each is listed with `implementation: true`; a call on any other value (`items.includes(`, `map.get(`) is not followed, a line over 2,000 characters is not scanned, a name followed by name alone is not followed past 64 declarations, a package import naming more than eight files names no module, and a file's imports are kept to 256 modules and 1,024 names; after one indexing pass a read costs O(imports + calls)) and `context`: the code that decides the body, so depth does not depend on the reader following calls. Context candidates are the guard around each call in up to two callers (the whole caller when it is 40 lines or fewer, else the 12 lines before the call and the enclosing conditions; a doctest or docstring line is no call site), the owner's header and constructors (a class docstring, `__init__`, `constructor`, or a Go function returning the receiver type: where defaults and a field's resolver are set), each direct callee's body, the implementations a field call reaches that decide something (role `implementation`), the callees of up to six direct callees one call deeper (a callee of eight lines or fewer, such as a lazy accessor, passes through to what it calls; each such part names the call it came through in `via`), and the module-level literal constants the body and the served parts use (role `constant`, one line each, from a share of the budget held back for them); each is ranked by its condition, refusal and literal-default lines, a callee named in the body's own condition or one that throws ranking higher and one call deeper ranking lower, and the best fit within 6 KiB per read, the call's remaining 32 KiB shared evenly across its symbol reads. Every part carries `role`, `path`, `symbol`, `startLine`, `endLine`, `cite` and `text`; `contextOmitted` names up to six parts past the budget, `callers` names who calls the symbol, and `deciding` says when the condition sits in a caller the read did not return, with the read to make. Or `startLine` / `maxLines` for a line range. The server records every line range, symbol read and context part it serves for the rest of the process; outlines are not reads. The retired `view`, `proposal`, `qualification` and `maxDepth` arguments answer `invalid_arguments` and name the call that replaces them. |
 | `infer_imports` | **R17** Walk TS/JS files, root and `src`/`source`-layout Python packages, deterministic Rust source, and root-module Go source → file-import plus typed package-import evidence. **side effect 0**. Structured `coverage` names Go, JavaScript, Python, Rust, and TypeScript support; C/Autotools remains fail-closed. Rust reuses the existing file/module envelope for resolvable `use`, file-backed `mod`, and exact literal path/include forms, capped at 256 KiB (a larger file is `file-too-large`) and 256 dependency statements per file. Any other scanned file over 2 MiB is likewise reported in `unresolved` as `<source-text>` with reason `file-too-large` instead of being read, and a source folder (default or `sourceFolders`) that is a symbolic link or resolves outside the repository is skipped. It rejects repository escapes and does not expand macros, evaluate `cfg`, resolve symbols, run Cargo/compiler/network code, or infer runtime, reverse, transitive, capability, or business impact. Conditional and non-literal forms remain `unsupported-static-form`; a file whose bytes are not source text (binary data under a source extension) is `source-not-parsed`, never an empty import list; external crate names are observed candidates whose importance requires Cargo/package evidence and review. Go never fabricates an imported target file: optional `packageImportEvidence` (`goPackageImports:v1`) preserves exact importing files and repository-relative package directories with bounded receipts. `value` means “not explicit type-only syntax”, never proven runtime execution. Import/package direction is observed evidence, not a self-approving semantic dependency or runtime impact. Focus mode pages exact file edges; compact Go delivery preserves an explicit full-evidence call. Omit `reviewMode` for size-safe delivery; `{reviewMode:"next"}` returns one bounded reconciliation packet, while an intentionally large complete response requires `{reviewMode:"full",allowLargeResponse:true}`. Missing edges remain `rationale_review_required`, never `proposedAction`. A path in an unsupported language such as C or with unknown implementation remains `notJudgeableByImports`; even in supported languages, **"No import found" is not evidence of absence.** Inspect both concepts and exact evidence, explain the meaning-level dependency, and ask the user before one explicit `add_relations` row with its `why`. |
 | `inspect_architecture` | **R+** Read one reviewed `architecture-profile/v1` and compare its scoped role/path/dependency rules with current supported source imports. Optional `dependency_usages` declares a non-empty subset of `value` / `type_only`; missing v1 fields preserve both, while `unknown` is never declarable. Returns `architectureBrief:v1`, role coverage, usage-qualified observed role edges and receipts, bounded violations, explicit unknowns, and the required `architectureChangePlan:v1` fields. Pattern names are declarations, not folder-name inference. Unsupported languages, incomplete scans, unknown import usage, unmapped or unruled edges, and empty roles fail closed; **side effect 0**. |
 | `add_concepts` | **R+** Batch writer — accepts `{concepts: [{slug, kind, title, ...}, ...]}` (max 50), returns `{concepts: [{slug, ok: true, changed, mtime} | {slug, ok: false, error, errorCode?, ...repairFields}, ...], findings?, coverage?}` and nothing else: no absolute path and no maintenance plan, since no next call uses them. `findings` is one line per kind of finding on the nodes just written, naming the nodes it applies to. Each row processed independently — existing-slug / invalid-kind / missing-required / non-object row shape / unknown row fields surface as `ok:false` rows whose `error` includes the `concepts[n]` row label; row failures also carry structured repair fields such as `errorCode`, `rowName`, `conflictSlug`, `firstSeenAt`, `receivedField`, `unknownFields`, `allowedFields`, and `receivedFields` when applicable. Single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`; the rest still land. Order preserved. Pre-checks duplicate slugs *within the input batch* and fails the later row with a `concepts[n] duplicate slug in input batch; first seen at concepts[m]` error plus structured `rowName` / `firstSeenAt`. A row whose normalized *title* matches an earlier landed row in the same batch still lands but carries a near-duplicate `warning` (patch the earlier node instead of forking the same concept) — no vault scan, in-batch comparison only. **No atomic rollback** — a one-row batch writes its node or nothing. **R14**: frontmatter is normalized per kind (a project gets `domains/capabilities/elements: []`; a capability gets `elements: []`; a capability or element should set `domain` — missing extras come back in `warnings`). Graph arrays are canonicalized as sets (trimmed, deduped, sorted). A body defaults to a kind-specific starter only when omitted; an explicit empty string is preserved. Use after `analyze_repo_structure` / `infer_imports` (or any bootstrap flow) when the agent has K accepted candidates. When the vault sits in a known repository and a row landed, the response adds one `coverage` line. Breadth: of the abilities the survey lists, how many have their own capability or element (its `path:` is the ability's file and it names the ability, or the file holds only that ability), are named inside a capability or element (a family when half its members are named; a word in a domain or the project does not place one), or are excluded with a reason in the project's `## Uncertainty` or `## Excludes`, with each unplaced ability by name. Areas (a repository surveyed by area): how many of the abilities the survey found are on the map, meaning a capability or element points at the ability's file by its `path:` (a folder strictly below its area's own folder points at the files under it; one at the area or above it counts nothing) or by cited lines that exist in the file (`path:L12-L30`, resolved as the Depth measure resolves cites, a cite under a sub-root this session read included; a family's folder at any file inside it), and nothing else counts; how many areas are not mapped yet, meaning they hold an ability not on the map, or hold none and no node's path falls in them and no domain names them; `Map next, in one request,` the files holding abilities with no node, each with its count, at most eighteen across at most seven areas, largest gap first and the first area always (its eighteen with most abilities when it holds more), with the call that opens each area; and the `Not mapped yet: N of M areas, R of T abilities.` lines to keep under the project's `## Uncertainty`, largest gap first, which the app's next step reads (R is the abilities not on the map, T those counted; areas holding no abilities ask for no line). While the project's first such line is missing or differs, or lines stay after every area is mapped, the sentence says so with `not-mapped-line-mismatch`. The measure reads the vault's first project. An ability is not counted when the project's `## Excludes`, or an Uncertainty line that says it is left out, names its file, a folder above it or its whole area as a path: a path of two or more segments or a file name wherever it is written, one folder name only in code form (backticked, `name/`, `name/**`) or leading its line; the root's own files are never named that way, and a cite of one row (`path:L12`) leaves nothing out. Depth: the capabilities whose `path:` file this server process never served a line or symbol read for, with the exact `analyze_repo_structure` call that reads them, by the symbol the body cites where it cites one; a process that served no reads says so, lists only the capabilities that cite no existing lines, and counts those citing lines an earlier session recorded. Rules: the capabilities that state a rule (a paragraph after the definition with a condition, order or default) without citing lines (`path:L12-L30`) that this session served and that hold a condition, with the read and patch that fix them. Abilities: the capabilities no capability-to-capability `depends_on` touches. |
@@ -1285,9 +902,11 @@ so an agent can repair a misspelled `tools/call.params.name` without an extra
 clients do not need to parse the human-readable error text.
 A name the server used to advertise and has retired fails with its own code,
 `tool_retired`, and says what to do instead: `git_status`, `git_history` and
-`git_snapshot` name the agent's own `git` command, and the seven folded names
+`git_snapshot` name the agent's own `git` command (for `git_snapshot`: `git -C <vaultRoot> add -- .
+&& git -C <vaultRoot> commit -m "<why>" -- .`, not during a merge or rebase, and never
+push), and the six folded names
 (`list_constellations`, `find_evidence`, `find_orphans`, `query_concepts`,
-`disconnect_project_source`, `replace_relation`, `reclassify_concept`) name the
+`replace_relation`, `reclassify_concept`) name the
 call that replaced them. The structured repair fields are `retiredTool` and
 `replacement`. The same code is never returned for a name that was never a tool.
 Unknown argument errors likewise include `toolName`, `receivedArgument`,
@@ -1448,14 +1067,7 @@ is rejected at the MCP boundary when omitted or unknown, instead of falling
 through to an empty result. `query_plan` responses also include an `execution`
 block with `shouldRun`, `nextStep`, `suggestedQuery`, and, when the plan should
 be narrowed, a `saferQuery` the agent can run instead of guessing lower-cost
-arguments. `centrality` plans use a PageRank-specific estimate with
-`iterations`, resolved edge count, dangling node count, and `rankingWorkUnits`
-instead of a generic aggregate scan, so coupling-audit agents can explain
-ranking cost before running graph centrality. For `all_paths`, `limit` and
-`searchBudget` are schema-advertised too, so agents can cap path enumeration
-and inspect `evidence.status`, `evidence.pathsComplete`, `exhaustive`, and
-`truncatedByBudget` before treating returned paths or `totalPaths` as complete
-evidence.
+arguments.
 
 ### Bounded defaults
 
@@ -1465,7 +1077,7 @@ structured output to send the serialized JSON as text too, and a client that
 read the tool's `outputSchema` (the SDK client Claude Code uses) rejects a
 success that has no `structuredContent`. The tools a large vault used to
 overflow are bounded by their own defaults (2026-09-27): `compile_ontology`
-answers with its summary, `list_concepts` with `mentions` with its best 50 matches,
+answers with its summary, `list_concepts` with `mentions` with its best 100 matches,
 `validate_vault` with one page, and the three briefs with 20 problem files;
 each names the call that returns the rest.
 
@@ -1531,8 +1143,7 @@ short. Declarations are found by a deterministic line scanner
 (`mcp/src/evidence-search/source-outline.mjs`) for JavaScript/TypeScript, Python, Go, Rust,
 Java/Kotlin/C#, Ruby and Markdown headings, in time linear in the file (a line over 1,000 characters, minified or generated code, is skipped and the row says `truncated`); a missing declaration is not
 evidence of absence, an unscanned language returns an empty list, and an outline
-mints no citation, so it supports no claim. Replay line ranges, not outlines,
-with a `proposal` or `qualification`.
+mints no citation, so it supports no claim.
 
 The reader honors the authorized analysis root and default/caller folder-name
 exclusions, refuses dotfiles, credential/key paths, symlink components,
@@ -1545,47 +1156,19 @@ requested source bytes; client/provider handling remains that client's boundary.
 No source execution, new network destination, copied source store or vault write
 is introduced. The separate wiki `read_source` stays vault-`sources/` only.
 
-When replaying `sourceReads` with a `proposal` or `qualification`, every selector
-must carry the previously returned `expectedSha256`. The server re-reads all
-selected files and regenerates citations. A failure blocks proposal review or
-release. The opt-in lifecycle `sourceDigest` binds the existing repository
-fingerprint plus the selected file/range manifest, including when the broader
-inventory is bounded; the ordinary source receipt fingerprint is unchanged.
-Omitting `sourceReads` preserves the legacy analysis contract.
-
 Well-formed range citations remain verbatim in persisted competency `Evidence`.
 Source-role inventory uses the underlying file path, while `Paths` accepts only
 ordinary paths. Persistable range paths must fit the existing 500 UTF-16-unit
 witness limit and avoid citation/Markdown-list delimiters; a readable raw path
-can still be refused for proposal persistence if it exceeds that contract.
+can still be refused in a competency answer if it exceeds that contract.
 
-Path support does not verify the recorded range or hash. Shared meaning
-assessment keeps exact range evidence unresolved, and proposal admission refuses
-an `answered` competency containing it, even with other prose witnesses. Use an
-honest partial/visible gap until current range verification is available; source
-remeasurement must not silently certify an old range. Existing ordinary evidence,
-purpose/domain, independent qualification, exact human acceptance and write
-gates remain in force. The source-checkout
+Path support does not verify the recorded range or hash. Use an honest
+partial/visible gap until current range verification is available; source
+remeasurement must not silently certify an old range. The source-checkout
 [bootstrap workflow](../.agents/skills/ontology-bootstrap/workflow.md)
 uses this capability to outline every unit's main file and read one main flow
 end to end before writing. It keeps implemented-behavior hypotheses separate
 from historical owner intent.
-Role-diverse behavior evidence may support tentative responsibility/capability
-candidates with sourced counter-boundaries, explicit uncertainty and conditions
-preserved in their bodies. Existing authority thresholds, independent
-qualification and exact human acceptance still apply; unsupported assignments
-stay outside the proposal. These are investigation instructions, not a new
-admission rule or a guarantee of construction quality.
-
-`tools/list` advertises only the shallow shape of `qualification` and
-`proposal`; the server checks the full schemas, including the nonempty
-purpose-authority `decisions`, `nonGoals`, and `sourceRefs` arrays, and refuses
-a malformed field with its path, expected shape and one valid example.
-Bound ontology-qualification non-goals to the stated review scope; they must not
-be invented as upstream product exclusions. In the source-checkout handoff
-helper, auditors independently accept or reject sealed quantifier classifications.
-Accepted rows retain the exact rationale, source-reference order and values;
-rewriting the reasoning requires rejection and resealing.
 
 ### The map analysis record
 
@@ -1615,7 +1198,7 @@ example with no code connected.
   changed), and every git call stops at 5 seconds without taking optional
   locks.
 - A session that writes nothing appends nothing; a dry run, an unchanged
-  write, `connect_project_source` (binding or `disconnect: true`) count as
+  write, `connect_project_source` and `disconnect_project_source` count as
   nothing.
 - A reader keeps the last line per session and analysis and sums an
   analysis's sessions. When an analysis begins, the server rewrites the file
@@ -1870,72 +1453,75 @@ verifier itself and change only when the tool contract changes.
 
 ```
 
+
 [ontology-atlas-mcp verify]
 
-· step 1 — parser smoke test
+· step 1: parser smoke test
 ✓ result: 9 passed, 0 failed
-· step 2 — server boot + tools/list + list_concepts/census/project probe/get_concepts/list_concepts mentions/find_backlinks/list_concepts filter/limited list_concepts filter/analyze_repo_structure/infer_imports/orphan match_nodes/destructive dry-runs (vault=<vault>, timeout=<N>ms)
-✓ initialize OK — server ontology-atlas-mcp@<version>
-✓ initialize instructions — tool inventory, construction card, write sequence and guide pointer present
-✓ tools/list 23/23 (23/23 titled; 13/13 read; 10/10 write; 6/6 destructive; 2/2 idempotent; 23/23 local-only) — absorb_document · add_concepts · add_relations · analyze_repo_structure · compile_ontology · connect_project_source · connection_info · delete_concept · finalize_project_meaning · find_backlinks · get_concepts · get_constellation · infer_imports · inspect_architecture · list_concepts · merge_concepts · patch_concept · query_ontology · read_source · remove_relation · rename_concept · validate_vault · validate_wiki
-✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
-✓ tools/list schema contract — strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance + project-meaning receipt/assessment schemas
-✓ strict arguments — unknown tool argument rejected at runtime
-✓ strict arguments — multiple unknown tool arguments reported together
-✓ strict tool names — unknown tool rejected with closest-name hint
-✓ add_concepts — non-object, single/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata
-✓ add_relations — non-object, single/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata
-✓ batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments
-✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady/canConfirm contract without write-maintenance
-✓ absorb_document dry-run — outside-repo temp fixture explicitly opted in, classified (policy + architecture sections), and not written
-✓ patch_concept conflict guard — stale expected_mtime rejected with vault_conflict
-✓ strict enums — invalid query operation rejected with closest-value hint
-✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain/separate_evidence_from_concept/fold_bulk_siblings/retire_unearned_node)
-✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint
-✓ strict list_concepts filters — invalid kind rejected with closest-value hint
-✓ strict list_concepts filter — invalid kind/has-key rejected with closest-value hints
-✓ retired tool — a retired name answers tool_retired with the call that replaces it
-✓ strict relation_check — invalid type rejected before endpoint resolution with closest-value hint and structured repair
-✓ strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics
-✓ strict graph edge kind filters — invalid match_edges.fromKind/toKind rejected with closest-value hints
-✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
-✓ maintenance cursor — ready page stable (<N> remaining actions; phase none; severity none; kind none; executable none; review none)
-· maintenance cursor — resume skipped (ready page has no actions)
-✓ list_concepts — vault total <N> nodes (vaultRoot /path/to/docs/ontology)
-✓ single get_concepts — <smoke slug> (<N> outgoing edges)
-✓ get_concepts — 2 ok rows, 1 partial row
-✓ list_concepts mentions — <N> evidence results for "project"
-✓ find_backlinks — <project slug> (<N> backlinks)
-✓ list_concepts filter — <N> query results / <N> total query results
-✓ list_concepts filter limited — 1 query result / <N> total query results (limited true)
-✓ analyze_repo_structure — <framework> (<N> domain candidates, <N> capability candidates, <N> element candidates)
-✓ infer_imports — <N> files scanned, <N> module edges (<from>-><to> x<N> (static:<N>/dynamic:<N>), …, +<N> more)
-✓ match_nodes hasIncoming:false — <N> orphans
-✓ list_concepts census — <N> nodes (capability:<N>, domain:<N>, element:<N>, project:<N>, vault-readme:<N>)
-✓ validate_vault — <N> files, 0 problem files
-✓ project probe — 1 project node
-✓ workspace_brief — healthy (<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>)
-✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
-· workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:<N> - The scoped ontology graph has disconnected actionable islands.
-✓ health — healthy (issues:0, unresolved:0, cycles:0, <N> checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:<N>, +<N> more)
-✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, <N> checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:<N>, +<N> more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-· health_tuned non-blocking advisory checks — components:info:<N> - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph <graph hash> (<N> nodes, <N> edges, issues 0)
-✓ compile_ontology page — 1/<N> nodes, 1/<N> edges
-✓ compile_ontology indexes — out <N>, in <N>, edgeById <N>, aliases <N>, edges <N>/<N>/<N>
-✓ overview — graph <graph hash> (<N> nodes, <N> edges, hubs <N>)
-✓ overview query_plan — aggregate_scan (medium, nodes <N>, edges <N>)
-✓ project_map query_plan — aggregate_scan (medium, nodes <N>, edges <N>)
-✓ neighbors — <smoke slug> (<N>/<N> edges, limited false)
-✓ path — <smoke slug> → <project slug> (<N> hops, <N> edges)
-✓ all_paths — <smoke slug> → <project slug> (<N>/<N> paths, budget 1000, expanded <N>, exhaustive true, evidence partial)
-✓ project_scope — <project slug> (<N> nodes, internalEdges <N>)
-✓ read census consistency — <N> nodes across census/list_concepts/compile_ontology/overview, <N> kinds
-✓ structuredContent — direct 13/13, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
+· step 2: server boot + tools/list + list_concepts/census/project probe/get_concepts/list_concepts mentions/find_backlinks/list_concepts filter/limited list_concepts filter/analyze_repo_structure/infer_imports/orphan match_nodes/destructive dry-runs (vault=docs/ontology, timeout=30000ms)
+✓ connection_info: active vault/repo roots match the verifier scope (wrong_vault fail-closed)
+✓ initialize OK: server ontology-atlas-mcp@<version>
+✓ initialize instructions: tool inventory, construction card, write sequence and guide pointer present
+✓ tools/list 24/24 (24/24 titled; 13/13 read; 11/11 write; 6/6 destructive; 2/2 idempotent; 24/24 local-only): absorb_document · add_concepts · add_relations · analyze_repo_structure · compile_ontology · connect_project_source · connection_info · delete_concept · disconnect_project_source · finalize_project_meaning · find_backlinks · get_concepts · get_constellation · infer_imports · inspect_architecture · list_concepts · merge_concepts · patch_concept · query_ontology · read_source · remove_relation · rename_concept · validate_vault · validate_wiki
+✓ tools/list inventory names: missing/extra/duplicate/invalid checks passed
+✓ initialize tool inventory: counts and read/write names match tools/list exactly
+✓ tools/list output schemas: each is the top-level cut of its full result contract
+✓ tools/list schema contract: strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance schema
+✓ strict arguments: unknown tool argument rejected at runtime
+✓ strict arguments: multiple unknown tool arguments reported together
+✓ strict tool names: unknown tool rejected with closest-name hint
+✓ add_concepts: non-object, single/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata
+✓ add_relations: non-object, single/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata
+✓ batch caps: get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments
+✓ destructive dry-runs: rename_concept · merge_concepts · delete_concept previewReady/canConfirm contract without write-maintenance
+✓ absorb_document dry-run: outside-repo temp fixture explicitly opted in, classified (policy + architecture sections), and not written
+✓ patch_concept conflict guard: stale expected_mtime rejected with vault_conflict
+✓ strict enums: invalid query operation rejected with closest-value hint
+✓ strict maintenance filters: invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain/separate_evidence_from_concept/fold_bulk_siblings/retire_unearned_node/capability_without_evidence/rejudge_summary_membership/definition_missing/boundary_missing/epistemic_exclusion/folder_only_evidence/slug_outside_kind_folder/uncertainty_missing/retire_starter_example)
+✓ strict relation filters: invalid dependencyTypes rejected with closest-value hint
+✓ strict list_concepts filters: invalid kind rejected with closest-value hint
+✓ strict list_concepts filter: invalid kind/has-key rejected with closest-value hints
+✓ retired tool: a retired name answers tool_retired with the call that replaces it
+✓ strict relation_check: invalid type rejected before endpoint resolution with closest-value hint and structured repair
+✓ strict graph filters: invalid match_nodes.kind/sort and recommend_relations.kind rejected with narrowed diagnostics
+✓ maintenance cursor: missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
+✓ maintenance cursor: ready page stable (<N> remaining actions; phase review:<N>; severity info:<N>; kind rejudge_summary_membership:<N>; executable none; review maint_<id>:review/rejudge_summary_membership:info)
+✓ maintenance cursor: resume afterActionId advanced (maint_<id>; <N> remaining action; phase review:<N>; severity info:<N>; kind rejudge_summary_membership:<N>; executable none; review maint_<id>:review/rejudge_summary_membership:info)
+✓ list_concepts: vault total <N> nodes (vaultRoot /Users/jinan/side-project/<project slug>/.claude/worktrees/agent-a1c9025a19546fd2b/docs/ontology)
+✓ single get_concepts: <smoke slug> (<N> outgoing edges)
+✓ get_concepts: 2 ok rows, 1 partial row
+✓ list_concepts mentions: <N> evidence results for "project"
+✓ find_backlinks: <smoke slug> (<N> backlink)
+✓ list_concepts filter: <N> query result / <N> total query result
+✓ list_concepts filter limited: <N> query result / <N> total query results (limited true)
+✓ analyze_repo_structure: <N> product units, <N> lines in <N> files
+✓ infer_imports: <N> files scanned, <N> module edges (elements/library->capabilities/library x91 (static:86/dynamic:<N>), elements/home->elements/ontology-map x84 (static:<N>), +<N> more)
+✓ infer_imports focus: src/entities/knowledge-graph/model/knowledge-graph.ts (<N> incoming, <N> outgoing, 11/11 returned)
+✓ match_nodes hasIncoming:false: <N> orphan
+✓ list_concepts census: <N> nodes (capability:<N> document:<N> domain:<N> element:<N> project:<N> vault-readme:<N>)
+▲ validate_vault found <N> problem files with warnings only (errors <N> warnings <N>) · codes dependency-unwitnessed:warning:<N> not-mapped-line-mismatch:warning:<N>; warnings do not block verification.
+✓ validate_vault: <N> files, <N> problem files
+✓ project probe: 1 project node
+✓ workspace_brief: needs_attention (<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>)
+· workspace_brief non-blocking advisory nextActions: meaning_assessment:warn:<N> - <N> project meaning assessment(s) require review; first <project slug>: invalid (competency_not_authored). This project's five competency answers are already written, but this vault has no finalize receipt for them. Nothing is broken. Call finalize_project_meaning to record the receipt., vault_validation/validate_vault:warn:<N> - <N> warning(s) require review. (frontmatter/graph refs <N> source paths <N>; repoRoot /Users/jinan/side-project/<project slug>/.claude/worktrees/agent-a1c9025a19546fd2b), components/health_check:info:<N> - The resolved ontology graph has disconnected actionable islands.
+✓ agent_brief: needs_attention (needs_attention 75/100, <N> entrypoints, <N> first calls, <N> write guardrails)
+✓ workspace_brief_limited: needs_attention (<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>)
+· workspace_brief_limited non-blocking advisory nextActions: meaning_assessment:warn:<N> - <N> project meaning assessment(s) require review; first <project slug>: invalid (competency_not_authored). This project's five competency answers are already written, but this vault has no finalize receipt for them. Nothing is broken. Call finalize_project_meaning to record the receipt., vault_validation/validate_vault:warn:<N> - <N> warning(s) require review. (frontmatter/graph refs <N> source paths <N>; repoRoot /Users/jinan/side-project/<project slug>/.claude/worktrees/agent-a1c9025a19546fd2b), components/health_check:info:<N> - The resolved ontology graph has disconnected actionable islands.
+✓ health: needs_attention (issues:<N> unresolved:<N> cycles:<N> <N> checks: vault_present:pass:<N> compile_issues:pass:<N> unresolved_edges:pass:<N> dependency_cycles:pass:<N> relation_recommendations:pass:<N> +<N> more)
+· health non-blocking advisory checks: components:info:<N> - The resolved ontology graph has disconnected actionable islands., vault_validation:warn:<N> - <N> warning(s) require review. (frontmatter/graph refs <N> source paths <N>; repoRoot /Users/jinan/side-project/<project slug>/.claude/worktrees/agent-a1c9025a19546fd2b), meaning_assessment:warn:<N> - <N> project meaning assessment(s) require review; first <project slug>: invalid (competency_not_authored). This project's five competency answers are already written, but this vault has no finalize receipt for them. Nothing is broken. Call finalize_project_meaning to record the receipt.
+✓ compile_ontology: graph <graph hash> (<N> nodes, <N> edges, issues <N>)
+✓ compile_ontology page: 1/86 nodes, 1/283 edges
+✓ compile_ontology indexes: out <N> in <N> edgeById <N> aliases <N> edges 283/0/0
+✓ overview: graph <graph hash> (<N> nodes, <N> edges, hubs <N>)
+✓ overview query_plan: aggregate_scan (medium, nodes <N> edges <N>)
+✓ project_map query_plan: aggregate_scan (medium, nodes <N> edges <N>)
+✓ neighbors: <smoke slug> (4/4 edges, limited false)
+✓ path: <smoke slug> → <project slug> (<N> hops, <N> edges)
+✓ project_scope: <project slug> (<N> nodes, internalEdges <N>)
+✓ read census consistency: <N> nodes across census/list_concepts/compile_ontology/overview, <N> kinds
+✓ structuredContent: direct 12/12, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 12/12
 
-All passed. Register `.mcp.json` with your MCP client and restart to use the
-verified runtime inventory.
+All passed: register .mcp.json with your MCP client and restart to use the 24 tools.
 
 ```
 
@@ -1956,16 +1542,13 @@ and paginated `compile_ontology({nodesLimit:1, edgesLimit:1})`,
 `query_ontology({operation:"query_plan", targetOperation:"project_map"})`,
 plus actual `query_ontology({operation:"neighbors"})`,
 `query_ontology({operation:"path"})`, and
-`query_ontology({operation:"all_paths"})`, and
 `query_ontology({operation:"project_scope"})` smoke calls.
 The indexed compile smoke verifies index shape, count alignment, edge membership,
 known-slug references, and resolved/external/unresolved edge breakdowns.
 It also requires every exercised direct read, write row-isolation smoke,
 destructive dry-run smoke, maintenance cursor, and
 `query_ontology` graph-query response to include `structuredContent`, and
-compares that payload with text JSON when both carry JSON. Compact agent brief
-v3 sends a handoff text instead of JSON text; the verifier checks that text against
-`structuredContent`, so typed facts are not serialized twice. Agents can consume MCP results without reparsing
+compares that payload with text JSON when both carry JSON. Agents can consume MCP results without reparsing
 human text. Successful verify output summarizes the
 direct-read, write, maintenance-cursor, and graph-query `structuredContent` coverage
 that was enforced in the run.
@@ -1992,7 +1575,7 @@ checks those contracts: the `list_concepts`
 `outputSchema` and matching `structuredContent` batch payload, the `find_backlinks`
 `outputSchema` and matching `structuredContent` backlink-match payload, the `compile_ontology`
 `outputSchema` and matching `structuredContent` graph-summary / full-artifact payload, the `analyze_repo_structure`
-`outputSchema` and matching `structuredContent` bootstrap-candidate payload, the `infer_imports`
+`outputSchema` for its source reads, the `infer_imports`
 `outputSchema` and matching `structuredContent` import-graph payload, the
 `patch_concept` single writer `outputSchema` contract, the `add_concepts`
 and `add_relations` batch writer `outputSchema` row contracts, the `rename_concept`,
@@ -2016,8 +1599,7 @@ inventory, the construction card, the one-line write sequence
 (`add_concepts` → `add_relations` → `validate_vault` → `connect_project_source`
 → `finalize_project_meaning`), the pointer to the `connection_info({guide})`
 topics, the backlinks-before-rename line or the `workspace_brief` →
-`validate_vault` first-contact line, or if they name the bulk qualification
-route. Write safety (`expected_mtime`, `overwrite: true`, `force: true`,
+`validate_vault` first-contact line. Write safety (`expected_mtime`, `overwrite: true`, `force: true`,
 dangling referrers) lives in the `write_safety` guide and the tool schemas
 checked above; strict-input recovery lives in the error responses checked
 below. Unknown-argument errors include `Received arguments: ...` so an agent
@@ -2137,7 +1719,7 @@ After you add `.mcp.json` / `.codex/config.toml` and restart the agent, try the 
 > 3. Call `get_concepts({ slugs: ["project"] })` to see the root node's frontmatter and neighbors.
 > 4. Call `query_ontology({ operation: "neighbors", slug: "capabilities/mcp-server" })` to inspect the local graph around that capability.
 > 5. Call `validate_vault({})` to check frontmatter and graph-reference integrity before writing.
-> 6. Call `query_ontology({ operation: "agent_brief", project: "project-slug" })` when you want a project-scoped Claude Code/Codex handoff: readiness, categorical fail-closed `meaningAssessment`, `businessOntologyLens` for the business-first outcome → domain → capability → element read order, graph entrypoints, recommended MCP calls, `graphDbQueryPack` (`facets` / `schema` / `match_nodes` / `match_edges` / `domain_matrix` / `centrality` / `all_paths` / `explain_relation` plus `business_questions` outcome / domain-boundary / capability-claim node scans / implementation-evidence edge scans with `query_plan` gates), `graph_traversal` (`schema` / `all_paths` / `pattern_walk` / `project_map`), `traversalStrategy` (`plan_before_enumeration` / `bounded_path_evidence` / `containment_cross_check`) for performance-aware traversal, write guardrails, `relationDecisionGuide` for relation preflight decisions, `resultContracts` that require `all_paths` callers to report completeness fields and `match_nodes` / `match_edges` callers to report `totalMatches`, `limited`, and `followUp` details before treating scan rows as evidence, and read-first write policy in one response. Use `query_ontology({ operation: "workspace_brief" })` when you only need the first-contact graph diagnosis.
+> 6. Call `query_ontology({ operation: "agent_brief", project: "project-slug" })` when you want a project-scoped Claude Code/Codex handoff: readiness, the categorical `meaningAssessment`, the business-first read order, recommended calls and write guardrails. Then read the nodes it names with `get_concepts({ slugs, body: "full" })`.
 > 7. Call `query_ontology({ operation: "overview", limit: 5 })` to confirm graph-query summaries work without fetching the full compile artifact.
 > 8. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })` and `query_ontology({ operation: "query_plan", targetOperation: "project_map" })` before heavier graph exploration so the agent sees the cost/index contract across more than one operation.
 
@@ -2170,11 +1752,10 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/agent-brief/agent-brief-scope.mjs` | which project and documents an agent brief covers |
 | `src/tools/agent-brief/meaning-readiness.mjs` | the meaning-readiness and project-meaning facts a brief carries, and the next-action hint table |
 | `src/tools/validate-vault.mjs` | `validate_vault`, `validate_wiki` |
-| `src/tools/repo-analysis/analyze-structure.mjs` | `analyze_repo_structure`: the breadth map, source reads and the analysis view |
+| `src/tools/repo-analysis/analyze-structure.mjs` | `analyze_repo_structure`: the breadth map and source reads |
 | `src/tools/repo-analysis/inspect-architecture.mjs` | `inspect_architecture`, with `architecture-profile-selection.mjs` choosing the profile |
 | `src/tools/repo-analysis/infer-imports.mjs` | `infer_imports`, with `import-review-rules.mjs` (review mode, delivery limit, drift summary) and `vault-reconciliation.mjs` (the vault diff) |
-| `src/tools/repo-analysis/index-project.mjs` | `index_project` (retired, still answered), with `plan-rules.mjs` (vault alignment, concept delta) |
-| `src/tools/project-source.mjs` | connect (and `disconnect: true`) / finalize a project binding |
+| `src/tools/project-source.mjs` | connect / disconnect / finalize a project binding |
 | `src/tools/writes/write-concepts.mjs` | `add_concepts`, `patch_concept`, and the retired `add_concept` |
 | `src/tools/writes/write-relations.mjs` | the edge writes: `add_relations`, and `remove_relation` with its `replaceWith` |
 | `src/tools/lifecycle.mjs` | `rename_concept` (and its `newKind` reclassification), `merge_concepts`, `delete_concept` |
@@ -2199,27 +1780,25 @@ transport. Everything a change would actually touch lives beside it.
 | `src/ontology-engine/graph-context/artifact-context.mjs` | graph indexes and reference resolution |
 | `src/ontology-engine/graph-context/context-operations.mjs` | shared graph lookups and scope helpers |
 | `src/ontology-engine/query-operation/query-planner.mjs` | bounded query planning |
-| `src/ontology-engine/traversal/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
+| `src/ontology-engine/traversal/traversal-analysis.mjs` | reachability and impact |
 | `src/ontology-engine/selection/graph-summary-queries.mjs` | `overview`, `schema`, `facets`: what the whole graph holds |
-| `src/ontology-engine/selection/match-queries.mjs` | `match_nodes`, `match_edges`, `relation_check`, `similar_nodes`, with `match-rules.mjs` (node filters, edge target kind, the relation verdict and approval gate) |
-| `src/ontology-engine/selection/profile-queries.mjs` | `node_profile`, `domain_profile`, `project_scope`, `project_map` |
-| `src/ontology-engine/selection/domain-matrix-queries.mjs` | `domain_matrix`, with `domain-matrix-rules.mjs` (domain assignment and edge classification) |
+| `src/ontology-engine/selection/match-queries.mjs` | `match_nodes`, `relation_check`, `similar_nodes`, with `match-rules.mjs` (node filters, the relation verdict and approval gate) |
+| `src/ontology-engine/selection/profile-queries.mjs` | `node_profile`, `project_scope`, `project_map` |
 | `src/ontology-engine/selection/cluster-queries.mjs` | `components`, `communities`, with `cluster-rules.mjs` (connected groups, community grouping) |
 | `src/ontology-engine/traversal/scope-lookups.mjs` | the nodes under a project or domain, a node's nearest domain, and project and domain roots |
 | `src/ontology-engine/traversal/containment-queries.mjs` | `lineage` and `containment_tree` |
-| `src/ontology-engine/traversal/dependency-order-queries.mjs` | `cycles` and `topological_order`, with `dependency-order-rules.mjs` (bounded cycle search, prerequisite layers) |
+| `src/ontology-engine/traversal/dependency-order-queries.mjs` | `cycles`, with `dependency-order-rules.mjs` (bounded cycle search) |
 | `src/ontology-engine/traversal/growth-queries.mjs` | `recommend_relations`, `growth_plan` and the candidate groups behind it |
 | `src/ontology-engine/maintenance/maintenance-queries.mjs` | repair and review action planning |
 | `src/ontology-engine/briefs/brief-queries.mjs` | evidence-aware agent and workspace briefs |
 | `src/ontology-engine/maintenance/health-query.mjs` | structural health reporting |
 | `src/ontology-engine/query-operation/query-arguments.mjs` | validates and normalizes the arguments of the query operations |
 | `src/ontology-engine/traversal/graph-measures.mjs` | page rank, community labels and node similarity over the compiled graph |
-| `src/ontology-engine/selection/node-ranking.mjs` | degree buckets, hubs and the order of node, lineage and centrality rows |
+| `src/ontology-engine/selection/node-ranking.mjs` | degree buckets, hubs and the order of node and lineage rows |
 | `src/ontology-engine/maintenance/reference-repair.mjs` | the node a dangling reference most likely meant, and the slug and title to create for it |
 | `src/ontology-engine/traversal/topology-shape.mjs` | a cycle in canonical form and topological layers cut at a limit |
 | `src/ontology-engine/traversal/dependency-qualification.mjs` | whether declared dependency edges carry a rationale |
 | `src/ontology-engine/maintenance/maintenance-actions.mjs` | the order of maintenance actions and the stable id each gets |
-| `src/ontology-engine/traversal/builder-focus.mjs` | the focus and canvas position `builder_context` takes |
 | `src/ontology-engine/query-operation/query-dispatch.mjs` | operation-to-query dispatch |
 | `src/ontology-engine/traversal/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
 | `src/ontology-engine/query-operation/query-values.mjs` | shared node/relation vocabulary and default limits |
@@ -2252,19 +1831,27 @@ cannot boot.
 
 ## Status
 
-- Unreleased — 23 tools (13 read + 10 write), down from 33. Ten names no longer run
+- Unreleased, lean cuts — the proposal and qualification route is gone: `analyze_repo_structure`
+  takes `rootPath`, `ignore`, `sourceReads` and `sourceOnly`, and a call that still sends `view`,
+  `proposal`, `qualification` or `maxDepth` answers `invalid_arguments` with the call that replaces
+  it. `query_ontology` lost nine operations (`all_paths`, `centrality`, `builder_context`,
+  `match_edges`, `domain_profile`, `domain_matrix`, `topological_order`, `meaning_repair_review`
+  and `analysis_history`), the compact task brief (`detail:"compact"` and `task`), and the `competency`
+  guide topic; each refusal names its replacement. A symbol read no longer carries a `family` line.
+  `disconnect_project_source` stays its own tool.
+- Unreleased — 24 tools (13 read + 11 write), down from 33. Nine names no longer run
   and answer `tool_retired` with the call that replaces them (`retiredTool` and
   `replacement` in the repair fields). `git_status`, `git_history` and `git_snapshot` are
-  cut: the agent runs its own `git`. Seven are folded: `list_constellations` into
+  cut: the agent runs its own `git`. Six are folded: `list_constellations` into
   `get_constellation` (no `id`), `find_evidence` into `list_concepts({mentions})`,
-  `find_orphans` into `query_ontology({operation:'match_nodes',hasIncoming:false})`,
-  `query_concepts` into `list_concepts({filter})`, `disconnect_project_source` into
-  `connect_project_source({disconnect:true})`, `replace_relation` into
+  `find_orphans` into `query_ontology({operation:'match_nodes',hasIncoming:false})` (read from the files, so it answers a vault that does not compile; a short reference several nodes share counts for each; `project` and `vault-readme` are left out unless `kind` or `excludeKinds` says otherwise; `offset` pages),
+  `query_concepts` into `list_concepts({filter})`, `replace_relation` into
   `remove_relation({replaceWith})`, and `reclassify_concept` into
   `rename_concept({newKind})`. Every folded write keeps its dry run, `expected_mtime`,
   consent, write log and audit line. The `tools/list` answer shrank from 76,282 to 65,710
-  bytes. `list_concepts({mentions})` differs from `find_evidence` in one way: it
-  answers graph nodes only, not ordinary Markdown pages.
+  bytes. `list_concepts({mentions})` keeps `find_evidence`'s scope (2026-08-17
+  decision (66)): plain Markdown pages answer with `isNode:false` below nodes of
+  equal score, and each row carries its `excerpt`.
 - 0.12.0 current safety contract — all nine destructive tools expose
   `previewReady` / `canConfirm` / `wouldChange` / `blockedReasons`; external or
   symlink-escaped `absorb_document` confirmation requires

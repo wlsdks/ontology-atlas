@@ -9,7 +9,7 @@ import { GROWTH_HINT_OUTPUT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs
 export const LIST_CONCEPTS_TOOL = {
   name: 'list_concepts',
   description:
-    'List every ontology node in the vault (each .md file with a frontmatter `kind:`); AI agents call this first to grasp the codebase\'s mental model. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault. Narrow by `kind`, `domain` and `since`, by a predicate with `filter` (such as "capabilities with no elements"), or by text with `mentions`, which ranks nodes whose title, relations or body say it and adds `matchedIn` and `score` to each row. Page with `offset` + `limit`, following `pagination.nextOffset` while `hasMore` is true.',
+    'List every ontology node in the vault (each .md file with a frontmatter `kind:`); AI agents call this first to grasp the codebase\'s mental model. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault. Narrow by `kind`, `domain` and `since`, by a predicate with `filter` (such as "capabilities with no elements"), or by text with `mentions`, which ranks the nodes whose title, relations or body say it, then plain Markdown pages that say it (`isNode: false`), and adds `matchedIn`, `score` and an `excerpt` to each row. Page with `offset` + `limit`, following `pagination.nextOffset` while `hasMore` is true.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -33,7 +33,7 @@ export const LIST_CONCEPTS_TOOL = {
           'Offset after filters, in deterministic slug order; resume at pagination.nextOffset.',
       },
       mentions: nonBlankStringSchema(
-        'Text to find, case-insensitive. Keeps the nodes whose title, capability or element names, or body contain it, best match first (title, then relations, then body, then slug). Zero rows names the nearest titles.',
+        'Text to find, case-insensitive. Keeps the documents whose title, capability or element names, or body contain it, best match first (title, then relations, then body, nodes before plain Markdown pages, then slug). A plain Markdown page has no `kind:` and answers with `isNode: false`; pass `kind` to see nodes only. Zero rows names the nearest titles.',
       ),
       filter: nonBlankStringSchema(
         'Predicate over frontmatter, case-insensitive keywords: `key=value`, `key!=value` (keys kind, domain, slug, title, created_by; quote a value holding spaces or a colon) and `has(key)` for a relation key such as elements or depends_on. Combine with AND, OR, NOT and parentheses: `(kind=domain OR kind=capability) AND NOT has(elements)`. Joins `kind`, `domain`, `since` and `mentions` as AND.',
@@ -112,6 +112,10 @@ export const LIST_CONCEPTS_TOOL = {
             },
             slug: NON_BLANK_STRING_SCHEMA,
             kind: NON_BLANK_STRING_SCHEMA,
+            isNode: {
+              type: 'boolean',
+              description: 'Only with `mentions`. False for a plain Markdown page that lives beside the nodes: it has no `uid` or `kind` and is not part of the graph.',
+            },
             title: NON_BLANK_STRING_SCHEMA,
             domain: { type: 'string' },
             capabilities: {
@@ -132,19 +136,45 @@ export const LIST_CONCEPTS_TOOL = {
               description: 'Only with `mentions`: where the text was found.',
             },
             score: { type: 'number', description: 'Only with `mentions`: relevance, higher first.' },
+            excerpt: { type: 'string', description: 'Only with `mentions`: the first prose of the body, at most 200 characters.' },
+            excerptTruncated: {
+              type: 'boolean',
+              description: 'Only present (and always true) when the body carries more than this excerpt shows, possibly the matched text.',
+            },
+            bodyChars: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Only alongside excerptTruncated: the full body length.',
+            },
             summary: { type: 'string' },
             summaryTruncated: {
               type: 'boolean',
               description: 'Only present (and always true) when the body carries more than this summary shows.',
             },
           },
-          required: ['uid', 'slug', 'kind', 'title', 'mtime'],
+          required: ['slug', 'title', 'mtime'],
+          oneOf: [
+            { required: ['uid', 'kind'] },
+            {
+              properties: { isNode: { const: false } },
+              required: ['isNode'],
+              not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+            },
+          ],
           additionalProperties: false,
         },
       },
       summaryHint: {
         type: 'string',
         description: 'Only present when at least one row carries a partial summary — names the follow-up call that returns the full bodies.',
+      },
+      nonNodeHint: {
+        type: 'string',
+        description: 'Only with `mentions`, when a row is a plain Markdown page: says so and how to see nodes only.',
+      },
+      excerptHint: {
+        type: 'string',
+        description: 'Only with `mentions`, when a row carries a partial excerpt: names the call that returns the full bodies.',
       },
       growthHint: {
         ...GROWTH_HINT_OUTPUT_SCHEMA,

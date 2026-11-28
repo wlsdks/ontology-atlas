@@ -99,6 +99,23 @@ describe('turnActivity', () => {
     expect(turnActivity(events, 0, 'atlas-vault', true).written).toEqual({ concepts: 3, relations: 1 });
   });
 
+  it('reads remove_relation with replaceWith as a replacement and rename_concept with newKind as a kind change, by the call\'s own arguments', () => {
+    const replace = { from: 'capabilities/a', to: 'elements/x', type: 'depends_on', replaceWith: { to: 'elements/y', type: 'depends_on' }, confirm: true };
+    const events: AcpEvent[] = [
+      user,
+      tool('t1', 'mcp__atlas-vault__remove_relation', 'other', 'completed', replace, { ok: true, changed: true, from: 'capabilities/a', to: 'elements/y', type: 'depends_on' }),
+      tool('t2', 'mcp__atlas-vault__remove_relation', 'other', 'completed', { from: 'capabilities/a', to: 'elements/z', type: 'depends_on', confirm: true }, { ok: true, changed: true, from: 'capabilities/a', to: 'elements/z', type: 'depends_on' }),
+      tool('t3', 'mcp.atlas-vault.rename_concept', 'execute', 'completed',
+        { server: 'atlas-vault', tool: 'rename_concept', arguments: { oldSlug: 'elements/rules', newKind: 'capability', domain: 'domains/billing', confirm: true } },
+        { ok: true, slug: 'capabilities/rules', changed: true }),
+    ];
+    expect(turnActivity(events, 0, 'atlas-vault', true).written).toEqual({ concepts: 1, relations: 1 });
+    const open = [user, tool('t4', 'mcp__atlas-vault__remove_relation', 'other', 'in_progress', replace)];
+    expect(turnActivity(open, 0, 'atlas-vault', true)).toMatchObject({ kind: 'writing', label: { kind: 'known', text: 'replaceRelation' } });
+    const kindOpen = [user, tool('t5', 'mcp__atlas-vault__rename_concept', 'other', 'in_progress', { oldSlug: 'a', newKind: 'element' })];
+    expect(turnActivity(kindOpen, 0, 'atlas-vault', true).label).toEqual({ kind: 'known', text: 'reclassifyNode' });
+  });
+
   it('counts a concept once when the turn writes it again', () => {
     const events: AcpEvent[] = [
       user,

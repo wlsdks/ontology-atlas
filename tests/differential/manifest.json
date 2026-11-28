@@ -34,6 +34,7 @@
         "validate_wiki",
         "absorb_document",
         "connect_project_source",
+        "disconnect_project_source",
         "finalize_project_meaning"
       ],
       "proven": false,

@@ -1,6 +1,6 @@
 /**
  * Binding a project node to the code it describes, and releasing it:
- * `connect_project_source` (which also disconnects), and the
+ * `connect_project_source`, `disconnect_project_source`, and the
  * `finalize_project_meaning` receipt.
  */
 
@@ -49,7 +49,6 @@ import {
   VAULT_ROOT,
 } from '../server/runtime.mjs';
 import {
-  requireOptionalBoolean,
   requireOptionalNonBlankString,
   requireOptionalNonNegativeNumber,
 } from '../server/validate.mjs';
@@ -124,17 +123,10 @@ function resolveProjectNodeSlug(projectSlug, allDocs) {
   return canonicalSlug;
 }
 
-function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair, disconnect } = {}) {
+function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {}) {
   requireOptionalNonBlankString(projectSlug, 'projectSlug');
   requireOptionalNonBlankString(rootPath, 'rootPath');
-  requireOptionalBoolean(disconnect, 'disconnect');
   if (typeof projectSlug !== 'string') throw new Error('projectSlug is required.');
-  if (disconnect === true) {
-    if (rootPath !== undefined || repair !== undefined) {
-      throw new Error('disconnect must not be combined with rootPath or repair: it only removes the binding.');
-    }
-    return disconnectProjectSource({ projectSlug, confirm });
-  }
   if (typeof rootPath === 'string' && !isAbsolute(rootPath)) {
     throw new Error(`rootPath must be an absolute local path; received "${rootPath}".`);
   }
@@ -246,7 +238,11 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair, disc
   };
 }
 
-function disconnectProjectSource({ projectSlug, confirm }) {
+function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
+  requireOptionalNonBlankString(projectSlug, 'projectSlug');
+  if (typeof projectSlug !== 'string') throw new Error('projectSlug is required.');
+
+
   const allDocs = loadVaultDocs(VAULT_ROOT);
   // A binding can outlive its project node. Disconnect must still be able to
   // clear it, so an unresolvable slug falls back to the literal value.
@@ -254,12 +250,12 @@ function disconnectProjectSource({ projectSlug, confirm }) {
   const sidecar = readProjectSourceBindings(VAULT_ROOT);
   if (sidecar.status === 'unsafe_path') {
     throw new Error(
-      `connect_project_source disconnect blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. Replace the symlink or junction with a real vault-local directory first.`,
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. Replace the symlink or junction with a real vault-local directory first.`,
     );
   }
   if (sidecar.status === 'malformed') {
     throw new Error(
-      `connect_project_source disconnect blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it by hand, or re-connect with repair: true to rewrite it.`,
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it by hand, or re-connect with repair: true to rewrite it.`,
     );
   }
   const bound = sidecar.status === 'ok'
@@ -282,8 +278,8 @@ function disconnectProjectSource({ projectSlug, confirm }) {
       removed: 0,
       bindings: removable,
       nextCall: {
-        tool: 'connect_project_source',
-        arguments: { projectSlug: canonicalSlug, disconnect: true, confirm: true },
+        tool: 'disconnect_project_source',
+        arguments: { projectSlug: canonicalSlug, confirm: true },
       },
     };
   }
@@ -291,11 +287,11 @@ function disconnectProjectSource({ projectSlug, confirm }) {
   const result = removeProjectSourceBindings(VAULT_ROOT, canonicalSlug);
   if (result.status === 'blocked_unsafe_path') {
     throw new Error(
-      `connect_project_source disconnect blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path.`,
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path.`,
     );
   }
   if (result.status === 'persistence_failed') {
-    throw new Error('connect_project_source disconnect could not persist the sidecar update.');
+    throw new Error('disconnect_project_source could not persist the sidecar update.');
   }
   const projectSource = readProjectSourceView(VAULT_ROOT, canonicalSlug, undefined);
   return {
@@ -566,5 +562,6 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {
 
 export {
   connectProjectSourceTool,
+  disconnectProjectSourceTool,
   finalizeProjectMeaningTool,
 };

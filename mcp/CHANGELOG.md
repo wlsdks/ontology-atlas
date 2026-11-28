@@ -8,7 +8,8 @@
   76,282 to 65,710 bytes. Ten names no longer run: a call answers `tool_retired`
   (`retiredTool`, `replacement`) with the call that replaces it.
 - Cut: `git_status`, `git_history`, `git_snapshot`. The answer names the agent's own
-  `git` command.
+  `git` command; for `git_snapshot` it is `git -C <vaultRoot> add -- . && git -C
+  <vaultRoot> commit -m "<why>" -- .`, not during a merge or rebase, and never push.
 - Folded: `list_constellations` into `get_constellation` (no `id`), `find_evidence` into
   `list_concepts({mentions})`, `find_orphans` into
   `query_ontology({operation:'match_nodes',hasIncoming:false})`, `query_concepts` into

@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
-import { DEFAULT_IGNORE } from '../analyze/scan-tables.mjs';
+import { DEFAULT_IGNORE } from '../analyze/default-ignore.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
 import { calleesOf } from './callees.mjs';
 import { SENSITIVE } from './credential-names.mjs';
@@ -525,24 +525,4 @@ export function readSourceEvidence(
   }
   setSerializedBytes(packet);
   return packet;
-}
-
-export function composeSourceDigest(repositoryFingerprint, sourceEvidence) {
-  if (!sourceEvidence) return repositoryFingerprint;
-  const manifest = sourceEvidence.rows.map((row) => ({
-    status: row.status,
-    path: row.path,
-    requestedRange: row.requestedRange,
-    ...(row.status === 'read' ? {
-      actualRange: row.actualRange,
-      fullFileSha256: row.fullFileSha256,
-      citation: row.citation,
-    } : row.status === 'outlined' ? {
-      mode: 'outline',
-      fullFileSha256: row.sha256,
-      declarationCount: row.declarationCount,
-      truncated: row.truncated,
-    } : { reason: row.reason }),
-  }));
-  return `sha256:${sha256(Buffer.from(JSON.stringify({ repositoryFingerprint, manifest })) )}`;
 }

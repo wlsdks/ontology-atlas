@@ -113,7 +113,7 @@ If the first fires, links become suggestions a person presses (Later 3).
      Pages under `wiki/answers/` are left out.
    - **Candidates:**
      - When search by meaning is prepared, each page carries at most 5 candidate concepts ranked by meaning (slug, title, definition sentence).
-     - Without it, the brief points the agent to Atlas `find_evidence`.
+     - Without it, the brief points the agent to Atlas `list_concepts({mentions})`.
    - **While it runs:** the press reads `progress.linking`, and `progress.linkRest` names the rest. Stop in the agent dock works.
 3. The agent edits each page's frontmatter in one of two ways:
    - it writes up to 5 slugs the page's Summary is about, each with a one-sentence reason in `relation_notes`;
@@ -297,7 +297,7 @@ Keys go in `messages/<locale>/library.json`. `wiki.undo` is reused. `wiki.proble
    - Each page in the brief carries at most 5 ranked candidates.
    - Ranking 20 pages against 5k concepts takes at most 50 ms.
    - Every vault file is byte-identical after ranking.
-   - Without vectors, the brief carries no candidates and names `find_evidence`.
+   - Without vectors, the brief carries no candidates and names `list_concepts({mentions})`.
 8. **Linking is not acceptance.**
    - Given a 20-page link turn.
    - The `list_concepts` census totals are unchanged, and no page's `status` changes.
@@ -353,3 +353,4 @@ All slices are Opus. Their files are disjoint.
 - 2026-11-19: first draft. The anchor is `describes:` slugs on the wiki page, written by the agent without approval and checked by the MCP's wiki schema. Vectors only rank candidates. The "only on a reviewed page" gate is overturned.
 - 2026-11-22: cites of `mcp/src/vault/` modules now name the subfolders the vault code was grouped into (`documents/`, `writes/`, `graph/`); no plan changed.
 - 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.
+- 2026-11-28: the Atlas search tool `find_evidence` is now `list_concepts({mentions})`, which keeps its scope (plain Markdown pages answer as `isNode:false`, decision 2026-08-17 (66)); the two mentions above name the new call.

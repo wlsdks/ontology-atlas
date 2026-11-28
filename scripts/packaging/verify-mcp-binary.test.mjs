@@ -6,9 +6,8 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 import {
-  assessMcpExactCaseAnalysis,
+  assessMcpExactCaseSurvey,
   compareMcpContracts,
-  countExactReadmeAddresses,
 } from './verify-mcp-binary.mjs';
 
 const MCP_VERSION = JSON.parse(fs.readFileSync(new URL('../../mcp/package.json', import.meta.url), 'utf8')).version;
@@ -47,42 +46,15 @@ test('source/bundled parity rejects schema drift instead of trusting tool count'
   });
 });
 
-test('exact-case verifier rejects an uppercase or missing semantic source address', () => {
-  const exact = {
-    project: { evidence: ['readme.md'] },
-    domains: [{ evidence: { source: 'readme.md' } }],
-  };
-  assert.deepEqual(countExactReadmeAddresses(exact), { lowercase: 2, uppercase: 0 });
-  assert.deepEqual(assessMcpExactCaseAnalysis(exact), {
+test('exact-case verifier rejects a breadth map that spells the README another way', () => {
+  assert.deepEqual(assessMcpExactCaseSurvey('Breadth map of /r: 1 product units.\nreadme.md: Purpose.\n'), {
     ok: true,
-    lowercaseAddresses: 2,
+    lowercaseAddresses: 1,
     uppercaseAddresses: 0,
-    projectEvidence: ['readme.md'],
   });
-  assert.deepEqual(
-    assessMcpExactCaseAnalysis({
-      project: { evidence: ['README.md'] },
-    }),
-    {
-      ok: false,
-      lowercaseAddresses: 0,
-      uppercaseAddresses: 1,
-      projectEvidence: ['README.md'],
-    },
-  );
-  assert.deepEqual(
-    assessMcpExactCaseAnalysis({
-      project: { evidence: ['readme.md'] },
-      domains: [{ evidence: { source: 'README.md' } }],
-    }),
-    {
-      ok: false,
-      lowercaseAddresses: 1,
-      uppercaseAddresses: 1,
-      projectEvidence: ['readme.md'],
-    },
-  );
-  assert.equal(assessMcpExactCaseAnalysis({ project: { evidence: [] } }).ok, false);
+  assert.equal(assessMcpExactCaseSurvey('README.md: Purpose.\n').ok, false);
+  assert.equal(assessMcpExactCaseSurvey('readme.md: a\nREADME.md: b\n').ok, false);
+  assert.equal(assessMcpExactCaseSurvey('no readme line').ok, false);
 });
 
 test('parses inline binary and vault flags used by the Windows workflows', () => {

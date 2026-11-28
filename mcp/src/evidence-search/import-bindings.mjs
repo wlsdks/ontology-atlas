@@ -6,16 +6,13 @@
  *
  * Each statement is read from lines of at most `LINE_CHARS` characters and at
  * most `STATEMENT_LINES` lines, so a hostile file costs one pass. A statement
- * or name cut at a cap marks the file's bindings `incomplete`. The family count
- * reads with `{ family: true }`: statements of up to `FAMILY_STATEMENT_LINES`
- * lines, and a JavaScript specifier kept apart by how it was written.
+ * or name cut at a cap marks the file's bindings `incomplete`.
  */
 
 import { posix } from 'node:path';
 
 const LINE_CHARS = 2000;
 const STATEMENT_LINES = 40;
-const FAMILY_STATEMENT_LINES = 400;
 const SPEC_CHARS = 300;
 // Modules and names one file brings in that are kept; a file importing more is generated.
 const SPECS = 256;
@@ -104,7 +101,7 @@ export function specKey(spec) {
 /** The one copy of `spec` this file holds, or null past the cap or for no spec. */
 function addSpec(bindings, spec) {
   if (!spec) return null;
-  const key = bindings.family && typeof spec.raw === 'string' ? `${specKey(spec)}\0${spec.raw}` : specKey(spec);
+  const key = specKey(spec);
   const held = bindings.byKey.get(key);
   if (held) return held;
   if (bindings.byKey.size >= SPECS) {
@@ -292,7 +289,6 @@ function readRust(lines, bindings) {
 }
 
 const BINDINGS = new WeakMap();
-const FAMILY_BINDINGS = new WeakMap();
 
 /**
  * The names and modules a file imports: `names` local name -> [{ spec, imported }],
@@ -300,14 +296,12 @@ const FAMILY_BINDINGS = new WeakMap();
  * every spec it imports.
  *
  * @param {{ path: string, lines: string[] }} file
- * @param {{ family?: boolean }} [options] read as the family count does
  */
-export function importsOf(file, { family = false } = {}) {
-  const cache = family ? FAMILY_BINDINGS : BINDINGS;
-  if (cache.has(file)) return cache.get(file);
+export function importsOf(file) {
+  if (BINDINGS.has(file)) return BINDINGS.get(file);
   const bindings = {
     names: new Map(), modules: new Map(), byKey: new Map(), specs: [], incomplete: false,
-    family, statementLines: family ? FAMILY_STATEMENT_LINES : STATEMENT_LINES,
+    statementLines: STATEMENT_LINES,
   };
   const lines = file.lines.map((line) => (line.length > LINE_CHARS ? line : line.replace(/\r?\n$/u, '')));
   const language = languageOf(file.path);
@@ -316,6 +310,6 @@ export function importsOf(file, { family = false } = {}) {
   else if (language === 'go') readGo(lines, bindings);
   else if (language === 'rs') readRust(lines, bindings);
   bindings.specs = [...bindings.byKey.values()];
-  cache.set(file, bindings);
+  BINDINGS.set(file, bindings);
   return bindings;
 }

@@ -24,7 +24,6 @@ const { addConceptsBatch, patchConcept } = await import('./write-concepts.mjs');
 const { addRelation, removeRelation } = await import('./write-relations.mjs');
 const { deleteConcept, mergeConcepts, renameConcept } = await import('../lifecycle.mjs');
 const { finalizeProjectMeaningTool } = await import('../project-source.mjs');
-const { connectionInfoTool } = await import('../read.mjs');
 
 const reservedRefusal = (operation, slug) =>
   new RegExp(`^Error: ${operation} refused: ${slug} carries review_state: human_decides, so it is reserved for a person\\.`);
@@ -66,8 +65,8 @@ test('renaming onto a reserved node with overwrite is refused, so the reservatio
 });
 
 test('finalizing the project meaning with answers is refused when a person has reserved the project', () => {
-  const { guideText } = connectionInfoTool({ guide: 'competency' });
-  const { answers } = JSON.parse(/```json\n([\s\S]*?)\n```/.exec(guideText)[1]);
+  const answers = ['scope', 'domains', 'abilities', 'evidence', 'impact']
+    .map((id) => ({ id, status: 'answered', answer: 'The project lets an operator invoice a customer.', concepts: ['project-reserved'], evidence: ['README.md'] }));
   assert.throws(
     () => finalizeProjectMeaningTool({ projectSlug: 'project-reserved', expected_mtime: 0, answers }),
     reservedRefusal('finalize_project_meaning', 'project-reserved'),

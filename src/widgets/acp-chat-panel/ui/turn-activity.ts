@@ -1,4 +1,4 @@
-import { parseAtlasToolCall, readToolCommandArgument, readToolFallbackTarget, type AcpEvent } from '@/features/acp-session';
+import { atlasCallIntent, parseAtlasToolCall, readToolCommandArgument, readToolFallbackTarget, type AcpEvent } from '@/features/acp-session';
 
 import { canonicalToolTitle, commandRowWords, toolLabel, withKindFallback, type ToolLabel } from './tool-label';
 
@@ -49,8 +49,8 @@ const PROTOCOL_KIND: Readonly<Record<string, TurnActivityKind>> = {
 
 type ToolEvent = Extract<AcpEvent, { kind: 'tool' }>;
 
-const CONCEPT_WRITE_TOOLS = new Set(['add_concept', 'add_concepts', 'patch_concept', 'rename_concept', 'merge_concepts', 'absorb_document']);
-const RELATION_WRITE_TOOLS = new Set(['add_relation', 'add_relations']);
+const CONCEPT_WRITE_TOOLS = new Set(['add_concept', 'add_concepts', 'patch_concept', 'rename_concept', 'reclassify_concept', 'merge_concepts', 'absorb_document']);
+const RELATION_WRITE_TOOLS = new Set(['add_relation', 'add_relations', 'replace_relation']);
 /** How deep a result may sit inside the adapter's envelope (`result` → `content` → text block → JSON). */
 const RESULT_DEPTH = 6;
 
@@ -108,7 +108,8 @@ interface WrittenSets {
 
 function collectWrites(written: WrittenSets, event: ToolEvent, callId: string): void {
   if (event.status !== 'completed') return;
-  const name = parseAtlasToolCall(event.title, event.rawInput)?.name;
+  const call = parseAtlasToolCall(event.title, event.rawInput);
+  const name = call ? atlasCallIntent(call.name, event.rawInput) : undefined;
   const target = name && CONCEPT_WRITE_TOOLS.has(name) ? written.concepts : name && RELATION_WRITE_TOOLS.has(name) ? written.relations : null;
   if (!target) return;
   const result = vaultWriteResult(event.rawOutput);
@@ -146,7 +147,7 @@ export function turnActivity(
   const written: TurnWrites = { concepts: writtenSets.concepts.size, relations: writtenSets.relations.size };
   if (open) {
     const title = canonicalToolTitle(open.title, open.rawInput);
-    const label = withKindFallback(toolLabel(title, vaultServerName), title, vaultServerName, open.toolKind);
+    const label = withKindFallback(toolLabel(title, vaultServerName, open.rawInput), title, vaultServerName, open.toolKind);
     const command = commandRowWords(label, readToolCommandArgument(open.rawInput));
     if (command) return { kind: kindOf(open, command.label), label: command.label, target: command.target, steps, written };
     return { kind: kindOf(open, label), label, target: readToolFallbackTarget(open.rawInput)?.value ?? null, steps, written };

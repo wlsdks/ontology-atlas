@@ -165,61 +165,13 @@ function runScaleOnce(docs) {
       operation: "query_plan",
       targetOperation: "match_nodes",
       kind: "capability",
-      minDegree: 2,
       sort: "degree",
       limit: 10,
     },
     {
       operation: "match_nodes",
       kind: "capability",
-      minDegree: 2,
       sort: "degree",
-      limit: 10,
-    },
-    {
-      operation: "query_plan",
-      targetOperation: "match_edges",
-      types: ["depends_on"],
-      limit: 20,
-    },
-    {
-      operation: "match_edges",
-      types: ["depends_on"],
-      limit: 20,
-    },
-    {
-      operation: "domain_matrix",
-      types: ["depends_on", "relates"],
-      limit: 6,
-    },
-    {
-      operation: "query_plan",
-      targetOperation: "centrality",
-      types: ["depends_on", "relates"],
-      limit: 10,
-    },
-    {
-      operation: "centrality",
-      types: ["depends_on", "relates"],
-      limit: 10,
-    },
-    {
-      operation: "query_plan",
-      targetOperation: "all_paths",
-      from: center,
-      to: peer,
-      maxHops: 3,
-      types: ["depends_on", "relates"],
-      searchBudget: 1000,
-      limit: 10,
-    },
-    {
-      operation: "all_paths",
-      from: center,
-      to: peer,
-      maxHops: 3,
-      types: ["depends_on", "relates"],
-      searchBudget: 1000,
       limit: 10,
     },
     {
@@ -242,52 +194,17 @@ function runScaleOnce(docs) {
       query: { operation: "query_plan", targetOperation: "blast_radius", slug: center, depth: 2 },
     },
     {
-      label: "query_plan_all_paths",
-      query: {
-        operation: "query_plan",
-        targetOperation: "all_paths",
-        from: center,
-        to: peer,
-        maxHops: 3,
-        types: ["depends_on", "relates"],
-        searchBudget: 1000,
-        limit: 10,
-      },
-    },
-    {
       label: "query_plan_match_nodes",
       query: {
         operation: "query_plan",
         targetOperation: "match_nodes",
         kind: "capability",
-        minDegree: 2,
         sort: "degree",
         limit: 10,
       },
     },
-    {
-      label: "query_plan_match_edges",
-      query: {
-        operation: "query_plan",
-        targetOperation: "match_edges",
-        types: ["depends_on"],
-        limit: 20,
-      },
-    },
     { label: "node_profile", query: { operation: "node_profile", slug: center, depth: 2, limit: 12 } },
     { label: "path", query: { operation: "path", from: center, to: project, maxHops: 5 } },
-    {
-      label: "all_paths",
-      query: {
-        operation: "all_paths",
-        from: center,
-        to: peer,
-        maxHops: 3,
-        types: ["depends_on", "relates"],
-        searchBudget: 1000,
-        limit: 10,
-      },
-    },
     {
       label: "pattern_walk",
       query: {
@@ -304,13 +221,10 @@ function runScaleOnce(docs) {
       query: { operation: "relation_check", from: center, to: project, type: "depends_on" },
     },
     { label: "blast_radius", query: { operation: "blast_radius", slug: center, depth: 2 } },
-    { label: "domain_matrix", query: { operation: "domain_matrix" } },
-    { label: "centrality", query: { operation: "centrality", limit: 10, iterations: 12 } },
     {
       label: "match_nodes",
-      query: { operation: "match_nodes", kind: "capability", minDegree: 2, sort: "degree", limit: 10 },
+      query: { operation: "match_nodes", kind: "capability", sort: "degree", limit: 10 },
     },
-    { label: "match_edges", query: { operation: "match_edges", types: ["depends_on"], limit: 20 } },
     {
       label: "graph_db_pack",
       query: null,
@@ -335,16 +249,9 @@ function runScaleOnce(docs) {
     },
     queries: Object.fromEntries(queryInputs.map((row) => [row.label, round(row.ms)])),
     queryDiagnostics: {
-      query_plan_all_paths: queryPlanDiagnostics(
-        queryInputs.find((row) => row.label === "query_plan_all_paths")?.value,
-      ),
       query_plan_match_nodes: queryPlanDiagnostics(
         queryInputs.find((row) => row.label === "query_plan_match_nodes")?.value,
       ),
-      query_plan_match_edges: queryPlanDiagnostics(
-        queryInputs.find((row) => row.label === "query_plan_match_edges")?.value,
-      ),
-      all_paths: allPathsDiagnostics(queryInputs.find((row) => row.label === "all_paths")?.value),
       graph_db_pack: graphDbPackDiagnostics(
         queryInputs.find((row) => row.label === "graph_db_pack")?.value,
       ),
@@ -365,21 +272,6 @@ function queryPlanDiagnostics(value) {
   };
 }
 
-function allPathsDiagnostics(value) {
-  return {
-    searchBudget: value?.searchBudget ?? null,
-    expandedStates: value?.expandedStates ?? null,
-    exhaustive: value?.exhaustive ?? null,
-    truncatedByBudget: value?.truncatedByBudget ?? null,
-    totalPaths: value?.totalPaths ?? null,
-    totalPathsExact: value?.totalPathsExact ?? null,
-    limited: value?.limited ?? null,
-    evidenceStatus: value?.evidence?.status ?? null,
-    evidenceReason: value?.evidence?.reason ?? null,
-    pathsComplete: value?.evidence?.pathsComplete ?? null,
-  };
-}
-
 function graphDbPackDiagnostics(value) {
   const rows = Array.isArray(value) ? value : [];
   return {
@@ -388,7 +280,6 @@ function graphDbPackDiagnostics(value) {
     totalMatches: rows
       .filter((row) => Number.isInteger(row?.totalMatches))
       .map((row) => row.totalMatches),
-    allPathsEvidenceStatus: rows.find((row) => row?.operation === "all_paths")?.evidence?.status ?? null,
     explainRelationHasShortestPath: Boolean(
       rows.find((row) => row?.operation === "explain_relation")?.shortestPath,
     ),
@@ -449,7 +340,7 @@ if (json) {
       `[perf-graph] budgets: compile <= ${budgets.compileMs}ms, each query <= ${budgets.queryMs}ms`,
     );
   }
-  console.log("   N   edges  compile  indexes  summary  agent  workspace  health  plan  pathplan nodeplan edgeplan  profile   path allpaths pattern schema  relchk  blast  matrix  centrality matchnodes matchedges graphpack  project_map");
+  console.log("   N   edges  compile  indexes  summary  agent  workspace  health  plan nodeplan  profile   path pattern schema  relchk  blast matchnodes graphpack  project_map");
   for (const result of results) {
     const row = [
       String(result.n).padStart(4),
@@ -461,43 +352,25 @@ if (json) {
       result.queries.workspace_brief.toFixed(2).padStart(9),
       result.queries.health.toFixed(2).padStart(7),
       result.queries.query_plan_blast_radius.toFixed(2).padStart(6),
-      result.queries.query_plan_all_paths.toFixed(2).padStart(8),
       result.queries.query_plan_match_nodes.toFixed(2).padStart(8),
-      result.queries.query_plan_match_edges.toFixed(2).padStart(8),
       result.queries.node_profile.toFixed(2).padStart(8),
       result.queries.path.toFixed(2).padStart(6),
-      result.queries.all_paths.toFixed(2).padStart(8),
       result.queries.pattern_walk.toFixed(2).padStart(7),
       result.queries.schema.toFixed(2).padStart(6),
       result.queries.relation_check.toFixed(2).padStart(7),
       result.queries.blast_radius.toFixed(2).padStart(7),
-      result.queries.domain_matrix.toFixed(2).padStart(7),
-      result.queries.centrality.toFixed(2).padStart(10),
       result.queries.match_nodes.toFixed(2).padStart(10),
-      result.queries.match_edges.toFixed(2).padStart(10),
       result.queries.graph_db_pack.toFixed(2).padStart(9),
       result.queries.project_map.toFixed(2).padStart(11),
     ];
     console.log(row.join(" "));
-    const allPathsPlan = result.queryDiagnostics.query_plan_all_paths;
-    console.log(
-      `[perf-graph] ${result.n} nodes query_plan(all_paths): ${allPathsPlan.strategy}/${allPathsPlan.costClass}, nextStep: ${allPathsPlan.nextStep}, shouldRun: ${allPathsPlan.shouldRun}, suggested: ${allPathsPlan.suggestedOperation}, safer: ${allPathsPlan.saferOperation ?? "none"}`,
-    );
-    const allPaths = result.queryDiagnostics.all_paths;
-    console.log(
-      `[perf-graph] ${result.n} nodes all_paths budget: ${allPaths.searchBudget}, expanded: ${allPaths.expandedStates}, exhaustive: ${allPaths.exhaustive}, totalPathsExact: ${allPaths.totalPathsExact}, evidence: ${allPaths.evidenceStatus}/${allPaths.evidenceReason}, pathsComplete: ${allPaths.pathsComplete}`,
-    );
     const matchNodesPlan = result.queryDiagnostics.query_plan_match_nodes;
-    const matchEdgesPlan = result.queryDiagnostics.query_plan_match_edges;
     console.log(
       `[perf-graph] ${result.n} nodes query_plan(match_nodes): ${matchNodesPlan.strategy}/${matchNodesPlan.costClass}, totalMatches: ${matchNodesPlan.totalMatches}, nextStep: ${matchNodesPlan.nextStep}, shouldRun: ${matchNodesPlan.shouldRun}`,
     );
-    console.log(
-      `[perf-graph] ${result.n} nodes query_plan(match_edges): ${matchEdgesPlan.strategy}/${matchEdgesPlan.costClass}, totalMatches: ${matchEdgesPlan.totalMatches}, nextStep: ${matchEdgesPlan.nextStep}, shouldRun: ${matchEdgesPlan.shouldRun}`,
-    );
     const graphDbPack = result.queryDiagnostics.graph_db_pack;
     console.log(
-      `[perf-graph] ${result.n} nodes graph_db_pack: ${graphDbPack.calls} calls, operations: ${graphDbPack.operations.join(" -> ")}, all_paths evidence: ${graphDbPack.allPathsEvidenceStatus}, explain shortestPath: ${graphDbPack.explainRelationHasShortestPath}`,
+      `[perf-graph] ${result.n} nodes graph_db_pack: ${graphDbPack.calls} calls, operations: ${graphDbPack.operations.join(" -> ")}, explain shortestPath: ${graphDbPack.explainRelationHasShortestPath}`,
     );
   }
 }

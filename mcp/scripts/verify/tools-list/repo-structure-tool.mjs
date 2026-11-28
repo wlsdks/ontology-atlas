@@ -7,8 +7,7 @@ export function repoStructureToolSchemaFailure(tools) {
     !/Read-only; nothing is written/i.test(analyzeTool.description || '') ||
     !/breadth map/i.test(analyzeTool.description || '') ||
     !/names no node/i.test(analyzeTool.description || '') ||
-    !/never an instruction or approval/i.test(analyzeTool.description || '') ||
-    !/constructionQualification:v1/i.test(analyzeTool.description || '')
+    !/never an instruction or approval/i.test(analyzeTool.description || '')
   ) {
     return 'analyze_repo_structure description missing bootstrap safety guidance';
   }

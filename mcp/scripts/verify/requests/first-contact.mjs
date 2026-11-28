@@ -1,16 +1,6 @@
 import { ABSORB_FIXTURE_PATH } from '../absorb-fixture.mjs';
 import { REPO_ROOT } from '../paths.mjs';
 
-export const VERIFY_TUNED_HEALTH_ARGS = {
-  componentLimit: 3,
-  cycleLimit: 3,
-  recommendationLimit: 3,
-  orderLimit: 3,
-  dependencyTypes: ['dependencies'],
-  componentTypes: ['domains', 'domain', 'capabilities', 'dependencies'],
-};
-export const VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT = 3;
-
 export function buildFirstContactRequests() {
   return [
     {
@@ -83,7 +73,7 @@ export function buildFirstContactRequests() {
       jsonrpc: '2.0',
       id: 38,
       method: 'tools/call',
-      params: { name: 'analyze_repo_structure', arguments: { rootPath: REPO_ROOT, maxDepth: 2 } },
+      params: { name: 'analyze_repo_structure', arguments: { rootPath: REPO_ROOT } },
     },
     {
       jsonrpc: '2.0',
@@ -152,20 +142,6 @@ export function buildFirstContactRequests() {
         arguments: {
           operation: 'workspace_brief',
           limit: 3,
-          ...VERIFY_TUNED_HEALTH_ARGS,
-          nodeLimit: VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
-        },
-      },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 20,
-      method: 'tools/call',
-      params: {
-        name: 'query_ontology',
-        arguments: {
-          operation: 'health',
-          ...VERIFY_TUNED_HEALTH_ARGS,
         },
       },
     },
@@ -337,7 +313,7 @@ export function buildFirstContactRequests() {
       method: 'tools/call',
       params: {
         name: 'query_ontology',
-        arguments: { operation: 'health', dependencyTypes: ['depend_on'] },
+        arguments: { operation: 'cycles', types: ['depend_on'] },
       },
     },
     {
@@ -404,18 +380,6 @@ export function buildFirstContactRequests() {
     },
     {
       jsonrpc: '2.0',
-      id: 54,
-      method: 'tools/call',
-      params: {
-        name: 'query_ontology',
-        arguments: {
-          operation: 'match_edges',
-          type: 'depend_on',
-        },
-      },
-    },
-    {
-      jsonrpc: '2.0',
       id: 58,
       method: 'tools/call',
       params: {
@@ -444,30 +408,6 @@ export function buildFirstContactRequests() {
         name: 'list_concepts',
         arguments: {
           kind: 'capabilty',
-        },
-      },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 48,
-      method: 'tools/call',
-      params: {
-        name: 'query_ontology',
-        arguments: {
-          operation: 'match_edges',
-          fromKind: 'capabilty',
-        },
-      },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 49,
-      method: 'tools/call',
-      params: {
-        name: 'query_ontology',
-        arguments: {
-          operation: 'match_edges',
-          toKind: 'externl',
         },
       },
     },

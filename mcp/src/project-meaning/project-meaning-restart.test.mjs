@@ -208,19 +208,15 @@ test('fresh MCP readers keep edited answers unconfirmed until explicit finalizat
     const receiptBefore = readFileSync(receiptPath, 'utf8');
     const edited = readFileSync(projectPath, 'utf8').replace('A bounded payment fixture.', 'A revised bounded payment fixture.');
     writeFileSync(projectPath, edited);
-    const [health, workspace, full, compact] = await call([
+    const [health, workspace, full] = await call([
       ['query_ontology', { operation: 'health' }],
       ['query_ontology', { operation: 'workspace_brief' }],
       ['query_ontology', { operation: 'agent_brief', project: 'demo' }],
-      ['query_ontology', { operation: 'agent_brief', project: 'demo', detail: 'compact', task: 'Review payment evidence' }],
     ]);
     assert.equal(agentBriefFailure(full), null);
-    assert.equal(compact.contract, 'agentBriefCompact:v3');
-    for (const assessment of [full.meaningAssessment, compact.currentness.meaning]) {
-      assert.equal(assessment.status, 'review_required');
-      assert.equal(assessment.topGap.id, 'competency_body_changed');
-      assert.equal(assessment.nextAction.id, 'reevaluate_competency');
-    }
+    assert.equal(full.meaningAssessment.status, 'review_required');
+    assert.equal(full.meaningAssessment.topGap.id, 'competency_body_changed');
+    assert.equal(full.meaningAssessment.nextAction.id, 'reevaluate_competency');
     assert.equal(full.projectSource.currentness, 'current');
     assert.equal(health.status, 'needs_attention');
     assert.equal(workspace.status, 'needs_attention');

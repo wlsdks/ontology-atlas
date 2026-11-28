@@ -801,8 +801,8 @@ Do not relay the candidates as they arrive. Each one must survive three tests.
 - **Does it exist** — is there evidence in code or docs, or does it merely
    sound plausible? Check with \`list_concepts({ mentions })\`. If a source folder is
    bound, \`analyze_repo_structure\` and \`infer_imports\` supply the evidence.
-- **Is it already here** — search near-names first with
-   \`list_concepts({ filter })\`. If it exists, do not create a second one; fill
+- **Is it already here** — search first with
+   \`list_concepts({ mentions: '<name>' })\`. If it exists, do not create a second one; fill
    the existing node with \`patch_concept\` (pass \`expected_mtime\`).
 - **Does it carry meaning** — an element needs a reason beyond its location.
    One node per file is not a map, it is a file listing.
@@ -853,10 +853,9 @@ something that already exists under a different name**. So the order is not
 
 2. **Check each candidate for duplicates first**
 
-For every candidate name, make two calls.
+For every candidate name, make one call.
 
-- \`list_concepts({ filter: '<name>' })\` — does a near-name already exist
-- \`list_concepts({ mentions: '<name>' })\` — is it already here under another name
+- \`list_concepts({ mentions: '<name>' })\` — is it already here, under this name or another
 
 If it exists, **do not create a new node.** Do one of two things: fill the
 existing node with \`patch_concept\` (pass \`expected_mtime\`), or add only the
@@ -969,7 +968,7 @@ description: 다음 한 걸음. 이 볼트에 무엇을 더하면 값이 가장 
 - **실재하는가** — 이름만 그럴듯한 게 아니라 코드나 문서에 근거가 있나.
    \`list_concepts({ mentions })\` 로 확인한다. 코드 폴더가 묶여 있으면
    \`analyze_repo_structure\` · \`infer_imports\` 가 근거를 준다.
-- **이미 있는가** — \`list_concepts({ filter })\` 로 비슷한 이름을 먼저 찾는다.
+- **이미 있는가** — \`list_concepts({ mentions: '<이름>' })\` 로 먼저 찾는다.
    있으면 새로 만들지 말고 그것을 \`patch_concept\`(\`expected_mtime\` 함께)로 채운다.
 - **뜻이 있는가** — 자리 말고 다른 이유가 있어야 element 다. 파일 하나마다
    노드 하나를 만들면 그건 지도가 아니라 파일 목록이다.
@@ -1020,10 +1019,9 @@ description: 글에서 개념 뽑기. 회의록·기획서·PR 설명에서 개�
 
 2. **후보마다 중복을 먼저 본다**
 
-후보 이름 하나하나에 대해 둘을 부른다.
+후보 이름 하나하나에 대해 하나를 부른다.
 
-- \`list_concepts({ filter: '<이름>' })\` — 비슷한 이름이 이미 있나
-- \`list_concepts({ mentions: '<이름>' })\` — 다른 이름으로 이미 들어와 있나
+- \`list_concepts({ mentions: '<이름>' })\` — 이 이름이든 다른 이름이든 이미 들어와 있나
 
 있으면 **새로 만들지 않는다.** 둘 중 하나를 한다 —
 \`patch_concept\`(\`expected_mtime\` 함께)로 내용을 채우거나, 관계만 더한다.

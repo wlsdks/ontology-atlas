@@ -1,6 +1,5 @@
 // The meaning-readiness and project-meaning facts an agent brief carries.
 
-import { attachMeaningRepair, buildMeaningRepair } from '../../meaning/meaning-repair.mjs';
 import { queryCompiledOntology } from '../../ontology-engine.mjs';
 import { buildProjectMeaningInventory } from '../../project-meaning/project-meaning-inventory.mjs';
 import {
@@ -109,7 +108,7 @@ function meaningReadinessCheck(artifact, loadedDocs) {
         // Whether the `## Competency answers` section parses. This picks the
         // honest hint when the receipt is missing: written-but-not-finalized
         // gets "call finalize_project_meaning", not "write the answers".
-        competencyAuthored: Boolean(context.meaningRepairInput?.competency),
+        competencyAuthored: context.competencyAuthored,
       };
     } catch {
       return {
@@ -267,21 +266,12 @@ export function projectMeaningContext(artifact, projectSlug, structureStatus, sc
     inventory: inventoryResult.status === 'ready' ? inventoryResult.inventory : null,
   };
   const meaningAssessment = readProjectMeaningAssessment(assessmentInput);
-  let competency = null;
+  let competencyAuthored = false;
   try {
-    competency = parseProjectCompetencyMarkdown(projectDoc?.body);
+    competencyAuthored = Boolean(parseProjectCompetencyMarkdown(projectDoc?.body));
   } catch {
-    // The repair projection fails closed when the human-editable competency block is unavailable.
+    // A body whose `## Competency answers` section does not parse counts as not authored.
   }
-  const meaningRepairInput = {
-    projectSlug,
-    graphHash,
-    meaningAssessment,
-    competency,
-    inventoryResult,
-    scopedDocs: docs,
-  };
-  const meaningRepair = buildMeaningRepair(meaningRepairInput);
   return {
     scope,
     docs,
@@ -291,8 +281,7 @@ export function projectMeaningContext(artifact, projectSlug, structureStatus, sc
     inventoryResult,
     assessmentInput,
     meaningAssessment,
-    meaningRepair,
-    meaningRepairInput,
+    competencyAuthored,
   };
 }
 
@@ -355,7 +344,5 @@ export function attachProjectMeaning(agentBrief, artifact, precomputedContext = 
       projectSourceRemedy: projectSourceRemedy(context.projectSource),
       meaningAssessment: context.meaningAssessment,
     };
-  return attachMeaningRepair({
-    ...adjustedBrief,
-  }, context.meaningRepair);
+  return adjustedBrief;
 }

@@ -2,7 +2,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 
 import { surveyEntry } from '../../analyze/survey/survey-paths.mjs';
-import { withoutSpans } from '../../analyze/text.mjs';
+import { withoutSpans } from '../../analyze/without-spans.mjs';
 import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../../analyze/survey/source-units.mjs';
 import { compareText } from '../../compare-text.mjs';
 

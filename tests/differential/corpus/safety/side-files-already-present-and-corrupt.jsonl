@@ -3,4 +3,3 @@
 {"$":"write-file","path":".ontology-atlas/activity.jsonl","text":"not json\n{\"v\":99}\n\n"}
 {"$":"write-file","path":".ontology-atlas/map-analysis.jsonl","text":"{\"v\":1,\"analysis\":\"x\"}\ngarbage\n"}
 {"id":1,"method":"tools/call","params":{"name":"add_concepts","arguments":{"concepts":[{"slug":"elements/after-corrupt","kind":"element","title":"After Corrupt"}]}}}
-{"id":2,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"analysis_history"}}}

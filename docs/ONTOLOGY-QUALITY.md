@@ -11,27 +11,11 @@ This document is not the place to create new ontology rules. It is an authoritat
 
 ## Reading quality evidence
 
-`pnpm eval:meaning-extraction` measures candidate retrieval against a fixed
-corpus and checks an oracle proposal built from the expected data. Its candidate
-projection omits definitions and competency answers; the runner explicitly sets
-the definition, citation-recall, and competency-coverage thresholds to zero.
-Read the separate metrics with `node scripts/benchmark/evaluate-meaning-corpus.mjs --json`.
-A candidate PASS is not a completed construction or a semantic quality score.
-The owners are `scripts/benchmark/evaluate-meaning-corpus.mjs` and
-`mcp/src/meaning/golden-corpus-scoring.mjs`; the oracle checks the evaluator contract, not
-an independent agent's construction ability.
-
-The JSON result's `measurementScope` distinguishes `candidateDiscovery` and
-`goldenOracleConsistency` (measured) from `independentConstruction`
-(`not_measured`). Measured identifies a diagnostic's scope; its existing row
-result still decides whether that diagnostic passed. The readable command output
-reports the same separation. Effective thresholds come from the actual evaluator
-results: `relaxedMinimumCoverage` identifies zero minimum coverage requirements,
-while `maximumForbiddenLeakage: 0` remains a strict upper bound. Raw coverage
-metrics can still be calculated even when their minimum requirement is relaxed.
-None of these fields evaluates the correctness of an independent construction.
-This is a reporting contract that keeps evaluation scope apart from
-construction quality, not completion of the source-first construction program.
+No command scores candidate retrieval or oracle proposals any more: the
+proposal and qualification route it measured was retired, so a construction is
+judged by the vault it wrote. `pnpm benchmark:construction` reports the artifact
+and its cost from recorded runs; it grades nothing and is not a measure of an
+independent agent's construction ability.
 
 Whole-vault validation establishes scanned shape, reference, and path facts.
 `health` also reports meaning currentness; neither a resolvable path nor a fresh

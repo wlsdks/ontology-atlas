@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import {
-  COMPETENCY_ANSWERS_GUIDE_EN,
   COMPETENCY_ANSWERS_HINT_EN,
   CONSTRUCTION_CARD_EN,
   CONSTRUCTION_CARD_MAX_CHARS,
@@ -13,6 +12,7 @@ import {
   CONSTRUCTION_GUIDE_MAX_CHARS,
   CONSTRUCTION_GUIDE_TOPICS,
 } from './construction-card.mjs';
+import { MEANING_COMPETENCY_QUESTIONS } from '../meaning/meaning-assessment.mjs';
 import { renderCompetencyAnswers } from '../project-meaning/competency-answers.mjs';
 import { parseProjectCompetencyMarkdown } from '../project-meaning/project-meaning-receipt.mjs';
 
@@ -87,26 +87,29 @@ test('no card or guide text asks the agent to wait or names the qualification ro
   }
 });
 
-test('the competency guide returns an example call the real renderer and parser accept', () => {
-  const { guideText } = connectionInfoTool({ guide: 'competency' });
-  assert.equal(guideText, COMPETENCY_ANSWERS_GUIDE_EN);
-
-  // The example callers copy is rendered and parsed as finalize_project_meaning does:
+test('the example row in the finalize refusal is one the real renderer and parser accept', () => {
+  // The row callers copy is rendered and parsed as finalize_project_meaning does:
   // prose can be wrong quietly, a parsed example cannot.
-  const example = /```json\n([\s\S]*?)\n```/.exec(guideText);
-  assert.ok(example, 'the guide must carry one fenced example call');
-  const { answers } = JSON.parse(example[1]);
-  const parsed = parseProjectCompetencyMarkdown(renderCompetencyAnswers(answers));
-  assert.deepEqual(
-    parsed.questions.map((row) => row.id),
-    ['scope', 'domains', 'abilities', 'evidence', 'impact'],
+  const example = /"answers":\[(\{.*?\}), \.\.\.one row for each id above\]/.exec(COMPETENCY_ANSWERS_HINT_EN);
+  assert.ok(example, 'the refusal must carry one example row');
+  const row = JSON.parse(example[1]);
+  // "one row for each id above": the example row repeated under every question id the refusal lists.
+  const ids = MEANING_COMPETENCY_QUESTIONS.map(({ id }) => id);
+  const parsed = parseProjectCompetencyMarkdown(renderCompetencyAnswers(ids.map((id) => ({ ...row, id }))));
+  assert.deepEqual(parsed.questions.map((question) => question.id), ids);
+  assert.ok(parsed.questions.every((question) => question.status === 'answered' && question.answer.length > 0));
+});
+
+test('a retired competency guide answers invalid_arguments and points to the refusal', () => {
+  assert.throws(
+    () => connectionInfoTool({ guide: 'competency' }),
+    { errorCode: 'invalid_arguments', message: /call it without `answers` and read the refusal/ },
   );
-  assert.ok(parsed.questions.some((row) => row.status === 'answered'));
-  assert.ok(parsed.questions.some((row) => row.gap));
 });
 
 test('the finalize refusal for a missing section names the answers repair, not a guide', () => {
-  for (const clause of ['`answers`', 'scope, domains, abilities, evidence and impact', 'gap']) {
+  const ids = MEANING_COMPETENCY_QUESTIONS.map(({ id }) => `\`${id}\``);
+  for (const clause of ['`answers`', 'gap', ...ids]) {
     assert.ok(COMPETENCY_ANSWERS_HINT_EN.includes(clause), `hint must say ${clause}`);
   }
   assert.doesNotMatch(COMPETENCY_ANSWERS_HINT_EN, /connection_info|guide/);

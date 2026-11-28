@@ -5,7 +5,7 @@ import {
   publicRelationType,
   requireRelationType,
 } from './query-primitives.mjs';
-import { EDGE_TARGET_KIND_VALUES, NODE_KIND_VALUES } from './query-values.mjs';
+import { NODE_KIND_VALUES } from './query-values.mjs';
 
 export function normalizeDependencyImpactTypes(types) {
   const normalized = normalizeTypes(types) ?? new Set(['dependencies']);
@@ -16,30 +16,6 @@ export function normalizeDependencyImpactTypes(types) {
     );
   }
   return normalized;
-}
-
-export function normalizeMatchEdgesTypes(options = {}) {
-  if (Array.isArray(options.types) && options.types.length > 0) {
-    return normalizeTypes(options.types, 'types');
-  }
-  const field = options.type === undefined ? 'relation' : 'type';
-  const value = options.type ?? options.relation;
-  if (value === undefined || value === null) return null;
-  if (typeof value !== 'string') {
-    throw new Error(`${field} must be a string.`);
-  }
-  const trimmed = value.trim();
-  if (!trimmed) {
-    throw new Error(`${field} must be a non-empty string.`);
-  }
-  if (trimmed !== value) {
-    throw new Error(`${field} must not have leading or trailing whitespace.`);
-  }
-  if (trimmed.includes('\0')) {
-    throw new Error(`${field} must not contain a null byte.`);
-  }
-  requireRelationType(trimmed, field);
-  return new Set([normalizeRelationType(trimmed)]);
 }
 
 export function normalizePattern(pattern) {
@@ -111,15 +87,6 @@ export function normalizeNodeKind(value, name) {
   return kind;
 }
 
-export function normalizeEdgeTargetKind(value, name) {
-  const kind = normalizeOptionalString(value, name);
-  if (kind === null) return null;
-  if (!EDGE_TARGET_KIND_VALUES.includes(kind)) {
-    throw new Error(formatAllowedValueError(name, kind, EDGE_TARGET_KIND_VALUES));
-  }
-  return kind;
-}
-
 export function normalizeNodeSort(value) {
   if (value === undefined || value === null) return 'degree';
   if (
@@ -159,17 +126,6 @@ export function normalizeStringSet(value, name, allowedValues = null) {
     items.push(trimmed);
   }
   return items.length > 0 ? new Set(items) : null;
-}
-
-export function normalizeIterations(value) {
-  if (value === undefined || value === null) return 20;
-  if (!Number.isInteger(value) || value < 1) {
-    throw new Error('iterations must be a positive integer.');
-  }
-  if (value > 100) {
-    throw new Error('iterations must be <= 100.');
-  }
-  return value;
 }
 
 export function normalizeTraversalDirection(direction, fallback) {

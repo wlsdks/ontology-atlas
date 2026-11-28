@@ -56,23 +56,20 @@ sequence:
   "tool": "query_ontology",
   "arguments": {
     "operation": "agent_brief",
-    "project": "project-slug",
-    "detail": "compact",
-    "task": "Describe the requested code change"
+    "project": "project-slug"
   }
 }
+{ "tool": "get_concepts", "arguments": { "slugs": ["slugs the brief names"], "body": "full" } }
 ```
 
-When `focus.taskNavigation.status` is `ready`, read its primary, supporting and
-focused-test coordinates plus any verified runner manifest in one source batch
-before repository inventory or broad search. Make separately named positive and
-negative regressions with exact observable output; run one focused and one
-non-overlapping full check. Broaden only if current source contradicts the
-reviewed evidence. Otherwise run the returned full-body read and treat exact
-navigation as unknown. Do not precede this path with `workspace_brief`,
-`list_concepts`, or a full `agent_brief`; those orient over the whole vault and
-duplicate the known-task handoff. The measured effect of this profile, and its
-limits, live in [mcp/README.md](../mcp/README.md#read-only-registration-oatlas_read_only); it is not a
+Read the nodes the brief names in full, then the source files they cite in one
+batch, before repository inventory or broad search. Make separately named
+positive and negative regressions with exact observable output; run one focused
+and one non-overlapping full check. Broaden only if current source contradicts
+the recorded meaning. Do not precede this path with `workspace_brief` or
+`list_concepts`; those orient over the whole vault and duplicate the
+known-task handoff. The measured effect of this profile, and its limits, live in
+[mcp/README.md](../mcp/README.md#read-only-registration-oatlas_read_only); it is not a
 claim about every MCP registration.
 
 When no coding task is known, start read-only:
@@ -84,15 +81,8 @@ When no coding task is known, start read-only:
 { "tool": "query_ontology", "arguments": { "operation": "health" } }
 ```
 
-Compact responses keep `structuredContent` plus the handoff text within 12,000
-UTF-8 bytes and return an exact `detail:"full"` follow-up when the complete
-manuals or graph packs are needed; the complete response is the default.
-Reviewed Markdown Evidence coordinates are checked only in their named
-current-source files; missing, ambiguous, stale,
-unsafe or unrecorded coordinates return no exact target, and there is no
-repository symbol scan. `project` is mandatory when the vault has several
-projects. Task text is request-local, is not stored, and does not prove source
-behaviour.
+`project` is mandatory when the vault has several projects. A brief does not prove
+source behaviour.
 
 Propose writes only after those checks are clean. After the person accepts
 project competency answers and the agent has completed the related concept and
@@ -114,23 +104,20 @@ Each line is one `query_ontology` call:
 { "operation": "facets", "limit": 10 }
 { "operation": "schema", "limit": 10 }
 { "operation": "match_nodes", "kind": "capability", "limit": 10 }
-{ "operation": "match_edges", "type": "depends_on", "limit": 10 }
-{ "operation": "domain_matrix", "types": ["depends_on", "relates"] }
-{ "operation": "query_plan", "targetOperation": "all_paths", "from": "capabilities/mcp-tool-server", "to": "domains/human-workbench", "maxHops": 3 }
+{ "operation": "match_nodes", "sort": "degree", "limit": 10 }
+{ "operation": "neighbors", "slug": "capabilities/mcp-tool-server", "limit": 10 }
+{ "operation": "query_plan", "targetOperation": "path", "from": "capabilities/mcp-tool-server", "to": "domains/human-workbench" }
 { "operation": "explain_relation", "from": "capabilities/mcp-tool-server", "to": "domains/human-workbench" }
 ```
 
-Scan rows are candidates, not proof. MCP `agent_brief` returns this
-scan-to-proof checklist as `docs.graphScanProofChecklist`:
+Scan rows are candidates, not proof:
 
 1. Report `totalMatches`, `limited`, and the returned row count from
-   `match_nodes` or `match_edges`.
+   `match_nodes`.
 2. For a node row, run `node_profile` or `blast_radius` before using it as
    onboarding or refactor evidence.
-3. For an edge row, run `explain_relation`, `path`, and `relation_check` before
+3. For a relation, run `explain_relation`, `path`, and `relation_check` before
    using it as coupling or write evidence.
-4. For path evidence, report `evidence.pathsComplete`; if it is false, narrow
-   the query before writing or making an architecture claim.
 
 ## How this differs from a graph database
 
@@ -172,8 +159,7 @@ A cold-start or unqualified vault may still report `needs_attention`:
 `workspace_brief` and `agent_brief` surface an invalid, unmeasured or stale
 `meaningAssessment` instead of relabelling it `healthy`, `ready` or `100`.
 `healthy` and `ready` are reserved for a vault whose meaning assessment is
-current and whose exact construction plan passed qualification and human
-approval.
+current.
 
 ## First session
 

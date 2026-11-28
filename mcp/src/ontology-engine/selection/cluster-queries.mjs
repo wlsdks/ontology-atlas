@@ -6,6 +6,8 @@ import {
 } from '../query-operation/query-primitives.mjs';
 import { connectedComponents, groupCommunities } from './cluster-rules.mjs';
 
+const COMMUNITY_ITERATIONS = 20;
+
 /** How the graph falls into connected groups and communities. */
 export function createClusterQueries({
   nodes,
@@ -13,7 +15,6 @@ export function createClusterQueries({
   nodeBySlug,
   traversalEdges,
   countBy,
-  normalizeIterations,
   propagateCommunityLabels,
   undirectedAdjacencyFrom,
 }) {
@@ -62,10 +63,9 @@ export function createClusterQueries({
   function communities(options = {}) {
     const limit = normalizeLimit(options.limit, 20);
     const nodeLimit = normalizeLimit(options.nodeLimit, 25, 'nodeLimit');
-    const iterations = normalizeIterations(options.iterations);
     const typeSet = normalizeTypes(options.types);
     const adjacency = undirectedAdjacencyFrom(nodes, edges, typeSet);
-    const labels = propagateCommunityLabels(adjacency, iterations);
+    const labels = propagateCommunityLabels(adjacency, COMMUNITY_ITERATIONS);
     const { groups, communityBySlug, crossCommunityEdges } = groupCommunities({
       nodes, edges, labels, typeSet, nodeBySlug,
     });
@@ -74,7 +74,7 @@ export function createClusterQueries({
       operation: 'communities',
       parameters: {
         types: typeSet ? [...typeSet].sort() : null,
-        iterations,
+        iterations: COMMUNITY_ITERATIONS,
         limit,
         nodeLimit,
       },

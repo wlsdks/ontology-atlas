@@ -60,6 +60,12 @@ const KIND_CHANGE_ANSWER_OUTPUT_SCHEMA = {
   additionalProperties: false,
 };
 
+/** The two answers `rename_concept` gives, each under its own schema; `tools/list` carries their union. */
+export const RENAME_CONCEPT_ANSWER_MODES = Object.freeze({
+  rename: RENAME_ANSWER_OUTPUT_SCHEMA,
+  reclassify: KIND_CHANGE_ANSWER_OUTPUT_SCHEMA,
+});
+
 export const RENAME_CONCEPT_TOOL = {
   name: 'rename_concept',
   description:

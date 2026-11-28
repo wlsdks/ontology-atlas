@@ -1896,7 +1896,7 @@ describe.each(['claude-acp', 'codex-acp'] as const)('auto-approve — a map buil
     ['validate_vault', {}],
     ['connect_project_source', { projectSlug: 'projects/shop' }],
     ['connect_project_source', { projectSlug: 'projects/shop', rootPath: '/code', confirm: true }],
-    ['connect_project_source', { projectSlug: 'projects/shop', disconnect: true, confirm: true }],
+    ['disconnect_project_source', { projectSlug: 'projects/shop', confirm: true }],
     ['finalize_project_meaning', { projectSlug: 'projects/shop', answers: [{ question: 'q1', answer: 'a1' }] }],
   ];
 

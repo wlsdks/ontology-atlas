@@ -596,7 +596,15 @@ describe('tool-executor reads', () => {
     expect(JSON.parse(beyondBound.content)).toEqual({ from: slugs[0], to: slugs[21], found: false, hops: [] });
   });
 
-  it('list_concepts narrows by mentions, best title match first, and by a filter predicate', async () => {
+  it('find_orphans counts only concepts that have a document', async () => {
+    const execute = createToolExecutor(makePort());
+    const payload = JSON.parse((await execute(call('find_orphans'))).content) as {
+      orphans: Array<{ slug: string }>;
+    };
+    expect(payload.orphans.map((row) => row.slug)).toEqual(['capabilities/refund']);
+  });
+
+  it('list_concepts narrows by mentions, best title match first', async () => {
     const execute = createToolExecutor(makePort());
     const all = JSON.parse((await execute(call('list_concepts'))).content) as { rows: Array<{ slug: string; kind: string; title: string }> };
     const probe = all.rows[0];
@@ -606,11 +614,6 @@ describe('tool-executor reads', () => {
     };
     expect(mentioned.query).toBe(probe.title.toUpperCase());
     expect(mentioned.rows[0].slug).toBe(probe.slug);
-    const filtered = JSON.parse((await execute(call('list_concepts', { filter: `kind=${probe.kind} AND NOT slug=${probe.slug}` }))).content) as {
-      rows: Array<{ slug: string; kind: string }>;
-    };
-    expect(filtered.rows.every((row) => row.kind === probe.kind && row.slug !== probe.slug)).toBe(true);
-    const refused = await execute(call('list_concepts', { filter: 'kind=' }));
-    expect(refused.outcome).toBe('args-invalid');
+    expect(mentioned.rows.length).toBeGreaterThan(0);
   });
 });

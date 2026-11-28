@@ -146,12 +146,6 @@
       "witness": "normalizeMeaningStructureStatus"
     },
     {
-      "key": "mcp:runtime:exports:src/meaning/golden-corpus-scoring.mjs:candidateProposalFromAnalysis",
-      "reason": "The meaning-corpus evaluator script builds candidate proposals with it; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "scripts/benchmark/evaluate-meaning-corpus.mjs",
-      "witness": "candidateProposalFromAnalysis"
-    },
-    {
       "key": "mcp:runtime:exports:src/ontology-engine.mjs:createOntologyEngine",
       "reason": "The graph-truth parity contract test drives the engine directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "tests/contract/analysis/graph-truth-parity.contract.test.ts",
@@ -312,12 +306,6 @@
       "reason": "ui:look hands this module to ui:audit --setup, which imports it dynamically and calls its default export.",
       "consumer": "scripts/design/ui-look.mjs",
       "witness": "scripts/design/look/open-vault.mjs"
-    },
-    {
-      "key": "scripts:runtime:exports:scripts/lib/dogfood-walk/rpc-client.mjs:SERVER",
-      "reason": "The dogfood-walk summaries test locates the server through this constant; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "scripts/lib/dogfood-walk/summaries.test.mjs",
-      "witness": "SERVER"
     },
     {
       "key": "scripts:runtime:exports:scripts/migrations/2026-08-02-add-node-uids.mjs:description",
@@ -520,6 +508,30 @@
       "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
       "consumer": "scripts/brand/moru-cast/preview.mjs",
       "witness": "scripts/brand/moru-cast/life/pose-variety.mjs"
+    },
+    {
+      "key": "frontend:runtime:binaries:scripts/mcp/program-size/check-program-size.mjs:size",
+      "reason": "The program-size gate reads each tree-sitter archive's section sizes with the system `size` tool and reports the figure as not measured where the tool is missing.",
+      "consumer": "scripts/mcp/program-size/check-program-size.mjs",
+      "witness": "size"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/mcp/program-size/check-program-size.mjs:size",
+      "reason": "The program-size gate reads each tree-sitter archive's section sizes with the system `size` tool and reports the figure as not measured where the tool is missing.",
+      "consumer": "scripts/mcp/program-size/check-program-size.mjs",
+      "witness": "size"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/mcp/program-size/check-program-size.mjs:size",
+      "reason": "The program-size gate reads each tree-sitter archive's section sizes with the system `size` tool and reports the figure as not measured where the tool is missing.",
+      "consumer": "scripts/mcp/program-size/check-program-size.mjs",
+      "witness": "size"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/mcp/program-size/check-program-size.mjs:size",
+      "reason": "The program-size gate reads each tree-sitter archive's section sizes with the system `size` tool and reports the figure as not measured where the tool is missing.",
+      "consumer": "scripts/mcp/program-size/check-program-size.mjs",
+      "witness": "size"
     }
   ]
 }

@@ -127,7 +127,7 @@ describe('rooted MCP read runner', () => {
     });
     assert.deepEqual(ROOTED_READ_SCHEMA.requestExamples.analyze_repo_structure.args, {
       rootPath: '/absolute/repository',
-      proposal: '<complete proposal object>',
+      sourceReads: [{ path: 'src/index.ts', mode: 'outline' }],
     });
     assert.ok(ROOTED_READ_SCHEMA.example.requests.length > 0, 'schema example must not become an idle request list');
     assert.equal(ROOTED_READ_SCHEMA.example.requests.some(({ name }) => name === 'connection_info'), false);

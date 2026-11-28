@@ -23,71 +23,11 @@ interface Opener {
   readonly trigger: string;
   /** What **must be visible** after the press. If it is not, this gate measured nothing. */
   readonly surface: string;
-  /** Surfaces whose trigger only exists after an invisible local file transport is filled first. */
-  readonly fileInput?: {
-    readonly testId: string;
-    readonly name: string;
-    readonly mimeType: string;
-    readonly body: string;
-  };
   /** Built-in sample needed before this route exposes its conditional surface. */
   readonly dogfood?: boolean;
   /** Protocol-level installed-app work state needed before the receipt history exists. */
   readonly libraryWorkReceipt?: boolean;
 }
-
-const CONSTRUCTION_PLAN_DIGEST = `sha256:${"a".repeat(64)}`;
-const CONSTRUCTION_SOURCE_DIGEST = `sha256:${"b".repeat(64)}`;
-const CONSTRUCTION_REVIEW_FILE = JSON.stringify({
-  qualification: {
-    contract: "constructionQualification:v1",
-    subject: {
-      projectSlug: "storefront",
-      graphDigest: CONSTRUCTION_PLAN_DIGEST,
-      sourceDigest: CONSTRUCTION_SOURCE_DIGEST,
-    },
-    purposeAuthority: { outcome: "사람과 에이전트가 같은 로컬 의미를 판단한다." },
-    competencyQuestions: [],
-    witnesses: [],
-    cqResults: [],
-    claims: [],
-    citationChecks: [],
-    axisResults: [],
-    diagnostics: [],
-    acceptance: {
-      decision: "accepted",
-      decidedBy: "jinan",
-      authority: "human",
-      planDigest: CONSTRUCTION_PLAN_DIGEST,
-    },
-  },
-  analysis: {
-    project: { slug: "storefront" },
-    proposalValidation: {
-      reviewPlan: {
-        concepts: [{ slug: "storefront" }],
-        relations: [{ from: "storefront", type: "domains", to: "commerce" }],
-        competencyAnswers: { scope: "answered" },
-      },
-      writePlan: {
-        concepts: [{ slug: "storefront" }],
-        relations: [{ from: "storefront", type: "domains", to: "commerce" }],
-        competencyAnswers: { scope: "answered" },
-      },
-      findings: [],
-      constructionLifecycle: {
-        contract: "ontologyConstructionLifecycle:v1",
-        qualificationStatus: "qualified",
-        writeEligibility: "executable",
-        planDigest: CONSTRUCTION_PLAN_DIGEST,
-        sourceDigest: CONSTRUCTION_SOURCE_DIGEST,
-        firstBlockingPhase: null,
-        diagnostics: [],
-        nextAction: "승인된 행만 작성한다.",
-      },
-    },
-  },
-});
 
 const OPENERS: readonly Opener[] = [
   {
@@ -119,18 +59,6 @@ const OPENERS: readonly Opener[] = [
     route: "/ko/docs/",
     trigger: "docs-sidebar-order-toggle",
     surface: '[data-testid="docs-sidebar-order-menu"]',
-  },
-  {
-    name: "Project review evidence",
-    route: "/ko/project/storefront/",
-    trigger: "construction-review-evidence-toggle",
-    surface: '[data-testid="construction-review-evidence"]',
-    fileInput: {
-      testId: "construction-review-ingress",
-      name: "construction-review.json",
-      mimeType: "application/json",
-      body: CONSTRUCTION_REVIEW_FILE,
-    },
   },
   {
     name: "Architecture analysis history",
@@ -190,14 +118,6 @@ async function openAndAudit(page: Page, o: Opener) {
     await page.goto(`${o.route}${separator}guides=off`, { waitUntil: "domcontentloaded" });
     // Audit the screen the route lands on, not one still filling in or converging.
     await waitForPageSettled(page);
-  }
-
-  if (o.fileInput) {
-    await page.getByTestId(o.fileInput.testId).setInputFiles({
-      name: o.fileInput.name,
-      mimeType: o.fileInput.mimeType,
-      buffer: Buffer.from(o.fileInput.body),
-    });
   }
 
   await page.getByTestId(o.trigger).first().click({ timeout: 8000 });

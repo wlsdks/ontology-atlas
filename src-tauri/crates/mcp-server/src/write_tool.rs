@@ -21,13 +21,14 @@ pub enum WriteTool {
     DeleteConcept,
     AbsorbDocument,
     ConnectProjectSource,
+    DisconnectProjectSource,
     FinalizeProjectMeaning,
     /// Only a test build has it: a tool that writes one file, to exercise the checkpoint.
     #[cfg(feature = "test-hooks")]
     TestWrite,
 }
 
-const SHIPPED: [WriteTool; 12] = [
+const SHIPPED: [WriteTool; 13] = [
     WriteTool::AddConcept,
     WriteTool::AddConcepts,
     WriteTool::AddRelation,
@@ -39,6 +40,7 @@ const SHIPPED: [WriteTool; 12] = [
     WriteTool::DeleteConcept,
     WriteTool::AbsorbDocument,
     WriteTool::ConnectProjectSource,
+    WriteTool::DisconnectProjectSource,
     WriteTool::FinalizeProjectMeaning,
 ];
 
@@ -62,6 +64,7 @@ impl WriteTool {
             Self::DeleteConcept => "delete_concept",
             Self::AbsorbDocument => "absorb_document",
             Self::ConnectProjectSource => "connect_project_source",
+            Self::DisconnectProjectSource => "disconnect_project_source",
             Self::FinalizeProjectMeaning => "finalize_project_meaning",
             #[cfg(feature = "test-hooks")]
             Self::TestWrite => "__test_write",

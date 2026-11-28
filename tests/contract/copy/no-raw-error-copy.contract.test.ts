@@ -499,16 +499,6 @@ const PERMITTED_SITES: readonly { path: string; count: number; reason: string }[
     // open.
     reason: 'window error text forwarded to the app log by a component that renders nothing',
   },
-  {
-    path: 'src/views/project-detail/ui/construction-review/ConstructionReviewPanel.tsx',
-    count: 1,
-    // The diagnostics an external ACP agent returned with its qualification, listed in the
-    // review's technical evidence section beside the plan and source digests. This repository did
-    // not mint these strings and has no code to translate them by; a translated synonym here is a
-    // word the reader has to map back to the agent transcript they are comparing against — the
-    // same reason `wikiProblemMachineLine` is deliberately not localised.
-    reason: "an external agent's diagnostic payload in the review's technical evidence section",
-  },
 ];
 
 const permittedCount = (path: string): number =>

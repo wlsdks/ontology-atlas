@@ -9,4 +9,3 @@
 {"id":7,"method":"tools/call","params":{"name":"delete_concept","arguments":{"slug":"capabilities/faq","confirm":true}}}
 {"id":8,"method":"tools/call","params":{"name":"remove_relation","arguments":{"from":"capabilities/checkout","to":"capabilities/cart","type":"depends_on","confirm":true}}}
 {"id":9,"method":"tools/call","params":{"name":"add_concepts","arguments":{"concepts":[{"slug":"elements/failing","kind":"nonsense","title":"Fails"}]}}}
-{"id":10,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"analysis_history"}}}
