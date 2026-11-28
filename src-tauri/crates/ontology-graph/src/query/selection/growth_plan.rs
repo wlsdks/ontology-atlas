@@ -20,10 +20,8 @@ use crate::query::walks::row_page::RowPage;
 /// outside the graph (`OutsideFacts::next_reads`): finding them means reading the prose of each
 /// uncertainty section, which belongs to the meaning slice, and ordering them means looking at the
 /// source files, which belongs to the source scan.
-#[derive(Serialize)]
-pub struct NextReads {
+struct NextReads {
     total: usize,
-    limited: bool,
     rows: Vec<UncertaintyRead>,
     reason: Option<&'static str>,
 }
@@ -33,7 +31,6 @@ impl NextReads {
         if !vault_has_documents {
             return Self {
                 total: 0,
-                limited: false,
                 rows: Vec::new(),
                 reason: Some("no_bodies"),
             };
@@ -41,7 +38,6 @@ impl NextReads {
         let all = reads.unwrap_or_default();
         Self {
             total: all.len(),
-            limited: all.len() > limit,
             rows: all.iter().take(limit).cloned().collect(),
             reason: None,
         }
@@ -64,6 +60,8 @@ pub struct GrowthSummary {
     empty_domains: usize,
     #[serde(rename = "nextReads")]
     next_reads: usize,
+    #[serde(rename = "nextReadsReason", skip_serializing_if = "Option::is_none")]
+    next_reads_reason: Option<&'static str>,
     /// The writes waiting. A next read is not a write, so it is not counted here.
     #[serde(rename = "totalActions")]
     total_actions: usize,
@@ -102,7 +100,7 @@ pub struct GrowthPlanAnswer<'a> {
     #[serde(rename = "emptyDomains")]
     empty_domains: RowPage<NodeCandidate<'a>>,
     #[serde(rename = "nextReads")]
-    next_reads: NextReads,
+    next_reads: Vec<UncertaintyRead>,
 }
 
 pub fn growth_plan<'a>(
@@ -138,6 +136,7 @@ pub fn growth_plan_with_limit<'a>(
         unassigned_nodes: unassigned.total(),
         empty_domains: empty.total(),
         next_reads: next_reads.total,
+        next_reads_reason: next_reads.reason,
         total_actions: recommendations.total() + external.total() + dangling.total(),
     };
     Ok(GrowthPlanAnswer {
@@ -148,6 +147,6 @@ pub fn growth_plan_with_limit<'a>(
         dangling_references: dangling,
         unassigned_nodes: unassigned,
         empty_domains: empty,
-        next_reads,
+        next_reads: next_reads.rows,
     })
 }

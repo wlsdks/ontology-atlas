@@ -73,6 +73,13 @@ pub struct ActivityContent {
     pub logged_as: Option<&'static str>,
 }
 
+/// One write's lines for the two audit files.
+pub struct NodeWrite {
+    pub activity: ActivityContent,
+    pub concepts: ConceptEffect,
+    pub share: ShareMeasure,
+}
+
 pub enum WriteRecord {
     /// Nothing changed (a dry run, a call that refused every row), so nothing is recorded: the logs
     /// carry what happened and nothing else.
@@ -82,6 +89,9 @@ pub enum WriteRecord {
         concepts: ConceptEffect,
         share: ShareMeasure,
     },
+    /// One call that wrote several nodes and leaves the line each would have left alone, in the
+    /// order of the nodes.
+    WroteEach(Vec<NodeWrite>),
 }
 
 /// The end of a write handler: the answer and the record of the change.

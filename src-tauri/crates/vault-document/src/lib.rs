@@ -17,7 +17,7 @@ mod loaded_document;
 mod loaded_vault;
 pub mod meaning_wording;
 mod near_titles;
-mod orphans;
+mod matched_nodes;
 mod query_filter;
 mod read_hints;
 mod reader_threads;
@@ -46,7 +46,7 @@ pub use kind_census::{kind_census, KindCensus, KindCounts};
 pub use loaded_document::{DisplayTitle, FileReadError, LoadedDocument};
 pub use loaded_vault::{LoadedVault, NamedReadError};
 pub use near_titles::{near_titles, NearTitle};
-pub use orphans::{find_orphans, Orphan, OrphanFilter};
+pub use matched_nodes::{match_nodes_from_files, MatchFilter, MatchedNode};
 pub use query_filter::{FilterError, QueryFilter};
 pub use read_hints::{
     evidence_zero_hits_hint, query_zero_rows_hint, slug_not_found_hint, GrowthHint, Reference,

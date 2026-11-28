@@ -31,5 +31,6 @@ pub use problem_list::{list_problems, CodeTally, Problem, ProblemList, ProblemSu
 pub use raw_source_kind::raw_source_kind_issues;
 pub use summary_freshness::{summary_freshness, StaleSummary, SummaryFreshness};
 pub use validation_page::{
-    page_validation, PageRequest, ValidationFrame, ValidationPage, DEFAULT_PAGE_LIMIT,
+    brief_validation, page_validation, BriefValidation, PageRequest, ValidationFrame,
+    ValidationPage, DEFAULT_PAGE_LIMIT,
 };

@@ -1986,6 +1986,20 @@ add('writes', 'patch-concept-frontmatter-and-body', { vault: 'storefront' }, [
   call('patch_concept', { slug: 'capabilities/cart', frontmatter: { __proto__x: 'y', constructor: 'c', 10: 'ten', 2: 'two', b: 'letter' } }),
   call('get_concepts', { slugs: ['capabilities/cart'], body: 'full' }),
 ]);
+add('writes', 'patch-concept-batch', { vault: 'storefront' }, [
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', body: 'Batch body.', expected_mtime: mtimeOf('capabilities/cart.md') }, { slug: 'capabilities/checkout', frontmatter: { review_note: 'batched' } }], confirm: false }),
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', body: 'Batch body.', expected_mtime: mtimeOf('capabilities/cart.md') }, { slug: 'capabilities/checkout', frontmatter: { review_note: 'batched' } }] }),
+  call('get_concepts', { slugs: ['capabilities/cart', 'capabilities/checkout'], body: 'full' }),
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', body: 'Never written.' }, { slug: 'capabilities/checkout', body: 'Stale.', expected_mtime: 5 }] }),
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', body: 'Never written.' }, { slug: 'capabilities/nonexistent', body: 'x' }] }),
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', body: 'a' }, { slug: 'capabilities/cart', body: 'b' }] }),
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart' }] }),
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', body: 'x', extra: 1 }] }),
+  call('patch_concept', { patches: [] }),
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', body: 'x' }], slug: 'capabilities/cart' }),
+  call('patch_concept', { patches: [{ slug: 'capabilities/cart', frontmatter: { uid: 'x' } }] }),
+  call('get_concepts', { slugs: ['capabilities/cart', 'capabilities/checkout'], body: 'full' }),
+]);
 add('writes', 'patch-concept-preserves-bytes-of-odd-files', { vault: 'edge-bytes' }, [
   call('patch_concept', { slug: 'capabilities/crlf', frontmatter: { note: 'edited' }, expected_mtime: mtimeOf('capabilities/crlf.md') }),
   call('patch_concept', { slug: 'capabilities/bom', frontmatter: { note: 'edited' }, expected_mtime: mtimeOf('capabilities/bom.md') }),

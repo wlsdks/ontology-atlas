@@ -53,10 +53,7 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
             (Some(from), Some(to)) => format!("Remove the link {from} \u{2192} {to}"),
             _ => "Remove one relation".to_string(),
         },
-        WriteTool::PatchConcept => match sent.named("slug") {
-            Some(slug) => format!("Edit concept {slug}"),
-            None => "Edit one concept".to_string(),
-        },
+        WriteTool::PatchConcept => edit_concepts(&sent),
         WriteTool::RenameConcept => match (sent.text("oldSlug"), sent.text("newSlug")) {
             (Some(old), Some(new)) => format!("Rename {old} \u{2192} {new}"),
             _ => "Rename one concept".to_string(),
@@ -95,6 +92,24 @@ fn create_concepts(sent: &Sent<'_>) -> String {
         (Some(slug), _) => format!("Create concept {slug}"),
         (None, None) => "Create concepts".to_string(),
         (None, Some(count)) => format!("Create {count} concept(s)"),
+    }
+}
+
+fn edit_concepts(sent: &Sent<'_>) -> String {
+    let Some(count) = sent.count("patches") else {
+        return match sent.named("slug") {
+            Some(slug) => format!("Edit concept {slug}"),
+            None => "Edit one concept".to_string(),
+        };
+    };
+    let rows = sent.0.elements("patches");
+    let only = match rows.as_deref() {
+        Some([row]) => string_member(row, "slug").map(|slug| shown(&slug)),
+        _ => None,
+    };
+    match only {
+        Some(slug) if count == 1 => format!("Edit concept {slug}"),
+        _ => format!("Edit {count} concept(s)"),
     }
 }
 

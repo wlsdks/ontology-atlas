@@ -6,7 +6,7 @@ use vault_edit::{
     replace_body, stored_setting, FieldPatch, KeyChange, NodeFields, Setting, SourceDocument,
     SourceRefusal,
 };
-use confined_files::PlanEntry;
+use confined_files::{ConfinedPath, PlanEntry};
 
 use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
@@ -14,7 +14,7 @@ use super::write_support::{
     identity_refusal, modified_ms, require_current, write_permit, SessionUids,
 };
 use crate::error::ToolError;
-use crate::write_checkpoint::Permit;
+use crate::write_checkpoint::{Permit, WritePermit};
 
 pub struct Patched {
     pub minted_uid: Option<String>,
@@ -44,15 +44,29 @@ fn key_changes(patch: &FieldPatch, minted_uid: Option<&str>) -> Vec<KeyChange> {
     changes
 }
 
-pub fn patch_document(
-    permit: &Permit<'_>,
+/// A change to one document that is checked and made into the text it will have, but not yet
+/// written: a batch plans each of its patches before any of them is applied.
+pub struct PlannedPatch {
+    entry: PlanEntry,
+    file: ConfinedPath,
+    pub minted_uid: Option<String>,
+}
+
+impl PlannedPatch {
+    /// The step to apply, and the file it changes, whose time is read once it has.
+    pub fn into_parts(self) -> (PlanEntry, ConfinedPath) {
+        (self.entry, self.file)
+    }
+}
+
+pub fn plan_patch(
+    write: &WritePermit<'_>,
     view: &VaultView<'_>,
     slug: &str,
     patch: &FieldPatch,
     body: Option<&str>,
     expected_mtime: Option<f64>,
-) -> Result<Patched, ToolError> {
-    let write = write_permit(permit)?;
+) -> Result<PlannedPatch, ToolError> {
     let writable = write.write_path(slug).map_err(|error| slug_refusal(&error))?;
     let source = SourceDocument::read(writable.as_confined(), slug)
         .map_err(|refusal| source_refusal(view, slug, refusal))?;
@@ -71,9 +85,38 @@ pub fn patch_document(
     let entry = PlanEntry::write(writable, text)
         .expecting_text(source.raw.clone())
         .expecting_modified(source.modified);
-    write.apply(vec![entry], confined_files::Reservations::Refuse(&|path, text| {
-        vault_edit::reservation_in(path, text)
-    }))?;
+    Ok(PlannedPatch {
+        entry,
+        file,
+        minted_uid,
+    })
+}
+
+/// Applies planned patches all or nothing, refusing a file reserved for a person.
+pub fn apply_patches(write: &WritePermit<'_>, planned: Vec<PlanEntry>) -> Result<(), ToolError> {
+    write
+        .apply(
+            planned,
+            confined_files::Reservations::Refuse(&|path, text| {
+                vault_edit::reservation_in(path, text)
+            }),
+        )
+        .map(|_| ())
+}
+
+pub fn patch_document(
+    permit: &Permit<'_>,
+    view: &VaultView<'_>,
+    slug: &str,
+    patch: &FieldPatch,
+    body: Option<&str>,
+    expected_mtime: Option<f64>,
+) -> Result<Patched, ToolError> {
+    let write = write_permit(permit)?;
+    let planned = plan_patch(write, view, slug, patch, body, expected_mtime)?;
+    let minted_uid = planned.minted_uid.clone();
+    let (entry, file) = planned.into_parts();
+    apply_patches(write, vec![entry])?;
     Ok(Patched {
         minted_uid,
         modified_ms: modified_ms(&file),

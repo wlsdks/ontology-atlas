@@ -83,6 +83,7 @@ fn a_ring_ten_thousand_long_blocks_the_order_and_is_no_cycle_within_the_depth() 
     assert_eq!(order["orderedCount"], 0);
     // The list of blocked nodes is cut at the health check's own limit.
     assert_eq!(order["blocked"].as_array().map(Vec::len), Some(20));
+    assert_eq!(order["order"].as_array().map(Vec::len), Some(0));
     let cycles = answer(&graph, &request("cycles"));
     assert_eq!(cycles["totalCycles"], 0);
     let components = answer(&graph, &request("components"));
@@ -113,8 +114,6 @@ fn fifty_thousand_nodes_and_a_hub_they_all_depend_on_answer_every_summary() {
     assert_eq!(overview["hubs"][0]["slug"], slug(0));
     let communities = answer(&graph, &request("communities"));
     assert_eq!(communities["summary"]["communities"], 1);
-    let busiest = answer(&graph, &request("match_nodes"));
-    assert_eq!(busiest["nodes"][0]["slug"], slug(0));
     let neighbors = answer(
         &graph,
         &QueryRequest {

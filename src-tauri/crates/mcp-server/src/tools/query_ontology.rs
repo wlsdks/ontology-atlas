@@ -4,7 +4,7 @@
 //! refused first, by `retired_arguments`, with what replaced it.
 
 use ontology_graph::{
-    asks_for_orphans, orphan_nodes, Direction, NodeSort, Operation, QueryError, QueryRequest,
+    is_match_nodes, match_nodes, Direction, NodeSort, Operation, QueryError, QueryRequest,
     SelectionArguments, RELATION_TYPE_VALUES, SEARCH_BUDGET_MAX,
 };
 use serde_json::Value;
@@ -328,6 +328,10 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     if request.operation == Operation::AnalysisRecord {
         return answer_from_archive(context, &record_id.unwrap_or_default());
     }
+    if is_match_nodes(&request) {
+        let read = read_vault(context)?;
+        return ToolOutput::json(&match_nodes(read.vault.documents(), &request));
+    }
     if matches!(
         request.operation.name(),
         "growth_plan" | "maintenance_plan" | "workspace_brief"
@@ -342,10 +346,6 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             request.selection.outside.stale_summaries = stale_summaries(context)?;
         }
         _ => {}
-    }
-    if asks_for_orphans(&request) {
-        let read = read_vault(context)?;
-        return ToolOutput::json(&orphan_nodes(read.vault.documents(), &request));
     }
     let graph = context.compiled_graph().read(context)?;
     let answer = ontology_graph::run_query(&graph, &request)

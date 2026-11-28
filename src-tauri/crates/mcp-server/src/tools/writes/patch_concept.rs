@@ -4,6 +4,7 @@ use vault_edit::Setting;
 
 use super::answer_fields::{output, Fields};
 use super::object_checks::plain_object;
+use super::patch_batch;
 use super::patch_document::patch_document;
 use super::sent_setting::Sent;
 use super::vault_view::VaultView;
@@ -18,8 +19,24 @@ use crate::tools::argument_checks::{
 };
 use crate::write_checkpoint::Permit;
 
+/// A patch that names `title` gives it a non-empty text: `null` would delete the key a node cannot
+/// live without.
+pub(super) fn check_title(patch: &[(String, Setting)]) -> Result<(), ToolError> {
+    match member(patch, "title") {
+        None => Ok(()),
+        Some(Setting::Null) => Err(ToolError::invalid(
+            "title cannot be deleted from a vault node — pass a new non-empty string instead.",
+        )),
+        Some(Setting::Text(title)) if !answer_format::whitespace::trim(title).is_empty() => Ok(()),
+        Some(_) => Err(ToolError::invalid("title must be a non-empty string.")),
+    }
+}
+
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
     write_permit(permit)?;
+    if arguments.get("patches").is_some() {
+        return patch_batch::call(permit, arguments);
+    }
     let slug = required_non_blank_text(arguments, "slug")?;
     let expected_mtime = optional_non_negative_number(arguments, "expected_mtime")?;
     let frontmatter = arguments.read::<Sent>("frontmatter")?.map(|Sent(sent)| sent);
@@ -39,16 +56,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         Some(serde_json::Value::String(text)) => Some(text),
         Some(_) => return Err(ToolError::invalid("body must be a string.")),
     };
-    match member(&patch, "title") {
-        None => {}
-        Some(Setting::Null) => {
-            return Err(ToolError::invalid(
-                "title cannot be deleted from a vault node — pass a new non-empty string instead.",
-            ))
-        }
-        Some(Setting::Text(title)) if !answer_format::whitespace::trim(title).is_empty() => {}
-        Some(_) => return Err(ToolError::invalid("title must be a non-empty string.")),
-    }
+    check_title(&patch)?;
 
     let context = permit.context();
     let view = VaultView::read(permit)?;

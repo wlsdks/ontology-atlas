@@ -11,8 +11,7 @@ const LONG: usize = 10_000;
 const HUB: usize = 50_000;
 const LIMIT: usize = 5;
 /// The operations that read the whole graph, with no node named.
-const WHOLE_GRAPH: [&str; 8] = [
-    "match_nodes",
+const WHOLE_GRAPH: [&str; 7] = [
     "domain_matrix",
     "recommend_relations",
     "health",
@@ -98,10 +97,6 @@ fn a_hub_fifty_thousand_nodes_depend_on_is_listed_by_the_limit_not_by_its_degree
             text.len()
         );
     }
-    let matched: serde_json::Value =
-        serde_json::from_str(&ask(&graph, "match_nodes")).expect("is JSON");
-    assert_eq!(matched["nodes"].as_array().map(Vec::len), Some(LIMIT));
-    assert_eq!(matched["limited"], true);
 }
 
 /// `maintenance_plan` reads the body of every node, and a body is a file read and a parse, so a plan

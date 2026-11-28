@@ -282,7 +282,7 @@ pub fn fitted_map<'a>(
         map.narrowed_to_fit = Some(NarrowedToFit {
             requested_item_limit: requested,
             item_limit,
-            next: format!("Lists were cut to {item_limit} per domain to keep this answer under {MAP_TEXT_CHARS} characters; query_ontology({{operation:\"node_profile\", slug}}) lists one domain in full."),
+            next: format!("Lists were cut to {item_limit} per domain to keep this answer under {MAP_TEXT_CHARS} characters; query_ontology({{operation:\"node_profile\", slug, limit}}) lists up to limit (default 20) members of one domain."),
         });
     }
     map

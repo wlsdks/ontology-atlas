@@ -9,6 +9,7 @@ mod answer_fields;
 mod delete_concept;
 mod merge_concepts;
 mod object_checks;
+mod patch_batch;
 mod patch_concept;
 mod patch_document;
 mod sent_setting;

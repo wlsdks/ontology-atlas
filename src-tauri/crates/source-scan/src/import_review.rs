@@ -76,7 +76,8 @@ pub struct EndpointDraft {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ProposalValidation {
+pub struct AddConceptsStep {
+    pub tool: &'static str,
     pub fields_after_kind_decision: FieldsAfterKindDecision,
     pub endpoint_drafts: Vec<EndpointDraft>,
     pub purpose: &'static str,
@@ -105,7 +106,7 @@ pub struct EndpointModelling {
     pub absent_endpoints: Vec<String>,
     pub observed_paths_by_endpoint: Vec<ObservedPaths>,
     pub analysis_call: AnalysisCall,
-    pub proposal_validation: ProposalValidation,
+    pub add_concepts_step: AddConceptsStep,
     pub resume_call: ResumeCall,
 }
 
@@ -256,9 +257,10 @@ fn endpoint_modelling(
             arguments: RootArguments {
                 root_path: root_path.to_string(),
             },
-            purpose: "Refresh repository candidates and evidence only; this call does not create or validate either missing ontology endpoint.",
+            purpose: "Refresh repository candidates and evidence only; it does not create either missing ontology endpoint.",
         },
-        proposal_validation: ProposalValidation {
+        add_concepts_step: AddConceptsStep {
+            tool: "add_concepts",
             fields_after_kind_decision: FieldsAfterKindDecision {
                 common: ["slug", "title", "definition", "evidence", "confidence"],
                 by_kind: ProposalFieldsByKind {
@@ -269,7 +271,7 @@ fn endpoint_modelling(
                 },
             },
             endpoint_drafts: drafts,
-            purpose: "Write each endpoint with add_concepts once reviewed product meaning decides its kind, title, definition, domain, and path. Do not infer them from the endpoint slug alone.",
+            purpose: "After the kind is decided from reviewed product meaning, write each missing endpoint as one add_concepts row (slug, kind, title, body, and domain or path by kind). Do not infer kind, title, definition, domain, or path from the endpoint slug alone.",
         },
         resume_call: ResumeCall {
             tool: "infer_imports",

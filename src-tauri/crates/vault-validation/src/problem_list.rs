@@ -24,7 +24,9 @@ pub struct CodeTally {
     pub count: usize,
     /// What to do about the code, stated once here and not in each file's message.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub remedy: Option<&'static str>,
+    pub remedy: Option<String>,
+    /// The files with this code that the page's rows do not name.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub files: Vec<String>,
     #[serde(rename = "filesOmitted", skip_serializing_if = "Option::is_none")]
     pub files_omitted: Option<usize>,
@@ -93,7 +95,7 @@ pub fn list_problems(files: &[String], mut issues: HashMap<String, Vec<Issue>>) 
                     CodeTally {
                         severity: issue.severity,
                         count: 0,
-                        remedy: code_remedy(issue.code),
+                        remedy: code_remedy(issue.code).map(str::to_string),
                         files: Vec::new(),
                         files_omitted: None,
                     },

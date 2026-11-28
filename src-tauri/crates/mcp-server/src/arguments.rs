@@ -84,6 +84,12 @@ impl Arguments {
             .any(|key| self.get(key).is_some_and(|raw| raw.get() == "true"))
     }
 
+    /// Whether the call is a preview its own words ask for, `confirm: false`, which changes
+    /// nothing and so asks no one.
+    pub fn asks_for_preview(&self) -> bool {
+        self.get("confirm").is_some_and(|raw| raw.get() == "false")
+    }
+
     /// One argument as `T`: `None` when it was not sent, and an invalid-argument failure naming it
     /// when it is not a `T`.
     pub fn read<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, ToolError> {

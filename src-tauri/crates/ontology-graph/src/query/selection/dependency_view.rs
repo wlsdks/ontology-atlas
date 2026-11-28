@@ -3,6 +3,8 @@
 //! asks them with the defaults a call of `cycles` has and keeps the facts
 //! as typed values, so the two never disagree about what a cycle is.
 
+use serde::Serialize;
+
 use crate::compiled_graph::CompiledGraph;
 use crate::query::operation_defaults::{CYCLES_MAX_HOPS, CYCLES_SEARCH_BUDGET};
 use crate::query::query_error::QueryError;
@@ -52,15 +54,28 @@ pub fn cycles<'a>(
     })
 }
 
+/// One node of the prerequisite order: the layer it sits in, and its slug.
+#[derive(Serialize)]
+pub struct OrderedRow<'a> {
+    rank: usize,
+    slug: &'a str,
+}
+
 pub struct OrderReport<'a> {
     pub acyclic: bool,
     pub total_nodes: usize,
     pub ordered_count: usize,
+    /// Whether more nodes are ordered than `order` lists.
+    pub limited: bool,
+    /// The first `limit` ordered nodes, prerequisites first.
+    pub order: Vec<OrderedRow<'a>>,
+    /// The first `limit` nodes a cycle keeps out of the order: a ring of ten thousand would
+    /// otherwise answer with ten thousand rows (row 24).
     pub blocked: Vec<BlockedRow<'a>>,
 }
 
-/// Whether `types` can be put in prerequisite order, and what is blocked when they cannot: the
-/// first `limit` blocked nodes.
+/// Whether `types` can be put in prerequisite order: the first `limit` ordered nodes, and the first
+/// `limit` nodes a cycle blocks.
 pub fn order<'a>(
     graph: &'a CompiledGraph,
     limit: usize,
@@ -69,10 +84,24 @@ pub fn order<'a>(
 ) -> Result<OrderReport<'a>, QueryError> {
     let relations = RelationSet::parse(Some(types), argument)?;
     let found = order_dependencies(graph, relations.as_ref());
+    let ordered_count = found.ordered_count();
     Ok(OrderReport {
         acyclic: found.is_acyclic(),
         total_nodes: found.total_nodes,
-        ordered_count: found.ordered_count(),
+        ordered_count,
+        limited: ordered_count > limit,
+        order: found
+            .layers
+            .iter()
+            .enumerate()
+            .flat_map(|(rank, layer)| {
+                layer.iter().map(move |node| OrderedRow {
+                    rank,
+                    slug: graph.node(*node).slug(),
+                })
+            })
+            .take(limit)
+            .collect(),
         blocked: found
             .blocked
             .iter()
