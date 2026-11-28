@@ -102,7 +102,7 @@ impl SourceRoot {
     }
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::ScanRoots;
@@ -114,15 +114,36 @@ mod tests {
             .expect("allowed")
     }
 
+    /// A repository with `src/a.ts`, and the links this platform can make to it without a
+    /// privilege: symbolic links on Unix, and on Windows a directory junction made by `mklink /J`
+    /// (Microsoft, "mklink", which needs no administrator right for a junction). A junction looks
+    /// like a folder to `symlink_metadata`, so this is the case the real-path check exists for.
+    fn repository_with_links(real: &std::path::Path) {
+        std::fs::create_dir_all(real.join("src")).expect("src");
+        std::fs::write(real.join("src/a.ts"), "export const a = 1;\n").expect("file");
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(real.join("src"), real.join("linked")).expect("link");
+            std::os::unix::fs::symlink(real.join("src/a.ts"), real.join("src/b.ts"))
+                .expect("file link");
+        }
+        #[cfg(windows)]
+        {
+            let made = std::process::Command::new("cmd")
+                .args(["/C", "mklink", "/J"])
+                .arg(real.join("linked"))
+                .arg(real.join("src"))
+                .output()
+                .expect("cmd runs");
+            assert!(made.status.success(), "mklink /J: {made:?}");
+        }
+    }
+
     #[test]
     fn a_link_on_the_path_a_folder_and_a_file_over_the_limit_are_each_refused_by_name() {
         let base = tempfile::tempdir().expect("temp dir");
         let real = std::fs::canonicalize(base.path()).expect("real");
-        std::fs::create_dir_all(real.join("src")).expect("src");
-        std::fs::write(real.join("src/a.ts"), "export const a = 1;\n").expect("file");
-        std::os::unix::fs::symlink(real.join("src"), real.join("linked")).expect("link");
-        std::os::unix::fs::symlink(real.join("src/a.ts"), real.join("src/b.ts"))
-            .expect("file link");
+        repository_with_links(&real);
         let root = root_of(&real);
         assert_eq!(
             root.read_repository_file(&["src", "a.ts"], 1024).as_deref(),
@@ -132,14 +153,19 @@ mod tests {
             root.read_repository_file(&["linked", "a.ts"], 1024),
             Err(RepositoryFileRefusal::ThroughLink)
         );
+        #[cfg(unix)]
         assert_eq!(
             root.read_repository_file(&["src", "b.ts"], 1024),
             Err(RepositoryFileRefusal::ThroughLink)
         );
+        // Windows cannot open a folder as a file, so there the refusal is the open's, not the kind's.
+        #[cfg(unix)]
         assert_eq!(
             root.read_repository_file(&["src"], 1024),
             Err(RepositoryFileRefusal::NotRegular)
         );
+        #[cfg(windows)]
+        assert!(root.read_repository_file(&["src"], 1024).is_err());
         assert_eq!(
             root.read_repository_file(&["src", "a.ts"], 4),
             Err(RepositoryFileRefusal::TooLarge)

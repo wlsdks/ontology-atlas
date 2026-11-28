@@ -11,8 +11,6 @@ answer-format = { path = "../answer-format" }
 confined-files = { path = "../confined-files" }
 repository-survey = { path = "../repository-survey" }
 source-scan = { path = "../source-scan" }
-# Product files are outlined on the global pool, only through `par_iter`.
-rayon = "1"
 # The patterns the readers match lines with; the engine runs in linear time, so a hostile line
 # cannot make one run long.
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-gencat", "unicode-perl"] }

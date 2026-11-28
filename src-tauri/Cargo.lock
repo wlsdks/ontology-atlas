@@ -5031,7 +5031,6 @@ version = "0.1.0"
 dependencies = [
  "answer-format",
  "confined-files",
- "rayon",
  "regex",
  "repository-survey",
  "serde_json",
