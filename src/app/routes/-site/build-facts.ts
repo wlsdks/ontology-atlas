@@ -1,7 +1,7 @@
 import { loadWorkbenchCatalog } from '@/i18n/workbench-catalog';
 import { GATEWAY_MESSAGE_PATHS, pickMessagePaths } from '@/i18n/gateway-messages';
 import type { AppLocale } from '@/i18n/locales';
-import type { GatewayDocument } from '@/views/gateway-doc';
+import { loadChangelogDocument, type GatewayDocument } from '@/views/gateway-doc';
 import type { SampleCensus } from '@/views/sample-map';
 
 import type { MessageTree } from './screen-metadata';
@@ -16,7 +16,8 @@ export interface SourceDates {
  * What only the build machine can answer about a public page: the words each page reads, the Git dates of
  * its source and the sample's size. The prerender answers from Node and records each answer; the page
  * carries the record, so its first browser render asks the same questions and gets the same answers. In
- * `pnpm dev` no one recorded anything: dates are absent and the page reads the whole catalogue.
+ * `pnpm dev` and the installed app no one recorded anything: dates are absent, the page reads the whole
+ * catalogue and the changelog arrives as its own file.
  */
 export interface BuildFacts {
   siteMessages(locale: AppLocale): Promise<MessageTree>;
@@ -48,14 +49,9 @@ export function replayBuildFacts(recorded: RecordedFacts): BuildFacts {
       return recorded[factKey('sampleCensus', locale)] as SampleCensus | undefined;
     },
     async changelog() {
-      const recordedChangelog = recorded[factKey('changelog')] as GatewayDocument | undefined;
-      if (recordedChangelog) return recordedChangelog;
-      // `pnpm dev` reads the whole file, which the page folds to its recent sections itself; a production
-      // build that was not recorded has no changelog to show, and carries no copy of the file.
-      if (!import.meta.env.DEV) return { raw: null, bundledOmittedSections: 0, language: 'en' };
-      const files = import.meta.glob<string>('/docs/CHANGELOG.md', { query: '?raw', import: 'default' });
-      const read = files['/docs/CHANGELOG.md'];
-      return { raw: read ? await read() : null, bundledOmittedSections: 0, language: 'en' };
+      // Where nothing was recorded (the installed app, `pnpm dev`) the composed changelog the prerender
+      // records is fetched from the same file.
+      return (recorded[factKey('changelog')] as GatewayDocument | undefined) ?? loadChangelogDocument();
     },
   };
 }
