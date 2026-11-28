@@ -43,12 +43,16 @@ impl KeptGraph {
     pub fn read(&self, context: &CallContext<'_>) -> Result<Arc<CompiledGraph>, ToolError> {
         let read = read_vault(context)?;
         let documents = read.vault.documents().to_vec();
-        {
-            let kept = self.kept.lock().unwrap_or_else(PoisonError::into_inner);
+        let stale = {
+            let mut kept = self.kept.lock().unwrap_or_else(PoisonError::into_inner);
             if let Some(kept) = kept.as_ref().filter(|kept| is_current(kept, &documents)) {
                 return Ok(Arc::clone(&kept.graph));
             }
-        }
+            kept.take()
+        };
+        // A graph that no longer matches the vault is never answered from again; let it go before
+        // the new one is compiled, so the two are not held at once.
+        drop(stale);
         let graph = Arc::new(
             ontology_graph::compile(&documents)
                 .map_err(|error| ToolError::failed(error.to_string()))?,
