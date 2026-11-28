@@ -1,6 +1,6 @@
 import { loadWorkbenchCatalog } from '@/i18n/workbench-catalog';
 import { pickMessagePaths } from '@/i18n/gateway-messages';
-import { firstCommitDate, lastCommitDate } from '@/shared/lib/public-pages/source-dates';
+import { firstCommitDateAsync, lastCommitDateAsync } from '@/shared/lib/public-pages/source-dates';
 import { readGatewayDocument } from '@/views/gateway-doc';
 import { readSampleCensus } from '@/views/sample-map';
 
@@ -27,8 +27,7 @@ export function recordBuildFacts(): { facts: BuildFacts; recorded: RecordedFacts
       return keep(factKey('siteMessages', locale), pickMessagePaths(await loadWorkbenchCatalog(locale), SITE_MESSAGE_PATHS));
     },
     async sourceDates(sourcePath, publishedPath = sourcePath) {
-      const modified = lastCommitDate([sourcePath]);
-      const published = firstCommitDate(publishedPath);
+      const [modified, published] = await Promise.all([lastCommitDateAsync([sourcePath]), firstCommitDateAsync(publishedPath)]);
       return keep(factKey('sourceDates', sourcePath, publishedPath), {
         ...(modified ? { modified } : {}),
         ...(published ? { published } : {}),

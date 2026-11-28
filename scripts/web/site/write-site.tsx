@@ -155,11 +155,14 @@ export async function writeSite({ root, assets }: { root: string; assets: SiteAs
     loadingPicture: loadingPictureFor(root),
   };
   const router = createAtlasRouter({ history: createMemoryHistory({ initialEntries: ['/'] }) });
-  const files: SiteFile[] = [];
-  for (const page of listSitePages(router)) {
-    const text = page.kind === 'router' ? await writeRouterPage(page, context) : await writeAppAddress(page, context);
-    files.push({ path: pagePath(page.path), text });
-  }
+  // Together, not one after another: most of a page's wait is Git answering when its source was changed, and
+  // those questions run as processes beside the one that renders.
+  const files: SiteFile[] = await Promise.all(
+    listSitePages(router).map(async (page) => ({
+      path: pagePath(page.path),
+      text: page.kind === 'router' ? await writeRouterPage(page, context) : await writeAppAddress(page, context),
+    })),
+  );
   files.push(
     { path: pagePath('/'), text: await writeRoot(context) },
     { path: '404.html', text: await writeNotFound(context) },

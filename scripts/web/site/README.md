@@ -1,7 +1,7 @@
 # scripts/web/site
 
 Writes the website as files: one HTML page for every address the router holds, the root, the 404 page,
-and the four text files crawlers read. It runs after `vite build --mode site` (`pnpm site:build`) and
+and the four text files crawlers read. It runs after `vite build --mode site` (`pnpm site:build`; `pnpm build:vite` runs it beside the app's build) and
 renders with React's own prerender, so a page's `<title>`, `<meta>` and `<link>` tags come from the
 route that owns them and the browser adopts the same markup. Start at `prerender-site.mjs`; the rest is
 named for what it exports.

@@ -26,6 +26,7 @@
     "build:static": "node scripts/web/build-static-export.mjs",
     "app:dev": "pnpm docs-vault:build && pnpm messages:build && vite --host 127.0.0.1 --port 3000 --strictPort",
     "app:build": "pnpm docs-vault:build && pnpm messages:build && vite build",
+    "build:vite": "node scripts/web/build-vite.mjs",
     "site:build": "pnpm docs-vault:build && pnpm messages:build && vite build --mode site && node scripts/web/site/prerender-site.mjs",
     "site:diff": "node scripts/web/site/diff-site-pages.mjs",
     "test:build:static": "node --test scripts/web/build-static-export.test.mjs scripts/web/next-build.test.mjs scripts/web/first-load-report.test.mjs",
