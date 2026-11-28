@@ -72,21 +72,20 @@ jobs:
           NEXT_PUBLIC_BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
       - name: Check sitemap, canonicals and titles in the site folder
         run: pnpm seo:check
-      # The first deploy of the Vite-built site must change no page the live Next-built site shows; it stops here
-      # if one would, or if the live site cannot be read. Once the live site is Vite-built the step passes at once.
-      - name: Stop unless the first Vite deploy changes no page
-        run: node scripts/web/first-vite-deploy-guard.mjs --out=out --base="$PAGES_BASE_URL"
-      # Before the deploy replaces the live site: which pages' visible text this build changes.
-      # Never the deploy's blocker: a slow or failing live site only means nothing is submitted.
-      - name: Find the pages this deploy changes
-        id: changed
-        continue-on-error: true
-        run: node scripts/web/indexnow.mjs changed --out=out >> "$GITHUB_OUTPUT"
+      # The updater feed is staged before the guard, so a feed error shows on its own line and a stop never leaves
+      # a half-staged folder. GitHub Pages replaces the whole site in one artifact, so a stop holds the feed with
+      # the site until the accepted list is amended; the guard stops only on a page that list does not name.
       - name: Stage the newest published updater manifest
         run: pnpm desktop:stage-hosted-updater
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PUBLISHED_RELEASE_TAG: ${{ env.PUBLISHED_RELEASE_TAG }}
+      # One fetch of the live site, before the deploy replaces it. While the live site is Next-built the first Vite
+      # deploy stops unless every page it changes is on the criterion-3 gate report's accepted list; once the live
+      # site is Vite-built the step only reports. Either way the pages whose visible text changed go to IndexNow.
+      - name: Stop unless the first Vite deploy changes only accepted pages
+        id: changed
+        run: node scripts/web/first-vite-deploy-guard.mjs --out=out --base="$PAGES_BASE_URL" >> "$GITHUB_OUTPUT"
       - name: Disable Jekyll
         run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

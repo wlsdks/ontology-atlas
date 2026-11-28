@@ -10,6 +10,9 @@
  *   node scripts/web/indexnow.mjs submit --urls='<JSON array>' --base=https://ontologyatlas.com
  *     After deploy: posts them to api.indexnow.org.
  *
+ * While the first Vite deploy is guarded, `first-vite-deploy-guard.mjs` runs `comparePages` once and prints the
+ * same `urls=` line, so the workflow fetches the live site once; `changed` is the standalone form after it goes.
+ *
  * Only changed pages are sent, because the site deploys on every merge and IndexNow is for change.
  * The key is public by design: an engine fetches `/<key>.txt` to prove the host is ours.
  */
