@@ -43,7 +43,8 @@ use super::project_source_selection::{existing_slug, missing_project};
 use super::vault_view::VaultView;
 use super::write_aftermath::{measure_coverage, share_counts, source_state};
 use super::write_gates::require_not_reserved;
-use super::write_support::{effect, modified_ms, require_current, write_permit};
+use super::concept_effect::effect;
+use super::expected_mtime::{modified_ms, require_current};
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
@@ -432,7 +433,6 @@ fn replaced_body_documents(
 
 #[allow(clippy::too_many_lines, reason = "one ordered flow: every refusal precedes the first write")]
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let call = permit.context();
     let project_name = optional_non_blank_text(arguments, "projectSlug")?;
     let expected_mtime = optional_non_negative_number(arguments, "expected_mtime")?;
