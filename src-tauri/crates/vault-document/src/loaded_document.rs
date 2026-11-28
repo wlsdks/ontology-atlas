@@ -63,6 +63,9 @@ fn digest_of(bytes: &[u8]) -> Digest256 {
 #[derive(Debug, Clone)]
 pub struct LoadedDocument {
     record: Arc<Record>,
+    /// The body read by a document made with [`Self::remembering_its_body`], shared by its clones.
+    /// It lives with that document, never with the record a cache keeps between calls.
+    remembered_body: Option<Arc<OnceLock<String>>>,
 }
 
 #[derive(Debug)]
@@ -122,6 +125,7 @@ impl LoadedDocument {
         let links = BodyLinks::of(&body);
         let kept = keep_body.then(|| body.into_owned());
         Self {
+            remembered_body: None,
             record: Arc::new(Record {
                 slug,
                 file: file.clone(),
@@ -146,6 +150,7 @@ impl LoadedDocument {
     pub fn with_body(&self, body: &str) -> Self {
         let record = &self.record;
         Self {
+            remembered_body: None,
             record: Arc::new(Record {
                 slug: record.slug.clone(),
                 file: record.file.clone(),
@@ -161,6 +166,19 @@ impl LoadedDocument {
                 signature: OnceLock::new(),
                 last_answer: AtomicU64::new(0),
             }),
+        }
+    }
+
+    /// This document for the length of one call: its first [`Self::body`] reads the file and the
+    /// rest of the call is answered from that read, so a call that asks for every body in turn
+    /// (the checks of `validate_vault` each do) reads each file once, not once per check. The text
+    /// is held until the returned documents are dropped; the cache a document came from never
+    /// holds it.
+    #[must_use]
+    pub fn remembering_its_body(&self) -> Self {
+        Self {
+            record: Arc::clone(&self.record),
+            remembered_body: Some(Arc::new(OnceLock::new())),
         }
     }
 
@@ -226,8 +244,17 @@ impl LoadedDocument {
     /// The body as readers see it: LF line endings only. A body that was not kept is read from the
     /// file again, which must still be the version the rest was read from.
     pub fn body(&self) -> Result<Cow<'_, str>, FileReadError> {
-        let read = self.read_body();
-        self.body_from(read)
+        let Some(remembered) = self.remembered_body.as_deref() else {
+            return self.body_from(self.read_body());
+        };
+        if let Some(text) = remembered.get() {
+            return Ok(Cow::Borrowed(text));
+        }
+        let body = self.body_from(self.read_body())?;
+        match body {
+            Cow::Owned(text) => Ok(Cow::Borrowed(remembered.get_or_init(|| text))),
+            kept @ Cow::Borrowed(_) => Ok(kept),
+        }
     }
 
     /// The file read again for its body, or `None` when the body was kept: the part of

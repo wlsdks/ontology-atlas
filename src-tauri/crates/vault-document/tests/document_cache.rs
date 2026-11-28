@@ -140,6 +140,28 @@ fn a_body_is_not_served_after_its_file_changed() {
     );
 }
 
+#[test]
+fn a_document_made_for_one_call_reads_its_file_once_and_the_cached_one_reads_it_every_time() {
+    let vault = vault(&[("pay.md", &note("Pay"))]);
+    let cache = DocumentCache::new();
+    let listed = LoadedVault::load(&vault.root, &cache).expect("load");
+    let kept = listed.documents().first().expect("one").clone();
+    let for_the_call = kept.remembering_its_body();
+
+    let first = for_the_call.body().expect("first read").into_owned();
+    fs::remove_file(vault.root.path().join("pay.md")).expect("remove");
+
+    assert_eq!(for_the_call.body().expect("remembered"), first);
+    assert_eq!(
+        for_the_call.clone().body().expect("a clone shares it"),
+        first
+    );
+    assert!(
+        matches!(kept.body(), Err(FileReadError::Changed { .. })),
+        "what the cache holds keeps no text, so the next call reads the file as it is then"
+    );
+}
+
 #[cfg(unix)]
 mod unix {
     use std::os::unix::fs::PermissionsExt;
