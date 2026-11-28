@@ -2342,6 +2342,15 @@ for (const [label, answer] of [['accepted', 'accept'], ['declined', 'decline'], 
     call('list_concepts', { limit: 1 }),
   ]);
 }
+add('safety', 'write-with-consent-replaced-relation', { vault: 'storefront', env: { OATLAS_WRITE_CONSENT: 'true' }, capabilities: { elicitation: { form: {} } }, elicit: 'accept' }, [
+  call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/cart', type: 'depends_on', replaceWith: { to: 'capabilities/order-lookup', type: 'depends_on', why: 'swapped' }, confirm: true }),
+  call('list_concepts', { limit: 1 }),
+]);
+add('safety', 'write-with-consent-kind-change', { vault: 'storefront', env: { OATLAS_WRITE_CONSENT: 'true' }, capabilities: { elicitation: { form: {} } }, elicit: 'accept' }, [
+  call('rename_concept', { oldSlug: 'capabilities/faq', newKind: 'element', domain: 'domains/order', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/cart', newKind: 'element', newSlug: 'elements/cart', domain: 'domains/order', body: 'Replaced.', confirm: true }),
+  call('list_concepts', { limit: 1 }),
+]);
 add('safety', 'consent-question-open-while-a-read-arrives', { vault: 'storefront', env: { OATLAS_WRITE_CONSENT: '1' }, capabilities: { elicitation: { form: {} } }, elicit: 'none' }, [
   call('add_concepts', { concepts: [{ slug: 'elements/asked', kind: 'element', title: 'Asked' }] }, { noWait: true }),
   call('list_concepts', { limit: 1 }),

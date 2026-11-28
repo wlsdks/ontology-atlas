@@ -8,7 +8,7 @@ use answer_format::json::quote;
 
 use super::shown_text::shown;
 use crate::arguments::Arguments;
-use crate::raw_json::string_member;
+use crate::raw_json::{string_member, Kind};
 use crate::write_tool::WriteTool;
 
 /// What the agent sent, read the way the card needs it: a value of another type is no value.
@@ -49,15 +49,9 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
             _ => "Add one relation".to_string(),
         },
         WriteTool::AddRelations => add_relations(&sent),
-        WriteTool::RemoveRelation => match (sent.named("from"), sent.named("to")) {
-            (Some(from), Some(to)) => format!("Remove the link {from} \u{2192} {to}"),
-            _ => "Remove one relation".to_string(),
-        },
+        WriteTool::RemoveRelation => remove_relation(&sent),
         WriteTool::PatchConcept => edit_concepts(&sent),
-        WriteTool::RenameConcept => match (sent.text("oldSlug"), sent.text("newSlug")) {
-            (Some(old), Some(new)) => format!("Rename {old} \u{2192} {new}"),
-            _ => "Rename one concept".to_string(),
-        },
+        WriteTool::RenameConcept => rename_concept(&sent),
         WriteTool::MergeConcepts => match (sent.text("fromSlug"), sent.text("intoSlug")) {
             (Some(from), Some(into)) => format!("Merge {from} into {into}"),
             _ => "Merge concepts".to_string(),
@@ -77,6 +71,69 @@ pub fn summary(tool: WriteTool, arguments: &Arguments) -> String {
         WriteTool::FinalizeProjectMeaning => finalize_project_meaning(&sent),
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => "Write one test file".to_string(),
+    }
+}
+
+/// `remove_relation` removes one link, or with `replaceWith` swaps its target for another.
+fn remove_relation(sent: &Sent<'_>) -> String {
+    let (from, to) = (sent.named("from"), sent.named("to"));
+    let Some(replacement) = sent
+        .0
+        .get("replaceWith")
+        .filter(|raw| matches!(Kind::of(raw), Kind::Object | Kind::Array))
+    else {
+        return match (from, to) {
+            (Some(from), Some(to)) => format!("Remove the link {from} \u{2192} {to}"),
+            _ => "Remove one relation".to_string(),
+        };
+    };
+    match (from, to, string_member(replacement, "to")) {
+        (Some(from), Some(to), Some(new_to)) => {
+            let new_to = shown(&new_to);
+            format!("Replace the link {from} \u{2192} {to} with {from} \u{2192} {new_to}")
+        }
+        _ => "Replace one relation".to_string(),
+    }
+}
+
+/// `rename_concept` renames a concept, or with `newKind` changes its kind. A kind change may also
+/// move it (`newSlug`), set its domain or replace its body, and the card names each of them.
+fn rename_concept(sent: &Sent<'_>) -> String {
+    if sent.0.get("newKind").is_none() {
+        return match (sent.text("oldSlug"), sent.text("newSlug")) {
+            (Some(old), Some(new)) => format!("Rename {old} \u{2192} {new}"),
+            _ => "Rename one concept".to_string(),
+        };
+    }
+    let Some(old) = sent.text("oldSlug") else {
+        return "Change one concept kind".to_string();
+    };
+    let kind = match sent.text("newKind") {
+        Some(kind) => format!("Change the kind of {old} to {kind}"),
+        None => format!("Change the kind of {old}"),
+    };
+    let mut also = Vec::new();
+    if let Some(new) = sent.text("newSlug") {
+        also.push(format!("rename it to {new}"));
+    }
+    match sent.text("domain") {
+        Some(domain) => also.push(format!("set its domain to {domain}")),
+        None if sent
+            .0
+            .get("domain")
+            .is_some_and(|raw| Kind::of(raw) == Kind::Null) =>
+        {
+            also.push("clear its domain".to_string());
+        }
+        None => {}
+    }
+    if sent.text("body").is_some() {
+        also.push("replace its body".to_string());
+    }
+    match also.split_last() {
+        None => kind,
+        Some((last, [])) => format!("{kind} and {last}"),
+        Some((last, rest)) => format!("{kind}, {} and {last}", rest.join(", ")),
     }
 }
 
@@ -187,8 +244,18 @@ mod tests {
             (AddRelation, r#"{"from":"a"}"#, "Add one relation"),
             (RemoveRelation, r#"{"from":"a","to":"b"}"#, "Remove the link a \u{2192} b"),
             (RemoveRelation, r#"{"from":5,"to":"b"}"#, "Remove one relation"),
+            (RemoveRelation, r#"{"from":"a","to":"b","replaceWith":{"to":"c"}}"#, "Replace the link a \u{2192} b with a \u{2192} c"),
+            (RemoveRelation, r#"{"from":"a","to":"b","replaceWith":{}}"#, "Replace one relation"),
+            (RemoveRelation, r#"{"from":"a","to":"b","replaceWith":null}"#, "Remove the link a \u{2192} b"),
             (PatchConcept, r#"{"slug":"s"}"#, "Edit concept s"),
             (RenameConcept, r#"{"oldSlug":"a","newSlug":"b"}"#, "Rename a \u{2192} b"),
+            (RenameConcept, r#"{"oldSlug":"a"}"#, "Rename one concept"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain"}"#, "Change the kind of a to domain"),
+            (RenameConcept, r#"{"newKind":"domain"}"#, "Change one concept kind"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"element","newSlug":"b"}"#, "Change the kind of a to element and rename it to b"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"element","body":"x"}"#, "Change the kind of a to element and replace its body"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"capability","newSlug":"b","domain":"d","body":""}"#, "Change the kind of a to capability, rename it to b, set its domain to d and replace its body"),
+            (RenameConcept, r#"{"oldSlug":"a","newKind":"domain","domain":null}"#, "Change the kind of a to domain and clear its domain"),
             (MergeConcepts, r#"{"fromSlug":"a","intoSlug":"b"}"#, "Merge a into b"),
             (DeleteConcept, r#"{}"#, "Delete one concept"),
             (AbsorbDocument, r#"{"filePath":"/tmp/a b.md"}"#, "Absorb \"/tmp/a b.md\" into typed nodes"),
