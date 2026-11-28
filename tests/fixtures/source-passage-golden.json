@@ -1,0 +1,2323 @@
+{
+ "recordedFrom": "the script server (mcp/src/library/source-text.mjs readSourceText) on 2026-11-28",
+ "bounds": {
+  "defaultLimit": 200,
+  "maxLimit": 1000,
+  "maxChars": 60000
+ },
+ "calls": {
+  "a Markdown policy, lines with blanks between them — {}": {
+   "format": "text",
+   "unitCount": 5,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "l1",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "# Settlement Policy"
+    },
+    {
+     "anchor": "l3",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "## Settlement cycle"
+    },
+    {
+     "anchor": "l5",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "Card payments settle on T+2 business days. Bank transfers settle same day when"
+    },
+    {
+     "anchor": "l6",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "the transfer clears before 15:00 KST, and on the next business day otherwise."
+    },
+    {
+     "anchor": "l8",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "A weekend or public holiday does not count as a business day."
+    }
+   ]
+  },
+  "a Markdown policy, lines with blanks between them — {\"from\":3,\"limit\":2}": {
+   "format": "text",
+   "unitCount": 5,
+   "from": 3,
+   "truncated": true,
+   "next": 5,
+   "note": null,
+   "units": [
+    {
+     "anchor": "l5",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "Card payments settle on T+2 business days. Bank transfers settle same day when"
+    },
+    {
+     "anchor": "l6",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "the transfer clears before 15:00 KST, and on the next business day otherwise."
+    }
+   ]
+  },
+  "a CSV whose quoted record spans two physical lines — {}": {
+   "format": "csv",
+   "unitCount": 3,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "r1",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "method,region,note"
+    },
+    {
+     "anchor": "r2",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "card_domestic,KR,\"settles T+2,\nholidays excluded\""
+    },
+    {
+     "anchor": "r4",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "bank_transfer,KR,same day"
+    }
+   ]
+  },
+  "a CSV whose quoted record spans two physical lines — {\"from\":2,\"limit\":1}": {
+   "format": "csv",
+   "unitCount": 3,
+   "from": 2,
+   "truncated": true,
+   "next": 3,
+   "note": null,
+   "units": [
+    {
+     "anchor": "r2",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "card_domestic,KR,\"settles T+2,\nholidays excluded\""
+    }
+   ]
+  },
+  "a TSV with a literal quote inside a field — {\"limit\":1000}": {
+   "format": "csv",
+   "unitCount": 3,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "r1",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "item\tmeasurement"
+    },
+    {
+     "anchor": "r2",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "pipe\t2\" steel"
+    },
+    {
+     "anchor": "r3",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "next\trow"
+    }
+   ]
+  },
+  "a CSV with an unclosed quote, which must report its note — {}": {
+   "format": "csv",
+   "unitCount": 2,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": "Unclosed quoted record begins at physical line r2; its raw remainder was retained as one unit through EOF. This is not a full CSV/TSV validity check.",
+   "units": [
+    {
+     "anchor": "r1",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "a,b"
+    },
+    {
+     "anchor": "r2",
+     "kind": "row",
+     "heading": null,
+     "sheet": null,
+     "text": "\"unterminated,c\nd,e\n"
+    }
+   ]
+  },
+  "an HTML export, tags dropped and then counted as lines — {}": {
+   "format": "html",
+   "unitCount": 4,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "l1",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "Merchant Onboarding"
+    },
+    {
+     "anchor": "l2",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "A merchant is live when three things are true."
+    },
+    {
+     "anchor": "l3",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "Registration verified"
+    },
+    {
+     "anchor": "l4",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "Account confirmed"
+    }
+   ]
+  },
+  "a DOCX with unique headings, deflated — {}": {
+   "format": "docx",
+   "unitCount": 6,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "h:dispute-handling-standard",
+     "kind": "heading",
+     "heading": "Dispute Handling Standard",
+     "sheet": null,
+     "text": "Dispute Handling Standard"
+    },
+    {
+     "anchor": "h:dispute-handling-standard",
+     "kind": "paragraph",
+     "heading": "Dispute Handling Standard",
+     "sheet": null,
+     "text": "This standard is the single source for how a disputed transaction is worked."
+    },
+    {
+     "anchor": "h:response-window",
+     "kind": "heading",
+     "heading": "Response window",
+     "sheet": null,
+     "text": "Response window"
+    },
+    {
+     "anchor": "h:response-window",
+     "kind": "paragraph",
+     "heading": "Response window",
+     "sheet": null,
+     "text": "Evidence must reach the network within 7 calendar days of notification."
+    },
+    {
+     "anchor": "h:records",
+     "kind": "heading",
+     "heading": "Records",
+     "sheet": null,
+     "text": "Records"
+    },
+    {
+     "anchor": "h:records",
+     "kind": "paragraph",
+     "heading": "Records",
+     "sheet": null,
+     "text": "Every case keeps the original notification and the network’s decision."
+    }
+   ]
+  },
+  "a DOCX with unique headings, deflated — {\"from\":5,\"limit\":2}": {
+   "format": "docx",
+   "unitCount": 6,
+   "from": 5,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "h:records",
+     "kind": "heading",
+     "heading": "Records",
+     "sheet": null,
+     "text": "Records"
+    },
+    {
+     "anchor": "h:records",
+     "kind": "paragraph",
+     "heading": "Records",
+     "sheet": null,
+     "text": "Every case keeps the original notification and the network’s decision."
+    }
+   ]
+  },
+  "a DOCX with colliding headings, whose generated anchors and note are the contract — {}": {
+   "format": "docx",
+   "unitCount": 7,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": "Ambiguous legacy DOCX heading addresses: h:scope (2 occurrences). Duplicate headings use distinct generated anchors in the returned units; cite those anchors instead.",
+   "units": [
+    {
+     "anchor": "p1",
+     "kind": "paragraph",
+     "heading": null,
+     "sheet": null,
+     "text": "A note before any heading at all."
+    },
+    {
+     "anchor": "h:scope-1",
+     "kind": "heading",
+     "heading": "Scope",
+     "sheet": null,
+     "text": "Scope"
+    },
+    {
+     "anchor": "h:scope-1",
+     "kind": "paragraph",
+     "heading": "Scope",
+     "sheet": null,
+     "text": "First scope."
+    },
+    {
+     "anchor": "h:scope-2",
+     "kind": "heading",
+     "heading": "Scope 2",
+     "sheet": null,
+     "text": "Scope 2"
+    },
+    {
+     "anchor": "h:scope-2",
+     "kind": "paragraph",
+     "heading": "Scope 2",
+     "sheet": null,
+     "text": "A uniquely named section that must keep h:scope-2."
+    },
+    {
+     "anchor": "h:scope-3",
+     "kind": "heading",
+     "heading": "Scope",
+     "sheet": null,
+     "text": "Scope"
+    },
+    {
+     "anchor": "h:scope-3",
+     "kind": "paragraph",
+     "heading": "Scope",
+     "sheet": null,
+     "text": "Second scope, which may not borrow the first anchor."
+    }
+   ]
+  },
+  "a DOCX stored without compression — {}": {
+   "format": "docx",
+   "unitCount": 2,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "h:stored",
+     "kind": "heading",
+     "heading": "Stored",
+     "sheet": null,
+     "text": "Stored"
+    },
+    {
+     "anchor": "h:stored",
+     "kind": "paragraph",
+     "heading": "Stored",
+     "sheet": null,
+     "text": "A zip entry with compression method 0."
+    }
+   ]
+  },
+  "an XLSX with two sheets, shared strings and a trailing empty cell — {}": {
+   "format": "xlsx",
+   "unitCount": 5,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "s1r1",
+     "kind": "row",
+     "heading": null,
+     "sheet": "Quarterly",
+     "text": "quarter | disputes_opened"
+    },
+    {
+     "anchor": "s1r2",
+     "kind": "row",
+     "heading": null,
+     "sheet": "Quarterly",
+     "text": "2026-Q1 | 412"
+    },
+    {
+     "anchor": "s1r3",
+     "kind": "row",
+     "heading": null,
+     "sheet": "Quarterly",
+     "text": "2026-Q2 | 388"
+    },
+    {
+     "anchor": "s2r1",
+     "kind": "row",
+     "heading": null,
+     "sheet": "Reason codes",
+     "text": "reason_code | meaning"
+    },
+    {
+     "anchor": "s2r2",
+     "kind": "row",
+     "heading": null,
+     "sheet": "Reason codes",
+     "text": "10.4 | Other fraud"
+    }
+   ]
+  },
+  "an XLSX with two sheets, shared strings and a trailing empty cell — {\"sheet\":2}": {
+   "format": "xlsx",
+   "unitCount": 2,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "s2r1",
+     "kind": "row",
+     "heading": null,
+     "sheet": "Reason codes",
+     "text": "reason_code | meaning"
+    },
+    {
+     "anchor": "s2r2",
+     "kind": "row",
+     "heading": null,
+     "sheet": "Reason codes",
+     "text": "10.4 | Other fraud"
+    }
+   ]
+  },
+  "an XLSX with two sheets, shared strings and a trailing empty cell — {\"from\":3,\"limit\":1}": {
+   "format": "xlsx",
+   "unitCount": 5,
+   "from": 3,
+   "truncated": true,
+   "next": 4,
+   "note": null,
+   "units": [
+    {
+     "anchor": "s1r3",
+     "kind": "row",
+     "heading": null,
+     "sheet": "Quarterly",
+     "text": "2026-Q2 | 388"
+    }
+   ]
+  },
+  "a long text file, where the default window truncates and pages — {}": {
+   "format": "text",
+   "unitCount": 260,
+   "from": 1,
+   "truncated": true,
+   "next": 201,
+   "note": null,
+   "units": [
+    {
+     "anchor": "l1",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 1"
+    },
+    {
+     "anchor": "l2",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 2"
+    },
+    {
+     "anchor": "l3",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 3"
+    },
+    {
+     "anchor": "l4",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 4"
+    },
+    {
+     "anchor": "l5",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 5"
+    },
+    {
+     "anchor": "l6",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 6"
+    },
+    {
+     "anchor": "l7",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 7"
+    },
+    {
+     "anchor": "l8",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 8"
+    },
+    {
+     "anchor": "l9",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 9"
+    },
+    {
+     "anchor": "l10",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 10"
+    },
+    {
+     "anchor": "l11",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 11"
+    },
+    {
+     "anchor": "l12",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 12"
+    },
+    {
+     "anchor": "l13",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 13"
+    },
+    {
+     "anchor": "l14",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 14"
+    },
+    {
+     "anchor": "l15",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 15"
+    },
+    {
+     "anchor": "l16",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 16"
+    },
+    {
+     "anchor": "l17",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 17"
+    },
+    {
+     "anchor": "l18",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 18"
+    },
+    {
+     "anchor": "l19",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 19"
+    },
+    {
+     "anchor": "l20",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 20"
+    },
+    {
+     "anchor": "l21",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 21"
+    },
+    {
+     "anchor": "l22",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 22"
+    },
+    {
+     "anchor": "l23",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 23"
+    },
+    {
+     "anchor": "l24",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 24"
+    },
+    {
+     "anchor": "l25",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 25"
+    },
+    {
+     "anchor": "l26",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 26"
+    },
+    {
+     "anchor": "l27",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 27"
+    },
+    {
+     "anchor": "l28",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 28"
+    },
+    {
+     "anchor": "l29",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 29"
+    },
+    {
+     "anchor": "l30",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 30"
+    },
+    {
+     "anchor": "l31",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 31"
+    },
+    {
+     "anchor": "l32",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 32"
+    },
+    {
+     "anchor": "l33",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 33"
+    },
+    {
+     "anchor": "l34",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 34"
+    },
+    {
+     "anchor": "l35",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 35"
+    },
+    {
+     "anchor": "l36",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 36"
+    },
+    {
+     "anchor": "l37",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 37"
+    },
+    {
+     "anchor": "l38",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 38"
+    },
+    {
+     "anchor": "l39",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 39"
+    },
+    {
+     "anchor": "l40",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 40"
+    },
+    {
+     "anchor": "l41",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 41"
+    },
+    {
+     "anchor": "l42",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 42"
+    },
+    {
+     "anchor": "l43",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 43"
+    },
+    {
+     "anchor": "l44",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 44"
+    },
+    {
+     "anchor": "l45",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 45"
+    },
+    {
+     "anchor": "l46",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 46"
+    },
+    {
+     "anchor": "l47",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 47"
+    },
+    {
+     "anchor": "l48",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 48"
+    },
+    {
+     "anchor": "l49",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 49"
+    },
+    {
+     "anchor": "l50",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 50"
+    },
+    {
+     "anchor": "l51",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 51"
+    },
+    {
+     "anchor": "l52",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 52"
+    },
+    {
+     "anchor": "l53",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 53"
+    },
+    {
+     "anchor": "l54",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 54"
+    },
+    {
+     "anchor": "l55",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 55"
+    },
+    {
+     "anchor": "l56",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 56"
+    },
+    {
+     "anchor": "l57",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 57"
+    },
+    {
+     "anchor": "l58",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 58"
+    },
+    {
+     "anchor": "l59",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 59"
+    },
+    {
+     "anchor": "l60",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 60"
+    },
+    {
+     "anchor": "l61",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 61"
+    },
+    {
+     "anchor": "l62",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 62"
+    },
+    {
+     "anchor": "l63",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 63"
+    },
+    {
+     "anchor": "l64",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 64"
+    },
+    {
+     "anchor": "l65",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 65"
+    },
+    {
+     "anchor": "l66",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 66"
+    },
+    {
+     "anchor": "l67",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 67"
+    },
+    {
+     "anchor": "l68",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 68"
+    },
+    {
+     "anchor": "l69",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 69"
+    },
+    {
+     "anchor": "l70",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 70"
+    },
+    {
+     "anchor": "l71",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 71"
+    },
+    {
+     "anchor": "l72",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 72"
+    },
+    {
+     "anchor": "l73",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 73"
+    },
+    {
+     "anchor": "l74",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 74"
+    },
+    {
+     "anchor": "l75",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 75"
+    },
+    {
+     "anchor": "l76",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 76"
+    },
+    {
+     "anchor": "l77",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 77"
+    },
+    {
+     "anchor": "l78",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 78"
+    },
+    {
+     "anchor": "l79",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 79"
+    },
+    {
+     "anchor": "l80",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 80"
+    },
+    {
+     "anchor": "l81",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 81"
+    },
+    {
+     "anchor": "l82",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 82"
+    },
+    {
+     "anchor": "l83",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 83"
+    },
+    {
+     "anchor": "l84",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 84"
+    },
+    {
+     "anchor": "l85",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 85"
+    },
+    {
+     "anchor": "l86",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 86"
+    },
+    {
+     "anchor": "l87",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 87"
+    },
+    {
+     "anchor": "l88",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 88"
+    },
+    {
+     "anchor": "l89",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 89"
+    },
+    {
+     "anchor": "l90",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 90"
+    },
+    {
+     "anchor": "l91",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 91"
+    },
+    {
+     "anchor": "l92",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 92"
+    },
+    {
+     "anchor": "l93",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 93"
+    },
+    {
+     "anchor": "l94",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 94"
+    },
+    {
+     "anchor": "l95",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 95"
+    },
+    {
+     "anchor": "l96",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 96"
+    },
+    {
+     "anchor": "l97",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 97"
+    },
+    {
+     "anchor": "l98",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 98"
+    },
+    {
+     "anchor": "l99",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 99"
+    },
+    {
+     "anchor": "l100",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 100"
+    },
+    {
+     "anchor": "l101",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 101"
+    },
+    {
+     "anchor": "l102",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 102"
+    },
+    {
+     "anchor": "l103",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 103"
+    },
+    {
+     "anchor": "l104",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 104"
+    },
+    {
+     "anchor": "l105",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 105"
+    },
+    {
+     "anchor": "l106",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 106"
+    },
+    {
+     "anchor": "l107",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 107"
+    },
+    {
+     "anchor": "l108",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 108"
+    },
+    {
+     "anchor": "l109",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 109"
+    },
+    {
+     "anchor": "l110",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 110"
+    },
+    {
+     "anchor": "l111",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 111"
+    },
+    {
+     "anchor": "l112",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 112"
+    },
+    {
+     "anchor": "l113",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 113"
+    },
+    {
+     "anchor": "l114",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 114"
+    },
+    {
+     "anchor": "l115",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 115"
+    },
+    {
+     "anchor": "l116",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 116"
+    },
+    {
+     "anchor": "l117",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 117"
+    },
+    {
+     "anchor": "l118",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 118"
+    },
+    {
+     "anchor": "l119",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 119"
+    },
+    {
+     "anchor": "l120",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 120"
+    },
+    {
+     "anchor": "l121",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 121"
+    },
+    {
+     "anchor": "l122",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 122"
+    },
+    {
+     "anchor": "l123",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 123"
+    },
+    {
+     "anchor": "l124",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 124"
+    },
+    {
+     "anchor": "l125",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 125"
+    },
+    {
+     "anchor": "l126",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 126"
+    },
+    {
+     "anchor": "l127",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 127"
+    },
+    {
+     "anchor": "l128",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 128"
+    },
+    {
+     "anchor": "l129",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 129"
+    },
+    {
+     "anchor": "l130",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 130"
+    },
+    {
+     "anchor": "l131",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 131"
+    },
+    {
+     "anchor": "l132",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 132"
+    },
+    {
+     "anchor": "l133",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 133"
+    },
+    {
+     "anchor": "l134",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 134"
+    },
+    {
+     "anchor": "l135",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 135"
+    },
+    {
+     "anchor": "l136",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 136"
+    },
+    {
+     "anchor": "l137",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 137"
+    },
+    {
+     "anchor": "l138",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 138"
+    },
+    {
+     "anchor": "l139",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 139"
+    },
+    {
+     "anchor": "l140",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 140"
+    },
+    {
+     "anchor": "l141",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 141"
+    },
+    {
+     "anchor": "l142",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 142"
+    },
+    {
+     "anchor": "l143",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 143"
+    },
+    {
+     "anchor": "l144",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 144"
+    },
+    {
+     "anchor": "l145",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 145"
+    },
+    {
+     "anchor": "l146",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 146"
+    },
+    {
+     "anchor": "l147",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 147"
+    },
+    {
+     "anchor": "l148",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 148"
+    },
+    {
+     "anchor": "l149",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 149"
+    },
+    {
+     "anchor": "l150",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 150"
+    },
+    {
+     "anchor": "l151",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 151"
+    },
+    {
+     "anchor": "l152",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 152"
+    },
+    {
+     "anchor": "l153",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 153"
+    },
+    {
+     "anchor": "l154",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 154"
+    },
+    {
+     "anchor": "l155",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 155"
+    },
+    {
+     "anchor": "l156",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 156"
+    },
+    {
+     "anchor": "l157",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 157"
+    },
+    {
+     "anchor": "l158",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 158"
+    },
+    {
+     "anchor": "l159",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 159"
+    },
+    {
+     "anchor": "l160",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 160"
+    },
+    {
+     "anchor": "l161",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 161"
+    },
+    {
+     "anchor": "l162",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 162"
+    },
+    {
+     "anchor": "l163",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 163"
+    },
+    {
+     "anchor": "l164",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 164"
+    },
+    {
+     "anchor": "l165",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 165"
+    },
+    {
+     "anchor": "l166",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 166"
+    },
+    {
+     "anchor": "l167",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 167"
+    },
+    {
+     "anchor": "l168",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 168"
+    },
+    {
+     "anchor": "l169",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 169"
+    },
+    {
+     "anchor": "l170",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 170"
+    },
+    {
+     "anchor": "l171",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 171"
+    },
+    {
+     "anchor": "l172",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 172"
+    },
+    {
+     "anchor": "l173",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 173"
+    },
+    {
+     "anchor": "l174",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 174"
+    },
+    {
+     "anchor": "l175",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 175"
+    },
+    {
+     "anchor": "l176",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 176"
+    },
+    {
+     "anchor": "l177",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 177"
+    },
+    {
+     "anchor": "l178",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 178"
+    },
+    {
+     "anchor": "l179",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 179"
+    },
+    {
+     "anchor": "l180",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 180"
+    },
+    {
+     "anchor": "l181",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 181"
+    },
+    {
+     "anchor": "l182",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 182"
+    },
+    {
+     "anchor": "l183",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 183"
+    },
+    {
+     "anchor": "l184",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 184"
+    },
+    {
+     "anchor": "l185",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 185"
+    },
+    {
+     "anchor": "l186",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 186"
+    },
+    {
+     "anchor": "l187",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 187"
+    },
+    {
+     "anchor": "l188",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 188"
+    },
+    {
+     "anchor": "l189",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 189"
+    },
+    {
+     "anchor": "l190",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 190"
+    },
+    {
+     "anchor": "l191",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 191"
+    },
+    {
+     "anchor": "l192",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 192"
+    },
+    {
+     "anchor": "l193",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 193"
+    },
+    {
+     "anchor": "l194",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 194"
+    },
+    {
+     "anchor": "l195",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 195"
+    },
+    {
+     "anchor": "l196",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 196"
+    },
+    {
+     "anchor": "l197",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 197"
+    },
+    {
+     "anchor": "l198",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 198"
+    },
+    {
+     "anchor": "l199",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 199"
+    },
+    {
+     "anchor": "l200",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 200"
+    }
+   ]
+  },
+  "a long text file, where the default window truncates and pages — {\"from\":201,\"limit\":1000}": {
+   "format": "text",
+   "unitCount": 260,
+   "from": 201,
+   "truncated": false,
+   "next": null,
+   "note": null,
+   "units": [
+    {
+     "anchor": "l201",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 201"
+    },
+    {
+     "anchor": "l202",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 202"
+    },
+    {
+     "anchor": "l203",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 203"
+    },
+    {
+     "anchor": "l204",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 204"
+    },
+    {
+     "anchor": "l205",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 205"
+    },
+    {
+     "anchor": "l206",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 206"
+    },
+    {
+     "anchor": "l207",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 207"
+    },
+    {
+     "anchor": "l208",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 208"
+    },
+    {
+     "anchor": "l209",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 209"
+    },
+    {
+     "anchor": "l210",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 210"
+    },
+    {
+     "anchor": "l211",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 211"
+    },
+    {
+     "anchor": "l212",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 212"
+    },
+    {
+     "anchor": "l213",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 213"
+    },
+    {
+     "anchor": "l214",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 214"
+    },
+    {
+     "anchor": "l215",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 215"
+    },
+    {
+     "anchor": "l216",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 216"
+    },
+    {
+     "anchor": "l217",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 217"
+    },
+    {
+     "anchor": "l218",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 218"
+    },
+    {
+     "anchor": "l219",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 219"
+    },
+    {
+     "anchor": "l220",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 220"
+    },
+    {
+     "anchor": "l221",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 221"
+    },
+    {
+     "anchor": "l222",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 222"
+    },
+    {
+     "anchor": "l223",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 223"
+    },
+    {
+     "anchor": "l224",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 224"
+    },
+    {
+     "anchor": "l225",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 225"
+    },
+    {
+     "anchor": "l226",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 226"
+    },
+    {
+     "anchor": "l227",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 227"
+    },
+    {
+     "anchor": "l228",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 228"
+    },
+    {
+     "anchor": "l229",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 229"
+    },
+    {
+     "anchor": "l230",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 230"
+    },
+    {
+     "anchor": "l231",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 231"
+    },
+    {
+     "anchor": "l232",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 232"
+    },
+    {
+     "anchor": "l233",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 233"
+    },
+    {
+     "anchor": "l234",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 234"
+    },
+    {
+     "anchor": "l235",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 235"
+    },
+    {
+     "anchor": "l236",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 236"
+    },
+    {
+     "anchor": "l237",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 237"
+    },
+    {
+     "anchor": "l238",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 238"
+    },
+    {
+     "anchor": "l239",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 239"
+    },
+    {
+     "anchor": "l240",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 240"
+    },
+    {
+     "anchor": "l241",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 241"
+    },
+    {
+     "anchor": "l242",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 242"
+    },
+    {
+     "anchor": "l243",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 243"
+    },
+    {
+     "anchor": "l244",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 244"
+    },
+    {
+     "anchor": "l245",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 245"
+    },
+    {
+     "anchor": "l246",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 246"
+    },
+    {
+     "anchor": "l247",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 247"
+    },
+    {
+     "anchor": "l248",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 248"
+    },
+    {
+     "anchor": "l249",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 249"
+    },
+    {
+     "anchor": "l250",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 250"
+    },
+    {
+     "anchor": "l251",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 251"
+    },
+    {
+     "anchor": "l252",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 252"
+    },
+    {
+     "anchor": "l253",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 253"
+    },
+    {
+     "anchor": "l254",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 254"
+    },
+    {
+     "anchor": "l255",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 255"
+    },
+    {
+     "anchor": "l256",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 256"
+    },
+    {
+     "anchor": "l257",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 257"
+    },
+    {
+     "anchor": "l258",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 258"
+    },
+    {
+     "anchor": "l259",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 259"
+    },
+    {
+     "anchor": "l260",
+     "kind": "line",
+     "heading": null,
+     "sheet": null,
+     "text": "line 260"
+    }
+   ]
+  },
+  "a PDF, which returns no text and says so — {}": {
+   "format": "pdf",
+   "unitCount": 0,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": "A PDF is read natively by the agent runtime, page by page; cite `#p<n>` with the page number. This tool returns no text for it.",
+   "units": []
+  },
+  "a format with no reader at all — {}": {
+   "format": "binary",
+   "unitCount": 0,
+   "from": 1,
+   "truncated": false,
+   "next": null,
+   "note": "No text reader for `.heic`. Cite the file by page (`#p<n>`) only when a person can find that page in it.",
+   "units": []
+  }
+ }
+}

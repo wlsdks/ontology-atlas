@@ -1,0 +1,65 @@
+{
+  "recordedFrom": "the script server (mcp/src/git/git-tools.mjs collectPathLastChanges) replaying document-dating-cases.json on 2026-11-28",
+  "walks": {
+    "a recheck mark dates the document by the run's commit": {
+      "document": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:03:00Z"
+      },
+      "code": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:02:00Z"
+      }
+    },
+    "a git revert of the run's commit returns the earlier date": {
+      "document": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:01:00Z"
+      },
+      "code": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:02:00Z"
+      }
+    },
+    "restoring the document from the run's parent and committing returns the earlier date": {
+      "document": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:01:00Z"
+      },
+      "code": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:02:00Z"
+      }
+    },
+    "a rebase of the run's commit keeps its bytes and the verdict": {
+      "document": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:06:00Z"
+      },
+      "code": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:02:00Z"
+      }
+    },
+    "a document edited and edited back is dated by its first commit with those bytes": {
+      "document": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:01:00Z"
+      },
+      "code": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:02:00Z"
+      }
+    },
+    "a cited file changed back is still dated by its newest commit": {
+      "document": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:01:00Z"
+      },
+      "code": {
+        "exists": true,
+        "lastChangedAt": "2026-01-01T00:03:00Z"
+      }
+    }
+  }
+}

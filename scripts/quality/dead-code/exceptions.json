@@ -122,18 +122,6 @@
       "witness": "pkill"
     },
     {
-      "key": "mcp:runtime:exports:src/architecture/architecture-profile.mjs:matchesPathPattern",
-      "reason": "Path-glob semantics are a cross-surface contract: the web occupant join mirrors this function, and the contract test consumes the export from outside the mcp scope where Knip cannot see it.",
-      "consumer": "tests/contract/harness/architecture-profile.contract.test.ts",
-      "witness": "matchesPathPattern"
-    },
-    {
-      "key": "mcp:runtime:exports:src/construction/construction-rules.mjs:CONSTRUCTION_RULES_EN",
-      "reason": "The in-app agent carries a literal copy of the bridge procedure and the vault-schema contract test holds it byte-equal to this export; the MCP serves the shorter construction guide instead, so no runtime module imports it.",
-      "consumer": "tests/contract/vault-format/vault-schema.contract.test.ts",
-      "witness": "CONSTRUCTION_RULES_EN"
-    },
-    {
       "key": "mcp:runtime:exports:src/construction/construction-rules.mjs:CHAT_RULES_DELTA_EN",
       "reason": "The construction-rules contract test reads the chat delta directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "tests/contract/mcp/construction-rules.contract.test.ts",
@@ -146,12 +134,6 @@
       "witness": "normalizeMeaningStructureStatus"
     },
     {
-      "key": "mcp:runtime:exports:src/ontology-engine.mjs:createOntologyEngine",
-      "reason": "The graph-truth parity contract test drives the engine directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/analysis/graph-truth-parity.contract.test.ts",
-      "witness": "createOntologyEngine"
-    },
-    {
       "key": "mcp:runtime:exports:src/project-source/project-source-receipt.mjs:serializeProjectSourceState",
       "reason": "The web project-source store serializes through the MCP receipt format; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "src/shared/lib/project-source/project-source-store.ts",
@@ -162,18 +144,6 @@
       "reason": "The dogfood provenance contract reads the agent prefix from the MCP schema; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "tests/contract/vault-data/dogfood-slug-provenance.contract.test.ts",
       "witness": "CREATED_BY_AGENT_PREFIX"
-    },
-    {
-      "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_UNKNOWN",
-      "reason": "The created-by provenance contract test compares the MCP unknown-agent value with the web writer; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/vault-format/created-by-provenance.contract.test.ts",
-      "witness": "CREATED_BY_AGENT_UNKNOWN"
-    },
-    {
-      "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_HUMAN",
-      "reason": "The provenance contract pins the app value to the MCP schema value; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/vault-format/created-by-provenance.contract.test.ts",
-      "witness": "CREATED_BY_HUMAN as HUMAN_MCP"
     },
     {
       "key": "mcp:runtime:exports:src/validate.mjs:KNOWN_VAULT_KINDS",
@@ -210,18 +180,6 @@
       "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "src/shared/lib/library/wiki-page-schema.ts",
       "witness": "WIKI_SECTION_ORDER"
-    },
-    {
-      "key": "mcp:runtime:exports:src/library/wiki-folder.mjs:validateWikiFolder",
-      "reason": "The wiki parity contracts judge one folder through both the app and the MCP module; the server judges from kept page facts instead, so the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/library/wiki-report.contract.test.ts",
-      "witness": "validateWikiFolder as validateFolderMcp"
-    },
-    {
-      "key": "mcp:runtime:files:src/library/wiki-report.mjs:src/library/wiki-report.mjs",
-      "reason": "The wiki check's report grouping is one physical module on purpose: the Library reaches it through a cross-runtime bridge so the app and validate_wiki cannot enumerate one folder two ways (docs/DECISIONS.md 2026-09-11 makes that difference a falsifier). Every consumer is outside the mcp scope, where Knip cannot see it.",
-      "consumer": "src/shared/lib/library/wiki-report.mjs",
-      "witness": "src/library/wiki-report.mjs"
     },
     {
       "key": "scripts:runtime:binaries:scripts/benchmark/benchmark-change-flow.mjs:codex",

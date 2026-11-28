@@ -6,16 +6,15 @@
 // recurring contract (3-way parser, 2-way validator); the same grammar applies to
 // tool definitions.
 //
-// The **source is read** rather than imported, and each tool block inside
-// `const TOOLS = [...]` yields its name, argument keys, and required list for
-// comparison. Adding or renaming an argument on the MCP side breaks this
-// immediately. The definitions live in `mcp/src/server/tool-definitions/`; reading
-// the entry point would find only the wiring.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+// The definitions are read from the surface the server embeds
+// (`src-tauri/crates/mcp-server/surface/tools.json`), each tool's `inputSchema` giving its
+// argument keys and required list. Adding or renaming an argument on the MCP side breaks this
+// immediately.
 import { describe, expect, it } from 'vitest';
 
 import { AGENT_READ_TOOLS, AGENT_TOOLS, AGENT_WRITE_TOOLS } from '@/features/vault-agent/model/agent-tools/tool-catalog';
+
+import { surfaceTools } from '../server-session/tool-surface';
 
 /**
  * Tools the app agent keeps under their old name whose question the server now
@@ -31,167 +30,29 @@ const ANSWERED_BY_ANOTHER_TOOL = new Map<string, { tool: string; arguments: read
 const SERVER_ONLY_ARGUMENTS = new Set(['filter']);
 const COMPARED_TOOLS = AGENT_TOOLS.filter((tool) => !ANSWERED_BY_ANOTHER_TOOL.has(tool.name));
 
-const DEFINITIONS_DIR = join(__dirname, '../../../mcp/src/server/tool-definitions');
-const MCP_SOURCE = readdirSync(DEFINITIONS_DIR)
-  .filter((file) => file.endsWith('.mjs'))
-  .map((file) => readFileSync(join(DEFINITIONS_DIR, file), 'utf-8'))
-  .join('\n');
-
-/** Index just past the bracket matching the opening bracket at `open`. */
-function matchBrace(source: string, open: number, openChar: '{' | '['): number {
-  const closeChar = openChar === '{' ? '}' : ']';
-  let depth = 0;
-  let index = open;
-  let inString: string | null = null;
-  let inLineComment = false;
-  for (; index < source.length; index += 1) {
-    const ch = source[index];
-    const prev = source[index - 1];
-    if (inLineComment) {
-      if (ch === '\n') inLineComment = false;
-      continue;
-    }
-    if (inString) {
-      if (ch === inString && prev !== '\\') inString = null;
-      continue;
-    }
-    if (ch === '/' && source[index + 1] === '/') {
-      inLineComment = true;
-      continue;
-    }
-    if (ch === "'" || ch === '"' || ch === '`') {
-      inString = ch;
-      continue;
-    }
-    if (ch === openChar) depth += 1;
-    else if (ch === closeChar) {
-      depth -= 1;
-      if (depth === 0) return index + 1;
-    }
-  }
-  throw new Error('could not find the matching parenthesis');
-}
-
 interface McpToolShape {
   propertyNames: string[];
   required: string[];
 }
 
-/** Extracts one tool's top-level inputSchema argument names and required list from the MCP source. */
+const SURFACE = surfaceTools() as unknown as Array<{
+  name: string;
+  inputSchema: { properties?: Record<string, unknown>; required?: string[] };
+}>;
+
+/** One tool's top-level argument names and required list, from the server's embedded definition. */
 function readMcpToolShape(toolName: string): McpToolShape {
-  const nameAt = MCP_SOURCE.indexOf(`name: '${toolName}',`);
-  if (nameAt < 0) throw new Error(`tool missing from the MCP: ${toolName}`);
-  const schemaAt = MCP_SOURCE.indexOf('inputSchema:', nameAt);
-  const schemaOpen = MCP_SOURCE.indexOf('{', schemaAt);
-  const schemaEnd = matchBrace(MCP_SOURCE, schemaOpen, '{');
-  const schema = MCP_SOURCE.slice(schemaOpen, schemaEnd);
-
-  const propsAt = schema.indexOf('properties:');
-  const propsOpen = schema.indexOf('{', propsAt);
-  const propsEnd = matchBrace(schema, propsOpen, '{');
-  const propsBody = schema.slice(propsOpen + 1, propsEnd - 1);
-
-  const propertyNames = collectDepthOneKeys(propsBody);
-
-  // `required` exists only at the top level of inputSchema. A `required` inside a
-  // selector branch such as `oneOf: [{ required: ... }]` must not be mistaken for a
-  // top-level requirement.
-  const tail = schema.slice(propsEnd);
-  const requiredMatch = findDepthZeroRequired(tail);
-  const required = requiredMatch
-    ? Array.from(requiredMatch.matchAll(/'([^']+)'/g)).map((m) => m[1])
-    : [];
-
-  return { propertyNames, required };
-}
-
-function findDepthZeroRequired(source: string): string | null {
-  let depth = 0;
-  let inString: string | null = null;
-  for (let index = 0; index < source.length; index += 1) {
-    const ch = source[index];
-    const prev = source[index - 1];
-    if (inString) {
-      if (ch === inString && prev !== '\\') inString = null;
-      continue;
-    }
-    if (ch === "'" || ch === '"' || ch === '`') {
-      inString = ch;
-      continue;
-    }
-    if (ch === '{' || ch === '[' || ch === '(') {
-      depth += 1;
-      continue;
-    }
-    if (ch === '}' || ch === ']' || ch === ')') {
-      depth -= 1;
-      continue;
-    }
-    if (depth === 0 && source.startsWith('required:', index)) {
-      const open = source.indexOf('[', index);
-      const close = matchBrace(source, open, '[');
-      return source.slice(open + 1, close - 1);
-    }
-  }
-  return null;
-}
-
-/** Collects depth-0 key names from an object body in order (ignoring strings and comments). */
-function collectDepthOneKeys(body: string): string[] {
-  const keys: string[] = [];
-  let depth = 0;
-  let inString: string | null = null;
-  let inLineComment = false;
-  let token = '';
-  for (let index = 0; index < body.length; index += 1) {
-    const ch = body[index];
-    const prev = body[index - 1];
-    if (inLineComment) {
-      if (ch === '\n') inLineComment = false;
-      continue;
-    }
-    if (inString) {
-      if (ch === inString && prev !== '\\') inString = null;
-      continue;
-    }
-    if (ch === '/' && body[index + 1] === '/') {
-      inLineComment = true;
-      token = '';
-      continue;
-    }
-    if (ch === "'" || ch === '"' || ch === '`') {
-      inString = ch;
-      token = '';
-      continue;
-    }
-    if (ch === '{' || ch === '[' || ch === '(') {
-      depth += 1;
-      token = '';
-      continue;
-    }
-    if (ch === '}' || ch === ']' || ch === ')') {
-      depth -= 1;
-      token = '';
-      continue;
-    }
-    if (depth === 0 && ch === ':') {
-      const key = token.trim();
-      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) keys.push(key);
-      token = '';
-      continue;
-    }
-    if (ch === ',' || ch === '\n') {
-      token = '';
-      continue;
-    }
-    token += ch;
-  }
-  return keys;
+  const tool = SURFACE.find((candidate) => candidate.name === toolName);
+  if (!tool) throw new Error(`tool missing from the MCP: ${toolName}`);
+  return {
+    propertyNames: Object.keys(tool.inputSchema.properties ?? {}),
+    required: [...(tool.inputSchema.required ?? [])],
+  };
 }
 
 describe('agent tool catalog matches the MCP server definition', () => {
-  it('the extractor itself works (get_concept takes one of slug/uid plus body)', () => {
-    // If the parser silently returns an empty array, every test below is meaningless.
+  it('the reader itself works (get_concept takes one of slug/uid plus body)', () => {
+    // If the definition silently reads as empty, every test below is meaningless.
     const shape = readMcpToolShape('get_concept');
     expect(shape.propertyNames).toEqual(['slug', 'uid', 'body']);
     // The "exactly one" contract is enforced by the MCP JSON Schema's oneOf.
@@ -213,6 +74,18 @@ describe('agent tool catalog matches the MCP server definition', () => {
       const mcp = readMcpToolShape(tool.name);
       const ours = [...(tool.parameters.required ?? [])];
       expect(ours.sort()).toEqual([...mcp.required].sort());
+    },
+  );
+
+  it.each(COMPARED_TOOLS.map((tool) => [tool.name, tool] as const))(
+    '%s: an argument that lists its allowed values lists the ones on the MCP side',
+    (_name, tool) => {
+      const server = SURFACE.find((candidate) => candidate.name === tool.name)!.inputSchema.properties ?? {};
+      for (const [argument, schema] of Object.entries(tool.parameters.properties ?? {})) {
+        const ours = (schema as { enum?: readonly string[] }).enum;
+        const theirs = (server[argument] as { enum?: string[] } | undefined)?.enum;
+        if (ours && theirs) expect([...ours].sort(), argument).toEqual([...theirs].sort());
+      }
     },
   );
 

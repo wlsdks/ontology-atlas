@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createNamePage } from '../../../mcp/src/analysis-history/name-page.mts';
+import { createNamePage } from '@/entities/analysis-record/lib/name-page.mts';
 
 function expected(names: string[], limit: number, cursor: string | null) {
   const remaining = names.filter(name => cursor === null || name < cursor).sort().reverse();

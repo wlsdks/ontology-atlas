@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  CONSTRUCTION_CARD_EN,
-  CONSTRUCTION_CARD_MAX_CHARS,
-} from "../../../mcp/src/construction/construction-card.mjs";
-import { SERVER_INSTRUCTIONS } from "../../../mcp/src/server/instructions.mjs";
+import { serverGuides, serverInstructions } from "../server-session/tool-surface";
+
+/** The card's own character budget; the whole string must still fit the window below. */
+const CONSTRUCTION_CARD_MAX_CHARS = 1750;
+const CONSTRUCTION_CARD_EN = serverGuides().card;
 
 /**
  * **A host may keep only the first 2,048 characters of `instructions`.**
@@ -19,7 +19,7 @@ import { SERVER_INSTRUCTIONS } from "../../../mcp/src/server/instructions.mjs";
  */
 const TRUNCATION_WINDOW = 2048;
 
-const RENDERED_INSTRUCTIONS = SERVER_INSTRUCTIONS;
+const RENDERED_INSTRUCTIONS = serverInstructions();
 
 const SURVIVING_WINDOW = RENDERED_INSTRUCTIONS.slice(0, TRUNCATION_WINDOW);
 

@@ -141,10 +141,6 @@ function compilePathPattern(pattern) {
   return needsProgram ? compilePathProgram(normalized) : regex;
 }
 
-export function matchesPathPattern(path, pattern) {
-  const candidate = normalizePath(path);
-  return compilePathPattern(pattern)?.test(candidate) ?? false;
-}
 function createPathMatcher() {
   const patterns = new Map();
   return (path, pattern) => {

@@ -25,7 +25,7 @@ export interface AgentToolDefinition {
   effect: 'read' | 'write';
 }
 
-/** The same constant as in `mcp/src/ontology-engine.mjs`. A contract test compares them. */
+/** The node kinds the server's `query_ontology` takes as a `kind`. */
 const NODE_KIND_VALUES = [
   'project',
   'domain',

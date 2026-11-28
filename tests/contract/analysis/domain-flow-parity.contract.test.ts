@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { deriveOntologyFromVault, resolveStaticVaultSource } from "@/entities/docs-vault";
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { derivationToInsight } from "@/features/vault-ontology/model/use-ontology-insight";
@@ -15,10 +15,9 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "@/widgets/ontology-map/model/containment-tree";
-import { compileOntology } from "../../../mcp/src/ontology-compiler.mjs";
-import { queryCompiledOntology } from "../../../mcp/src/ontology-engine.mjs";
-import { parseFrontmatter } from "../../../mcp/src/parser.mjs";
+import { parseFrontmatter } from "@/shared/lib/vault-document/frontmatter-codec.mjs";
 import { DOMAIN_FLOW_CASES } from "../../fixtures/domain-flow-cases.mjs";
+import { callServerTools, type ServerToolCall } from "../server-session/call-server-tool";
 
 interface CompilerDoc {
   slug: string;
@@ -32,10 +31,17 @@ interface MatrixRow {
   count: number;
 }
 
-function matrixRows(compiled: unknown, types: string[]): MatrixRow[] {
-  const result = queryCompiledOntology(compiled as never, { operation: "domain_matrix", types, limit: 500 }) as {
-    connections: { rows: MatrixRow[]; limited: boolean };
-  };
+type Direction = "incoming" | "outgoing";
+
+const blastKey = (slug: string, direction: Direction) => `${slug}|${direction}`;
+
+function matrixCall(types: string[]): ServerToolCall {
+  return { name: "query_ontology", arguments: { operation: "domain_matrix", types, limit: 500 } };
+}
+
+function matrixRows(answer: { isError: boolean; value: unknown }): MatrixRow[] {
+  expect(answer.isError, String(answer.value)).toBe(false);
+  const result = answer.value as { connections: { rows: MatrixRow[]; limited: boolean } };
   expect(result.connections.limited).toBe(false);
   return result.connections.rows;
 }
@@ -122,8 +128,8 @@ const VAULTS = [
   { source: "storefront" as const, root: "samples/storefront" },
 ];
 
-describe.each(VAULTS)("$source vault: dial roll-ups equal domain_matrix and blast_radius", ({ source, root }) => {
-  const compiled = compileOntology(loadDocs(join(process.cwd(), root)), { includeIndexes: true });
+describe.each(VAULTS)("$source vault: dial roll-ups equal the server's domain_matrix and blast_radius", ({ source, root }) => {
+  const vaultRoot = join(process.cwd(), root);
   const vault = resolveStaticVaultSource(source);
   const insight = derivationToInsight(deriveOntologyFromVault(vault.manifest), "en", {
     agentSlugPrefix: vault.agentSlugPrefix,
@@ -132,13 +138,45 @@ describe.each(VAULTS)("$source vault: dial roll-ups equal domain_matrix and blas
   const idByRef = new Map<string, string>();
   for (const [id, ref] of refById) if (ref !== null) idByRef.set(ref, id);
   const name = (id: string) => refById.get(id) ?? `unnamed:${id}`;
-  const compiledSlugs = new Set(((compiled as { nodes: { slug: string }[] }).nodes).map((n) => n.slug));
+  const compiledSlugs = new Set(loadDocs(vaultRoot).map((doc) => doc.slug));
 
   const graph = buildOntologyMapGraph(insight.nodes, insight.edges);
   const model = dialOf(graph.nodes, graph.edges);
 
-  const depends = matrixRows(compiled, ["depends_on"]);
-  const relates = matrixRows(compiled, ["relates"]);
+  let depends: MatrixRow[] = [];
+  let relates: MatrixRow[] = [];
+  const blastRows = new Map<string, string[]>();
+
+  beforeAll(async () => {
+    const blastCalls: Array<{ slug: string; direction: Direction }> = [];
+    for (const capabilityId of model.capabilityById.keys()) {
+      const capability = model.capabilityById.get(capabilityId)!;
+      for (const end of [capabilityId, ...capability.elementIds]) {
+        const slug = refById.get(end);
+        if (!slug || !compiledSlugs.has(slug)) continue;
+        for (const direction of ["incoming", "outgoing"] as const) {
+          if (!blastCalls.some((call) => call.slug === slug && call.direction === direction)) blastCalls.push({ slug, direction });
+        }
+      }
+    }
+    const answers = await callServerTools(vaultRoot, [
+      matrixCall(["depends_on"]),
+      matrixCall(["relates"]),
+      ...blastCalls.map(({ slug, direction }) => ({
+        name: "query_ontology",
+        arguments: { operation: "blast_radius", slug, direction, depth: 1, limit: 500 },
+      })),
+    ]);
+    depends = matrixRows(answers[0]);
+    relates = matrixRows(answers[1]);
+    blastCalls.forEach(({ slug, direction }, index) => {
+      const answer = answers[index + 2];
+      expect(answer.isError, String(answer.value)).toBe(false);
+      const result = answer.value as { nodes: { rows: { slug: string }[]; limited: boolean } };
+      expect(result.nodes.limited).toBe(false);
+      blastRows.set(blastKey(slug, direction), result.nodes.rows.map((row) => row.slug));
+    });
+  }, 120_000);
 
   it("reads a vault with cross-domain dependencies", () => {
     expect(depends.length).toBeGreaterThan(0);
@@ -160,18 +198,14 @@ describe.each(VAULTS)("$source vault: dial roll-ups equal domain_matrix and blas
     for (const [ref, n] of web) expect([ref, n]).toEqual([ref, mcp.get(ref) ?? 0]);
   });
 
-  function blastCaps(capabilityId: string, direction: "incoming" | "outgoing"): string[] {
+  function blastCaps(capabilityId: string, direction: Direction): string[] {
     const capability = model.capabilityById.get(capabilityId)!;
     const caps = new Set<string>();
     for (const end of [capabilityId, ...capability.elementIds]) {
       const slug = refById.get(end);
       if (!slug || !compiledSlugs.has(slug)) continue;
-      const result = queryCompiledOntology(compiled, { operation: "blast_radius", slug, direction, depth: 1, limit: 500 }) as {
-        nodes: { rows: { slug: string }[]; limited: boolean };
-      };
-      expect(result.nodes.limited).toBe(false);
-      for (const row of result.nodes.rows) {
-        const id = idByRef.get(row.slug);
+      for (const rowSlug of blastRows.get(blastKey(slug, direction)) ?? []) {
+        const id = idByRef.get(rowSlug);
         const cap = id === undefined ? undefined : model.capabilityById.has(id) ? id : model.capabilityOf.get(id);
         if (cap !== undefined && cap !== capabilityId) caps.add(name(cap));
       }

@@ -7,13 +7,13 @@ import {
   VAULT_TOOL_LABEL_KEYS,
   toolLabel,
 } from '../../../src/widgets/acp-chat-panel/ui/tool-label';
-import { TOOLS_FOR_LIST } from '../../../mcp/src/server/registry.mjs';
+import { advertisedToolNames } from '../server-session/tool-surface';
 
 /**
- * The subject list is the server's own (`TOOLS_FOR_LIST`), not hand-kept, so a new tool arrives here
- * the moment it arrives on the wire.
+ * The subject list is the server's own surface (the tools its embedded definitions advertise), not
+ * hand-kept, so a new tool arrives here the moment it arrives on the wire.
  */
-const ADVERTISED: string[] = (TOOLS_FOR_LIST as Array<{ name: string }>).map((tool) => tool.name);
+const ADVERTISED: string[] = advertisedToolNames();
 
 describe('the transcript has a word for every tool our server advertises', () => {
   it('has subjects at all — an empty inventory would make every check below vacuous', () => {

@@ -1,0 +1,2188 @@
+{
+  "recordedFrom": "the script server (mcp/src/library/wiki-schema.mjs, wiki-folder.mjs, wiki-judgement.mjs) on 2026-11-28",
+  "generatedFolder": {
+    "count": 600,
+    "folderVerdictsSha256": "4fb7d88c84289ab53d04f37279535f05e79cb37a2708b2c0b1c4a2160aedd3e7",
+    "pageVerdictsSha256": "af449259412334ac0db6dec0ac47a0cb3c8b5ca4c347bf0588759526cec54d86",
+    "judgedPagesSha256": "6460599910bfa1c92efcba99c35e0f6333ebde9cb5e989c5ed5d44af0c5406f7"
+  },
+  "fields": [
+    [
+      "title",
+      true
+    ],
+    [
+      "created_by",
+      true
+    ],
+    [
+      "compiled_at",
+      true
+    ],
+    [
+      "sources",
+      true
+    ],
+    [
+      "source_hash",
+      true
+    ],
+    [
+      "status",
+      true
+    ],
+    [
+      "summary",
+      true
+    ],
+    [
+      "sources_truncated",
+      false
+    ],
+    [
+      "describes",
+      false
+    ],
+    [
+      "relation_notes",
+      false
+    ]
+  ],
+  "requiredFields": [
+    "title",
+    "created_by",
+    "compiled_at",
+    "sources",
+    "source_hash",
+    "status",
+    "summary"
+  ],
+  "sectionOrder": [
+    "Summary",
+    "Facts",
+    "Decisions",
+    "Open questions",
+    "Not in sources"
+  ],
+  "citationPattern": "\\[\\[src:(sources\\/[^\\][#\\n]+)#(p\\d+|s\\d+(?:r\\d+)?|r\\d+|l\\d+|h:[a-z0-9][a-z0-9-]*)\\]\\]",
+  "describesRows": {
+    "a draft page names the concepts it is about, each with a reason": {
+      "ok": true,
+      "problems": []
+    },
+    "an empty describes records that a writer checked and found no concept": {
+      "ok": true,
+      "problems": []
+    },
+    "a page without describes is not asked for one": {
+      "ok": true,
+      "problems": []
+    },
+    "a full slug, a unique tail and a slug: alias each name one concept": {
+      "ok": true,
+      "problems": []
+    },
+    "a Hangul slug typed in NFD names the concept stored in NFC": {
+      "ok": true,
+      "problems": []
+    },
+    "a slug no document has names no concept": {
+      "ok": false,
+      "problems": [
+        {
+          "code": "describes-target-missing",
+          "message": "`capabilities/gone` under `describes:` names no concept in this folder. Remove it, or name a concept that exists by its slug.",
+          "detail": {
+            "key": "describes-target-missing",
+            "values": {
+              "target": "capabilities/gone"
+            }
+          }
+        }
+      ]
+    },
+    "a tail two concepts share names neither": {
+      "ok": false,
+      "problems": [
+        {
+          "code": "describes-target-missing",
+          "message": "`checkout` under `describes:` matches more than one document by its last part, so it names no one concept. Write the concept's full slug.",
+          "detail": {
+            "key": "describes-target-missing",
+            "values": {
+              "target": "checkout"
+            }
+          }
+        }
+      ]
+    },
+    "a tail a concept shares with a wiki page is ambiguous, as find_backlinks reads it": {
+      "ok": false,
+      "problems": [
+        {
+          "code": "describes-target-missing",
+          "message": "`refunds` under `describes:` matches more than one document by its last part, so it names no one concept. Write the concept's full slug.",
+          "detail": {
+            "key": "describes-target-missing",
+            "values": {
+              "target": "refunds"
+            }
+          }
+        }
+      ]
+    },
+    "a wiki page is not a concept": {
+      "ok": false,
+      "problems": [
+        {
+          "code": "describes-target-missing",
+          "message": "`wiki/plan` under `describes:` is a wiki page or the vault README, not a concept. `describes:` names `kind:` nodes only.",
+          "detail": {
+            "key": "describes-target-missing",
+            "values": {
+              "target": "wiki/plan"
+            }
+          }
+        }
+      ]
+    },
+    "the vault README is not a concept": {
+      "ok": false,
+      "problems": [
+        {
+          "code": "describes-target-missing",
+          "message": "`README` under `describes:` is a wiki page or the vault README, not a concept. `describes:` names `kind:` nodes only.",
+          "detail": {
+            "key": "describes-target-missing",
+            "values": {
+              "target": "README"
+            }
+          }
+        }
+      ]
+    },
+    "a lone describes value is not a list, so no reader takes it as a link": {
+      "ok": false,
+      "problems": [
+        {
+          "code": "bad-describes",
+          "message": "`describes:` is not a list. Write each concept's slug as a list item (`describes:` then `  - capabilities/<name>`), or `describes: []` when no concept fits. A single value is not read as a link, and a rename cannot rewrite it.",
+          "detail": {
+            "key": "bad-describes"
+          }
+        }
+      ]
+    },
+    "each entry that names no concept is reported once, the good ones not at all": {
+      "ok": false,
+      "problems": [
+        {
+          "code": "describes-target-missing",
+          "message": "`capabilities/gone` under `describes:` names no concept in this folder. Remove it, or name a concept that exists by its slug.",
+          "detail": {
+            "key": "describes-target-missing",
+            "values": {
+              "target": "capabilities/gone"
+            }
+          }
+        },
+        {
+          "code": "describes-target-missing",
+          "message": "`wiki/plan` under `describes:` is a wiki page or the vault README, not a concept. `describes:` names `kind:` nodes only.",
+          "detail": {
+            "key": "describes-target-missing",
+            "values": {
+              "target": "wiki/plan"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "folderCases": {
+    "one page alone is not an orphan — there is nobody to link it": [
+      {
+        "path": "wiki/alone.md",
+        "problems": []
+      }
+    ],
+    "two pages that link each other are clean": [
+      {
+        "path": "wiki/a.md",
+        "problems": []
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": []
+      }
+    ],
+    "a page nobody links is an orphan": [
+      {
+        "path": "wiki/a.md",
+        "problems": [
+          {
+            "code": "orphan-page",
+            "message": "No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.",
+            "detail": {
+              "key": "orphan-page"
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": []
+      }
+    ],
+    "a link to a page that is not there dangles": [
+      {
+        "path": "wiki/a.md",
+        "problems": [
+          {
+            "code": "dangling-wikilink",
+            "message": "`[[wiki/missing]]` names a page that is not in this folder. Link only to a page that exists, or write the page.",
+            "line": 15,
+            "detail": {
+              "key": "dangling-wikilink",
+              "values": {
+                "target": "wiki/missing"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": [
+          {
+            "code": "orphan-page",
+            "message": "No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.",
+            "detail": {
+              "key": "orphan-page"
+            }
+          }
+        ]
+      }
+    ],
+    "a source a page merely cites does not fan out: only a primary source shared without a link is reported": [
+      {
+        "path": "wiki/a.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/c.md` also lists `sources/minutes.txt` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/c.md",
+                "sources": "`sources/minutes.txt`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/c.md` also lists `sources/minutes.txt` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/c.md",
+                "sources": "`sources/minutes.txt`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/c.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/a.md` also lists `sources/minutes.txt` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/a.md",
+                "sources": "`sources/minutes.txt`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/b.md` also lists `sources/minutes.txt` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/b.md",
+                "sources": "`sources/minutes.txt`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/d.md",
+        "problems": []
+      }
+    ],
+    "two pages sharing a source without linking are told about each other, on both": [
+      {
+        "path": "wiki/a.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/b.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/b.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/a.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/a.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/c.md",
+        "problems": []
+      }
+    ],
+    "a bare [[slug]] resolves inside wiki/, and a citation is never a link": [
+      {
+        "path": "wiki/a.md",
+        "problems": []
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": []
+      }
+    ],
+    "a link into the vault outside wiki/ is left to the vault, not called dangling": [
+      {
+        "path": "wiki/a.md",
+        "problems": []
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": []
+      }
+    ],
+    "a link into wiki/ is still judged when the concept link beside it is not": [
+      {
+        "path": "wiki/a.md",
+        "problems": [
+          {
+            "code": "dangling-wikilink",
+            "message": "`[[wiki/missing]]` names a page that is not in this folder. Link only to a page that exists, or write the page.",
+            "line": 15,
+            "detail": {
+              "key": "dangling-wikilink",
+              "values": {
+                "target": "wiki/missing"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": [
+          {
+            "code": "orphan-page",
+            "message": "No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.",
+            "detail": {
+              "key": "orphan-page"
+            }
+          }
+        ]
+      }
+    ],
+    "three pages from one primary source: the linked pair is quiet, each unlinked pair is reported": [
+      {
+        "path": "wiki/a.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/c.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/c.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/c.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/c.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/c.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/a.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/a.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/b.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/b.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/d.md",
+        "problems": []
+      }
+    ],
+    "two primary sources in one folder pair only the pages written from the same one": [
+      {
+        "path": "wiki/a.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/b.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/b.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/b.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/a.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/a.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/c.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/d.md` also lists `sources/budget.xlsx` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/d.md",
+                "sources": "`sources/budget.xlsx`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/d.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/c.md` also lists `sources/budget.xlsx` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/c.md",
+                "sources": "`sources/budget.xlsx`"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "a page listing another page's primary source second is paired, whichever comes first in the input": [
+      {
+        "path": "wiki/b.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/a.md` also lists `sources/a.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/a.md",
+                "sources": "`sources/a.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/a.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/b.md` also lists `sources/a.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/b.md",
+                "sources": "`sources/a.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/e.md` also lists `sources/a.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/e.md",
+                "sources": "`sources/a.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/e.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/a.md` also lists `sources/a.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/a.md",
+                "sources": "`sources/a.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/c.md",
+        "problems": []
+      }
+    ],
+    "a page paired through two sources names its partners in input order": [
+      {
+        "path": "wiki/p0.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/p1.md` also lists `sources/b.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/p1.md",
+                "sources": "`sources/b.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/p2.md` also lists `sources/a.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/p2.md",
+                "sources": "`sources/a.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/p1.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/p0.md` also lists `sources/b.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/p0.md",
+                "sources": "`sources/b.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/p2.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/p0.md` also lists `sources/a.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/p0.md",
+                "sources": "`sources/a.pdf`"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/hub.md",
+        "problems": []
+      }
+    ],
+    "twelve pages from one primary source name ten partners each and count the eleventh": [
+      {
+        "path": "wiki/m00.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m01.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m02.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m03.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m04.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m05.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m06.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m07.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m08.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m09.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m10.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m10.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m10.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/m11.md",
+        "problems": [
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m00.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m00.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m01.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m01.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m02.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m02.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m03.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m03.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m04.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m04.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m05.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m05.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m06.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m06.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m07.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m07.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m08.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m08.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "`wiki/m09.md` also lists `sources/plan.pdf` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+            "detail": {
+              "key": "shared-source-unlinked",
+              "values": {
+                "other": "wiki/m09.md",
+                "sources": "`sources/plan.pdf`"
+              }
+            }
+          },
+          {
+            "code": "shared-source-unlinked",
+            "message": "1 more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.",
+            "detail": {
+              "key": "shared-source-unlinked-more",
+              "values": {
+                "count": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "wiki/hub.md",
+        "problems": []
+      }
+    ]
+  }
+}

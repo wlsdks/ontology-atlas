@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  boundaryFindings as boundaryMcp,
-  definitionFinding as definitionMcp,
-  epistemicExclusionFinding as epistemicMcp,
-  uncertaintyFinding as uncertaintyMcp,
-} from "../../../mcp/src/meaning/meaning-findings.mjs";
-import { defaultBody, folderForKind } from "../../../mcp/src/schema.mjs";
-import {
   BODY_BOUNDARY_SECTIONS as BOUNDARY_TS,
   BODY_DEFINITION_SECTIONS as DEFINITION_TS,
   BODY_UNCERTAINTY_SECTIONS as UNCERTAINTY_TS,
@@ -16,26 +9,19 @@ import {
   meaningFindings as meaningFindingsTs,
   parseBodySections,
 } from "@/shared/lib/vault-document/meaning-findings";
-import {
-  BODY_BOUNDARY_SECTIONS as BOUNDARY_MCP,
-  BODY_DEFINITION_SECTIONS as DEFINITION_MCP,
-  BODY_UNCERTAINTY_SECTIONS as UNCERTAINTY_MCP,
-  isEpistemicExclusionBoundary as epistemicRuleMcp,
-} from "../../../mcp/src/construction/construction-rules.mjs";
+import golden from "../../fixtures/meaning-findings-golden.json";
 
 /**
  * **The body half of the validator contract.**
  *
- * `mcp/src/meaning/meaning-findings.mjs` is the canonical judgement and reaches for
- * `node:fs`, so the browser cannot execute it; `src/shared/lib/vault-document/meaning-findings.ts`
- * is the port. Two implementations of one rule drift — that is the accident this
- * repository already recorded for the parser and for the frontmatter validator —
- * so both run over one fixture table here and must return the same code set for
- * every body.
+ * The script server's `meaning-findings.mjs` is the judgement the port
+ * `src/shared/lib/vault-document/meaning-findings.ts` follows. Two implementations of one rule
+ * drift, so the port runs over one fixture table here and must return the code set each row
+ * names. The rows were checked against the script server on 2026-11-28; the constants it decides
+ * with are recorded in `tests/fixtures/meaning-findings-golden.json`.
  *
- * Only `folder-only-evidence` is absent from both sides of the comparison: it
- * asks the filesystem whether a cited path is a directory, which the port
- * deliberately does not do.
+ * Only `folder-only-evidence` is absent: it asks the filesystem whether a cited path is a
+ * directory, which the port deliberately does not do.
  *
  * Every row exists because it once decided something:
  *  - the `## Definition`-first shape, which the qualification lane writes and an
@@ -52,7 +38,7 @@ interface BodyCase {
   title: string;
   slug?: string;
   body: string;
-  /** The codes both implementations must return, sorted. */
+  /** The codes the port must return, sorted. */
   expected: string[];
 }
 
@@ -114,7 +100,7 @@ const CASES: BodyCase[] = [
     kind: "capability",
     title: "Vault Compiler",
     slug: "capabilities/vault-compiler",
-    body: defaultBody("capability", "Vault Compiler") as string,
+    body: golden.starterBodyForCapability,
     expected: ["boundary-missing", "boundary-missing", "definition-missing", "uncertainty-missing"],
   },
   {
@@ -240,38 +226,9 @@ const CASES: BodyCase[] = [
   },
 ];
 
-/** The canonical module's five body judgements, flattened to a sorted code list. */
-function mcpCodes(bodyCase: BodyCase): string[] {
-  const input = {
-    kind: bodyCase.kind,
-    slug: bodyCase.slug ?? "",
-    title: bodyCase.title,
-    body: bodyCase.body,
-  };
-  const findings = [
-    definitionMcp(input),
-    ...boundaryMcp(input),
-    uncertaintyMcp(input),
-    epistemicMcp(input),
-  ].filter(Boolean) as Array<{ code: string }>;
-  const codes = findings.map((finding) => finding.code);
-  /*
-   * `slug-outside-kind-folder` lives in `vault/`'s write gate rather than in
-   * `meaning-findings.mjs`, so the canonical rule is read from the schema it is
-   * built on — `folderForKind` plus a prefix test, the same two lines the gate
-   * runs. Comparing the port against a re-typed literal would prove nothing.
-   */
-  const folder = folderForKind(bodyCase.kind) as string;
-  if (bodyCase.slug && folder && !bodyCase.slug.startsWith(folder)) {
-    codes.push("slug-outside-kind-folder");
-  }
-  return codes.sort();
-}
-
-describe("meaning findings — the mcp module and the browser port agree", () => {
+describe("meaning findings — the browser port returns the codes each row names", () => {
   for (const bodyCase of CASES) {
     it(bodyCase.name, () => {
-      const fromMcp = mcpCodes(bodyCase);
       const fromTs = meaningFindingsTs({
         kind: bodyCase.kind,
         slug: bodyCase.slug,
@@ -280,17 +237,16 @@ describe("meaning findings — the mcp module and the browser port agree", () =>
       })
         .map((finding) => finding.code)
         .sort();
-      expect(fromTs).toEqual(fromMcp);
       expect(fromTs).toEqual([...bodyCase.expected].sort());
     });
   }
 });
 
-describe("the constants the two implementations decide with", () => {
+describe("the constants the port decides with, against the script server's recording", () => {
   it("the starter template for every kind is byte-identical to the schema's", () => {
     for (const kind of Object.keys(KIND_BODY_TEMPLATES)) {
       expect(KIND_BODY_TEMPLATES[kind]("Sample Title"), kind).toBe(
-        defaultBody(kind, "Sample Title"),
+        (golden.starterBodies as Record<string, string>)[kind],
       );
     }
   });
@@ -300,29 +256,23 @@ describe("the constants the two implementations decide with", () => {
     // derivation silently stops recognising its scaffold.
     for (const kind of ["project", "domain", "capability", "element", "document"]) {
       expect(Object.keys(KIND_BODY_TEMPLATES)).toContain(kind);
-      expect(folderTs(kind)).toBe(folderForKind(kind));
+      expect(folderTs(kind)).toBe((golden.folders as Record<string, string>)[kind]);
     }
   });
 
   it("the heading synonym lists match", () => {
-    expect([...DEFINITION_TS]).toEqual([...DEFINITION_MCP]);
-    expect([...UNCERTAINTY_TS]).toEqual([...UNCERTAINTY_MCP]);
-    expect([...BOUNDARY_TS.includes]).toEqual([...BOUNDARY_MCP.includes]);
-    expect([...BOUNDARY_TS.excludes]).toEqual([...BOUNDARY_MCP.excludes]);
+    expect([...DEFINITION_TS]).toEqual(golden.headings.definition);
+    expect([...UNCERTAINTY_TS]).toEqual(golden.headings.uncertainty);
+    expect([...BOUNDARY_TS.includes]).toEqual(golden.headings.includes);
+    expect([...BOUNDARY_TS.excludes]).toEqual(golden.headings.excludes);
   });
 
-  it("the epistemic-exclusion rule answers identically, sentence by sentence", () => {
-    const sentences = [
-      "the test suite and the examples folder, which this survey did not inspect",
-      "`typings/index.d.ts`, the TypeScript surface, which was not read",
-      "`index.js`, the package front door, which is not carried as a node in this first pass",
-      "remote vaults are not mentioned in this scan",
-      "Atlas does not sync folders between machines",
-      "flags, which are options rather than positional arguments",
-      "rendering the graph, which the map surface owns",
-    ];
-    for (const sentence of sentences) {
-      expect(epistemicRuleTs(sentence), sentence).toBe(epistemicRuleMcp(sentence));
+  it("the epistemic-exclusion rule answers as recorded, sentence by sentence", () => {
+    const recorded = Object.entries(golden.epistemic);
+    expect(recorded.some(([, verdict]) => verdict)).toBe(true);
+    expect(recorded.some(([, verdict]) => !verdict)).toBe(true);
+    for (const [sentence, verdict] of recorded) {
+      expect(epistemicRuleTs(sentence), sentence).toBe(verdict);
     }
   });
 

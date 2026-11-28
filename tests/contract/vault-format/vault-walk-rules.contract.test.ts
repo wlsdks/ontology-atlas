@@ -7,13 +7,10 @@ import {
   VAULT_WALK_MAX_ENTRIES,
   isVaultSourcePath,
 } from '@/entities/docs-vault/lib/local-manifest/walk-vault';
-import {
-  VAULT_SOURCES_DIR as MCP_VAULT_SOURCES_DIR,
-  isVaultSourcePath as isMcpVaultSourcePath,
-} from '../../../mcp/src/schema.mjs';
 
 const repoRoot = resolve(__dirname, '../../..');
 const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/vault/walk.rs'), 'utf8');
+const serverSlugRules = readFileSync(resolve(repoRoot, 'src-tauri/crates/confined-files/src/slug_rules.rs'), 'utf8');
 const tsSource = ['walk-vault.ts', 'build-local-manifest.ts']
   .map((file) => readFileSync(resolve(repoRoot, 'src/entities/docs-vault/lib/local-manifest', file), 'utf8'))
   .join('\n');
@@ -78,11 +75,17 @@ describe('vault walk rules: TS and Rust must agree', () => {
     expect(rustSource).toMatch(/const VAULT_SOURCES_DIR: &str = "sources";/);
   });
 
-  it('MCP, which scripts load, names and anchors the sources folder like the app', () => {
-    expect(MCP_VAULT_SOURCES_DIR).toBe(VAULT_SOURCES_DIR);
-    for (const path of ['sources/a.pdf', 'sources/notes/a.md', 'notes/sources/a.md', 'sources.md']) {
-      expect(isMcpVaultSourcePath(path), path).toBe(isVaultSourcePath(path));
-    }
+  it('the MCP server names the sources folder like the app, and the app anchors it at the root', () => {
+    expect(serverSlugRules).toMatch(/pub const VAULT_SOURCES_DIR: &str = "sources";/);
+    const sourcePaths = Object.fromEntries(
+      ['sources/a.pdf', 'sources/notes/a.md', 'notes/sources/a.md', 'sources.md'].map((path) => [path, isVaultSourcePath(path)]),
+    );
+    expect(sourcePaths).toEqual({
+      'sources/a.pdf': true,
+      'sources/notes/a.md': true,
+      'notes/sources/a.md': false,
+      'sources.md': false,
+    });
   });
 
   it('both walks anchor the sources prefix at the vault root', () => {

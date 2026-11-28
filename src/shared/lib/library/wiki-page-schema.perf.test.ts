@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateWikiFolder as validateFolderMcp } from '../../../../mcp/src/library/wiki-folder.mjs';
-import {
-  buildWikiNodeIndex as buildNodesMcp,
-  validateWikiPage as validatePageMcp,
-} from '../../../../mcp/src/library/wiki-schema.mjs';
 import {
   buildWikiNodeIndex as buildNodesTs,
   validateWikiPage as validateTs,
@@ -55,27 +50,25 @@ describe('validation stays linear as a folder grows', () => {
       });
     const small = folder(1000);
     const large = folder(4000);
-    for (const validate of [validateFolderTs, validateFolderMcp]) {
-      const time = (pages: Array<{ path: string; raw: string }>, calls: number) => {
-        const spent = startWorkClock();
-        for (let call = 0; call < calls; call += 1) validate(pages);
-        return spent() / calls;
-      };
-      time(small, 8);
-      time(large, 2);
-      let smallBest = Infinity;
-      let largeBest = Infinity;
-      for (let round = 0; round < 5; round += 1) {
-        smallBest = Math.min(smallBest, time(small, 8));
-        largeBest = Math.min(largeBest, time(large, 2));
-      }
-      expect(largeBest / smallBest).toBeLessThan(8);
+    const time = (pages: Array<{ path: string; raw: string }>, calls: number) => {
+      const spent = startWorkClock();
+      for (let call = 0; call < calls; call += 1) validateFolderTs(pages);
+      return spent() / calls;
+    };
+    time(small, 8);
+    time(large, 2);
+    let smallBest = Infinity;
+    let largeBest = Infinity;
+    for (let round = 0; round < 5; round += 1) {
+      smallBest = Math.min(smallBest, time(small, 8));
+      largeBest = Math.min(largeBest, time(large, 2));
     }
+    expect(largeBest / smallBest).toBeLessThan(8);
   });
 
   /**
    * Openings that never close: each match attempt used to scan to the end of the line or
-   * body, so a 320 KB page took 4 s (2026-11-19). Both twins now stop at the next `[`. Measured 2026-11-19 on an M-series Mac: 0-3 ms at the largest size; the budget is
+   * body, so a 320 KB page took 4 s (2026-11-19). The validator now stops at the next `[`. Measured 2026-11-19 on an M-series Mac: 0-3 ms at the largest size; the budget is
    * far above that and catches a return of the quadratic shape, not machine speed. Timed: a regular
    * expression's backtracking has no count to read.
    */
@@ -89,8 +82,6 @@ describe('validation stays linear as a folder grows', () => {
   };
   const judge = (raw: string) => {
     const folder = [{ path: 'wiki/a.md', raw }, { path: 'wiki/b.md', raw: head + tail }];
-    validatePageMcp(raw, { knownSources: new Set<string>() });
-    validateFolderMcp(folder);
     validateTs(raw, { knownSources: new Set<string>() });
     validateFolderTs(folder);
   };
@@ -121,33 +112,31 @@ describe('validation stays linear as a folder grows', () => {
   /**
    * Every page written from one source: naming every partner was k² findings, 11.8 s and 5.5 GB
    * for 4,000 pages (2026-11-19). Each page now names ten and counts the rest. Measured
-   * 2026-11-19: 41 ms for 4,000 pages (MCP); the budget catches the quadratic shape returning.
+   * 2026-11-19: 41 ms for 4,000 pages; the budget catches the quadratic shape returning.
    * No growth ratio: at tens of milliseconds GC noise swings it from 5 to 12 on one machine. The
    * findings count guards the k² naming; the time guards pairing that names nothing.
    */
-  it('one source shared by thousands of pages stays linear in both twins', () => {
+  it('one source shared by thousands of pages stays linear', () => {
     const folder = (size: number) =>
       Array.from({ length: size }, (_, index) => ({
         path: `wiki/p-${index}.md`,
         raw: `---\ntitle: p${index}\nsources: [sources/one.pdf]\n---\n\n## Summary\n\nAbout [[wiki/hub]].\n`,
       }));
     const large = folder(4000);
-    for (const validate of [validateFolderTs, validateFolderMcp]) {
-      validate(large);
-      const time = (pages: Array<{ path: string; raw: string }>) => {
-        let fastest = Infinity;
-        for (let run = 0; run < 5; run += 1) {
-          const spent = startWorkClock();
-          validate(pages);
-          fastest = Math.min(fastest, spent());
-        }
-        return fastest;
-      };
-      const largeMs = time(large);
-      console.log(`[wiki-schema perf] one shared source: 4,000 pages in ${largeMs.toFixed(1)} ms`);
-      expect(largeMs).toBeLessThan(1500);
-      expect(validate(large)[0]!.problems.length).toBeLessThan(20);
-    }
+    validateFolderTs(large);
+    const time = (pages: Array<{ path: string; raw: string }>) => {
+      let fastest = Infinity;
+      for (let run = 0; run < 5; run += 1) {
+        const spent = startWorkClock();
+        validateFolderTs(pages);
+        fastest = Math.min(fastest, spent());
+      }
+      return fastest;
+    };
+    const largeMs = time(large);
+    console.log(`[wiki-schema perf] one shared source: 4,000 pages in ${largeMs.toFixed(1)} ms`);
+    expect(largeMs).toBeLessThan(1500);
+    expect(validateFolderTs(large)[0]!.problems.length).toBeLessThan(20);
   });
 
   /**
@@ -155,7 +144,7 @@ describe('validation stays linear as a folder grows', () => {
    * the reads of the document entries: a scan of every document per entry, or an index rebuilt per
    * page, multiplies them by the entries.
    */
-  it('resolving every describes entry reads each document once to index it, in both twins', () => {
+  it('resolving every describes entry reads each document once to index it', () => {
     const reads = { count: 0 };
     const counted = <T extends object>(entry: T): T =>
       new Proxy(entry, {
@@ -176,19 +165,11 @@ describe('validation stays linear as a folder grows', () => {
       ].join('\n'),
     }));
     const documents = [...concepts, ...pages.map((page) => ({ slug: page.slug }))].map(counted);
-    type Twin = [string, (raw: string, options: { nodes?: never }) => { ok: boolean }, (entries: typeof documents) => never];
-    const twins = [
-      ['TS', validateTs, buildNodesTs],
-      ['MCP', validatePageMcp, buildNodesMcp],
-    ] as unknown as Twin[];
-    for (const [name, validate, build] of twins) {
-      reads.count = 0;
-      const nodes = build(documents);
-      let failing = 0;
-      for (const page of pages) if (!validate(page.raw, { nodes }).ok) failing += 1;
-      expect(failing).toBe(0);
-      // Measured 2026-11-23: three reads a document, all while the index is built.
-      expect(reads.count, `${name}: ${reads.count} reads of ${documents.length} documents`).toBeLessThanOrEqual(5 * documents.length);
-    }
+    const nodes = buildNodesTs(documents);
+    let failing = 0;
+    for (const page of pages) if (!validateTs(page.raw, { nodes }).ok) failing += 1;
+    expect(failing).toBe(0);
+    // Measured 2026-11-23: three reads a document, all while the index is built.
+    expect(reads.count, `${reads.count} reads of ${documents.length} documents`).toBeLessThanOrEqual(5 * documents.length);
   });
 });

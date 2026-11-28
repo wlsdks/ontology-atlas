@@ -115,7 +115,7 @@ describe('the gate: what is said and what is applied must match', () => {
     expect(registry.agents.find((agent) => agent.id === 'codex-acp')?.launch?.package).toBe(
       '@agentclientprotocol/codex-acp@2.12.1',
     );
-    expect(readFileSync(join(ROOT, 'mcp/src/server/write-consent.mjs'), 'utf8')).toContain(
+    expect(readFileSync(join(ROOT, 'src-tauri/crates/mcp-server/src/consent/mod.rs'), 'utf8')).toContain(
       'codex_approval_kind',
     );
   });

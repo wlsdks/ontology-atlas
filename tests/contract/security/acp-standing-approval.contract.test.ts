@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { STANDING_APPROVAL_ATLAS_WRITES, standingApproval } from '@/features/acp-session/model/permissions/standing-approval';
 
-import { READ_TOOL_NAMES, RETIRED_TOOL_REPLACEMENTS } from '../../../mcp/src/server/registry.mjs';
+import { serverRegistry } from '../server-session/tool-surface';
 
 /**
  * Auto-approve answers the Atlas writes a map build makes; deleting and merging concepts keep the
@@ -19,7 +19,8 @@ const surface = JSON.parse(readFileSync(join(ROOT, 'docs/.generated/mcp-surface.
   mcp: { tools: Array<{ name: string; mode: 'read' | 'write' }> };
 };
 // A retired write is out of tools/list but still answered, so an approval naming it stays valid.
-const retiredWrites = [...RETIRED_TOOL_REPLACEMENTS.keys()].filter((name) => !READ_TOOL_NAMES.has(name));
+const registry = serverRegistry();
+const retiredWrites = registry.retiredTools.map((tool) => tool.name).filter((name) => !registry.readTools.includes(name));
 const serverWrites = [
   ...surface.mcp.tools.filter((tool) => tool.mode === 'write').map((tool) => tool.name),
   ...retiredWrites,

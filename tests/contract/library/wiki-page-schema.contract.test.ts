@@ -1,22 +1,24 @@
-import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import GOLDEN from '../../fixtures/wiki-validation-golden.json';
 import {
   WIKI_FOLDER_CASES,
   WIKI_PAGE_CASES,
   WIKI_PAGE_KNOWN_SOURCES,
   generatedWikiFolder,
-  writeWikiFolderVault,
 } from '../../fixtures/wiki-page-cases.mjs';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import {
   WIKI_CITATION_PATTERN as PATTERN_TS,
   WIKI_FIELDS as FIELDS_TS,
   WIKI_PAGE_TEMPLATE as TEMPLATE_TS,
   WIKI_REQUIRED_FIELDS as REQUIRED_TS,
   WIKI_SECTION_ORDER as SECTIONS_TS,
+  buildWikiNodeIndex,
   validateWikiPage as validateTs,
 } from '@/shared/lib/library/wiki-page-schema';
 import {
@@ -26,108 +28,63 @@ import {
   wikiPageFacts as wikiPageFactsTs,
   wikiPageProblems,
 } from '@/shared/lib/library/wiki-folder';
-import {
-  WIKI_CITATION_PATTERN as PATTERN_MCP,
-  WIKI_FIELDS as FIELDS_MCP,
-  WIKI_PAGE_TEMPLATE as TEMPLATE_MCP,
-  WIKI_REQUIRED_FIELDS as REQUIRED_MCP,
-  WIKI_SECTION_ORDER as SECTIONS_MCP,
-  WIKI_ADVISORY_CODES,
-  buildWikiNodeIndex,
-  isWikiFurnitureSlug,
-  validateWikiPage as validateMcp,
-} from '../../../mcp/src/library/wiki-schema.mjs';
-import {
-  validateWikiFolder as validateFolderMcp,
-  wikiFolderJudgement as folderJudgementMcp,
-  wikiPageCodes,
-  wikiPageFacts,
-} from '../../../mcp/src/library/wiki-folder.mjs';
-import { judgeLoadedWikiPages } from '../../../mcp/src/library/wiki-judgement.mjs';
-import { createVaultDocCache } from '../../../mcp/src/vault/documents/document-cache.mjs';
+import { WIKI_ADVISORY_CODES } from '@/shared/lib/library/wiki-report.mjs';
 
 /**
- * One format however many things write a page: the TS and MCP validators must share the same codes
- * (messages may differ), since the Docs sidebar and agent retries branch
- * on the code. The template is compared character for character because it is prompt material.
+ * One format however many things write a page: the app's validators give the codes and words the
+ * `validate_wiki` tool gave when `tests/fixtures/wiki-validation-golden.json` was recorded from it;
+ * the Docs sidebar and agent retries branch on the code. The template is compared character for
+ * character because it is prompt material.
  */
 
-interface Validator {
-  (raw: string, options?: { knownSources?: Iterable<string>; nodes?: Iterable<{ slug: string; kind?: unknown; alias?: unknown }> }): {
-    ok: boolean;
-    problems: Array<{ code: string; message: string; line?: number }>;
-  };
-}
+const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const distinct = (codes: readonly string[]) => [...new Set(codes)].sort();
 
-const VALIDATORS: Record<string, Validator> = {
-  'src/shared/lib (TS)': validateTs as Validator,
-  'mcp/src/library/wiki-schema.mjs': validateMcp as Validator,
-};
-
-describe('the wiki page contract — both implementations agree', () => {
-  for (const [name, validate] of Object.entries(VALIDATORS)) {
-    describe(name, () => {
-      for (const testCase of WIKI_PAGE_CASES) {
-        it(testCase.name, () => {
-          const result = validate(testCase.input, testCase.nodes ? { nodes: testCase.nodes } : {});
-          expect(result.problems.map((p) => p.code).sort()).toEqual(
-            [...testCase.expectedCodes].sort(),
-          );
-          expect(result.ok).toBe(testCase.expectedOk);
-        });
-      }
-
-      it('reports a citation naming a file that is not in the folder', () => {
-        const complete = WIKI_PAGE_CASES.find((c) => c.expectedOk)!;
-        const result = validate(complete.input, { knownSources: new Set<string>() });
-        expect(result.problems.map((p) => p.code)).toContain('citation-target-missing');
-      });
-
-      it('accepts the same page once the cited files exist', () => {
-        const complete = WIKI_PAGE_CASES.find((c) => c.expectedOk)!;
-        expect(validate(complete.input, { knownSources: new Set(WIKI_PAGE_KNOWN_SOURCES) }).ok).toBe(true);
-      });
-
-      it('accepts its own template, which is what every writer is handed', () => {
-        expect(validate(TEMPLATE_TS).ok).toBe(true);
-      });
+describe('the wiki page contract', () => {
+  for (const testCase of WIKI_PAGE_CASES) {
+    it(testCase.name, () => {
+      const result = validateTs(testCase.input, testCase.nodes ? { nodes: testCase.nodes } : {});
+      expect(result.problems.map((p) => p.code).sort()).toEqual([...testCase.expectedCodes].sort());
+      expect(result.ok).toBe(testCase.expectedOk);
     });
   }
 
-  it('both implementations return the same verdict on every describes row, word for word', () => {
+  it('reports a citation naming a file that is not in the folder', () => {
+    const complete = WIKI_PAGE_CASES.find((c) => c.expectedOk)!;
+    const result = validateTs(complete.input, { knownSources: new Set<string>() });
+    expect(result.problems.map((p) => p.code)).toContain('citation-target-missing');
+  });
+
+  it('accepts the same page once the cited files exist', () => {
+    const complete = WIKI_PAGE_CASES.find((c) => c.expectedOk)!;
+    expect(validateTs(complete.input, { knownSources: new Set(WIKI_PAGE_KNOWN_SOURCES) }).ok).toBe(true);
+  });
+
+  it('accepts its own template, which is what every writer is handed', () => {
+    expect(validateTs(TEMPLATE_TS).ok).toBe(true);
+  });
+
+  it('returns the recorded verdict on every describes row, word for word', () => {
     for (const testCase of WIKI_PAGE_CASES.filter((c) => c.nodes)) {
-      expect(JSON.stringify(validateMcp(testCase.input, { nodes: testCase.nodes }))).toBe(
-        JSON.stringify(validateTs(testCase.input, { nodes: testCase.nodes })),
-      );
+      const recorded = (GOLDEN.describesRows as Record<string, unknown>)[testCase.name];
+      expect(recorded, testCase.name).toBeDefined();
+      expect(JSON.stringify(validateTs(testCase.input, { nodes: testCase.nodes }))).toBe(JSON.stringify(recorded));
     }
   });
 
-  it('neither implementation knows the retired describes-needs-approval code', () => {
-    const sources = ['mcp/src/library/wiki-schema.mjs', 'src/shared/lib/library/wiki-page-schema.ts'];
+  it('does not know the retired describes-needs-approval code', () => {
     const repoRoot = resolve(__dirname, '../../..');
-    for (const file of sources) expect(readFileSync(resolve(repoRoot, file), 'utf8')).not.toContain('describes-needs-approval');
+    expect(readFileSync(resolve(repoRoot, 'src/shared/lib/library/wiki-page-schema.ts'), 'utf8')).not.toContain('describes-needs-approval');
     for (const locale of ['en', 'ko', 'ja', 'zh']) {
       expect(readFileSync(resolve(repoRoot, `messages/${locale}/library.json`), 'utf8')).not.toContain('describes-needs-approval');
     }
   });
 
-  it('both implementations ship the identical template text', () => {
-    expect(TEMPLATE_TS).toBe(TEMPLATE_MCP);
-  });
-
-  it('both implementations name the same fields, in the same order', () => {
-    expect(FIELDS_TS.map((field) => [field.key, field.required])).toEqual(
-      (FIELDS_MCP as typeof FIELDS_TS).map((field) => [field.key, field.required]),
-    );
-    expect([...REQUIRED_TS]).toEqual([...REQUIRED_MCP]);
-  });
-
-  it('both implementations fix the same section order', () => {
-    expect([...SECTIONS_TS]).toEqual([...SECTIONS_MCP]);
-  });
-
-  it('both implementations use one citation syntax', () => {
-    expect(PATTERN_TS).toBe(PATTERN_MCP);
+  it('names the recorded fields in the recorded order, the sections in order, and one citation syntax', () => {
+    expect(FIELDS_TS.map((field) => [field.key, field.required])).toEqual(GOLDEN.fields);
+    expect([...REQUIRED_TS]).toEqual(GOLDEN.requiredFields);
+    expect([...SECTIONS_TS]).toEqual(GOLDEN.sectionOrder);
+    expect(PATTERN_TS).toBe(GOLDEN.citationPattern);
   });
 
   /**
@@ -162,62 +119,59 @@ describe('the wiki page contract — both implementations agree', () => {
 });
 
 /**
- * The folder half: three facts only the whole folder can tell are judged by both implementations on
- * the same cases, since the page validator alone stays green.
+ * The folder half: three facts only the whole folder can tell are judged on the same cases, since
+ * the page validator alone stays green.
  */
-describe('the wiki folder contract — both implementations agree', () => {
-  const FOLDER_VALIDATORS = {
-    'src/shared/lib (TS)': validateFolderTs,
-    'mcp/src/library/wiki-folder.mjs': validateFolderMcp,
-  } as const;
-  for (const [name, validate] of Object.entries(FOLDER_VALIDATORS)) {
-    describe(name, () => {
-      for (const testCase of WIKI_FOLDER_CASES) {
-        it(testCase.name, () => {
-          const result = (validate as typeof validateFolderTs)(testCase.pages);
-          const got = Object.fromEntries(
-            result.map((entry) => [entry.path, entry.problems.map((p) => p.code).sort()]),
-          );
-          const want = Object.fromEntries(
-            Object.entries(testCase.expected).map(([path, codes]) => [path, [...codes].sort()]),
-          );
-          expect(got).toEqual(want);
-          if (!testCase.partners) return;
-          const partners = Object.fromEntries(
-            result.map((entry) => [
-              entry.path,
-              entry.problems
-                .filter((p) => p.code === 'shared-source-unlinked')
-                .map((p) => p.detail?.values?.other),
-            ]),
-          );
-          expect(partners).toEqual(testCase.partners);
-        });
-      }
+describe('the wiki folder contract', () => {
+  for (const testCase of WIKI_FOLDER_CASES) {
+    it(testCase.name, () => {
+      const result = validateFolderTs(testCase.pages);
+      const got = Object.fromEntries(
+        result.map((entry) => [entry.path, entry.problems.map((p) => p.code).sort()]),
+      );
+      const want = Object.fromEntries(
+        Object.entries(testCase.expected).map(([path, codes]) => [path, [...codes].sort()]),
+      );
+      expect(got).toEqual(want);
+      if (!testCase.partners) return;
+      const partners = Object.fromEntries(
+        result.map((entry) => [
+          entry.path,
+          entry.problems
+            .filter((p) => p.code === 'shared-source-unlinked')
+            .map((p) => p.detail?.values?.other),
+        ]),
+      );
+      expect(partners).toEqual(testCase.partners);
     });
   }
 
-  it('both implementations return byte-identical verdicts on every case', () => {
+  it('returns the recorded verdicts on every case, byte for byte', () => {
     for (const testCase of WIKI_FOLDER_CASES) {
-      expect(JSON.stringify(validateFolderMcp(testCase.pages))).toBe(
-        JSON.stringify(validateFolderTs(testCase.pages)),
-      );
+      const recorded = (GOLDEN.folderCases as Record<string, unknown>)[testCase.name];
+      expect(recorded, testCase.name).toBeDefined();
+      expect(JSON.stringify(validateFolderTs(testCase.pages))).toBe(JSON.stringify(recorded));
     }
   });
 });
 
 /**
  * `validate_wiki` judges from page facts kept per file version, so it must answer what judging every
- * page's text answers: the page half against the MCP text validator, the folder half the web twin.
+ * page's text answers.
  */
 describe('wiki page facts — judging from facts equals judging from text', () => {
   const generated = generatedWikiFolder();
-  const distinct = (codes: readonly string[]) => [...new Set(codes)].sort();
+  const optionSets = [
+    {},
+    { knownSources: new Set(generated.knownSources) },
+    { nodes: generated.nodes },
+    { knownSources: new Set(generated.knownSources), nodes: generated.nodes },
+  ];
 
   it('the generated folder exercises every folder code and most page codes', () => {
     const codes = new Set<string>(validateFolderTs(generated.pages).flatMap((entry) => entry.problems.map((p) => p.code)));
     for (const page of generated.pages) {
-      for (const p of validateMcp(page.raw, { knownSources: generated.knownSources, nodes: generated.nodes }).problems) codes.add(p.code);
+      for (const p of validateTs(page.raw, { knownSources: new Set(generated.knownSources), nodes: generated.nodes }).problems) codes.add(p.code);
     }
     expect([...codes].sort()).toEqual([
       'bad-citation', 'bad-describes', 'bad-truncation-record', 'citation-target-missing', 'dangling-wikilink',
@@ -227,73 +181,65 @@ describe('wiki page facts — judging from facts equals judging from text', () =
     ]);
   });
 
-  it('the MCP folder half is byte-identical to the web twin on the generated folder', () => {
-    expect(JSON.stringify(validateFolderMcp(generated.pages))).toBe(JSON.stringify(validateFolderTs(generated.pages)));
+  it('the folder verdicts of the generated folder are the recorded ones', () => {
+    expect(generated.pages.length).toBe(GOLDEN.generatedFolder.count);
+    expect(sha256(validateFolderTs(generated.pages))).toBe(GOLDEN.generatedFolder.folderVerdictsSha256);
   });
 
-  it("a page's codes from its facts are the codes its text reports, with and without the folder", () => {
+  it("each page's verdicts, with and without the folder, are the recorded ones", () => {
+    const withOptions = [{}, optionSets[3]];
+    expect(sha256(generated.pages.map((page) => withOptions.map((options) => validateTs(page.raw, options))))).toBe(
+      GOLDEN.generatedFolder.pageVerdictsSha256,
+    );
+  });
+
+  it("a page's facts rebuild the problems and codes its text reports, whatever the options", () => {
     const pages = [...WIKI_PAGE_CASES.map((testCase) => testCase.input), ...generated.pages.map((page) => page.raw)];
-    const optionSets = [{}, { knownSources: new Set(generated.knownSources), nodes: generated.nodes }];
     for (const raw of pages) {
-      const facts = wikiPageFacts(raw);
+      const facts = wikiPageFactsTs(raw);
       for (const options of optionSets) {
-        expect(distinct(wikiPageCodes(facts, options))).toEqual(distinct(validateTs(raw, options).problems.map((p) => p.code)));
+        const expected = validateTs(raw, options).problems;
+        expect(JSON.stringify(wikiPageProblems(facts, options))).toBe(JSON.stringify(expected));
+        expect(distinct(wikiPageCodesTs(facts, options))).toEqual(distinct(expected.map((p) => p.code)));
       }
     }
   });
 
-  it('the web twin keeps the same page facts as MCP, and rebuilds the full problem list from them', () => {
-    const pages = [...WIKI_PAGE_CASES.map((testCase) => testCase.input), ...generated.pages.map((page) => page.raw)];
-    const optionSets = [{}, { knownSources: new Set(generated.knownSources) }, { nodes: generated.nodes }, { knownSources: new Set(generated.knownSources), nodes: generated.nodes }];
-    for (const raw of pages) {
-      const twin = wikiPageFactsTs(raw);
-      const { head: _head, tail: _tail, ...shared } = twin;
-      expect(shared).toEqual(wikiPageFacts(raw));
-      for (const options of optionSets) {
-        expect(JSON.stringify(wikiPageProblems(twin, options))).toBe(JSON.stringify(validateTs(raw, options).problems));
-        expect(distinct(wikiPageCodesTs(twin, options))).toEqual(distinct(wikiPageCodes(wikiPageFacts(raw), options)));
-      }
-    }
-  });
-
-  it('the web folder judgement asked page by page equals the MCP one on the generated folder', () => {
-    const facts = generated.pages.map((page) => ({ path: page.path, raw: page.raw }));
-    const twin = folderJudgementTs(facts.map((page) => ({ path: page.path, facts: wikiPageFactsTs(page.raw) })));
-    const mcp = folderJudgementMcp(facts.map((page) => ({ path: page.path, facts: wikiPageFacts(page.raw) })));
-    facts.forEach((_, index) => {
-      expect(JSON.stringify(twin.problemsOf(index))).toBe(JSON.stringify(mcp.problemsOf(index)));
-      expect(twin.codesOf(index)).toEqual(mcp.codesOf(index));
+  it('the folder judgement asked page by page equals the folder verdicts on the generated folder', () => {
+    const judgement = folderJudgementTs(
+      generated.pages.map((page) => ({ path: page.path, facts: wikiPageFactsTs(page.raw) })),
+    );
+    const verdicts = validateFolderTs(generated.pages);
+    verdicts.forEach((verdict, index) => {
+      expect(JSON.stringify(judgement.problemsOf(index))).toBe(JSON.stringify(verdict.problems));
+      expect(distinct(judgement.codesOf(index))).toEqual(distinct(verdict.problems.map((p) => p.code)));
     });
   });
 
-  it('validate_wiki over a folder on disk returns what judging every page text returns, page for page', () => {
-    const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-wiki-facts-')));
-    try {
-      writeWikiFolderVault(root, generated);
-      const knownSources = new Set(generated.knownSources);
-      const docs = createVaultDocCache(root).load();
-      const judged = judgeLoadedWikiPages(docs, knownSources);
-
-      const nodes = buildWikiNodeIndex(docs.map((doc) => ({ slug: doc.slug, kind: (doc.frontmatter as { kind?: unknown }).kind, alias: (doc.frontmatter as { slug?: unknown }).slug })));
-      const pages = docs
-        .filter((doc) => doc.slug.startsWith('wiki/') && !isWikiFurnitureSlug(doc.slug))
-        .map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw }));
-      const folder = new Map(validateFolderTs(pages).map((entry) => [entry.path, entry.problems]));
-      const expected = pages
-        .map((page) => {
-          const problems = [...validateMcp(page.raw, { knownSources, nodes }).problems, ...(folder.get(page.path) ?? [])];
-          return { path: page.path, ok: problems.length === 0, problems };
-        })
-        .sort((left, right) => (left.path < right.path ? -1 : 1));
-
-      expect(expected.length).toBe(generated.pages.length);
-      expect(JSON.stringify(judged.map((page) => ({ path: page.path, ok: page.ok, problems: page.problems })))).toBe(JSON.stringify(expected));
-      for (const page of judged) {
-        expect(distinct(page.codes)).toEqual(distinct(page.problems.map((p: { code: string }) => p.code)));
-        expect(page.blocking).toBe(page.problems.some((p: { code: string }) => !WIKI_ADVISORY_CODES.includes(p.code)));
-      }
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
+  it('judging every page text with its folder problems gives the pages `validate_wiki` returned for the folder', () => {
+    const knownSources = new Set(generated.knownSources);
+    // The index the server built from the folder on disk: the concepts and every page, a page by
+    // its own `kind:` and `slug:`.
+    const nodes = buildWikiNodeIndex([
+      ...generated.nodes.filter((node) => !node.slug.startsWith('wiki/')),
+      ...generated.pages.map((page) => {
+        const { frontmatter } = parseFrontmatter(page.raw);
+        return { slug: page.path.slice(0, -'.md'.length), kind: frontmatter.kind, alias: frontmatter.slug };
+      }),
+      { slug: 'wiki/_template' },
+    ]);
+    // The server reads the folder in path order, and which partners a page names depends on it.
+    const inPathOrder = [...generated.pages].sort((left, right) => (left.path < right.path ? -1 : 1));
+    const folder = new Map(validateFolderTs(inPathOrder).map((entry) => [entry.path, entry.problems]));
+    const judged = inPathOrder
+      .map((page) => {
+        const problems = [
+          ...validateTs(page.raw, { knownSources, nodes }).problems,
+          ...(folder.get(page.path) ?? []),
+        ];
+        return { path: page.path, ok: problems.length === 0, problems };
+      });
+    expect(sha256(judged)).toBe(GOLDEN.generatedFolder.judgedPagesSha256);
+    expect(judged.some((page) => page.problems.some((p) => !WIKI_ADVISORY_CODES.includes(p.code)))).toBe(true);
   });
 });

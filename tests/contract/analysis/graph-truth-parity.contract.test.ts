@@ -1,56 +1,36 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { deriveOntologyFromVault, resolveStaticVaultSource } from "@/entities/docs-vault";
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { derivationToInsight } from "@/features/vault-ontology/model/use-ontology-insight";
-import { compileOntology } from "../../../mcp/src/ontology-compiler.mjs";
-import { createOntologyEngine } from "../../../mcp/src/ontology-engine.mjs";
-import { parseFrontmatter } from "../../../mcp/src/parser.mjs";
+import { callServerTool } from "../server-session/call-server-tool";
 
 /**
- * The web and MCP must answer with the same concepts for the same vault; identities and
- * set equalities are pinned rather than counts, because the dogfood vault grows.
+ * The web and the MCP server must answer with the same concepts for the same vault; identities and
+ * set equalities are pinned rather than counts, because the dogfood vault grows. The server is
+ * asked over stdio, as an agent asks it.
  */
 
 const VAULT_ROOT = join(process.cwd(), "docs/ontology");
 
-interface CompilerDoc {
-  slug: string;
-  frontmatter: Record<string, unknown>;
-  mtime: number;
-}
-
-/** Reads `docs/ontology/` against the same root MCP uses when it mounts. */
-function loadVaultDocs(dir = VAULT_ROOT, base = VAULT_ROOT): CompilerDoc[] {
-  const out: CompilerDoc[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      out.push(...loadVaultDocs(full, base));
-      continue;
-    }
-    if (!entry.name.endsWith(".md")) continue;
-    const { frontmatter } = parseFrontmatter(readFileSync(full, "utf8")) as {
-      frontmatter: Record<string, unknown>;
-    };
-    if (!frontmatter?.kind) continue;
-    out.push({
-      slug: full.slice(base.length + 1).replace(/\.md$/, ""),
-      frontmatter,
-      mtime: statSync(full).mtimeMs,
-    });
-  }
-  return out;
-}
-
-const compiled = compileOntology(loadVaultDocs()) as {
+interface CompiledOntology {
   nodeCount: number;
   referencedOnlyCount: number;
   edges: Array<{ from: string; to: string; via: string; ref: string; resolved: boolean }>;
   aliases: Array<{ alias: string; slug: string }>;
   nodes: Array<{ slug: string }>;
-};
+}
+
+/** `compile_ontology` with every array, the whole graph the server compiled from the vault. */
+async function compileOverStdio(vault: string): Promise<CompiledOntology> {
+  const answer = await callServerTool(vault, "compile_ontology", { full: true });
+  expect(answer.isError, String(answer.value)).toBe(false);
+  return answer.value as CompiledOntology;
+}
+
+const compiled = await compileOverStdio(VAULT_ROOT);
 
 /**
  * Compiler frontmatter key → the web derivation's relation type (and whether the
@@ -89,7 +69,7 @@ const insight = derivationToInsight(derivation, "ko", {
   agentSlugPrefix: resolveStaticVaultSource("dogfood").agentSlugPrefix,
 });
 
-describe("screen · MCP concept parity (bundled dogfood == docs/ontology)", () => {
+describe("screen · server concept parity (bundled dogfood == docs/ontology)", () => {
   it("the number of concepts with a document equals the number of compiled nodes", () => {
     const documented = insight.nodes.filter((node) => node.hasOwnDocument !== false);
     expect(documented).toHaveLength(compiled.nodeCount);
@@ -171,34 +151,38 @@ describe("screen · MCP concept parity (bundled dogfood == docs/ontology)", () =
 });
 
 describe("asking about a name-only concept, the engine answers honestly", () => {
-  it("returns 'who wrote it under which key' rather than 'none'", () => {
-    const syntheticCompiled = compileOntology([
-      {
-        slug: "capabilities/ghost-parent",
-        frontmatter: {
-          uid: "01890f3e-7b5d-4c0a-8f14-123456789abc",
-          kind: "capability",
-          title: "Ghost parent",
-          elements: ["elements/ghost-node"],
-        },
-        mtime: 1,
-      },
-    ]) as typeof compiled;
-    const ref = syntheticCompiled.edges.find((edge) => !edge.resolved)?.ref;
-    expect(ref).toBe("elements/ghost-node");
-    const engine = createOntologyEngine(syntheticCompiled) as {
-      nodeProfile: (slug: string) => unknown;
-    };
-    let thrown: (Error & { referencedBy?: Array<{ slug: string; via: string }> }) | null = null;
+  it("returns 'who wrote it under which key' rather than 'none'", async () => {
+    const vault = mkdtempSync(join(tmpdir(), "atlas-ghost-parent-"));
     try {
-      engine.nodeProfile(ref!);
-    } catch (err) {
-      thrown = err as Error & { referencedBy?: Array<{ slug: string; via: string }> };
+      mkdirSync(join(vault, "capabilities"), { recursive: true });
+      writeFileSync(
+        join(vault, "capabilities/ghost-parent.md"),
+        [
+          "---",
+          "uid: 01890f3e-7b5d-4c0a-8f14-123456789abc",
+          "slug: capabilities/ghost-parent",
+          "kind: capability",
+          "title: Ghost parent",
+          "elements: [elements/ghost-node]",
+          "---",
+          "",
+          "A parent that names an element nobody wrote.",
+          "",
+        ].join("\n"),
+      );
+      const synthetic = await compileOverStdio(vault);
+      const ref = synthetic.edges.find((edge) => !edge.resolved)?.ref;
+      expect(ref).toBe("elements/ghost-node");
+
+      const answer = await callServerTool(vault, "query_ontology", { operation: "neighbors", slug: ref });
+      expect(answer.isError).toBe(true);
+      const message = (answer.value as { error: string }).error;
+      // It must not push a wrong node through a typo guess ("Did you mean…").
+      expect(message).not.toMatch(/Did you mean/);
+      expect(message).toContain("has no document of its own");
+      expect(message).toContain("capabilities/ghost-parent (via elements)");
+    } finally {
+      rmSync(vault, { recursive: true, force: true });
     }
-    expect(thrown).not.toBeNull();
-    // It must not push a wrong node through a typo guess ("Did you mean…").
-    expect(thrown?.message).not.toMatch(/Did you mean/);
-    expect(thrown?.message).toContain("has no document of its own");
-    expect(thrown?.referencedBy?.length ?? 0).toBeGreaterThan(0);
   });
 });

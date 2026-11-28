@@ -146,3 +146,12 @@ export const WIKI_REPORT_EXPECTED_GROUPS = Object.freeze([
  */
 export const WIKI_REPORT_EXPECTED_BLOCKING_PAGES = 2;
 export const WIKI_REPORT_EXPECTED_FIT_PAGES = 0;
+
+/**
+ * The `shared-source-unlinked` sentences of the folder, sorted, as the script server's validators
+ * worded them when they were recorded.
+ */
+export const WIKI_REPORT_EXPECTED_SHARED_SOURCE_MESSAGES = Object.freeze([
+  "`wiki/settlement-ko.md` also lists `sources/settlement-policy.md` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+  "`wiki/settlement.md` also lists `sources/settlement-policy.md` and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.",
+]);

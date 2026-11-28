@@ -1,7 +1,7 @@
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
 import { applyFrontmatterUpdates } from '@/entities/docs-vault';
 import {
@@ -13,16 +13,15 @@ import {
 import { looksLikeCodePath } from '@/shared/lib/concept-display/humanize-code-path-title';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
-import { compileOntology } from '../../../mcp/src/ontology-compiler.mjs';
-import { queryCompiledOntology } from '../../../mcp/src/ontology-engine.mjs';
-import { buildProjectSourceReceipt } from '../../../mcp/src/project-source/project-source-mint.mjs';
-import { deriveProjectSourceWitnessesFromDocs } from '../../../mcp/src/project-source/project-source-witnesses.mjs';
-import { loadVaultDocs } from '../../../mcp/src/vault/documents/document-cache.mjs';
+import { deriveProjectSourceWitnesses } from '@/features/project-source-binding/lib/project-source-witnesses';
+import { buildProjectSourceReceipt } from '@/shared/lib/project-source/project-source-receipt';
+
+import { callServerTools } from '../server-session/call-server-tool';
 
 /**
  * Help naming a consumer is worth reading only if the consumer does what it says.
  * Each case runs that consumer on a fixture, so moving code stays green and
- * changing what the consumer does turns red.
+ * changing what the consumer does turns red. The server is asked over stdio.
  */
 
 const ROOT = resolve(__dirname, '../../..');
@@ -63,21 +62,25 @@ for (const relation of EDITOR_RELATIONS) {
   const raw = writeRelation(writeRelation(doc(slug), slug, relation, TARGET), slug, relation, goneOf(relation));
   writeFileSync(join(vault, `${slug}.md`), raw);
 }
-const artifact = compileOntology(loadVaultDocs(vault)) as {
+
+type ValidateReport = { problems: { slug: string; issues: { code: string; severity: string }[] }[] };
+type CompiledArtifact = {
   nodes: { slug: string }[];
   edges: { from: string; to: string }[];
   issues: { code: string; slug?: string; severity: string; ref?: string }[];
 };
 
-type ValidateReport = { problems: { slug: string; issues: { code: string; severity: string }[] }[] };
-let validateVaultReport: (input: object) => ValidateReport;
-beforeAll(async () => {
-  // validate_vault resolves its folder from OATLAS_VAULT when its module loads.
-  vi.stubEnv('OATLAS_VAULT', vault);
-  ({ validateVaultReport } = await import('../../../mcp/src/tools/validate-vault.mjs'));
-});
+const [compiledAnswer, validatedAnswer, impactAnswer] = await callServerTools(vault, [
+  { name: 'compile_ontology', arguments: { full: true } },
+  { name: 'validate_vault', arguments: {} },
+  { name: 'query_ontology', arguments: { operation: 'impact', slug: TARGET } },
+]);
+for (const answer of [compiledAnswer, validatedAnswer, impactAnswer]) expect(answer.isError, String(answer.value)).toBe(false);
+const artifact = compiledAnswer.value as CompiledArtifact;
+const validateReport = validatedAnswer.value as ValidateReport;
+const impactNodes = (impactAnswer.value as { nodes: { slug: string }[] }).nodes;
+
 afterAll(() => {
-  vi.unstubAllEnvs();
   rmSync(vault, { recursive: true, force: true });
 });
 
@@ -92,7 +95,7 @@ describe('relation help: each line is one connection, and a missing target only 
     );
     expect(compiled).toEqual([expect.objectContaining({ severity: 'warning', ref: goneOf(relation) })]);
 
-    const reported = validateVaultReport({}).problems.find((problem) => problem.slug === slug)?.issues ?? [];
+    const reported = validateReport.problems.find((problem) => problem.slug === slug)?.issues ?? [];
     const dangling = reported.filter((issue) => issue.code === 'dangling-graph-reference');
     expect(dangling.map((issue) => issue.severity)).toEqual(['warning']);
   });
@@ -100,11 +103,7 @@ describe('relation help: each line is one connection, and a missing target only 
 
 describe('target help names exactly the relations an impact query follows', () => {
   it('the relations the help is built from are the ones impact traversal reaches', () => {
-    const reached = new Set(
-      queryCompiledOntology(artifact, { operation: 'impact', slug: TARGET }).nodes.map(
-        (node: { slug: string }) => node.slug,
-      ),
-    );
+    const reached = new Set(impactNodes.map((node) => node.slug));
     const walked = EDITOR_RELATIONS.filter((relation) => reached.has(sourceOf(relation)));
     expect(walked.length).toBeGreaterThan(0);
     expect(IMPACT_EDIT_RELATIONS).toEqual(walked);
@@ -118,12 +117,16 @@ describe('code-location help: each listed path is checked against the connected 
     { slug: 'project', frontmatter: { kind: 'project', title: 'Project' }, body: '' },
     { slug: 'capabilities/a', frontmatter: { kind: 'capability', title: 'A', path: 'src/a.ts', elements: ELEMENTS }, body: '' },
   ];
-  const witnesses: { path: string }[] = deriveProjectSourceWitnessesFromDocs({ projectSlug: 'project', docs });
+  const nodes = [
+    { id: 'project:project', kind: 'project', title: 'Project', projectIds: [], agentSlug: 'project' },
+    { id: 'capability:a', kind: 'capability', title: 'A', projectIds: ['project'], agentSlug: 'capabilities/a' },
+  ];
+  const witnesses = deriveProjectSourceWitnesses({ projectSlug: 'project', nodes: nodes as never, docs: docs as never });
   const witnessed = witnesses.map((witness) => witness.path);
   const receipt = (files: string[]) =>
     buildProjectSourceReceipt({
       projectSlug: 'project',
-      probe: { sourceId: 'source', kind: 'git', revision: 'r1', fingerprint: 'f1', files, truncated: false },
+      probe: { sourceId: 'source', kind: 'git', revision: 'r1', fingerprint: 'f1', dirty: false, files, truncated: false },
       witnesses,
       graphHash: 'graph',
       measuredAt: '2026-01-01T00:00:00.000Z',

@@ -7,25 +7,23 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useMapEvidenceStates } from "@/features/vault-ontology/model/use-map-evidence-states";
-import * as gitTools from "../../../mcp/src/git/git-tools.mjs";
-
-/** The two MCP readers, typed as this test calls them; the module ships plain ESM. */
-const collectPathLastChanges = gitTools.collectPathLastChanges as unknown as (input: {
-  repoRoot: string;
-  vaultRoot: string;
-  repoPaths: string[];
-  vaultPaths: string[];
-}) => { ok: boolean; changes: Map<string, Record<string, unknown>> };
-const readEvidenceTextPairs = gitTools.readEvidenceTextPairs as unknown as (input: {
-  repoRoot: string;
-  vaultRoot: string;
-  pairs: { path: string; commit: string }[];
-}) => { ok: boolean; readings: { path: string; commit: string; before: string | null; after: string | null }[] };
+import WALK from "../../fixtures/evidence-surfaces-bridge-golden.json";
+import { callServerTool } from "../server-session/call-server-tool";
 
 /**
- * One repository, two surfaces: the map's hook (its desktop Git bridge answered by the MCP
- * server's own walk and reader) and `validate_vault` must call the same concepts stale. The
- * fixture holds one of each kind of commit the comparison rule decides.
+ * What the git bridge reported for this repository, recorded from the script server's walk and
+ * reader on 2026-11-28: the dated rows by path, and each file's text before and after the change.
+ * Commits are echoed from the request, because a hash depends on how the machine stores symlinks.
+ */
+type RecordedChange = { path: string } & Record<string, unknown>;
+const RECORDED_CHANGES = WALK.changes as RecordedChange[];
+const RECORDED_READINGS = WALK.readings as { path: string; before: string | null; after: string | null }[];
+
+/**
+ * One repository, two surfaces: the map's hook (its desktop Git bridge answered with the dates and
+ * texts recorded from the script server) and `validate_vault` (asked of the running server over
+ * stdio) must call the same concepts stale. The fixture holds one of each kind of commit the
+ * comparison rule decides.
  */
 
 const repo = vi.hoisted(() => ({ root: "", vault: "", docs: [] as { slug: string; frontmatter: Record<string, unknown> }[] }));
@@ -43,14 +41,14 @@ vi.mock("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime", () => ({
 vi.mock("@/shared/lib/git/tauri-git", () => ({
   isGitBridgeAvailable: () => true,
   gitPathsLastChange: async (_vaultPath: string, repoPaths: string[], vaultPaths: string[]) => {
-    const walk = collectPathLastChanges({ repoRoot: repo.root, vaultRoot: repo.vault, repoPaths, vaultPaths });
-    if (!walk.ok) return null;
-    return [...walk.changes].map(([path, change]) => ({ path, ...change }));
+    const asked = new Set([...repoPaths, ...vaultPaths]);
+    return RECORDED_CHANGES.filter((change) => asked.has(change.path));
   },
-  gitEvidenceTextPairs: async (_vaultPath: string, pairs: { path: string; commit: string }[]) => {
-    const read = readEvidenceTextPairs({ repoRoot: repo.root, vaultRoot: repo.vault, pairs });
-    return read.ok ? read.readings : null;
-  },
+  gitEvidenceTextPairs: async (_vaultPath: string, pairs: { path: string; commit: string }[]) =>
+    pairs.map((pair) => {
+      const reading = RECORDED_READINGS.find((candidate) => candidate.path === pair.path);
+      return { path: pair.path, commit: pair.commit, before: reading?.before ?? null, after: reading?.after ?? null };
+    }),
 }));
 
 let clock = Date.parse("2026-11-01T00:00:00Z");
@@ -108,10 +106,17 @@ afterAll(() => {
   if (repo.root) rmSync(repo.root, { recursive: true, force: true });
 });
 
+interface EvidenceDrift {
+  checked: boolean;
+  counts: { current: number; stale: number; missing: number };
+  stale: { slug: string }[];
+  missing: { slug: string }[];
+}
+
 it("the map and validate_vault call the same concepts current and stale", async () => {
-  process.env.OATLAS_VAULT = repo.vault;
-  const { validateVaultReport } = await import("../../../mcp/src/tools/validate-vault.mjs");
-  const drift = validateVaultReport({ repoRoot: repo.root }).evidenceDrift;
+  const answer = await callServerTool(repo.vault, "validate_vault", {}, { repoRoot: repo.root });
+  expect(answer.isError, JSON.stringify(answer.value)).toBe(false);
+  const drift = (answer.value as { evidenceDrift: EvidenceDrift }).evidenceDrift;
   expect(drift.checked).toBe(true);
 
   const nodes: KnowledgeGraphNode[] = repo.docs.map((doc) => ({
@@ -126,7 +131,7 @@ it("the map and validate_vault call the same concepts current and stale", async 
   const map = renderHook(() => useMapEvidenceStates({ nodes, enabled: true }));
   await waitFor(() => expect(map.result.current.availability).toBe("measured"));
   const mapStale = [...map.result.current.states].filter(([, state]) => state === "stale").map(([id]) => id).sort();
-  const serverStale = [...drift.stale, ...drift.missing].map((row: { slug: string }) => row.slug).sort();
+  const serverStale = [...drift.stale, ...drift.missing].map((row) => row.slug).sort();
 
   expect(mapStale).toEqual(serverStale);
   expect(serverStale).toEqual([

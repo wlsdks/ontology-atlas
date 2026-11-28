@@ -44,7 +44,7 @@ export interface StandingApprovalAnswer {
 }
 
 const PATH_SEPARATOR = /[\\/]/;
-/** Coding agents load these as instructions. Mirrors `mcp/src/schema.mjs`; `agent-instruction-files.contract.test.ts` holds the two together. */
+/** Coding agents load these as instructions. `agent-instruction-files.contract.test.ts` holds this list to the stems the script server refused and to the Rust list in `confined-files`. */
 const AGENT_INSTRUCTION_FILE_STEMS: ReadonlySet<string> = new Set(['agents', 'agents.override', 'claude', 'claude.local', 'gemini']);
 const HIDDEN_OR_CONTROL_CHARACTER = /[\p{Cc}\p{Cf}\u2028\u2029]/u;
 
