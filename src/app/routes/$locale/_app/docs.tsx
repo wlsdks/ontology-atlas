@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
+import { librarySearch } from '@/shared/lib/navigation/screen-searches';
 import { DocsVaultPage } from '@/views/docs-vault';
 import { RouteLoadingFallback } from '@/shared/ui';
 import { ScreenTitle } from '../../-site/ScreenTitle';
@@ -12,13 +13,18 @@ const head: ScreenHead = {
   description: { namespace: 'metadata', key: 'descriptions.docs' },
 };
 
-export const Route = createFileRoute('/$locale/_app/docs')({ staticData: { head }, component: DocsRoute });
+export const Route = createFileRoute('/$locale/_app/docs')({
+  staticData: { head },
+  validateSearch: librarySearch,
+  component: DocsRoute,
+});
 
 function DocsRoute() {
+  const search = Route.useSearch();
   return (
     <>
       <ScreenTitle head={head} />
-      <Suspense fallback={<RouteLoadingFallback />}><DocsVaultPage initialCollection="ontology" documentScope="ontology" legacyEntry /></Suspense>
+      <Suspense fallback={<RouteLoadingFallback />}><DocsVaultPage initialCollection="ontology" documentScope="ontology" legacyEntry search={search} /></Suspense>
     </>
   );
 }

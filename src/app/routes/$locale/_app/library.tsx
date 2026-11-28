@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { LibraryWorkspace } from '@/app-providers/library-workspace';
-import { librarySearch } from '@/app-providers/library-workspace/library-search';
+import { librarySearch } from '@/shared/lib/navigation/screen-searches';
 import { RouteLoadingFallback } from '@/shared/ui';
 import { ScreenTitle } from '../../-site/ScreenTitle';
 import type { ScreenHead } from '../../-site/screen-metadata';
