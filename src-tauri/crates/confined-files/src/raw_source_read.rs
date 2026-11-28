@@ -18,6 +18,8 @@
 use std::fs;
 use std::io::Read;
 
+use icu_normalizer::ComposingNormalizerBorrowed;
+
 use crate::os_error::OsErrorCode;
 use crate::plain_file::{self, FileFacts};
 use crate::private_names::{is_credential_name, is_hidden_name};
@@ -204,8 +206,20 @@ impl VaultRoot {
             && real_parts
                 .iter()
                 .zip(parts)
-                .all(|(real, named)| real == named || real.to_lowercase() == named.to_lowercase())
+                .all(|(real, named)| same_part(real, named))
     }
+}
+
+/// Whether the disk's spelling of a part is the name's: the same text, or the same text in another
+/// letter case, or in another Unicode normalization form (macOS keeps a name as it was created,
+/// decomposed when a Korean or accented name came from a decomposing program, and finds it by
+/// either form).
+fn same_part(real: &str, named: &str) -> bool {
+    if real == named {
+        return true;
+    }
+    let nfc = ComposingNormalizerBorrowed::new_nfc();
+    nfc.normalize(real).to_lowercase() == nfc.normalize(named).to_lowercase()
 }
 
 fn same_version(before: FileFacts, after: FileFacts) -> bool {
@@ -218,6 +232,16 @@ fn same_version(before: FileFacts, after: FileFacts) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_part_spelled_in_another_normalization_form_or_case_is_the_same_part() {
+        // U+CDE8 (a Hangul syllable) against its decomposition, and e-acute against e + U+0301.
+        assert!(same_part("\u{110e}\u{1171}.md", "\u{cde8}.md"));
+        assert!(same_part("caf\u{e9}.md", "cafe\u{301}.md"));
+        assert!(same_part("PLAN.md", "plan.md"));
+        assert!(!same_part("plan.md", "plans.md"));
+        assert!(!same_part("cafe.md", "caf\u{e9}.md"));
+    }
 
     #[test]
     fn a_name_is_checked_before_the_disk_is_asked() {

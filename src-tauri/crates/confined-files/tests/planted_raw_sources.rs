@@ -145,6 +145,28 @@ mod unix {
 /// A Windows name is matched without regard to case, and a reserved device name is no file. Sources:
 /// Microsoft, "Naming Files, Paths, and Namespaces"
 /// (learn.microsoft.com/windows/win32/fileio/naming-a-file): a path is not case-sensitive, and
+/// macOS keeps a file name as it was created and finds it by either normalization form, so a name
+/// a decomposing program wrote (NFD) is the file an agent typed in NFC names, not a link.
+#[cfg(target_os = "macos")]
+#[test]
+fn a_decomposed_name_on_disk_is_read_when_it_is_typed_composed() {
+    let planted = planted();
+    fs::write(planted.root.path().join("sources/cafe\u{301}.md"), "latte").expect("file");
+    assert_eq!(
+        read(&planted, "sources/caf\u{e9}.md"),
+        Ok(b"latte".to_vec())
+    );
+    fs::write(
+        planted.root.path().join("sources/\u{110e}\u{1171}.md"),
+        "hangul",
+    )
+    .expect("file");
+    assert_eq!(
+        read(&planted, "sources/\u{cde8}.md"),
+        Ok(b"hangul".to_vec())
+    );
+}
+
 /// `CON`, `PRN`, `AUX`, `NUL`, `COM1`-`COM9` and `LPT1`-`LPT9` name devices, also with an extension.
 #[cfg(windows)]
 mod windows {
