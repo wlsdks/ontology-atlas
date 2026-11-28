@@ -10,12 +10,11 @@
 //
 // Exit 1 if drift, 0 if clean.
 
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { resolve, join } from "node:path";
-import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
-// The detection lives in the MCP package, shared with the agent-callable validate_vault pathDrift surface.
-import { detectVaultPathDrift } from "../../mcp/src/drift/detect-drift.mjs";
-import { VAULT_SOURCES_DIR } from "../../mcp/src/schema.mjs";
+import { existsSync, statSync } from "node:fs";
+import { resolve } from "node:path";
+// The detection lives in the server: this script asks `validate_vault` for its `pathDrift`, the
+// same answer an agent gets, so the two cannot disagree.
+import { callMcpTool } from "../../mcp/scripts/call-tool.mjs";
 
 const COLORS = {
   red: "\x1b[31m",
@@ -81,28 +80,14 @@ if (!statSync(REPO).isDirectory()) {
   process.exit(2);
 }
 
-function walkMd(directory, out = [], root = directory) {
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name.startsWith(".")) continue;
-    const full = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      if (directory !== root || entry.name !== VAULT_SOURCES_DIR) walkMd(full, out, root);
-    } else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
-  }
-  return out;
+const validation = await callMcpTool(VAULT, "validate_vault", {}, { repoRoot: REPO });
+const { pathDrift } = validation;
+if (!pathDrift?.checked) {
+  process.stderr.write(`validate_vault did not check paths: ${pathDrift?.reason ?? "no pathDrift in its answer"}\n`);
+  process.exit(2);
 }
-
-// Delegates to the shared detector (one source of truth with validate_vault pathDrift); slug is
-// frontmatter.slug, else the file path.
-const docs = walkMd(VAULT).map((filePath) => {
-  const { frontmatter } = parseFrontmatter(readFileSync(filePath, "utf-8"));
-  return { slug: String(frontmatter.slug ?? "").trim() || filePath, frontmatter };
-});
-const { nodesScanned, pathsChecked, drifts } = detectVaultPathDrift({
-  docs,
-  repoRoot: REPO,
-  fileExists: existsSync,
-});
+const { pathsChecked, drifts } = pathDrift;
+const nodesScanned = pathDrift.nodesScanned;
 
 if (drifts.length === 0) {
   console.log(
