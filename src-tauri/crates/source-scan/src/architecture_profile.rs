@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 
 use answer_format::collation::compare_text;
 use answer_format::whitespace::trim;
-use vault_document::frontmatter::{Frontmatter, Value};
+use vault_document::frontmatter::{Frontmatter, Key, Value};
 
 use crate::source_scan_error::SourceScanError;
 
@@ -375,7 +375,7 @@ pub struct ProfileDocument<'a> {
 /// A canonical text of a frontmatter, whatever order its keys were written in: two mirrors of one
 /// profile can serialise differently.
 fn fingerprint(frontmatter: &Frontmatter) -> String {
-    let mut entries: Vec<(&String, &Value)> = frontmatter.iter().collect();
+    let mut entries: Vec<(&Key, &Value)> = frontmatter.iter().collect();
     entries.sort_by(|left, right| answer_format::utf16::compare(left.0, right.0));
     entries
         .iter()

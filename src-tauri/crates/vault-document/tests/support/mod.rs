@@ -20,7 +20,7 @@ fn others(document: &Document, key: &str) -> Vec<(String, Value)> {
         .frontmatter()
         .iter()
         .filter(|(name, _)| name.as_str() != key)
-        .map(|(name, value)| (name.clone(), value.clone()))
+        .map(|(name, value)| (name.to_string(), value.clone()))
         .collect()
 }
 

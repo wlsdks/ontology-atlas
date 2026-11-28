@@ -8,6 +8,7 @@ mod diagnostic;
 mod entry_line;
 mod inline;
 mod javascript_number;
+mod key;
 mod line;
 mod quoting;
 mod value;
@@ -15,46 +16,80 @@ mod value;
 pub use answer_format::key_order::in_object_order;
 pub use block::{read_block, ReadBlock, ReadEntry};
 pub use diagnostic::{Diagnostic, DiagnosticCode};
+pub use key::Key;
 pub use line::Line;
 pub use value::{Scalar, Value};
 
-use indexmap::IndexMap;
+use std::collections::HashMap;
+
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 
 /// The keys of a node and what each holds, in the order the file wrote them. A key written twice
 /// holds its last value at its first position. Written out, the keys come in the order a
 /// JavaScript object lists them ([`in_object_order`]).
+///
+/// The entries are a list, not a hash table: a node has a dozen keys, which a look along the list
+/// finds as soon as a hash would, and fifty thousand nodes keep fifty thousand fewer tables.
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct Frontmatter(IndexMap<String, Value>);
+pub struct Frontmatter(Box<[(Key, Value)]>);
+
+/// Past this many keys, a key written twice is found through a table while the entries are read.
+const KEYS_FOUND_BY_LOOKING: usize = 32;
 
 impl Serialize for Frontmatter {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut map = serializer.serialize_map(Some(self.0.len()))?;
-        for (key, value) in in_object_order(self.0.iter()) {
+        for (key, value) in in_object_order(self.iter()) {
             map.serialize_entry(key, value)?;
         }
         map.end()
     }
 }
 
+fn pair((key, value): &(Key, Value)) -> (&Key, &Value) {
+    (key, value)
+}
+
+type Entries<'a> =
+    std::iter::Map<std::slice::Iter<'a, (Key, Value)>, fn(&(Key, Value)) -> (&Key, &Value)>;
+
 impl Frontmatter {
-    pub fn from_entries(entries: &[ReadEntry]) -> Self {
-        let mut keys = IndexMap::with_capacity(entries.len());
+    pub fn from_entries(entries: Vec<ReadEntry>) -> Self {
+        let mut keys: Vec<(Key, Value)> = Vec::with_capacity(entries.len());
+        let mut positions: HashMap<String, usize> = HashMap::new();
+        let by_table = entries.len() > KEYS_FOUND_BY_LOOKING;
         for entry in entries {
-            if let Some(value) = &entry.value {
-                keys.insert(entry.key.clone(), value.clone());
+            let Some(value) = entry.value else {
+                continue;
+            };
+            let written = if by_table {
+                positions.get(&entry.key).copied()
+            } else {
+                keys.iter().position(|(key, _)| *key == entry.key.as_str())
+            };
+            match written.and_then(|at| keys.get_mut(at)) {
+                Some((_, held)) => *held = value,
+                None => {
+                    if by_table {
+                        positions.insert(entry.key.clone(), keys.len());
+                    }
+                    keys.push((Key::new(&entry.key), value));
+                }
             }
         }
-        Self(keys)
+        Self(keys.into_boxed_slice())
     }
 
     pub fn get(&self, key: &str) -> Option<&Value> {
-        self.0.get(key)
+        self.0
+            .iter()
+            .find(|(held, _)| *held == key)
+            .map(|(_, value)| value)
     }
 
     pub fn contains_key(&self, key: &str) -> bool {
-        self.0.contains_key(key)
+        self.get(key).is_some()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -66,17 +101,19 @@ impl Frontmatter {
     }
 
     /// The keys and values in the order they were written.
-    pub fn iter(&self) -> indexmap::map::Iter<'_, String, Value> {
-        self.0.iter()
+    pub fn iter(&self) -> Entries<'_> {
+        self.0
+            .iter()
+            .map(pair as fn(&(Key, Value)) -> (&Key, &Value))
     }
 
     /// The keys and values in the order a JavaScript object lists them.
-    pub fn in_object_order(&self) -> Vec<(&String, &Value)> {
-        in_object_order(self.0.iter())
+    pub fn in_object_order(&self) -> Vec<(&Key, &Value)> {
+        in_object_order(self.iter())
     }
 
     pub fn keys(&self) -> impl Iterator<Item = &str> {
-        self.0.keys().map(String::as_str)
+        self.0.iter().map(|(key, _)| key.as_str())
     }
 
     /// The text under `key`, when it holds text.
@@ -97,10 +134,10 @@ impl Frontmatter {
 }
 
 impl<'a> IntoIterator for &'a Frontmatter {
-    type Item = (&'a String, &'a Value);
-    type IntoIter = indexmap::map::Iter<'a, String, Value>;
+    type Item = (&'a Key, &'a Value);
+    type IntoIter = Entries<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
+        self.iter()
     }
 }

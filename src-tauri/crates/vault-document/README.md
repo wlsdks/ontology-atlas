@@ -10,7 +10,7 @@ Every module of `src/` is named here once.
 | Question | File |
 |---|---|
 | How is a file split into bytes I can change one line of? | `document.rs` (`Document`, `RawShape`, `parts`, `entry_range`) |
-| How is a frontmatter block read? | `frontmatter/`: `block.rs` walks entries; `entry_line`, `inline`, `block_scalar`, `quoting`, `javascript_number` read one shape each; `line.rs` is one line; `value.rs` is what a key holds; `diagnostic.rs` is a fault on a line; `key_order.rs` writes keys in the order a script object lists them |
+| How is a frontmatter block read? | `frontmatter/`: `block.rs` walks entries; `entry_line`, `inline`, `block_scalar`, `quoting`, `javascript_number` read one shape each; `line.rs` is one line; `value.rs` is what a key holds; `key.rs` is a key's name (a name the format defines is stored once for the program); `diagnostic.rs` is a fault on a line; `key_order.rs` writes keys in the order a script object lists them |
 | What kinds, fields and review states exist? | `schema.rs` (`KNOWN_KINDS`, `GRAPH_ARRAY_KEYS`), `starter_body.rs` |
 | What is wrong with one document? | `validation.rs`, `body_findings.rs`, `evidence_limit.rs`, `meaning_wording.rs` |
 | What is wrong only across the vault? | `vault_issues.rs` (dangling references, duplicate slugs and uids) |

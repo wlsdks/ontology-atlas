@@ -150,7 +150,14 @@ fn read_entry_at(lines: &[Line<'_>], index: usize, block: &mut ReadBlock) -> usi
             }
             Some(Nested::Mapping) => {
                 let (members, next) = read_block_mapping(lines, index + 1, &mut block.diagnostics);
-                block.finish_entry(key, Value::Map(members), index, next, line_number, true);
+                block.finish_entry(
+                    key,
+                    Value::Map(Box::new(members)),
+                    index,
+                    next,
+                    line_number,
+                    true,
+                );
                 next
             }
             None => {
@@ -187,7 +194,7 @@ fn read_entry_at(lines: &[Line<'_>], index: usize, block: &mut ReadBlock) -> usi
         let members = read_inline_mapping(&value, line_number, &mut block.diagnostics);
         block.finish_entry(
             key,
-            Value::Map(members),
+            Value::Map(Box::new(members)),
             index,
             index + 1,
             line_number,
