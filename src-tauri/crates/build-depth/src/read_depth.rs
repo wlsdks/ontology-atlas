@@ -9,10 +9,9 @@ use confined_files::SourceFiles;
 use source_reads::ReadsUnder;
 use vault_document::LoadedDocument;
 
-use crate::line_cites::{cited_symbol, CitedText};
+use crate::line_cites::{cited_symbol, line_cites, served_lines, CitedText};
 use crate::node_fields::{kind_of, node_path};
 use crate::rule_without_read_lines::{cited_lines_decide, pre_section_paragraphs, states_rule};
-use crate::session_cites::{cite_was_served, session_cites};
 
 const READ_CALL_SELECTORS: usize = 16;
 
@@ -72,8 +71,8 @@ pub(crate) fn measure_reads(
         .iter()
         .filter_map(|document| {
             let body = body_of(document);
-            let read = session_cites(&body, Some(reads), source).iter().any(|cite| {
-                cite_was_served(reads, cite) && cited_lines_decide(source, &mut texts, cite)
+            let read = line_cites(&body, source).iter().any(|cite| {
+                served_lines(reads, cite) && cited_lines_decide(source, &mut texts, cite)
             });
             (!read).then(|| row_of(document, &body))
         })
@@ -107,8 +106,8 @@ pub(crate) fn measure_rules(
         if !states {
             continue;
         }
-        let exact = session_cites(&body, reads, source).iter().any(|cite| {
-            judged.is_none_or(|reads| cite_was_served(reads, cite))
+        let exact = line_cites(&body, source).iter().any(|cite| {
+            judged.is_none_or(|reads| served_lines(reads, cite))
                 && cited_lines_decide(source, &mut texts, cite)
         });
         if !exact {

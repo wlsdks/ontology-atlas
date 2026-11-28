@@ -3,7 +3,7 @@
 //! `Not mapped yet` lines. `validate_vault` reports the same measure as `finalizeGate`, so an
 //! agent sees the refusal before it asks for it.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use confined_files::SourceFiles;
 use repository_survey::{repo_text, AbilityKind, AbilityRow, Survey};
@@ -13,7 +13,9 @@ use vault_document::LoadedDocument;
 
 use crate::ability_placement::{place_abilities, Placement};
 use crate::area_coverage::{measure_areas, AreaCoverage};
-use crate::node_fields::{kind_of, project_of, refs_of, SlugResolver};
+use crate::capability_links::{capability_links, CapabilityLinks};
+use crate::dependency_both_ways::dependency_edges;
+use crate::node_fields::{kind_of, project_of};
 use crate::not_mapped_lines::{line_gap, lines_to_keep};
 use crate::read_depth::{
     cite_repair, measure_reads, measure_rules, read_call, CapabilityRow, ReadDepth, RuleDepth,
@@ -23,13 +25,6 @@ use crate::role_placement::{measure_roles, RoleDepth, ROLE_REPAIR};
 const LISTED: usize = 12;
 const EDGES_PER_CAPABILITY: usize = 2;
 const ABILITY_EDGES_PER_CAPABILITY: usize = 3;
-const DEPENDENCY_KEYS: [&str; 2] = ["dependencies", "depends_on"];
-
-struct AbilityEdges {
-    edges: usize,
-    /// Capabilities on no capability-to-capability edge, sorted.
-    alone: Vec<String>,
-}
 
 /// The measure of a map's depth. Fields are read through the functions of this file.
 pub struct BuildDepth<'a> {
@@ -37,7 +32,7 @@ pub struct BuildDepth<'a> {
     abilities: Option<(usize, Vec<&'a AbilityRow>)>,
     reads: Option<ReadDepth>,
     rules: RuleDepth,
-    ability_edges: AbilityEdges,
+    ability_edges: CapabilityLinks<'a>,
     roles: Option<RoleDepth>,
     areas: Option<AreaCoverage<'a>>,
     capabilities: usize,
@@ -53,48 +48,8 @@ pub struct BuildDepthInput<'a> {
     pub source: Option<&'a dyn SourceFiles>,
 }
 
-/// Every `depends_on` edge as `(from, to)` slugs that resolve, repeats kept.
-fn dependency_edges(documents: &[LoadedDocument]) -> Vec<(&str, &str)> {
-    let resolver = SlugResolver::of(documents);
-    let mut edges = Vec::new();
-    for document in documents {
-        for reference in refs_of(document, &DEPENDENCY_KEYS) {
-            if let Some(to) = resolver.resolve(reference) {
-                if to != document.slug() {
-                    edges.push((document.slug(), to));
-                }
-            }
-        }
-    }
-    edges
-}
-
-fn measure_ability_edges(documents: &[LoadedDocument], edges: &[(&str, &str)]) -> AbilityEdges {
-    let capabilities: HashSet<&str> = documents
-        .iter()
-        .filter(|document| kind_of(document) == "capability")
-        .map(LoadedDocument::slug)
-        .collect();
-    let between: Vec<&(&str, &str)> = edges
-        .iter()
-        .filter(|(from, to)| capabilities.contains(from) && capabilities.contains(to))
-        .collect();
-    let linked: HashSet<&str> = between.iter().flat_map(|(from, to)| [*from, *to]).collect();
-    let mut alone: Vec<String> = capabilities
-        .iter()
-        .filter(|slug| !linked.contains(**slug))
-        .map(|slug| (*slug).to_string())
-        .collect();
-    alone.sort();
-    AbilityEdges {
-        edges: between.len(),
-        alone,
-    }
-}
-
 pub fn measure_build_depth<'a>(input: &BuildDepthInput<'a>) -> BuildDepth<'a> {
     let documents = input.documents;
-    let edges = dependency_edges(documents);
     let abilities = input.survey.map(|survey| {
         let rows = &survey.map.abilities;
         let placements = place_abilities(documents, rows);
@@ -124,7 +79,7 @@ pub fn measure_build_depth<'a>(input: &BuildDepthInput<'a>) -> BuildDepth<'a> {
             .reads
             .map(|reads| measure_reads(documents, reads, input.source)),
         rules: measure_rules(documents, input.reads, input.source),
-        ability_edges: measure_ability_edges(documents, &edges),
+        ability_edges: capability_links(documents),
         roles: input
             .reads
             .and_then(|reads| measure_roles(documents, reads, input.source)),
@@ -133,7 +88,7 @@ pub fn measure_build_depth<'a>(input: &BuildDepthInput<'a>) -> BuildDepth<'a> {
             .iter()
             .filter(|document| kind_of(document) == "capability")
             .count(),
-        depends_on: edges.len(),
+        depends_on: dependency_edges(documents).len(),
     }
 }
 
@@ -283,7 +238,7 @@ pub fn competency_depth_refusals(answered: &[&str], depth: &BuildDepth<'_>) -> V
                 "- impact: {} depends_on edges run from one capability to another for {} capabilities, so \"what else stops working\" ends at shared roles. Next call: add_relations for each ability that needs another to have run, be configured or be present (none touch {}), each why citing the read lines that show it. {}",
                 edges.edges,
                 depth.capabilities,
-                listed(&edges.alone, Clone::clone),
+                listed(&edges.alone, |slug| (*slug).to_string()),
                 fallback("impact", "conditions between abilities are recorded for only part of the map"),
             ));
         }

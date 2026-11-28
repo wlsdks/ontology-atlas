@@ -4,7 +4,7 @@
 //! and the next files to map. A reader who wants the rest asks for the next page; a full list in
 //! every answer was about 7,000 tokens a call.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use confined_files::SourceFiles;
 use repository_survey::{AbilityRow, Survey};
@@ -14,7 +14,7 @@ use vault_document::{Issue, LoadedDocument};
 
 use crate::ability_placement::{place_abilities, Placement};
 use crate::area_coverage::{measure_areas, AreaCoverage};
-use crate::dependency_both_ways::dependency_edges;
+use crate::capability_links::capability_links;
 use crate::line_cites::{cited_lines_exist, line_cites, served_lines, CitedText};
 use crate::node_fields::{kind_of, node_path};
 use crate::not_mapped_lines::lines_to_keep;
@@ -301,22 +301,10 @@ fn unplaced_row(row: &AbilityRow) -> UnplacedRow {
 }
 
 fn ability_edges(documents: &[LoadedDocument]) -> Option<AbilityEdgeSummary> {
-    let capabilities: HashSet<&str> = documents
-        .iter()
-        .filter(|document| kind_of(document) == "capability")
-        .map(LoadedDocument::slug)
-        .collect();
-    if capabilities.len() < 2 {
-        return None;
-    }
-    let between: Vec<(&str, &str)> = dependency_edges(documents)
-        .into_iter()
-        .filter(|(from, to)| capabilities.contains(from) && capabilities.contains(to))
-        .collect();
-    let linked: HashSet<&str> = between.iter().flat_map(|(from, to)| [*from, *to]).collect();
-    Some(AbilityEdgeSummary {
-        edges: between.len(),
-        capabilities_without_edge: capabilities.difference(&linked).count(),
+    let links = capability_links(documents);
+    (links.capabilities >= 2).then(|| AbilityEdgeSummary {
+        edges: links.edges,
+        capabilities_without_edge: links.alone.len(),
     })
 }
 

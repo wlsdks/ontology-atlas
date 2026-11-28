@@ -4,6 +4,7 @@ mod ability_placement;
 mod area_coverage;
 mod code_in_text;
 mod coverage;
+mod capability_links;
 mod dependency_both_ways;
 mod finalize_depth;
 mod line_cites;
