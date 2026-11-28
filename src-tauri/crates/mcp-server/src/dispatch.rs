@@ -72,6 +72,11 @@ impl<'a> CallContext<'a> {
         self.session.source_reads()
     }
 
+    /// The surveys of the repositories asked about, kept until a repository changes.
+    pub fn survey_cache(&self) -> &repository_survey::SurveyCache {
+        self.session.survey_cache()
+    }
+
     /// Whether the client cancelled this request or ended the session.
     pub fn is_cancelled(&self) -> bool {
         self.was_cancelled() || self.session.is_closed()

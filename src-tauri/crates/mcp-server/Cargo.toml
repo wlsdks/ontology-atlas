@@ -20,6 +20,8 @@ path = "src/main.rs"
 [dependencies]
 analysis-archive-format = { path = "../analysis-archive-format" }
 answer-format = { path = "../answer-format" }
+# What a first map still lacks against its survey: the coverage and the findings that need it.
+build-depth = { path = "../build-depth" }
 confined-files = { path = "../confined-files" }
 hardened-git = { path = "../hardened-git" }
 vault-document = { path = "../vault-document" }

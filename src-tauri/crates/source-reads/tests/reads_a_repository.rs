@@ -247,3 +247,21 @@ fn a_windows_device_name_is_refused_before_the_disk_is_asked() {
         ]
     );
 }
+
+/// NTFS opens a name by any letter case (Microsoft, "Naming Files, Paths, and Namespaces": "Do not
+/// assume case sensitivity"), so a selector that spells a path in other letters than the disk
+/// holds reads the file and is served, as it is on a case-insensitive macOS volume.
+#[cfg(windows)]
+#[test]
+fn a_path_in_other_letters_than_the_disk_holds_is_served_on_ntfs() {
+    let (_base, root) = repository(&[("src/Order.ts", "export const order = 1;\n")]);
+    let read = evidence(
+        &root,
+        serde_json::json!([{ "path": "SRC/ORDER.TS", "startLine": 1, "maxLines": 1 }]),
+    );
+    assert!(
+        matches!(read.rows.as_slice(), [SourceRow::Read(_)]),
+        "{:?}",
+        read.rows
+    );
+}

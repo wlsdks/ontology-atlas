@@ -32,6 +32,7 @@ mod sibling_families;
 mod source_class;
 mod subcommand_rows;
 mod survey_areas;
+mod survey_cache;
 mod survey_files;
 mod survey_text;
 mod tooling_path;
@@ -44,12 +45,14 @@ mod worker_rows;
 pub use ability_row::{ability_row_text, AbilityKind, AbilityRow};
 pub use ability_rows::ABILITY_LIMIT;
 pub use breadth_map::{
-    build_breadth_map, render_breadth_map, AreaRow, BreadthMap, Size, Survey, SurveyRequest,
-    UnitRow, SURVEY_RESPONSE_CHARS,
+    build_breadth_map, render_breadth_map, AbilityFile, AreaRow, BreadthMap, MainFile, Size,
+    Survey, SurveyRequest, UnitRow, SURVEY_RESPONSE_CHARS,
 };
 pub use git_ignored_paths::git_ignored_paths;
 pub use js_pattern::{is_js_space, js_regex, js_trim_end};
 pub use source_class::SourceClass;
+pub use survey_areas::AreaLocator;
+pub use survey_cache::{SurveyAsked, SurveyCache};
 pub use survey_files::SurveyFiles;
 pub use survey_text::{format_count, repo_line, repo_text};
 pub use unit_collection::{

@@ -55,17 +55,8 @@ fn entry_point_inside(source: &dyn SourceFiles, folder: &Path) -> Option<String>
 }
 
 fn message(slug: &str, path: &str, suggestion: Option<&str>) -> String {
-    let opener = match suggestion {
-        Some(file) => format!("Name the one file an unfamiliar agent should open first \u{2014} `{file}` is what this folder offers as an entry point"),
-        None => "Name the one file an unfamiliar agent should open first".to_string(),
-    };
-    let named = suggestion.map_or_else(
-        || format!("{}/<file>", path.trim_end_matches('/')),
-        str::to_string,
-    );
-    format!(
-        "\"{slug}\" cites `path: {path}`, and that is a directory. The write succeeded, but drift on a folder can never be checked: a folder's timestamp moves on almost any commit underneath it, so this node's evidence is permanently \"unknown\" rather than current or stale. {opener}: patch_concept({{slug:\"{slug}\", frontmatter:{{path:\"{named}\"}}}}). Keep the folder in the body as context if it matters; the frontmatter slot is for the one entry point."
-    )
+    let entry = suggestion.map_or_else(String::new, |file| format!("; entry point: `{file}`"));
+    format!("\"{slug}\" cites `path: {path}`, a directory, so its drift can never be checked{entry}")
 }
 
 /// The finding for `document` when its `path:` names a folder of the repository `source` reads,

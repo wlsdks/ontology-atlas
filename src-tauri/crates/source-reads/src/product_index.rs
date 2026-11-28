@@ -75,6 +75,7 @@ impl ProductIndex {
                 ignore: extra_ignore,
                 vault_exclusion: None,
                 git_ignored: &git_ignored,
+                kept_files: &std::collections::HashMap::new(),
             },
         );
         let files = collection

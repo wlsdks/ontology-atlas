@@ -548,6 +548,21 @@ const FIXTURE_BUILDERS = {
     },
   },
 
+  // A vault whose `sources` folder is a link to a folder outside it: no tool may list, read or
+  // search what lies behind the link.
+  'sources-folder-link': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      write(dir, v('linked.md'), projectNode('linked', 'Linked', ['domains/inside']));
+      write(dir, v('domains/inside.md'), domainNode('domains/inside', 'Inside', ['capabilities/normal']));
+      write(dir, v('capabilities/normal.md'), capabilityNode('capabilities/normal', 'Normal', 'domains/inside'));
+      write(dir, 'outside-sources/claims-a-kind.md', node({ slug: 'claims-a-kind', kind: 'element', title: 'Claims A Kind', body: 'SECRET-SENTINEL-linked-sources' }));
+      write(dir, 'outside-sources/notes.md', '# Notes\n\nSECRET-SENTINEL-linked-sources-notes\n');
+      symlinkSync('../outside-sources', path.join(dir, v('sources')));
+    },
+  },
+
   library: {
     vaultRel: 'vault',
     build(dir) {

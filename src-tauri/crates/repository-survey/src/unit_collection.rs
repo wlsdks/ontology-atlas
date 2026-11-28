@@ -133,6 +133,8 @@ pub struct CollectOptions<'a> {
     pub vault_exclusion: Option<String>,
     /// Paths Git ignores below the root, in NFC.
     pub git_ignored: &'a HashSet<String>,
+    /// Files of an earlier survey that cannot have changed, by path; they are not read again.
+    pub kept_files: &'a HashMap<&'a str, &'a SurveyedFile>,
 }
 
 fn count_lines(text: &str) -> usize {
@@ -282,7 +284,10 @@ pub fn collect_source_units(files: &SurveyFiles<'_>, options: &CollectOptions<'_
     let (walked, truncated) = walk_source_files(source, options);
     let surveyed: Vec<SurveyedFile> = walked
         .into_par_iter()
-        .map(|(path, absolute)| survey_file(source, path, &absolute))
+        .map(|(path, absolute)| match options.kept_files.get(path.as_str()) {
+            Some(kept) => (*kept).clone(),
+            None => survey_file(source, path, &absolute),
+        })
         .collect();
     let extra_ignore: Vec<String> = DEFAULT_IGNORE
         .iter()

@@ -493,6 +493,10 @@ dependencies = [
  "answer-format",
  "confined-files",
  "regex",
+ "repository-survey",
+ "serde",
+ "serde_json",
+ "source-reads",
  "source-scan",
  "vault-document",
 ]
@@ -3031,6 +3035,7 @@ version = "0.1.0"
 dependencies = [
  "analysis-archive-format",
  "answer-format",
+ "build-depth",
  "confined-files",
  "hardened-git",
  "indexmap 2.14.0",

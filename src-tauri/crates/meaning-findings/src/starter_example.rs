@@ -4,7 +4,6 @@
 
 use answer_format::collation::compare_text;
 use answer_format::whitespace::trim;
-use vault_document::schema::folder_for_kind;
 use vault_document::LoadedDocument;
 
 use crate::finding::Finding;
@@ -60,15 +59,13 @@ fn has_untouched_starter_body(body: &str) -> bool {
         .all(|marker| lowered.contains(marker))
 }
 
-fn message(starter: &str, kind: &str, real: &str, rename_to: &str, untouched_body: bool) -> String {
+fn message(starter: &str, kind: &str, real: &str, untouched_body: bool) -> String {
     let body_note = if untouched_body {
-        format!(" Its body is still the starter's own explanation of what a {kind} is, so a reader who opens it asking what this {kind} does gets a definition of the word instead.")
+        format!("; its body is still the starter's own explanation of what a {kind} is")
     } else {
         String::new()
     };
-    format!(
-        "\"{starter}\" is the {kind} the `init` starter wrote as a shape to copy, and \"{real}\" is now a real {kind} beside it. The write succeeded and nothing here blocks it. While the starter was the only {kind} in the vault it was instructions; now it is a fake concept sitting on the map next to the real ones, and the only relations it has run to the other two starter examples.{body_note} Delete it: delete_concept({{slug:\"{starter}\"}}) without `confirm` returns a dry-run listing its backlinks first \u{2014} they are the other two starter examples, so delete all three together and the graph loses nothing. If you meant to keep this one, it is not a starter any more: patch_concept it into a real concept, then give it a real address with rename_concept({{oldSlug:\"{starter}\", newSlug:\"{rename_to}\", confirm:true}}). The UID does not change, so nothing loses its identity."
-    )
+    format!("\"{starter}\" is the {kind} the `init` starter wrote as a shape to copy, and \"{real}\" is now a real {kind} beside it{body_note}")
 }
 
 struct Candidate<'a> {
@@ -116,20 +113,13 @@ pub fn starter_example_findings(documents: &[LoadedDocument]) -> Vec<Finding> {
             .document
             .body()
             .is_ok_and(|body| has_untouched_starter_body(&body));
-        let rename_to = format!("{}<real-name>", folder_for_kind(&candidate.kind));
         findings.push(Finding {
             code: "starter-example-node",
             slug: address.to_string(),
             key: "slug".to_string(),
             refs: vec![real.document.slug().to_string()],
             count: 1,
-            message: message(
-                address,
-                &candidate.kind,
-                real.document.slug(),
-                &rename_to,
-                untouched,
-            ),
+            message: message(address, &candidate.kind, real.document.slug(), untouched),
         });
     }
     findings.sort_by(|left, right| compare_text(&left.slug, &right.slug));
