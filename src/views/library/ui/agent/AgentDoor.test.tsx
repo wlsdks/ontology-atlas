@@ -31,11 +31,11 @@ describe("the door out of a blocked step", () => {
      */
     expect(door).toHaveTextContent(koMessages.navRail.agents);
     /*
-     * Locale-prefixed, because it is `@/i18n/navigation`'s `Link` — `/ko/agents`, not
-     * `/agents/`. Asserting the prefix is the point: a raw `next/link` here would drop
+     * Locale-prefixed, because it is `@/i18n/navigation`'s `Link` — `/ko/agents/`, not
+     * `/agents/`. Asserting the prefix is the point: a plain anchor here would drop
      * the locale and bounce the person through a redirect.
      */
-    expect(door.getAttribute("href")).toBe(`/ko${DESTINATION_HREF.agents.replace(/\/$/, "")}`);
+    expect(door.getAttribute("href")).toBe(`/ko${DESTINATION_HREF.agents}`);
   });
 
   it("is one control, not a sentence", () => {

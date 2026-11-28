@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Download } from 'lucide-react';
 import { useTranslations } from 'use-intl';
 import { Link } from '@/i18n/navigation';
@@ -31,10 +31,7 @@ const TEST_IDS = {
   },
 } as const;
 
-/**
- * The sample map is the download page's second way in and its heaviest route, so it is fetched
- * once a visitor points at, focuses or touches a way to it, not as soon as the link is on screen.
- */
+/** The sample map is the download page's second way in; a link to its page, which loads when it is followed. */
 function SampleLink({
   href,
   className,
@@ -46,18 +43,8 @@ function SampleLink({
   children: ReactNode;
   'data-testid': string;
 }) {
-  const [intent, setIntent] = useState(false);
-  const want = () => setIntent(true);
   return (
-    <Link
-      href={href}
-      prefetch={intent ? null : false}
-      onPointerEnter={want}
-      onFocus={want}
-      onTouchStart={want}
-      data-testid={testId}
-      className={className}
-    >
+    <Link href={href} data-testid={testId} className={className}>
       {children}
     </Link>
   );

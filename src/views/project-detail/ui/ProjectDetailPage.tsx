@@ -688,17 +688,17 @@ export function ProjectDetailPage({
                 {t("libraryCounts", { sources: librarySources, wikiPages: libraryWikiPages })}
                 {soleProject ? null : ` · ${t("surfaceFolderScope")}`}
               </span>
-              <Link href="/library/" prefetch={false} className={quietLinkClass}>
+              <Link href="/library/" className={quietLinkClass}>
                 {t("surfaceOpenLibrary")}
               </Link>
             </span>
           ) : null}
           {nativeVaultRootPath !== null ? (
-            <Link href="/architecture/" prefetch={false} data-testid="project-detail-harness-link" className={quietLinkClass}>
+            <Link href="/architecture/" data-testid="project-detail-harness-link" className={quietLinkClass}>
               {t("surfaceOpenHarness")}
             </Link>
           ) : null}
-          <Link href="/changes/" prefetch={false} data-testid="project-detail-changes-link" className={quietLinkClass}>
+          <Link href="/changes/" data-testid="project-detail-changes-link" className={quietLinkClass}>
             {t("surfaceOpenChanges")}
           </Link>
           {connectedProjects.length > 0 ? (

@@ -6,5 +6,4 @@
  */
 export { readGatewayDocument, readVaultDoc } from './gateway-doc/lib/read-vault-doc';
 export { readGuideDocument } from './gateway-doc/lib/read-guide-document';
-export { guideChapterMeta } from './gateway-doc/lib/guide-chapter-meta';
 export { readSampleCensus } from './sample-map/lib/read-sample-census';

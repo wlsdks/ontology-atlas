@@ -1,3 +1,6 @@
+import type { HarnessSearch } from '@/shared/lib/navigation/screen-searches';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
+
 const HARNESS_VIEWS = ['overview', 'architecture'] as const;
 
 export type HarnessView = (typeof HARNESS_VIEWS)[number];
@@ -27,10 +30,12 @@ export function parseHarnessView(raw: string | null | undefined): HarnessView {
  */
 const BLUEPRINT_ONLY_PARAMS = ['role', 'stage'] as const;
 
-export function resolveAddressView(params: URLSearchParams | null | undefined): HarnessView {
-  const raw = params?.get('view');
+export { harnessSearch, type HarnessSearch } from '@/shared/lib/navigation/screen-searches';
+
+export function resolveAddressView(search: HarnessSearch): HarnessView {
+  const raw = firstSearchText(search.view);
   if (raw) return parseHarnessView(raw);
-  if (params && BLUEPRINT_ONLY_PARAMS.some((name) => params.has(name))) return 'architecture';
+  if (BLUEPRINT_ONLY_PARAMS.some((name) => search[name] !== undefined)) return 'architecture';
   return DEFAULT_HARNESS_VIEW;
 }
 

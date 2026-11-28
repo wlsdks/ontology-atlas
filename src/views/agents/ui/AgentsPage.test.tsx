@@ -3,6 +3,7 @@ import { IntlProvider } from 'use-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
+import { parseSearch } from '@/shared/lib/navigation/atlas-search';
 import { AgentsPage } from './AgentsPage';
 
 vi.mock('@/i18n/navigation', () => ({
@@ -10,9 +11,6 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 let search = '';
-vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams(search),
-}));
 
 vi.mock('@/widgets/app-settings-menu', () => ({
   AcpRuntimeSettings: ({ embedded }: { embedded?: boolean }) => (
@@ -24,7 +22,9 @@ vi.mock('@/widgets/app-settings-menu', () => ({
 function renderPage(children?: React.ReactNode, mcpCount?: number) {
   return render(
     <IntlProvider locale="ko" messages={ko}>
-      <AgentsPage mcpCount={mcpCount}>{children}</AgentsPage>
+      <AgentsPage mcpCount={mcpCount} search={parseSearch(search)}>
+        {children}
+      </AgentsPage>
     </IntlProvider>,
   );
 }

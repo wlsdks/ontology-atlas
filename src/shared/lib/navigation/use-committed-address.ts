@@ -1,6 +1,7 @@
 import { useMatches } from '@tanstack/react-router';
+import { useMemo } from 'react';
 
-import { stringifySearch } from './atlas-search';
+import { parseSearch, stringifySearch, type AtlasSearch } from './atlas-search';
 
 export interface CommittedAddress {
   pathname: string;
@@ -24,4 +25,10 @@ export function useCommittedAddress(): CommittedAddress {
   return queryStart < 0
     ? { pathname: address, searchString: '' }
     : { pathname: address.slice(0, queryStart), searchString: address.slice(queryStart) };
+}
+
+/** The query of the screen on show, as the router parsed it; for chrome that reads a key beside the screen. */
+export function useCommittedSearch(): AtlasSearch {
+  const { searchString } = useCommittedAddress();
+  return useMemo(() => parseSearch(searchString), [searchString]);
 }

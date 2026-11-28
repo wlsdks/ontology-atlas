@@ -1,10 +1,10 @@
 import { use, type ReactNode } from 'react';
 import { IntlProvider, type IntlError } from 'use-intl';
-import { usePathname } from 'next/navigation';
 import type { AppLocale } from '@/i18n/locales';
 import { loadWorkbenchCatalog, useWorkbenchCatalog, type MessageCatalog } from '@/i18n/workbench-catalog';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
+import { useCommittedAddress } from '@/shared/lib/navigation/use-committed-address';
 
 /**
  * The workbench's messages. `/` starts from `rootMessages`, the subset the neutral frame and the
@@ -24,8 +24,8 @@ export function WorkbenchMessagesProvider({
   rootMessages: MessageCatalog;
   children: ReactNode;
 }) {
-  // `next/navigation`'s: the locale-aware one reads the provider this component mounts.
-  const pathname = usePathname() ?? '/';
+  // The whole path with its language: the locale-aware `usePathname` reads the provider this component mounts.
+  const { pathname } = useCommittedAddress();
   const atRoot = stripLocalePrefix(pathname) === '/';
   // Null on the server and while hydrating, so `/` hydrates with the subset its HTML was built from.
   const loaded = useWorkbenchCatalog(locale);

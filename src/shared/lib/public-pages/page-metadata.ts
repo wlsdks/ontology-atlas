@@ -11,7 +11,7 @@ interface MetadataImage {
 
 /** What a page says about itself in `<head>`: one field per tag the site writes, nothing the site never reads. */
 export interface PageMetadata {
-  title?: string | { absolute: string } | { default: string; template: string };
+  title?: string | { absolute: string };
   description?: string;
   keywords?: string[];
   authors?: { name: string; url?: string }[];

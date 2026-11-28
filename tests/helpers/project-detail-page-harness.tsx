@@ -14,8 +14,8 @@ import { ProjectDetailPage } from "@/views/project-detail/ui/ProjectDetailPage";
 // Mocking both router and search params breaks the replace → re-render loop, so it is reconnected here.
 const nav = vi.hoisted(() => ({ search: "", version: 0 }));
 
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(nav.search),
+vi.mock("@/shared/lib/navigation/use-committed-address", () => ({
+  useCommittedAddress: () => ({ pathname: "/", searchString: nav.search === "" ? "" : `?${nav.search}` }),
 }));
 
 vi.mock("@/i18n/navigation", () => ({

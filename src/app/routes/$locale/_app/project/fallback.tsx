@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
-import { ProjectFallbackClient } from '@/app/[locale]/project/fallback/ProjectFallbackClient';
+import { ProjectFallbackScreen } from '@/app-providers/project-screens/ProjectFallbackScreen';
+import { projectFallbackSearch } from '@/app-providers/project-screens/project-fallback-search';
 import { RouteLoadingFallback } from '@/shared/ui';
 import { ScreenTitle } from '../../../-site/ScreenTitle';
 import type { ScreenHead } from '../../../-site/screen-metadata';
@@ -11,13 +12,19 @@ const head: ScreenHead = {
   follow: false,
 };
 
-export const Route = createFileRoute('/$locale/_app/project/fallback')({ staticData: { head }, component: ProjectFallbackRoute });
+export const Route = createFileRoute('/$locale/_app/project/fallback')({
+  staticData: { head },
+  validateSearch: projectFallbackSearch,
+  component: ProjectFallbackRoute,
+});
 
 function ProjectFallbackRoute() {
+  const search = Route.useSearch();
+  const pathname = Route.useMatch({ select: (match) => match.pathname });
   return (
     <>
       <ScreenTitle head={head} />
-      <Suspense fallback={<RouteLoadingFallback />}><ProjectFallbackClient /></Suspense>
+      <Suspense fallback={<RouteLoadingFallback />}><ProjectFallbackScreen pathname={pathname} search={search} /></Suspense>
     </>
   );
 }

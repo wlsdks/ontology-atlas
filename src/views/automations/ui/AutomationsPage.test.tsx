@@ -1,3 +1,4 @@
+import { parseSearch } from '@/shared/lib/navigation/atlas-search';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { IntlProvider } from 'use-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -15,10 +16,6 @@ let search = '';
 vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: mocks.push }),
   Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
-}));
-
-vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams(search),
 }));
 
 function runner(overrides: Partial<RoundsRunnerValue> = {}): RoundsRunnerValue {
@@ -58,7 +55,7 @@ function pass(overrides: Partial<RoundPassEntry> = {}): RoundPassEntry {
 function renderPage(value: RoundsRunnerValue | null = runner(), onOpenDocumentSchedule = vi.fn(), onEditDocumentSchedule = vi.fn()) {
   return render(
     <IntlProvider locale="en" messages={en}>
-      <AutomationsPage runner={value} onOpenDocumentSchedule={onOpenDocumentSchedule} onEditDocumentSchedule={onEditDocumentSchedule} />
+      <AutomationsPage search={parseSearch(search)} runner={value} onOpenDocumentSchedule={onOpenDocumentSchedule} onEditDocumentSchedule={onEditDocumentSchedule} />
     </IntlProvider>,
   );
 }
@@ -194,7 +191,7 @@ describe('Automations manager', () => {
     const button = screen.getByTestId('automations-new');
     view.rerender(
       <IntlProvider locale="en" messages={en}>
-        <AutomationsPage runner={runner({ rounds: [round], state: { v: 1, rounds: [round] } })} onOpenDocumentSchedule={vi.fn()} onEditDocumentSchedule={vi.fn()} />
+        <AutomationsPage search={parseSearch(search)} runner={runner({ rounds: [round], state: { v: 1, rounds: [round] } })} onOpenDocumentSchedule={vi.fn()} onEditDocumentSchedule={vi.fn()} />
       </IntlProvider>,
     );
     expect(screen.getByTestId('automations-new')).toBe(button);

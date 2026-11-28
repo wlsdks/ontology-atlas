@@ -107,7 +107,7 @@ describe('one chat window: which branch owns it', () => {
   });
 
   it('a whole-graph flow request goes to the same window of the installed coding agent', () => {
-    const route = parseHomeRouteState(new URLSearchParams('ask=business-flow'));
+    const route = parseHomeRouteState({ ask: 'business-flow' });
 
     expect(route.askBusinessFlow).toBe(true);
     expect(

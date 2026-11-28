@@ -21,11 +21,6 @@ vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ replace: () => {} }),
 }));
 
-vi.mock("next/navigation", () => ({
-  usePathname: () => pathname,
-  useRouter: () => ({ replace: () => {}, push: () => {} }),
-}));
-
 function renderAt(path: string) {
   pathname = path;
   return rtlRender(

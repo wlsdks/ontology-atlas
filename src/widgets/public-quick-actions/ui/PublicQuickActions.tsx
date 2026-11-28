@@ -1,6 +1,6 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCommittedAddress } from "@/shared/lib/navigation/use-committed-address";
 import { useTranslations } from "use-intl";
 import { CopyPlus, PencilLine } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -21,12 +21,9 @@ export function PublicQuickActions({
 }: Props) {
   const t = useTranslations("publicQuickActions");
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { searchString } = useCommittedAddress();
 
-  const returnTo = useMemo(() => {
-    const query = searchParams.toString();
-    return query ? `${pathname}?${query}` : pathname;
-  }, [pathname, searchParams]);
+  const returnTo = `${pathname}${searchString}`;
 
   const newProjectHref = useMemo(() => {
     const url = new URL(

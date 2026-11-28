@@ -7,7 +7,8 @@ import {
   guideCanonicalPath,
   resolveGuidePage,
 } from '@/views/gateway-doc';
-import { guideChapterMeta, readGuideDocument } from '@/views/build-time-readers';
+import { readGuideDocument } from '@/views/build-time-readers';
+import { guideChapterMeta } from '@/app-providers/providers/guide-chapter-meta';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { routing } from '@/i18n/routing';
 import { JsonLd } from '@/shared/ui';

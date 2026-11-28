@@ -9,4 +9,5 @@ export {
   guideSourcePath,
   resolveGuidePage,
 } from './model/guide-pages';
+export type { GuidePage } from './model/guide-pages';
 export { CHANGELOG_CONTENT_LOCALES } from './model/changelog';

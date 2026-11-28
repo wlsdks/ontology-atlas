@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'use-intl';
-import { useSearchParams } from 'next/navigation';
 
 import { AgentSetupSection, SettingsGroupHeading } from '@/widgets/app-settings-menu';
 import { ConnectorsPanel, useVaultConnectors, type VaultConnectorsState } from '@/features/mcp-connectors';
@@ -11,15 +10,19 @@ import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vau
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import { MCP_SECTION_PARAM, parseMcpTab } from '../lib/mcp-tab-state';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
+
+import { MCP_SECTION_PARAM, parseMcpTab, type McpSearch } from '../lib/mcp-tab-state';
 
 export function McpPage({
   connectors: providedConnectors,
   handle: providedHandle,
+  search,
 }: {
   connectors?: VaultConnectorsState;
   handle?: FileSystemDirectoryHandle | null;
-} = {}) {
+  search: McpSearch;
+}) {
   const t = useTranslations('mcp');
   const tConnectors = useTranslations('connectors');
   const localVault = useLocalVault();
@@ -39,8 +42,7 @@ export function McpPage({
   const connectorsListed =
     handle !== null && connectors.status === 'ready' && connectors.connectors.length > 0;
 
-  const searchParams = useSearchParams();
-  const section = parseMcpTab(searchParams?.get(MCP_SECTION_PARAM));
+  const section = parseMcpTab(firstSearchText(search[MCP_SECTION_PARAM]));
   /*
    * The ?mcp=connectors query scrolls only once the store settles, or the list renders afterwards and
    * pushes the group away. It moves `app-shell-body-slot`, not `scrollIntoView`, which also

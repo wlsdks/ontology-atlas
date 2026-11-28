@@ -1,4 +1,3 @@
-import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'use-intl';
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type ComponentType } from 'react';
 
@@ -7,6 +6,8 @@ import type { DocsVaultPage } from '@/views/docs-vault';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
+import { stringifySearch } from '@/shared/lib/navigation/atlas-search';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
 import { DESTINATION_HREF, withQuery } from '@/shared/config/destinations';
 import {
   useLibraryIndexSegment,
@@ -16,6 +17,7 @@ import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vau
 import { PageHeaderBar, RouteLoadingFallback, TabBar } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
+import type { LibrarySearch } from './library-search';
 import { fadeIn, prefersReducedMotion, tabSwitchFade, whenIdle, whenLoaded, type LibraryTab } from './panel-arrival';
 import styles from './library-workspace.module.css';
 
@@ -42,37 +44,34 @@ function OntologyDocuments() {
 
 type OntologyView = 'documents' | 'sets';
 
-function carriedQuery(params: URLSearchParams): URLSearchParams {
-  const query = new URLSearchParams(params.toString());
-  const openSlug = new URLSearchParams(window.location.search).get('slug');
-  if (openSlug) query.set('slug', openSlug);
-  return query;
+/** Every key of the address, so a tab or view change keeps the open document and the flags beside it. */
+function carriedQuery(search: LibrarySearch): URLSearchParams {
+  return new URLSearchParams(stringifySearch(search));
 }
 
-export function LibraryWorkspace() {
+export function LibraryWorkspace({ search }: { search: LibrarySearch }) {
   const t = useTranslations('library');
   const format = useFormatter();
-  const params = useSearchParams();
   const router = useRouter();
   const vault = useLocalVault();
   const wikiCount = useMemo(() => selectWikiPages(vault.manifest?.docs ?? []).length, [vault.manifest?.docs]);
   const preferredSegment = useLibraryIndexSegment();
-  const requested = params.get('tab');
+  const requested = firstSearchText(search.tab);
   const tab: LibraryTab = requested === 'collections' || requested === 'ontology' ? 'ontology'
     : requested === 'sources' || requested === 'wiki' ? requested : preferredSegment;
-  const ontologyView: OntologyView = requested === 'collections' || params.get('ontologyView') === 'sets' ? 'sets' : 'documents';
+  const ontologyView: OntologyView = requested === 'collections' || firstSearchText(search.ontologyView) === 'sets' ? 'sets' : 'documents';
   useEffect(() => {
     if (requested !== 'rounds') return;
-    const round = params.get('round');
+    const round = firstSearchText(search.round);
     router.replace(withQuery(DESTINATION_HREF.automations, round ? { kind: 'documents', round } : { kind: 'documents' }));
-  }, [params, requested, router]);
+  }, [search, requested, router]);
   useEffect(() => {
     if (requested !== 'collections') return;
-    const query = new URLSearchParams(params.toString());
+    const query = carriedQuery(search);
     query.set('tab', 'ontology');
     query.set('ontologyView', 'sets');
     router.replace(`/library/?${query}${window.location.hash}`, { scroll: false });
-  }, [params, requested, router]);
+  }, [search, requested, router]);
   useEffect(() => whenIdle(() => void loadOntologyPage()), []);
   const handle = selectOpenVaultHandle(vault.status, vault.handle);
   const [toolsHost, setToolsHost] = useState<HTMLDivElement | null>(null);
@@ -103,14 +102,14 @@ export function LibraryWorkspace() {
   const selectTab = useCallback((next: LibraryTab) => {
     if (next === tab) return;
     if (next === 'sources' || next === 'wiki') writeLibraryIndexSegment(next);
-    const query = carriedQuery(params);
+    const query = carriedQuery(search);
     query.set('tab', next);
     router.push(`/library/?${query}${window.location.hash}`, { scroll: false });
-  }, [params, router, tab]);
+  }, [search, router, tab]);
   // The tab already shown takes its own press back to its home, so an open page needs no close control.
   const showLibraryHomeRef = useRef<(() => void) | null>(null);
   const selectOntologyView = (next: OntologyView) => {
-    const query = carriedQuery(params);
+    const query = carriedQuery(search);
     query.set('tab', 'ontology');
     query.set('ontologyView', next);
     router.push(`/library/?${query}${window.location.hash}`, { scroll: false });

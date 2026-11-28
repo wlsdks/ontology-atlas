@@ -12,26 +12,18 @@ vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: () => {}, back: () => {}, replace: () => {} }),
 }));
 
-vi.mock("next/navigation", () => ({
-  usePathname: () => "/ko/nope",
-  useRouter: () => ({ replace: () => {}, push: () => {} }),
-}));
-
 import { NotFoundScreen } from "./NotFoundScreen";
 import { RouteErrorScreen } from "./RouteErrorScreen";
 import { StandaloneMessagesProvider } from "./standalone-locale";
-import {
-  NOT_FOUND_PICK,
-  ROUTE_ERROR_PICK,
-  pickStandaloneMessages,
-} from "@/i18n/standalone-messages";
+import { NOT_FOUND_MESSAGES } from "@/i18n/not-found-messages";
+import { ROUTE_ERROR_MESSAGES } from "@/i18n/route-error-messages";
 
-const notFoundMessages = pickStandaloneMessages(NOT_FOUND_PICK);
+const notFoundMessages = NOT_FOUND_MESSAGES;
 
 /** Stands in for the root layout, which hands the boundary its copy. */
 function renderRouteError(digest?: string) {
   return render(
-    <StandaloneMessagesProvider messages={pickStandaloneMessages(ROUTE_ERROR_PICK)}>
+    <StandaloneMessagesProvider messages={ROUTE_ERROR_MESSAGES}>
       <RouteErrorScreen digest={digest} onRetry={() => {}} />
     </StandaloneMessagesProvider>,
   );

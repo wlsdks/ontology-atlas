@@ -130,7 +130,7 @@ test("hex board writes the address only on a real change: stale-only and 20 fore
   await page.waitForTimeout(1_500);
   expect((await writes()) - before, "stale only wrote the address").toBeLessThanOrEqual(1);
 
-  // Another writer re-writes the address without `view` 20 times, announcing each one the way
+  // Another writer re-writes the address without `view` 20 times, announcing each one with a popstate the way
   // the installed app's route verifier does. The board must not answer each with a write.
   await page.getByTestId("hex-board-stale-only").click();
   before = await writes();
@@ -140,7 +140,6 @@ test("hex board writes the address only on a real change: stale-only and 20 fore
     for (let i = 0; i < 20; i += 1) {
       history.replaceState({}, "", bare);
       window.dispatchEvent(new PopStateEvent("popstate"));
-      window.dispatchEvent(new Event("app:urlchange"));
       await new Promise((r) => setTimeout(r, 50));
     }
   });

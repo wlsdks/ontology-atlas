@@ -1,6 +1,5 @@
 import { useTranslations } from 'use-intl';
-import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 
 import { AcpRuntimeSettings, ModelConnections } from '@/widgets/app-settings-menu';
 import { PageHeaderBar, TabBar } from '@/shared/ui';
@@ -13,14 +12,16 @@ import { useSwapHeight } from '@/shared/lib/render-timing/use-presence';
 import { TermHint } from '@/shared/ui/hints/term-hint';
 import { PAGE_FRAME_FORM, PAGE_LEDE } from '@/shared/ui/tokens/page-frame';
 
-import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
-import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { buildAgentsTabHref, parseAgentsTab, type AgentsSearch, type AgentsTab } from '../lib/agents-tab-state';
+import { currentAddress, guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
 
 /** The MCP tab is `children` from the app layer, so neither view imports the other. */
 export function AgentsPage({
   children,
   mcpCount,
-}: { children?: ReactNode; mcpCount?: number } = {}) {
+  search,
+}: { children?: ReactNode; mcpCount?: number; search: AgentsSearch }) {
   const t = useTranslations('agents');
   const tBriefing = useTranslations('gitBriefing');
   const tMcp = useTranslations('mcp');
@@ -33,15 +34,12 @@ export function AgentsPage({
     [router],
   );
 
-  const searchParams = useSearchParams();
-  const [tab, setTabState] = useState<AgentsTab>(() =>
-    parseAgentsTab(searchParams?.get(AGENTS_TAB_PARAM)),
-  );
+  const paramTab = parseAgentsTab(firstSearchText(search.tab));
+  const [tab, setTabState] = useState<AgentsTab>(paramTab);
   /* Panels differ in height; swapping them in one frame would drop the scroll position. */
   const { hostRef: panelHostRef, capture: capturePanelHeight } = useSwapHeight(tab);
 
   /* A rail click or shortcut changes only the query; the view stays mounted, so the tab follows. */
-  const paramTab = parseAgentsTab(searchParams?.get(AGENTS_TAB_PARAM));
   // Adjusted during render: an effect would paint the stale tab for one frame.
   const [seenParamTab, setSeenParamTab] = useState(paramTab);
   if (paramTab !== seenParamTab) {
@@ -52,21 +50,12 @@ export function AgentsPage({
     }
   }
 
-  useEffect(() => {
-    const syncTabFromHistory = () => {
-      capturePanelHeight();
-      setTabState(parseAgentsTab(new URL(window.location.href).searchParams.get(AGENTS_TAB_PARAM)));
-    };
-    window.addEventListener('popstate', syncTabFromHistory);
-    return () => window.removeEventListener('popstate', syncTabFromHistory);
-  }, [capturePanelHeight]);
-
   const selectTab = (next: string) => {
     const nextTab = parseAgentsTab(next);
     capturePanelHeight();
     setTabState(nextTab);
     /* The history door, not a router navigation: that would move WebView focus off the strip. */
-    guardedHistoryWrite('replace', buildAgentsTabHref(nextTab, new URL(window.location.href)));
+    guardedHistoryWrite('replace', buildAgentsTabHref(nextTab, currentAddress()));
   };
 
   return (
@@ -114,7 +103,7 @@ export function AgentsPage({
           'pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]',
         )}
       >
-      {searchParams?.get('returnTo') === 'changes' && <Link href="/changes/" className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong', className: 'mb-4 w-fit' })}>{tBriefing('back')}</Link>}
+      {firstSearchText(search.returnTo) === 'changes' && <Link href="/changes/" className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong', className: 'mb-4 w-fit' })}>{tBriefing('back')}</Link>}
       <div className="min-w-0">
       <p data-testid="agents-lede" className={`max-w-2xl ${PAGE_LEDE}`}>
         {tab === 'mcp'

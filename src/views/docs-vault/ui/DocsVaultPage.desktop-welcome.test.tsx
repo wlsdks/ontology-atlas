@@ -21,9 +21,9 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-vi.mock("next/navigation", () => ({
-  usePathname: () => "/ko/docs/",
-  useSearchParams: () => new URLSearchParams(),
+vi.mock("@/shared/lib/navigation/use-committed-address", () => ({
+  useCommittedAddress: () => ({ pathname: "/ko/docs/", searchString: "" }),
+  useCommittedSearch: () => ({}),
 }));
 
 const messages: Record<string, string> = {

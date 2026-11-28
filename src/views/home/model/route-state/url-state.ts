@@ -1,10 +1,11 @@
 import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
 import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
-import {
-  BUSINESS_FLOW_ASK_VALUE,
-  ONTOLOGY_DEEPLINK_ASK_KEY,
-} from "@/entities/knowledge-graph";
+import { BUSINESS_FLOW_ASK_VALUE } from "@/entities/knowledge-graph";
+import { firstSearchText } from "@/shared/lib/navigation/search-text";
+import { HOME_QUERY_KEYS, type HomeQueryKey, type HomeSearch } from "@/shared/lib/navigation/screen-searches";
+
+export { HOME_QUERY_KEYS, homeSearch, type HomeSearch } from "@/shared/lib/navigation/screen-searches";
 import {
   parseNodeIntentKind,
   type FirstWordsNodeIntentKind,
@@ -72,33 +73,6 @@ function parseHomeMapView(value: string | null): HomeMapView | null {
 }
 
 type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
-
-/**
- * The registry's source of truth: `tests/contract/routes/scope-registry.contract.test.ts` requires
- * a `global` or `vault-scoped` tag for every key, so each new key answers "clear on vault change?".
- */
-export const HOME_QUERY_KEYS = {
-  project: "p",
-  category: "c",
-  hub: "hub",
-  impact: "impact",
-  pulse: "pulse",
-  mode: "mode",
-  pathSource: "pathFrom",
-  pathTarget: "pathTo",
-  pathSourceAlias: "from",
-  pathTargetAlias: "to",
-  create: "create",
-  workbench: "workbench",
-  edit: "edit",
-  index: "index",
-  open: "open",
-  realm: "realm",
-  recent: "recent",
-  constellation: "constellation",
-  ask: ONTOLOGY_DEEPLINK_ASK_KEY,
-  view: "view",
-} as const;
 
 /**
  * Keys whose value is a name from one vault: surviving a vault switch leaves them pointing at
@@ -349,24 +323,23 @@ export function resolveRealmNodeId(
   return bareMatch;
 }
 
-export function parseHomeRouteState(
-  searchParams: URLSearchParams,
-): HomeRouteState {
-  const impactParam = searchParams.get(HOME_QUERY_KEYS.impact);
-  const pulseParam = searchParams.get(HOME_QUERY_KEYS.pulse);
-  const modeParam = searchParams.get(HOME_QUERY_KEYS.mode);
-  const rawSelectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
+export function parseHomeRouteState(search: HomeSearch): HomeRouteState {
+  const get = (key: HomeQueryKey): string | null => firstSearchText(search[key]) ?? null;
+  const impactParam = get(HOME_QUERY_KEYS.impact);
+  const pulseParam = get(HOME_QUERY_KEYS.pulse);
+  const modeParam = get(HOME_QUERY_KEYS.mode);
+  const rawSelectedSlug = get(HOME_QUERY_KEYS.project);
   // A deep link honours its stated mode: selectedSlug never promotes to focus at parse time.
   const analysisMode = VALID_ANALYSIS_MODE.includes(modeParam as TopologyAnalysisMode)
     ? (modeParam as TopologyAnalysisMode)
     : DEFAULT_HOME_ROUTE_STATE.analysisMode;
   const pathSourceSlug =
-    searchParams.get(HOME_QUERY_KEYS.pathSource) ??
-    searchParams.get(HOME_QUERY_KEYS.pathSourceAlias) ??
+    get(HOME_QUERY_KEYS.pathSource) ??
+    get(HOME_QUERY_KEYS.pathSourceAlias) ??
     (analysisMode === "path" ? rawSelectedSlug : null);
   const pathTargetSlug =
-    searchParams.get(HOME_QUERY_KEYS.pathTarget) ??
-    searchParams.get(HOME_QUERY_KEYS.pathTargetAlias);
+    get(HOME_QUERY_KEYS.pathTarget) ??
+    get(HOME_QUERY_KEYS.pathTargetAlias);
   const selectedSlug =
     analysisMode === "path" && pathSourceSlug && pathTargetSlug
       ? null
@@ -379,15 +352,15 @@ export function parseHomeRouteState(
     : VALID_IMPACT.includes(impactParam as ProjectImpactMode)
       ? (impactParam as ProjectImpactMode)
       : DEFAULT_HOME_ROUTE_STATE.impactMode;
-  const workbench = searchParams.get(HOME_QUERY_KEYS.workbench);
+  const workbench = get(HOME_QUERY_KEYS.workbench);
   const meaningEditorIntent = workbench === "edit";
 
   return {
     selectedSlug,
-    activeCategory: searchParams.get(HOME_QUERY_KEYS.category),
+    activeCategory: get(HOME_QUERY_KEYS.category),
     focusedHubSlug: pathResultComplete
       ? null
-      : searchParams.get(HOME_QUERY_KEYS.hub),
+      : get(HOME_QUERY_KEYS.hub),
     impactMode,
     pulseMode: VALID_PULSE.includes(pulseParam as HomePulseMode)
       ? (pulseParam as HomePulseMode)
@@ -396,21 +369,21 @@ export function parseHomeRouteState(
     pathSourceSlug,
     pathTargetSlug,
     createNodeIntent:
-      searchParams.get(HOME_QUERY_KEYS.create) === "concept" || workbench === "create",
+      get(HOME_QUERY_KEYS.create) === "concept" || workbench === "create",
     meaningEditorIntent,
     meaningEditParam: meaningEditorIntent
-      ? searchParams.get(HOME_QUERY_KEYS.edit)
+      ? get(HOME_QUERY_KEYS.edit)
       : null,
-    indexState: parseIndexPanelStateParam(searchParams.get(HOME_QUERY_KEYS.index)),
-    askIntent: parseNodeIntentKind(searchParams.get(HOME_QUERY_KEYS.ask)),
-    askBusinessFlow: searchParams.get(HOME_QUERY_KEYS.ask) === BUSINESS_FLOW_ASK_VALUE,
+    indexState: parseIndexPanelStateParam(get(HOME_QUERY_KEYS.index)),
+    askIntent: parseNodeIntentKind(get(HOME_QUERY_KEYS.ask)),
+    askBusinessFlow: get(HOME_QUERY_KEYS.ask) === BUSINESS_FLOW_ASK_VALUE,
     expandedParents: parseExpandedParentsParam(
-      searchParams.get(HOME_QUERY_KEYS.open),
+      get(HOME_QUERY_KEYS.open),
     ),
-    realmSlug: searchParams.get(HOME_QUERY_KEYS.realm) || null,
-    recentWindow: parseRecentWindowParam(searchParams.get(HOME_QUERY_KEYS.recent)),
-    constellationIntent: searchParams.get(HOME_QUERY_KEYS.constellation) || null,
-    mapView: parseHomeMapView(searchParams.get(HOME_QUERY_KEYS.view)),
+    realmSlug: get(HOME_QUERY_KEYS.realm) || null,
+    recentWindow: parseRecentWindowParam(get(HOME_QUERY_KEYS.recent)),
+    constellationIntent: get(HOME_QUERY_KEYS.constellation) || null,
+    mapView: parseHomeMapView(get(HOME_QUERY_KEYS.view)),
   };
 }
 

@@ -1,12 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { parseSearch } from "@/shared/lib/navigation/atlas-search";
 import { useHomeRouteState } from "./use-home-route-state";
-
-// `useSearchParams` is only a re-render trigger, so a stub echoing the URL is enough.
-vi.mock("next/navigation", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("next/navigation")>()),
-  useSearchParams: () => new URLSearchParams(window.location.search),
-}));
 
 function currentUrl() {
   return `${window.location.pathname}${window.location.search}`;
@@ -22,7 +17,7 @@ describe("useHomeRouteState history contract", () => {
    * nothing.
    */
   it("adds no history entry when the resulting URL is unchanged", () => {
-    const { result } = renderHook(() => useHomeRouteState());
+    const { result } = renderHook(() => useHomeRouteState(parseSearch(window.location.search)));
     const before = window.history.length;
 
     act(() => {
@@ -34,7 +29,7 @@ describe("useHomeRouteState history contract", () => {
   });
 
   it("pushes exactly one entry for an update that changes the URL", () => {
-    const { result } = renderHook(() => useHomeRouteState());
+    const { result } = renderHook(() => useHomeRouteState(parseSearch(window.location.search)));
     const before = window.history.length;
 
     act(() => {
@@ -46,7 +41,7 @@ describe("useHomeRouteState history contract", () => {
   });
 
   it("the replace option overwrites the current entry for deep-link normalization", () => {
-    const { result } = renderHook(() => useHomeRouteState());
+    const { result } = renderHook(() => useHomeRouteState(parseSearch(window.location.search)));
     const before = window.history.length;
 
     act(() => {
@@ -63,7 +58,8 @@ describe("useHomeRouteState history contract", () => {
       "",
       "/ko/topology/?ask=business-flow&via=insights%3Aflow",
     );
-    const { result } = renderHook(() => useHomeRouteState());
+    const { result } = renderHook(() => useHomeRouteState(parseSearch(window.location.search)));
+    expect(result.current[0].askBusinessFlow).toBe(true);
 
     act(() => {
       result.current[1](
@@ -73,6 +69,5 @@ describe("useHomeRouteState history contract", () => {
     });
 
     expect(currentUrl()).toBe("/ko/topology/?via=insights%3Aflow");
-    expect(result.current[0].askBusinessFlow).toBe(false);
   });
 });

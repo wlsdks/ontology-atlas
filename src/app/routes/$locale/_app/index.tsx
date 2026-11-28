@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { ScreenTitle } from '../../-site/ScreenTitle';
 import type { ScreenHead } from '../../-site/screen-metadata';
 import { RouteLoadingFallback } from '@/shared/ui';
+import { homeSearch } from '@/shared/lib/navigation/screen-searches';
 import { RootEntryPage } from '@/views/root-entry';
 
 const head: ScreenHead = {
@@ -14,14 +15,19 @@ const head: ScreenHead = {
   absoluteTitle: true,
 };
 
-export const Route = createFileRoute('/$locale/_app/')({ staticData: { head }, component: LocaleRootRoute });
+export const Route = createFileRoute('/$locale/_app/')({
+  staticData: { head },
+  validateSearch: homeSearch,
+  component: LocaleRootRoute,
+});
 
 function LocaleRootRoute() {
+  const search = Route.useSearch();
   return (
     <>
       <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}>
-        <RootEntryPage />
+        <RootEntryPage search={search} />
       </Suspense>
     </>
   );

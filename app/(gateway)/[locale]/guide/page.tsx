@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { GatewayDocPage, GUIDE_ENTRY_PAGE } from '@/views/gateway-doc';
-import { guideChapterMeta, readGuideDocument } from '@/views/build-time-readers';
+import { readGuideDocument } from '@/views/build-time-readers';
+import { guideChapterMeta } from '@/app-providers/providers/guide-chapter-meta';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { JsonLd } from '@/shared/ui';
 

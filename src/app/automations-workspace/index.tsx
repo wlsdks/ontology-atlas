@@ -2,9 +2,9 @@ import { useState } from 'react';
 
 import { isOntologyRoundKind, type RoundRecord } from '@/entities/library-round';
 import { NewRoundSheet, useLibraryRounds, useVaultFolders } from '@/views/library';
-import { AutomationsPage } from '@/views/automations';
+import { AutomationsPage, type AutomationsSearch } from '@/views/automations';
 
-export function AutomationsWorkspace() {
+export function AutomationsWorkspace({ search }: { search: AutomationsSearch }) {
   const runner = useLibraryRounds();
   const [documentsSheetOpen, setDocumentsSheetOpen] = useState(false);
   const [documentsDraft, setDocumentsDraft] = useState(0);
@@ -20,7 +20,7 @@ export function AutomationsWorkspace() {
 
   return (
     <>
-      <AutomationsPage runner={runner} onOpenDocumentSchedule={() => openDocumentsSheet(null)} onEditDocumentSchedule={openDocumentsSheet} />
+      <AutomationsPage search={search} runner={runner} onOpenDocumentSchedule={() => openDocumentsSheet(null)} onEditDocumentSchedule={openDocumentsSheet} />
       {runner ? (
         <NewRoundSheet
           key={documentsDraft}

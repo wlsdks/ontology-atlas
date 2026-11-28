@@ -32,16 +32,18 @@ import { ArchitectureImportMatrix } from './ArchitectureImportMatrix';
 import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 import { ArchitectureVerdict } from './ArchitectureVerdict';
 import { HARNESS_GUTTER_LEFT } from './harness-frame';
-import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { currentAddress, guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
+import { firstSearchText } from '@/shared/lib/navigation/search-text';
+import { useCommittedSearch } from '@/shared/lib/navigation/use-committed-address';
 
 const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
 const EMPTY_EDGES: ArchitectureRecord['brief']['conformance']['violations'] = [];
 /** The width from which the table, verdict and pane share one window-high row (`xl`). */
 const WORKBENCH_MIN_PX = 1280;
 
-function buildArchitectureHref(role: string | null, pathname: string): string {
+function buildArchitectureHref(role: string | null, pathname: string, currentSearch: string): string {
   /* Preserve orthogonal route flags (`guides=off`, fixtures, view options). */
-  const query = new URLSearchParams(typeof window === 'undefined' ? undefined : window.location.search);
+  const query = new URLSearchParams(currentSearch);
   query.delete('stage');
   query.delete('role');
   if (role) query.set('role', role);
@@ -50,12 +52,8 @@ function buildArchitectureHref(role: string | null, pathname: string): string {
 }
 
 function writeArchitectureAddress(role: string | null): void {
-  guardedHistoryWrite('replace', buildArchitectureHref(role, window.location.pathname));
-}
-
-function readArchitectureRole(): string | null {
-  if (typeof window === 'undefined') return null;
-  return new URL(window.location.href).searchParams.get('role');
+  const written = currentAddress();
+  guardedHistoryWrite('replace', buildArchitectureHref(role, written.pathname, written.search));
 }
 
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
@@ -116,17 +114,20 @@ export function ArchitectureWorkbench({
   );
 
   /* The chosen role is in the address: a selected role is shareable state, and a deep link is how an agent is handed a state. */
-  const [chosenRole, setChosenRole] = useState<string | null>(() => readArchitectureRole());
+  const addressRole = firstSearchText(useCommittedSearch().role) ?? null;
+  const [chosenRole, setChosenRole] = useState<string | null>(addressRole);
   /* The other end of the cell last chosen; it marks a column and a row of the pane. */
   const [markedRole, setMarkedRole] = useState<string | null>(null);
-  useEffect(() => {
-    const syncFromHistory = () => {
-      setChosenRole(readArchitectureRole());
+  /* Back and Forward move the address under a mounted screen; the choice follows it during render, not a frame later. */
+  const [seenAddressRole, setSeenAddressRole] = useState(addressRole);
+  if (addressRole !== seenAddressRole) {
+    setSeenAddressRole(addressRole);
+    /* A choice made here writes the address and comes back equal to it; only a move made elsewhere differs. */
+    if (addressRole !== chosenRole) {
+      setChosenRole(addressRole);
       setMarkedRole(null);
-    };
-    window.addEventListener('popstate', syncFromHistory);
-    return () => window.removeEventListener('popstate', syncFromHistory);
-  }, []);
+    }
+  }
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const [copiedTaskLabel, setCopiedTaskLabel] = useState<string | null>(null);

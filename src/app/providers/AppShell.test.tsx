@@ -65,6 +65,15 @@ vi.mock("@/features/vault-ontology", () => ({
 }));
 
 
+// No router mounts around the shell here; the screen on show is whatever the window's address names.
+vi.mock("@/shared/lib/navigation/use-committed-address", async () => {
+  const { parseSearch } = await import("@/shared/lib/navigation/atlas-search");
+  return {
+    useCommittedAddress: () => ({ pathname: window.location.pathname, searchString: window.location.search }),
+    useCommittedSearch: () => parseSearch(window.location.search),
+  };
+});
+
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: shellMocks.replace }),
   usePathname: () => shellMocks.pathname,

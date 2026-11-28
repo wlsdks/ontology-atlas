@@ -43,8 +43,8 @@ vi.mock("@/i18n/navigation", () => ({
   usePathname: () => "/",
 }));
 
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
+vi.mock("@/shared/lib/navigation/use-committed-address", () => ({
+  useCommittedAddress: () => ({ pathname: "/", searchString: "" }),
 }));
 
 function makeProject(overrides: Partial<Project> = {}): Project {

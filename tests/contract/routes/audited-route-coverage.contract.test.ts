@@ -6,24 +6,32 @@ import { AUDITED_ROUTES, EXCLUDED_ROUTES } from "../../e2e/audited-routes";
 
 /**
  * Every route is either measured or excluded with a reason in `EXCLUDED_ROUTES`; an unclassified
- * route fails. Reads the filesystem on purpose: a copied route list would drift from the source.
+ * route fails. Reads the route modules on purpose: a copied route list would drift from the source.
  */
 
-/** The workbench routes and the gateway routes; a route group adds no URL segment. */
-const APP_LOCALE_DIRS = [
-  path.resolve(__dirname, "../../../app/[locale]"),
-  path.resolve(__dirname, "../../../app/(gateway)/[locale]"),
-];
+/** The route modules: `$locale/_app` holds the app's screens, `$locale/_site` the public pages. */
+const ROUTES_DIR = path.resolve(__dirname, "../../../src/app/routes/$locale");
 
-/** Walks a locale root for route patterns — directories containing a `page.tsx`. */
+/**
+ * Walks the route modules for route patterns. A layout folder (`_app`) adds no URL segment, `route.tsx`
+ * is a layout, `index.tsx` is its folder's address, `$param` is a dynamic segment and `$.tsx` the
+ * catch-all that answers "not found".
+ */
 function discoverRoutes(dir: string, prefix = ""): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir)) {
     const full = path.join(dir, entry);
-    if (!statSync(full).isDirectory()) continue;
-    const routePrefix = `${prefix}/${entry}`;
-    if (readdirSync(full).includes("page.tsx")) found.push(routePrefix);
-    found.push(...discoverRoutes(full, routePrefix));
+    if (statSync(full).isDirectory()) {
+      const segment = entry.startsWith("_") ? "" : `/${entry.replace(/^\$(.+)$/, "[$1]")}`;
+      found.push(...discoverRoutes(full, `${prefix}${segment}`));
+      continue;
+    }
+    if (!entry.endsWith(".tsx") || entry === "route.tsx" || entry === "$.tsx") continue;
+    if (entry === "index.tsx") {
+      if (prefix !== "") found.push(prefix);
+      continue;
+    }
+    found.push(`${prefix}/${entry.slice(0, -".tsx".length).replace(/^\$(.+)$/, "[$1]")}`);
   }
   return found;
 }
@@ -42,7 +50,7 @@ function matchesAuditedUrl(routePattern: string, url: string): boolean {
 }
 
 describe("route coverage of the accessibility ratchet", () => {
-  const routes = ["/", ...APP_LOCALE_DIRS.flatMap((dir) => discoverRoutes(dir))];
+  const routes = ["/", ...discoverRoutes(ROUTES_DIR)];
 
   it("actually finds the canonical inventory, so the detector does not idle on an empty set", () => {
     // Without this assertion `discoverRoutes` returning 0 would leave every check below green.

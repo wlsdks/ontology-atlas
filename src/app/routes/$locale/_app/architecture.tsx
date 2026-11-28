@@ -1,5 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Suspense } from 'react';
+import { parseSearch } from '@/shared/lib/navigation/atlas-search';
+import { harnessSearch } from '@/shared/lib/navigation/screen-searches';
 import { HarnessPage } from '@/views/architecture';
 import { RouteLoadingFallback } from '@/shared/ui';
 import { ScreenTitle } from '../../-site/ScreenTitle';
@@ -12,13 +14,31 @@ const head: ScreenHead = {
   description: { namespace: 'harness', key: 'explainer' },
 };
 
-export const Route = createFileRoute('/$locale/_app/architecture')({ staticData: { head }, component: ArchitectureRoute });
+export const Route = createFileRoute('/$locale/_app/architecture')({
+  staticData: { head },
+  validateSearch: harnessSearch,
+  // A retired `?view=` value is answered with the view that replaced it, before any screen renders.
+  beforeLoad: async ({ location, search }) => {
+    if (search.view === undefined) return;
+    const { rewriteRetiredView } = await import('@/views/architecture');
+    const rewritten = rewriteRetiredView(location.searchStr);
+    if (rewritten === null) return;
+    throw redirect({
+      to: location.pathname,
+      search: parseSearch(rewritten),
+      ...(location.hash === '' ? {} : { hash: location.hash }),
+      replace: true,
+    });
+  },
+  component: ArchitectureRoute,
+});
 
 function ArchitectureRoute() {
+  const search = Route.useSearch();
   return (
     <>
       <ScreenTitle head={head} />
-      <Suspense fallback={<RouteLoadingFallback />}><HarnessPage /></Suspense>
+      <Suspense fallback={<RouteLoadingFallback />}><HarnessPage search={search} /></Suspense>
     </>
   );
 }

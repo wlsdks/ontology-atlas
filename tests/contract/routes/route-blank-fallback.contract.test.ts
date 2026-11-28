@@ -30,7 +30,7 @@ const APPROVED_FALLBACKS = [
  */
 const HYDRATION_HOLDS = [
   join("src", "app", "providers", "AppAddressFaces.tsx"),
-  // A lazily loaded overlay or control, closed until a person opens it, has nothing to show while its chunk arrives.
+  // The wrapper itself: its `fallback={null}` is the point, and where it may stand is checked below.
   join("src", "shared", "ui", "fallbacks", "silent-suspense.tsx"),
   // The not-found and error screens load as one chunk with their own words, and stand where the loading
   // picture of `index.html` or the screen they replace already is; they cannot read the workbench's messages.
@@ -88,6 +88,21 @@ describe("blank-screen gate on route entry", () => {
       return !APPROVED_FALLBACKS.some((name) => source.includes(name));
     });
     expect(offenders.map(rel)).toEqual([]);
+  });
+
+  it("a silent boundary wraps only a lazily loaded piece, never a screen's content", () => {
+    // `<SilentSuspense>` shows nothing while its child loads, which is right for a control or overlay whose
+    // chunk arrives after the screen is drawn, and a blank screen for anything that is the content.
+    const users = files.filter((p) => readFileSync(p, "utf-8").includes("<SilentSuspense"));
+    expect(users.length, "no silent boundary found; the check would idle").toBeGreaterThan(3);
+    const offenders = users.flatMap((p) => {
+      const source = readFileSync(p, "utf-8");
+      return [...source.matchAll(/<SilentSuspense>\s*<([A-Z]\w*)/gu)]
+        .map((match) => match[1]!)
+        .filter((child) => !new RegExp(`const ${child} = lazy\\(`, "u").test(source))
+        .map((child) => `${rel(p)}: ${child}`);
+    });
+    expect(offenders).toEqual([]);
   });
 
   it("the placeholder wording exists in both ko and en", () => {

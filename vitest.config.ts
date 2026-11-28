@@ -86,14 +86,6 @@ export default defineConfig({
         },
       },
     ],
-    // `@/i18n/navigation` still imports `next-intl/navigation`, and externalizing it to Node ESM fails to
-    // resolve its `next/navigation` subpath from the pnpm virtual store, which broke test file loading itself.
-    // Vite inlining lets Vite's resolver read the subpath. Goes with that import in slice 4b.
-    server: {
-      deps: {
-        inline: ['next-intl'],
-      },
-    },
   },
   resolve: {
     // @rollup/plugin-alias matches prefixes in registration order and adopts the first match.

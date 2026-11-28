@@ -1,5 +1,5 @@
 import { Suspense, use, useSyncExternalStore, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useCommittedAddress } from "@/shared/lib/navigation/use-committed-address";
 import { stripLocalePrefix } from "@/shared/lib/navigation/nav-destination";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { APP_ONLY_FACE_CLASS, workbenchFaceClass } from "./app-address-face-class";
@@ -34,7 +34,7 @@ function useAppOnlyFace(): boolean {
  * (`GatewayHandOverScript`), so its own HTML stays visible and carries no second face.
  */
 export function AppAddressFaces({ appOnly, children }: { appOnly: ReactNode; children: ReactNode }) {
-  const atEntry = stripLocalePrefix(usePathname() ?? "/") === "/";
+  const atEntry = stripLocalePrefix(useCommittedAddress().pathname) === "/";
   const showAppOnly = useAppOnlyFace();
   return (
     <>

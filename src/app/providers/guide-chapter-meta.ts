@@ -2,9 +2,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 
 import { firstCommitDate, lastCommitDate } from '@/shared/lib/public-pages/source-dates';
 
-import { GUIDE_ENTRY_PAGE, type GuidePage } from '../model/guide-pages';
-import { guideSourcePath } from '../model/guide-pages';
-import { guideStructuredData } from './guide-structured-data';
+import { GUIDE_ENTRY_PAGE, guideSourcePath, guideStructuredData, type GuidePage } from '@/views/gateway-doc';
 
 export interface GuideChapterMeta {
   headline: string;
@@ -16,6 +14,8 @@ export interface GuideChapterMeta {
 }
 
 /**
+ * Only the Next pages under `app/` read this, through `next-intl/server`, so it stays out of every view
+ * (a view's files reach the browser bundle). The Vite site reads the same facts in `routes/-site/guide-chapter.ts`.
  * Everything a guide route says about a chapter beyond its body, read once at build time by the
  * route's server component. `bodyPath` is the file the reader's locale actually renders, so a
  * chapter still shown in English is dated by the English file.

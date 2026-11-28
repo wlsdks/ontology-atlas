@@ -19,12 +19,6 @@ const APP_FOLDER = process.env.ATLAS_APP_FOLDER ?? DEFAULT_APP_FOLDER;
 /** Where the website's files are written: the same bundle with everything in `public/`, then the prerendered pages. */
 const SITE_FOLDER = DEFAULT_SITE_FOLDER;
 
-/**
- * Until slice 4b moves addresses onto the router, source files still import `next/navigation` and
- * `next-intl/navigation`; these answer them over TanStack Router (`src/app/next-shims/`).
- */
-const nextShims = (name: string) => path.join(root, 'src/app/next-shims', name);
-
 export default defineConfig(({ command, mode }) => ({
   root,
   plugins: [
@@ -43,8 +37,6 @@ export default defineConfig(({ command, mode }) => ({
   ],
   resolve: {
     alias: [
-      { find: /^next-intl\/navigation$/, replacement: nextShims('next-intl-navigation.tsx') },
-      { find: /^next\/navigation$/, replacement: nextShims('next-navigation.ts') },
       { find: /^@\/app-providers/, replacement: path.join(root, 'src/app') },
       { find: /^@\/views/, replacement: path.join(root, 'src/views') },
       { find: /^@\/widgets/, replacement: path.join(root, 'src/widgets') },

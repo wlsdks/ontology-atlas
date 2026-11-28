@@ -1,3 +1,4 @@
+import { parseSearch } from '@/shared/lib/navigation/atlas-search';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -54,18 +55,17 @@ describe('rewriteRetiredView', () => {
 describe('resolveAddressView', () => {
   it('reads the blueprint out of an address that carries only its own parameters', () => {
     /* Deep links from before the overview became the default carry `?role=` without `?view=`. */
-    expect(resolveAddressView(new URLSearchParams('role=views'))).toBe('architecture');
-    expect(resolveAddressView(new URLSearchParams('stage=plan'))).toBe('architecture');
+    expect(resolveAddressView(parseSearch('role=views'))).toBe('architecture');
+    expect(resolveAddressView(parseSearch('stage=plan'))).toBe('architecture');
   });
 
   it('lets an explicit view win over that reading', () => {
-    expect(resolveAddressView(new URLSearchParams('view=overview&role=views'))).toBe('overview');
+    expect(resolveAddressView(parseSearch('view=overview&role=views'))).toBe('overview');
   });
 
   it('opens the arrival view for a plain address or none at all', () => {
-    expect(resolveAddressView(new URLSearchParams(''))).toBe('overview');
-    expect(resolveAddressView(new URLSearchParams('focus=main'))).toBe('overview');
-    expect(resolveAddressView(null)).toBe('overview');
+    expect(resolveAddressView(parseSearch(''))).toBe('overview');
+    expect(resolveAddressView(parseSearch('focus=main'))).toBe('overview');
   });
 });
 
