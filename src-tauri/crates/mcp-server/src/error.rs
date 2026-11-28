@@ -96,14 +96,6 @@ impl ToolError {
         self
     }
 
-    /// The same failure with words before and after its own: which item of a call failed, and what
-    /// state the call left. The code and the fields stay.
-    #[must_use]
-    pub fn framed(mut self, before: &str, after: &str) -> Self {
-        self.message = format!("{before}{}{after}", self.message);
-        self
-    }
-
     pub fn code(&self) -> ErrorCode {
         self.code
     }

@@ -1,16 +1,19 @@
 //! One page of the answer. The rows are cut by count, or by size when the caller named no limit
-//! (the reply stays readable at 40,000 characters), and a page repeats no code's repair guidance:
-//! after the first finding of a code on the page, a later one that carries only the same guidance
-//! keeps the sentence naming its own node and points back at the first.
+//! (the reply stays readable at 40,000 characters). What to do about a code is said once, in
+//! `summary.byCode[code].remedy`, and each finding keeps only the sentence that names its node. A
+//! code lists the files that are not on this page of rows; the rows name the others.
 
 use std::collections::HashMap;
 
 use answer_format::pagination::Pagination;
-use build_depth::{Coverage, CoveragePage};
+use answer_format::whitespace::trim;
+use build_depth::{Coverage, CoverageCounts, CoveragePage};
 use serde::Serialize;
 use vault_document::Issue;
 
-use crate::evidence_drift::EvidenceDrift;
+use crate::evidence_drift::{
+    EvidenceCounts, EvidenceDrift, FolderOnlyConcept, MissingConcept, StaleConcept,
+};
 use crate::path_drift::PathDrift;
 use crate::problem_list::{CodeTally, Problem, ProblemList, ProblemSummary, TalliesByCode};
 use crate::summary_freshness::SummaryFreshness;
@@ -21,6 +24,12 @@ const HINT_AND_ENVELOPE_BYTES: usize = 4096;
 const ROW_INDENT_BYTES: usize = 4;
 const FILES_SAMPLED_PER_CODE: usize = 20;
 const SENTENCE_MIN_CHARS: usize = 40;
+/// Dated rows a report lists per group; `counts` and `omitted` carry the rest.
+const EVIDENCE_ROWS: usize = 10;
+/// Problem files the validation a brief carries lists.
+const BRIEF_PAGE_LIMIT: usize = 3;
+/// Stands for a node's own slug while guidance is compared between nodes.
+const OWN_SLUG: &str = "\u{0}";
 
 /// Everything the answer says besides which problem rows it shows.
 pub struct ValidationFrame {
@@ -40,6 +49,56 @@ struct RepoRoot {
     missing: bool,
 }
 
+/// How many dated rows each group of `evidenceDrift` left out, for the groups that left any.
+#[derive(Serialize)]
+struct OmittedRows {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stale: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    missing: Option<usize>,
+    #[serde(rename = "folderOnly", skip_serializing_if = "Option::is_none")]
+    folder_only: Option<usize>,
+}
+
+/// `evidenceDrift` with each group of rows cut to the first ten.
+#[derive(Serialize)]
+struct EvidenceRows<'a> {
+    checked: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reason: &'a Option<String>,
+    #[serde(rename = "repoRoot", skip_serializing_if = "Option::is_none")]
+    repo_root: &'a Option<String>,
+    counts: &'a EvidenceCounts,
+    stale: &'a [StaleConcept],
+    missing: &'a [MissingConcept],
+    #[serde(rename = "folderOnly")]
+    folder_only: &'a [FolderOnlyConcept],
+    hint: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    omitted: Option<OmittedRows>,
+}
+
+fn evidence_rows(drift: &EvidenceDrift) -> EvidenceRows<'_> {
+    let cut = |length: usize| length.checked_sub(EVIDENCE_ROWS).filter(|rest| *rest > 0);
+    let omitted = OmittedRows {
+        stale: cut(drift.stale.len()),
+        missing: cut(drift.missing.len()),
+        folder_only: cut(drift.folder_only.len()),
+    };
+    let any = omitted.stale.is_some() || omitted.missing.is_some() || omitted.folder_only.is_some();
+    EvidenceRows {
+        checked: drift.checked,
+        reason: &drift.reason,
+        repo_root: &drift.repo_root,
+        counts: &drift.counts,
+        stale: &drift.stale[..drift.stale.len().min(EVIDENCE_ROWS)],
+        missing: &drift.missing[..drift.missing.len().min(EVIDENCE_ROWS)],
+        folder_only: &drift.folder_only[..drift.folder_only.len().min(EVIDENCE_ROWS)],
+        hint: &drift.hint,
+        omitted: any.then_some(omitted),
+    }
+}
+
 #[derive(Serialize)]
 struct Frame<'a> {
     scanned: usize,
@@ -52,7 +111,7 @@ struct Frame<'a> {
     #[serde(rename = "summaryFreshness")]
     summary_freshness: &'a SummaryFreshness,
     #[serde(rename = "evidenceDrift")]
-    evidence_drift: &'a EvidenceDrift,
+    evidence_drift: EvidenceRows<'a>,
     #[serde(rename = "pathDrift")]
     path_drift: &'a PathDrift,
 }
@@ -60,8 +119,6 @@ struct Frame<'a> {
 /// The answer: where the page lies, then the frame with the page's rows.
 #[derive(Serialize)]
 pub struct ValidationPage<'a> {
-    #[serde(rename = "nextCall", skip_serializing_if = "Option::is_none")]
-    next_call: Option<NextCall>,
     #[serde(rename = "problemsPagination")]
     pagination: Pagination,
     #[serde(rename = "problemsHint", skip_serializing_if = "Option::is_none")]
@@ -76,7 +133,7 @@ pub struct ValidationPage<'a> {
     #[serde(rename = "summaryFreshness")]
     summary_freshness: &'a SummaryFreshness,
     #[serde(rename = "evidenceDrift")]
-    evidence_drift: &'a EvidenceDrift,
+    evidence_drift: EvidenceRows<'a>,
     #[serde(rename = "pathDrift")]
     path_drift: &'a PathDrift,
 }
@@ -90,7 +147,6 @@ pub struct PageRequest<'a> {
     /// `None` when the caller named no limit: the page is then also held to its size.
     limit: Option<usize>,
     repo_root: Option<&'a str>,
-    brief: bool,
 }
 
 impl<'a> PageRequest<'a> {
@@ -106,26 +162,12 @@ impl<'a> PageRequest<'a> {
             unplaced_offset,
             limit,
             repo_root,
-            brief: false,
-        }
-    }
-
-    /// The first page another tool's answer carries: a few rows, no size cut, and the next call
-    /// named as a call to make.
-    pub const fn brief() -> Self {
-        Self {
-            offset: 0,
-            unplaced_offset: 0,
-            limit: Some(BRIEF_PAGE_LIMIT),
-            repo_root: None,
-            brief: true,
         }
     }
 }
 
-const BRIEF_PAGE_LIMIT: usize = 20;
-
-/// The call that reads the rest of the rows.
+/// The call that reads the rest of the rows: `validate_vault` with `offset`, or with nothing when
+/// the first page already holds every row.
 #[derive(Serialize)]
 pub struct NextCall {
     tool: &'static str,
@@ -134,7 +176,55 @@ pub struct NextCall {
 
 #[derive(Serialize)]
 struct NextCallArguments {
-    offset: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    offset: Option<usize>,
+}
+
+/// `pathDrift` as a brief carries it: how many paths were checked and how many drifted.
+#[derive(Serialize)]
+struct PathDriftCounts {
+    checked: bool,
+    #[serde(rename = "pathsChecked")]
+    paths_checked: usize,
+    drifts: usize,
+}
+
+/// `summaryFreshness` as a brief carries it.
+#[derive(Serialize)]
+struct SummaryFreshnessCount {
+    checked: bool,
+    #[serde(rename = "summaryNodes")]
+    summary_nodes: usize,
+    stale: usize,
+}
+
+/// `evidenceDrift` as a brief carries it: whether it was dated, and the counts.
+#[derive(Serialize)]
+struct EvidenceCountsOnly<'a> {
+    checked: bool,
+    counts: &'a EvidenceCounts,
+}
+
+/// The validation a brief, `health` or `workspace_brief` embeds: the counts, the first problem
+/// files and the next call. The rows behind a count (stale evidence, unplaced abilities, the files
+/// of a code, drifted paths) are `validate_vault`'s.
+#[derive(Serialize)]
+pub struct BriefValidation<'a> {
+    #[serde(rename = "nextCall")]
+    next_call: NextCall,
+    scanned: usize,
+    #[serde(rename = "problemsPagination")]
+    pagination: Pagination,
+    summary: ProblemSummary,
+    problems: Vec<Problem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    coverage: Option<CoverageCounts<'a>>,
+    #[serde(rename = "evidenceDrift")]
+    evidence_drift: EvidenceCountsOnly<'a>,
+    #[serde(rename = "summaryFreshness")]
+    summary_freshness: SummaryFreshnessCount,
+    #[serde(rename = "pathDrift")]
+    path_drift: PathDriftCounts,
 }
 
 fn pretty_bytes<T: Serialize>(value: &T) -> usize {
@@ -178,59 +268,115 @@ fn first_sentence(message: &str) -> &str {
     message
 }
 
-/// Rows with the repeated guidance after a code's first finding folded away.
-fn fold_repeated_guidance(rows: Vec<Problem>) -> Vec<Problem> {
-    let mut first_guidance: HashMap<&'static str, String> = HashMap::new();
-    rows.into_iter()
+/// One finding with its message cut after the sentence that names the node.
+struct Split {
+    named: String,
+    guidance: String,
+}
+
+/// Every problem file with the guidance a code repeats taken out of its findings, and that guidance
+/// once per code. A code gets a remedy when two or more of its findings exist and all carry the
+/// same guidance after their first sentence, with the node's own slug written as `<slug>`; a code
+/// whose messages differ after that sentence (a file to read, a suggested path) keeps every
+/// message whole.
+fn split_repeated_remedies(problems: &[Problem]) -> (Vec<Problem>, HashMap<&'static str, String>) {
+    let split: Vec<Vec<Split>> = problems
+        .iter()
         .map(|row| {
-            let slug = row.slug.clone();
-            let issues = row
-                .issues
-                .into_iter()
+            row.issues
+                .iter()
                 .map(|issue| {
                     let message = issue.message.clone().unwrap_or_default();
-                    let named = first_sentence(&message).to_string();
+                    let named = first_sentence(&message);
                     let guidance = message
                         .get(named.len()..)
                         .unwrap_or_default()
-                        .replace(&slug, "\u{0}");
-                    match first_guidance.get(issue.code) {
-                        None => {
-                            first_guidance.insert(issue.code, guidance);
-                            issue
-                        }
-                        Some(first) if guidance.is_empty() || guidance != *first => issue,
-                        Some(_) => Issue {
-                            message: Some(format!(
-                                "{named} Repair as the first {} on this page says.",
-                                issue.code
-                            )),
-                            ..issue
-                        },
+                        .replace(&row.slug, OWN_SLUG);
+                    Split {
+                        named: named.to_string(),
+                        guidance: trim(&guidance).to_string(),
                     }
                 })
-                .collect();
-            Problem { slug, issues }
+                .collect()
         })
-        .collect()
+        .collect();
+    let mut total: HashMap<&'static str, usize> = HashMap::new();
+    let mut shared: HashMap<&'static str, Vec<(String, usize)>> = HashMap::new();
+    for (row, parts) in problems.iter().zip(&split) {
+        for (issue, part) in row.issues.iter().zip(parts) {
+            *total.entry(issue.code).or_default() += 1;
+            if part.guidance.is_empty() {
+                continue;
+            }
+            let seen = shared.entry(issue.code).or_default();
+            match seen.iter_mut().find(|(held, _)| *held == part.guidance) {
+                Some((_, count)) => *count += 1,
+                None => seen.push((part.guidance.clone(), 1)),
+            }
+        }
+    }
+    let mut remedies: HashMap<&'static str, String> = HashMap::new();
+    for (code, seen) in &shared {
+        if let [(guidance, count)] = seen.as_slice() {
+            if *count >= 2 && total.get(code) == Some(count) {
+                remedies.insert(code, guidance.replace(OWN_SLUG, "<slug>"));
+            }
+        }
+    }
+    let kept = problems
+        .iter()
+        .zip(&split)
+        .map(|(row, parts)| Problem {
+            slug: row.slug.clone(),
+            issues: row
+                .issues
+                .iter()
+                .zip(parts)
+                .map(|(issue, part)| {
+                    let shares = remedies
+                        .get(issue.code)
+                        .is_some_and(|remedy| part.guidance.replace(OWN_SLUG, "<slug>") == *remedy);
+                    if shares {
+                        Issue {
+                            message: Some(part.named.clone()),
+                            ..issue.clone()
+                        }
+                    } else {
+                        issue.clone()
+                    }
+                })
+                .collect(),
+        })
+        .collect();
+    (kept, remedies)
 }
 
-fn sampled(by_code: &TalliesByCode) -> TalliesByCode {
+/// The tally of each code for a page: its remedy, and the files that are not on the page's rows,
+/// at most twenty.
+fn tallies_for_page(
+    by_code: &TalliesByCode,
+    remedies: &HashMap<&'static str, String>,
+    on_page: &[&str],
+) -> TalliesByCode {
     TalliesByCode(
         by_code
             .0
             .iter()
             .map(|(code, tally)| {
-                let omitted = tally.files.len().saturating_sub(FILES_SAMPLED_PER_CODE);
+                let elsewhere: Vec<&String> = tally
+                    .files
+                    .iter()
+                    .filter(|slug| !on_page.contains(&slug.as_str()))
+                    .collect();
+                let omitted = elsewhere.len().saturating_sub(FILES_SAMPLED_PER_CODE);
                 (
                     *code,
                     CodeTally {
                         severity: tally.severity,
                         count: tally.count,
-                        remedy: tally.remedy,
-                        files: tally
-                            .files
-                            .iter()
+                        remedy: tally.remedy.clone().or_else(|| remedies.get(code).cloned()),
+                        files: elsewhere
+                            .into_iter()
                             .take(FILES_SAMPLED_PER_CODE)
                             .cloned()
                             .collect(),
@@ -255,22 +401,18 @@ pub fn page_validation<'a>(
     let total = list.problems.len();
     let start = request.offset.min(total);
     let limit = request.limit.unwrap_or(DEFAULT_PAGE_LIMIT);
+    let (shortened, remedies) = split_repeated_remedies(&list.problems);
+    let wanted: Vec<Problem> = shortened.into_iter().skip(start).take(limit).collect();
+    let on_page: Vec<&str> = wanted.iter().map(|row| row.slug.as_str()).collect();
     let summary = ProblemSummary {
         problem_files: list.summary.problem_files,
         error_files: list.summary.error_files,
         warning_files: list.summary.warning_files,
-        by_code: sampled(&list.summary.by_code),
+        by_code: tallies_for_page(&list.summary.by_code, &remedies, &on_page),
     };
-    let wanted: Vec<Problem> = list
-        .problems
-        .iter()
-        .skip(start)
-        .take(limit)
-        .cloned()
-        .collect();
-    let mut rows = fold_repeated_guidance(wanted);
+    let mut rows = wanted.clone();
     let mut stopped_for_size = false;
-    if request.limit.is_none() && !request.brief {
+    if request.limit.is_none() {
         let empty = Frame {
             scanned: frame.scanned,
             repo_root: frame.repo_root_missing.then_some(RepoRoot { missing: true }),
@@ -278,7 +420,7 @@ pub fn page_validation<'a>(
             problems: &[],
             summary: &summary,
             summary_freshness: &frame.summary_freshness,
-            evidence_drift: &frame.evidence_drift,
+            evidence_drift: evidence_rows(&frame.evidence_drift),
             path_drift: &frame.path_drift,
         };
         let spent = pretty_bytes(&empty) + HINT_AND_ENVELOPE_BYTES;
@@ -320,7 +462,7 @@ pub fn page_validation<'a>(
                         answer_format::json::quote(root)
                     ));
                 }
-                if let Some(named) = request.limit.filter(|_| !request.brief) {
+                if let Some(named) = request.limit {
                     arguments.push_str(&format!(",\"limit\":{named}"));
                 }
                 format!(". The next page: validate_vault({arguments}}}).")
@@ -329,14 +471,7 @@ pub fn page_validation<'a>(
         };
         format!("{shown}{size}{next}")
     });
-    let next_call = (request.brief && next_offset.is_some()).then(|| NextCall {
-        tool: "validate_vault",
-        arguments: NextCallArguments {
-            offset: next_offset.unwrap_or_default(),
-        },
-    });
     ValidationPage {
-        next_call,
         pagination: Pagination::of(start, limit, total, rows.len()),
         hint,
         scanned: frame.scanned,
@@ -345,8 +480,71 @@ pub fn page_validation<'a>(
         problems: rows,
         summary,
         summary_freshness: &frame.summary_freshness,
-        evidence_drift: &frame.evidence_drift,
+        evidence_drift: evidence_rows(&frame.evidence_drift),
         path_drift: &frame.path_drift,
+    }
+}
+
+/// The first three problem files and the counts behind everything else, for the tools that embed
+/// the validation.
+pub fn brief_validation<'a>(
+    frame: &'a ValidationFrame,
+    list: &ProblemList,
+) -> BriefValidation<'a> {
+    let total = list.problems.len();
+    let (shortened, remedies) = split_repeated_remedies(&list.problems);
+    let rows: Vec<Problem> = shortened.into_iter().take(BRIEF_PAGE_LIMIT).collect();
+    let by_code = TalliesByCode(
+        list.summary
+            .by_code
+            .0
+            .iter()
+            .map(|(code, tally)| {
+                (
+                    *code,
+                    CodeTally {
+                        severity: tally.severity,
+                        count: tally.count,
+                        remedy: tally.remedy.clone().or_else(|| remedies.get(code).cloned()),
+                        files: Vec::new(),
+                        files_omitted: None,
+                    },
+                )
+            })
+            .collect(),
+    );
+    let has_more = rows.len() < total;
+    BriefValidation {
+        next_call: NextCall {
+            tool: "validate_vault",
+            arguments: NextCallArguments {
+                offset: has_more.then_some(rows.len()),
+            },
+        },
+        scanned: frame.scanned,
+        pagination: Pagination::of(0, BRIEF_PAGE_LIMIT, total, rows.len()),
+        summary: ProblemSummary {
+            problem_files: list.summary.problem_files,
+            error_files: list.summary.error_files,
+            warning_files: list.summary.warning_files,
+            by_code,
+        },
+        problems: rows,
+        coverage: frame.coverage.as_ref().map(Coverage::counts),
+        evidence_drift: EvidenceCountsOnly {
+            checked: frame.evidence_drift.checked,
+            counts: &frame.evidence_drift.counts,
+        },
+        summary_freshness: SummaryFreshnessCount {
+            checked: frame.summary_freshness.checked,
+            summary_nodes: frame.summary_freshness.summary_nodes,
+            stale: frame.summary_freshness.stale.len(),
+        },
+        path_drift: PathDriftCounts {
+            checked: frame.path_drift.checked,
+            paths_checked: frame.path_drift.paths_checked,
+            drifts: frame.path_drift.drifts.len(),
+        },
     }
 }
 
@@ -368,26 +566,32 @@ mod tests {
     }
 
     #[test]
-    fn a_later_finding_of_a_code_keeps_its_own_sentence_and_points_back_at_the_first() {
+    fn guidance_every_finding_of_a_code_repeats_is_said_once_as_its_remedy() {
         let guidance = " Fix the path in the frontmatter or remove the entry from the node.";
-        let first = format!(
-            "\"node-one\" cites a file that is no longer in the repository at all.{guidance}"
-        );
-        let second = format!(
-            "\"node-two\" cites a file that is no longer in the repository at all.{guidance}"
-        );
-        let other = "\"node-three\" cites a moved file; read it at src/x.ts before you decide anything here.";
-        let folded = fold_repeated_guidance(vec![
-            row("node-one", &first),
-            row("node-two", &second),
-            row("node-three", other),
-        ]);
-        assert_eq!(folded[0].issues[0].message.as_deref(), Some(first.as_str()));
+        let named = |slug: &str| {
+            format!("\"{slug}\" cites a file that is no longer in the repository at all.")
+        };
+        let rows = vec![
+            row("node-one", &format!("{}{guidance}", named("node-one"))),
+            row("node-two", &format!("{}{guidance}", named("node-two"))),
+        ];
+        let (kept, remedies) = split_repeated_remedies(&rows);
+        assert_eq!(kept[0].issues[0].message.as_deref(), Some(named("node-one").as_str()));
+        assert_eq!(kept[1].issues[0].message.as_deref(), Some(named("node-two").as_str()));
         assert_eq!(
-            folded[1].issues[0].message.as_deref(),
-            Some("\"node-two\" cites a file that is no longer in the repository at all. Repair as the first path-drift on this page says.")
+            remedies.get("path-drift").map(String::as_str),
+            Some("Fix the path in the frontmatter or remove the entry from the node.")
         );
-        assert_eq!(folded[2].issues[0].message.as_deref(), Some(other));
+    }
+
+    #[test]
+    fn a_code_whose_findings_carry_different_guidance_keeps_every_message_whole() {
+        let first = "\"node-one\" cites a file that is no longer in the repository at all. Read src/a.ts first.";
+        let second = "\"node-two\" cites a file that is no longer in the repository at all. Read src/b.ts first.";
+        let (kept, remedies) =
+            split_repeated_remedies(&[row("node-one", first), row("node-two", second)]);
+        assert!(remedies.is_empty());
+        assert_eq!(kept[1].issues[0].message.as_deref(), Some(second));
     }
 
     fn frame_with_unplaced(unplaced: usize) -> ValidationFrame {

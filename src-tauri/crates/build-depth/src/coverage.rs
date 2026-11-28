@@ -116,7 +116,61 @@ pub struct CoveragePage<'a> {
     reads: &'a Option<ReadSummary>,
 }
 
+/// The counts of the measure and nothing behind them: no unplaced rows, no lines to keep, no files
+/// to map next. What a brief carries, because the rows are `validate_vault`'s to list.
+#[derive(Serialize, Clone, Copy)]
+pub struct CoverageCounts<'a> {
+    breadth: BreadthCounts,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    areas: Option<AreaCounts>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reads: &'a Option<ReadSummary>,
+}
+
+#[derive(Serialize, Clone, Copy)]
+struct BreadthCounts {
+    abilities: usize,
+    #[serde(rename = "notListed", skip_serializing_if = "is_zero")]
+    not_listed: usize,
+    node: usize,
+    named: usize,
+    excluded: usize,
+    unplaced: usize,
+}
+
+#[derive(Serialize, Clone, Copy)]
+struct AreaCounts {
+    counted: usize,
+    #[serde(rename = "notMapped")]
+    not_mapped: usize,
+    abilities: usize,
+    uncovered: usize,
+    #[serde(rename = "mappedPercent", skip_serializing_if = "Option::is_none")]
+    mapped_percent: Option<u8>,
+}
+
 impl Coverage {
+    pub fn counts(&self) -> CoverageCounts<'_> {
+        CoverageCounts {
+            breadth: BreadthCounts {
+                abilities: self.breadth.abilities,
+                not_listed: self.breadth.not_listed,
+                node: self.breadth.node,
+                named: self.breadth.named,
+                excluded: self.breadth.excluded,
+                unplaced: self.breadth.unplaced.len(),
+            },
+            areas: self.areas.as_ref().map(|areas| AreaCounts {
+                counted: areas.counted,
+                not_mapped: areas.not_mapped,
+                abilities: areas.abilities,
+                uncovered: areas.uncovered,
+                mapped_percent: areas.mapped_percent,
+            }),
+            reads: &self.reads,
+        }
+    }
+
     /// A survey that found no abilities, no area and no read gives the answer nothing to say.
     fn says_nothing(&self) -> bool {
         self.breadth.abilities == 0

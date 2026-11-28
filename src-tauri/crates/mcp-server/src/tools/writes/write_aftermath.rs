@@ -235,43 +235,47 @@ fn count(value: usize) -> Setting {
     Setting::Number(value as f64)
 }
 
-fn moved(name: &str, before: Option<usize>, after: Option<usize>, fields: Fields) -> Fields {
-    if before == after {
-        return fields;
-    }
-    fields.with(
-        name,
-        Fields::new()
-            .with_some("before", before.map(count))
-            .with_some("after", after.map(count))
-            .into_setting(),
-    )
+/// One count of the measure under the name it has in a write's `coverage.changed`.
+struct Count {
+    name: &'static str,
+    value: fn(&Coverage) -> Option<usize>,
 }
 
-/// What moved between two measures of the coverage, and nothing else: the abilities the map
-/// placed or lost, the areas, the files read. `None` when nothing moved.
+const COUNTS: [Count; 12] = [
+    Count { name: "abilities.surveyed", value: |c| Some(c.breadth.abilities) },
+    Count { name: "abilities.onNode", value: |c| Some(c.breadth.node) },
+    Count { name: "abilities.named", value: |c| Some(c.breadth.named) },
+    Count { name: "abilities.excluded", value: |c| Some(c.breadth.excluded) },
+    Count { name: "abilities.unplaced", value: |c| Some(c.breadth.unplaced.len()) },
+    Count { name: "areas.counted", value: |c| c.areas.as_ref().map(|a| a.counted) },
+    Count { name: "areas.notMapped", value: |c| c.areas.as_ref().map(|a| a.not_mapped) },
+    Count { name: "areas.abilities", value: |c| c.areas.as_ref().map(|a| a.abilities) },
+    Count { name: "areas.uncovered", value: |c| c.areas.as_ref().map(|a| a.uncovered) },
+    Count {
+        name: "areas.mappedPercent",
+        value: |c| c.areas.as_ref().and_then(|a| a.mapped_percent).map(usize::from),
+    },
+    Count { name: "reads.capabilities", value: |c| c.reads.as_ref().map(|r| r.capabilities) },
+    Count { name: "reads.read", value: |c| c.reads.as_ref().map(|r| r.read) },
+];
+
+/// The counts a write moved, as `{ changed: { "section.field": [before, after] } }`, and nothing
+/// else: a count that was not measured before is not a change. `None` when nothing moved.
 pub fn coverage_change(before: Option<&Coverage>, after: Option<&Coverage>) -> Option<Setting> {
-    if before == after {
-        return None;
-    }
-    let breadth = |coverage: Option<&Coverage>, pick: fn(&Coverage) -> usize| coverage.map(pick);
-    let mut fields = Fields::new();
-    fields = moved("abilities", breadth(before, |c| c.breadth.abilities), breadth(after, |c| c.breadth.abilities), fields);
-    fields = moved("node", breadth(before, |c| c.breadth.node), breadth(after, |c| c.breadth.node), fields);
-    fields = moved("named", breadth(before, |c| c.breadth.named), breadth(after, |c| c.breadth.named), fields);
-    fields = moved("excluded", breadth(before, |c| c.breadth.excluded), breadth(after, |c| c.breadth.excluded), fields);
-    fields = moved("unplaced", breadth(before, |c| c.breadth.unplaced.len()), breadth(after, |c| c.breadth.unplaced.len()), fields);
-    let area = |coverage: Option<&Coverage>, pick: fn(&build_depth::AreaSummary) -> usize| {
-        coverage.and_then(|c| c.areas.as_ref()).map(pick)
-    };
-    fields = moved("notMapped", area(before, |a| a.not_mapped), area(after, |a| a.not_mapped), fields);
-    fields = moved("uncovered", area(before, |a| a.uncovered), area(after, |a| a.uncovered), fields);
-    let read = |coverage: Option<&Coverage>| coverage.and_then(|c| c.reads.as_ref()).map(|r| r.read);
-    fields = moved("read", read(before), read(after), fields);
-    match fields.into_setting() {
-        Setting::Map(members) if members.is_empty() => None,
-        other => Some(other),
-    }
+    let (before, after) = (before?, after?);
+    let moved: Vec<(String, Setting)> = COUNTS
+        .iter()
+        .filter_map(|measure| {
+            let (was, now) = ((measure.value)(before)?, (measure.value)(after)?);
+            (was != now).then(|| {
+                (
+                    measure.name.to_string(),
+                    Setting::List(vec![count(was), count(now)]),
+                )
+            })
+        })
+        .collect();
+    (!moved.is_empty()).then(|| Fields::new().with("changed", Setting::Map(moved)).into_setting())
 }
 
 /// The counts one map analysis line carries, from the coverage after the write.

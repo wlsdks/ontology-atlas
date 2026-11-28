@@ -18,7 +18,7 @@ operation from the graph and a `QueryRequest` to a typed answer. `Operation` nam
 the tool offers; the one no module answers yet is `Operation::Pending` (`agent_brief`), which `run`
 refuses by name. `analysis_record` is `Operation::AnalysisRecord`: it reads one of the vault's record
 files, not the graph, so `mcp-server` answers it and `run` refuses it by name. `match_nodes` with
-`hasIncoming: false` is answered from the files, not the compiled graph (`orphan_nodes`), so a vault
+`hasIncoming: false` is answered from the files, not the compiled graph (`match_nodes_from_files`), so a vault
 that does not compile still lists its orphans. A family of operations is a folder with
 its own `run` and its own answer type: `walks/` follows edges from a node, `selection/` picks nodes
 from the whole graph.
@@ -54,7 +54,7 @@ from the whole graph.
 | `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs` | `containment_tree`, `project_scope` and `project_map`: what holds what, and what each project holds; `fitted_map` is the map cut to a character bound, which `workspace_brief` carries once per project |
 | `selection/clusters.rs` | `components` and `communities` (label propagation) |
 | `selection/graph_summary.rs` | `overview`, `schema`, `facets` |
-| `selection/match_nodes.rs`, `selection/orphan_nodes.rs` | `match_nodes`: the rows that pass a condition, by degree or slug, paged by `offset`; `orphan_nodes`: the same question for `hasIncoming: false`, read from the files |
+| `selection/match_nodes.rs`, `selection/match_nodes_from_files.rs` | `match_nodes`: the rows that pass a condition, by degree or slug, paged by `offset`, read from the files by one engine, so `{}` equals the union of `hasIncoming` true and false |
 | `selection/node_profile.rs`, `selection/domain_matrix.rs` | one node or one domain, and the domain-to-domain edge table |
 | `selection/similar_nodes.rs`, `selection/relation_recommendations.rs` | `similar_nodes` and `recommend_relations` (the domain links a capability or element lacks) |
 | `selection/health.rs`, `selection/workspace_brief.rs` | `health`: the verdict and its checks; `workspace_brief`: the first page of a vault |

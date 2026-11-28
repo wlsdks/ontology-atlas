@@ -94,7 +94,8 @@ pub struct DomainMatrixAnswer<'a> {
     project: Option<&'a str>,
     filters: EchoedRelations,
     summary: MatrixSummary,
-    domains: RowPage<DomainRow<'a>>,
+    /// Every domain of the scope: the count of domains is small and a cut list would hide one.
+    domains: Vec<DomainRow<'a>>,
     connections: RowPage<Connection<'a>>,
 }
 
@@ -252,7 +253,6 @@ pub fn domain_matrix<'a>(
 
     let domain_rows: Vec<DomainRow<'a>> = domains
         .iter()
-        .take(limit)
         .map(|domain| {
             let counts = tallied.domain_counts.get(domain);
             let count = |read: fn(&DomainCounts) -> usize| counts.map_or(0, read);
@@ -283,7 +283,7 @@ pub fn domain_matrix<'a>(
             external_edges: tallied.external,
             unresolved_edges: tallied.unresolved,
         },
-        domains: RowPage::new(domains.len(), limit, domain_rows),
+        domains: domain_rows,
         connections: RowPage::new(total_pairs, limit, connections),
     })
 }

@@ -17,12 +17,27 @@ use super::write_gates::{has_key, member, require_not_reserved, require_valid_fr
 use super::write_support::{effect, modified_ms, write_permit};
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, NodeWrite, ShareMeasure, WriteDone, WriteRecord};
-use crate::error::ToolError;
+use crate::error::{ErrorCode, ToolError};
 use crate::write_checkpoint::Permit;
 
 const PATCH_BATCH_MAX: usize = 20;
 const PATCH_KEYS: [&str; 4] = ["slug", "frontmatter", "body", "expected_mtime"];
 const NOTHING_CHANGED: &str = " No node was changed: the files this call touched were put back as they were.";
+
+/// A failure of the batch as an agent reads it: words that name the patch and say what state the call
+/// left, under the code of the failure itself. A stale file is a plain `conflict` here, and the
+/// fields that repair a single call (similar slugs, the current time) are left out, because they
+/// belong to one node and this answer speaks for several.
+fn failed_in_batch(failure: ToolError, before: &str) -> ToolError {
+    let code = match failure.code() {
+        ErrorCode::VaultConflict => ErrorCode::Conflict,
+        other => other,
+    };
+    ToolError::new(
+        code,
+        format!("{before}{}{NOTHING_CHANGED}", failure.message()),
+    )
+}
 
 /// One patch after its checks: the node, the keys to set or remove, and the guard.
 struct Patch {
@@ -86,12 +101,12 @@ fn checked_patches(
         .iter()
         .find(|key| arguments.get(key).is_some())
     {
-        return Err(ToolError::invalid(format!(
+        return Err(ToolError::failed(format!(
             "Send either `patches` or `{extra}` on its own, not both."
         )));
     }
     let sent = arguments.read::<Sent>("patches")?.map(|Sent(sent)| sent);
-    let wrong_size = || ToolError::invalid(format!("patches must hold 1 to {PATCH_BATCH_MAX} patches."));
+    let wrong_size = || ToolError::failed(format!("patches must hold 1 to {PATCH_BATCH_MAX} patches."));
     let Some(Setting::List(items)) = sent else {
         return Err(wrong_size());
     };
@@ -105,7 +120,7 @@ fn checked_patches(
         allowed_keys(members, &label, &PATCH_KEYS)?;
         let patch = check_patch(members, &label)?;
         if patches.iter().any(|earlier| earlier.slug == patch.slug) {
-            return Err(ToolError::invalid(format!(
+            return Err(ToolError::failed(format!(
                 "{label}.slug repeats \"{}\": send one patch per node.",
                 patch.slug
             )));
@@ -151,14 +166,14 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
             patch.expected_mtime,
         )
         .map_err(|refused| {
-            refused.framed(&format!("patches[{index}] ({}): ", patch.slug), NOTHING_CHANGED)
+            failed_in_batch(refused, &format!("patches[{index}] ({}): ", patch.slug))
         })?;
         let minted = plan.minted_uid.clone();
         let (entry, file) = plan.into_parts();
         entries.push(entry);
         touched.push((file, minted));
     }
-    apply_patches(write, entries).map_err(|failed| failed.framed("", NOTHING_CHANGED))?;
+    apply_patches(write, entries).map_err(|failed| failed_in_batch(failed, ""))?;
 
     let slugs: Vec<String> = patches.iter().map(|patch| patch.slug.clone()).collect();
     let rows: Vec<Setting> = patches

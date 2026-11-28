@@ -3,7 +3,7 @@
 //! outran their description (`maintenance_plan`).
 
 use ontology_graph::{StaleSummary, VaultValidationFacts};
-use vault_validation::{page_validation, summary_freshness, PageRequest};
+use vault_validation::{brief_validation, summary_freshness};
 
 use super::read_vault::read_vault;
 use super::vault_repository::{locate, Located};
@@ -15,7 +15,7 @@ use crate::error::ToolError;
 pub fn validation_facts(context: &CallContext<'_>) -> Result<VaultValidationFacts, ToolError> {
     let read = read_vault(context)?;
     let report = build_report(context, &read.root, read.vault.documents(), None)?;
-    let page = page_validation(&report.frame, &report.list, &PageRequest::brief());
+    let page = brief_validation(&report.frame, &report.list);
     let brief =
         answer_format::json::to_raw(&page).map_err(|error| ToolError::failed(error.to_string()))?;
     Ok(VaultValidationFacts {
