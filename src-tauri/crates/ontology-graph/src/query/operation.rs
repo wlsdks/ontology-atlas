@@ -32,7 +32,7 @@ pub enum Operation {
 
 impl Operation {
     /// Every operation, in the order the tool's schema lists them and an error offers them.
-    pub const ALL: [Self; 30] = [
+    pub const ALL: [Self; 31] = [
         Self::Walk(WalkOperation::Neighbors),
         Self::Walk(WalkOperation::Path),
         Self::QueryPlan,
@@ -49,6 +49,7 @@ impl Operation {
         Self::Selection(SelectionOperation::Facets),
         Self::Selection(SelectionOperation::MatchNodes),
         Self::Selection(SelectionOperation::NodeProfile),
+        Self::Selection(SelectionOperation::DomainMatrix),
         Self::Walk(WalkOperation::ProjectScope),
         Self::Walk(WalkOperation::ProjectMap),
         Self::Walk(WalkOperation::RelationCheck),
@@ -115,6 +116,6 @@ mod tests {
         unique.sort_unstable();
         unique.dedup();
         assert_eq!(unique.len(), names.len());
-        assert_eq!(Operation::plan_target_names().len(), 28);
+        assert_eq!(Operation::plan_target_names().len(), 29);
     }
 }

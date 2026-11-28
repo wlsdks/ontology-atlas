@@ -120,17 +120,29 @@ fn the_map_lists_units_and_entry_points_and_leaves_out_tests_and_ignored_folders
 }
 
 #[test]
-fn a_retired_part_is_refused_by_name_and_a_bad_argument_by_its_own_words() {
+fn a_retired_part_is_refused_with_what_replaced_it_and_a_null_is_no_part() {
     let (_scene, root) = repository();
     for (arguments, words) in [
-        (r#"{"view":"analysis"}"#, "are retired"),
-        (r#"{"proposal":{"concepts":[]}}"#, "are retired"),
-        (r#"{"qualification":{"contract":"constructionQualification:v2"}}"#, "are retired"),
+        (
+            r#"{"view":"analysis"}"#,
+            "view \"analysis\", proposal and qualification are retired",
+        ),
         (
             r#"{"view":"nonsense"}"#,
-            "view must be \"breadth\" or \"analysis\".",
+            "are retired: the structural analysis",
         ),
-        (r#"{"maxDepth":99}"#, "maxDepth must be <= 10."),
+        (
+            r#"{"proposal":{"concepts":[]}}"#,
+            "write what you found with add_concepts and add_relations",
+        ),
+        (
+            r#"{"qualification":{"contract":"constructionQualification:v2"}}"#,
+            "read the code with sourceReads",
+        ),
+        (
+            r#"{"maxDepth":99}"#,
+            "maxDepth is retired: the survey never used it.",
+        ),
         (
             r#"{"sourceOnly":true}"#,
             "sourceOnly requires sourceReads with 1\u{2013}16 exact selectors.",
@@ -140,8 +152,8 @@ fn a_retired_part_is_refused_by_name_and_a_bad_argument_by_its_own_words() {
         assert_eq!(result["isError"], true, "{arguments}");
         assert!(text_of(&result).contains(words), "{arguments}: {result}");
     }
-    let nothing = survey(&root, r#"{"proposal":null}"#);
-    assert_ne!(nothing["isError"], true, "a null proposal is no proposal: {nothing}");
+    let nothing = survey(&root, r#"{"proposal":null,"view":null}"#);
+    assert_ne!(nothing["isError"], true, "a null is no part: {nothing}");
 }
 
 #[test]

@@ -315,12 +315,7 @@ pub fn health<'a>(
         &dependency_types,
         "types",
     )?;
-    let order = dependency_view::order(
-        graph,
-        question.order_limit,
-        &dependency_types,
-        "types",
-    )?;
+    let order = dependency_view::order(graph, question.order_limit, &dependency_types, "types")?;
 
     let counts = graph.edge_counts();
     let (nodes, edges) = (graph.nodes().len(), graph.edges().len());

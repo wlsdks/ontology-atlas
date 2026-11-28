@@ -56,30 +56,8 @@ pub enum RecordKind {
     Review,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AnalysisMode {
-    Meaning,
-    Architecture,
-}
-
-impl AnalysisMode {
-    pub const NAMES: [&'static str; 2] = ["meaning", "architecture"];
-
-    pub fn parse(name: &str) -> Option<Self> {
-        match name {
-            "meaning" => Some(Self::Meaning),
-            "architecture" => Some(Self::Architecture),
-            _ => None,
-        }
-    }
-
-    pub const fn name(self) -> &'static str {
-        match self {
-            Self::Meaning => "meaning",
-            Self::Architecture => "architecture",
-        }
-    }
-}
+/// The modes a run may be recorded under.
+const ANALYSIS_MODES: [&str; 2] = ["meaning", "architecture"];
 
 /// A record that passed its checks: the fields as the file wrote them, in file order.
 #[derive(Debug, Clone)]
@@ -154,7 +132,7 @@ fn check_review(row: &Row) -> Result<(), RecordFault> {
 
 fn check_run(row: &Row) -> Result<(), RecordFault> {
     fields(row, &RUN_KEYS, "run")?;
-    one_of(field(row, "mode"), &AnalysisMode::NAMES, "analysis mode")?;
+    one_of(field(row, "mode"), &ANALYSIS_MODES, "analysis mode")?;
     check_scope(object(field(row, "scope"), "scope")?)?;
     let request = object(field(row, "request"), "request")?;
     fields(request, &["id", "text", "parentRunId"], "request")?;

@@ -1,39 +1,28 @@
-//! The archive of one vault: its record files listed a page at a time and read one at a time, each
-//! through the vault's confined folder, so a link planted in the folder or at a name reaches
-//! nothing outside it and a record is never read past its byte limit.
+//! The archive of one vault: a record file read by its id, through the vault's confined folder, so
+//! a link planted in the folder or at a name reaches nothing outside it and a record is never read
+//! past its byte limit.
 
 use std::path::PathBuf;
 
 use analysis_archive_format::{
-    is_record_file_name, is_record_of, is_uuid_v4, record_file_name, ARCHIVE_FOLDER,
-    MAX_RECORD_BYTES,
+    is_record_of, is_uuid_v4, record_file_name, ARCHIVE_FOLDER, MAX_RECORD_BYTES,
 };
 use confined_files::{SidecarError, Unsafe, VaultSidecar};
 use serde::Serialize;
 use thiserror::Error;
 
-use super::analysis_record::{AnalysisMode, AnalysisRecord, RecordKind};
-use super::archive_limits::{HISTORY_LIMIT_DEFAULT, HISTORY_LIMIT_MAX};
+use super::analysis_record::{AnalysisRecord, RecordKind};
 use super::evidence_digest::evidence_problems;
-use super::name_page::NamePage;
 use super::record_fault::RecordFault;
-use super::record_summary::RecordSummary;
 use super::record_text::parse_record;
 use super::record_value::RecordValue;
 
 const MEANING_AUTHORITY: &str = "diagnostic-records-only";
 
-/// Why a call to the archive was refused. The first three are the caller's to fix; the rest are
-/// about the vault.
+/// Why a call to the archive was refused. The first is the caller's to fix; the rest are about the
+/// vault.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ArchiveError {
-    #[error(
-        "Analysis history limit must be between 1 and {} scanned files.",
-        HISTORY_LIMIT_MAX
-    )]
-    InvalidLimit,
-    #[error("Invalid analysis history cursor.")]
-    InvalidCursor,
     #[error("Analysis recordId must be a UUIDv4.")]
     InvalidRecordId,
     #[error("Analysis record was not found.")]
@@ -45,75 +34,6 @@ pub enum ArchiveError {
     /// A record that cannot be read, or the folder that cannot be listed, with the reason.
     #[error("{0}")]
     Unreadable(String),
-}
-
-/// How many record files one `analysis_history` call reads: a whole number from 1 to
-/// [`HISTORY_LIMIT_MAX`]. The one place the range is judged.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct HistoryLimit(usize);
-
-impl HistoryLimit {
-    /// The limit a call sent, `None` when it sent something that is no number.
-    #[allow(
-        clippy::cast_precision_loss,
-        reason = "the candidates are at most a hundred"
-    )]
-    pub fn from_sent(number: Option<f64>) -> Result<Self, ArchiveError> {
-        let sent = number.ok_or(ArchiveError::InvalidLimit)?;
-        (1..=HISTORY_LIMIT_MAX)
-            .find(|candidate| *candidate as f64 == sent)
-            .map(Self)
-            .ok_or(ArchiveError::InvalidLimit)
-    }
-
-    pub fn get(self) -> usize {
-        self.0
-    }
-}
-
-impl Default for HistoryLimit {
-    fn default() -> Self {
-        Self(HISTORY_LIMIT_DEFAULT)
-    }
-}
-
-/// What one `analysis_history` call asks for.
-#[derive(Debug, Clone, Default)]
-pub struct HistoryQuery {
-    pub limit: HistoryLimit,
-    pub cursor: Option<String>,
-    pub mode: Option<AnalysisMode>,
-    pub project: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct Problem {
-    #[serde(rename = "fileName")]
-    file_name: String,
-    reason: String,
-}
-
-#[derive(Serialize)]
-pub struct Pagination {
-    #[serde(rename = "hasMore")]
-    has_more: bool,
-    #[serde(rename = "nextCursor")]
-    next_cursor: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct HistoryAnswer {
-    contract: &'static str,
-    operation: &'static str,
-    records: Vec<RecordSummary>,
-    problems: Vec<Problem>,
-    #[serde(rename = "totalFiles")]
-    total_files: usize,
-    scanned: usize,
-    returned: usize,
-    pagination: Pagination,
-    #[serde(rename = "meaningAuthority")]
-    meaning_authority: &'static str,
 }
 
 #[derive(Serialize)]
@@ -151,25 +71,6 @@ fn read_failure(error: SidecarError) -> RecordFault {
     })
 }
 
-/// A review keeps its run's id and so never approves another scope or run: it passes whatever the
-/// filters say, and only a run is held to them.
-fn passes(record: &AnalysisRecord, query: &HistoryQuery) -> bool {
-    if record.kind() == RecordKind::Review {
-        return true;
-    }
-    let mode_fits = query
-        .mode
-        .is_none_or(|mode| record.text_of("mode") == mode.name());
-    let project_fits = query.project.as_deref().is_none_or(|project| {
-        record
-            .at("scope")
-            .get("projectSlug")
-            .and_then(RecordValue::as_text)
-            == Some(project)
-    });
-    mode_fits && project_fits
-}
-
 impl AnalysisArchive {
     pub fn new(vault: PathBuf) -> Self {
         Self {
@@ -200,57 +101,6 @@ impl AnalysisArchive {
             }
         }
         Ok(record)
-    }
-
-    /// The newest records below the cursor, `limit` files at a time. A page reads and judges
-    /// `limit` files, so `mode` and `project` can leave it with fewer rows than files; `hasMore`
-    /// and `nextCursor` follow the files, never the rows.
-    pub fn history(&self, query: &HistoryQuery) -> Result<HistoryAnswer, ArchiveError> {
-        if query
-            .cursor
-            .as_deref()
-            .is_some_and(|cursor| !is_record_file_name(cursor))
-        {
-            return Err(ArchiveError::InvalidCursor);
-        }
-        let mut page = NamePage::new(query.limit.get(), query.cursor.clone());
-        for name in self.folder.file_names().map_err(listing_failure)? {
-            let name = name.map_err(|error| listing_failure(error.into()))?;
-            if is_record_file_name(&name) {
-                page.add(name);
-            }
-        }
-        let found = page.finish();
-        let mut records = Vec::new();
-        let mut problems = Vec::new();
-        for name in &found.names {
-            match self.read_file(name) {
-                Ok(record) => {
-                    if !passes(&record, query) {
-                        continue;
-                    }
-                    records.push(RecordSummary::of(&record, name));
-                }
-                Err(fault) => problems.push(Problem {
-                    file_name: name.clone(),
-                    reason: fault.to_string(),
-                }),
-            }
-        }
-        Ok(HistoryAnswer {
-            contract: "analysisHistory:v1",
-            operation: "analysis_history",
-            returned: records.len(),
-            records,
-            problems,
-            total_files: found.total,
-            scanned: found.names.len(),
-            pagination: Pagination {
-                has_more: found.next_cursor.is_some(),
-                next_cursor: found.next_cursor,
-            },
-            meaning_authority: MEANING_AUTHORITY,
-        })
     }
 
     /// The one record with this id, whole.

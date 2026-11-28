@@ -200,7 +200,7 @@ fn with_stated(request: &QueryRequest, stated: &Value) -> QueryRequest {
     request.depth = count("depth");
     request.max_hops = count("maxHops");
     request.limit = count("limit");
-    request.search_budget = stated["searchBudget"].as_f64();
+    request.search_budget = count("searchBudget");
     request
 }
 
@@ -224,7 +224,7 @@ fn a_plan_for_every_operation_states_what_the_operation_does_when_a_call_leaves_
         );
         planned_count += 1;
     }
-    assert_eq!(planned_count, 27);
+    assert_eq!(planned_count, 28);
 }
 
 #[test]
@@ -257,7 +257,10 @@ fn a_plan_refuses_the_start_name_an_operation_refuses_and_resolves_the_one_it_re
     };
     for operation in ["reachability", "impact", "blast_radius", "subgraph"] {
         let refused = run_query(&graph, &named(operation, "domain:core")).err();
-        assert!(refused.is_some(), "{operation} takes a slug, not a focus name");
+        assert!(
+            refused.is_some(),
+            "{operation} takes a slug, not a focus name"
+        );
         let planned = run_query(
             &graph,
             &plan_of(operation, named("query_plan", "domain:core")),

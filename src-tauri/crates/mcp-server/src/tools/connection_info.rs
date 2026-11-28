@@ -12,6 +12,7 @@ use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
+use crate::retired_arguments::refuse_retired_guide;
 use crate::surface::Surface;
 
 /// The construction card and the long-form guides, as the surface generator wrote them.
@@ -95,6 +96,9 @@ fn toolset_hash(listed: &[&crate::surface::ToolDef]) -> String {
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
     let guides = guides();
     let topics: Vec<&str> = guides.topics.iter().map(String::as_str).collect();
+    if let Some(sent) = arguments.string("guide") {
+        refuse_retired_guide(&sent)?;
+    }
     let topic = optional_one_of(arguments, "guide", &topics)?;
     let config = context.config();
     let surface = Surface::embedded();

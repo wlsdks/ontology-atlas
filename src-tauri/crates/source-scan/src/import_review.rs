@@ -77,9 +77,6 @@ pub struct EndpointDraft {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProposalValidation {
-    pub tool: &'static str,
-    pub required_arguments: [&'static str; 2],
-    pub required_proposal_fields: [&'static str; 6],
     pub fields_after_kind_decision: FieldsAfterKindDecision,
     pub endpoint_drafts: Vec<EndpointDraft>,
     pub purpose: &'static str,
@@ -262,16 +259,6 @@ fn endpoint_modelling(
             purpose: "Refresh repository candidates and evidence only; this call does not create or validate either missing ontology endpoint.",
         },
         proposal_validation: ProposalValidation {
-            tool: "analyze_repo_structure",
-            required_arguments: ["rootPath", "proposal"],
-            required_proposal_fields: [
-                "project",
-                "domains",
-                "capabilities",
-                "elements",
-                "relations",
-                "competencyAnswers",
-            ],
             fields_after_kind_decision: FieldsAfterKindDecision {
                 common: ["slug", "title", "definition", "evidence", "confidence"],
                 by_kind: ProposalFieldsByKind {
@@ -282,7 +269,7 @@ fn endpoint_modelling(
                 },
             },
             endpoint_drafts: drafts,
-            purpose: "Build a complete proposal from reviewed product meaning, then pass it with rootPath. Do not infer kind, title, definition, domain, or path from the endpoint slug alone.",
+            purpose: "Write each endpoint with add_concepts once reviewed product meaning decides its kind, title, definition, domain, and path. Do not infer them from the endpoint slug alone.",
         },
         resume_call: ResumeCall {
             tool: "infer_imports",

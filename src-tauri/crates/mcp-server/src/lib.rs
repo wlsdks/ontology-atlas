@@ -22,6 +22,7 @@ pub mod dispatch;
 pub mod error;
 pub mod protocol;
 mod raw_json;
+mod retired_arguments;
 pub mod runtime;
 pub mod server;
 pub mod suggestions;

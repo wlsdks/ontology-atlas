@@ -35,9 +35,8 @@ pub use query_error::QueryError;
 pub use relation_set::RELATION_TYPE_VALUES;
 pub use request::{Direction, QueryRequest, SEARCH_BUDGET_MAX};
 pub use selection::{
-    parse_ignore_patterns, LineSpan, NodeSort, OutsideFacts,
-    SelectionArguments, SelectionOperation, SelectionRequest, StaleSummary, UncertaintyRead,
-    VaultValidationFacts,
+    parse_ignore_patterns, LineSpan, NodeSort, OutsideFacts, SelectionArguments,
+    SelectionOperation, SelectionRequest, StaleSummary, UncertaintyRead, VaultValidationFacts,
 };
 pub use walks::WalkOperation;
 
@@ -91,7 +90,9 @@ pub fn run<'a>(
         }
         Operation::QueryPlan => OperationAnswer::Plan(Box::new(plan::query_plan(graph, request)?)),
         Operation::AnalysisRecord => {
-            return Err(QueryError::NotAGraphOperation(Operation::AnalysisRecord.name()));
+            return Err(QueryError::NotAGraphOperation(
+                Operation::AnalysisRecord.name(),
+            ));
         }
         Operation::Pending(operation) => {
             return Err(QueryError::NotAnsweredYet(operation.name()));

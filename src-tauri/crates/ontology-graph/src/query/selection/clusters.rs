@@ -148,7 +148,12 @@ pub fn components<'a>(
     let limit = request.limit.unwrap_or(CLUSTER_GROUP_LIMIT);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let groups = connected_components(graph, types.as_ref());
-    Ok(describe_components(graph, &groups, limit, CLUSTER_NODE_LIMIT))
+    Ok(describe_components(
+        graph,
+        &groups,
+        limit,
+        CLUSTER_NODE_LIMIT,
+    ))
 }
 
 /// The label each node ends with: the node whose slug names its community.

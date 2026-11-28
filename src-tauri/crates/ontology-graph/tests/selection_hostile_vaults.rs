@@ -11,8 +11,9 @@ const LONG: usize = 10_000;
 const HUB: usize = 50_000;
 const LIMIT: usize = 5;
 /// The operations that read the whole graph, with no node named.
-const WHOLE_GRAPH: [&str; 7] = [
+const WHOLE_GRAPH: [&str; 8] = [
     "match_nodes",
+    "domain_matrix",
     "recommend_relations",
     "health",
     "growth_plan",

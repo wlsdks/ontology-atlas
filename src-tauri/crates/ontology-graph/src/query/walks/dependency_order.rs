@@ -36,10 +36,7 @@ impl DependencyOrder {
 }
 
 /// The order of the nodes joined by the edges `types` allows.
-pub fn order_dependencies(
-    graph: &CompiledGraph,
-    types: Option<&RelationSet>,
-) -> DependencyOrder {
+pub fn order_dependencies(graph: &CompiledGraph, types: Option<&RelationSet>) -> DependencyOrder {
     let count = graph.nodes().len();
 
     let selected: Vec<EdgeId> = graph

@@ -5,7 +5,6 @@
 use serde::Serialize;
 
 use crate::query::operation::Operation;
-use crate::query::query_error::QueryError;
 use crate::query::selection::SelectionRequest;
 
 /// The way an operation may follow an edge. `Both` and `Undirected` both follow an edge either way;
@@ -57,8 +56,7 @@ pub const SEARCH_BUDGET_MAX: usize = 50_000;
 pub const DEPTH_MAX: usize = 20;
 
 /// The arguments of one `query_ontology` call that the operations read, each read once by the
-/// tool layer. The operation asks for the argument its own way: `search_budget` is judged only by
-/// the two operations that spend one, after they have resolved their nodes.
+/// tool layer.
 #[derive(Debug, Clone)]
 pub struct QueryRequest {
     pub operation: Operation,
@@ -68,8 +66,8 @@ pub struct QueryRequest {
     pub limit: Option<usize>,
     pub max_hops: Option<usize>,
     pub depth: Option<usize>,
-    /// `searchBudget` as sent, a number or NaN for anything that is not one.
-    pub search_budget: Option<f64>,
+    /// `searchBudget`, a whole number the tool layer kept within [`SEARCH_BUDGET_MAX`].
+    pub search_budget: Option<usize>,
     pub direction: Option<Direction>,
     pub types: Option<Vec<String>>,
     pub include_external: Option<bool>,
@@ -135,30 +133,7 @@ impl QueryRequest {
     }
 
     /// The states a search may expand: `default` when none was asked for.
-    pub fn search_budget(&self, default: usize) -> Result<usize, QueryError> {
-        let Some(sent) = self.search_budget else {
-            return Ok(default);
-        };
-        if sent.fract() != 0.0 || !sent.is_finite() || sent < 1.0 {
-            return Err(QueryError::Invalid(
-                "searchBudget must be a positive integer.".to_string(),
-            ));
-        }
-        #[allow(
-            clippy::cast_possible_truncation,
-            clippy::cast_sign_loss,
-            reason = "the number is a whole number of at least one"
-        )]
-        let budget = if sent > SEARCH_BUDGET_MAX as f64 {
-            usize::MAX
-        } else {
-            sent as usize
-        };
-        if budget > SEARCH_BUDGET_MAX {
-            return Err(QueryError::Invalid(format!(
-                "searchBudget must be <= {SEARCH_BUDGET_MAX}."
-            )));
-        }
-        Ok(budget)
+    pub fn search_budget(&self, default: usize) -> usize {
+        self.search_budget.unwrap_or(default)
     }
 }

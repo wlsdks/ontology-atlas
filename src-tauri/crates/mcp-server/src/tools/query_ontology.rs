@@ -1,23 +1,23 @@
 //! `query_ontology`: one question put to the compiled graph. The arguments are read here once, in
-//! the order and with the sentences the JavaScript server used, into the `QueryRequest` the
-//! operations answer from (`ontology_graph::run_query`).
+//! the order and with the sentences the script server uses, into the `QueryRequest` the operations
+//! answer from (`ontology_graph::run_query`). An operation or an argument the server retired is
+//! refused first, by `retired_arguments`, with what replaced it.
 
 use ontology_graph::{
-    AnalysisOperation, Direction, NodeSort, Operation, QueryError, QueryRequest,
-    SelectionArguments, RELATION_TYPE_VALUES,
+    Direction, NodeSort, Operation, QueryError, QueryRequest, SelectionArguments,
+    RELATION_TYPE_VALUES, SEARCH_BUDGET_MAX,
 };
 use serde_json::Value;
 
 use super::argument_checks::{
-    argument, optional_boolean, optional_non_blank_text, optional_non_negative_integer,
+    argument, one_of, optional_boolean, optional_non_blank_text, optional_non_negative_integer,
     optional_one_of, optional_positive_integer, optional_text_list, required_non_blank_text,
 };
-use crate::analysis_records::{
-    AnalysisArchive, AnalysisMode, ArchiveError, HistoryLimit, HistoryQuery,
-};
+use crate::analysis_records::{AnalysisArchive, ArchiveError};
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
+use crate::retired_arguments::refuse_retired_query_operation;
 use vault_document::slug_not_found_hint;
 
 use super::read_vault::open_root;
@@ -32,65 +32,32 @@ const NODE_KINDS: [&str; 6] = [
     "document",
     "vault-readme",
 ];
-const EDGE_TARGET_KINDS: [&str; 8] = [
-    "project",
-    "domain",
-    "capability",
-    "element",
-    "document",
-    "vault-readme",
-    "external",
-    "unresolved",
-];
 /// Arguments that are text a call may send; each is checked, and the ones an operation reads are
 /// taken from what was checked.
-const TEXT_ARGUMENTS: [&str; 20] = [
+const TEXT_ARGUMENTS: [&str; 10] = [
     "slug",
-    "seed",
     "candidateSlug",
     "title",
-    "task",
     "from",
     "project",
     "to",
     "type",
     "kind",
     "domain",
-    "slugContains",
-    "fromKind",
-    "toKind",
-    "relation",
     "afterActionId",
-    "expectedGraphHash",
-    "expectedSourceFingerprint",
-    "reviewRevision",
-    "cursor",
 ];
-const COUNT_ARGUMENTS: [&str; 7] = [
-    "limit",
-    "itemLimit",
-    "nodeLimit",
-    "componentLimit",
-    "cycleLimit",
-    "recommendationLimit",
-    "orderLimit",
-];
-const BOOLEAN_ARGUMENTS: [&str; 7] = [
+const BOOLEAN_ARGUMENTS: [&str; 6] = [
     "includeExternal",
     "includeUnresolved",
-    "includeIsolated",
     "includeOrphans",
     "executableOnly",
     "hasIncoming",
     "hasOutgoing",
 ];
-const DEGREE_ARGUMENTS: [&str; 4] = ["minDegree", "maxDegree", "minInDegree", "minOutDegree"];
 const MAINTENANCE_PHASES: usize = 5;
 const MAINTENANCE_SEVERITIES: usize = 3;
 const MAINTENANCE_KINDS: usize = 20;
-const TASK_MAX_CHARS: usize = 2_000;
 const PAGE_MAX: f64 = 500.0;
-const ITERATIONS_MAX: f64 = 100.0;
 const HOPS_MAX: f64 = 20.0;
 
 #[allow(
@@ -106,16 +73,6 @@ fn invalid(message: &str) -> ToolError {
     ToolError::invalid(message)
 }
 
-/// `^prefix[a-f0-9]{digits}$`.
-fn is_prefixed_hex(text: &str, prefix: &str, digits: usize) -> bool {
-    text.strip_prefix(prefix).is_some_and(|rest| {
-        rest.len() == digits
-            && rest
-                .bytes()
-                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-    })
-}
-
 fn text_of<'a>(texts: &'a [(&str, Option<String>)], name: &str) -> Option<&'a String> {
     texts
         .iter()
@@ -123,7 +80,7 @@ fn text_of<'a>(texts: &'a [(&str, Option<String>)], name: &str) -> Option<&'a St
         .and_then(|(_, text)| text.as_ref())
 }
 
-/// A whole number of at least one, at most `PAGE_MAX`, as the JavaScript server checks `limit`.
+/// A whole number of at least one, at most `PAGE_MAX`, as the script server checks `limit`.
 fn page_size(value: &Value, name: &str) -> Result<usize, ToolError> {
     let number = value
         .as_f64()
@@ -135,17 +92,26 @@ fn page_size(value: &Value, name: &str) -> Result<usize, ToolError> {
     Ok(count(number))
 }
 
-/// The arguments only the analysis records read.
-struct AnalysisArguments {
-    record_id: Option<String>,
-    cursor: Option<String>,
-    mode: Option<AnalysisMode>,
-    limit: Option<HistoryLimit>,
+/// `excludeKinds`: at most one entry per node kind, each a node kind.
+fn excluded_kinds(arguments: &Arguments) -> Result<Option<Vec<String>>, ToolError> {
+    let Some(kinds) = optional_text_list(arguments, "excludeKinds", NODE_KINDS.len())? else {
+        return Ok(None);
+    };
+    for kind in &kinds {
+        one_of(
+            &Value::String(kind.clone()),
+            "excludeKinds items",
+            &NODE_KINDS,
+        )?;
+    }
+    Ok(Some(kinds))
 }
 
-/// Reads every argument of the call once, in the JavaScript server's order, into the request.
-fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArguments), ToolError> {
+/// Reads every argument of the call once, in the script server's order, into the request. The id
+/// of the record `analysis_record` reads comes beside it: it is no part of what a graph answers.
+fn read_request(arguments: &Arguments) -> Result<(QueryRequest, Option<String>), ToolError> {
     let operation_name = required_non_blank_text(arguments, "operation")?;
+    refuse_retired_query_operation(&operation_name)?;
     let operation = Operation::parse(&operation_name).ok_or_else(|| {
         ToolError::not_an_allowed_value(
             "operation",
@@ -166,89 +132,26 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
         target_operation = Operation::parse(&target);
     }
     let record_id = optional_non_blank_text(arguments, "recordId")?;
-    let analysis_cursor = optional_non_blank_text(arguments, "analysisCursor")?;
-    let analysis_mode = optional_one_of(arguments, "analysisMode", &AnalysisMode::NAMES)?;
-    let is = |name: &str| operation.name() == name;
-    if is("analysis_record") && record_id.is_none() {
+    let reads_record = operation == Operation::AnalysisRecord;
+    if reads_record && record_id.is_none() {
         required_non_blank_text(arguments, "recordId")?;
     }
-    if record_id.is_some() && !is("analysis_record") {
+    if record_id.is_some() && !reads_record {
         return Err(invalid("recordId is only valid for analysis_record."));
     }
-    if (analysis_mode.is_some() || analysis_cursor.is_some()) && !is("analysis_history") {
-        return Err(invalid(
-            "Analysis history filters require analysis_history.",
-        ));
-    }
-    let limit_sent = argument(arguments, "limit")?;
-    let history_limit = if is("analysis_history") {
-        limit_sent
-            .as_ref()
-            .map(|limit| HistoryLimit::from_sent(limit.as_f64()))
-            .transpose()
-            .map_err(|error| archive_refusal(&error))?
-    } else {
-        None
-    };
     let mut texts: Vec<(&str, Option<String>)> = Vec::with_capacity(TEXT_ARGUMENTS.len());
     for key in TEXT_ARGUMENTS {
         texts.push((key, optional_non_blank_text(arguments, key)?));
     }
-    let detail = optional_one_of(arguments, "detail", &["compact", "full"])?;
-    if detail.is_some() && !is("agent_brief") {
-        return Err(invalid(
-            "detail is only valid for operation \"agent_brief\".",
-        ));
-    }
-    let compact = detail == Some("compact");
-    let task = text_of(&texts, "task");
-    if task.is_some() && (!is("agent_brief") || !compact) {
-        return Err(invalid(
-            "task is only valid for operation \"agent_brief\" with detail \"compact\".",
-        ));
-    }
-    if is("agent_brief") && compact && task.is_none() {
-        return Err(invalid("agent_brief detail \"compact\" requires task."));
-    }
-    if let Some(task) = task {
-        if answer_format::utf16::len(task) > TASK_MAX_CHARS {
-            return Err(invalid(&format!(
-                "task must contain at most {TASK_MAX_CHARS} characters."
-            )));
-        }
-    }
-    let mut limit = None;
-    let mut node_limit = None;
-    let mut item_limit = None;
-    let mut counts: Vec<(&str, Option<usize>)> = Vec::with_capacity(COUNT_ARGUMENTS.len());
-    for key in COUNT_ARGUMENTS {
-        let size = if key == "limit" {
-            limit_sent
-                .as_ref()
-                .map(|value| page_size(value, key))
-                .transpose()?
-        } else {
-            optional_positive_integer(arguments, key, Some(PAGE_MAX))?.map(count)
-        };
-        match key {
-            "limit" => limit = size,
-            "nodeLimit" => node_limit = size,
-            "itemLimit" => item_limit = size,
-            _ => {}
-        }
-        counts.push((key, size));
-    }
-    let iterations =
-        optional_positive_integer(arguments, "iterations", Some(ITERATIONS_MAX))?.map(count);
+    let limit = argument(arguments, "limit")?
+        .map(|value| page_size(&value, "limit"))
+        .transpose()?;
+    let item_limit = optional_positive_integer(arguments, "itemLimit", Some(PAGE_MAX))?.map(count);
+    let search_budget =
+        optional_positive_integer(arguments, "searchBudget", Some(SEARCH_BUDGET_MAX as f64))?
+            .map(count);
     let max_hops = optional_non_negative_integer(arguments, "maxHops", Some(HOPS_MAX))?.map(count);
     let depth = optional_non_negative_integer(arguments, "depth", Some(HOPS_MAX))?.map(count);
-    let mut degrees: Vec<(&str, Option<usize>)> = Vec::with_capacity(DEGREE_ARGUMENTS.len());
-    for key in DEGREE_ARGUMENTS {
-        degrees.push((
-            key,
-            optional_non_negative_integer(arguments, key, None)?.map(count),
-        ));
-    }
     let direction =
         optional_one_of(arguments, "direction", &Direction::ALLOWED)?.and_then(Direction::parse);
     let sort = optional_one_of(
@@ -257,16 +160,12 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
         &["degree", "inDegree", "outDegree", "slug"],
     )?
     .and_then(NodeSort::parse);
+    let is = |name: &str| operation.name() == name;
     if is("recommend_relations") {
         check_kind(&texts, &["capability", "element"])?;
     } else if is("match_nodes") {
         check_kind(&texts, &NODE_KINDS)?;
     }
-    if is("match_edges") {
-        check_text_in(&texts, "fromKind", &NODE_KINDS)?;
-        check_text_in(&texts, "toKind", &EDGE_TARGET_KINDS)?;
-    }
-    let mut include_isolated = None;
     let mut include_orphans = None;
     let mut include_external = None;
     let mut include_unresolved = None;
@@ -274,7 +173,6 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
     for key in BOOLEAN_ARGUMENTS {
         let flag = optional_boolean(arguments, key)?;
         match key {
-            "includeIsolated" => include_isolated = flag,
             "includeOrphans" => include_orphans = flag,
             "includeExternal" => include_external = flag,
             "includeUnresolved" => include_unresolved = flag,
@@ -282,57 +180,34 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
         }
         flags.push((key, flag));
     }
+    let offset = optional_non_negative_integer(arguments, "offset", None)?.map(count);
+    let exclude_kinds = excluded_kinds(arguments)?;
     let relations = RELATION_TYPE_VALUES.len();
     let types = optional_text_list(arguments, "types", relations)?;
     let pattern = optional_text_list(arguments, "pattern", relations)?;
     let phases = optional_text_list(arguments, "phases", MAINTENANCE_PHASES)?;
     let severities = optional_text_list(arguments, "severities", MAINTENANCE_SEVERITIES)?;
     let kinds = optional_text_list(arguments, "kinds", MAINTENANCE_KINDS)?;
-    let dependency_types = optional_text_list(arguments, "dependencyTypes", relations)?;
-    let component_types = optional_text_list(arguments, "componentTypes", relations)?;
-    if is("meaning_repair_review") {
-        check_meaning_repair(arguments, &texts)?;
-    }
-    // Judged by the operations that spend it, after they have found their nodes.
-    let search_budget =
-        argument(arguments, "searchBudget")?.map(|value| value.as_f64().unwrap_or(f64::NAN));
 
     let mut request = QueryRequest::new(operation);
     request.slug = text_of(&texts, "slug").cloned();
     request.from = text_of(&texts, "from").cloned();
     request.to = text_of(&texts, "to").cloned();
     request.limit = limit;
-    request.node_limit = node_limit;
-    request.iterations = iterations;
     request.max_hops = max_hops;
     request.depth = depth;
     request.search_budget = search_budget;
     request.direction = direction;
     request.types = types;
-    request.include_isolated = include_isolated;
     request.include_external = include_external;
     request.include_unresolved = include_unresolved;
     request.item_limit = item_limit;
     request.include_orphans = include_orphans;
     request.pattern = pattern;
-    request.seed = text_of(&texts, "seed").cloned();
     request.project = text_of(&texts, "project").cloned();
     request.relation_type = text_of(&texts, "type").cloned();
-    request.relation = text_of(&texts, "relation").cloned();
     request.target_operation = target_operation;
     let text = |name: &str| text_of(&texts, name).cloned();
-    let size = |name: &str| {
-        counts
-            .iter()
-            .find(|(key, _)| *key == name)
-            .and_then(|(_, n)| *n)
-    };
-    let degree = |name: &str| {
-        degrees
-            .iter()
-            .find(|(key, _)| *key == name)
-            .and_then(|(_, n)| *n)
-    };
     let flag = |name: &str| {
         flags
             .iter()
@@ -342,113 +217,31 @@ fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArgument
     request.selection.arguments = SelectionArguments {
         kind: text("kind"),
         domain: text("domain"),
-        slug_contains: text("slugContains"),
-        min_degree: degree("minDegree"),
-        max_degree: degree("maxDegree"),
-        min_in_degree: degree("minInDegree"),
-        min_out_degree: degree("minOutDegree"),
         has_incoming: flag("hasIncoming"),
         has_outgoing: flag("hasOutgoing"),
         sort,
-        from_kind: text("fromKind"),
-        to_kind: text("toKind"),
+        offset,
+        exclude_kinds,
         candidate_slug: text("candidateSlug"),
         title: text("title"),
-        component_limit: size("componentLimit"),
-        cycle_limit: size("cycleLimit"),
-        recommendation_limit: size("recommendationLimit"),
-        order_limit: size("orderLimit"),
         phases,
         severities,
         kinds,
-        dependency_types,
-        component_types,
         executable_only: flag("executableOnly"),
         after_action_id: text("afterActionId"),
     };
-    let analysis = AnalysisArguments {
-        record_id,
-        cursor: analysis_cursor,
-        mode: analysis_mode.and_then(AnalysisMode::parse),
-        limit: history_limit,
-    };
-    Ok((request, analysis))
+    Ok((request, record_id))
 }
 
 fn check_kind(texts: &[(&str, Option<String>)], allowed: &[&str]) -> Result<(), ToolError> {
-    check_text_in(texts, "kind", allowed)
-}
-
-fn check_text_in(
-    texts: &[(&str, Option<String>)],
-    name: &str,
-    allowed: &[&str],
-) -> Result<(), ToolError> {
-    match text_of(texts, name) {
+    match text_of(texts, "kind") {
         Some(text) if !allowed.contains(&text.as_str()) => Err(ToolError::not_an_allowed_value(
-            name,
+            "kind",
             ReceivedValue::Text(text),
             allowed,
         )),
         _ => Ok(()),
     }
-}
-
-fn check_meaning_repair(
-    arguments: &Arguments,
-    texts: &[(&str, Option<String>)],
-) -> Result<(), ToolError> {
-    if text_of(texts, "project").is_none() {
-        required_non_blank_text(arguments, "project")?;
-    }
-    if text_of(texts, "reviewRevision").is_none() {
-        required_non_blank_text(arguments, "reviewRevision")?;
-    }
-    let cursor = text_of(texts, "cursor");
-    if cursor.is_none() {
-        if text_of(texts, "expectedGraphHash").is_none() {
-            required_non_blank_text(arguments, "expectedGraphHash")?;
-        }
-        if text_of(texts, "expectedSourceFingerprint").is_none() {
-            required_non_blank_text(arguments, "expectedSourceFingerprint")?;
-        }
-    }
-    if let Some(hash) = text_of(texts, "expectedGraphHash") {
-        if !is_prefixed_hex(hash, "project-graph-v1:", 8) {
-            return Err(invalid(
-                "expectedGraphHash must be a project-graph-v1 hash.",
-            ));
-        }
-    }
-    if !text_of(texts, "reviewRevision")
-        .is_some_and(|revision| is_prefixed_hex(revision, "sha256:", 64))
-    {
-        return Err(invalid("reviewRevision must be a sha256 digest."));
-    }
-    if let Some(fingerprint) = text_of(texts, "expectedSourceFingerprint") {
-        if answer_format::utf16::len(fingerprint) > 200 {
-            return Err(invalid(
-                "expectedSourceFingerprint must contain at most 200 characters.",
-            ));
-        }
-    }
-    if let Some(cursor) = cursor {
-        if answer_format::utf16::len(cursor) > 4096 {
-            return Err(invalid("cursor must contain at most 4096 characters."));
-        }
-        let is_meaning_cursor = cursor.strip_prefix("mrp1.").is_some_and(|rest| {
-            rest.len() == 32
-                && rest
-                    .bytes()
-                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-        });
-        if !is_meaning_cursor {
-            return Err(invalid(
-                "cursor must be an opaque meaning repair cursor returned by nextCall.",
-            ));
-        }
-    }
-    Ok(())
 }
 
 /// The refusal an agent reads. `node_profile` alone adds a growth hint to a name that is no node, so a
@@ -508,9 +301,7 @@ fn read_ignore_patterns(context: &CallContext<'_>) -> Result<Vec<String>, ToolEr
 /// fix, a missing record is not found, and everything else is about the vault.
 fn archive_refusal(error: &ArchiveError) -> ToolError {
     match error {
-        ArchiveError::InvalidLimit
-        | ArchiveError::InvalidCursor
-        | ArchiveError::InvalidRecordId => ToolError::invalid(error.to_string()),
+        ArchiveError::InvalidRecordId => ToolError::invalid(error.to_string()),
         ArchiveError::NotFound => ToolError::new(ErrorCode::NotFound, error.to_string()),
         ArchiveError::Ambiguous | ArchiveError::FolderRefused | ArchiveError::Unreadable(_) => {
             ToolError::failed(error.to_string())
@@ -518,42 +309,23 @@ fn archive_refusal(error: &ArchiveError) -> ToolError {
     }
 }
 
-/// The analysis operations answer from the vault's record files and never compile the graph, so a
-/// vault whose graph cannot compile still lists its records.
+/// `analysis_record` answers from the vault's record files and never compiles the graph, so a
+/// vault whose graph cannot compile still reads its records.
 fn answer_from_archive(
     context: &CallContext<'_>,
-    operation: AnalysisOperation,
-    request: &QueryRequest,
-    analysis: AnalysisArguments,
+    record_id: &str,
 ) -> Result<ToolOutput, ToolError> {
     let archive = AnalysisArchive::new(context.config().vault_root.clone());
-    match operation {
-        AnalysisOperation::History => {
-            let query = HistoryQuery {
-                limit: analysis.limit.unwrap_or_default(),
-                cursor: analysis.cursor,
-                mode: analysis.mode,
-                project: request.project.clone(),
-            };
-            let answer = archive
-                .history(&query)
-                .map_err(|error| archive_refusal(&error))?;
-            ToolOutput::json(&answer)
-        }
-        AnalysisOperation::Record => {
-            let id = analysis.record_id.unwrap_or_default();
-            let answer = archive
-                .record(&id)
-                .map_err(|error| archive_refusal(&error))?;
-            ToolOutput::json(&answer)
-        }
-    }
+    let answer = archive
+        .record(record_id)
+        .map_err(|error| archive_refusal(&error))?;
+    ToolOutput::json(&answer)
 }
 
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
-    let (mut request, analysis) = read_request(arguments)?;
-    if let Operation::Analysis(operation) = request.operation {
-        return answer_from_archive(context, operation, &request, analysis);
+    let (mut request, record_id) = read_request(arguments)?;
+    if request.operation == Operation::AnalysisRecord {
+        return answer_from_archive(context, &record_id.unwrap_or_default());
     }
     if matches!(
         request.operation.name(),

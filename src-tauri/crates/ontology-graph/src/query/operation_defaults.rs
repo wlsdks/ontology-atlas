@@ -93,6 +93,7 @@ pub const SCHEMA_LIMIT: usize = 50;
 
 pub const NODE_PROFILE_LIMIT: usize = 20;
 pub const NODE_PROFILE_DEPTH: usize = 3;
+pub const DOMAIN_MATRIX_LIMIT: usize = 100;
 
 pub const RECOMMEND_RELATIONS_LIMIT: usize = 50;
 pub const GROWTH_PLAN_LIMIT: usize = 25;
@@ -134,6 +135,7 @@ pub fn default_limit(operation: Operation) -> Option<usize> {
             SelectionOperation::MatchNodes => Some(MATCH_NODES_LIMIT),
             SelectionOperation::RecommendRelations => Some(RECOMMEND_RELATIONS_LIMIT),
             SelectionOperation::NodeProfile => Some(NODE_PROFILE_LIMIT),
+            SelectionOperation::DomainMatrix => Some(DOMAIN_MATRIX_LIMIT),
             SelectionOperation::GrowthPlan => Some(GROWTH_PLAN_LIMIT),
             SelectionOperation::MaintenancePlan => Some(MAINTENANCE_PLAN_LIMIT),
             SelectionOperation::WorkspaceBrief => Some(WORKSPACE_BRIEF_LIMIT),

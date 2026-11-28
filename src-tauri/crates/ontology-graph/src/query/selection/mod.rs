@@ -1,11 +1,13 @@
 //! The operations that pick nodes out of the graph or summarize it: `overview`, `schema`,
 //! `facets`, `components`, `communities`, `similar_nodes`, `match_nodes`, `recommend_relations`,
-//! `node_profile`, `growth_plan`, `maintenance_plan`, `health` and `workspace_brief`. What they read about the
+//! `node_profile`, `domain_matrix`, `growth_plan`, `maintenance_plan`, `health` and
+//! `workspace_brief`. What they read about the
 //! world beside the graph (the vault's validation, its ignore file, the reads its bodies ask for)
 //! reaches them in `QueryRequest::selection`, handed over by the tool layer.
 
 mod clusters;
 mod dependency_view;
+mod domain_matrix;
 mod follow_up;
 mod graph_summary;
 mod growth_candidates;
@@ -30,8 +32,8 @@ pub(in crate::query) use match_nodes::count_matching_nodes;
 
 pub use ignored_references::parse_patterns as parse_ignore_patterns;
 pub use selection_request::{
-    LineSpan, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest,
-    StaleSummary, UncertaintyRead, VaultValidationFacts,
+    LineSpan, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest, StaleSummary,
+    UncertaintyRead, VaultValidationFacts,
 };
 
 use serde::Serialize;
@@ -51,6 +53,7 @@ pub enum SelectionOperation {
     MatchNodes,
     RecommendRelations,
     NodeProfile,
+    DomainMatrix,
     GrowthPlan,
     MaintenancePlan,
     Health,
@@ -69,6 +72,7 @@ impl SelectionOperation {
             Self::MatchNodes => "match_nodes",
             Self::RecommendRelations => "recommend_relations",
             Self::NodeProfile => "node_profile",
+            Self::DomainMatrix => "domain_matrix",
             Self::GrowthPlan => "growth_plan",
             Self::MaintenancePlan => "maintenance_plan",
             Self::Health => "health",
@@ -93,6 +97,7 @@ pub enum SelectionAnswer<'a> {
     MatchNodes(match_nodes::MatchNodesAnswer<'a>),
     RecommendRelations(relation_recommendations::RecommendRelationsAnswer<'a>),
     NodeProfile(node_profile::NodeProfileAnswer<'a>),
+    DomainMatrix(domain_matrix::DomainMatrixAnswer<'a>),
     GrowthPlan(growth_plan::GrowthPlanAnswer<'a>),
     MaintenancePlan(maintenance_plan::MaintenancePlanAnswer<'a>),
     Health(health::HealthAnswer<'a>),
@@ -131,6 +136,9 @@ pub fn run<'a>(
         ),
         SelectionOperation::NodeProfile => {
             SelectionAnswer::NodeProfile(node_profile::node_profile(graph, request)?)
+        }
+        SelectionOperation::DomainMatrix => {
+            SelectionAnswer::DomainMatrix(domain_matrix::domain_matrix(graph, request)?)
         }
         SelectionOperation::GrowthPlan => {
             SelectionAnswer::GrowthPlan(growth_plan::growth_plan(graph, request)?)

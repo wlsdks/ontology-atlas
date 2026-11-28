@@ -298,7 +298,7 @@ pub fn cycles<'a>(
         .or(request.depth)
         .unwrap_or(CYCLES_MAX_HOPS);
     let types = RelationSet::dependencies_unless_named(request.types.as_deref())?;
-    let search_budget = request.search_budget(CYCLES_SEARCH_BUDGET)?;
+    let search_budget = request.search_budget(CYCLES_SEARCH_BUDGET);
 
     let search = find_cycles(graph, types.as_ref(), max_depth, limit, search_budget);
 

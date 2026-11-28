@@ -40,6 +40,11 @@ impl Arguments {
         self
     }
 
+    /// Takes `key` out of the arguments, as if it had not been sent.
+    pub fn remove(&mut self, key: &str) {
+        self.fields.shift_remove(key);
+    }
+
     pub fn is_empty(&self) -> bool {
         self.fields.is_empty()
     }

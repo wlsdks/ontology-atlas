@@ -487,8 +487,7 @@ pub fn maintenance_plan<'a>(
     let phase_filter = filter_of(arguments.phases.as_deref(), "phases", &PHASES)?;
     let severity_filter = filter_of(arguments.severities.as_deref(), "severities", &SEVERITIES)?;
     let kind_filter = filter_of(arguments.kinds.as_deref(), "kinds", &KINDS)?;
-    let cycle_report =
-        dependency_view::cycles(graph, limit, None, &default_types(), "types")?;
+    let cycle_report = dependency_view::cycles(graph, limit, None, &default_types(), "types")?;
     let recommendations = recommend(graph, None, limit);
     let external = external_elements(graph, &request.selection.outside.ignore_patterns, limit);
     let dangling = dangling_references(graph, limit);

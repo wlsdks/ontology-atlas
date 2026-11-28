@@ -29,8 +29,8 @@ use crate::query::operation_defaults::{
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{public_relation_type, RelationSet};
 use crate::query::request::{Direction, QueryRequest};
-use crate::query::selection::SelectionOperation;
 use crate::query::selection::count_matching_nodes;
+use crate::query::selection::SelectionOperation;
 use crate::query::walks::impact::refuse_structural_types;
 use crate::query::walks::neighbors::count_filtered_edges;
 use crate::query::walks::WalkOperation;

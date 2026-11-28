@@ -6,7 +6,6 @@ use std::collections::HashSet;
 
 use serde::Serialize;
 
-use crate::query::score_rounding::round_score;
 use super::clusters::undirected_adjacency;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::node_resolution::resolve;
@@ -15,6 +14,7 @@ use crate::query::operation_defaults::SIMILAR_NODES_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::QueryRequest;
+use crate::query::score_rounding::round_score;
 use crate::query::walks::row_page::RowPage;
 use vault_document::frontmatter::Value;
 

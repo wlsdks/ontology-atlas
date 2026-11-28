@@ -19,6 +19,7 @@ use crate::arguments::Arguments;
 use crate::audit::WriteRecord;
 use crate::error::{ToolError, UnknownField};
 use crate::protocol::{ClientAnswer, ServerRequestWait, Session};
+use crate::retired_arguments::refuse_retired_argument;
 use crate::runtime::Config;
 use crate::suggestions::closest_allowed_value;
 use crate::surface::Surface;
@@ -240,18 +241,20 @@ fn unknown_tool_error(surface: &Surface, name: &str) -> ToolError {
     ToolError::unknown_tool(name, suggestion.as_deref(), &allowed)
 }
 
-/// The arguments of a call to `tool_name`, with an unknown argument refused by name and, for a
-/// known tool, an argument that holds half of a surrogate pair (which is not text, so no handler
-/// is given it), and a blank or multi-line value of a non-blank string argument, refused.
+/// The arguments of a call to `tool_name`, with a retired argument refused by what replaced it, an
+/// unknown argument refused by name and, for a known tool, an argument that holds half of a
+/// surrogate pair (which is not text, so no handler is given it), and a blank or multi-line value
+/// of a non-blank string argument, refused.
 pub fn normalize_tool_arguments(
     surface: &Surface,
     arguments: Option<Arguments>,
     tool_name: &str,
 ) -> Result<Arguments, ToolError> {
-    let arguments = arguments.unwrap_or_default();
+    let mut arguments = arguments.unwrap_or_default();
     let Some(tool) = surface.tool(tool_name) else {
         return Ok(arguments);
     };
+    refuse_retired_argument(tool_name, &mut arguments)?;
     let unknown: Vec<&str> = arguments
         .keys()
         .filter(|key| !tool.argument_names.iter().any(|allowed| allowed == key))
