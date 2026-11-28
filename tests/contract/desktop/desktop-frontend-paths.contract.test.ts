@@ -150,6 +150,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
     const allowed = [
       /^src\/views\/download\//,
       /^src\/shared\/lib\/public-pages\/page-metadata\.ts$/,
+      /^src\/app\/routes\/-site\/screen-metadata\.ts$/,
       /^app\/layout\.tsx$/,
       /^app\/robots\.ts$/,
       /^app\/sitemap\.ts$/,

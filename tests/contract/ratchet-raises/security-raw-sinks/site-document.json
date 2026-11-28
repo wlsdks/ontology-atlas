@@ -1,0 +1,5 @@
+{
+  "gate": "security-raw-sinks",
+  "raise": 2,
+  "why": "SiteDocument, the document the website's prerender writes and the browser renders again, carries three script children by raw text: the boot script that chooses the language, one inline script at the root, and the JSON record the page embeds. Each text is built at build time from the locale list and the build's own facts and holds no vault, URL or user data; the record goes through serializeJsonForHtml. A script child cannot use a plain text child, because React escapes script text and would break the code and the JSON. The three sinks need a raise of three; the existing gateway hand-over record covers one."
+}
