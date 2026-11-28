@@ -5,57 +5,41 @@ import type { PageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { withTrailingSlash } from '@/shared/lib/public-pages/trailing-slash';
 
 type Entry = readonly [key: string, element: ReactElement];
+type OpenGraph = NonNullable<PageMetadata['openGraph']>;
+type Twitter = NonNullable<PageMetadata['twitter']>;
 
 /** A path of this site becomes its absolute address; an address that already names a site stays as written. */
-const absolute = (url: string | URL) => {
-  const text = String(url);
-  return text.startsWith('/') ? absoluteUrl(text) : text;
-};
+const absolute = (url: string) => (url.startsWith('/') ? absoluteUrl(url) : url);
 
 /** An address with the site's trailing-slash rule applied to its path. */
-const addressWithSlash = (url: string | URL) => {
-  const { origin, pathname, search, hash } = new URL(String(url));
+const addressWithSlash = (url: string) => {
+  const { origin, pathname, search, hash } = new URL(url);
   return `${origin}${withTrailingSlash(pathname)}${search}${hash}`;
 };
 
-/** The address a metadata link names, whether written as text, a URL or a descriptor. */
-const hrefOf = (value: unknown): string | undefined => {
-  if (typeof value === 'string' || value instanceof URL) return addressWithSlash(value);
-  if (Array.isArray(value)) return hrefOf(value[0]);
-  if (value && typeof value === 'object' && 'url' in value) return hrefOf(value.url);
-  return undefined;
-};
-
-const joined = (value: unknown): string | undefined => {
-  if (Array.isArray(value)) return value.join(',');
-  return typeof value === 'string' ? value : undefined;
-};
-
-function robotsContent(robots: PageMetadata['robots']): string | undefined {
-  if (!robots) return undefined;
-  if (typeof robots === 'string') return robots;
-  return `${robots.index === false ? 'noindex' : 'index'}, ${robots.follow === false ? 'nofollow' : 'follow'}`;
+function robotsContent(robots: NonNullable<PageMetadata['robots']>): string {
+  return `${robots.index ? 'index' : 'noindex'}, ${robots.follow ? 'follow' : 'nofollow'}`;
 }
 
 function titleText(title: PageMetadata['title']): string | undefined {
-  if (!title) return undefined;
   if (typeof title === 'string') return title;
-  if ('absolute' in title && title.absolute) return title.absolute;
-  if ('default' in title && title.default) return title.default;
-  return undefined;
+  return title !== undefined && 'absolute' in title ? title.absolute : undefined;
 }
 
-function imageEntries(prefix: 'og' | 'twitter', images: unknown): Entry[] {
-  const list = Array.isArray(images) ? images : images ? [images] : [];
-  return list.flatMap((image, index): Entry[] => {
-    const source = typeof image === 'string' || image instanceof URL ? { url: image } : (image as Record<string, unknown>);
+function imageEntries(prefix: 'og', images: OpenGraph['images']): Entry[];
+function imageEntries(prefix: 'twitter', images: Twitter['images']): Entry[];
+function imageEntries(prefix: 'og' | 'twitter', images: OpenGraph['images'] | Twitter['images']): Entry[] {
+  return (images ?? []).flatMap((image, index): Entry[] => {
+    const source = typeof image === 'string' ? { url: image } : image;
     const field = prefix === 'og' ? 'property' : 'name';
     const name = prefix === 'og' ? 'og:image' : 'twitter:image';
-    const entries: Entry[] = [[`${name}-${index}`, <meta key={`${name}-${index}`} {...{ [field]: name }} content={absolute(source.url as string)} />]];
-    for (const detail of ['width', 'height', 'alt'] as const) {
-      if (prefix === 'og' && source[detail] !== undefined) {
+    const entries: Entry[] = [[`${name}-${index}`, <meta key={`${name}-${index}`} {...{ [field]: name }} content={absolute(source.url)} />]];
+    if (prefix === 'og' && 'width' in source) {
+      for (const detail of ['width', 'height', 'alt'] as const) {
+        const value = source[detail];
+        if (value === undefined) continue;
         const key = `${name}:${detail}-${index}`;
-        entries.push([key, <meta key={key} property={`${name}:${detail}`} content={String(source[detail])} />]);
+        entries.push([key, <meta key={key} property={`${name}:${detail}`} content={String(value)} />]);
       }
     }
     return entries;
@@ -76,47 +60,45 @@ export function metadataTags(metadata: PageMetadata, resolvedTitle?: string): Re
 
   const title = resolvedTitle ?? titleText(metadata.title);
   if (title) add('title', <title>{title}</title>);
-  meta('description', typeof metadata.description === 'string' ? metadata.description : undefined);
-  for (const author of Array.isArray(metadata.authors) ? metadata.authors : metadata.authors ? [metadata.authors] : []) {
-    if (author.url) add(`author-link:${author.url}`, <link rel="author" href={String(author.url)} />);
+  meta('description', metadata.description);
+  for (const author of metadata.authors ?? []) {
+    if (author.url) add(`author-link:${author.url}`, <link rel="author" href={author.url} />);
     meta('author', author.name);
   }
-  if (typeof metadata.manifest === 'string') add('manifest', <link rel="manifest" href={metadata.manifest} />);
-  meta('keywords', joined(metadata.keywords));
-  meta('robots', robotsContent(metadata.robots));
+  if (metadata.manifest !== undefined) add('manifest', <link rel="manifest" href={metadata.manifest} />);
+  meta('keywords', metadata.keywords?.join(','));
+  meta('robots', metadata.robots && robotsContent(metadata.robots));
 
   const alternates = metadata.alternates;
-  const canonical = hrefOf(alternates?.canonical);
-  if (canonical) add('canonical', <link rel="canonical" href={canonical} />);
+  if (alternates) add('canonical', <link rel="canonical" href={addressWithSlash(alternates.canonical)} />);
   for (const [language, url] of Object.entries(alternates?.languages ?? {})) {
-    const href = hrefOf(url);
-    if (href) add(`alternate:${language}`, <link rel="alternate" hrefLang={language} href={href} />);
+    add(`alternate:${language}`, <link rel="alternate" hrefLang={language} href={addressWithSlash(url)} />);
   }
 
-  meta('google-site-verification', typeof metadata.verification?.google === 'string' ? metadata.verification.google : undefined);
-  for (const [name, content] of Object.entries(metadata.verification?.other ?? {})) meta(name, joined(content));
+  meta('google-site-verification', metadata.verification?.google);
+  for (const [name, content] of Object.entries(metadata.verification?.other ?? {})) meta(name, content);
 
-  const og = metadata.openGraph as Record<string, unknown> | null | undefined;
+  const og = metadata.openGraph;
   if (og) {
-    meta('og:title', typeof og.title === 'string' ? og.title : undefined, 'property');
-    meta('og:description', typeof og.description === 'string' ? og.description : undefined, 'property');
-    meta('og:url', og.url === undefined ? undefined : addressWithSlash(og.url as string), 'property');
-    meta('og:site_name', typeof og.siteName === 'string' ? og.siteName : undefined, 'property');
-    meta('og:locale', typeof og.locale === 'string' ? og.locale : undefined, 'property');
+    meta('og:title', og.title, 'property');
+    meta('og:description', og.description, 'property');
+    meta('og:url', addressWithSlash(og.url), 'property');
+    meta('og:site_name', og.siteName, 'property');
+    meta('og:locale', og.locale, 'property');
     entries.push(...imageEntries('og', og.images));
-    for (const locale of (og.alternateLocale as string[] | undefined) ?? []) {
+    for (const locale of og.alternateLocale ?? []) {
       add(`og:locale:alternate:${locale}`, <meta property="og:locale:alternate" content={locale} />);
     }
-    meta('og:type', typeof og.type === 'string' ? og.type : undefined, 'property');
-    meta('article:published_time', typeof og.publishedTime === 'string' ? og.publishedTime : undefined, 'property');
-    meta('article:modified_time', typeof og.modifiedTime === 'string' ? og.modifiedTime : undefined, 'property');
+    meta('og:type', og.type, 'property');
+    meta('article:published_time', og.publishedTime, 'property');
+    meta('article:modified_time', og.modifiedTime, 'property');
   }
 
-  const twitter = metadata.twitter as Record<string, unknown> | null | undefined;
+  const twitter = metadata.twitter;
   if (twitter) {
-    meta('twitter:card', typeof twitter.card === 'string' ? twitter.card : undefined);
-    meta('twitter:title', typeof twitter.title === 'string' ? twitter.title : undefined);
-    meta('twitter:description', typeof twitter.description === 'string' ? twitter.description : undefined);
+    meta('twitter:card', twitter.card);
+    meta('twitter:title', twitter.title);
+    meta('twitter:description', twitter.description);
     entries.push(...imageEntries('twitter', twitter.images));
   }
 
