@@ -649,7 +649,7 @@ every slice merges into `integration/mcp-rust-2026-11-27` with `git merge --no-f
 | 7 | Evidence search and agent brief: `find_evidence`, `read_source`, the `vault-index` probe, `strsim` | 4, 6 |
 | 8 | Repository survey with `rayon`: `analyze_repo_structure` | 6, 7 |
 | 9 | Meaning findings and construction depth; completes `validate_vault` | 5, 8 |
-| 10 | Vault writes and `git_snapshot`: the nine writers | 4, 9 |
+| 10 | Vault writes and `git_snapshot`: the nine writers; also the test-only cargo feature that reads `ATLAS_DIFF_CLOCK_MS` and `ATLAS_DIFF_UID_SEED` (no crate reads them yet) | 4, 9 |
 | 11 | Library, wiki and project source: seven tools | 10 |
 | 12 | Nothing imports `mcp/src`: scripts, tests and screen modules moved; goldens recorded from JavaScript | 11 |
 | 13 | Packaging: bundle, `.mcpb`, image, launcher; clean-host and installed-app walks | 11; criterion 7 |
@@ -842,3 +842,4 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   keeps no copy of them, so a project slug that names nothing is `missing_node` as everywhere else;
   `limit` cuts the `sharedNeighbors` of `similar_nodes` and the `domains` of `domain_matrix` (row
   32); the facts only the tool layer can read are a named gap, declared per answer (row 37).
+- 2026-11-28 (harness triage): the Rust program does not yet read `ATLAS_DIFF_CLOCK_MS` or `ATLAS_DIFF_UID_SEED`, the two inputs the differential harness pins (`scripts/mcp/differential/README.md`); no crate mentions either. Slice 10 owns it, because the writers are the first code that draws a UID or reads the clock: behind a cargo feature the release build lacks, the clock returns the pinned milliseconds and each UID stream draws as the README says, and the write families compare against JavaScript only once it does.
