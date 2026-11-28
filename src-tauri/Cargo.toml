@@ -26,6 +26,7 @@ members = [
   "crates/vault-edit",
   "crates/raw-source-text",
   "crates/saved-constellations",
+  "crates/document-absorption",
   "crates/mcp-server",
 ]
 
