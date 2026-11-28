@@ -70,7 +70,7 @@ const RETIRED_QUERY_OPERATIONS = new Map([
 
 /** `connection_info` guide topics no longer served, with where the text went. */
 const RETIRED_GUIDES = new Map([
-  ['competency', 'The answer layout is in the refusal of finalize_project_meaning: call it without `answers` and read the refusal.'],
+  ['competency', 'The answer layout is the `answers` item schema of finalize_project_meaning in tools/list: one row per fixed question with id, status, answer and the witness lists the question names.'],
 ]);
 
 function refused(message) {

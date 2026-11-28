@@ -111,8 +111,8 @@ both.
 ## 7. Validate, connect, finalize
 
 `validate_vault`, then `connect_project_source`, then
-`finalize_project_meaning` with the project's `## Competency answers`
-(`connection_info({guide:"competency"})` has the layout). Finalize refuses
+`finalize_project_meaning` with `answers`, one row per fixed question
+(the `answers` item schema in `tools/list` is the layout). Finalize refuses
 `abilities` answered while a surveyed ability is unplaced, `evidence` answered
 when more than a third of capabilities' entry files were never read in this
 session or any capability states a rule without citing read lines that hold

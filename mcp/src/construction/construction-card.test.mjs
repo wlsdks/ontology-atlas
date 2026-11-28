@@ -103,7 +103,7 @@ test('the example row in the finalize refusal is one the real renderer and parse
 test('a retired competency guide answers invalid_arguments and points to the refusal', () => {
   assert.throws(
     () => connectionInfoTool({ guide: 'competency' }),
-    { errorCode: 'invalid_arguments', message: /call it without `answers` and read the refusal/ },
+    { errorCode: 'invalid_arguments', message: /`answers` item schema of finalize_project_meaning/ },
   );
 });
 

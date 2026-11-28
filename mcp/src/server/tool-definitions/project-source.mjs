@@ -40,7 +40,7 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
         maxItems: MEANING_COMPETENCY_QUESTIONS.length,
         description:
           `One row per fixed question: ${COMPETENCY_QUESTION_LIST} ` +
-          'An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`. Call without `answers` and the refusal shows the layout.',
+          'An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`. Each row\'s fields are this item schema.',
         items: {
           type: 'object',
           properties: {
