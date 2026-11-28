@@ -17,6 +17,7 @@ use indexmap::IndexMap;
 use regex::Regex;
 
 use crate::ability_row::{AbilityKind, AbilityRow};
+use crate::declaring_line::declaring_line;
 use crate::declaration_index::{declaration_index, DeclarationIndex};
 use crate::documented_abilities::{documented_abilities, Documents, VocabularyFile};
 use crate::entry_points::{executable_name, EntryPoint};
@@ -76,11 +77,7 @@ fn entry_ability(files: &SurveyFiles<'_>, entry: &EntryPoint) -> AbilityRow {
         entry.kind,
         AbilityKind::Route | AbilityKind::Plugin | AbilityKind::Command
     ) {
-        let escaped = regex::escape(needle);
-        let pattern = js_regex(&format!(
-            "[\"'`]{escaped}[\"'`]|\\b(?:class|def|function|func)\\s+{escaped}\\b"
-        ));
-        line_of(&text, &pattern)
+        declaring_line(&text, needle)
     } else {
         1
     };

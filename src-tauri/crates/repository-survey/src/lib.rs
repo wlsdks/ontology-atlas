@@ -7,6 +7,7 @@ mod ability_rows;
 mod bounded_lines;
 mod breadth_map;
 mod declaration_index;
+mod declaring_line;
 mod dispatched_operations;
 mod doc_pages;
 mod documented_abilities;
