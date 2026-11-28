@@ -100,8 +100,18 @@ mkdirSync(path.dirname(placed), { recursive: true });
 const staging = `${placed}.new`;
 copyFileSync(compiled, staging);
 chmodSync(staging, 0o755);
-rmSync(placed, { force: true });
+try {
+  rmSync(placed, { force: true });
+} catch {
+  // Windows refuses to delete a program an agent is running but allows renaming it.
+  renameSync(placed, `${placed}.replaced`);
+}
 renameSync(staging, placed);
+try {
+  rmSync(`${placed}.replaced`, { force: true });
+} catch {
+  // Still running: a later build replaces it.
+}
 
 const sizeMb = (statSync(placed).size / (1024 * 1024)).toFixed(1);
 console.log(`✔ ${path.relative(root, placed)} — ${sizeMb} MB (rustc ${reportedToolchain(rustc.stdout)})`);
