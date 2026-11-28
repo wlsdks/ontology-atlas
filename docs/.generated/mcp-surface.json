@@ -2,9 +2,9 @@
   "_generatedBy": "pnpm docs:surface:build",
   "_contract": "Derived from the MCP tool registry and the CLI command registry. Never hand-edit — run `pnpm docs:surface:build` and commit the diff.",
   "mcp": {
-    "toolCount": 23,
+    "toolCount": 24,
     "readToolCount": 13,
-    "writeToolCount": 10,
+    "writeToolCount": 11,
     "tools": [
       {
         "name": "absorb_document",
@@ -43,13 +43,9 @@
         "mode": "read",
         "arguments": [
           "ignore",
-          "maxDepth",
-          "proposal",
-          "qualification",
           "rootPath",
           "sourceOnly",
-          "sourceReads",
-          "view"
+          "sourceReads"
         ],
         "required": []
       },
@@ -72,7 +68,6 @@
         "mode": "write",
         "arguments": [
           "confirm",
-          "disconnect",
           "projectSlug",
           "repair",
           "rootPath"
@@ -100,6 +95,17 @@
         ],
         "required": [
           "slug"
+        ]
+      },
+      {
+        "name": "disconnect_project_source",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "projectSlug"
+        ],
+        "required": [
+          "projectSlug"
         ]
       },
       {
@@ -224,60 +230,36 @@
         "mode": "read",
         "arguments": [
           "afterActionId",
-          "analysisCursor",
-          "analysisMode",
           "candidateSlug",
-          "componentLimit",
-          "componentTypes",
-          "cursor",
-          "cycleLimit",
-          "dependencyTypes",
           "depth",
-          "detail",
           "direction",
           "domain",
+          "excludeKinds",
           "executableOnly",
-          "expectedGraphHash",
-          "expectedSourceFingerprint",
           "from",
-          "fromKind",
           "hasIncoming",
           "hasOutgoing",
           "includeExternal",
-          "includeIsolated",
           "includeOrphans",
           "includeUnresolved",
           "itemLimit",
-          "iterations",
           "kind",
           "kinds",
           "limit",
-          "maxDegree",
           "maxHops",
-          "minDegree",
-          "minInDegree",
-          "minOutDegree",
-          "nodeLimit",
+          "offset",
           "operation",
-          "orderLimit",
           "pattern",
           "phases",
           "project",
-          "recommendationLimit",
           "recordId",
-          "relation",
-          "reviewRevision",
           "searchBudget",
-          "seed",
           "severities",
           "slug",
-          "slugContains",
           "sort",
           "targetOperation",
-          "task",
           "title",
           "to",
-          "toKind",
           "type",
           "types"
         ],

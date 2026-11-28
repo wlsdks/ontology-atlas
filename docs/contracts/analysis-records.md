@@ -159,8 +159,6 @@ export. These are record/operation budgets, not project or ontology limits.
 ## Agent access
 
 ```json
-{"operation":"analysis_history","analysisMode":"architecture","limit":30}
-{"operation":"analysis_history","analysisCursor":"<previous nextCursor>","limit":30}
 {"operation":"analysis_record","recordId":"<UUID>"}
 ```
 

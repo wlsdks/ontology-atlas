@@ -6,7 +6,7 @@
 const BELOW = new Set(['.', '[', '#', '/']);
 
 /** Whether `declared` is `actual` or a path above it, cut at a path boundary (`#/2` is not `#/20`). */
-export function pathCovers(declared, actual) {
+function pathCovers(declared, actual) {
   if (declared === actual) return true;
   return declared !== '' && actual.startsWith(declared) && BELOW.has(actual[declared.length]);
 }
@@ -29,7 +29,7 @@ const WHOLE_ANSWER = /^(?:result|error|result\.content|result\.content\[\d+\](?:
  * alone cannot tell a text that holds JSON from a plain sentence (a refusal), so an entry for such
  * a sentence is counted too.
  */
-export function isWholeAnswerEntry(entry) {
+function isWholeAnswerEntry(entry) {
   return entry.where === 'answer' && WHOLE_ANSWER.test(entry.path);
 }
 

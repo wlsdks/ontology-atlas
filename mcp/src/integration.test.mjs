@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,11 +14,9 @@ import {
   EXPECTED_TOOLS,
   expectedToolTitle,
 } from "../scripts/verify/tools-list/inventory.mjs";
-import { analyzeRepoStructure } from "./analyze.mjs";
 import { IMPORT_EDGE_KIND_VALUES, IMPORT_UNRESOLVED_REASON_VALUES } from "./infer-imports.mjs";
 import { VAULT_ISSUE_CODE_VALUES } from "./validate.mjs";
 import {
-  EDGE_TARGET_KIND_VALUES,
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
@@ -34,9 +32,6 @@ import { analysisRecordFileName, serializeAnalysisRecord } from './analysis-hist
 import { buildProjectSourceGraphHash } from "./project-source/project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning/project-meaning-receipt.mjs";
 import { defaultBody } from "./schema.mjs";
-import { proposalCoverageRefs } from "./construction/construction-lifecycle.mjs";
-import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from "./construction/construction-qualification.mjs";
-import { MEANING_PROPOSAL_INPUT_SCHEMA } from "./server/tool-schemas/meaning-construction.mjs";
 import { RETIRED_TOOL_REPLACEMENTS, TOOL_BY_NAME, TOOL_INPUT_CONTRACT_BY_NAME, TOOL_OUTPUT_CONTRACT_BY_NAME } from "./server/registry.mjs";
 import { advertisedOutputSchema } from "./server/advertised-output-schema.mjs";
 import {
@@ -48,10 +43,6 @@ import { runJsonRpcProcess } from "../../scripts/lib/mcp-test-rpc.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_ENTRY = resolve(__dirname, "index.js");
-const QUALIFIED_CONSTRUCTION_FIXTURE = JSON.parse(readFileSync(
-  resolve(__dirname, "../../tests/fixtures/construction-qualification/qualified.json"),
-  "utf8",
-));
 const EQUALITY_FILTER_KEYS = ["kind", "domain", "slug", "title", "created_by"];
 
 let passed = 0;
@@ -554,7 +545,7 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(listConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(listConcepts?.outputSchema?.properties?.total?.type, "integer");
     assert.equal(listConcepts?.outputSchema?.properties?.vaultRoot?.type, "string");
-    assert.deepEqual(listConcepts?.outputSchema?.properties?.nodes?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
+    assert.deepEqual(listConcepts?.outputSchema?.properties?.nodes?.items?.required, ["slug", "title", "mtime"]);
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.mtime?.type, "number");
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.additionalProperties, false);
     assert.deepEqual(listConcepts?.outputSchema?.properties?.vaultWarnings?.required, ["errorCount", "warningCount"]);
@@ -601,7 +592,7 @@ await test("tools/list — each single-item tool description cross-references it
     assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.warnings?.items?.properties?.severity?.enum, ["error", "warning"]);
     assert.match(
       listConcepts?.description ?? "",
-      /by text with `mentions`[\s\S]*ranks nodes whose title, relations or body say it[\s\S]*adds `matchedIn` and `score` to each row/i,
+      /by text with `mentions`[\s\S]*ranks the nodes whose title, relations or body say it[\s\S]*plain Markdown pages[\s\S]*adds `matchedIn`, `score` and an `excerpt` to each row/i,
       "list_concepts description documents the mentions search",
     );
     assert.match(
@@ -709,20 +700,11 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(compileOntology?.outputSchema?.properties?.indexes?.properties?.mergedUidToSlug?.type, "object");
     assert.deepEqual(compileOntology?.outputSchema?.properties?.summary?.required, ["nodes", "edges", "graphHash", "maxMtime", "resolvedEdges", "externalEdges", "unresolvedEdges", "aliases", "ambiguousAliases", "issues"]);
     assert.equal(compileOntology?.outputSchema?.properties?.summary?.additionalProperties, false);
-    const indexProject = findTool("index_project");
-    const indexMeaningGate = indexProject?.outputSchema?.properties?.meaningGate;
-    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities", "evidence", "evidenceRows"]);
-    assert.equal(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.maxItems, 5);
-    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.items?.required, ["slug", "kind", "source"]);
-    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.items?.properties?.kind?.enum, ["domain", "capability"]);
-    assert.deepEqual(indexMeaningGate?.properties?.implementationEvidence?.required, ["elements", "reviewRequiredCapabilities", "reviewRequiredRows"]);
-    assert.equal(indexMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredRows?.maxItems, 5);
-    assert.deepEqual(indexMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredRows?.items?.required, ["slug", "reason", "evidence"]);
     const analyzeRepo = findTool("analyze_repo_structure");
     assert.match(
       analyzeRepo?.description ?? "",
-      /Read-only; nothing is written[\s\S]*breadth map[\s\S]*every product unit[\s\S]*entry points[\s\S]*names no node[\s\S]*Up to 16 selectors[\s\S]*never an instruction or approval[\s\S]*constructionQualification:v1/i,
-      "analyze_repo_structure description says the default survey is a breadth map and keeps the reviewed-plan route",
+      /Read-only; nothing is written[\s\S]*breadth map[\s\S]*every product unit[\s\S]*entry points[\s\S]*names no node[\s\S]*Up to 16 selectors[\s\S]*never an instruction or approval/i,
+      "analyze_repo_structure description says the default survey is a breadth map",
     );
     assert.match(
       analyzeRepo?.inputSchema?.properties?.rootPath?.description ?? "",
@@ -731,45 +713,8 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.equal(analyzeRepo?.inputSchema?.properties?.ignore?.maxItems, 200);
     assert.equal(analyzeRepo?.outputSchema, undefined, "the breadth map and source reads are text rows, so the tool declares no outputSchema");
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "elements", "relations", "competencyAnswers"]);
-    assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.type, "array");
-    assert.match(analyzeRepo?.inputSchema?.properties?.proposal?.description ?? "", /refused with its path, expected shape and an example/);
     assert.equal(analyzeRepo?.inputSchema?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.qualification?.properties?.contract?.enum, ["constructionQualification:v1"]);
-    assert.deepEqual(MEANING_PROPOSAL_INPUT_SCHEMA.properties.elements.items.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
-    assert.deepEqual(MEANING_PROPOSAL_INPUT_SCHEMA.properties.relations.items.required, ["from", "to", "type", "why", "evidence", "confidence"]);
-    assert.deepEqual(CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.required, [
-      "contract",
-      "qualificationId",
-      "subject",
-      "actors",
-      "purposeAuthority",
-      "scenarios",
-      "competencyQuestions",
-      "witnesses",
-      "cqResults",
-      "claims",
-      "citationChecks",
-      "sourceHiddenTask",
-      "axisResults",
-      "diagnostics",
-      "regression",
-      "resourceUse",
-      "acceptance",
-    ]);
-    assert.equal(CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.additionalProperties, false);
-    assert.deepEqual(CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.properties.claims.items.required, [
-      "id",
-      "statement",
-      "status",
-      "witnessRefs",
-      "proposalRefs",
-    ]);
-    const competencyAnswerSchema = MEANING_PROPOSAL_INPUT_SCHEMA.properties.competencyAnswers.properties.scope;
-    assert.deepEqual(competencyAnswerSchema?.required, ["answer", "status", "witnesses"]);
-    assert.deepEqual(competencyAnswerSchema?.properties?.status?.enum, ["answered", "partial", "visible-gap"]);
-    assert.deepEqual(competencyAnswerSchema?.properties?.witnesses?.required, ["concepts", "relations", "evidence", "paths"]);
+    assert.deepEqual(Object.keys(analyzeRepo?.inputSchema?.properties ?? {}).sort(), ["ignore", "rootPath", "sourceOnly", "sourceReads"], "the survey takes no proposal, qualification or depth");
     const inferImports = findTool("infer_imports");
     assert.equal(inferImports?.outputSchema?.type, "object");
     assert.equal(inferImports?.inputSchema?.properties?.sourceFolders?.maxItems, 50);
@@ -858,9 +803,6 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(goPackageSummarySchema?.properties?.fullEvidenceCall?.properties?.arguments?.properties?.sourceFolders?.maxItems, 50);
     assert.equal(goPackageSummarySchema?.properties?.fullEvidenceCall?.properties?.arguments?.properties?.ignore?.maxItems, 200);
     assert.equal(goPackageSummarySchema?.properties?.fullEvidenceCall?.properties?.arguments?.properties?.maxFiles?.maximum, 50000);
-    assert.deepEqual(indexProject?.outputSchema?.properties?.imports?.properties?.packageImports?.type, "integer");
-    assert.deepEqual(indexProject?.outputSchema?.properties?.imports?.properties?.packageModuleEdges?.type, "integer");
-    assert.deepEqual(indexProject?.outputSchema?.properties?.imports?.required, ["filesScanned", "moduleEdges", "packageImports", "packageModuleEdges", "coverage"]);
     assert.deepEqual(inferImports?.outputSchema?.properties?.contract?.enum, ["inferImportsReview:v1", "inferImportsFocus:v1"]);
     assert.deepEqual(inferImports?.outputSchema?.properties?.focusReview?.required, [
       "contract",
@@ -1598,40 +1540,18 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       findTool("query_ontology")?.description ?? "",
-      /impact and blast_radius follow declared `depends_on` only[\s\S]*`approvalGate` writes nothing until[\s\S]*the human explicitly approves/,
-      "query_ontology description keeps the depends_on impact rule and the relation approval gate",
+      /impact \(what depends on a node, declared `depends_on` only\)[\s\S]*relation_check \(preflight before add_relations[\s\S]*connection_info\(\{guide:"query"\}\)/,
+      "query_ontology description keeps the depends_on impact rule and points at the query guide",
     );
     assert.match(
       findTool("query_ontology")?.description ?? "",
-      /agent_brief with detail:\"compact\" and `task` right after connection_info[\s\S]*never searches the repository, never proves source behavior/,
-      "query_ontology description documents the bounded task handoff and evidence limit",
-    );
-    assert.match(
-      findTool("query_ontology")?.inputSchema?.properties?.detail?.description ?? "",
-      /12000 UTF-8 bytes/,
-      "query_ontology detail states the compact handoff bound",
+      /agent_brief \(the project brief; `project` when the vault has more than one\)/,
+      "query_ontology description names the one project brief",
     );
     assert.deepEqual(
-      {
-        detailEnum: findTool("query_ontology")?.inputSchema?.properties?.detail?.enum,
-        taskType: findTool("query_ontology")?.inputSchema?.properties?.task?.type,
-        taskMaxLength: findTool("query_ontology")?.inputSchema?.properties?.task?.maxLength,
-      },
-      {
-        detailEnum: ["compact", "full"],
-        taskType: "string",
-        taskMaxLength: 2000,
-      },
-      "query_ontology exposes the compact/full and request-local task signature",
-    );
-    assert.deepEqual(
-      {
-        type: findTool("query_ontology")?.inputSchema?.properties?.iterations?.type,
-        minimum: findTool("query_ontology")?.inputSchema?.properties?.iterations?.minimum,
-        maximum: findTool("query_ontology")?.inputSchema?.properties?.iterations?.maximum,
-      },
-      { type: "integer", minimum: 1, maximum: 100 },
-      "query_ontology exposes bounded iterations schema",
+      Object.keys(findTool("query_ontology")?.inputSchema?.properties ?? {}).filter((key) => ["detail", "task", "iterations", "nodeLimit", "componentLimit", "cycleLimit", "recommendationLimit", "orderLimit", "dependencyTypes", "componentTypes", "relation", "fromKind", "toKind", "minDegree", "maxDegree", "minInDegree", "minOutDegree", "maxDepth"].includes(key)),
+      [],
+      "query_ontology no longer takes the compact brief, the tuning limits or the degree filters",
     );
     assert.deepEqual(
       {
@@ -1640,8 +1560,14 @@ await test("tools/list — each single-item tool description cross-references it
         maximum: findTool("query_ontology")?.inputSchema?.properties?.limit?.maximum,
         depthMaximum: findTool("query_ontology")?.inputSchema?.properties?.depth?.maximum,
         maxHopsMaximum: findTool("query_ontology")?.inputSchema?.properties?.maxHops?.maximum,
-        nodeLimitDescription:
-          findTool("query_ontology")?.inputSchema?.properties?.nodeLimit?.description,
+        typesEnum: findTool("query_ontology")?.inputSchema?.properties?.types?.items?.enum,
+        patternEnum: findTool("query_ontology")?.inputSchema?.properties?.pattern?.items?.enum,
+        typeEnum: findTool("query_ontology")?.inputSchema?.properties?.type?.enum,
+        kindEnum: findTool("query_ontology")?.inputSchema?.properties?.kind?.enum,
+        phasesEnum: findTool("query_ontology")?.inputSchema?.properties?.phases?.items?.enum,
+        severitiesEnum: findTool("query_ontology")?.inputSchema?.properties?.severities?.items?.enum,
+        maintenanceKindsEnum: findTool("query_ontology")?.inputSchema?.properties?.kinds?.items?.enum,
+        afterActionIdDescription: findTool("query_ontology")?.inputSchema?.properties?.afterActionId?.description,
       },
       {
         type: "integer",
@@ -1649,125 +1575,31 @@ await test("tools/list — each single-item tool description cross-references it
         maximum: 500,
         depthMaximum: 20,
         maxHopsMaximum: 20,
-        nodeLimitDescription:
-          "Node summaries per group; default 25 for components/communities, 10 for health/workspace_brief/agent_brief.",
-      },
-      "query_ontology exposes runtime numeric caps in schema",
-    );
-    assert.deepEqual(
-      {
-        componentLimitType: findTool("query_ontology")?.inputSchema?.properties?.componentLimit?.type,
-        componentLimitMaximum:
-          findTool("query_ontology")?.inputSchema?.properties?.componentLimit?.maximum,
-        cycleLimitType: findTool("query_ontology")?.inputSchema?.properties?.cycleLimit?.type,
-        recommendationLimitType:
-          findTool("query_ontology")?.inputSchema?.properties?.recommendationLimit?.type,
-        orderLimitType: findTool("query_ontology")?.inputSchema?.properties?.orderLimit?.type,
-        dependencyTypesItem:
-          findTool("query_ontology")?.inputSchema?.properties?.dependencyTypes?.items?.type,
-        dependencyTypesEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.dependencyTypes?.items?.enum,
-        typesEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.types?.items?.enum,
-        patternEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.pattern?.items?.enum,
-        typeEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.type?.enum,
-        relationEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.relation?.enum,
-        kindEnum: findTool("query_ontology")?.inputSchema?.properties?.kind?.enum,
-        fromKindEnum: findTool("query_ontology")?.inputSchema?.properties?.fromKind?.enum,
-        toKindEnum: findTool("query_ontology")?.inputSchema?.properties?.toKind?.enum,
-        componentTypesItem:
-          findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.items?.type,
-        componentTypesEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.items?.enum,
-        phasesEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.phases?.items?.enum,
-        severitiesEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.severities?.items?.enum,
-        maintenanceKindsEnum:
-          findTool("query_ontology")?.inputSchema?.properties?.kinds?.items?.enum,
-        kindDescription:
-          findTool("query_ontology")?.inputSchema?.properties?.kind?.description,
-        fromKindDescription:
-          findTool("query_ontology")?.inputSchema?.properties?.fromKind?.description,
-        toKindDescription:
-          findTool("query_ontology")?.inputSchema?.properties?.toKind?.description,
-        afterActionIdDescription:
-          findTool("query_ontology")?.inputSchema?.properties?.afterActionId?.description,
-        componentTypesDescription:
-          findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.description,
-      },
-      {
-        componentLimitType: "integer",
-        componentLimitMaximum: 500,
-        cycleLimitType: "integer",
-        recommendationLimitType: "integer",
-        orderLimitType: "integer",
-        dependencyTypesItem: "string",
-        dependencyTypesEnum: RELATION_TYPE_VALUES,
         typesEnum: RELATION_TYPE_VALUES,
         patternEnum: RELATION_TYPE_VALUES,
         typeEnum: RELATION_TYPE_VALUES,
-        relationEnum: RELATION_TYPE_VALUES,
         kindEnum: NODE_KIND_VALUES,
-        fromKindEnum: NODE_KIND_VALUES,
-        toKindEnum: EDGE_TARGET_KIND_VALUES,
-        componentTypesItem: "string",
-        componentTypesEnum: RELATION_TYPE_VALUES,
         phasesEnum: MAINTENANCE_PHASE_VALUES,
         severitiesEnum: MAINTENANCE_SEVERITY_VALUES,
         maintenanceKindsEnum: MAINTENANCE_KIND_VALUES,
-        kindDescription: "match_nodes filter; recommend_relations takes capability or element.",
-        fromKindDescription: "match_edges only: source kind, always a real node.",
-        toKindDescription: "match_edges only: target kind; external and unresolved select refs that are not nodes.",
         afterActionIdDescription:
           "maintenance_plan: resume after this id; pass cursor.nextAfterActionId while cursor.hasMore. An unknown id returns an empty page with cursor.found=false.",
-        componentTypesDescription: "health/workspace_brief/agent_brief: component types, default all.",
       },
-      "query_ontology exposes health/workspace_brief/agent_brief tuning controls",
+      "query_ontology exposes its numeric caps and relation, kind and maintenance enums",
     );
     assert.deepEqual(
-      {
-        minDegreeType: findTool("query_ontology")?.inputSchema?.properties?.minDegree?.type,
-        minDegreeMinimum: findTool("query_ontology")?.inputSchema?.properties?.minDegree?.minimum,
-        maxDegreeType: findTool("query_ontology")?.inputSchema?.properties?.maxDegree?.type,
-        maxDegreeMinimum: findTool("query_ontology")?.inputSchema?.properties?.maxDegree?.minimum,
-        minInDegreeType: findTool("query_ontology")?.inputSchema?.properties?.minInDegree?.type,
-        minInDegreeMinimum:
-          findTool("query_ontology")?.inputSchema?.properties?.minInDegree?.minimum,
-        minOutDegreeType: findTool("query_ontology")?.inputSchema?.properties?.minOutDegree?.type,
-        minOutDegreeMinimum:
-          findTool("query_ontology")?.inputSchema?.properties?.minOutDegree?.minimum,
-      },
-      {
-        minDegreeType: "integer",
-        minDegreeMinimum: 0,
-        maxDegreeType: "integer",
-        maxDegreeMinimum: 0,
-        minInDegreeType: "integer",
-        minInDegreeMinimum: 0,
-        minOutDegreeType: "integer",
-        minOutDegreeMinimum: 0,
-      },
-      "query_ontology exposes integer match_nodes degree filters",
+      findTool("query_ontology")?.inputSchema?.properties?.sort?.enum,
+      ["degree", "inDegree", "outDegree", "slug"],
+      "query_ontology exposes the match_nodes sort",
     );
+    assert.equal(findTool("query_ontology")?.inputSchema?.properties?.hasIncoming?.type, "boolean");
     assert.deepEqual(
       {
-        maxDepthType: findTool("analyze_repo_structure")?.inputSchema?.properties?.maxDepth?.type,
-        maxDepthMinimum:
-          findTool("analyze_repo_structure")?.inputSchema?.properties?.maxDepth?.minimum,
-        maxDepthMaximum:
-          findTool("analyze_repo_structure")?.inputSchema?.properties?.maxDepth?.maximum,
         maxFilesType: findTool("infer_imports")?.inputSchema?.properties?.maxFiles?.type,
         maxFilesMinimum: findTool("infer_imports")?.inputSchema?.properties?.maxFiles?.minimum,
         maxFilesMaximum: findTool("infer_imports")?.inputSchema?.properties?.maxFiles?.maximum,
       },
       {
-        maxDepthType: "integer",
-        maxDepthMinimum: 0,
-        maxDepthMaximum: 10,
         maxFilesType: "integer",
         maxFilesMinimum: 1,
         maxFilesMaximum: 50000,
@@ -1779,90 +1611,24 @@ await test("tools/list — each single-item tool description cross-references it
       ["operation"],
       "query_ontology exposes operation as the required dispatch key",
     );
+    const queryOperations = findTool("query_ontology")?.inputSchema?.properties?.operation?.enum ?? [];
     assert.deepEqual(
-      findTool("query_ontology")?.inputSchema?.properties?.operation?.enum,
+      queryOperations,
       [
-        "neighbors",
-        "path",
-        "all_paths",
-        "query_plan",
-        "centrality",
-        "communities",
-        "similar_nodes",
-        "explain_relation",
-        "reachability",
-        "pattern_walk",
-        "impact",
-        "blast_radius",
-        "subgraph",
-        "builder_context",
-        "overview",
-        "schema",
-        "facets",
-        "match_nodes",
-        "match_edges",
-        "node_profile",
-        "domain_profile",
-        "domain_matrix",
-        "project_scope",
-        "project_map",
-        "relation_check",
-        "components",
-        "lineage",
-        "containment_tree",
-        "cycles",
-        "topological_order",
-        "recommend_relations",
-        "growth_plan",
-        "maintenance_plan",
-        "agent_brief",
-        "meaning_repair_review",
-        "analysis_history",
-        "analysis_record",
-        "workspace_brief",
-        "health",
+        "neighbors", "path", "query_plan", "communities", "similar_nodes", "explain_relation", "reachability",
+        "pattern_walk", "impact", "blast_radius", "subgraph", "overview", "schema", "facets", "match_nodes",
+        "node_profile", "project_scope", "project_map", "relation_check", "components", "lineage",
+        "containment_tree", "cycles", "recommend_relations", "growth_plan", "maintenance_plan", "agent_brief",
+        "analysis_record", "workspace_brief", "health",
       ],
-      "query_ontology exposes runtime operation enum",
+      "query_ontology exposes the runtime operation enum",
     );
+    for (const retired of ["all_paths", "centrality", "match_edges", "domain_profile", "domain_matrix", "builder_context", "topological_order"]) {
+      assert.ok(!queryOperations.includes(retired), `${retired} is no longer an operation`);
+    }
     assert.deepEqual(
       findTool("query_ontology")?.inputSchema?.properties?.targetOperation?.enum,
-      [
-        "neighbors",
-        "path",
-        "all_paths",
-        "centrality",
-        "communities",
-        "similar_nodes",
-        "explain_relation",
-        "reachability",
-        "pattern_walk",
-        "impact",
-        "blast_radius",
-        "subgraph",
-        "builder_context",
-        "overview",
-        "schema",
-        "facets",
-        "match_nodes",
-        "match_edges",
-        "node_profile",
-        "domain_profile",
-        "domain_matrix",
-        "project_scope",
-        "project_map",
-        "relation_check",
-        "components",
-        "lineage",
-        "containment_tree",
-        "cycles",
-        "topological_order",
-        "recommend_relations",
-        "growth_plan",
-        "maintenance_plan",
-        "agent_brief",
-        "workspace_brief",
-        "health",
-      ],
+      queryOperations.filter((operation) => operation !== "query_plan" && operation !== "analysis_record"),
       "query_ontology exposes query_plan targetOperation enum",
     );
     for (const [toolName, propertyName] of [
@@ -2311,7 +2077,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
   }
 });
 
-await test("analyze_repo_structure — the survey is a breadth map over MCP and the candidate packet stays in the analyzer", async () => {
+await test("analyze_repo_structure — the survey is a breadth map over MCP and names no node", async () => {
   const vaultRoot = makeVault();
   const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-analyze-")));
   try {
@@ -2332,102 +2098,6 @@ await test("analyze_repo_structure — the survey is a breadth map over MCP and 
     assert.match(survey, /^Breadth map of /);
     assert.deepEqual(unitPaths(survey), ["src/features"]);
     assert.doesNotMatch(survey, /domains\/|capabilities\/|proposalValidation/, "the survey names no candidate node");
-    const result = analyzeRepoStructure(repoRoot);
-    assert.equal(result.framework, "fsd");
-    assert.deepEqual(result.project, {
-      slug: "sample-app",
-      title: "Sample App",
-      definition: "Proposed repository purpose from README.md: Login flows.",
-      evidence: ["README.md"],
-      includes: ["repository-contained implementation evidence"],
-      excludes: [],
-      confidence: 0.5,
-      uncertainty: "proposal-only: source prose is a bounded purpose witness, not a shared business assertion. Unknowns: shared business ownership is not established by repository evidence; runtime, test, and external-system behavior remain outside this bounded scan.",
-    });
-    assert.ok(result.domains.some((domain) => domain.slug === "domains/auth"));
-    assert.ok(result.capabilities.some((capability) => capability.slug === "capabilities/auth"));
-    assert.ok(result.suggestedRelations.some((relation) => relation.from === "domains/auth" && relation.to === "capabilities/auth" && relation.type === "contains"));
-    assert.equal(result.proposalValidation.status, "not-provided");
-    assert.equal(result.proposalValidation.canWrite, false);
-  } finally {
-    rmSync(vaultRoot, { recursive: true, force: true });
-    rmSync(repoRoot, { recursive: true, force: true });
-  }
-});
-
-await test("analyze_repo_structure — authored Markdown alone supplies initial evidence over MCP", async () => {
-  const vaultRoot = makeVault();
-  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-authored-evidence-")));
-  try {
-    writeFileSync(join(repoRoot, 'README.md'), [
-      '<!--', '# Hidden Identity', '## Billing', 'Hidden claim creates every invoice.', '-->', '',
-      '    Indented claim authorizes all payments.', '',
-      '> Quoted claim rotates every encryption key.', '',
-      '# Authored Workflow', '', 'Operators preserve audit evidence.', '',
-      '## Features', '- Operators inspect retained records.',
-      '  - Human approval is required before export.',
-    ].join('\n'));
-    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, 'analyze_repo_structure', { rootPath: repoRoot }),
-    ]);
-    const purpose = getCallTextAlone(responses, 2).split("\n").find((line) => line.startsWith("README.md: "));
-    assert.match(purpose, /Operators preserve audit evidence/);
-    assert.doesNotMatch(purpose, /Hidden claim|Indented claim|Quoted claim/);
-    const result = analyzeRepoStructure(repoRoot);
-    assert.equal(result.project.title, 'Authored Workflow');
-    const evidence = result.semanticEvidence.find((row) => row.source === 'README.md');
-    assert.equal(evidence.trust, 'candidate-evidence');
-    assert.match(evidence.excerpt, /Operators inspect retained records/);
-    assert.match(evidence.excerpt, /Human approval is required before export/);
-    assert.doesNotMatch(evidence.excerpt, /Hidden claim|Indented claim|Quoted claim/);
-    assert.equal(result.domains.some((row) => row.title === 'Billing'), false);
-    assert.equal(result.proposalValidation.canWrite, false);
-  } finally {
-    rmSync(vaultRoot, { recursive: true, force: true });
-    rmSync(repoRoot, { recursive: true, force: true });
-  }
-});
-
-await test("analyze_repo_structure — truncated document evidence recovers its approval condition through the public read", async () => {
-  const vaultRoot = makeVault();
-  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-excerpt-recovery-")));
-  const paragraph = `Operators release reviewed exports. ${'Every request retains source and operator context. '.repeat(40)}Execution requires explicit human approval.`;
-  const original = `# Review Workflow\r\n\r\n${paragraph}\r\n`;
-  const readme = join(repoRoot, 'README.md');
-  try {
-    writeFileSync(readme, original);
-    const analysis = analyzeRepoStructure(repoRoot);
-    const evidence = analysis.semanticEvidence.find((row) => row.source === 'README.md');
-    assert.equal(evidence.trust, 'claim-review-required');
-    assert.ok(evidence.riskFlags.includes('excerpt-truncated'));
-    assert.equal(evidence.excerptInfo.scope, 'selected_prose');
-    assert.equal(evidence.excerptInfo.truncated, true);
-    assert.equal(evidence.excerptInfo.firstOmittedLine, 3);
-    assert.doesNotMatch(evidence.excerpt, /human approval/);
-    assert.equal(analysis.proposalValidation.canWrite, false);
-    const read = () => rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, 'analyze_repo_structure', {
-        rootPath: repoRoot, sourceOnly: true, sourceReads: [evidence.excerptInfo.nextSourceRead],
-      }),
-    ]);
-    const recovered = getCallTextAlone((await read()).responses, 2);
-    assert.match(recovered, /^Source reads in .*: 1 read, 0 outlined, 0 not returned\. .*nothing was written/);
-    assert.ok(recovered.includes(`\n\`\`\`\n${paragraph}\r\n\`\`\``), 'the paragraph exactly as it is in the file');
-    assert.match(recovered, /^cite README\.md:L3-L3 pinned source:README\.md#L3-L3@sha256:[a-f0-9]{64}$/m);
-    assert.doesNotMatch(recovered, /^(Cut|Next lines):/m, 'the read is complete');
-    writeFileSync(readme, original.replace('human approval', 'new authorization'));
-    const changed = getCallTextAlone((await read()).responses, 2);
-    assert.match(changed, /: 0 read, 0 outlined, 1 not returned\. .*nothing was written/);
-    assert.match(changed, /^== refused README\.md: hash_mismatch$/m);
-    assert.doesNotMatch(changed, /pinned|```|Operators release/);
-    rmSync(readme);
-    writeFileSync(join(repoRoot, 'other.md'), original);
-    symlinkSync(join(repoRoot, 'other.md'), readme);
-    const unsafe = getCallTextAlone((await read()).responses, 2);
-    assert.match(unsafe, /^== refused README\.md: symlink_path$/m);
-    assert.doesNotMatch(unsafe, /pinned|```|Operators release/);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -2460,17 +2130,17 @@ await test("analyze_repo_structure — reads answer source-only and never repeat
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-await test("analyze_repo_structure — source-only rejects missing reads and every lifecycle combination", async () => {
+await test("analyze_repo_structure — source-only rejects missing reads and answers a retired lifecycle argument with the replacement", async () => {
   const root = makeVault();
   const reads = [{ path: 'index.ts', startLine: 1, maxLines: 1 }];
   try {
     const invalid = [{ sourceOnly: true }, { sourceOnly: true, sourceReads: [] },
       { sourceOnly: true, sourceReads: Array(17).fill(reads[0]) },
       { sourceOnly: 'true', sourceReads: reads },
-      { sourceOnly: true, sourceReads: reads, proposal: null },
-      { sourceOnly: true, sourceReads: reads, qualification: null },
       { sourceOnly: true, sourceReads: reads, proposal: {} },
-      { sourceOnly: true, sourceReads: reads, qualification: {} }];
+      { sourceOnly: true, sourceReads: reads, qualification: {} },
+      { sourceOnly: true, sourceReads: reads, view: 'analysis' },
+      { sourceOnly: true, sourceReads: reads, maxDepth: 2 }];
     const { responses } = await rpcForRepo(root, root, [...INIT_REQUESTS,
       ...invalid.map((args, i) => callTool(i + 2, 'analyze_repo_structure', args)),
     ]);
@@ -2478,7 +2148,8 @@ await test("analyze_repo_structure — source-only rejects missing reads and eve
       const result = responses.find((row) => row.id === i + 2).result;
       assert.equal(result.isError, true);
       assert.notEqual(result.structuredContent.errorCode, 'unknown_argument');
-      assert.match(result.structuredContent.error, /sourceOnly|sourceReads/);
+      assert.match(result.structuredContent.error, i < 4 ? /sourceOnly|sourceReads/ : /is retired|retired:/);
+      if (i >= 4) assert.equal(result.structuredContent.errorCode, 'invalid_arguments');
     }
     assert.equal(loadVaultDocs(root).length, 0);
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -2533,534 +2204,6 @@ await test("analyze_repo_structure — round-trips bounded sourceReads through M
     assert.match(result, /^cite src\/policy\.ts:L1-L1 pinned source:src\/policy\.ts#L1-L1@sha256:[a-f0-9]{64}$/m);
     assert.match(result, /^== refused src\/missing\.ts: not_found$/m);
     assert.equal(result.split("pinned ").length, 2, "only the read row carries a citation");
-  } finally {
-    rmSync(vaultRoot, { recursive: true, force: true });
-    rmSync(repoRoot, { recursive: true, force: true });
-  }
-});
-
-await test("analyze_repo_structure — validates a complete meaning proposal before writes", async () => {
-  const vaultRoot = makeVault();
-  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-proposal-")));
-  try {
-    writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "claims" }), "utf-8");
-    writeFileSync(
-      join(repoRoot, "README.md"),
-      "# Claims\n\nTeams need reviewable claims.\n\n## Review\n\nReview owns publication-readiness decisions for claims.\n\nReview claims before publication.\n",
-      "utf-8",
-    );
-    mkdirSync(join(repoRoot, "docs"), { recursive: true });
-    writeFileSync(
-      join(repoRoot, "docs", "product-contract.md"),
-      "# Product Contract\n\nClaims provides reviewable claim publishing for teams.\n\nReview owns publication-readiness decisions for claims.\n",
-      "utf-8",
-    );
-    mkdirSync(join(repoRoot, "src", "review"), { recursive: true });
-    writeFileSync(join(repoRoot, "src", "review", "index.ts"), "export function review(claim) {\n  if (!claim.approved) return false;\n  return true;\n}\n", "utf-8");
-    const proposal = {
-      project: {
-        slug: "claims",
-        title: "Claims",
-        definition: "A system for publishing reviewable claims.",
-        evidence: ["README.md", "docs/product-contract.md"],
-        confidence: 0.9,
-      },
-      domains: [{
-        slug: "domains/review",
-        title: "Review",
-        definition: "The responsibility boundary for deciding whether claims may be published.",
-        evidence: ["README.md", "docs/product-contract.md"],
-        confidence: 0.9,
-      }],
-      capabilities: [{
-        slug: "capabilities/review",
-        title: "Claim Review",
-        definition: "Evaluate a claim before publication.",
-        domain: "domains/review",
-        path: "src/review",
-        evidence: ["README.md", "src/review"],
-        confidence: 0.9,
-      }],
-      elements: [],
-      relations: [
-        {
-          from: "claims",
-          to: "domains/review",
-          type: "domains",
-          why: "The project owns the review boundary.",
-          evidence: ["README.md", "docs/product-contract.md"],
-          confidence: 0.9,
-        },
-        {
-          from: "domains/review",
-          to: "capabilities/review",
-          type: "capabilities",
-          why: "Review is realized through claim evaluation.",
-          evidence: ["README.md"],
-          confidence: 0.9,
-        },
-      ],
-      competencyAnswers: {
-        scope: {
-          answer: "Teams publishing reviewable claims.",
-          status: "answered",
-          witnesses: {
-            concepts: ["claims"], relations: [], evidence: ["README.md", "docs/product-contract.md"], paths: [],
-          },
-        },
-        domains: {
-          answer: "Review owns publication readiness.",
-          status: "answered",
-          witnesses: {
-            concepts: ["domains/review"],
-            relations: [{ from: "claims", to: "domains/review", type: "domains" }],
-            evidence: ["README.md", "docs/product-contract.md"], paths: [],
-          },
-        },
-        abilities: {
-          answer: "Claim Review evaluates claims.",
-          status: "answered",
-          witnesses: {
-            concepts: ["capabilities/review"],
-            relations: [{ from: "domains/review", to: "capabilities/review", type: "capabilities" }],
-            evidence: ["README.md"], paths: [],
-          },
-        },
-        evidence: {
-          answer: "README and source implementation.",
-          status: "answered",
-          witnesses: {
-            concepts: ["capabilities/review"], relations: [],
-            evidence: ["src/review"], paths: ["src/review"],
-          },
-        },
-        impact: {
-          answer: "The current proposal does not prove a change-impact dependency.",
-          status: "visible-gap",
-          gap: "No depends_on relation is supported by the bounded evidence packet.",
-          witnesses: {
-            concepts: ["capabilities/review"], relations: [],
-            evidence: ["README.md"], paths: [],
-          },
-        },
-      },
-    };
-    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
-    ]);
-    const result = getCallParsed(responses, 2);
-    assert.equal(result.proposalValidation.status, "pass");
-    assert.equal(result.proposalValidation.canWrite, false);
-    assert.equal(result.proposalValidation.summary.errors, 0);
-    assert.equal(result.proposalValidation.summary.warnings, 1);
-    assert.equal(result.proposalValidation.summary.concepts, 3);
-    assert.equal(result.proposalValidation.summary.relations, 2);
-    assert.equal(result.proposalValidation.constructionLifecycle.writeEligibility, "reviewable");
-    assert.equal(result.proposalValidation.constructionLifecycle.phases.length, 8);
-    assert.match(result.proposalValidation.constructionLifecycle.planDigest, /^sha256:[a-f0-9]{64}$/);
-    assert.match(result.proposalValidation.constructionLifecycle.sourceDigest, /^sha256:[a-f0-9]{64}$/);
-    assert.deepEqual(result.proposalValidation.constructionLifecycle.requiredGapIds, [
-      "proposal:visible-competency-gap:competencyAnswers.impact",
-    ]);
-    assert.equal(result.proposalValidation.reviewPlan.concepts.length, 3);
-    assert.equal(result.proposalValidation.writePlan, undefined);
-
-    const qualification = structuredClone(QUALIFIED_CONSTRUCTION_FIXTURE);
-    qualification.qualificationId = "qualification:claims:v1";
-    qualification.subject.projectSlug = "claims";
-    qualification.subject.graphDigest = result.proposalValidation.constructionLifecycle.planDigest;
-    qualification.subject.sourceDigest = result.proposalValidation.constructionLifecycle.sourceDigest;
-    qualification.acceptance.planDigest = result.proposalValidation.constructionLifecycle.planDigest;
-    qualification.acceptance.planRevision = result.proposalValidation.constructionLifecycle.planRevision;
-    qualification.acceptance.acceptedGapIds = result.proposalValidation.constructionLifecycle.requiredGapIds;
-    const proposalRefs = proposalCoverageRefs(result.proposalValidation.reviewPlan);
-    qualification.claims.forEach((claim, index) => {
-      claim.proposalRefs = [
-        ...(index === 0 ? proposalRefs : [proposalRefs[0]]),
-      ];
-    });
-
-    const qualified = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal, qualification }),
-    ]);
-    const qualifiedResult = getCallParsed(qualified.responses, 2);
-    assert.equal(qualifiedResult.proposalValidation.status, "pass");
-    assert.equal(qualifiedResult.proposalValidation.canWrite, true);
-    assert.equal(qualifiedResult.proposalValidation.constructionLifecycle.writeEligibility, "executable");
-    assert.deepEqual(
-      qualifiedResult.proposalValidation.writePlan,
-      result.proposalValidation.reviewPlan,
-      "the public writer rows must be byte-for-JSON equal to the reviewed plan",
-    );
-    assert.equal(qualifiedResult.proposalValidation.writePlan.concepts.length, 3);
-    assert.equal(qualifiedResult.proposalValidation.writePlan.relations.length, 2);
-    assert.equal(qualifiedResult.proposalValidation.writePlan.competencyAnswers.impact.status, "visible-gap");
-
-    const foreignProposalClaim = structuredClone(qualification);
-    foreignProposalClaim.claims[0].proposalRefs = [
-      ...proposalRefs.slice(0, -1),
-      "concept:foreign-proposal",
-    ];
-    const foreignProposal = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "analyze_repo_structure", {
-        rootPath: repoRoot,
-        proposal,
-        qualification: foreignProposalClaim,
-      }),
-    ]);
-    const foreignProposalResult = getCallParsed(foreignProposal.responses, 2);
-    assert.equal(foreignProposalResult.proposalValidation.canWrite, false);
-    assert.equal(foreignProposalResult.proposalValidation.writePlan, undefined);
-    assert.equal(foreignProposalResult.proposalValidation.constructionLifecycle.admission.tier, "hard_block");
-    assert.ok(foreignProposalResult.proposalValidation.constructionLifecycle.diagnostics.some(
-      ({ code }) => code === "proposal-coverage-unexpected:concept:foreign-proposal",
-    ));
-
-    const sourceHiddenMissing = structuredClone(qualification);
-    sourceHiddenMissing.sourceHiddenTask.status = "not_measured";
-    const blocked = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "analyze_repo_structure", {
-        rootPath: repoRoot,
-        proposal,
-        qualification: sourceHiddenMissing,
-      }),
-    ]);
-    const blockedResult = getCallParsed(blocked.responses, 2);
-    assert.equal(blockedResult.proposalValidation.canWrite, false);
-    assert.equal(blockedResult.proposalValidation.writePlan, undefined);
-    assert.equal(
-      blockedResult.proposalValidation.constructionLifecycle.firstBlockingPhase,
-      "independent_source_hidden",
-    );
-    assert.ok(blockedResult.proposalValidation.constructionLifecycle.diagnostics.some(
-      ({ code }) => code === "source-hidden-not-measured",
-    ));
-
-    const written = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "add_concepts", {
-        concepts: qualifiedResult.proposalValidation.writePlan.concepts,
-      }),
-      callTool(3, "add_relations", {
-        relations: qualifiedResult.proposalValidation.writePlan.relations,
-      }),
-    ]);
-    assert.ok(getCallParsed(written.responses, 2).concepts.every((row) => row.ok));
-    assert.ok(getCallParsed(written.responses, 3).relations.every((row) => row.ok));
-
-    const readback = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "get_concepts", {
-        slugs: qualifiedResult.proposalValidation.writePlan.concepts.map(({ slug }) => slug),
-        body: "full",
-      }),
-    ]);
-    const readbackResult = getCallParsed(readback.responses, 2);
-    assert.equal(readbackResult.concepts.length, qualifiedResult.proposalValidation.writePlan.concepts.length);
-    assert.ok(readbackResult.concepts.every((row) => row.isNode === true && row.bodyInfo?.mode === "full"));
-
-    const validated = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "validate_vault", {}),
-    ]);
-    const validatedResult = getCallParsed(validated.responses, 2);
-    /*
-     * Frontmatter clean, meaning thin, and validate_vault says both. The exact three
-     * findings are pinned because each proves a different wiring: two body checks
-     * on the written prose, and `folder-only-evidence` (`path: src/review` is a
-     * directory) from the whole-vault pass.
-     */
-    assert.equal(validatedResult.summary.errorFiles, 0);
-    assert.deepEqual(
-      Object.fromEntries(
-        Object.entries(validatedResult.summary.byCode).map(([code, entry]) => [code, entry.files]),
-      ),
-      {
-        'definition-missing': ['capabilities/review'],
-        'boundary-missing': ['capabilities/review', 'domains/review'],
-        'folder-only-evidence': ['capabilities/review'],
-      },
-    );
-
-    const compiled = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "compile_ontology", { full: true }),
-    ]);
-    const compiledResult = getCallParsed(compiled.responses, 2);
-    assert.equal(compiledResult.issues.filter(({ severity }) => severity === "error").length, 0);
-    assert.equal(compiledResult.unresolvedEdgeCount, 0);
-
-    const connected = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "connect_project_source", {
-        projectSlug: "claims",
-        rootPath: repoRoot,
-        confirm: true,
-      }),
-    ]);
-    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
-
-    const finalizeCall = (id) => callTool(id, "finalize_project_meaning", {
-      projectSlug: "claims",
-      expected_mtime: statSync(join(vaultRoot, "claims.md")).mtimeMs,
-    });
-    // An answered evidence row needs the cited condition lines read by this server process.
-    const unread = await rpcForRepo(vaultRoot, repoRoot, [...INIT_REQUESTS, finalizeCall(2)]);
-    assert.match(getCallText(unread.responses, 2), /- evidence: 1 of 1 capabilities cite no lines this server read/);
-    const reviewPath = join(vaultRoot, "capabilities", "review.md");
-    const finalized = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "analyze_repo_structure", { sourceOnly: true, sourceReads: [{ path: "src/review/index.ts", symbol: "review" }] }),
-      callTool(3, "patch_concept", {
-        slug: "capabilities/review",
-        expected_mtime: statSync(reviewPath).mtimeMs,
-        body: `${readFileSync(reviewPath, "utf-8").replace(/^---[\s\S]*?\n---\n/, "")}\nOnly an approved claim passes review (src/review/index.ts:L2).\n`,
-      }),
-      finalizeCall(4),
-    ]);
-    assert.equal(isErrorResponse(finalized.responses, 3), false, getCallText(finalized.responses, 3));
-    assert.equal(
-      isErrorResponse(finalized.responses, 4),
-      false,
-      getCallText(finalized.responses, 4),
-    );
-    const finalizedResult = getCallParsed(finalized.responses, 4);
-    assert.equal(finalizedResult.ok, true);
-    assert.equal(finalizedResult.meaningAssessment.dimensions.competency.questions
-      .find((row) => row.id === "scope")?.witnessStatus, "resolved");
-    assert.equal(JSON.stringify(finalizedResult).includes(repoRoot), false);
-
-    const handedOff = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", {
-        operation: "agent_brief",
-        project: "claims",
-      }),
-    ]);
-    const handoffBrief = getCallParsed(handedOff.responses, 2);
-    assert.equal(
-      handoffBrief.meaningAssessment.dimensions.competency.status,
-      "needs_evidence",
-      JSON.stringify(handoffBrief.meaningAssessment),
-    );
-    assert.equal(handoffBrief.meaningAssessment.dimensions.competency.questions
-      .find((row) => row.id === "scope")?.witnessStatus, "resolved");
-    assert.equal(handoffBrief.meaningAssessment.topGap?.questionId, "impact");
-    assert.equal(handoffBrief.meaningAssessment.dimensions.source.currentness, "current");
-    assert.equal(JSON.stringify(handoffBrief.projectSource).includes(repoRoot), false);
-    assert.equal(JSON.stringify(handoffBrief.meaningAssessment).includes(repoRoot), false);
-    assert.equal(JSON.stringify(handoffBrief.meaningRepair).includes(repoRoot), false);
-
-    const legacyProposal = {
-      ...proposal,
-      competencyAnswers: {
-        scope: "Teams publishing reviewable claims.",
-        domains: "Review owns publication readiness.",
-        abilities: "Claim Review evaluates claims.",
-        evidence: "README and source implementation.",
-        impact: "Review decisions gate publication.",
-      },
-    };
-    const { responses: legacyResponses } = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "analyze_repo_structure", {
-        rootPath: repoRoot,
-        proposal: legacyProposal,
-      }),
-    ]);
-    const legacyResult = legacyResponses.find((row) => row.id === 2).result;
-    assert.equal(legacyResult.isError, true);
-    assert.match(
-      legacyResult.structuredContent.error,
-      /^proposal\.competencyAnswers\.scope must be an object; received a string\..*Example proposal\.competencyAnswers\.scope: \{"answer"/,
-    );
-
-    const malformedBoundaryProposal = {
-      ...proposal,
-      project: { ...proposal.project, includes: "Reviewable claims." },
-    };
-    const { responses: malformedBoundaryResponses } = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "analyze_repo_structure", {
-        rootPath: repoRoot,
-        proposal: malformedBoundaryProposal,
-      }),
-    ]);
-    const malformedBoundaryResult = malformedBoundaryResponses.find((row) => row.id === 2).result;
-    assert.equal(malformedBoundaryResult.isError, true);
-    assert.match(
-      malformedBoundaryResult.structuredContent.error,
-      /^proposal\.project\.includes must be an array; received a string\..*Example proposal\.project\.includes\[0\]: "<includes>"/,
-    );
-  } finally {
-    rmSync(vaultRoot, { recursive: true, force: true });
-    rmSync(repoRoot, { recursive: true, force: true });
-  }
-});
-
-await test("analyze_repo_structure — validates exact TypeScript import endpoints inside the proposal call", async () => {
-  const vaultRoot = makeVault();
-  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-ts-proposal-")));
-  try {
-    writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "portable-reader" }), "utf-8");
-    writeFileSync(
-      join(repoRoot, "README.md"),
-      "# Portable Reader\n\nA desktop reader that presents subscribed content.\n\nReading owns subscribed-content presentation.\n",
-      "utf-8",
-    );
-    mkdirSync(join(repoRoot, "docs"), { recursive: true });
-    writeFileSync(
-      join(repoRoot, "docs", "product-contract.md"),
-      "# Product Contract\n\nPortable Reader provides subscribed-content reading for desktop users.\n\nReading owns subscribed-content presentation.\n",
-      "utf-8",
-    );
-    mkdirSync(join(repoRoot, "src"), { recursive: true });
-    writeFileSync(
-      join(repoRoot, "src", "entry.ts"),
-      "import { loadItems } from './service';\nexport const start = () => loadItems();\n",
-      "utf-8",
-    );
-    writeFileSync(
-      join(repoRoot, "src", "service.ts"),
-      "export const loadItems = () => [];\n",
-      "utf-8",
-    );
-
-    const projectDomain = { from: "portable-reader", to: "domains/reading", type: "domains" };
-    const domainCapability = { from: "domains/reading", to: "capabilities/content-reading", type: "capabilities" };
-    const capabilityEntry = { from: "capabilities/content-reading", to: "elements/desktop-entry", type: "elements" };
-    const capabilityService = { from: "capabilities/content-reading", to: "elements/content-service", type: "elements" };
-    const dependency = { from: "elements/desktop-entry", to: "elements/content-service", type: "depends_on" };
-    const proposal = {
-      project: {
-        slug: "portable-reader",
-        title: "Portable Reader",
-        definition: "A desktop product for reading subscribed content.",
-        evidence: ["README.md", "docs/product-contract.md"],
-        confidence: 0.9,
-      },
-      domains: [{
-        slug: "domains/reading",
-        title: "Reading",
-        definition: "The responsibility boundary for presenting subscribed content.",
-        evidence: ["README.md", "docs/product-contract.md"],
-        confidence: 0.9,
-      }],
-      capabilities: [{
-        slug: "capabilities/content-reading",
-        title: "Content reading",
-        definition: "Load and present subscribed content in the desktop product.",
-        domain: "domains/reading",
-        path: "src",
-        evidence: ["README.md"],
-        confidence: 0.9,
-      }],
-      elements: [
-        {
-          slug: "elements/desktop-entry",
-          title: "Desktop entry",
-          definition: "The desktop source entry that starts content loading.",
-          domain: "domains/reading",
-          path: "src/entry.ts",
-          evidence: ["src/entry.ts"],
-          confidence: 0.9,
-        },
-        {
-          slug: "elements/content-service",
-          title: "Content service",
-          definition: "The source boundary that loads subscribed content.",
-          domain: "domains/reading",
-          path: "src/service.ts",
-          evidence: ["src/service.ts"],
-          confidence: 0.9,
-        },
-      ],
-      relations: [
-        { ...projectDomain, why: "The project owns the reading boundary.", evidence: ["README.md", "docs/product-contract.md"], confidence: 0.9 },
-        { ...domainCapability, why: "Reading is realized through content loading and presentation.", evidence: ["README.md"], confidence: 0.9 },
-        { ...capabilityEntry, why: "The desktop entry implements content reading.", evidence: ["src/entry.ts"], confidence: 0.9 },
-        { ...capabilityService, why: "The content service implements content reading.", evidence: ["src/service.ts"], confidence: 0.9 },
-        { ...dependency, why: "The desktop entry statically imports the content service.", evidence: ["src/entry.ts", "src/service.ts"], confidence: 0.9 },
-      ],
-      competencyAnswers: {
-        scope: {
-          answer: "Desktop users read subscribed content.",
-          status: "answered",
-          witnesses: { concepts: ["portable-reader"], relations: [], evidence: ["README.md", "docs/product-contract.md"], paths: [] },
-        },
-        domains: {
-          answer: "Reading owns content presentation.",
-          status: "answered",
-          witnesses: { concepts: ["domains/reading"], relations: [projectDomain], evidence: ["README.md", "docs/product-contract.md"], paths: [] },
-        },
-        abilities: {
-          answer: "Content reading loads and presents subscriptions.",
-          status: "answered",
-          witnesses: { concepts: ["capabilities/content-reading"], relations: [domainCapability], evidence: ["README.md"], paths: [] },
-        },
-        evidence: {
-          answer: "The entry and service files are exact implementation witnesses.",
-          status: "answered",
-          witnesses: {
-            concepts: ["capabilities/content-reading", "elements/desktop-entry", "elements/content-service"],
-            relations: [capabilityEntry, capabilityService],
-            evidence: ["src/entry.ts", "src/service.ts"],
-            paths: ["src", "src/entry.ts", "src/service.ts"],
-          },
-        },
-        impact: {
-          answer: "Changing the service can affect the desktop entry that imports it.",
-          status: "answered",
-          witnesses: {
-            concepts: ["elements/desktop-entry", "elements/content-service"],
-            relations: [dependency],
-            evidence: ["src/entry.ts", "src/service.ts"],
-            paths: [],
-          },
-        },
-      },
-    };
-
-    const reversedProposal = structuredClone(proposal);
-    reversedProposal.relations[4] = {
-      ...reversedProposal.relations[4],
-      from: "elements/content-service",
-      to: "elements/desktop-entry",
-      why: "The content service statically imports the desktop entry.",
-    };
-    reversedProposal.competencyAnswers.impact.witnesses.relations = [{
-      from: "elements/content-service",
-      to: "elements/desktop-entry",
-      type: "depends_on",
-    }];
-
-    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
-      callTool(3, "analyze_repo_structure", { rootPath: repoRoot, proposal: reversedProposal }),
-    ]);
-    const result = getCallParsed(responses, 2);
-    const reversedResult = getCallParsed(responses, 3);
-    assert.equal(result.proposalValidation.status, "pass", JSON.stringify(result.proposalValidation.findings));
-    assert.equal(result.proposalValidation.canWrite, false);
-    assert.ok(result.proposalValidation.reviewPlan);
-    assert.equal(
-      result.proposalValidation.findings.some(({ code }) =>
-        ["unknown-citation", "unobserved-python-import-dependency"].includes(code)),
-      false,
-      JSON.stringify(result.proposalValidation.findings),
-    );
-    assert.equal(reversedResult.proposalValidation.status, "fail");
-    assert.ok(
-      reversedResult.proposalValidation.findings.some(
-        ({ code }) => code === "unobserved-python-import-dependency",
-      ),
-      JSON.stringify(reversedResult.proposalValidation.findings),
-    );
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -3193,7 +2336,7 @@ await test("inspect_architecture — profile intent and observed imports produce
   }
 });
 
-await test("infer_imports — Go package evidence stays typed while focus and index return bounded summaries", async () => {
+await test("infer_imports — Go package evidence stays typed while focus returns a bounded summary", async () => {
   const vaultRoot = makeVault();
   const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-go-summary-")));
   try {
@@ -3218,11 +2361,9 @@ await test("infer_imports — Go package evidence stays typed while focus and in
         reviewMode: "focus",
         focusPath: "cmd/sample/main.go",
       }),
-      callTool(4, "index_project", { rootPath: repoRoot }),
     ]);
     const full = getCallParsed(responses, 2);
     const focused = getCallParsed(responses, 3);
-    const indexed = getCallParsed(responses, 4);
 
     assert.equal(full.packageImportEvidence.contract, "goPackageImports:v1");
     assert.equal(full.packageImportEvidence.packageImports.length, 1);
@@ -3251,10 +2392,6 @@ await test("infer_imports — Go package evidence stays typed while focus and in
     assert.deepEqual(focused.packageImportEvidenceSummary, expectedSummary);
     assert.deepEqual(focused.focusReview.edges, []);
     assert.match(focused.focusReview.interpretation, /legacy file edges only/i);
-    assert.equal(indexed.imports.moduleEdges, 0);
-    assert.equal(indexed.imports.packageImports, 1);
-    assert.equal(indexed.imports.packageModuleEdges, 1);
-    assert.equal(indexed.plan.importRelations, 1);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -3416,7 +2553,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
   }
 });
 
-await test("Rust and Autotools C MCP evidence — analyze, infer, and index preserve provenance and bounded import coverage", async () => {
+await test("Rust and Autotools C MCP evidence — the survey and infer_imports keep bounded import coverage", async () => {
   const vaultRoot = makeVault();
   const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-")));
   try {
@@ -3447,28 +2584,9 @@ await test("Rust and Autotools C MCP evidence — analyze, infer, and index pres
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
       callTool(3, "infer_imports", { rootPath: repoRoot }),
-      callTool(4, "index_project", { rootPath: repoRoot }),
     ]);
     assert.match(getCallTextAlone(responses, 2), /^Breadth map of /);
-    const analyze = analyzeRepoStructure(repoRoot);
     const imports = getCallParsed(responses, 3);
-    const index = getCallParsed(responses, 4);
-
-    assert.equal(analyze.configurationEvidence.contract, "rustFeatureConfigurationEvidence:v1");
-    assert.equal(analyze.configurationEvidence.writePolicy.writeAllowed, false);
-    assert.equal(analyze.configurationEvidence.claimBoundary.semanticDependency, false);
-    assert.deepEqual(
-      analyze.configurationEvidence.packages[0].features[0].references[0],
-      {
-        path: "src/lib.rs",
-        line: 1,
-        form: "cfg",
-        meaning: "conditional_inclusion",
-        polarity: "positive",
-        predicate: 'feature = "portable"',
-        sourceRole: "production",
-      },
-    );
 
     assert.deepEqual(getCallStructured(responses, 3), imports);
     assert.equal(imports.filesScanned, 2);
@@ -3489,10 +2607,6 @@ await test("Rust and Autotools C MCP evidence — analyze, infer, and index pres
     assert.equal(imports.coverage.allDetectedLanguagesSupported, false);
     assert.equal(imports.coverage.zeroEdgesMeaning, "no_supported_static_import_edges_observed");
 
-    assert.deepEqual(getCallStructured(responses, 4), index);
-    assert.equal(index.sideEffect, 0);
-    assert.equal(index.configurationEvidence.contract, "rustFeatureConfigurationEvidence:v1");
-    assert.deepEqual(index.imports.coverage, imports.coverage);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -3672,113 +2786,7 @@ await test("infer_imports reviewMode next — test-only type evidence stays visi
   }
 });
 
-await test("index_project — repo analysis, import indexing, and vault validation expose one read-only plan", async () => {
-  const vaultRoot = makeVault([
-    {
-      slug: "project",
-      content: "---\nslug: sample-app\nkind: project\ntitle: Existing Sample App\n---\n",
-    },
-  ]);
-  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-")));
-  try {
-    writeFileSync(
-      join(repoRoot, "package.json"),
-      JSON.stringify({ name: "sample-app", description: "Sample App" }, null, 2),
-      "utf-8",
-    );
-    writeFileSync(repoRoot + "/README.md", "# Sample App\n\n## Auth\n\n", "utf-8");
-    mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
-    mkdirSync(join(repoRoot, "src", "features", "billing"), { recursive: true });
-    mkdirSync(join(repoRoot, "docs", "ontology", "capabilities"), { recursive: true });
-    writeFileSync(
-      join(repoRoot, "docs", "ontology", "capabilities", "auth.md"),
-      [
-        "---",
-        "kind: capability",
-        "title: Auth",
-        "elements:",
-        "  - src/features/auth",
-        "---",
-        "",
-      ].join("\n"),
-      "utf-8",
-    );
-    writeFileSync(
-      join(repoRoot, "src", "features", "auth", "index.ts"),
-      "import { billing } from '../billing';\nexport const auth = billing;\n",
-      "utf-8",
-    );
-    writeFileSync(join(repoRoot, "src", "features", "billing", "index.ts"), "export const billing = true;\n", "utf-8");
-
-    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "index_project", { rootPath: repoRoot }),
-    ]);
-    const result = getCallParsed(responses, 2);
-    assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(result.mode, "plan");
-    assert.equal(result.sideEffect, 0);
-    assert.equal(result.rootPath, repoRoot);
-    assert.equal(result.analyze.framework, "fsd");
-    assert.equal(result.plan.concepts, 4);
-    assert.deepEqual(result.plan.conceptDelta, {
-      candidates: 4,
-      existing: 1,
-      ambiguous: 0,
-      new: 3,
-      limited: false,
-      sampleAmbiguousSlugs: [],
-      sampleNewSlugs: ["capabilities/auth", "capabilities/billing", "domains/auth"],
-    });
-    assert.equal(result.plan.suggestedRelations, 4);
-    assert.ok(result.plan.importRelations >= 1);
-    assert.equal(result.meaningGate.policy, "business-first");
-    assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
-    assert.equal(result.meaningGate.businessOntology.domains, 0);
-    assert.equal(result.meaningGate.businessOntology.capabilities, 1);
-    assert.equal(result.meaningGate.businessOntology.evidence, 1);
-    assert.deepEqual(result.meaningGate.businessOntology.evidenceRows, [
-      {
-        slug: "capabilities/auth",
-        kind: "capability",
-        source: "docs/ontology/capabilities/auth.md",
-      },
-    ]);
-    assert.equal(result.meaningGate.proposedBusinessOntology.domains, 1);
-    assert.equal(result.meaningGate.proposedBusinessOntology.capabilities, 1);
-    assert.equal(result.meaningGate.implementationEvidence.elements, 0);
-    assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 1);
-    assert.deepEqual(result.meaningGate.implementationEvidence.reviewRequiredRows, [
-      {
-        slug: "capabilities/billing",
-        reason: "implementation-only: source folder is implementation evidence, not proof of a shared capability meaning; add business outcome and stable responsibility evidence before promoting this capability",
-        evidence: { source: "src/features/billing" },
-      },
-    ]);
-    assert.equal(result.extractionContract.assertionPolicy.automaticBusinessAssertions, 0);
-    assert.equal(result.extractionContract.assertionPolicy.humanApprovalRequired, true);
-    assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
-    assert.equal(result.validation.problemFiles, 0);
-    assert.equal(result.next.applyTool, "add_concepts; add_relations only after semantic rationale + human approval");
-    assert.match(result.next.review, /Nothing promotes inferred imports to depends_on/);
-    assert.deepEqual(result.next.reviewCalls, [
-      {
-        tool: "analyze_repo_structure",
-        arguments: { rootPath: repoRoot },
-      },
-      {
-        tool: "infer_imports",
-        arguments: { rootPath: repoRoot },
-      },
-    ]);
-    assert.equal(existsSync(join(vaultRoot, "sample-app.md")), false);
-  } finally {
-    rmSync(vaultRoot, { recursive: true, force: true });
-    rmSync(repoRoot, { recursive: true, force: true });
-  }
-});
-
-await test("index_project — Python package and import boundaries reach the public read-only plan", async () => {
+await test("infer_imports — Python package and import boundaries resolve inside the package", async () => {
   const vaultRoot = makeVault([]);
   const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-")));
   try {
@@ -3815,58 +2823,14 @@ await test("index_project — Python package and import boundaries reach the pub
 
     const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
-      callTool(2, "index_project", { rootPath: repoRoot }),
-      callTool(3, "analyze_repo_structure", { rootPath: repoRoot }),
-      callTool(4, "infer_imports", { rootPath: repoRoot, reconcile: false }),
+      callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
+      callTool(3, "infer_imports", { rootPath: repoRoot, reconcile: false }),
     ]);
-    const result = getCallParsed(responses, 2);
-    const analyze = analyzeRepoStructure(repoRoot);
-    const imports = getCallParsed(responses, 4);
+    const imports = getCallParsed(responses, 3);
 
-    assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.match(getCallTextAlone(responses, 3), /^Breadth map of /);
-    assert.deepEqual(getCallStructured(responses, 4), imports);
-    assert.deepEqual(result.analyze.project, {
-      slug: "protocol-client",
-      title: "Protocol Client",
-      definition: "Proposed repository purpose from README.rst: A standardized diagnostic protocol client.",
-      evidence: ["README.rst"],
-      includes: ["repository-contained implementation evidence"],
-      excludes: [],
-      confidence: 0.5,
-      uncertainty: "proposal-only: source prose is a bounded purpose witness, not a shared business assertion. Unknowns: shared business ownership is not established by repository evidence; runtime, test, and external-system behavior remain outside this bounded scan.",
-    });
-    assert.equal(result.analyze.elements, 5);
-    assert.equal(result.plan.concepts, 6);
-    assert.deepEqual(result.plan.conceptDelta.sampleNewSlugs, [
-      "elements/client",
-      "elements/connections",
-      "elements/diagnostic-client",
-      "elements/request",
-      "elements/services",
-      "protocol-client",
-    ]);
-    assert.deepEqual(
-      result.semanticEvidence.map((row) => [row.source, row.role]),
-      [
-        ["README.rst", "mission"],
-        ["setup.py", "package-contract"],
-      ],
-    );
-    assert.equal(result.imports.filesScanned, 5);
-    assert.equal(result.imports.moduleEdges, 3);
-    assert.equal(result.plan.importRelations, 3);
-    assert.deepEqual(
-      analyze.elements.map((row) => [row.slug, row.path]).sort(),
-      [
-        ["elements/client", "diagnostic_client/client.py"],
-        ["elements/connections", "diagnostic_client/connections.py"],
-        ["elements/diagnostic-client", "diagnostic_client"],
-        ["elements/request", "diagnostic_client/Request.py"],
-        ["elements/services", "diagnostic_client/services"],
-      ],
-    );
-    assert.equal(analyze.capabilities.length, 0);
+    assert.match(getCallTextAlone(responses, 2), /^Breadth map of /);
+    assert.deepEqual(getCallStructured(responses, 3), imports);
+    assert.equal(imports.filesScanned, 5);
     assert.ok(
       imports.edges.some(
         (edge) =>
@@ -3927,49 +2891,7 @@ await test("infer_imports — Python package-internal symlink escape is rejected
   }
 });
 
-await test("index_project — ambiguous aliases stay in review instead of becoming new concepts", async () => {
-  const vaultRoot = makeVault([
-    {
-      slug: "domains/shared",
-      content: "---\nkind: domain\ntitle: Shared Domain\n---\n",
-    },
-    {
-      slug: "capabilities/shared",
-      content: "---\nkind: capability\ntitle: Shared Capability\ndomain: domains/shared\n---\n",
-    },
-  ]);
-  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-index-ambiguous-")));
-  try {
-    writeFileSync(
-      join(repoRoot, "package.json"),
-      JSON.stringify({ name: "shared", description: "Shared" }, null, 2),
-      "utf-8",
-    );
-    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, "index_project", {
-        rootPath: repoRoot,
-        skipImports: true,
-      }),
-    ]);
-    const result = getCallParsed(responses, 2);
-    assert.deepEqual(result.plan.conceptDelta, {
-      candidates: 1,
-      existing: 0,
-      ambiguous: 1,
-      new: 0,
-      limited: false,
-      sampleAmbiguousSlugs: ["shared"],
-      sampleNewSlugs: [],
-    });
-    assert.match(result.next.review, /manually resolve ambiguous aliases/);
-  } finally {
-    rmSync(vaultRoot, { recursive: true, force: true });
-    rmSync(repoRoot, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology — compiled graph engine neighbors/path/all_paths/query_plan/centrality/communities/similar_nodes/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/domain_matrix/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/maintenance_plan/agent_brief/workspace_brief/health", async () => {
+await test("query_ontology — compiled graph engine neighbors/path/query_plan/communities/similar_nodes/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/node_profile/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/recommend_relations/growth_plan/maintenance_plan/agent_brief/workspace_brief/health", async () => {
   const root = makeVault([
     {
       slug: "project",
@@ -4032,11 +2954,6 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
         from: "capabilities/session",
         to: "auth-domain",
       }),
-      callTool(4, "query_ontology", {
-        operation: "all_paths",
-        from: "capabilities/session",
-        to: "auth-domain",
-      }),
       callTool(5, "query_ontology", {
         operation: "explain_relation",
         from: "capabilities/session",
@@ -4083,27 +3000,11 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       callTool(14, "query_ontology", {
         operation: "match_nodes",
         kind: "capability",
-        minInDegree: 1,
         sort: "inDegree",
-      }),
-      callTool(15, "query_ontology", {
-        operation: "match_edges",
-        fromKind: "capability",
-        type: "depends_on",
-        toKind: "domain",
       }),
       callTool(16, "query_ontology", {
         operation: "node_profile",
         slug: "capabilities/login",
-      }),
-      callTool(17, "query_ontology", {
-        operation: "domain_profile",
-        slug: "auth-domain",
-      }),
-      callTool(18, "query_ontology", {
-        operation: "domain_matrix",
-        project: "project",
-        types: ["depends_on"],
       }),
       callTool(19, "query_ontology", {
         operation: "project_scope",
@@ -4131,9 +3032,6 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       callTool(25, "query_ontology", {
         operation: "cycles",
       }),
-      callTool(26, "query_ontology", {
-        operation: "topological_order",
-      }),
       callTool(27, "query_ontology", {
         operation: "recommend_relations",
       }),
@@ -4146,27 +3044,13 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       callTool(30, "query_ontology", {
         operation: "health",
       }),
-      callTool(80, "query_ontology", {
-        operation: "health",
-        componentLimit: 1,
-        cycleLimit: 1,
-        recommendationLimit: 1,
-        orderLimit: 1,
-        dependencyTypes: ["dependencies"],
-        componentTypes: ["domain", "contains"],
-      }),
       callTool(31, "query_ontology", {
         operation: "query_plan",
-        targetOperation: "all_paths",
+        targetOperation: "path",
         from: "capabilities/session",
         to: "auth-domain",
         maxHops: 3,
         types: ["depends_on"],
-      }),
-      callTool(32, "query_ontology", {
-        operation: "centrality",
-        types: ["depends_on"],
-        limit: 2,
       }),
       callTool(33, "query_ontology", {
         operation: "communities",
@@ -4203,11 +3087,6 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "domains/auth",
     ]);
 
-    const allPaths = getCallParsed(responses, 4);
-    assert.equal(allPaths.operation, "all_paths");
-    assert.equal(allPaths.found, true);
-    assert.equal(allPaths.totalPaths, 2);
-    assert.deepEqual(allPaths.byLength, { 2: 2 });
 
     const explanation = getCallParsed(responses, 5);
     assert.equal(explanation.operation, "explain_relation");
@@ -4313,44 +3192,14 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
 
     const matchNodes = getCallParsed(responses, 14);
     assert.equal(matchNodes.operation, "match_nodes");
-    assert.deepEqual(matchNodes.nodes.map((node) => node.slug), ["capabilities/login"]);
+    assert.deepEqual(matchNodes.nodes.map((node) => node.slug), ["capabilities/login", "capabilities/session"]);
     assert.equal(matchNodes.nodes[0].inDegree, 1);
-
-    const matchEdges = getCallParsed(responses, 15);
-    assert.equal(matchEdges.operation, "match_edges");
-    assert.equal(matchEdges.totalMatches, 1);
-    assert.deepEqual(matchEdges.edges.map((edge) => `${edge.from}->${edge.to}:${edge.via}`), [
-      "capabilities/login->domains/auth:dependencies",
-    ]);
 
     const nodeProfile = getCallParsed(responses, 16);
     assert.equal(nodeProfile.operation, "node_profile");
     assert.equal(nodeProfile.center, "capabilities/login");
     assert.deepEqual(nodeProfile.degree, { in: 1, out: 3, total: 4 });
     assert.equal(nodeProfile.edges.outgoing.total, 3);
-
-    const domainProfile = getCallParsed(responses, 17);
-    assert.equal(domainProfile.operation, "domain_profile");
-    assert.equal(domainProfile.domain, "domains/auth");
-    assert.deepEqual(domainProfile.parents.projects.map((project) => project.slug), ["project"]);
-    assert.equal(domainProfile.summary.nodes, 2);
-    assert.equal(domainProfile.summary.capabilities, 1);
-    assert.equal(domainProfile.summary.internalEdges, 2);
-    assert.equal(domainProfile.summary.externalEdges, 1);
-    assert.deepEqual(domainProfile.capabilities.nodes.map((node) => node.slug), [
-      "capabilities/login",
-    ]);
-
-    const domainMatrix = getCallParsed(responses, 18);
-    assert.equal(domainMatrix.operation, "domain_matrix");
-    assert.equal(domainMatrix.project, "project");
-    assert.deepEqual(domainMatrix.filters, {
-      types: ["dependencies"],
-      relationTypes: ["depends_on"],
-    });
-    assert.equal(domainMatrix.summary.domains, 1);
-    assert.equal(domainMatrix.summary.crossDomainEdges, 0);
-    assert.equal(domainMatrix.summary.externalEdges, 0);
 
     const projectScope = getCallParsed(responses, 19);
     assert.equal(projectScope.operation, "project_scope");
@@ -4417,14 +3266,6 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(cycles.totalCycles, 0);
     assert.deepEqual(cycles.relationTypes, ["dependencies"]);
 
-    const topologicalOrder = getCallParsed(responses, 26);
-    assert.equal(topologicalOrder.acyclic, true);
-    assert.deepEqual(topologicalOrder.order.map((row) => row.slug), [
-      "domains/auth",
-      "capabilities/login",
-      "capabilities/session",
-    ]);
-
     const recommendations = getCallParsed(responses, 27);
     assert.equal(recommendations.totalRecommendations, 1);
     assert.deepEqual(recommendations.recommendations.map((row) => row.proposedAction.args.relations[0]), [
@@ -4470,34 +3311,13 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(health.relationCensus.canonicalMapCensus.countAvailable, false);
     assert.equal(health.checks.find((check) => check.id === "relation_recommendations").status, "warn");
 
-    const tunedHealth = getCallParsed(responses, 80);
-    assert.equal(tunedHealth.operation, "health");
-    assert.equal(tunedHealth.summary.nodes, 4);
-
     const queryPlan = getCallParsed(responses, 31);
     assert.equal(queryPlan.operation, "query_plan");
-    assert.equal(queryPlan.targetOperation, "all_paths");
+    assert.equal(queryPlan.targetOperation, "path");
     assert.equal(queryPlan.sideEffect, false);
     assert.equal(queryPlan.normalized.from, "capabilities/session");
     assert.equal(queryPlan.normalized.to, "domains/auth");
     assert.deepEqual(queryPlan.normalized.types, ["dependencies"]);
-    assert.equal(queryPlan.estimate.strategy, "bounded_path_enumeration");
-    assert.equal(queryPlan.estimate.edgeScans, 4);
-    assert.equal(queryPlan.estimate.costClass, "low");
-    assert.equal(queryPlan.normalized.limit, 25);
-
-    const centrality = getCallParsed(responses, 32);
-    assert.equal(centrality.operation, "centrality");
-    assert.equal(centrality.graph.nodes, 4);
-    assert.equal(centrality.graph.resolvedEdges, 2);
-    assert.deepEqual(centrality.rankings.pageRank.map((row) => row.slug), [
-      "domains/auth",
-      "capabilities/login",
-    ]);
-    assert.deepEqual(centrality.rankings.bridges.map((row) => row.slug), [
-      "capabilities/login",
-      "domains/auth",
-    ]);
 
     const communities = getCallParsed(responses, 33);
     assert.equal(communities.operation, "communities");
@@ -4590,73 +3410,6 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       /do not treat paths, APIs, routes, or commands as the ontology root/i,
     );
     assert.equal(Object.hasOwn(agentBrief, "cliFallbackCommands"), false);
-    assert.deepEqual(agentBrief.graphDbQueryPack.map((item) => item.id), [
-      "graph_facets",
-      "node_scan",
-      "edge_scan",
-      "domain_coupling",
-      "path_evidence",
-      "business_questions",
-    ]);
-    assert.deepEqual(agentBrief.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
-      "facets",
-      "schema",
-      "query_plan",
-      "match_nodes",
-      "query_plan",
-      "match_edges",
-      "domain_matrix",
-      "query_plan",
-      "centrality",
-      "query_plan",
-      "all_paths",
-      "explain_relation",
-      "facets",
-      "query_plan",
-      "match_nodes",
-      "domain_matrix",
-      "query_plan",
-      "match_nodes",
-      "query_plan",
-      "match_edges",
-    ]);
-    assert.deepEqual(agentBrief.playbooks.map((playbook) => playbook.id), [
-      "refactor_impact",
-      "onboarding_map",
-      "coupling_audit",
-      "graph_traversal",
-    ]);
-    assert.equal(agentBrief.playbooks[0].calls[3].arguments.operation, "blast_radius");
-    assert.deepEqual(agentBrief.playbooks[1].calls.map((call) => call.arguments.operation), [
-      "workspace_brief",
-      "domain_matrix",
-      "query_plan",
-      "match_nodes",
-      "node_profile",
-    ]);
-    assert.equal(agentBrief.playbooks[1].calls[2].arguments.targetOperation, "match_nodes");
-    assert.equal(agentBrief.playbooks[1].calls[2].arguments.kind, "capability");
-    assert.equal(agentBrief.playbooks[1].calls[3].arguments.minDegree, 2);
-    assert.deepEqual(agentBrief.playbooks[2].calls.map((call) => call.arguments.operation), [
-      "health",
-      "domain_matrix",
-      "query_plan",
-      "centrality",
-      "query_plan",
-      "match_edges",
-    ]);
-    assert.equal(agentBrief.playbooks[2].calls[4].arguments.targetOperation, "match_edges");
-    assert.deepEqual(agentBrief.playbooks[2].calls[5].arguments.types, ["depends_on"]);
-    assert.deepEqual(agentBrief.playbooks[3].calls.map((call) => call.arguments.operation), [
-      "schema",
-      "query_plan",
-      "all_paths",
-      "pattern_walk",
-      "project_map",
-    ]);
-    assert.equal(agentBrief.playbooks[3].calls[1].arguments.targetOperation, "all_paths");
-    assert.equal(agentBrief.playbooks[3].calls[1].arguments.searchBudget, 1000);
-    assert.equal(agentBrief.playbooks[3].calls[2].arguments.searchBudget, 1000);
     assert.ok(agentBrief.entrypoints.some((entrypoint) => entrypoint.slug === "domains/auth"));
     assert.deepEqual(agentBrief.writeGuardrails.map((guardrail) => guardrail.id), [
       "preflight_relation",
@@ -4687,12 +3440,15 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.match(agentBrief.writePolicy.join("\n"), /Definition\/Includes.*not exhaustive.*only\/all\/every\/exactly/);
     assert.match(agentBrief.writePolicy.join("\n"), /bounded packet.*same atomic claim.*measurement qualifier/);
     assert.match(agentBrief.handoffPrompt, /Definition\/Includes.*not exhaustive.*only\/all\/every\/exactly/s);
+    for (const cut of ["graphDbQueryPack", "playbooks", "traversalStrategy", "resultContracts", "navigation"]) {
+      assert.equal(Object.hasOwn(agentBrief, cut), false, `${cut} is cut from the brief`);
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test('query_ontology analysis archive — restores raw records without graph meaning and rejects unsafe ids', async () => {
+await test('query_ontology analysis archive — restores a raw record without graph meaning and rejects unsafe ids', async () => {
   const root = makeVault();
   const record = {
     schema: 'atlas-analysis/v1', recordType: 'run', id: '95f4ba81-41f7-483b-a617-2a4be815be32', createdAt: '2026-09-05T08:00:00.000Z', mode: 'meaning',
@@ -4706,16 +3462,12 @@ await test('query_ontology analysis archive — restores raw records without gra
     mkdirSync(directory, { recursive: true });
     writeFileSync(join(directory, analysisRecordFileName(record)), serializeAnalysisRecord(record));
     const { responses } = await rpc(root, [...INIT_REQUESTS,
-      callTool(10, 'query_ontology', { operation: 'analysis_history', limit: 1 }),
       callTool(11, 'query_ontology', { operation: 'analysis_record', recordId: record.id }),
       callTool(12, 'query_ontology', { operation: 'analysis_record', recordId: '../secret' }),
-      callTool(13, 'query_ontology', { operation: 'analysis_history', limit: 101 }),
       callTool(14, 'compile_ontology'),
     ]);
-    assert.equal(getCallParsed(responses, 10).records[0].id, record.id);
     assert.deepEqual(getCallParsed(responses, 11).record, record);
     assert.equal(isErrorResponse(responses, 12), true);
-    assert.equal(isErrorResponse(responses, 13), true);
     assert.equal(getCallParsed(responses, 14).nodeCount, 0);
     assert.equal(readFileSync(join(directory, analysisRecordFileName(record)), 'utf8'), serializeAnalysisRecord(record));
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -5302,7 +4054,7 @@ await test("get_concept — says so for a document outside the graph", async () 
  * outranked nodes. Loose documents stay visible (a memo may be real evidence),
  * but nodes rank first on a tie, each row carries `isNode`, and `nodesOnly` narrows.
  */
-await test("list_concepts mentions — only graph nodes answer, the best match first", async () => {
+await test("list_concepts mentions — plain Markdown pages answer as isNode:false below nodes of equal score, each row with an excerpt", async () => {
   const root = makeVault([
     {
       slug: "aaa-meeting-note",
@@ -5327,12 +4079,17 @@ await test("list_concepts mentions — only graph nodes answer, the best match f
     ]);
     const all = getCallParsed(responses, 2);
     assert.deepEqual(
-      all.nodes.map((m) => m.slug),
-      ["capabilities/token-issue", "elements/token-store"],
-      "a document without a kind is not a node and never answers",
+      all.nodes.map((m) => [m.slug, m.isNode]),
+      [["capabilities/token-issue", true], ["elements/token-store", true], ["aaa-meeting-note", false]],
+      "the memo answers last: its body ties the element's, and a node outranks a page of equal score",
     );
-    assert.equal(all.total, 2);
-    assert.ok(all.nodes[0].score >= all.nodes[1].score);
+    assert.equal(all.total, 3);
+    const memo = all.nodes[2];
+    assert.equal(memo.uid, undefined);
+    assert.equal(memo.kind, undefined);
+    assert.match(memo.excerpt, /토큰 발급이 느리다/);
+    assert.match(all.nonNodeHint, /1 of 3 row\(s\) are not graph nodes/);
+    for (const row of all.nodes) assert.equal(typeof row.excerpt, "string", `${row.slug} carries an excerpt`);
     const narrowed = getCallParsed(responses, 3);
     assert.deepEqual(narrowed.nodes.map((m) => m.slug), ["elements/token-store"], "mentions joins kind as AND");
   } finally {
@@ -5818,7 +4575,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         slug: "a",
         direction: "sideways",
       }),
-      callTool(11, "query_ontology", { operation: "centrality", iterations: 101 }),
       callTool(12, "query_ontology", { operation: "cycles", depth: -1 }),
       callTool(13, "find_neighbors", { slug: "a", types: ["depends_on", 123] }),
       callTool(14, "list_concepts", { mentions: 7 }),
@@ -5865,12 +4621,10 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         hasIncoming: "false",
       }),
       callTool(28, "query_ontology", { operation: "overview", limit: 501 }),
-      callTool(29, "query_ontology", { operation: "components", nodeLimit: 501 }),
       callTool(30, "query_ontology", { operation: "project_map", itemLimit: 501 }),
       callTool(31, "query_ontology", { operation: "reachability", slug: "a", depth: 21 }),
       callTool(32, "query_ontology", { operation: "path", from: "a", to: "b", maxHops: 21 }),
       callTool(33, "analyze_repo_structure", { rootPath: " ." }),
-      callTool(34, "analyze_repo_structure", { maxDepth: 11 }),
       callTool(35, "analyze_repo_structure", { ignore: ["dist", " "] }),
       callTool(36, "infer_imports", { rootPath: ".\0" }),
       callTool(37, "infer_imports", { sourceFolders: ["src", " lib"] }),
@@ -5878,8 +4632,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(39, "infer_imports", { maxFiles: 0 }),
       callTool(40, "infer_imports", { maxFiles: 50001 }),
       callTool(41, "compile_ontology", { nodesLimit: 0 }),
-      callTool(42, "query_ontology", { operation: "match_nodes", minDegree: -1 }),
-      callTool(43, "query_ontology", { operation: "match_nodes", maxDegree: 1.5 }),
       callTool(44, "query_ontology", { operation: "match_nodes", sort: "mtime" }),
       callTool(45, "query_ontology", { operation: "recommend_relations", kind: "domain" }),
       callTool(46, "find_path", { from: "a", to: "b", maxHops: 21 }),
@@ -5899,14 +4651,9 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         targetOperation: "overveiw",
       }),
       callTool(56, "find_neighbors", { slug: "a", direction: "incomng" }),
-      callTool(57, "query_ontology", { operation: "health", componentLimit: 501 }),
-      callTool(58, "query_ontology", { operation: "health", dependencyTypes: [" dependencies"] }),
-      callTool(59, "query_ontology", { operation: "workspace_brief", componentLimit: 501 }),
       callTool(60, "query_ontology", { operation: "maintenance_plan", phases: ["repiar"] }),
       callTool(61, "query_ontology", { operation: "maintenance_plan", severities: ["fatal"] }),
       callTool(62, "query_ontology", { operation: "maintenance_plan", kinds: ["add_mising_relation"] }),
-      callTool(63, "query_ontology", { operation: "health", dependencyTypes: ["depend_on"] }),
-      callTool(64, "query_ontology", { operation: "workspace_brief", componentTypes: ["capabilties"] }),
       callTool(65, "query_ontology", {
         operation: "relation_check",
         from: "a",
@@ -5914,8 +4661,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         type: "depend_on",
       }),
       callTool(66, "query_ontology", { operation: "match_nodes", kind: "capabilty" }),
-      callTool(67, "query_ontology", { operation: "match_edges", fromKind: "capabilty" }),
-      callTool(68, "query_ontology", { operation: "match_edges", toKind: "externl" }),
       callTool(69, "find_neighbors", { slug: "a", types: ["depend_on"] }),
       callTool(72, "list_concepts", { filter: "kind=capabilty" }),
       callTool(73, "list_concepts", { filter: "has(capabilties)" }),
@@ -5923,10 +4668,10 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(75, "list_concepts", { kind: "capabilty" }),
     ]);
     for (const id of [
-      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-      21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-      38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 33, 35, 36, 37,
+      38, 39, 40, 41, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+      55, 56, 60, 61, 62, 65, 66, 69,
       72, 73, 74, 75,
     ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
@@ -5939,10 +4684,7 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 7).result.content[0].text, /limit must be a positive integer/i);
     assert.match(responses.find((r) => r.id === 8).result.content[0].text, /nodesOffset must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 9).result.content[0].text, /edgesLimit must be a positive integer/i);
-    assert.match(responses.find((r) => r.id === 42).result.content[0].text, /minDegree must be a non-negative integer/i);
-    assert.match(responses.find((r) => r.id === 43).result.content[0].text, /maxDegree must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 10).result.content[0].text, /direction must be one of/i);
-    assert.match(responses.find((r) => r.id === 11).result.content[0].text, /iterations must be <= 100/i);
     assert.match(responses.find((r) => r.id === 12).result.content[0].text, /depth must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 13).result.content[0].text, /types must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 14).result.content[0].text, /mentions must be a non-empty string/i);
@@ -5982,9 +4724,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       suggestion: "incoming",
       allowedValues: ["outgoing", "incoming", "both"],
     });
-    assert.match(responses.find((r) => r.id === 57).result.content[0].text, /componentLimit must be <= 500/i);
-    assert.match(responses.find((r) => r.id === 58).result.content[0].text, /dependencyTypes items must not have leading or trailing whitespace/i);
-    assert.match(responses.find((r) => r.id === 59).result.content[0].text, /componentLimit must be <= 500/i);
     assert.match(responses.find((r) => r.id === 60).result.content[0].text, /phases items must be one of: validate, repair, link, materialize, review/i);
     assert.match(responses.find((r) => r.id === 60).result.content[0].text, /Received: "repiar"/i);
     assert.match(responses.find((r) => r.id === 60).result.content[0].text, /Did you mean "repair"\?/i);
@@ -6012,24 +4751,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       suggestion: "add_missing_relation",
       allowedValues: MAINTENANCE_KIND_VALUES,
     });
-    assert.match(responses.find((r) => r.id === 63).result.content[0].text, /dependencyTypes items must be one of/i);
-    assert.match(responses.find((r) => r.id === 63).result.content[0].text, /Received: "depend_on"/i);
-    assert.match(responses.find((r) => r.id === 63).result.content[0].text, /Did you mean "depends_on"\?/i);
-    assertStructuredValueRepair(responses, 63, {
-      valueName: "dependencyTypes items",
-      receivedValue: "depend_on",
-      suggestion: "depends_on",
-      allowedValues: RELATION_TYPE_VALUES,
-    });
-    assert.match(responses.find((r) => r.id === 64).result.content[0].text, /componentTypes items must be one of/i);
-    assert.match(responses.find((r) => r.id === 64).result.content[0].text, /Received: "capabilties"/i);
-    assert.match(responses.find((r) => r.id === 64).result.content[0].text, /Did you mean "capabilities"\?/i);
-    assertStructuredValueRepair(responses, 64, {
-      valueName: "componentTypes items",
-      receivedValue: "capabilties",
-      suggestion: "capabilities",
-      allowedValues: RELATION_TYPE_VALUES,
-    });
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /type must be one of/i);
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /Received: "depend_on"/i);
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /Did you mean "depends_on"\?/i);
@@ -6047,24 +4768,6 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       receivedValue: "capabilty",
       suggestion: "capability",
       allowedValues: NODE_KIND_VALUES,
-    });
-    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /fromKind must be one of/i);
-    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /Received: "capabilty"/i);
-    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /Did you mean "capability"\?/i);
-    assertStructuredValueRepair(responses, 67, {
-      valueName: "fromKind",
-      receivedValue: "capabilty",
-      suggestion: "capability",
-      allowedValues: NODE_KIND_VALUES,
-    });
-    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /toKind must be one of/i);
-    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /Received: "externl"/i);
-    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /Did you mean "external"\?/i);
-    assertStructuredValueRepair(responses, 68, {
-      valueName: "toKind",
-      receivedValue: "externl",
-      suggestion: "external",
-      allowedValues: EDGE_TARGET_KIND_VALUES,
     });
     assert.match(responses.find((r) => r.id === 69).result.content[0].text, /types items must be one of/i);
     assert.match(responses.find((r) => r.id === 69).result.content[0].text, /Received: "depend_on"/i);
@@ -6124,12 +4827,10 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 26).result.content[0].text, /executableOnly must be a boolean/i);
     assert.match(responses.find((r) => r.id === 27).result.content[0].text, /hasIncoming must be a boolean/i);
     assert.match(responses.find((r) => r.id === 28).result.content[0].text, /limit must be <= 500/i);
-    assert.match(responses.find((r) => r.id === 29).result.content[0].text, /nodeLimit must be <= 500/i);
     assert.match(responses.find((r) => r.id === 30).result.content[0].text, /itemLimit must be <= 500/i);
     assert.match(responses.find((r) => r.id === 31).result.content[0].text, /depth must be <= 20/i);
     assert.match(responses.find((r) => r.id === 32).result.content[0].text, /maxHops must be <= 20/i);
     assert.match(responses.find((r) => r.id === 33).result.content[0].text, /rootPath must not have leading or trailing whitespace/i);
-    assert.match(responses.find((r) => r.id === 34).result.content[0].text, /maxDepth must be <= 10/i);
     assert.match(responses.find((r) => r.id === 35).result.content[0].text, /ignore items must be non-empty strings/i);
     assert.match(responses.find((r) => r.id === 36).result.content[0].text, /rootPath must not contain a null byte/i);
     assert.match(responses.find((r) => r.id === 37).result.content[0].text, /sourceFolders items must not have leading or trailing whitespace/i);
@@ -6356,47 +5057,6 @@ await test("query_ontology pattern_walk — exact branch limit keeps all MCP pat
       truncated.paths.rows.map((row) => row.end),
       ["capabilities/login"],
     );
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology all_paths — limited exposes hidden MCP paths", async () => {
-  const root = makeVault([
-    { slug: "a", content: "---\nkind: capability\ntitle: A\nrelates: [b, c, e, f]\n---\n" },
-    { slug: "b", content: "---\nkind: capability\ntitle: B\nrelates: [d]\n---\n" },
-    { slug: "c", content: "---\nkind: capability\ntitle: C\nrelates: [d]\n---\n" },
-    { slug: "e", content: "---\nkind: capability\ntitle: E\nrelates: [d]\n---\n" },
-    { slug: "f", content: "---\nkind: capability\ntitle: F\nrelates: [d]\n---\n" },
-    { slug: "d", content: "---\nkind: capability\ntitle: D\n---\n" },
-  ]);
-  try {
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", {
-        operation: "all_paths",
-        from: "a",
-        to: "d",
-        maxHops: 2,
-        limit: 4,
-      }),
-      callTool(3, "query_ontology", {
-        operation: "all_paths",
-        from: "a",
-        to: "d",
-        maxHops: 2,
-        limit: 2,
-      }),
-    ]);
-    const exact = getCallParsed(responses, 2);
-    assert.equal(exact.totalPaths, 4);
-    assert.equal(exact.limited, false);
-    assert.equal(exact.paths.length, 4);
-
-    const truncated = getCallParsed(responses, 3);
-    assert.equal(truncated.totalPaths, 4);
-    assert.equal(truncated.limited, true);
-    assert.equal(truncated.paths.length, 2);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -9352,53 +8012,6 @@ await test("construction profile — discovery does not bypass consent for an om
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-await test("builder_context — persisted Workshop focus, positions, and agent handoff", async () => {
-  const root = makeVault([
-    {
-      slug: "domains/auth",
-      content: "---\nkind: domain\ntitle: Auth\ncanvasPosition:\n  x: 100\n  y: 80\n---\n",
-    },
-    {
-      slug: "capabilities/login",
-      content: "---\nkind: capability\ntitle: Login\ndomain: domains/auth\ncanvasPosition:\n  x: 340\n  y: 80\n---\n",
-    },
-  ]);
-  try {
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", {
-        operation: "builder_context",
-        slug: "domains/auth",
-        direction: "incoming",
-        depth: 1,
-      }),
-      callTool(3, "query_ontology", {
-        operation: "builder_context",
-        slug: "domain:auth",
-        direction: "incoming",
-        depth: 1,
-      }),
-    ]);
-    const context = getCallParsed(responses, 2);
-    const roundTrip = getCallParsed(responses, 3);
-    assert.equal(context.operation, "builder_context");
-    assert.equal(context.focus, "domains/auth");
-    assert.equal(context.source, "persisted_vault");
-    assert.equal(context.builder.href, "/topology/?p=domain%3Aauth&workbench=edit");
-    assert.equal(context.builder.unsavedDraftsIncluded, false);
-    assert.equal(roundTrip.focus, context.focus);
-    assert.deepEqual(roundTrip.builder, context.builder);
-    assert.deepEqual(context.nodes.map((row) => row.canvasPosition), [
-      { x: 100, y: 80 },
-      { x: 340, y: 80 },
-    ]);
-    assert.ok(context.agentHandoff.writeTools.includes("patch_concept"));
-    assert.match(context.agentHandoff.constraints.join("\n"), /expected_mtime/);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
 await test("query_ontology — unresolved compiled slug exposes structured recovery fields", async () => {
   const root = makeVault([
     {
@@ -9410,7 +8023,7 @@ await test("query_ontology — unresolved compiled slug exposes structured recov
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", {
-        operation: "builder_context",
+        operation: "node_profile",
         slug: "capabilities/logn",
       }),
     ]);
@@ -9571,12 +8184,11 @@ await test("retired names — each cut or folded tool answers tool_retired with 
   const expectations = {
     git_status: /your own git: `git -C <repoRoot> status -- <vault>`/,
     git_history: /your own git: `git -C <repoRoot> log -- <vault>`/,
-    git_snapshot: /your own git: commit the vault yourself/,
+    git_snapshot: /your own git: `git -C <vaultRoot> add -- \. && git -C <vaultRoot> commit -m "<why>" -- \.`, not during a merge or rebase, and never push/,
     list_constellations: /get_constellation with no `id`/,
     find_evidence: /list_concepts\(\{ mentions: "text" \}\)/,
     find_orphans: /query_ontology\(\{ operation: 'match_nodes', hasIncoming: false \}\)/,
     query_concepts: /list_concepts\(\{ filter \}\)/,
-    disconnect_project_source: /connect_project_source\(\{ projectSlug, disconnect: true, confirm \}\)/,
     replace_relation: /remove_relation\(\{ from, to, type, replaceWith: \{ to, type, why \}, confirm \}\)/,
     reclassify_concept: /rename_concept\(\{ oldSlug, newKind, domain, body, confirm \}\)/,
   };
@@ -9595,6 +8207,45 @@ await test("retired names — each cut or folded tool answers tool_retired with 
       assert.match(structured.replacement, expectations[name], `${name} names its replacement`);
       assert.match(getCallText(responses, id), new RegExp(`${name} is retired and no longer runs; use `));
     });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("match_nodes hasIncoming:false answers the orphan question from the files, as find_orphans did", async () => {
+  const root = makeVault([
+    { slug: "projects/shop", content: "---\nkind: project\ntitle: Shop\ndomains:\n  - domains/billing\n---\n" },
+    { slug: "domains/billing", content: "---\nkind: domain\ntitle: Billing\ncapabilities:\n  - capabilities/charge\n---\n" },
+    // `ledger` names two nodes: an ambiguous short reference counts for each of them.
+    { slug: "capabilities/charge", content: "---\nkind: capability\ntitle: Charge a card\ndomain: domains/billing\nelements:\n  - ledger\n---\n" },
+    { slug: "elements/ledger", content: "---\nkind: element\ntitle: Ledger\ndomain: domains/billing\n---\n" },
+    // An invalid uid makes the compile fail closed; the orphan question still answers.
+    { slug: "elements/archive/ledger", content: "---\nuid: not-a-uid\nkind: element\ntitle: Archived ledger\ndomain: domains/billing\n---\n" },
+    { slug: "capabilities/refund", content: "---\nkind: capability\ntitle: Refund a payment\ndomain: domains/billing\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "compile_ontology", {}),
+      callTool(3, "query_ontology", { operation: "match_nodes", hasIncoming: false }),
+      callTool(4, "query_ontology", { operation: "match_nodes", hasIncoming: false, excludeKinds: [], limit: 1 }),
+      callTool(5, "query_ontology", { operation: "match_nodes", hasIncoming: false, excludeKinds: [], limit: 1, offset: 1 }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true, "the invalid uid stops the compile");
+    const orphans = getCallStructured(responses, 3);
+    assert.equal(orphans.source, "vault_files");
+    assert.deepEqual(orphans.nodes.map((node) => node.slug), ["capabilities/refund"]);
+    assert.equal(orphans.totalMatches, 1);
+    assert.deepEqual(orphans.pagination, { offset: 0, limit: 100, returned: 1, total: 1, hasMore: false, nextOffset: null });
+    assert.deepEqual(orphans.filters.excludeKinds, ["project", "vault-readme"]);
+    const first = getCallStructured(responses, 4);
+    const second = getCallStructured(responses, 5);
+    assert.deepEqual([first.pagination.hasMore, first.pagination.nextOffset, first.totalMatches], [true, 1, 2]);
+    assert.deepEqual(
+      [...first.nodes, ...second.nodes].map((node) => node.slug).sort(),
+      ["capabilities/refund", "projects/shop"],
+    );
+    assert.equal(second.pagination.hasMore, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -9988,7 +8639,7 @@ await test("body delivery — the full body is available and truncation is never
   }
 });
 
-await test("query_ontology agent_brief — selected project and compact task handoff stay bounded and consistent", async () => {
+await test("query_ontology agent_brief — the selected project is the whole brief and a retired compact request is refused", async () => {
   const root = makeVault([
     {
       slug: "project-a",
@@ -10027,46 +8678,16 @@ await test("query_ontology agent_brief — selected project and compact task han
     },
   ]);
   try {
-    const task = "Fix DER SET ordering when an optional value writes no bytes; preserve rejection for present out-of-order elements.";
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", { operation: "agent_brief", project: "project-a" }),
-      callTool(3, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        detail: "compact",
-        task,
-      }),
-      callTool(4, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        detail: "compact",
-      }),
-      callTool(5, "query_ontology", { operation: "agent_brief" }),
-      callTool(6, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        detail: "compact",
-        task: "x".repeat(2001),
-      }),
-      callTool(7, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        task: "Task without compact detail",
-      }),
-      callTool(8, "query_ontology", {
-        operation: "health",
-        detail: "compact",
-      }),
-      callTool(9, "query_ontology", {
-        operation: "agent_brief",
-        project: "project-a",
-        detail: "full",
-      }),
+      callTool(3, "query_ontology", { operation: "agent_brief", project: "project-a", detail: "compact", task: "Fix DER SET ordering." }),
+      callTool(4, "query_ontology", { operation: "agent_brief" }),
+      callTool(5, "query_ontology", { operation: "agent_brief", project: "project-a", task: "Task without compact detail" }),
+      callTool(6, "query_ontology", { operation: "health", detail: "compact" }),
     ]);
 
     const full = getCallParsed(responses, 2);
-    assert.deepEqual(getCallParsed(responses, 9), full, "omitted detail and explicit full remain byte-shape compatible");
     assert.equal(full.operation, "agent_brief");
     assert.equal(full.projectSlug, "project-a");
     assert.equal(full.graph.nodes, 4);
@@ -10080,442 +8701,21 @@ await test("query_ontology agent_brief — selected project and compact task han
       new RegExp(`Current readiness: ${full.readiness.status} ${full.readiness.score}/100;`),
     );
     assert.match(full.handoffPrompt, new RegExp(`status ${full.status}\\.`));
+    assert.equal(Object.hasOwn(full, "focus"), false, "the brief carries no task navigation");
 
-    const compact = getCallParsed(responses, 3);
-    const compactText = getCallText(responses, 3);
-    assert.equal(compact.contract, "agentBriefCompact:v3");
-    assert.equal(compact.operation, "agent_brief");
-    assert.equal(compact.detail, "compact");
-    assert.equal(compact.sideEffect, false);
-    assert.equal(compact.project.slug, "project-a");
-    assert.equal(Object.hasOwn(compact, "handoffPrompt"), false);
-    assert.equal(compact.task.requestLocal, true);
-    assert.equal(compact.task.persisted, false);
-    assert.equal(compact.task.text, undefined);
-    assert.doesNotMatch(JSON.stringify(compact), new RegExp(task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-    assert.equal(compact.validation.status, "pass");
-    assert.equal(compact.validation.scope, "whole_vault");
-    assert.equal(compact.validation.problemFiles, 0);
-    assert.equal(compact.focus.capability.slug, "capabilities/write-values");
-    assert.equal(compact.focus.capability.claimStatus, "recorded_bounded_claim");
-    assert.deepEqual(compact.focus.evidenceAnchors.map((row) => row.slug), ["elements/writer"]);
-    assert.deepEqual(compact.focus.evidenceAnchors.map((row) => row.path), ["src/writer.rs"]);
-    assert.equal(compact.focus.taskNavigation.status, "blocked");
-    assert.equal(compact.focus.taskNavigation.blockedBy, "source_not_current");
-    assert.equal(compact.focus.taskNavigation.primary, null);
-    assert.equal(compact.focus.impact.completeness, "unknown");
-    assert.ok(compact.focus.unknowns.length > 1);
-    const textUnknowns = compactText.split('\n')
-      .filter((line) => line.startsWith('Unknown: ')).map((line) => JSON.parse(line.slice('Unknown: '.length)).text);
-    assert.deepEqual([...textUnknowns].sort(), [...compact.focus.unknowns].sort());
-    assert.ok(compact.nextReads.some((row) => row.tool === "get_concepts" && row.arguments.body === "full"));
-    const recovery = compact.nextReads[0];
-    assert.deepEqual(recovery.arguments.slugs, ['project-a', 'capabilities/write-values', 'elements/writer']);
-    const recovered = await rpc(root, [
-      ...INIT_REQUESTS, callTool(2, recovery.tool, recovery.arguments),
-    ], { OATLAS_READ_ONLY: '1' });
-    const bodies = getCallParsed(recovered.responses, 2).concepts;
-    assert.deepEqual(bodies.map((row) => row.slug), recovery.arguments.slugs);
-    assert.ok(bodies.every((row) => row.ok && row.bodyInfo.mode === 'full' && !row.bodyInfo.truncated));
-    for (const source of compact.focus.uncertainty.sources) {
-      const body = bodies.find((row) => row.slug === source.slug).body;
-      for (const index of source.unknownIndexes) assert.ok(body.includes(compact.focus.unknowns[index]));
+    for (const id of [3, 5, 6]) {
+      assert.equal(isErrorResponse(responses, id), true, `request ${id} is refused`);
+      assert.equal(getCallStructured(responses, id)?.errorCode, "invalid_arguments");
+      assert.match(getCallStructured(responses, id)?.error ?? "", /detail|task/i);
     }
-    assert.deepEqual(compact.fullDetail, {
-      tool: "query_ontology",
-      arguments: { operation: "agent_brief", project: "project-a", detail: "full" },
-    });
-    assert.deepEqual(compact.safety, {
-      humanApprovalRequiredForMeaningWrites: true,
-      automaticWrite: false,
-      automaticFinalize: false,
-      structuralReadinessIsSemanticApproval: false,
-    });
-    assert.equal(Object.hasOwn(compact, "playbooks"), false);
-    assert.equal(Object.hasOwn(compact, "cliFallbackCommands"), false);
-    assert.doesNotMatch(JSON.stringify(compact), /project-b|domains\/example|capabilities\/example|elements\/example/);
-    assert.ok(
-      Buffer.byteLength(JSON.stringify(compact), "utf8") + Buffer.byteLength(compactText, "utf8") <= 12000,
-      "compact agent brief must fit the 12 KiB first-contact budget across both channels",
-    );
-    assert.match(compactText, new RegExp(`Current source: ${compact.currentness.source.status}/${compact.currentness.source.currentness}`));
-    assert.match(compactText, /Task navigation: blocked/);
-    assert.match(compactText, new RegExp(`Meaning: ${compact.currentness.meaning.status}`));
-    assert.doesNotMatch(
-      loadVaultDocs(root).map((doc) => `${doc.frontmatter?.title ?? ""}\n${doc.body}`).join("\n"),
-      new RegExp(task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
-      "compact task text must not be persisted into vault Markdown",
-    );
-
-    for (const [id, pattern] of [
-      [4, /detail "compact" requires task/i],
-      [5, /project is required when the vault contains multiple project nodes/i],
-      [6, /task must contain at most 2000 characters/i],
-      [7, /task is only valid.*detail "compact"/i],
-      [8, /detail is only valid.*agent_brief/i],
-    ]) {
-      assert.equal(isErrorResponse(responses, id), true);
-      assert.match(getCallStructured(responses, id)?.error ?? "", pattern);
-    }
-    const refusedResponse = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, 'query_ontology', { operation: 'agent_brief', project: 'project-a', detail: 'compact', task: 'Coordinate orbital trajectories.' }),
-    ], { OATLAS_READ_ONLY: '1' });
-    const refused = getCallParsed(refusedResponse.responses, 2);
-    assert.equal(refused.focus.capability, null);
-    assert.equal(refused.focus.refusal.reason, 'no_match');
-    const refusedRead = await rpc(root, [
-      ...INIT_REQUESTS, callTool(2, refused.nextReads[0].tool, refused.nextReads[0].arguments),
-    ], { OATLAS_READ_ONLY: '1' });
-    assert.deepEqual(getCallParsed(refusedRead.responses, 2).concepts.map((row) => ({ slug: row.slug, ok: row.ok })), [{ slug: 'project-a', ok: true }]);
-    const lateLimit = 'Cross-process replacement recovery has not been tested.';
-    const projectPath = join(root, 'project-a.md');
-    writeFileSync(projectPath, readFileSync(projectPath, 'utf8').replace(/## Uncertainty[\s\S]*/u,
-      `## Uncertainty\n\n${'Bounded context. '.repeat(3000)}${lateLimit}\n`));
-    const cappedResponse = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, 'query_ontology', { operation: 'agent_brief', project: 'project-a', detail: 'compact', task }),
-    ], { OATLAS_READ_ONLY: '1' });
-    const capped = getCallParsed(cappedResponse.responses, 2);
-    const projectCoverage = capped.focus.uncertainty.sources.find((row) => row.slug === 'project-a');
-    assert.equal(projectCoverage.totalUnits, 1);
-    assert.equal(projectCoverage.omittedUnits, 1);
-    rmSync(join(root, 'elements/writer.md'));
-    const partialRead = await rpc(root, [
-      ...INIT_REQUESTS, callTool(2, capped.nextReads[0].tool, capped.nextReads[0].arguments),
-    ], { OATLAS_READ_ONLY: '1' });
-    const partialBodies = getCallParsed(partialRead.responses, 2).concepts;
-    const projectBody = partialBodies.find((row) => row.slug === 'project-a');
-    assert.equal(projectBody.ok, true);
-    assert.equal(projectBody.bodyInfo.truncated, true);
-    assert.ok(projectBody.bodyInfo.omittedChars > 0);
-    assert.equal(projectBody.body.includes(lateLimit), false);
-    assert.equal(partialBodies.find((row) => row.slug === 'elements/writer').ok, false);
+    assert.equal(isErrorResponse(responses, 4), true);
+    assert.match(getCallStructured(responses, 4)?.error ?? "", /project is required when the vault contains multiple project nodes/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test("query_ontology agent_brief: persisted claim boundaries outrank task noun overlap", async () => {
-  const root = makeVault([
-    {
-      slug: "project",
-      content: "---\nkind: project\ntitle: Policy Runtime\ndomains: [domains/policy]\n---\n## Definition\n\nA runtime that evaluates collateral policy.\n",
-    },
-    {
-      slug: "domains/policy",
-      content: "---\nkind: domain\ntitle: Policy\ncapabilities: [capabilities/policy-appraisal, capabilities/expiry-diagnostics]\n---\n## Definition\n\nPolicy owns collateral acceptance and its reporting boundary.\n",
-    },
-    {
-      slug: "capabilities/policy-appraisal",
-      content: [
-        "---",
-        "kind: capability",
-        "title: Policy Appraisal",
-        "domain: domains/policy",
-        "---",
-        "## Definition",
-        "",
-        "Evaluate whether collateral remains acceptable before expiry using a configured safety margin.",
-        "",
-        "## Includes",
-        "",
-        "- Reject collateral when remaining validity is below the safety margin.",
-        "",
-        "## Excludes",
-        "",
-        "- Post-expiry diagnostic reporting.",
-        "",
-      ].join("\n"),
-    },
-    {
-      slug: "capabilities/expiry-diagnostics",
-      content: [
-        "---",
-        "kind: capability",
-        "title: Expiry Diagnostics",
-        "domain: domains/policy",
-        "---",
-        "## Definition",
-        "",
-        "Report why expired collateral was rejected and expose validity-margin diagnostics.",
-        "",
-        "## Includes",
-        "",
-        "- Post-expiry diagnostic reporting.",
-        "",
-        "## Excludes",
-        "",
-        "- Deciding pre-expiry acceptance policy.",
-        "",
-      ].join("\n"),
-    },
-  ]);
-  const taskCases = [
-    [
-      "Before expiry, reject collateral whose remaining validity is below a safety margin; do not add post-expiry diagnostics.",
-      "capabilities/policy-appraisal",
-    ],
-    [
-      "Implement a pre-expiry validity-margin rejection policy; diagnostics after expiry are out of scope.",
-      "capabilities/policy-appraisal",
-    ],
-    [
-      "Decide pre-expiry acceptance from remaining collateral validity and leave diagnostic reporting unchanged.",
-      "capabilities/policy-appraisal",
-    ],
-    [
-      "Add post-expiry diagnostics explaining rejected collateral; do not change pre-expiry acceptance policy.",
-      "capabilities/expiry-diagnostics",
-    ],
-  ];
-  try {
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      ...taskCases.map(([task], index) => callTool(index + 2, "query_ontology", {
-        operation: "agent_brief",
-        project: "project",
-        detail: "compact",
-        task,
-      })),
-    ]);
-
-    assert.equal(taskCases.length, 4, "the MCP boundary-routing gate must exercise real subjects");
-    for (const [index, [task, expectedSlug]] of taskCases.entries()) {
-      const compact = getCallParsed(responses, index + 2);
-      assert.equal(compact.focus.capability?.slug, expectedSlug, task);
-      assert.equal(compact.readerRules.includes("Capability: selection, not proof."), Boolean(expectedSlug), task);
-      assert.equal(compact.task.text, undefined);
-      assert.doesNotMatch(JSON.stringify(compact), new RegExp(task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-      assert.equal(compact.safety.automaticWrite, false);
-      assert.equal(compact.safety.automaticFinalize, false);
-      assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") + Buffer.byteLength(getCallText(responses, index + 2), "utf8") <= 12000);
-    }
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology agent_brief: literal claims do not become a selected capability", async () => {
-  const root = makeVault([
-    { slug: "project", content: "---\nkind: project\ntitle: Operations\ndomains: [domains/catalog]\n---\nLocal operations.\n" },
-    { slug: "domains/catalog", content: "---\nkind: domain\ntitle: Catalog\ncapabilities: [capabilities/catalog]\n---\nOwns archive indexes.\n" },
-    { slug: "capabilities/catalog", content: "---\nkind: capability\ntitle: Archive Catalog\ndomain: domains/catalog\n---\n## **Includes**\n\n<!--\nRotate encryption keys.\n-->\n\n- Index archive records only after approval.\n" },
-  ]);
-  try {
-    const { responses } = await rpc(root, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", { operation: "agent_brief", project: "project", detail: "compact", task: "Rotate encryption keys." }),
-      callTool(3, "query_ontology", { operation: "agent_brief", project: "project", detail: "compact", task: "Index archive records." }),
-    ]);
-    const refused = getCallParsed(responses, 2);
-    assert.equal(refused.focus.capability, null);
-    assert.equal(refused.focus.refusal.reason, "no_match");
-    assert.equal(refused.focus.taskNavigation.primary, null);
-    assert.equal(refused.safety.automaticWrite, false);
-    assert.ok(getCallText(responses, 2).includes("Task refusal: no_match;"));
-    const selected = getCallParsed(responses, 3);
-    assert.equal(selected.focus.capability?.slug, "capabilities/catalog");
-    assert.ok(selected.focus.qualifiers.units.some((unit) => unit.text.includes("only after approval")));
-    assert.ok(getCallText(responses, 3).includes("only after approval"));
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology agent_brief: current reviewed coordinates become one exact task-navigation batch", async () => {
-  const vault = makeVault([
-    {
-      slug: "project",
-      content: "---\nkind: project\ntitle: Encoding Library\ndomains: [domains/encoding]\n---\n## Definition\n\nA library that writes encoded values.\n",
-    },
-    {
-      slug: "domains/encoding",
-      content: "---\nkind: domain\ntitle: Encoding\ncapabilities: [capabilities/write-values]\n---\n## Definition\n\nEncoding owns value production.\n",
-    },
-    {
-      slug: "capabilities/write-values",
-      content: "---\nkind: capability\ntitle: Write DER Values\ndomain: domains/encoding\nelements: [elements/writer]\n---\n## Definition\n\nWrite DER Values produces encoded output.\n",
-    },
-    {
-      slug: "elements/writer",
-      content: `---
-kind: element
-title: Writer Implementation
-domain: domains/encoding
-path: src/writer.ts
----
-## Definition
-
-Writer Implementation anchors encoded output.
-
-## Evidence
-
-\`\`\`md
-- Primary implementation: \`src/example-only.ts#example\`
-\`\`\`
-
-<!--
-- Focused test: \`tests/example-only.test.ts#example\`
--->
-
-- Primary implementation: \`src/writer.ts#writeDerSet\`
-- Supporting implementation: \`src/writer.ts#writeOptionalValue\`
-- Focused test: \`tests/writer.test.ts#writes optional DER SET values\`
-
-## Includes
-
-DER SET output ordering and optional values.
-
-## Excludes
-
-DER parsing and unrelated encodings.
-`,
-    },
-  ]);
-  const repo = mkdtempSync(join(tmpdir(), "ontology-atlas-task-navigation-repo-"));
-  try {
-    mkdirSync(join(repo, "src"), { recursive: true });
-    mkdirSync(join(repo, "tests"), { recursive: true });
-    writeFileSync(
-      join(repo, "src/writer.ts"),
-      "export function writeDerSet() { return writeOptionalValue(); }\nexport function writeOptionalValue() { return true; }\n",
-    );
-    writeFileSync(
-      join(repo, "tests/writer.test.ts"),
-      "test('writes optional DER SET values', () => {});\n",
-    );
-    const connected = await rpcForRepo(vault, repo, [
-      ...INIT_REQUESTS,
-      callTool(2, "connect_project_source", {
-        projectSlug: "project",
-        rootPath: repo,
-        confirm: true,
-      }),
-    ]);
-    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
-
-    const { responses } = await rpcForRepo(vault, repo, [
-      ...INIT_REQUESTS,
-      callTool(2, "query_ontology", {
-        operation: "agent_brief",
-        project: "project",
-        detail: "compact",
-        task: "Write an optional DER SET value.",
-      }),
-    ]);
-    const compact = getCallParsed(responses, 2);
-    const compactText = getCallText(responses, 2);
-    const recovery = compact.nextReads[0];
-    assert.ok(compactText.includes(`${recovery.tool} ${JSON.stringify(recovery.arguments)}`),
-      "MCP text must retain the exact full-body recovery call alongside ready source navigation");
-    assert.equal(compact.contract, "agentBriefCompact:v3");
-    assert.equal(compact.focus.taskNavigation.status, "ready");
-    assert.deepEqual(compact.focus.taskNavigation.primary, {
-      path: "src/writer.ts",
-      symbol: "writeDerSet",
-      role: "primary",
-      line: 1,
-      endLine: 1,
-      sourceStatus: "supported_current",
-    });
-    assert.equal(compact.focus.taskNavigation.supporting.symbol, "writeOptionalValue");
-    assert.equal(compact.focus.taskNavigation.tests[0].symbol, "writes optional DER SET values");
-    assert.equal(compact.focus.taskNavigation.readPlan.targetCount, 3);
-    assert.match(compactText, /Primary: "src\/writer\.ts#writeDerSet:1"/);
-    assert.match(compactText, /Focused tests: \["tests\/writer\.test\.ts#writes optional DER SET values:1"\]/);
-    assert.match(compactText, /IN: "DER SET output ordering and optional values\."/);
-    assert.match(compactText, /OUT: "DER parsing and unrelated encodings\."/);
-    assert.match(compactText, /Verify: runner unknown/);
-    assert.match(compactText, /Read: .*stop_on_match/);
-    assert.match(compactText, /Tests: named positive \+ negative regression; exact observable output\./);
-    assert.equal(JSON.stringify(compact).includes(repo) || compactText.includes(repo), false, "private source root must not cross MCP output");
-    assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") + Buffer.byteLength(compactText, "utf8") <= 12000);
-  } finally {
-    rmSync(vault, { recursive: true, force: true });
-    rmSync(repo, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology agent_brief — read-only known-task wire path stays below 22000 characters", async () => {
-  const scratch = mkdtempSync(join(tmpdir(), "ontology-atlas-compact-wire-"));
-  const vault = join(scratch, "vault");
-  const repo = resolve(__dirname, "../..");
-  cpSync(resolve(repo, "docs/ontology"), vault, {
-    recursive: true,
-    filter: (source) => !source.split(/[\\/]/).includes(".ontology-atlas"),
-  });
-  try {
-    const connected = await rpcForRepo(vault, repo, [
-      ...INIT_REQUESTS,
-      callTool(2, "connect_project_source", {
-        projectSlug: "ontology-atlas",
-        rootPath: repo,
-        confirm: true,
-      }),
-    ]);
-    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
-
-    const { responses } = await rpcForRepo(vault, repo, [
-      ...INIT_REQUESTS,
-      callTool(2, "connection_info", {}),
-      callTool(3, "query_ontology", {
-        operation: "agent_brief",
-        project: "ontology-atlas",
-        detail: "compact",
-        task: "Change the task-scoped compact agent brief projection.",
-      }),
-      callTool(4, "query_ontology", {
-        operation: "agent_brief",
-        project: "ontology-atlas",
-        detail: "full",
-      }),
-    ], { OATLAS_READ_ONLY: "1" });
-    const connectionResponse = responses.find((row) => row.id === 2);
-    const compactResponse = responses.find((row) => row.id === 3);
-    assert.ok(connectionResponse?.result, "connection_info must return one wire result");
-    assert.ok(compactResponse?.result, "compact agent_brief must return one wire result");
-    assert.notEqual(compactResponse.result.isError, true, JSON.stringify(compactResponse.result));
-    const compact = getCallParsed(responses, 3);
-    assert.equal(compact.focus.taskNavigation.status, "ready");
-    assert.equal(compact.focus.taskNavigation.currentness, "current");
-    assert.equal(compact.focus.verification.runner, "package-script");
-    assert.equal(compact.focus.verification.manifest, "mcp/package.json");
-    const structureBytes = Buffer.byteLength(JSON.stringify(compact), "utf8");
-    const textBytes = Buffer.byteLength(getCallText(responses, 3), "utf8");
-    const compactBytes = structureBytes + textBytes;
-    const uncertaintyUnits = compact.focus.uncertainty.sources.reduce((sum, row) => sum + row.unknownIndexes.length, 0);
-    console.log(`    compact agent_brief structure ${structureBytes} + text ${textBytes} = ${compactBytes} bytes; headroom ${12000 - compactBytes}; units ${compact.focus.qualifiers?.units.length ?? 0} qualifier + ${uncertaintyUnits} uncertainty`);
-    assert.ok(
-      compactBytes <= 12000,
-      `compact agent_brief is ${compactBytes} bytes; budget 12000, headroom ${12000 - compactBytes}`,
-    );
-    const repair = compact.meaningRepair;
-    assert.equal(repair.contract, "meaningRepairCompact:v2");
-    assert.equal(repair.status, "human_review_required");
-    const [firstCall] = repair.firstStep.calls;
-    assert.equal(firstCall.arguments.operation, "meaning_repair_review");
-    assert.equal(firstCall.arguments.expectedGraphHash, repair.provenance.graphHash);
-    assert.equal(firstCall.arguments.expectedSourceFingerprint, repair.provenance.sourceFingerprint);
-    assert.equal(firstCall.arguments.reviewRevision, repair.reviewRevision);
-    const full = getCallParsed(responses, 4);
-    assert.deepEqual(compact.fullDetail.arguments, { operation: "agent_brief", project: "ontology-atlas", detail: "full" });
-    assert.deepEqual(full.meaningRepair.workflow.slice(1).map((row) => row.step), repair.omitted.steps);
-    assert.equal(full.meaningRepair.stopWhen.length, repair.omitted.stopConditions);
-    const wireCharacters = JSON.stringify(connectionResponse).length + JSON.stringify(compactResponse).length;
-    // The budget grows by exactly the construction card's allowance
-    // (CONSTRUCTION_CARD_MAX_CHARS, rounded up), not by what the dogfood prose weighs.
-    assert.ok(
-      wireCharacters < 22_000,
-      `connection_info + compact read-only wire path must stay below 22000 characters; received ${wireCharacters} (compact ${compactBytes} bytes, headroom ${12000 - compactBytes})`,
-    );
-    assert.equal(JSON.stringify(compactResponse).includes(repo), false, "wire response must not expose the private root");
-  } finally {
-    rmSync(scratch, { recursive: true, force: true });
-  }
-});
-
-await test("query_ontology agent_brief — a valid 501-node project keeps full and compact handoffs", async () => {
+await test("query_ontology agent_brief — a valid 501-node project keeps its full brief", async () => {
   const elementSlugs = Array.from({ length: 500 }, (_, index) => `elements/unit-${String(index + 1).padStart(3, "0")}`);
   const root = makeVault([
     {
@@ -10531,13 +8731,7 @@ await test("query_ontology agent_brief — a valid 501-node project keeps full a
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", { operation: "project_scope", project: "large-project", limit: 500 }),
-      callTool(3, "query_ontology", { operation: "agent_brief", project: "large-project", detail: "full" }),
-      callTool(4, "query_ontology", {
-        operation: "agent_brief",
-        project: "large-project",
-        detail: "compact",
-        task: "Inspect an unrelated lunar camera behavior.",
-      }),
+      callTool(3, "query_ontology", { operation: "agent_brief", project: "large-project" }),
     ]);
     const publicScope = getCallParsed(responses, 2);
     assert.equal(publicScope.nodes.total, 501);
@@ -10548,10 +8742,6 @@ await test("query_ontology agent_brief — a valid 501-node project keeps full a
     assert.equal(full.compiledSummary.nodes, 501);
     assert.equal(full.projectSlug, "large-project");
     assert.equal(full.meaningAssessment.status, "invalid");
-    const compact = getCallParsed(responses, 4);
-    assert.equal(compact.focus.status, "not_recorded");
-    assert.equal(compact.currentness.meaning.status, "invalid");
-    assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") + Buffer.byteLength(getCallText(responses, 4), "utf8") <= 12000);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

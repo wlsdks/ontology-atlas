@@ -92,7 +92,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let scan = target.scan(&ImportScanOptions {
         max_files,
         ..ImportScanOptions::default()
-    });
+    })?;
     let measured = measured_stamp(Path::new(&target.label))?;
     ToolOutput::json(&build_architecture_brief(profile, &scan, measured))
 }

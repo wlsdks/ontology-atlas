@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
@@ -18,7 +18,6 @@ import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
 import { formatDate } from "@/shared/lib/locale-text/format-date";
 import { MOTION } from "@/shared/motion";
 import {
-  Button,
   FeatureStage,
   InlineEditable,
   OntologyMapKindGlyph,
@@ -55,7 +54,6 @@ import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { useTaxonomy } from "@/features/taxonomy";
-import { useConstructionReviewSession } from "@/features/construction-review-local";
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { resolveProjectTagline } from "../model/project-tagline";
 import { stripDuplicateHeading } from "@/shared/lib/vault-document/strip-duplicate-heading";
@@ -72,7 +70,6 @@ import { ToCheckSection } from "./now/ToCheckSection";
 import { ChangedSection } from "./now/ChangedSection";
 import { SECTION_HEADING_CLASS } from "./now/now-parts";
 import { ProjectActions } from "./ProjectActions";
-import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
 import { PageHeaderBar } from "@/shared/ui/layout/page-header-bar";
 
 const NO_IDS: ReadonlySet<string> = new Set();
@@ -209,19 +206,6 @@ export function ProjectDetailPage({
   const tIndex = useTranslations("topology.index");
   const failureSentence = useFailureSentence();
   const router = useRouter();
-  const constructionReview = useConstructionReviewSession(slug);
-  const reviewOutcomeRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (constructionReview.status === "ready" || constructionReview.status === "blocked") {
-      const outcome = reviewOutcomeRef.current;
-      outcome?.focus({ preventScroll: true });
-      outcome?.scrollIntoView?.({ block: "start" });
-    }
-  }, [constructionReview.status]);
-  const openReviewPicker = (event: MouseEvent<HTMLButtonElement>) => {
-    event.currentTarget.focus({ preventScroll: true });
-    constructionReview.openPicker();
-  };
   const { show: showToast } = useToast();
   const [project, setProject] = useState<Project | null>(
     initialProject,
@@ -495,11 +479,6 @@ export function ProjectDetailPage({
                       : t("briefAskUnstructured"),
                 startAgent: agent.route === "agent" ? agent.start : null,
               }}
-              review={{
-                inputProps: constructionReview.inputProps,
-                openPicker: constructionReview.openPicker,
-                reading: constructionReview.status === "reading",
-              }}
             />
           </div>
 
@@ -579,38 +558,6 @@ export function ProjectDetailPage({
             />
           </div>
         </div>
-
-        {constructionReview.status === "ready" || constructionReview.status === "blocked" ? (
-          <div ref={reviewOutcomeRef} tabIndex={-1} role="region"
-            aria-label={t("constructionReview.resultRegion")}
-            data-testid="construction-review-outcome" className="scroll-mt-6 focus:outline-none">
-            {constructionReview.status === "ready" && constructionReview.review ? (
-              <ConstructionReviewPanel
-                key={`${constructionReview.review.sourceDigest}:${constructionReview.review.planDigest}`}
-                review={constructionReview.review}
-              />
-            ) : null}
-
-            {constructionReview.status === "blocked" && constructionReview.errorState ? (
-              <section
-                data-testid="construction-review-error"
-                data-envelope-state={constructionReview.errorState}
-                className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)] sm:px-5"
-              >
-                <h2 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-danger-text)]">
-                  {t("constructionReview.errorTitle")}
-                </h2>
-                <p className="mt-1.5 text-body leading-prose text-[color:var(--color-text-secondary)]">
-                  {t(`constructionReview.errors.${constructionReview.errorState}`)}
-                </p>
-                <Button type="button" variant="outline" size="sm" onClick={openReviewPicker}
-                  data-testid="construction-review-retry" className="atlas-touch-floor atlas-touch-floor-wide mt-4">
-                  {t("constructionReview.retryFile")}
-                </Button>
-              </section>
-            ) : null}
-          </div>
-        ) : null}
 
         <section
           data-testid="project-detail-composition"

@@ -30,6 +30,7 @@ specification).
 | `jvm_masking.rs`, `jvm_file_facts.rs`, `jvm_rows.rs` | Java and Kotlin: comments and literals blanked, each file's classes read once, then routes, executables, workers and families across files |
 | `readme_purpose.rs`, `doc_pages.rs` | README purpose, documentation pages |
 | `survey_cache.rs` | The survey kept until Git's `status` (or one walk, without Git) says the repository changed; only changed files are read again |
+| `survey_of_census.rs` | The survey answered from a census the app supplied: no disk read, no Git, never kept |
 | `git_ignored_paths.rs` | What Git ignores, so a built checkout counts like a clean one |
 | `survey_files.rs` | The only way a path from a manifest or README becomes a read |
 | `survey_text.rs`, `js_pattern.rs`, `name_key.rs`, `bounded_lines.rs`, `declaration_index.rs` | Text escaping and counts, JavaScript pattern meanings, name comparison, line bounds, the declaration index |

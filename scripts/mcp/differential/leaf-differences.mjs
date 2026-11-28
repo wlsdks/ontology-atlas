@@ -12,7 +12,7 @@ const ROOT = Object.freeze({ prefix: '', pointer: null });
 
 const escapePointer = (name) => name.replaceAll('~', '~0').replaceAll('/', '~1');
 
-export function formatLocation({ prefix, pointer }) {
+function formatLocation({ prefix, pointer }) {
   return pointer === null ? prefix : `${prefix}#${pointer}`;
 }
 

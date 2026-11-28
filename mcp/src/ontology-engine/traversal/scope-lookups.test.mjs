@@ -73,12 +73,6 @@ test('a project root must be a project, and a missing slug is accepted only when
   assert.throws(() => many.resolveProjectRoot(undefined), /because multiple project roots exist: a, b$/);
 });
 
-test('a domain root must be a domain', () => {
-  const { resolveDomainRoot } = scopeOf([{ slug: 'd', kind: 'domain' }, { slug: 'c', kind: 'capability' }]);
-  assert.equal(resolveDomainRoot('d'), 'd');
-  assert.throws(() => resolveDomainRoot('c'), /^Error: domain "c" must resolve to a kind: domain node\.$/);
-});
-
 test('scope helpers sort nodes by slug, intersect scopes and cap node lists with a limited flag', () => {
   const { sortedNodesInScope, intersectSlugSets, limitedNodeList } = scopeOf([{ slug: 'b' }, { slug: 'a' }]);
   assert.deepEqual(sortedNodesInScope(new Set(['b', 'a', 'gone'])).map((node) => node.slug), ['a', 'b']);

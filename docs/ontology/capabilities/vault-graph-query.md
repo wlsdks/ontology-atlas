@@ -20,14 +20,14 @@ Compiles the folder of Markdown files into one typed graph and answers structura
 ## Includes
 - Neighbours, paths, impact, reachability, clusters, and whole-graph health over the compiled graph.
 - Project meaning assessment and competency receipt recovery beside graph health: an edited document, stale source and malformed input need different next actions, and none grants automatic acceptance.
-- Duplicate and overlap candidates surfaced before a new node is written.
+- Duplicate and overlap candidates (`similar_nodes`) surfaced before a new node is written.
 - A growth plan that, beside the writes it recommends, names the next reads each node's own recorded unknowns ask for.
 - A second, deliberately simpler surface that filters documents by field rather than by traversal.
 
 ## Evidence
 - `mcp/src/tools/graph.mjs` attaches `projectMeaningContext` to health, workspace and agent briefs.
 - `mcp/src/project-meaning/project-meaning-receipt.mjs` reads the exact document-bound finalization record.
-- `mcp/src/project-meaning/project-meaning-restart.test.mjs` exercises the full and compact MCP readback through fresh processes.
+- `mcp/src/project-meaning/project-meaning-restart.test.mjs` exercises the MCP readback through fresh processes.
 
 ## Excludes
 - Judging whether an answer is true of the product; a graph answer is a structural fact, not accepted meaning.

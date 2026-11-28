@@ -179,7 +179,6 @@ add('shell', 'retired-tool-names', { vault: 'storefront' }, [
   call('find_evidence', { title: 'cart' }),
   call('find_orphans', {}),
   call('query_concepts', { filter: 'kind=capability' }),
-  call('disconnect_project_source', { projectSlug: 'storefront', confirm: true }),
   call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/faq', newType: 'depends_on', why: 'x' }),
   call('reclassify_concept', { slug: 'capabilities/cart', newKind: 'element' }),
 ]);
@@ -441,67 +440,54 @@ for (const vault of GRAPH_VAULTS) {
 }
 const QUERY_STOREFRONT = [
   { operation: 'overview' }, { operation: 'schema' }, { operation: 'facets' }, { operation: 'health' },
-  { operation: 'workspace_brief' }, { operation: 'components' }, { operation: 'cycles' }, { operation: 'topological_order' },
-  { operation: 'centrality' }, { operation: 'communities' }, { operation: 'containment_tree' }, { operation: 'domain_matrix' },
-  { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'analysis_history' },
+  { operation: 'workspace_brief' }, { operation: 'components' }, { operation: 'cycles' },
+  { operation: 'communities' }, { operation: 'containment_tree' },
+  { operation: 'growth_plan' }, { operation: 'maintenance_plan' },
   { operation: 'neighbors', slug: 'capabilities/checkout' }, { operation: 'neighbors', slug: 'capabilities/checkout', direction: 'in', depth: 2 },
   { operation: 'neighbors', slug: 'capabilities/checkout', types: ['depends_on'], direction: 'out' },
   { operation: 'path', from: 'capabilities/cart', to: 'capabilities/order-cancel' },
   { operation: 'path', from: 'capabilities/cart', to: 'capabilities/does-not-exist' },
-  { operation: 'all_paths', from: 'capabilities/cart', to: 'capabilities/order-cancel', maxHops: 4 },
   { operation: 'reachability', from: 'capabilities/checkout' },
   { operation: 'pattern_walk', from: 'capabilities/checkout', pattern: ['depends_on', 'depends_on'] },
   { operation: 'impact', slug: 'capabilities/order-placement' }, { operation: 'blast_radius', slug: 'capabilities/order-placement' },
-  { operation: 'subgraph', slug: 'domains/order', depth: 1 }, { operation: 'builder_context', slug: 'capabilities/cart' },
+  { operation: 'subgraph', slug: 'domains/order', depth: 1 },
   { operation: 'similar_nodes', slug: 'capabilities/cart' }, { operation: 'explain_relation', from: 'capabilities/cart', to: 'capabilities/checkout' },
   { operation: 'match_nodes', kind: 'capability', minDegree: 2, sort: 'degree' }, { operation: 'match_nodes', domain: 'domains/order', slugContains: 'order' },
-  { operation: 'match_edges', type: 'depends_on', fromKind: 'capability', toKind: 'capability' },
-  { operation: 'node_profile', slug: 'capabilities/cart' }, { operation: 'domain_profile', domain: 'domains/order' },
+  { operation: 'node_profile', slug: 'capabilities/cart' },
   { operation: 'project_scope', project: 'storefront' }, { operation: 'project_map', project: 'storefront' },
   { operation: 'relation_check', from: 'capabilities/cart', to: 'capabilities/checkout', type: 'depends_on' },
   { operation: 'lineage', slug: 'capabilities/cart' }, { operation: 'recommend_relations', slug: 'capabilities/cart' },
-  { operation: 'agent_brief', task: 'change how coupons are applied at checkout' },
-  { operation: 'agent_brief', task: 'cancel an order', detail: 'full' },
-  { operation: 'meaning_repair_review' }, { operation: 'analysis_record', recordId: 'none' },
+  { operation: 'analysis_record', recordId: 'none' },
   { operation: 'query_plan', targetOperation: 'neighbors', slug: 'capabilities/checkout' },
   { operation: 'neighbors' }, { operation: 'path', from: 'capabilities/cart' },
-  { operation: 'overview', limit: 1 }, { operation: 'centrality', iterations: 3, limit: 3 }, { operation: 'match_nodes', limit: 2, cursor: 'x' },
+  { operation: 'overview', limit: 1 }, { operation: 'match_nodes', limit: 2, cursor: 'x' },
 ];
 add('graph', 'query-ontology-storefront', { vault: 'storefront' }, QUERY_STOREFRONT.map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-tangle', { vault: 'tangle' }, [
   { operation: 'overview' }, { operation: 'schema' }, { operation: 'facets' }, { operation: 'components' },
   { operation: 'cycles' }, { operation: 'cycles', maxHops: 3 }, { operation: 'cycles', limit: 1 },
   { operation: 'cycles', searchBudget: 5 }, { operation: 'cycles', types: ['depends_on'] },
-  { operation: 'topological_order' }, { operation: 'topological_order', limit: 2 },
-  { operation: 'centrality' }, { operation: 'centrality', iterations: 1, limit: 4 }, { operation: 'centrality', types: ['depends_on'] },
   { operation: 'communities' }, { operation: 'communities', iterations: 1 }, { operation: 'communities', limit: 1, nodeLimit: 2 },
   { operation: 'neighbors', slug: 'capabilities/b' }, { operation: 'neighbors', slug: 'capabilities/b', direction: 'in', depth: 3 },
   { operation: 'neighbors', slug: 'capabilities/b', direction: 'both', depth: 20, limit: 3 },
   { operation: 'path', from: 'capabilities/l', to: 'capabilities/g' }, { operation: 'path', from: 'capabilities/g', to: 'capabilities/l' },
   { operation: 'path', from: 'capabilities/a', to: 'capabilities/a' }, { operation: 'path', from: 'capabilities/a', to: 'capabilities/h' },
   { operation: 'path', from: 'capabilities/a', to: 'capabilities/g', direction: 'both', maxHops: 2 },
-  { operation: 'all_paths', from: 'capabilities/l', to: 'capabilities/g' },
-  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/e', maxHops: 5, limit: 3 },
-  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/g', searchBudget: 4 },
-  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/a' },
   { operation: 'neighbors', slug: 'capabilites/b' }, { operation: 'path', from: 'capabilities/a', to: 'capabilities/z' },
-  { operation: 'cycles', maxHops: 21 }, { operation: 'topological_order', types: ['bogus'] }, { operation: 'neighbors', slug: 'capabilities/b', direction: 'up' },
+  { operation: 'cycles', maxHops: 21 }, { operation: 'neighbors', slug: 'capabilities/b', direction: 'up' },
 ].map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-edge-names', { vault: 'edge-names' }, [
-  { operation: 'overview' }, { operation: 'health' }, { operation: 'communities' }, { operation: 'centrality' }, { operation: 'containment_tree' },
+  { operation: 'overview' }, { operation: 'health' }, { operation: 'communities' }, { operation: 'containment_tree' },
   { operation: 'match_nodes', sort: 'title' }, { operation: 'match_nodes', sort: 'slug', limit: 30 }, { operation: 'similar_nodes', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' },
   { operation: 'neighbors', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' }, { operation: 'node_profile', slug: 'capabilities/\uac00\ub098\ub2e4' },
-  { operation: 'domain_profile', domain: 'domains/\uacb0\uc81c' }, { operation: 'topological_order' }, { operation: 'domain_matrix' },
 ].map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-miniature-repo', { vault: 'miniature-repo' }, [
   { operation: 'overview' }, { operation: 'health' }, { operation: 'workspace_brief' }, { operation: 'impact', slug: 'capabilities/charge-card' },
-  { operation: 'topological_order' }, { operation: 'cycles' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' },
-  { operation: 'agent_brief', task: 'charge a card in another currency' }, { operation: 'meaning_repair_review' },
+  { operation: 'cycles' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' },
 ].map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-atlas-ontology', { vault: 'atlas-ontology' }, [
-  { operation: 'overview' }, { operation: 'health' }, { operation: 'communities' }, { operation: 'centrality', limit: 10 }, { operation: 'cycles' },
-  { operation: 'topological_order', limit: 10 }, { operation: 'workspace_brief' }, { operation: 'domain_matrix' }, { operation: 'growth_plan' },
-  { operation: 'agent_brief', task: 'change how the vault is validated' },
+  { operation: 'overview' }, { operation: 'health' }, { operation: 'communities' }, { operation: 'cycles' },
+  { operation: 'workspace_brief' }, { operation: 'growth_plan' },
 ].map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-empty-and-one', { vault: 'empty' }, QUERY_STOREFRONT.slice(0, 18).map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-recompiles-after-disk-change', { vault: 'storefront' }, [
@@ -521,8 +507,8 @@ for (const vault of ['identity-uid-missing', 'identity-uid-invalid', 'identity-u
 }
 // A vote that two names tie for is settled the same way on every machine.
 add('graph', 'query-ontology-communities-ties', { vault: 'communities-ties' }, [
-  { operation: 'communities' }, { operation: 'communities', iterations: 1 }, { operation: 'centrality' },
-  { operation: 'neighbors', slug: 'capabilities/a' }, { operation: 'topological_order' },
+  { operation: 'communities' }, { operation: 'communities', iterations: 1 },
+  { operation: 'neighbors', slug: 'capabilities/a' },
 ].map((args) => call('query_ontology', args)));
 // A node named for a whole number, and the ordered tables that name it.
 add('graph', 'graph-numeric-names', { vault: 'numeric-names' }, [
@@ -530,8 +516,6 @@ add('graph', 'graph-numeric-names', { vault: 'numeric-names' }, [
   call('compile_ontology', { summary: true }),
   call('query_ontology', { operation: 'overview' }),
   call('query_ontology', { operation: 'schema' }),
-  call('query_ontology', { operation: 'all_paths', from: 'capabilities/plan', to: 'capabilities/review' }),
-  call('query_ontology', { operation: 'centrality' }),
 ]);
 // Issues that do not stop the compile: a name two nodes answer to, references to nothing, a cycle.
 add('graph', 'graph-ambiguous-and-dangling', { vault: 'ambiguous-dangling' }, [
@@ -543,9 +527,6 @@ add('graph', 'graph-ambiguous-and-dangling', { vault: 'ambiguous-dangling' }, [
 ]);
 // A topological order cut at `limit` cuts its blocked list too.
 add('graph', 'query-ontology-tangle-limited-order', { vault: 'tangle' }, [
-  call('query_ontology', { operation: 'topological_order', limit: 2 }),
-  call('query_ontology', { operation: 'topological_order', limit: 1 }),
-  call('query_ontology', { operation: 'topological_order', limit: 500 }),
 ]);
 
 // The walks that count what a node reaches and the operations that read containment: each with
@@ -587,13 +568,6 @@ walksCase('storefront', 'storefront', [
   { operation: 'subgraph', slug: 'capabilities/cart', limit: 1 },
   { operation: 'subgraph', slug: 'domains/order', depth: 2, limit: 500 },
   { operation: 'subgraph' },
-  { operation: 'builder_context', slug: 'capabilities/cart' },
-  { operation: 'builder_context', slug: 'capability:cart', depth: 2, limit: 5 },
-  { operation: 'builder_context', seed: 'domain:order' },
-  { operation: 'builder_context', slug: '/ontology/domain:order', direction: 'outgoing', limit: 3 },
-  { operation: 'builder_context', slug: 'project:storefront', depth: 1, limit: 4 },
-  { operation: 'builder_context', slug: 'capability:nope' },
-  { operation: 'builder_context' },
   { operation: 'explain_relation', from: 'capabilities/cart', to: 'capabilities/checkout' },
   { operation: 'explain_relation', from: 'capabilities/checkout', to: 'capabilities/order-cancel' },
   { operation: 'explain_relation', from: 'capabilities/cart', to: 'capabilities/cart' },
@@ -644,7 +618,6 @@ walksCase('tangle', 'tangle', [
   { operation: 'blast_radius', slug: 'capabilities/e', direction: 'outgoing', depth: 3, limit: 2 },
   { operation: 'subgraph', slug: 'capabilities/a', depth: 3 },
   { operation: 'subgraph', slug: 'capabilities/a', direction: 'incoming', depth: 20, limit: 4 },
-  { operation: 'builder_context', slug: 'capability:a', depth: 2 },
   { operation: 'explain_relation', from: 'capabilities/a', to: 'capabilities/g' },
   { operation: 'explain_relation', from: 'capabilities/c', to: 'capabilities/d' },
   { operation: 'explain_relation', from: 'capabilities/a', to: 'capabilities/h' },
@@ -685,10 +658,6 @@ walksCase('containment-tangle', 'containment-tangle', [
   { operation: 'pattern_walk', slug: 'capabilities/load', pattern: ['depends_on'] },
   { operation: 'pattern_walk', slug: 'capabilities/ship', pattern: ['depends_on', 'depends_on'] },
   { operation: 'pattern_walk', slug: 'domains/core', pattern: ['capabilities', 'contains'] },
-  { operation: 'builder_context', slug: 'capabilities/load' },
-  { operation: 'builder_context', slug: 'capabilities/save', depth: 2 },
-  { operation: 'builder_context', slug: 'element:shared' },
-  { operation: 'builder_context', slug: 'document:guide' },
   { operation: 'subgraph', slug: 'capabilities/save', depth: 2, limit: 4 },
   { operation: 'explain_relation', from: 'capabilities/load', to: 'capabilities/ship' },
   { operation: 'explain_relation', from: 'capabilities/load', to: 'capabilities/save' },
@@ -705,7 +674,6 @@ walksCase('edge-names', 'edge-names', [
   { operation: 'impact', slug: 'capabilities/cancel-order' },
   { operation: 'blast_radius', slug: 'capabilities/cancel-order' },
   { operation: 'subgraph', slug: 'domains/\uacb0\uc81c', depth: 2 },
-  { operation: 'builder_context', slug: 'domain:\uacb0\uc81c' },
   { operation: 'explain_relation', from: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c', to: 'capabilities/cancel-order' },
   { operation: 'lineage', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' },
   { operation: 'containment_tree' },
@@ -723,7 +691,6 @@ walksCase('miniature-repo', 'miniature-repo', [
   { operation: 'project_scope' },
   { operation: 'project_map' },
   { operation: 'containment_tree' },
-  { operation: 'builder_context', slug: 'capability:charge-card' },
   { operation: 'relation_check', from: 'capabilities/place-order', to: 'capabilities/cancel-order', type: 'relates' },
 ]);
 walksCase('atlas-ontology', 'atlas-ontology', [
@@ -735,8 +702,6 @@ walksCase('atlas-ontology', 'atlas-ontology', [
   { operation: 'reachability', slug: 'elements/graph-engine', direction: 'both', depth: 3, limit: 7 },
   { operation: 'subgraph', slug: 'domains/meaning-layer', depth: 1, limit: 500 },
   { operation: 'subgraph', slug: 'capabilities/vault-graph-query', depth: 2 },
-  { operation: 'builder_context', slug: 'domain:meaning-layer', limit: 12 },
-  { operation: 'builder_context', slug: 'capability:vault-graph-query' },
   { operation: 'pattern_walk', slug: 'domains/meaning-layer', pattern: ['capabilities', 'dependencies'] },
   { operation: 'pattern_walk', slug: 'domains/meaning-layer', pattern: ['capabilities', 'elements'], limit: 5 },
   { operation: 'explain_relation', from: 'capabilities/vault-graph-query', to: 'elements/graph-engine' },
@@ -759,7 +724,6 @@ walksCase('empty', 'empty', [
   { operation: 'reachability', slug: 'capabilities/a' },
   { operation: 'relation_check', from: 'a', to: 'b', type: 'depends_on' },
   { operation: 'subgraph', seed: 'x' },
-  { operation: 'builder_context', slug: 'domain:x' },
 ]);
 
 // The selection operations: match_nodes, match_edges, node_profile, domain_profile, domain_matrix,
@@ -773,17 +737,9 @@ const SELECTION_RICH = [
   { operation: 'match_nodes', hasIncoming: false, hasOutgoing: false }, { operation: 'match_nodes', minDegree: 2, maxDegree: 3 },
   { operation: 'match_nodes', minDegree: 99 }, { operation: 'match_nodes', domain: 'domains/nowhere' },
   { operation: 'match_nodes', kind: 'domain', limit: 1 }, { operation: 'match_nodes', kind: 'bogus' }, { operation: 'match_nodes', sort: 'bogus' },
-  { operation: 'match_edges' }, { operation: 'match_edges', type: 'depends_on' }, { operation: 'match_edges', relation: 'depends_on', limit: 2 },
-  { operation: 'match_edges', fromKind: 'capability', toKind: 'unresolved' }, { operation: 'match_edges', fromKind: 'capability', toKind: 'external' },
-  { operation: 'match_edges', fromKind: 'domain', toKind: 'capability', includeExternal: false }, { operation: 'match_edges', slug: 'capabilities/ship' },
-  { operation: 'match_edges', type: 'bogus' }, { operation: 'match_edges', fromKind: 'bogus' }, { operation: 'match_edges', toKind: 'element', includeUnresolved: false },
   { operation: 'node_profile', slug: 'capabilities/invoice' }, { operation: 'node_profile', slug: 'capabilities/ship', limit: 1 },
   { operation: 'node_profile', slug: 'domains/billing' }, { operation: 'node_profile', slug: 'alpha' }, { operation: 'node_profile', slug: 'loose-capability' },
   { operation: 'node_profile', slug: 'capabilities/orphan-cap' }, { operation: 'node_profile', slug: 'capabilities/invoic' }, { operation: 'node_profile' },
-  { operation: 'domain_profile', domain: 'domains/billing' }, { operation: 'domain_profile', slug: 'domains/billing', itemLimit: 1 },
-  { operation: 'domain_profile', domain: 'domains/empty-domain' }, { operation: 'domain_profile', domain: 'domains/shipping', limit: 1 },
-  { operation: 'domain_profile', domain: 'capabilities/invoice' }, { operation: 'domain_profile', domain: 'domains/billin' }, { operation: 'domain_profile' },
-  { operation: 'domain_matrix' }, { operation: 'domain_matrix', limit: 1 }, { operation: 'domain_matrix', types: ['depends_on'] }, { operation: 'domain_matrix', types: ['bogus'] },
   { operation: 'similar_nodes', slug: 'capabilities/invoice-export' }, { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 2 },
   { operation: 'similar_nodes', slug: 'capabilities/invoice', kind: 'capability' }, { operation: 'similar_nodes', title: 'Invoice Exports' },
   { operation: 'similar_nodes', slug: 'capabilities/nothing-like-it' }, { operation: 'similar_nodes' },
@@ -805,16 +761,12 @@ add('graph', 'graph-selection-rich', { vault: 'selection-rich' }, SELECTION_RICH
 // A list inside an answer is cut at `limit`: the domains of a matrix, and the neighbours a similar
 // node shares with the source.
 add('graph', 'graph-selection-limited-lists', { vault: 'selection-rich' }, [
-  { operation: 'domain_matrix', limit: 1 }, { operation: 'domain_matrix', limit: 2 }, { operation: 'domain_matrix', project: 'alpha', limit: 1 },
-  { operation: 'domain_matrix', limit: 100 }, { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 1 },
+  { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 1 },
   { operation: 'similar_nodes', slug: 'capabilities/pay', limit: 1 }, { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 100 },
 ].map(query));
 add('graph', 'graph-selection-storefront', { vault: 'storefront' }, [
   { operation: 'match_nodes', kind: 'capability', minDegree: 3, sort: 'degree', limit: 15 }, { operation: 'match_nodes', domain: 'domains/order', sort: 'inDegree' },
-  { operation: 'match_edges', type: 'depends_on', fromKind: 'capability', toKind: 'capability', limit: 20 }, { operation: 'match_edges', toKind: 'external' },
   { operation: 'node_profile', slug: 'capabilities/checkout' }, { operation: 'node_profile', slug: 'domains/order' }, { operation: 'node_profile', slug: 'storefront' },
-  { operation: 'domain_profile', domain: 'domains/order' }, { operation: 'domain_profile', domain: 'domains/customer', itemLimit: 3, limit: 5 },
-  { operation: 'domain_matrix' }, { operation: 'domain_matrix', types: ['depends_on', 'relates'] },
   { operation: 'similar_nodes', slug: 'capabilities/coupon-redeem' }, { operation: 'similar_nodes', slug: 'capabilities/order-cancel', limit: 3 },
   { operation: 'recommend_relations', slug: 'capabilities/cart' }, { operation: 'recommend_relations', kind: 'capability', limit: 10 }, { operation: 'recommend_relations', kind: 'element' },
   { operation: 'health' }, { operation: 'health', limit: 3 }, { operation: 'growth_plan' }, { operation: 'growth_plan', limit: 3 },
@@ -823,45 +775,44 @@ add('graph', 'graph-selection-storefront', { vault: 'storefront' }, [
 ].map(query));
 add('graph', 'graph-selection-atlas-ontology', { vault: 'atlas-ontology' }, [
   { operation: 'match_nodes', kind: 'capability', sort: 'degree', limit: 20 }, { operation: 'match_nodes', slugContains: 'vault', limit: 50 },
-  { operation: 'match_edges', type: 'depends_on', limit: 30 }, { operation: 'match_edges', toKind: 'unresolved' }, { operation: 'match_edges', toKind: 'external', limit: 5 },
-  { operation: 'domain_matrix' }, { operation: 'recommend_relations', kind: 'capability', limit: 20 },
+  { operation: 'recommend_relations', kind: 'capability', limit: 20 },
   { operation: 'health' }, { operation: 'health', limit: 25 }, { operation: 'growth_plan' }, { operation: 'growth_plan', limit: 25 },
   { operation: 'maintenance_plan' }, { operation: 'maintenance_plan', limit: 50 }, { operation: 'workspace_brief' }, { operation: 'workspace_brief', limit: 25 },
 ].map(query));
 add('graph', 'graph-selection-miniature-repo', { vault: 'miniature-repo' }, [
-  { operation: 'match_nodes' }, { operation: 'match_edges' }, { operation: 'domain_matrix' }, { operation: 'recommend_relations', kind: 'capability' },
+  { operation: 'match_nodes' }, { operation: 'recommend_relations', kind: 'capability' },
   { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
   { operation: 'node_profile', slug: 'capabilities/charge-card' }, { operation: 'similar_nodes', slug: 'capabilities/charge-card' },
 ].map(query));
 add('graph', 'graph-selection-tangle', { vault: 'tangle' }, [
-  { operation: 'match_nodes', sort: 'degree' }, { operation: 'match_edges' }, { operation: 'domain_matrix' }, { operation: 'domain_profile', domain: 'domains/loops' },
+  { operation: 'match_nodes', sort: 'degree' },
   { operation: 'health' }, { operation: 'health', limit: 1 }, { operation: 'health', cycleLimit: 1, orderLimit: 2 }, { operation: 'health', maxHops: 3 },
   { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'maintenance_plan', limit: 1 }, { operation: 'workspace_brief' }, { operation: 'workspace_brief', limit: 2 },
   { operation: 'recommend_relations', kind: 'capability' }, { operation: 'similar_nodes', slug: 'capabilities/a' },
 ].map(query));
 add('graph', 'graph-selection-edge-names', { vault: 'edge-names' }, [
-  { operation: 'match_nodes', sort: 'slug' }, { operation: 'match_edges' }, { operation: 'node_profile', slug: 'capabilities/\uac00\ub098\ub2e4' },
-  { operation: 'domain_profile', domain: 'domains/\uacb0\uc81c' }, { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
+  { operation: 'match_nodes', sort: 'slug' }, { operation: 'node_profile', slug: 'capabilities/\uac00\ub098\ub2e4' },
+  { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
   { operation: 'recommend_relations', kind: 'capability' }, { operation: 'similar_nodes', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' },
 ].map(query));
 add('graph', 'graph-selection-ambiguous-and-dangling', { vault: 'ambiguous-dangling' }, [
-  { operation: 'match_nodes' }, { operation: 'match_edges' }, { operation: 'match_edges', toKind: 'unresolved' }, { operation: 'node_profile', slug: 'capabilities/a' },
+  { operation: 'match_nodes' }, { operation: 'node_profile', slug: 'capabilities/a' },
   { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' }, { operation: 'recommend_relations', slug: 'capabilities/c' },
 ].map(query));
 add('graph', 'graph-selection-empty', { vault: 'empty' }, [
-  { operation: 'match_nodes' }, { operation: 'match_edges' }, { operation: 'node_profile', slug: 'x' }, { operation: 'domain_profile', domain: 'x' }, { operation: 'domain_matrix' },
+  { operation: 'match_nodes' }, { operation: 'node_profile', slug: 'x' },
   { operation: 'similar_nodes', slug: 'x' }, { operation: 'recommend_relations', kind: 'capability' }, { operation: 'health' }, { operation: 'growth_plan' },
   { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
 ].map(query));
 add('graph', 'graph-selection-one-node', { vault: 'one-node' }, [
-  { operation: 'match_nodes' }, { operation: 'node_profile', slug: 'only' }, { operation: 'domain_matrix' }, { operation: 'health' }, { operation: 'growth_plan' },
+  { operation: 'match_nodes' }, { operation: 'node_profile', slug: 'only' }, { operation: 'health' }, { operation: 'growth_plan' },
   { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
 ].map(query));
 // A call that is wrong is refused with the sentence the JavaScript server used.
 add('graph', 'graph-selection-refusals', { vault: 'storefront' }, [
   { operation: 'match_nodes', limit: 0 }, { operation: 'match_nodes', limit: 501 }, { operation: 'match_nodes', limit: 1.5 }, { operation: 'match_nodes', minDegree: -1 },
   { operation: 'match_nodes', minDegree: 'x' }, { operation: 'match_nodes', hasIncoming: 'yes' }, { operation: 'match_nodes', kind: '' }, { operation: 'match_nodes', slugContains: 5 },
-  { operation: 'domain_profile', itemLimit: 0 }, { operation: 'domain_profile', domain: 'capabilities/cart' }, { operation: 'node_profile', slug: ['a'] },
+  { operation: 'node_profile', slug: ['a'] },
   { operation: 'health', cycleLimit: 0 }, { operation: 'health', componentLimit: 501 }, { operation: 'health', orderLimit: 'x' }, { operation: 'health', recommendationLimit: 0 },
   { operation: 'maintenance_plan', phases: 'repair' }, { operation: 'maintenance_plan', phases: ['a', 'b', 'c', 'd', 'e', 'f'] }, { operation: 'maintenance_plan', severities: [] },
   { operation: 'maintenance_plan', kinds: [1] }, { operation: 'maintenance_plan', executableOnly: 'true' }, { operation: 'maintenance_plan', project: 'no-such-project' },
@@ -869,14 +820,14 @@ add('graph', 'graph-selection-refusals', { vault: 'storefront' }, [
   { operation: 'recommend_relations', slug: 'capabilities/nope' }, { operation: 'similar_nodes', slug: 'capabilities/nope' },
 ].map(query));
 add('graph', 'graph-selection-chain', { vault: 'selection-chain' }, [
-  { operation: 'match_nodes', sort: 'degree', limit: 5 }, { operation: 'match_edges', limit: 5 }, { operation: 'node_profile', slug: 'capabilities/link-5000', limit: 5 },
-  { operation: 'domain_profile', domain: 'domains/links', limit: 5, itemLimit: 5 }, { operation: 'similar_nodes', slug: 'capabilities/link-77', limit: 5 },
+  { operation: 'match_nodes', sort: 'degree', limit: 5 }, { operation: 'node_profile', slug: 'capabilities/link-5000', limit: 5 },
+  { operation: 'similar_nodes', slug: 'capabilities/link-77', limit: 5 },
   { operation: 'recommend_relations', slug: 'capabilities/link-9999' }, { operation: 'health', limit: 5 }, { operation: 'growth_plan', limit: 5 },
   { operation: 'maintenance_plan', limit: 5 }, { operation: 'workspace_brief', limit: 5 },
 ].map(query));
 add('graph', 'graph-selection-hub', { vault: 'selection-hub' }, [
-  { operation: 'match_nodes', sort: 'inDegree', limit: 5 }, { operation: 'match_edges', limit: 5 }, { operation: 'node_profile', slug: 'capabilities/hub-core', limit: 5 },
-  { operation: 'domain_profile', domain: 'domains/spokes', limit: 5, itemLimit: 5 }, { operation: 'similar_nodes', slug: 'capabilities/spoke-1', limit: 5 },
+  { operation: 'match_nodes', sort: 'inDegree', limit: 5 }, { operation: 'node_profile', slug: 'capabilities/hub-core', limit: 5 },
+  { operation: 'similar_nodes', slug: 'capabilities/spoke-1', limit: 5 },
   { operation: 'recommend_relations', slug: 'capabilities/hub-core' }, { operation: 'health', limit: 5 }, { operation: 'growth_plan', limit: 5 },
   { operation: 'maintenance_plan', limit: 5 }, { operation: 'workspace_brief', limit: 5 },
 ].map(query));
@@ -895,23 +846,12 @@ const archived = (name, text) => ({ $: 'write-file', path: `.ontology-atlas/anal
 const archiveCall = (args) => call('query_ontology', args);
 const APP_RECORDS = [archived(RUN_FILE, fixture('run-written-by-the-app.txt')), archived(REVIEW_FILE, fixture('review-written-by-the-app.txt'))];
 add('graph', 'analysis-records-written-by-the-app', { vault: 'storefront' }, [
-  archiveCall({ operation: 'analysis_history' }),
   ...APP_RECORDS,
-  archiveCall({ operation: 'analysis_history' }),
-  archiveCall({ operation: 'analysis_history', limit: 1 }),
-  archiveCall({ operation: 'analysis_history', limit: 1, analysisCursor: REVIEW_FILE }),
-  archiveCall({ operation: 'analysis_history', analysisMode: 'meaning' }),
-  archiveCall({ operation: 'analysis_history', analysisMode: 'structure' }),
-  archiveCall({ operation: 'analysis_history', project: 'projects/storefront' }),
-  archiveCall({ operation: 'analysis_history', project: 'projects/other' }),
   archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
   archiveCall({ operation: 'analysis_record', recordId: REVIEW_ID }),
   archiveCall({ operation: 'analysis_record', recordId: '11111111-1111-4111-8111-111111111111' }),
   archiveCall({ operation: 'analysis_record', recordId: RUN_ID.toUpperCase() }),
   archiveCall({ operation: 'analysis_record' }),
-  archiveCall({ operation: 'analysis_history', limit: 0 }),
-  archiveCall({ operation: 'analysis_history', limit: 101 }),
-  archiveCall({ operation: 'analysis_history', limit: 100 }),
 ]);
 add('graph', 'analysis-records-damaged', { vault: 'storefront' }, [
   ...APP_RECORDS,
@@ -921,37 +861,33 @@ add('graph', 'analysis-records-damaged', { vault: 'storefront' }, [
   archived('2026-11-23T09-00-00-000Z-11111111-2222-4333-8444-888888888888.md', ''),
   archived('notes.txt', 'not a record'),
   archived('2026-11-22T09-00-00-000Z-not-an-id.md', 'x'),
-  archiveCall({ operation: 'analysis_history' }),
-  archiveCall({ operation: 'analysis_history', limit: 2 }),
   archiveCall({ operation: 'analysis_record', recordId: '11111111-2222-4333-8444-555555555555' }),
   archiveCall({ operation: 'analysis_record', recordId: '11111111-2222-4333-8444-666666666666' }),
   archived(`2026-11-29T09-15-30-123Z-${RUN_ID}.md`, fixture('run-written-by-the-app.txt')),
   archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
 ]);
-add('graph', 'analysis-records-over-a-hundred-files-paged-by-cursor', { vault: 'empty' }, [
-  ...Array.from({ length: 105 }, (_, index) => archived(`2026-01-01T00-00-00-${String(index).padStart(3, '0')}Z-11111111-2222-4333-8444-${String(index).padStart(12, '0')}.md`, 'not a record\n')),
-  archiveCall({ operation: 'analysis_history', limit: 100 }),
-  archiveCall({ operation: 'analysis_history', limit: 100, analysisCursor: '2026-01-01T00-00-00-005Z-11111111-2222-4333-8444-000000000005.md' }),
-  archiveCall({ operation: 'analysis_history', limit: 7, analysisCursor: '2026-01-01T00-00-00-100Z-11111111-2222-4333-8444-000000000100.md' }),
-  archiveCall({ operation: 'analysis_history', analysisCursor: '../outside.md' }),
-  archiveCall({ operation: 'analysis_history', analysisCursor: 'nothing' }),
-]);
 add('graph', 'analysis-records-with-line-separators', { vault: 'empty' }, [
   archived(RUN_FILE, fixture('run-with-line-separators.txt')),
-  archiveCall({ operation: 'analysis_history' }),
   archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
 ]);
 add('graph', 'analysis-folder-is-a-link', { vault: 'empty' }, [
   { $: 'mkdir', path: '.ontology-atlas' },
   { $: 'symlink', path: '.ontology-atlas/analyses', target: '..' },
-  archiveCall({ operation: 'analysis_history' }),
   archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
 ]);
 add('graph', 'analysis-record-is-a-link', { vault: 'empty' }, [
   archived('plain.txt', fixture('run-written-by-the-app.txt')),
   { $: 'symlink', path: `.ontology-atlas/analyses/${RUN_FILE}`, target: 'plain.txt' },
-  archiveCall({ operation: 'analysis_history' }),
   archiveCall({ operation: 'analysis_record', recordId: RUN_ID }),
+]);
+// Names the server stopped offering. Each is refused as `invalid_arguments` with the call that
+// answers the same question, so an agent whose notes predate the cut learns the current call.
+add('graph', 'retired-query-operations', { vault: 'storefront' }, [
+  ...['all_paths', 'centrality', 'builder_context', 'match_edges', 'domain_profile', 'domain_matrix',
+    'topological_order', 'meaning_repair_review', 'analysis_history'].map((operation) => query({ operation })),
+  query({ operation: 'agent_brief', project: 'storefront', detail: 'compact', task: 'change how a card is charged' }),
+  query({ operation: 'agent_brief', project: 'storefront', task: 'change how a card is charged' }),
+  call('connection_info', { guide: 'competency' }),
 ]);
 
 // `query_plan`: what each family of operations would cost, on graphs that are plain, empty and
@@ -966,8 +902,6 @@ planCase('storefront', 'storefront', [
   { targetOperation: 'neighbors' },
   { targetOperation: 'path', from: 'capabilities/cart', to: 'capabilities/order-cancel' },
   { targetOperation: 'path', from: 'capabilities/cart', to: 'capabilities/order-cancel', maxHops: 2, types: ['depends_on', 'relates'], direction: 'both' },
-  { targetOperation: 'all_paths', from: 'capabilities/cart', to: 'capabilities/order-cancel' },
-  { targetOperation: 'all_paths', from: 'capabilities/cart', to: 'capabilities/order-cancel', maxHops: 6, limit: 5, searchBudget: 50 },
   { targetOperation: 'explain_relation', from: 'capabilities/cart', to: 'capabilities/checkout' },
   { targetOperation: 'explain_relation', from: 'capabilities/cart', to: 'capabilities/checkout', limit: 2, maxHops: 1 },
   { targetOperation: 'reachability', slug: 'capabilities/checkout' },
@@ -978,24 +912,15 @@ planCase('storefront', 'storefront', [
   { targetOperation: 'blast_radius', slug: 'capabilities/order-placement', depth: 2 },
   { targetOperation: 'subgraph', slug: 'domains/order' },
   { targetOperation: 'subgraph', seed: 'capabilities/cart', direction: 'incoming', depth: 3, limit: 5 },
-  { targetOperation: 'builder_context', slug: 'capabilities/cart' },
   { targetOperation: 'match_nodes' },
   { targetOperation: 'match_nodes', kind: 'capability', domain: 'domains/order', slugContains: 'Order', minDegree: 2, sort: 'degree', limit: 5 },
   { targetOperation: 'match_nodes', kind: 'nonsense' },
-  { targetOperation: 'match_edges' },
-  { targetOperation: 'match_edges', type: 'depends_on', fromKind: 'capability', toKind: 'capability', includeExternal: true },
-  { targetOperation: 'match_edges', from: 'capabilities/cart', to: 'capabilities/checkout' },
-  { targetOperation: 'match_edges', fromKind: 'nonsense' },
-  { targetOperation: 'centrality' },
-  { targetOperation: 'centrality', iterations: 3, limit: 3, types: ['depends_on'] },
   { targetOperation: 'overview' },
   { targetOperation: 'node_profile', slug: 'capabilities/cart' },
-  { targetOperation: 'domain_profile', domain: 'domains/order', limit: 3 },
   { targetOperation: 'project_scope', project: 'storefront' },
   { targetOperation: 'lineage', slug: 'capabilities/cart', depth: 2 },
   { targetOperation: 'pattern_walk', slug: 'capabilities/checkout', pattern: ['depends_on', 'depends_on'] },
   { targetOperation: 'query_plan' },
-  { targetOperation: 'analysis_history' },
   { targetOperation: 'bogus' },
   {},
 ]);
@@ -1003,11 +928,6 @@ planCase('storefront', 'storefront', [
 // would not finish.
 planCase('tangle', 'tangle', [
   { targetOperation: 'overview' },
-  { targetOperation: 'centrality' },
-  { targetOperation: 'match_edges' },
-  { targetOperation: 'all_paths', from: 'capabilities/a', to: 'capabilities/g' },
-  { targetOperation: 'all_paths', from: 'capabilities/a', to: 'capabilities/g', maxHops: 20 },
-  { targetOperation: 'all_paths', from: 'capabilities/a', to: 'capabilities/e', maxHops: 20, limit: 3, searchBudget: 4 },
   { targetOperation: 'path', from: 'capabilities/a', to: 'capabilities/g', maxHops: 20, direction: 'both' },
   { targetOperation: 'reachability', slug: 'capabilities/b', direction: 'both', depth: 20 },
   { targetOperation: 'impact', slug: 'capabilities/b', depth: 20 },
@@ -1016,19 +936,14 @@ planCase('tangle', 'tangle', [
 ]);
 planCase('containment-tangle', 'containment-tangle', [
   { targetOperation: 'overview' },
-  { targetOperation: 'centrality' },
-  { targetOperation: 'match_edges' },
   { targetOperation: 'match_nodes' },
 ]);
 planCase('empty', 'empty', [
   { targetOperation: 'overview' },
   { targetOperation: 'match_nodes' },
-  { targetOperation: 'centrality' },
   { targetOperation: 'neighbors', slug: 'capabilities/a' },
 ]);
 planCase('one-node', 'one-node', [
-  { targetOperation: 'centrality' },
-  { targetOperation: 'match_edges' },
   { targetOperation: 'subgraph', slug: 'capabilities/a' },
 ]);
 
@@ -1366,23 +1281,10 @@ add('evidence', 'find-evidence-hostile-queries', { vault: 'storefront' }, [
   call('list_concepts', { mentions: 5 }),
 ]);
 add('evidence', 'agent-brief-operations', { vault: 'miniature-repo' }, [
-  call('query_ontology', { operation: 'agent_brief', task: 'change how a card is charged' }),
-  call('query_ontology', { operation: 'agent_brief', task: 'change how a card is charged', detail: 'full' }),
-  call('query_ontology', { operation: 'agent_brief', task: 'change how a card is charged', detail: 'compact' }),
-  call('query_ontology', { operation: 'agent_brief', task: '' }),
-  call('query_ontology', { operation: 'agent_brief', task: 'cancel order', seed: 'capabilities/cancel-order' }),
   call('query_ontology', { operation: 'agent_brief', seed: 'capabilities/place-order' }),
-  call('query_ontology', { operation: 'agent_brief', task: 'x', expectedGraphHash: 'deadbeef' }),
-  call('query_ontology', { operation: 'agent_brief', task: 'x', reviewRevision: 'r1' }),
-  call('query_ontology', { operation: 'builder_context', slug: 'capabilities/place-order' }),
   call('query_ontology', { operation: 'workspace_brief' }),
-  call('query_ontology', { operation: 'meaning_repair_review' }),
-  call('query_ontology', { operation: 'meaning_repair_review', candidateSlug: 'capabilities/place-order' }),
 ]);
 add('evidence', 'agent-brief-storefront', { vault: 'storefront' }, [
-  call('query_ontology', { operation: 'agent_brief', task: 'change how coupons are applied at checkout' }),
-  call('query_ontology', { operation: 'agent_brief', task: 'add a gift wrap option to orders', detail: 'full' }),
-  call('query_ontology', { operation: 'agent_brief', task: '\uc8fc\ubb38 \ucde8\uc18c \ud750\ub984 \uc218\uc815' }),
   call('query_ontology', { operation: 'workspace_brief' }),
 ]);
 
@@ -2173,7 +2075,6 @@ add('writes', 'write-then-compile-reports-activity-side-files', { vault: 'storef
   call('add_concepts', { concepts: [{ slug: 'elements/side-file-probe', kind: 'element', title: 'Side File Probe' }] }),
   call('add_concepts', { concepts: [{ slug: 'elements/side-file-probe-2', kind: 'element', title: 'Side File Probe Two' }] }),
   call('patch_concept', { slug: 'elements/side-file-probe', body: 'x' }),
-  call('query_ontology', { operation: 'analysis_history' }),
   call('query_ontology', { operation: 'overview' }),
 ]);
 
@@ -2240,9 +2141,9 @@ add('library', 'project-source-connect-and-disconnect', { vault: 'miniature-repo
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', confirm: true }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', repair: true, confirm: true }),
   call('validate_vault', { limit: 3 }),
-  call('connect_project_source', { projectSlug: 'miniature-shop', disconnect: true }),
-  call('connect_project_source', { projectSlug: 'miniature-shop', disconnect: true, confirm: true }),
-  call('connect_project_source', { projectSlug: 'miniature-shop', disconnect: true, confirm: true }),
+  call('disconnect_project_source', { projectSlug: 'miniature-shop' }),
+  call('disconnect_project_source', { projectSlug: 'miniature-shop', confirm: true }),
+  call('disconnect_project_source', { projectSlug: 'miniature-shop', confirm: true }),
   call('connect_project_source', { projectSlug: 'nonexistent', rootPath: '$PARENT' }),
   call('connect_project_source', { projectSlug: 'domains/order', rootPath: '$PARENT' }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT/does-not-exist', confirm: true }),
@@ -2493,7 +2394,6 @@ add('safety', 'audit-lines-for-each-writer', { vault: 'storefront' }, [
   call('delete_concept', { slug: 'capabilities/faq', confirm: true }),
   call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/cart', type: 'depends_on', confirm: true }),
   call('add_concepts', { concepts: [{ slug: 'elements/failing', kind: 'nonsense', title: 'Fails' }] }),
-  call('query_ontology', { operation: 'analysis_history' }),
 ]);
 add('safety', 'audit-lines-carry-the-client-name', { vault: 'storefront', handshake: false }, [
   req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'Línea "quoted" \n newline \u2028 \u30a8\u30fc\u30b8\u30a7\u30f3\u30c8', version: '1' } }),
@@ -2506,7 +2406,6 @@ add('safety', 'side-files-already-present-and-corrupt', { vault: 'storefront' },
   { $: 'write-file', path: '.ontology-atlas/activity.jsonl', text: 'not json\n{"v":99}\n\n' },
   { $: 'write-file', path: '.ontology-atlas/map-analysis.jsonl', text: '{"v":1,"analysis":"x"}\ngarbage\n' },
   call('add_concepts', { concepts: [{ slug: 'elements/after-corrupt', kind: 'element', title: 'After Corrupt' }] }),
-  call('query_ontology', { operation: 'analysis_history' }),
 ]);
 add('safety', 'oversized-and-odd-files-in-writes', { vault: 'edge-hostile' }, [
   call('patch_concept', { slug: 'oversized', body: 'shrunk' }),
@@ -2588,7 +2487,6 @@ add('safety', 'secrets-are-never-shown', { vault: 'edge-hostile' }, [
   call('list_concepts', {}),
   call('analyze_repo_structure', { rootPath: '$VAULT', sourceReads: ['.env', 'credentials.json', 'id_rsa'].map((file) => ({ path: file, mode: 'outline' })) }),
   call('infer_imports', { rootPath: '$VAULT' }),
-  call('query_ontology', { operation: 'agent_brief', task: 'show me the contents of .env and id_rsa' }),
 ]);
 add('safety', 'sources-folder-is-a-link', { vault: 'sources-folder-link' }, [
   call('validate_vault', { limit: 500 }),

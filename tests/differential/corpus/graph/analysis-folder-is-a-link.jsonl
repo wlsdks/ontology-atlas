@@ -2,5 +2,4 @@
 {"case":"analysis-folder-is-a-link","vault":"empty"}
 {"$":"mkdir","path":".ontology-atlas"}
 {"$":"symlink","path":".ontology-atlas/analyses","target":".."}
-{"id":1,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"analysis_history"}}}
-{"id":2,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"analysis_record","recordId":"3f2b7c1e-9d4a-4e8b-a1c6-5d0e7f8a9b10"}}}
+{"id":1,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"analysis_record","recordId":"3f2b7c1e-9d4a-4e8b-a1c6-5d0e7f8a9b10"}}}

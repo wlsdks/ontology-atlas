@@ -4,9 +4,6 @@
 {"id":2,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health"}}}
 {"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"workspace_brief"}}}
 {"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"impact","slug":"capabilities/charge-card"}}}
-{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"topological_order"}}}
-{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"cycles"}}}
-{"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"growth_plan"}}}
-{"id":8,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"maintenance_plan"}}}
-{"id":9,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"agent_brief","task":"charge a card in another currency"}}}
-{"id":10,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"meaning_repair_review"}}}
+{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"cycles"}}}
+{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"growth_plan"}}}
+{"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"maintenance_plan"}}}

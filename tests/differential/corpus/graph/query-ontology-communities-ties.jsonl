@@ -2,6 +2,4 @@
 {"case":"query-ontology-communities-ties","vault":"communities-ties"}
 {"id":1,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"communities"}}}
 {"id":2,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"communities","iterations":1}}}
-{"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"centrality"}}}
-{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"neighbors","slug":"capabilities/a"}}}
-{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"topological_order"}}}
+{"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"neighbors","slug":"capabilities/a"}}}

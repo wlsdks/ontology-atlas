@@ -2,5 +2,4 @@
 {"case":"query-plan-empty","vault":"empty"}
 {"id":1,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"overview"}}}
 {"id":2,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"match_nodes"}}}
-{"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"centrality"}}}
-{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"neighbors","slug":"capabilities/a"}}}
+{"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"query_plan","targetOperation":"neighbors","slug":"capabilities/a"}}}

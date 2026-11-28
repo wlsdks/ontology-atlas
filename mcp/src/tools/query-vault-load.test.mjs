@@ -74,18 +74,12 @@ test('graph read requests load every vault document once and observe edits on th
       const { queryOntologyTool } = await import(${JSON.stringify(graphModule)});
       const { validateVaultTool } = await import(${JSON.stringify(validationModule)});
       const operations = ['overview', 'health', 'workspace_brief', 'agent_brief',
-        'growth_plan', 'maintenance_plan', 'builder_context', 'meaning_repair_review'];
+        'growth_plan', 'maintenance_plan'];
       const observations = [];
       let brief;
       for (const operation of operations) {
         reads.clear();
-        const result = await queryOntologyTool({ operation, project: 'project-p',
-          ...(operation === 'builder_context' ? { slug: 'capabilities/a' } : {}),
-          ...(operation === 'meaning_repair_review' ? {
-            reviewRevision: 'sha256:' + '0'.repeat(64),
-            expectedGraphHash: 'project-graph-v1:00000000',
-            expectedSourceFingerprint: 'unavailable',
-          } : {}), limit: 5 });
+        const result = await queryOntologyTool({ operation, project: 'project-p', limit: 5 });
         observations.push({ operation, reads: [...reads.values()] });
         if (operation === 'agent_brief') brief = result;
       }
@@ -126,7 +120,7 @@ test('graph read requests load every vault document once and observe edits on th
       encoding: 'utf8',
       env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
     }));
-    assert.equal(result.observations.length, 8);
+    assert.equal(result.observations.length, 6);
     // Later requests re-read only files whose stamp moved or is still racy, so only
     // the first request is bound to open every file.
     assert.deepEqual(result.observations[0].reads, [1, 1, 1, 1, 1], 'the first request must read the full vault, including non-node documents');

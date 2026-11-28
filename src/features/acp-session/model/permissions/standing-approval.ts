@@ -12,6 +12,7 @@ export const STANDING_APPROVAL_ATLAS_WRITES: ReadonlySet<string> = new Set([
   'add_relation',
   'add_relations',
   'connect_project_source',
+  'disconnect_project_source',
   'finalize_project_meaning',
   'patch_concept',
   'remove_relation',
@@ -125,8 +126,7 @@ function approvableAtlasWrite(request: AcpPermissionRequest, context: StandingAp
   const { rawInput } = request;
   // `overwrite` deletes the concept already at the new slug, so it asks as a deletion does.
   if (bareName === 'rename_concept' && !(rawInput.overwrite === undefined || rawInput.overwrite === false)) return null;
-  // Disconnecting only unbinds a folder, so it needs no folder check; binding does.
-  if (bareName === 'connect_project_source' && rawInput.disconnect !== true && !bindsOpenedFolder(rawInput, context.vaultRoot)) return null;
+  if (bareName === 'connect_project_source' && !bindsOpenedFolder(rawInput, context.vaultRoot)) return null;
   if (bareName === 'patch_concept' && typeof rawInput.body === 'string' && rawInput.body.trim() === '') return null;
   return bareName;
 }

@@ -2,8 +2,7 @@
 {"case":"graph-selection-one-node","vault":"one-node"}
 {"id":1,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes"}}}
 {"id":2,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"node_profile","slug":"only"}}}
-{"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"domain_matrix"}}}
-{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health"}}}
-{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"growth_plan"}}}
-{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"maintenance_plan"}}}
-{"id":7,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"workspace_brief"}}}
+{"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"health"}}}
+{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"growth_plan"}}}
+{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"maintenance_plan"}}}
+{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"workspace_brief"}}}

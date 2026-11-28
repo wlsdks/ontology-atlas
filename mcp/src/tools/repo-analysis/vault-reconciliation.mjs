@@ -2,7 +2,7 @@ import { reconcileImportEdges } from '../../drift/reconcile-imports.mjs';
 import { COMPILED_ONTOLOGY_CACHE } from '../../server/runtime.mjs';
 import { summarizeReconciliation } from './import-review-rules.mjs';
 
-export function aliasToSlugOf(artifact) {
+function aliasToSlugOf(artifact) {
   return Object.fromEntries((artifact?.aliases ?? []).map(({ alias, slug }) => [alias, slug]));
 }
 

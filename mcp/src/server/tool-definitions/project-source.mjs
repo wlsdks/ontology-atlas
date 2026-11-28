@@ -40,7 +40,7 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
         maxItems: MEANING_COMPETENCY_QUESTIONS.length,
         description:
           `One row per fixed question: ${COMPETENCY_QUESTION_LIST} ` +
-          'An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`. Example: connection_info({guide:"competency"}).',
+          'An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`. Call without `answers` and the refusal shows the layout.',
         items: {
           type: 'object',
           properties: {
@@ -103,51 +103,10 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
   },
 };
 
-const PROJECT_SOURCE_CONNECT_OUTPUT_SCHEMA = {
-  type: 'object',
-  properties: {
-    ok: { type: 'boolean' },
-    changed: { type: 'boolean' },
-    confirmed: { type: 'boolean' },
-    contract: { type: 'string', enum: ['projectSourceConnect:v1'] },
-    projectSlug: NON_BLANK_STRING_SCHEMA,
-    mode: { type: 'string', enum: ['connect', 'replace', 'remeasure'] },
-    binding: PROJECT_SOURCE_BINDING_VIEW_SCHEMA,
-    inference: { type: ['object', 'null'], additionalProperties: true },
-    previewReceipt: PROJECT_SOURCE_RECEIPT_SCHEMA,
-    projectSource: PROJECT_SOURCE_VIEW_SCHEMA,
-    remedy: PROJECT_SOURCE_REMEDY_SCHEMA,
-    previousBindingCount: { type: 'number' },
-    nextCall: PROJECT_SOURCE_NEXT_CALL_SCHEMA,
-    undo: { type: ['object', 'null'] },
-  },
-  required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'mode', 'binding'],
-  additionalProperties: false,
-};
-
-/** What `disconnect: true` answers: the bindings removed, or to be removed without `confirm`. */
-const PROJECT_SOURCE_DISCONNECT_OUTPUT_SCHEMA = {
-  type: 'object',
-  properties: {
-    ok: { type: 'boolean' },
-    changed: { type: 'boolean' },
-    confirmed: { type: 'boolean' },
-    contract: { type: 'string', enum: ['projectSourceDisconnect:v1'] },
-    projectSlug: NON_BLANK_STRING_SCHEMA,
-    removed: { type: 'number' },
-    bindings: { type: 'array' },
-    projectSource: PROJECT_SOURCE_VIEW_SCHEMA,
-    remedy: PROJECT_SOURCE_REMEDY_SCHEMA,
-    nextCall: PROJECT_SOURCE_NEXT_CALL_SCHEMA,
-  },
-  required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'removed', 'bindings'],
-  additionalProperties: false,
-};
-
 export const CONNECT_PROJECT_SOURCE_TOOL = {
   name: 'connect_project_source',
   description:
-    'Bind a project node to the local code folder it describes, measure it and write the source receipt; this answers `nextAction: connect_source` and its repair and re-measure actions. Omit `rootPath` to infer it. Without `confirm: true` nothing is written: you get the proposed folder, how many `path:` claims land in it, and the confirming call. The absolute root stays in a gitignored sidecar. With `disconnect: true` it instead removes the project\'s binding and its receipt (the wrong folder was bound, or to stop measuring); `confirm: true` writes, nothing else changes, and `rootPath` and `repair` are refused.',
+    'Bind a project node to the local code folder it describes, measure it and write the source receipt; this answers `nextAction: connect_source` and its repair and re-measure actions. Omit `rootPath` to infer it. Without `confirm: true` nothing is written: you get the proposed folder, how many `path:` claims land in it, and the confirming call. The absolute root stays in a gitignored sidecar.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -166,29 +125,62 @@ export const CONNECT_PROJECT_SOURCE_TOOL = {
         description:
           'Replace a malformed project-sources.json instead of refusing.',
       },
-      disconnect: {
+    },
+    required: ['projectSlug'],
+  },
+  outputSchema: {
+    type: 'object',
+    properties: {
+      ok: { type: 'boolean' },
+      changed: { type: 'boolean' },
+      confirmed: { type: 'boolean' },
+      contract: { type: 'string', enum: ['projectSourceConnect:v1'] },
+      projectSlug: NON_BLANK_STRING_SCHEMA,
+      mode: { type: 'string', enum: ['connect', 'replace', 'remeasure'] },
+      binding: PROJECT_SOURCE_BINDING_VIEW_SCHEMA,
+      inference: { type: ['object', 'null'], additionalProperties: true },
+      previewReceipt: PROJECT_SOURCE_RECEIPT_SCHEMA,
+      projectSource: PROJECT_SOURCE_VIEW_SCHEMA,
+      remedy: PROJECT_SOURCE_REMEDY_SCHEMA,
+      previousBindingCount: { type: 'number' },
+      nextCall: PROJECT_SOURCE_NEXT_CALL_SCHEMA,
+      undo: { type: ['object', 'null'] },
+    },
+    required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'mode', 'binding'],
+    additionalProperties: false,
+  },
+};
+
+export const DISCONNECT_PROJECT_SOURCE_TOOL = {
+  name: 'disconnect_project_source',
+  description:
+    'Remove a project node\'s local source binding and its receipt, when the wrong folder was bound or to stop measuring; the reversal of connect_project_source. Without `confirm: true` it only reports what would be removed. No other binding or markdown changes.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      projectSlug: nonBlankStringSchema('Project slug.'),
+      confirm: {
         type: 'boolean',
-        description:
-          'Remove the project\'s binding and receipt instead of connecting; dry-run unless `confirm: true`.',
+        description: 'Required to write.',
       },
     },
     required: ['projectSlug'],
   },
-  // One object for both answers: the binding (default) and the removal (`disconnect: true`).
   outputSchema: {
     type: 'object',
     properties: {
-      ...PROJECT_SOURCE_CONNECT_OUTPUT_SCHEMA.properties,
-      ...PROJECT_SOURCE_DISCONNECT_OUTPUT_SCHEMA.properties,
-      contract: {
-        type: 'string',
-        enum: [
-          ...PROJECT_SOURCE_CONNECT_OUTPUT_SCHEMA.properties.contract.enum,
-          ...PROJECT_SOURCE_DISCONNECT_OUTPUT_SCHEMA.properties.contract.enum,
-        ],
-      },
+      ok: { type: 'boolean' },
+      changed: { type: 'boolean' },
+      confirmed: { type: 'boolean' },
+      contract: { type: 'string', enum: ['projectSourceDisconnect:v1'] },
+      projectSlug: NON_BLANK_STRING_SCHEMA,
+      removed: { type: 'number' },
+      bindings: { type: 'array' },
+      projectSource: PROJECT_SOURCE_VIEW_SCHEMA,
+      remedy: PROJECT_SOURCE_REMEDY_SCHEMA,
+      nextCall: PROJECT_SOURCE_NEXT_CALL_SCHEMA,
     },
-    required: PROJECT_SOURCE_CONNECT_OUTPUT_SCHEMA.required.filter((key) => PROJECT_SOURCE_DISCONNECT_OUTPUT_SCHEMA.required.includes(key)),
+    required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'removed', 'bindings'],
     additionalProperties: false,
   },
 };

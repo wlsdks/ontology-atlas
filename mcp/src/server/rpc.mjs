@@ -29,10 +29,6 @@ function okResponseBytes(result) {
 }
 
 function ok(result) {
-  if (result?.contract === 'agentBriefCompact:v3' && typeof result.handoffPrompt === 'string') {
-    const { handoffPrompt, ...structure } = result;
-    return { content: [{ type: 'text', text: handoffPrompt }], structuredContent: structure };
-  }
   // Hosts forward structuredContent in place of the text, so the rows the breadth
   // map and source reads are written as travel alone.
   if ((result?.contract === 'breadthMap:v1' || result?.delivery === 'source_only') && typeof result.text === 'string') {

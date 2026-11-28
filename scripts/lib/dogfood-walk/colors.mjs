@@ -1,9 +1,9 @@
-// ANSI color codes shared by the dogfood walk summaries and CLI report output.
+// ANSI color codes used by the dogfood walk report.
 export const COLORS = {
   bold: "\x1b[1m",
   dim: "\x1b[2m",
   cyan: "\x1b[36m",
-  yellow: "\x1b[33m",
+  red: "\x1b[31m",
   green: "\x1b[32m",
   reset: "\x1b[0m",
 };

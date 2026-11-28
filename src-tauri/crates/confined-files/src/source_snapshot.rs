@@ -31,23 +31,24 @@ pub const MAX_TRANSPORT_BYTES: u64 = 64 * 1024 * 1024;
 /// The descriptor number the app hands the census on. Only 198 is accepted.
 pub const SNAPSHOT_DESCRIPTOR: i32 = 198;
 
-/// Why a census could not be used. The text is what the server prints.
+/// Why a census could not be used. The text is what the server prints, word for word what the
+/// script server throws in the same case.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum SnapshotError {
     /// The census is not the expected contract, is truncated, or is not the expected shape.
-    #[error("source snapshot is incomplete")]
+    #[error("Confined source snapshot is incomplete")]
     Incomplete,
     /// The descriptor is missing, or is not the agreed number.
-    #[error("source snapshot descriptor is unavailable")]
+    #[error("Confined source snapshot descriptor is unavailable")]
     DescriptorUnavailable,
     /// The descriptor holds more than [`MAX_TRANSPORT_BYTES`].
-    #[error("source snapshot exceeds its transport limit")]
+    #[error("Confined source snapshot exceeds its transport limit")]
     TooLargeToTransport,
     /// The census was taken of another folder than the one asked about.
-    #[error("source snapshot was taken of another folder")]
+    #[error("Confined source snapshot root mismatch")]
     RootMismatch,
     /// An entry or a read broke a rule; the first reason of a run is the run's.
-    #[error("source read refused: {0}")]
+    #[error("Confined source read refused: {0}")]
     Refused(Refusal),
 }
 
@@ -210,6 +211,18 @@ impl SourceSnapshot {
                 let named = std::env::var("OATLAS_SOURCE_SNAPSHOT_FD")
                     .is_ok_and(|value| value == SNAPSHOT_DESCRIPTOR.to_string());
                 if !named {
+                    return Err(SnapshotError::DescriptorUnavailable);
+                }
+                // The environment names the descriptor but nothing says it is open. Taking over a
+                // number that is not open would make std abort when the handle is dropped
+                // ("owned file descriptor already closed"), so the number is asked about first.
+                // SAFETY: `borrow_raw` only needs the number to stay valid while borrowed; it is
+                // dropped before the line that takes the descriptor over.
+                let open = rustix::fs::fstat(unsafe {
+                    rustix::fd::BorrowedFd::borrow_raw(SNAPSHOT_DESCRIPTOR)
+                })
+                .is_ok();
+                if !open {
                     return Err(SnapshotError::DescriptorUnavailable);
                 }
                 // SAFETY: the app starts this program with the census open on exactly this
@@ -466,6 +479,14 @@ impl SourceFiles for SnapshotSource<'_> {
         Ok(Cow::Borrowed(text))
     }
 
+    fn answers_from_census(&self) -> bool {
+        true
+    }
+
+    fn refused_a_read(&self) -> bool {
+        self.recorded().failure.is_some()
+    }
+
     fn list_directory(&self, path: &Path) -> Result<DirectoryListing, SourceReadError> {
         let (name, entry) = self.get(path)?;
         let entry = entry.ok_or(SourceReadError::Absent)?;
@@ -555,7 +576,7 @@ mod tests {
         );
         assert_eq!(
             SnapshotError::Incomplete.to_string(),
-            "source snapshot is incomplete"
+            "Confined source snapshot is incomplete"
         );
     }
 
@@ -805,5 +826,72 @@ mod tests {
                 "{path}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+#[cfg(windows)]
+mod windows_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn census_of(root: &str, entry_path: &str) -> String {
+        json!({
+            "contract": SNAPSHOT_CONTRACT,
+            "rootPath": root,
+            "truncated": false,
+            "entries": [{ "path": entry_path, "kind": "file", "size": 0, "text": "" }],
+        })
+        .to_string()
+    }
+
+    /// A numbered descriptor is a C runtime idea. `CreateProcess` passes a child the handles it
+    /// is told to inherit and no descriptor numbers (Microsoft, "CreateProcessW", parameter
+    /// `bInheritHandles`), so descriptor 198 never exists and the program must refuse instead of
+    /// reading the disk.
+    #[test]
+    fn no_census_arrives_on_windows() {
+        assert_eq!(
+            SourceSnapshot::inherited().err(),
+            Some(SnapshotError::DescriptorUnavailable)
+        );
+    }
+
+    /// `Path::is_absolute` on Windows: "a path is absolute if it has a prefix and starts with the
+    /// root: `c:\windows` is absolute, `c:foo` and `\windows` are not" (Rust std documentation).
+    /// A census entry is named relative to the root, so a drive or a UNC prefix is refused
+    /// whole.
+    #[test]
+    fn a_census_entry_named_with_a_drive_or_a_share_is_refused() {
+        for entry in [r"C:\Windows\win.ini", r"\\server\share\a.ts"] {
+            let refused =
+                SourceSnapshot::from_json(&census_of(r"C:\repo", entry)).expect_err(entry);
+            assert_eq!(
+                refused,
+                SnapshotError::Refused(Refusal::AbsoluteSnapshotEntry),
+                "{entry}"
+            );
+        }
+    }
+
+    /// Both `\` and `/` separate the parts of a Windows path (Rust std, `std::path` module
+    /// documentation), so a climbing entry written with backslashes leaves the root the same way
+    /// one written with slashes does.
+    #[test]
+    fn a_climbing_entry_written_with_backslashes_leaves_the_root_and_is_refused() {
+        let refused = SourceSnapshot::from_json(&census_of(r"C:\repo", r"..\outside.ts"))
+            .expect_err("outside");
+        assert!(matches!(refused, SnapshotError::Refused(_)), "{refused:?}");
+    }
+
+    /// A census of one drive's folder is never used for the same folder on another drive.
+    #[test]
+    fn a_census_of_one_drive_is_not_used_for_another() {
+        let snapshot = SourceSnapshot::from_json(&census_of(r"C:\repo", "a.ts")).expect("census");
+        assert!(snapshot.source_for(Path::new(r"C:\repo")).is_ok());
+        assert_eq!(
+            snapshot.source_for(Path::new(r"D:\repo")).err(),
+            Some(SnapshotError::RootMismatch)
+        );
     }
 }

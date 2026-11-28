@@ -40,22 +40,13 @@ mod vault_facts;
 mod vault_repository;
 mod vault_validation_facts;
 mod vault_validation_report;
+mod writes;
 
 pub use compiled_graph::KeptGraph;
 
 /// A write tool's handler. It receives the proof that the checkpoint passed, and answers with what
 /// the audit lines record, so it cannot finish without saying.
 pub type WriteHandler = fn(&Permit<'_>, &Arguments) -> Result<WriteDone, ToolError>;
-
-/// The tools that read repository files. When the app asks for every such read to come from its
-/// census (`OATLAS_CONFINED_SOURCE_READS=1`) they answer from nothing else, and until the census
-/// path is ported they refuse, so the disk is never read behind the app's back.
-const READS_REPOSITORY_FILES: [&str; 4] = [
-    "read_source",
-    "infer_imports",
-    "inspect_architecture",
-    "analyze_repo_structure",
-];
 
 /// The result of read tool `name`, or `None` when this build does not handle it.
 pub fn call(
@@ -66,13 +57,6 @@ pub fn call(
     #[cfg(feature = "test-hooks")]
     if let Some(result) = test_hooks::call(context, name, arguments) {
         return Some(result);
-    }
-    if READS_REPOSITORY_FILES.contains(&name) && confined_files::confined_source_reads_enabled() {
-        return Some(Err(ToolError::failed(
-            "Reading from the census the app passed is not ported to the Rust server yet: with \
-             OATLAS_CONFINED_SOURCE_READS=1 this tool refuses rather than read the disk the app \
-             did not offer.",
-        )));
     }
     match name {
         "connection_info" => Some(connection_info::call(context, arguments)),
@@ -94,17 +78,18 @@ pub fn call(
 /// The handler of `tool`, or `None` while this build does not port it.
 pub fn write_handler(tool: WriteTool) -> Option<WriteHandler> {
     match tool {
-        WriteTool::AddConcept
-        | WriteTool::AddConcepts
-        | WriteTool::AddRelation
-        | WriteTool::AddRelations
-        | WriteTool::RemoveRelation
-        | WriteTool::PatchConcept
-        | WriteTool::RenameConcept
-        | WriteTool::MergeConcepts
-        | WriteTool::DeleteConcept
-        | WriteTool::AbsorbDocument
+        WriteTool::PatchConcept => Some(writes::patch_concept),
+        WriteTool::AddConcepts => Some(writes::add_concepts),
+        WriteTool::AddConcept => Some(writes::add_concept),
+        WriteTool::AddRelations => Some(writes::add_relations),
+        WriteTool::AddRelation => Some(writes::add_relation),
+        WriteTool::RemoveRelation => Some(writes::remove_relation),
+        WriteTool::RenameConcept => Some(writes::rename_concept),
+        WriteTool::MergeConcepts => Some(writes::merge_concepts),
+        WriteTool::DeleteConcept => Some(writes::delete_concept),
+        WriteTool::AbsorbDocument
         | WriteTool::ConnectProjectSource
+        | WriteTool::DisconnectProjectSource
         | WriteTool::FinalizeProjectMeaning => None,
         #[cfg(feature = "test-hooks")]
         WriteTool::TestWrite => Some(test_hooks::write_through_checkpoint),

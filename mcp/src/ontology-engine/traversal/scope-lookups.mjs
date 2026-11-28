@@ -38,15 +38,6 @@ export function createScopeLookups({
       .sort();
   }
 
-  function resolveDomainRoot(slugOrAlias) {
-    const slug = resolve(slugOrAlias, 'domain');
-    const node = nodeBySlug.get(slug);
-    if (node?.kind !== 'domain') {
-      throw new Error(`domain "${slug}" must resolve to a kind: domain node.`);
-    }
-    return slug;
-  }
-
   function collectContainmentScope(rootSlug) {
     const included = new Set([rootSlug]);
     const queue = [rootSlug];
@@ -132,7 +123,7 @@ export function createScopeLookups({
   }
 
   return {
-    resolveProjectRoot, projectRootSlugs, resolveDomainRoot, collectContainmentScope,
+    resolveProjectRoot, projectRootSlugs, collectContainmentScope,
     nearestDomainFor, intersectSlugSets, sortedNodesInScope, domainMapRow, limitedNodeList,
   };
 }

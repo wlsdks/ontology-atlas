@@ -11,6 +11,7 @@ import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 import { schemaErrors } from '../../../scripts/lib/output-schema-errors.mjs';
 import { CONSTRUCTION_GUIDE_TOPICS } from '../construction/construction-card.mjs';
 import { advertisedOutputSchema } from './advertised-output-schema.mjs';
+import { answerModeOf } from './tool-answer-modes.mjs';
 import { TOOL_OUTPUT_CONTRACT_BY_NAME } from './registry.mjs';
 
 const HOST_VALIDATOR = new AjvJsonSchemaValidator();
@@ -44,13 +45,19 @@ async function answersAgainstDeclaredSchemas(vault, calls) {
     assert.ok(contract, `${name} defines no output contract`);
     assert.ok(advertised.get(name), `${name} advertises no outputSchema`);
     const errors = schemaErrors(contract, result.structuredContent);
+    // A tool with two kinds of answer is also held to the schema of the kind this call asked for,
+    // which the union above cannot tell apart.
+    const asked = answerModeOf(name, args);
+    if (asked) {
+      errors.push(...schemaErrors(asked.schema, result.structuredContent).map((error) => `${asked.mode} answer: ${error}`));
+    }
     // The validator an MCP SDK client runs on structuredContent, against the
     // full contract and against the schema tools/list advertises.
     for (const [label, schema] of [['contract', contract], ['advertised', advertised.get(name)]]) {
       const host = HOST_VALIDATOR.getValidator(schema)(result.structuredContent);
       if (!host.valid) errors.push(`host validator on the ${label} schema: ${host.errorMessage}`);
     }
-    return { name, args, answer: result.structuredContent, schemaError: errors.length === 0 ? null : errors.slice(0, 5).join('; ') };
+    return { name, args, mode: asked?.mode ?? null, answer: result.structuredContent, schemaError: errors.length === 0 ? null : errors.slice(0, 5).join('; ') };
   });
 }
 
@@ -119,6 +126,7 @@ test('confirmed writes answer with a post-write maintenance summary that matches
     ]);
 
     assert.deepEqual(answers.filter((answer) => answer.schemaError).map(({ name, schemaError }) => ({ name, schemaError })), []);
+    assert.deepEqual(answers.map(({ name, mode }) => `${name}:${mode}`), ['remove_relation:remove', 'remove_relation:replace', 'rename_concept:reclassify', 'rename_concept:rename']);
     for (const { name, answer } of answers) {
       assert.equal(answer.changed, true, `${name} wrote`);
       assert.equal(answer.postWriteMaintenance?.operation, 'maintenance_plan', `${name} answers with the maintenance summary`);

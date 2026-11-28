@@ -7,7 +7,7 @@ export function conceptSearchToolsSchemaFailure(tools) {
   if (
     !/by text with `mentions`/i.test(listConceptsTool.description || '') ||
     !/by a predicate with `filter`/i.test(listConceptsTool.description || '') ||
-    !/adds `matchedIn` and `score`/i.test(listConceptsTool.description || '')
+    !/adds `matchedIn`, `score` and an `excerpt`/i.test(listConceptsTool.description || '')
   ) {
     return 'list_concepts description missing mentions and filter guidance';
   }

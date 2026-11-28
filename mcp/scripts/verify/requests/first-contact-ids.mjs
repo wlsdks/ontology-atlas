@@ -24,8 +24,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [17, 'strict_enum'],
   [18, 'project_probe'],
   [19, 'orphan_match_nodes'],
-  [20, 'health_tuned'],
-  [21, 'workspace_brief_tuned'],
+  [21, 'workspace_brief_limited'],
   [22, 'strict_maintenance_phase_filter'],
   [23, 'strict_maintenance_severity_filter'],
   [24, 'strict_maintenance_kind_filter'],
@@ -50,12 +49,9 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [45, 'delete_concept_dry_run'],
   [46, 'strict_relation_check'],
   [47, 'strict_graph_kind_filter'],
-  [48, 'strict_graph_from_kind_filter'],
-  [49, 'strict_graph_to_kind_filter'],
   [51, 'strict_recommend_relations_kind_filter'],
   [52, 'strict_recommend_relations_unsupported_kind_filter'],
   [53, 'strict_match_nodes_sort_filter'],
-  [54, 'strict_match_edges_type_filter'],
   [58, 'strict_list_concepts_filter_kind'],
   [59, 'strict_list_concepts_filter_has_key'],
   [60, 'strict_list_concepts_kind_filter'],
@@ -65,7 +61,6 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [64, 'get_concepts_batch_cap'],
   [65, 'strict_unknown_tool'],
   [66, 'agent_brief'],
-  [67, 'all_paths'],
   [69, 'absorb_document_dry_run'],
   [70, 'infer_imports_focus'],
   [71, 'retired_tool'],
@@ -88,7 +83,6 @@ export const DYNAMIC_FIRST_CONTACT_RESPONSE_IDS = [
   13, // neighbors: sent after graph smoke target selection.
   14, // path: sent after graph smoke target selection.
   15, // project_scope: sent after project probe/listing discovers a project node.
-  67, // all_paths: sent after graph smoke target selection.
   ...OPTIONAL_FIRST_CONTACT_RESPONSE_IDS,
 ];
 

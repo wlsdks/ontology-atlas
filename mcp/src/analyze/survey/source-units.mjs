@@ -11,7 +11,7 @@
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, relative, sep } from 'node:path';
 
-import { DEFAULT_IGNORE } from '../scan-tables.mjs';
+import { DEFAULT_IGNORE } from '../default-ignore.mjs';
 import { gitIgnoredPaths } from './git-ignored.mjs';
 import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
 import { compareText } from '../../compare-text.mjs';

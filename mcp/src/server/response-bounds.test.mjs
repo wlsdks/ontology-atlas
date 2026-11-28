@@ -166,17 +166,17 @@ test('a brief and validate_vault list every path drift', () => {
     }
     const result = inServer(root, `
       const health = await queryOntologyTool({ operation: 'health' });
-      const compact = await queryOntologyTool({ operation: 'agent_brief', detail: 'compact', task: 'Explain the drift fixture.' });
+      const brief = await queryOntologyTool({ operation: 'agent_brief' });
       console.log(JSON.stringify({
         drift: health.validation.pathDrift,
         check: health.checks.find((check) => check.id === 'vault_validation'),
-        compactDrifts: compact.validation.driftCount,
+        briefDrifts: brief.health.validation.pathDrift.drifts.length,
         tool: validateVaultTool({}).pathDrift,
       }));
     `);
     assert.equal(result.drift.drifts.length, 25);
     assert.match(result.check.message, /source paths 25;/, 'the check counts every drift');
-    assert.equal(result.compactDrifts, 25);
+    assert.equal(result.briefDrifts, 25, 'the brief lists every drift');
     assert.equal(result.tool.drifts.length, 25);
   } finally {
     rmSync(root, { recursive: true, force: true });

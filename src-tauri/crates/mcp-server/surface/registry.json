@@ -19,8 +19,7 @@
     "read_source",
     "inspect_architecture",
     "analyze_repo_structure",
-    "infer_imports",
-    "index_project"
+    "infer_imports"
   ],
   "retiredTools": [
     {
@@ -61,7 +60,7 @@
     },
     {
       "name": "git_snapshot",
-      "replacement": "your own git: commit the vault yourself after `git -C <repoRoot> status -- <vault>`"
+      "replacement": "your own git: `git -C <vaultRoot> add -- . && git -C <vaultRoot> commit -m \"<why>\" -- .`, not during a merge or rebase, and never push"
     },
     {
       "name": "list_constellations",
@@ -78,10 +77,6 @@
     {
       "name": "query_concepts",
       "replacement": "list_concepts({ filter })"
-    },
-    {
-      "name": "disconnect_project_source",
-      "replacement": "connect_project_source({ projectSlug, disconnect: true, confirm })"
     },
     {
       "name": "replace_relation",
@@ -125,6 +120,9 @@
       "projectSlug",
       "rootPath"
     ],
+    "disconnect_project_source": [
+      "projectSlug"
+    ],
     "add_concept": [
       "slug",
       "title",
@@ -154,21 +152,13 @@
     ],
     "query_ontology": [
       "recordId",
-      "analysisCursor",
       "slug",
-      "seed",
       "candidateSlug",
       "title",
       "from",
-      "project",
-      "task",
-      "expectedGraphHash",
-      "expectedSourceFingerprint",
-      "reviewRevision",
-      "cursor",
       "to",
+      "project",
       "domain",
-      "slugContains",
       "afterActionId"
     ],
     "validate_vault": [
@@ -186,9 +176,6 @@
       "afterReviewId",
       "focusPath",
       "focusAfterEdgeId"
-    ],
-    "index_project": [
-      "rootPath"
     ],
     "analyze_repo_structure": [
       "rootPath"

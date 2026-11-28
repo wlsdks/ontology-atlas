@@ -210,6 +210,7 @@
     "addNode": "Add a concept",
     "editNode": "Edit a concept",
     "renameNode": "Rename a concept",
+    "reclassifyNode": "Change a concept's kind",
     "mergeNodes": "Merge two concepts",
     "addRelation": "Add a relation",
     "readConstellation": "Read a saved bookmark",
@@ -218,9 +219,11 @@
     "checkPages": "Check the pages",
     "deleteNode": "Delete a concept",
     "removeRelation": "Remove a relation",
+    "replaceRelation": "Replace a relation",
     "compile": "Rebuild the map from the files",
     "absorb": "Sort a document into candidates",
     "connectSource": "Connect a source",
+    "disconnectSource": "Disconnect a source",
     "judgeMeaning": "Judge the recorded meaning"
   },
   "toolKind": {

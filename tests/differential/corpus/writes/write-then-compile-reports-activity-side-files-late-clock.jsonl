@@ -3,5 +3,4 @@
 {"id":1,"method":"tools/call","params":{"name":"add_concepts","arguments":{"concepts":[{"slug":"elements/side-file-probe","kind":"element","title":"Side File Probe"}]}}}
 {"id":2,"method":"tools/call","params":{"name":"add_concepts","arguments":{"concepts":[{"slug":"elements/side-file-probe-2","kind":"element","title":"Side File Probe Two"}]}}}
 {"id":3,"method":"tools/call","params":{"name":"patch_concept","arguments":{"slug":"elements/side-file-probe","body":"x"}}}
-{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"analysis_history"}}}
-{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"overview"}}}
+{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"overview"}}}

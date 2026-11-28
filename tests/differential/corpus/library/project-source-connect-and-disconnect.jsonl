@@ -7,9 +7,9 @@
 {"id":5,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","rootPath":"$PARENT","confirm":true}}}
 {"id":6,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","rootPath":"$PARENT","repair":true,"confirm":true}}}
 {"id":7,"method":"tools/call","params":{"name":"validate_vault","arguments":{"limit":3}}}
-{"id":8,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","disconnect":true}}}
-{"id":9,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","disconnect":true,"confirm":true}}}
-{"id":10,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","disconnect":true,"confirm":true}}}
+{"id":8,"method":"tools/call","params":{"name":"disconnect_project_source","arguments":{"projectSlug":"miniature-shop"}}}
+{"id":9,"method":"tools/call","params":{"name":"disconnect_project_source","arguments":{"projectSlug":"miniature-shop","confirm":true}}}
+{"id":10,"method":"tools/call","params":{"name":"disconnect_project_source","arguments":{"projectSlug":"miniature-shop","confirm":true}}}
 {"id":11,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"nonexistent","rootPath":"$PARENT"}}}
 {"id":12,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"domains/order","rootPath":"$PARENT"}}}
 {"id":13,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","rootPath":"$PARENT/does-not-exist","confirm":true}}}

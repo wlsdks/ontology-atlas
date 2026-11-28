@@ -26,14 +26,6 @@ interface CompilerDoc {
   mtime: number;
 }
 
-type Compiled = ReturnType<typeof compileOntology>;
-
-interface MatrixRow {
-  from: string;
-  to: string;
-  count: number;
-}
-
 const MAP_KINDS = new Set(["project", "domain", "capability", "element"]);
 
 function loadDocs(dir: string, base = dir): CompilerDoc[] {
@@ -50,14 +42,6 @@ function loadDocs(dir: string, base = dir): CompilerDoc[] {
     out.push({ slug: full.slice(base.length + 1).replace(/\.md$/, ""), frontmatter, mtime: 1 });
   }
   return out;
-}
-
-function matrixRows(compiled: Compiled, types: string[]): MatrixRow[] {
-  const result = queryCompiledOntology(compiled, { operation: "domain_matrix", types, limit: 500 }) as {
-    connections: { rows: MatrixRow[]; limited: boolean };
-  };
-  expect(result.connections.limited).toBe(false);
-  return result.connections.rows;
 }
 
 function dialOf(nodes: readonly { id: string; label: string; kind: string }[], edges: readonly TreeInputEdge[]) {
@@ -86,47 +70,23 @@ function relatesOnlyPairs(model: DialModel, name: (id: string) => string): strin
   return model.flows.filter((f) => f.relatesOnly).map((f) => unordered(name(f.a), name(f.b))).sort();
 }
 
-function mcpRelatesOnly(dependsRows: MatrixRow[], relatesRows: MatrixRow[]): string[] {
-  const dependent = new Set(dependsRows.map((r) => unordered(r.from, r.to)));
-  return [...new Set(relatesRows.map((r) => unordered(r.from, r.to)))].filter((p) => !dependent.has(p)).sort();
-}
-
-function mcpDependents(dependsRows: MatrixRow[]): Map<string, number> {
-  const out = new Map<string, number>();
-  for (const r of dependsRows) if (r.from !== r.to) out.set(r.to, (out.get(r.to) ?? 0) + 1);
-  return out;
-}
-
-describe("domain flow case table (MCP compile vs map roll-up)", () => {
+describe("domain flow case table (map roll-up)", () => {
   for (const testCase of DOMAIN_FLOW_CASES) {
     describe(testCase.name, () => {
-      const compiled = compileOntology(testCase.docs.map((d) => ({ ...d, mtime: 1 })));
-      const depends = matrixRows(compiled, ["depends_on"]);
-      const relates = matrixRows(compiled, ["relates"]);
       const model = dialOf(testCase.map.nodes, testCase.map.edges as TreeInputEdge[]);
-      const side = (count: number | { mcp: number; map: number }, which: "mcp" | "map") =>
-        typeof count === "number" ? count : count[which];
-      const expected = (which: "mcp" | "map") =>
-        new Map(testCase.expected.directed.map((r) => [`${r.from} > ${r.to}`, side(r.count, which)] as const));
-
-      it("MCP domain_matrix rows equal the expected directed counts", () => {
-        expect(new Map(depends.map((r) => [`${r.from} > ${r.to}`, r.count] as const))).toEqual(expected("mcp"));
-      });
+      const expectedCounts = new Map(testCase.expected.directed.map((r) => [`${r.from} > ${r.to}`, r.count] as const));
 
       it("the map roll-up equals the expected directed counts", () => {
-        expect(directedCounts(model, (id) => id)).toEqual(expected("map"));
+        expect(directedCounts(model, (id) => id)).toEqual(expectedCounts);
       });
 
       it("relates-only pairs agree", () => {
         const want = testCase.expected.relatesOnly.map(([a, b]) => unordered(a, b)).sort();
-        expect(mcpRelatesOnly(depends, relates)).toEqual(want);
         expect(relatesOnlyPairs(model, (id) => id)).toEqual(want);
       });
 
       it("dependents agree", () => {
         expect(Object.fromEntries(model.dependents)).toEqual(testCase.expected.dependents);
-        const mcp = mcpDependents(depends);
-        for (const [id, count] of Object.entries(testCase.expected.dependents)) expect(mcp.get(id) ?? 0).toBe(count);
       });
     });
   }
@@ -137,7 +97,7 @@ const VAULTS = [
   { source: "storefront" as const, root: "samples/storefront" },
 ];
 
-describe.each(VAULTS)("$source vault: dial roll-ups equal domain_matrix and blast_radius", ({ source, root }) => {
+describe.each(VAULTS)("$source vault: dial roll-ups equal blast_radius", ({ source, root }) => {
   const compiled = compileOntology(loadDocs(join(process.cwd(), root)), { includeIndexes: true });
   const vault = resolveStaticVaultSource(source);
   const insight = derivationToInsight(deriveOntologyFromVault(vault.manifest), "en", {
@@ -151,27 +111,10 @@ describe.each(VAULTS)("$source vault: dial roll-ups equal domain_matrix and blas
 
   const graph = buildOntologyMapGraph(insight.nodes, insight.edges);
   const model = dialOf(graph.nodes, graph.edges);
-  const depends = matrixRows(compiled, ["depends_on"]);
-  const relates = matrixRows(compiled, ["relates"]);
 
   it("reads a vault with cross-domain dependencies", () => {
-    expect(depends.length).toBeGreaterThan(0);
+    expect(model.flows.length).toBeGreaterThan(0);
     expect(model.capabilityById.size).toBeGreaterThan(0);
-  });
-
-  it("every directed count equals the domain_matrix depends_on row", () => {
-    expect(directedCounts(model, name)).toEqual(new Map(depends.map((r) => [`${r.from} > ${r.to}`, r.count] as const)));
-  });
-
-  it("relates-only pairs equal relates rows minus every pair with a dependency", () => {
-    expect(relatesOnlyPairs(model, name)).toEqual(mcpRelatesOnly(depends, relates));
-  });
-
-  it("every dependents count equals the depends_on rows into that domain", () => {
-    const mcp = mcpDependents(depends);
-    const web = new Map([...model.dependents].map(([id, n]) => [name(id), n] as const));
-    for (const ref of mcp.keys()) expect(web.has(ref)).toBe(true);
-    for (const [ref, n] of web) expect([ref, n]).toEqual([ref, mcp.get(ref) ?? 0]);
   });
 
   function blastCaps(capabilityId: string, direction: "incoming" | "outgoing"): string[] {

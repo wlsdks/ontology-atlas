@@ -3057,6 +3057,7 @@ dependencies = [
  "thiserror 2.0.21",
  "uuid",
  "vault-document",
+ "vault-edit",
  "vault-validation",
 ]
 
@@ -6424,6 +6425,19 @@ dependencies = [
  "strsim",
  "tempfile",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "vault-edit"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "confined-files",
+ "icu_normalizer",
+ "regex",
+ "tempfile",
+ "thiserror 2.0.21",
+ "vault-document",
 ]
 
 [[package]]

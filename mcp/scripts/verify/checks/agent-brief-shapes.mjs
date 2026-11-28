@@ -37,7 +37,7 @@ export function agentBriefPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-export function agentBriefExactKeys(value, keys) {
+function agentBriefExactKeys(value, keys) {
   return agentBriefPlainObject(value)
     && Object.keys(value).length === keys.length
     && keys.every((key) => Object.hasOwn(value, key));

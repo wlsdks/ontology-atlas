@@ -14,6 +14,5 @@
 {"id":12,"method":"tools/call","params":{"name":"find_evidence","arguments":{"title":"cart"}}}
 {"id":13,"method":"tools/call","params":{"name":"find_orphans","arguments":{}}}
 {"id":14,"method":"tools/call","params":{"name":"query_concepts","arguments":{"filter":"kind=capability"}}}
-{"id":15,"method":"tools/call","params":{"name":"disconnect_project_source","arguments":{"projectSlug":"storefront","confirm":true}}}
-{"id":16,"method":"tools/call","params":{"name":"replace_relation","arguments":{"from":"capabilities/checkout","oldTo":"capabilities/cart","oldType":"depends_on","newTo":"capabilities/faq","newType":"depends_on","why":"x"}}}
-{"id":17,"method":"tools/call","params":{"name":"reclassify_concept","arguments":{"slug":"capabilities/cart","newKind":"element"}}}
+{"id":15,"method":"tools/call","params":{"name":"replace_relation","arguments":{"from":"capabilities/checkout","oldTo":"capabilities/cart","oldType":"depends_on","newTo":"capabilities/faq","newType":"depends_on","why":"x"}}}
+{"id":16,"method":"tools/call","params":{"name":"reclassify_concept","arguments":{"slug":"capabilities/cart","newKind":"element"}}}

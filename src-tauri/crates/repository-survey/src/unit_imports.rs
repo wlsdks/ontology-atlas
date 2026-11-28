@@ -13,7 +13,7 @@ use crate::unit_collection::Collection;
 pub const IMPORTS_PER_UNIT: usize = 8;
 
 /// For each unit, by index, the paths of the other units its product code imports, in UTF-16
-/// order. A scan that finds nothing leaves every set empty.
+/// order. A scan that finds nothing, or that a census refused a read of, leaves every set empty.
 pub fn unit_imports(
     source: &dyn SourceFiles,
     root_label: &str,
@@ -29,6 +29,9 @@ pub fn unit_imports(
             ..ImportScanOptions::default()
         },
     );
+    if source.refused_a_read() {
+        return edges;
+    }
     let unit_of_directory = |directory: &str| -> Option<usize> {
         let in_directory = collection.files.iter().find(|file| {
             file.class == SourceClass::Product

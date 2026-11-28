@@ -32,6 +32,8 @@ repository-survey = { path = "../repository-survey" }
 # The exact reads of `sourceReads`, and the record of which lines this session served.
 source-reads = { path = "../source-reads" }
 vault-validation = { path = "../vault-validation" }
+# The exact new text of the files a write changes.
+vault-edit = { path = "../vault-edit" }
 # The constellations a person saved, which `get_constellation` lists.
 saved-constellations = { path = "../saved-constellations" }
 meaning-findings = { path = "../meaning-findings" }
@@ -59,6 +61,9 @@ regex = { version = "1", default-features = false, features = ["std", "unicode-g
 # `__test_*` tools exercise cancellation, panics and a call that waits off the queue. The release
 # build never enables it; the crate's own tests do, through the dev-dependency below.
 test-hooks = []
+# The clock and the random ids a differential run pins (`ATLAS_DIFF_CLOCK_MS`, `ATLAS_DIFF_UID_SEED`),
+# so Rust and the JavaScript server write the same bytes. The release build never enables it.
+differential-inputs = []
 
 [dev-dependencies]
 mcp-server = { path = ".", features = ["test-hooks"] }

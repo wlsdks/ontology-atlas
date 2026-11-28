@@ -148,7 +148,7 @@ const differenceKey = (entry) => `${entry.case}|${entry.where}|${JSON.stringify(
  * differences. A base that does not exist here (a shallow clone) is said so and not an error.
  */
 /** The numbers of the rows of the specification's table of declared changes. */
-export function specificationRows(repoRoot) {
+function specificationRows(repoRoot) {
   const text = readFileSync(path.join(repoRoot, 'docs', 'specs', '2026-11-27-mcp-server-in-rust.md'), 'utf8');
   const start = text.indexOf('### Declared behaviour changes');
   const end = text.indexOf('### What equal means');

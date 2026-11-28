@@ -4,7 +4,6 @@
  */
 
 import {
-  COMPETENCY_ANSWERS_GUIDE_EN,
   CONSTRUCTION_CARD_EN,
   CONSTRUCTION_GUIDE_EN,
   CONSTRUCTION_GUIDE_TOPICS,
@@ -29,6 +28,8 @@ import {
   READ_ONLY_MODE,
   TOOLS_FOR_LIST,
 } from '../server/registry.mjs';
+import { QUERY_GUIDE_EN } from '../server/query-guide.mjs';
+import { retiredGuideError } from '../server/retired-arguments.mjs';
 import { structuredRowErrorDetails } from '../server/rpc.mjs';
 import {
   REPO_RESOLUTION,
@@ -67,6 +68,7 @@ import { FULL_BODY_MAX_CHARS, GET_CONCEPTS_FULL_BODY_MAX, describeBodyDelivery }
 import {
   loadVaultDocs,
   readDoc,
+  readVaultDocText,
 } from '../vault/documents/document-cache.mjs';
 import { findBacklinks, findPath, listKinds } from '../vault/graph/graph-queries.mjs';
 import {
@@ -131,7 +133,10 @@ function listConcepts({ kind, domain, since, summary, mentions, filter, offset =
   const narrowed = docs.filter((doc) => {
     const docKind = doc.frontmatter.kind;
     if (kind && docKind !== kind) return false;
-    if (!docKind) return false; // A frontmatter `kind:` is what makes it an ontology node.
+    // A frontmatter `kind:` is what makes it an ontology node. A text search also reads the
+    // plain Markdown pages beside the nodes, as the search for evidence always has; each
+    // answers with `isNode: false`.
+    if (!docKind && mentions === undefined) return false;
     // Domain filter on frontmatter `domain:`, applied across kinds, so "every
     // capability in the auth domain" needs no filter expression.
     if (domain && doc.frontmatter.domain !== domain) return false;
@@ -151,6 +156,7 @@ function listConcepts({ kind, domain, since, summary, mentions, filter, offset =
   }
   const page = ranked.slice(offset, offset + limit);
   const summaryTruncatedSlugs = [];
+  const excerptTruncatedSlugs = [];
   const nodes = page.map(({ doc, matchedIn, score }) => {
     // Opt-in summary, so one list call answers "what is each node about?".
     // Capped at 200 chars to keep the payload from ballooning. Off unless the
@@ -168,6 +174,7 @@ function listConcepts({ kind, domain, since, summary, mentions, filter, offset =
       uid: doc.frontmatter.uid,
       slug: doc.slug,
       kind: doc.frontmatter.kind,
+      ...(mentions === undefined ? {} : { isNode: isGraphNode(doc) }),
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
       domain: doc.frontmatter.domain,
       capabilities: doc.frontmatter.capabilities,
@@ -176,10 +183,11 @@ function listConcepts({ kind, domain, since, summary, mentions, filter, offset =
       // changed recently". Same meaning as get_concepts' mtime field: sortable,
       // and usable for external-change detection.
       mtime: doc.mtime,
-      ...(matchedIn === undefined ? {} : { matchedIn, score }),
+      ...(matchedIn === undefined ? {} : { matchedIn, score, ...mentionExcerpt(doc, excerptTruncatedSlugs) }),
       ...summaryFields,
     };
   });
+  const pageNonNodeCount = mentions === undefined ? 0 : nodes.filter((row) => row.isNode === false).length;
   return {
     total: filtered.length,
     census: vaultCensus(),
@@ -203,6 +211,13 @@ function listConcepts({ kind, domain, since, summary, mentions, filter, offset =
       summaryTruncatedSlugs.length > 0
         ? `${summaryTruncatedSlugs.length} row(s) carry a partial summary (summaryTruncated: true). Read those bodies in full with get_concepts({ slugs: [...], body: "full" }).`
         : undefined,
+    // Plain Markdown pages answer a text search too; they rank below nodes of equal relevance.
+    nonNodeHint: pageNonNodeCount > 0
+      ? `${pageNonNodeCount} of ${nodes.length} row(s) are not graph nodes (isNode: false: no \`kind:\`, such as meeting notes, memos and drafts). They rank below nodes of equal relevance. Pass \`kind\` to see graph nodes only.`
+      : undefined,
+    excerptHint: excerptTruncatedSlugs.length > 0
+      ? `${excerptTruncatedSlugs.length} row(s) carry a partial excerpt (excerptTruncated: true); the matched text may sit past it. Read the whole body with get_concepts({ slugs: [...], body: "full" }).`
+      : undefined,
     vaultWarnings:
       errorCount + warningCount > 0
         ? { errorCount, warningCount }
@@ -219,6 +234,18 @@ function listConcepts({ kind, domain, since, summary, mentions, filter, offset =
  * only when title and frontmatter did not match, and is read only when its fingerprint
  * allows the text and no earlier call answered it (`docBodyIncluder`).
  */
+function isGraphNode(doc) {
+  return typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
+}
+
+/** The line of prose a text-search row carries, so a match needs no follow-up read to be judged. */
+function mentionExcerpt(doc, truncatedSlugs) {
+  const delivery = describeBodyDelivery(readVaultDocText(doc).body, { maxLen: 200 });
+  if (!delivery.info.truncated) return { excerpt: delivery.text };
+  truncatedSlugs.push(doc.slug);
+  return { excerpt: delivery.text, excerptTruncated: true, bodyChars: delivery.info.totalChars };
+}
+
 function rankByMentions(docs, text) {
   const needle = String(text).toLowerCase().trim();
   const bodyIncludes = docBodyIncluder(needle);
@@ -235,7 +262,11 @@ function rankByMentions(docs, text) {
     if (score <= 0) continue;
     scored.push({ doc, matchedIn, score });
   }
-  return scored.sort((a, b) => b.score - a.score || compareText(a.doc.slug, b.doc.slug));
+  // Score first, then nodes before the pages that are not, then slug: body matches tie, so
+  // without the middle key loose memos would crowd out nodes.
+  return scored.sort(
+    (a, b) => b.score - a.score || Number(isGraphNode(b.doc)) - Number(isGraphNode(a.doc)) || compareText(a.doc.slug, b.doc.slug),
+  );
 }
 
 /**
@@ -434,10 +465,12 @@ const CONSTRUCTION_GUIDE_TEXT = {
   construction: CONSTRUCTION_GUIDE_EN,
   write_safety: WRITE_SAFETY_SECTION_EN,
   workflows: WORKFLOWS_SECTION_EN,
-  competency: COMPETENCY_ANSWERS_GUIDE_EN,
+  query: QUERY_GUIDE_EN,
 };
 
 function connectionInfoTool({ guide } = {}) {
+  const retiredGuide = retiredGuideError(guide);
+  if (retiredGuide) throw retiredGuide;
   requireOptionalEnum(guide, 'guide', [...CONSTRUCTION_GUIDE_TOPICS]);
   const toolNames = TOOLS_FOR_LIST.map((tool) => tool.name);
   const toolsetHash = createHash('sha256')

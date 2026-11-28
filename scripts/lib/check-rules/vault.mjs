@@ -1,15 +1,6 @@
-/** The ontology vault: validation, audit, migration, meaning corpus, and section shape. */
+/** The ontology vault: validation, audit, migration, and section shape. */
 
 export const rules = [
-  {
-    order: 280,
-    command: 'pnpm test:meaning-corpus',
-    reason: 'business meaning corpus evaluator or its fixtures changed',
-    matches: [
-      /^scripts\/benchmark\/evaluate-meaning-corpus(?:\.test)?\.mjs$/,
-      /^tests\/fixtures\/meaning-corpus\//,
-    ],
-  },
   {
     order: 290,
     command: 'pnpm test:vault:validate',

@@ -36,6 +36,12 @@ fn is_set(arguments: &Arguments, name: &str) -> bool {
 /// What a call for a retired part is told.
 const RETIRED: &str = "view \"analysis\", proposal and qualification are retired: the structural analysis and the review of a proposal no longer exist. Call analyze_repo_structure for the breadth map, read the code with sourceReads, then write what you found with add_concepts and add_relations.";
 
+/// What a `sourceReads` call is told when the app asked for every read to come from its census.
+/// The census holds each file's whole text, but the selectors open a file, check it did not
+/// change and name the lines it read by the bytes it stood on, and no census run answers those
+/// questions yet.
+const CENSUS_HOLDS_NO_SELECTED_READS: &str = "sourceReads is not available while the app supplies a census of the repository (OATLAS_CONFINED_SOURCE_READS=1): reading a selected file or symbol would open the file on the disk, which this mode never does. Call analyze_repo_structure without sourceReads for the breadth map.";
+
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
     let root_path = optional_non_blank_text(arguments, "rootPath")?;
     if let Some(view) = arguments.read::<serde_json::Value>("view")? {
@@ -66,6 +72,9 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     }
     let target = ScanTarget::allow(context, root_path.as_deref())?;
     if let Some(selectors) = arguments.read::<serde_json::Value>("sourceReads")? {
+        if target.reads_census() {
+            return Err(ToolError::failed(CENSUS_HOLDS_NO_SELECTED_READS));
+        }
         let selectors = parse_source_reads(&selectors).map_err(|refusal| {
             if refusal.names_a_wrong_value {
                 ToolError::invalid(refusal.message)
@@ -85,6 +94,6 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             &evidence,
         )));
     }
-    let survey = kept_survey(context, &target, &ignore);
+    let survey = kept_survey(context, &target, &ignore)?;
     Ok(ToolOutput::text(survey.text.clone()))
 }

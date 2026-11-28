@@ -279,6 +279,12 @@ const CONSTELLATION_ANSWER_OUTPUT_SCHEMA = {
   additionalProperties: false,
 };
 
+/** The two answers `get_constellation` gives, each under its own schema; `tools/list` carries their union. */
+export const GET_CONSTELLATION_ANSWER_MODES = Object.freeze({
+  list: CONSTELLATION_LIST_OUTPUT_SCHEMA,
+  context: CONSTELLATION_CONTEXT_OUTPUT_SCHEMA,
+});
+
 export const GET_CONSTELLATION_TOOL = {
   name: 'get_constellation',
   description:

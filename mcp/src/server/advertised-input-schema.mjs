@@ -84,6 +84,11 @@ function requireNonBlank(value, name) {
     throw new Error(`${name} must not have leading or trailing whitespace. Example ${name}: ${JSON.stringify(value.trim())}.`);
   }
   if (value.includes('\0')) throw new Error(`${name} must not contain a null byte.`);
+  requireSingleLine(value, name);
+}
+
+/** Refuses a string with a line break in it: the part of the non-blank pattern a nested field has no top-level check for. */
+export function requireSingleLine(value, name) {
   if (!NON_BLANK_REGEXP.test(value)) {
     const codePoint = (LINE_TERMINATOR.exec(value)?.[0] ?? '\n').codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
     throw new Error(`${name} must be a single line: it contains U+${codePoint}, a control or invisible formatting character that breaks a line.`);

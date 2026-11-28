@@ -1,12 +1,9 @@
 // Which project and documents an agent brief covers, and the private source
 // access it may use.
 
-import { projectSourceSnapshotUnchanged } from '../../agent-brief/agent-brief-compact.mjs';
 import { compileOntology } from '../../ontology-compiler.mjs';
 import { queryCompiledOntology, shareArtifact } from '../../ontology-engine.mjs';
 import { buildProjectSourceGraphHash } from '../../project-source/project-source-graph-hash.mjs';
-import { readProjectSourceBindings, readProjectSourceView } from '../../project-source/project-source-receipt.mjs';
-import { VAULT_ROOT } from '../../server/runtime.mjs';
 import { compareText } from '../../compare-text.mjs';
 
 function resolveAgentBriefProject(artifact, requestedProject) {
@@ -98,17 +95,11 @@ const lastProjectArtifact = new WeakMap();
 export function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns, loadedDocs) {
   const projectSlug = resolveAgentBriefProject(artifact, args.project);
   if (projectSlug === null) {
-    if (args.detail === 'compact') {
-      throw new Error('agent_brief detail "compact" requires one selected kind: project node; this vault has none.');
-    }
-    const engineArgs = { ...args };
-    delete engineArgs.detail;
-    delete engineArgs.task;
     return {
       projectSlug: null,
       scope: null,
       scopedArtifact: artifact,
-      result: queryCompiledOntology(artifact, engineArgs, { ontologyAtlasIgnorePatterns }),
+      result: queryCompiledOntology(artifact, args, { ontologyAtlasIgnorePatterns }),
     };
   }
   const scope = completeAgentBriefProjectScope(artifact, projectSlug, loadedDocs);
@@ -127,46 +118,9 @@ export function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePattern
     }
   }
   const engineArgs = { ...args, project: projectSlug };
-  delete engineArgs.detail;
-  delete engineArgs.task;
   const result = queryCompiledOntology(scopedArtifact, engineArgs, {
     ontologyAtlasIgnorePatterns,
     sourceDocs: scope.docs,
   });
   return { projectSlug, scope, scopedArtifact, result };
-}
-
-export function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash, viewOptions = {}) {
-  const receiptCurrent = projectSource?.status === 'verified_current'
-    && projectSource?.currentness === 'current';
-  // A receipt behind the source still opens the bound root when the live
-  // probe confirms every recorded witness resolves: coordinates are then
-  // verified against the live files, and the response says which revision.
-  const liveSupported = !receiptCurrent
-    && ['source_changed', 'ontology_changed'].includes(projectSource?.topGap?.id)
-    && projectSource?.live?.status === 'witnesses_supported'
-    && typeof projectSource?.live?.sourceFingerprint === 'string';
-  if ((!receiptCurrent && !liveSupported) || typeof projectSource?.receipt?.sourceId !== 'string') return null;
-  const sidecar = readProjectSourceBindings(VAULT_ROOT);
-  if (sidecar.status !== 'ok') return null;
-  const matches = sidecar.bindings.filter((binding) => (
-    binding?.projectSlug === projectSlug
-    && binding?.sourceId === projectSource.receipt.sourceId
-    && typeof binding?.rootPath === 'string'
-    && binding.rootPath.trim()
-  ));
-  if (matches.length !== 1) return null;
-  return {
-    rootPath: matches[0].rootPath,
-    mode: liveSupported ? 'live' : 'receipt',
-    confirmCurrent() {
-      const refreshed = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash, viewOptions);
-      if (liveSupported) {
-        return refreshed?.live?.status === 'witnesses_supported'
-          && refreshed.live.sourceFingerprint === projectSource.live.sourceFingerprint
-          && refreshed.live.sourceRevision === projectSource.live.sourceRevision;
-      }
-      return projectSourceSnapshotUnchanged(projectSource, refreshed);
-    },
-  };
 }

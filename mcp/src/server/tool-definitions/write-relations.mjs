@@ -180,6 +180,12 @@ const REPLACE_ANSWER_OUTPUT_SCHEMA = {
   additionalProperties: false,
 };
 
+/** The two answers `remove_relation` gives, each under its own schema; `tools/list` carries their union. */
+export const REMOVE_RELATION_ANSWER_MODES = Object.freeze({
+  remove: REMOVE_ANSWER_OUTPUT_SCHEMA,
+  replace: REPLACE_ANSWER_OUTPUT_SCHEMA,
+});
+
 export const REMOVE_RELATION_TOOL = {
   name: 'remove_relation',
   description:

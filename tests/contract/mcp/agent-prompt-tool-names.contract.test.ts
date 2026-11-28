@@ -26,17 +26,6 @@ const MCP_DEFINITIONS = join(process.cwd(), "mcp", "src", "server", "tool-defini
 const MCP_DEFINITION_FILES = readdirSync(MCP_DEFINITIONS)
   .filter((file) => file.endsWith(".mjs"))
   .map((file) => join(MCP_DEFINITIONS, file));
-const MCP_SCHEMAS = join(process.cwd(), "mcp", "src", "server", "tool-schemas");
-const MCP_SCHEMA_FILES = readdirSync(MCP_SCHEMAS)
-  .filter((file) => file.endsWith(".mjs"))
-  .map((file) => join(MCP_SCHEMAS, file));
-/** Names and descriptions live in the tool definitions and the schemas they are built from. */
-const MCP_SURFACE_FILES = [
-  join(process.cwd(), "mcp", "src", "server", "registry.mjs"),
-  ...MCP_DEFINITION_FILES,
-  ...MCP_SCHEMA_FILES,
-];
-
 function registeredToolNames(): Set<string> {
   const source = MCP_DEFINITION_FILES.map((file) => readFileSync(file, "utf8")).join("\n");
   const names = new Set<string>();
@@ -106,16 +95,9 @@ describe("copied instructions name only what exists", () => {
      */
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
 
-    // Assert the invariant, not one sentence: the bulk `writePlan` is gated and ordinary writing is not;
-    // both paths write only what a person approved first.
-    expect(
-      prompt,
-      "the bulk plan must stay unwritten while the server says canWrite is false",
-    ).toMatch(/not write the proposal wholesale[\s\S]{0,80}canWrite is\s+false/i);
-    expect(
-      prompt,
-      "the incremental path must write only what the person approved",
-    ).toMatch(/write what they\s+approve/i);
+    expect(prompt).toMatch(/do not write to the vault yet/i);
+    expect(prompt, "ordinary writing must write only what the person approved").toMatch(/write what they\s+approve/i);
+    expect(prompt).not.toMatch(/write only approved items/i);
     expect(prompt).toMatch(/human review/i);
     expect(prompt).toMatch(/approv(al|ed|e)/i);
   });
@@ -126,89 +108,29 @@ describe("copied instructions name only what exists", () => {
   });
 
   /**
-   * A prompt that names the write tools must name the fields that authorize them, taken from the
-   * answer the server builds, since acceptance binds to a generated plan digest.
+   * The only route to a written vault is the reviewed batch: the tools that land it are the ones
+   * the server serves, named in the order the construction card runs them. The bulk proposal and
+   * its evaluator are cut, so the prompt must not send an agent after them.
    */
-  it("a prompt that calls a write tool also names the field that permits that write", () => {
+  it("names the reviewed-batch write path in order, each tool one the server serves", () => {
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
-    const namesWriteTools = /add_concepts?|add_relations?/.test(prompt);
-    expect(namesWriteTools).toBe(true);
-
-    // The survey declares no output schema, so the fields are read where the answer is built.
-    const source = readFileSync(join(process.cwd(), "mcp", "src", "analyze", "candidates", "repo-structure.mjs"), "utf8");
-    for (const field of ["canWrite", "writePlan", "nextStep"]) {
-      expect(
-        source.includes(`proposalValidation.${field} =`),
-        `${field} must still be part of the server's response for this prompt to name it`,
-      ).toBe(true);
-      expect(
-        prompt,
-        `the prompt names write tools, so it must also name ${field} — otherwise it promises a write the server may refuse without saying why`,
-      ).toContain(field);
+    const path = ["add_concepts", "add_relations", "validate_vault", "connect_project_source", "finalize_project_meaning"];
+    for (const tool of path) {
+      expect(registered.has(tool), `${tool} must still be a tool the server serves`).toBe(true);
     }
+    // validate_vault is also named in step 1, so each tool is searched for after the one before it.
+    let from = prompt.indexOf("add_concepts");
+    for (const tool of path.slice(1)) {
+      const at = prompt.indexOf(tool, from);
+      expect(at, `${tool} follows the tool before it in the prompt`).toBeGreaterThan(from);
+      from = at;
+    }
+    expect(from).toBeGreaterThan(-1);
+    expect(prompt).toMatch(/a few concepts at a time/i);
   });
 
-  /**
-   * **Do not send a single-context agent after a state it cannot honestly reach.**
-   *
-   * Writing needs a qualification packet whose evaluator is not its builder; the
-   * server fails closed on `maker-self-evaluation` when the two ids match, and the
-   * lifecycle tells an agent that cannot run an independent lane to stop and ask
-   * for a handoff. An instruction that says "keep going until canWrite is true"
-   * leaves such an agent looping or inventing the second actor — and the first
-   * repair of this prompt said exactly that.
-   *
-   * The independence rule is read from the server rather than restated, so this
-   * fails if that boundary ever moves.
-   *
-   * **Stopping was only half the repair.** The first fix made the agent stop
-   * honestly, which is where a real installer then sat: told what was missing and
-   * never what was available. The bulk `writePlan` is gated, but `add_concepts`
-   * and `add_relation` are not, and the shipped growth path uses exactly those.
-   * So the prompt must both refuse the unreachable state *and* name the path that
-   * stays open. The write tools are read from the server's own tool list, so this
-   * fails if that boundary ever moves too.
-   */
-  it("does not chase a state it cannot reach alone, and names the open path instead", () => {
+  it("does not send the agent after the cut bulk proposal or its independent evaluator", () => {
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
-    const source = MCP_SURFACE_FILES.map((file) => readFileSync(file, "utf8")).join("\n");
-    expect(
-      source.includes("maker-independence") || source.includes("source-hidden"),
-      "the server must still require an evaluator distinct from the builder",
-    ).toBe(true);
-
-    expect(prompt).not.toMatch(/keep following it until canWrite is true/i);
-    expect(prompt).toMatch(/independent evaluation/i);
-    expect(prompt).toMatch(/do not fabricate an evaluator/i);
-    expect(prompt).toMatch(/stop pursuing the\s+whole plan/i);
-
-    expect(
-      source.includes("'add_concepts'") || source.includes('"add_concepts"'),
-      "the incremental path the prompt offers must still be a tool the server serves",
-    ).toBe(true);
-    expect(
-      prompt,
-      "an agent that cannot run the evaluation lane must be given the ungated path, not left at a dead end",
-    ).toMatch(/a few concepts at a time/i);
-    expect(prompt).toMatch(/not gated on the qualification/i);
-  });
-
-  /**
-   * The digest is a pure function of the submitted proposal, so a proposal carried
-   * back verbatim reproduces the digest the human accepted. A fresh session that
-   * re-authors instead invalidates its own approval, which is what made the
-   * walkthrough's three turns produce three different plans.
-   */
-  it("tells the agent to store the proposal the person saw exactly as shown", () => {
-    const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
-    expect(prompt).toMatch(/save the exact proposal/i);
-    expect(prompt).toMatch(/verbatim reproduces the same\s+digest/i);
-  });
-
-  it("the analyze prompt does not suggest that approval alone performs the write", () => {
-    // The exact sentence that produced the dead end, and the shape of any successor.
-    const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
-    expect(prompt).not.toMatch(/write only approved items/i);
-    expect(prompt).toMatch(/approval alone does not\s+make it true/i);
+    expect(prompt).not.toMatch(/canWrite|writePlan|proposalValidation|evaluator|digest|qualification below/i);
   });
 });

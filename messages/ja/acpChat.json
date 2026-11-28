@@ -210,6 +210,7 @@
     "addNode": "概念を追加",
     "editNode": "概念を編集",
     "renameNode": "概念の名前を変更",
+    "reclassifyNode": "概念の種類を変更",
     "mergeNodes": "2つの概念を統合",
     "addRelation": "関係を追加",
     "readConstellation": "保存したブックマークを読む",
@@ -218,9 +219,11 @@
     "checkPages": "ページを検査",
     "deleteNode": "概念を削除",
     "removeRelation": "つながりを削除",
+    "replaceRelation": "つながりを置換",
     "compile": "ファイルからマップを再構築",
     "absorb": "文書を候補に仕分ける",
     "connectSource": "コードフォルダを接続",
+    "disconnectSource": "コードフォルダの接続を解除",
     "judgeMeaning": "記録された意味を判定"
   },
   "toolKind": {

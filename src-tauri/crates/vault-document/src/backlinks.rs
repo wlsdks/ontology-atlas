@@ -28,6 +28,17 @@ pub struct Backlink<'a> {
     pub matched_keys: Option<Vec<&'static str>>,
     #[serde(rename = "matchedInBody", skip_serializing_if = "Option::is_none")]
     pub matched_in_body: Option<bool>,
+    /// Set when a reference only might name the target: it ends like the target's slug and like
+    /// another's, so it counts as a referrer without being an edge.
+    #[serde(rename = "ambiguousTail", skip_serializing_if = "Option::is_none")]
+    pub ambiguous_tail: Option<bool>,
+}
+
+/// Whether a reference that several documents could mean counts as pointing at each of them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AmbiguousReferences {
+    Ignore,
+    Count,
 }
 
 /// Every document that points at `target_slug`, in the order the vault lists them. The target is the
@@ -37,6 +48,7 @@ pub fn find_backlinks<'a>(
     documents: &'a [LoadedDocument],
     index: &ReferenceIndex<'a>,
     target_slug: &str,
+    ambiguous: AmbiguousReferences,
 ) -> Result<Vec<Backlink<'a>>, FileReadError> {
     let resolved_target = index.resolve(target_slug).unwrap_or(target_slug);
     let mut needles: Vec<&str> = Vec::new();
@@ -59,10 +71,19 @@ pub fn find_backlinks<'a>(
             continue;
         }
         let mut matched_keys: Vec<&'static str> = Vec::new();
+        let mut ambiguous_hit = false;
         for neighbor in neighbor_refs(document.frontmatter()) {
-            if index.resolve(&neighbor.reference) == Some(resolved_target)
-                && !matched_keys.contains(&neighbor.key)
-            {
+            let candidates = index.candidates(&neighbor.reference);
+            let names_target = match candidates.as_slice() {
+                [only] => *only == resolved_target,
+                several => {
+                    let maybe = ambiguous == AmbiguousReferences::Count
+                        && several.contains(&resolved_target);
+                    ambiguous_hit |= maybe;
+                    maybe
+                }
+            };
+            if names_target && !matched_keys.contains(&neighbor.key) {
                 matched_keys.push(neighbor.key);
             }
         }
@@ -92,6 +113,7 @@ pub fn find_backlinks<'a>(
             mtime: document.modified_ms(),
             matched_keys: (!matched_keys.is_empty()).then_some(matched_keys),
             matched_in_body: body_hit.then_some(true),
+            ambiguous_tail: ambiguous_hit.then_some(true),
         });
     }
     Ok(matches)

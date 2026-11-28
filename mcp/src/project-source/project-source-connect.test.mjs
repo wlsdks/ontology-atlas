@@ -393,8 +393,8 @@ describe('remedy', () => {
     const remedy = projectSourceRemedy({ projectSlug: 'p', nextAction: { id: 'connect_source' } });
     assert.equal(remedy.tool.name, 'connect_project_source');
     assert.equal(remedy.tool.arguments.confirm, true);
-    assert.equal(remedy.undo.tool.name, 'connect_project_source');
-    assert.equal(remedy.undo.tool.arguments.disconnect, true);
+    assert.equal(remedy.undo.tool.name, 'disconnect_project_source');
+    assert.deepEqual(remedy.undo.tool.arguments, { projectSlug: 'p', confirm: true });
   });
 
   it('carries the offending node into a path repair', () => {

@@ -46,24 +46,8 @@ export function buildGraphQuerySmokeRequests(graphSmoke) {
         method: 'tools/call',
         params: { name: 'query_ontology', arguments: { operation: 'path', from: graphSmoke.slug, to: graphSmoke.pathTarget || graphSmoke.slug } },
       },
-      {
-        jsonrpc: '2.0',
-        id: 67,
-        method: 'tools/call',
-        params: {
-          name: 'query_ontology',
-          arguments: {
-            operation: 'all_paths',
-            from: graphSmoke.slug,
-            to: graphSmoke.pathTarget || graphSmoke.slug,
-            maxHops: 5,
-            searchBudget: 1000,
-            limit: 5,
-          },
-        },
-      },
     );
-    expectedResponseIds.push(13, 14, 67);
+    expectedResponseIds.push(13, 14);
   }
   if (graphSmoke?.hasProject) {
     requests.push({

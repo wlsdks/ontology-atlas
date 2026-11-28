@@ -9,6 +9,7 @@ use build_depth::measure_against_survey;
 use confined_files::{SourceFiles, VaultRoot};
 use hardened_git::RepoPath;
 use meaning_findings::WITNESS_TEXT_MAX_BYTES;
+use source_reads::ReadsUnder;
 use source_scan::place_folder;
 use vault_document::{LoadedDocument, ReferenceIndex};
 use vault_validation::{
@@ -17,7 +18,7 @@ use vault_validation::{
 };
 
 use super::import_scan_target::ScanTarget;
-use super::kept_survey::kept_survey;
+use super::kept_survey::{kept_survey, survey_from_disk};
 use super::vault_repository::{locate, locate_from, Located};
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
@@ -38,16 +39,42 @@ pub fn build_report(
     let config = context.config();
     let named = repo_root.is_some() || config.repo_resolution != "process.cwd";
     let target = ScanTarget::allow_named(context, repo_root, "repoRoot")?;
-    let source = target.source_with_limit(WITNESS_TEXT_MAX_BYTES);
-    // A root that is not there is one finding, not one for each path that cites a file under it.
-    let repo_root_missing = named && source.kind(target.root()) == Ok(None);
+    // A root that is not there is one finding, not one for each path that cites a file under it. Only
+    // a root read from the disk can be missing: a census holds what the app listed.
+    let disk_source = (named && !target.reads_census())
+        .then(|| target.source_with_limit(WITNESS_TEXT_MAX_BYTES));
+    let repo_root_missing = disk_source
+        .as_ref()
+        .is_some_and(|disk| disk.kind(target.root()) == Ok(None));
     let grounded = named && !repo_root_missing;
+    // A claim about code is read from the disk, or from the census when the app supplies one: the
+    // census holds no Git history, so what only Git can date is then not measured.
+    let disk = disk_source.filter(|_| grounded);
+    let census = (grounded && target.reads_census())
+        .then(|| target.census_run())
+        .transpose()?;
+    let source: Option<&dyn SourceFiles> = match (&disk, &census) {
+        (Some(disk), _) => Some(disk),
+        (None, Some(census)) => Some(census),
+        (None, None) => None,
+    };
 
-    let measured = grounded.then(|| {
-        let survey = kept_survey(context, &target, &[]);
-        let reads = context.source_reads().reads_under(target.source_root());
-        measure_against_survey(documents, &survey, &reads, &source)
+    let measured = source.map(|source| {
+        if target.reads_census() {
+            kept_survey(context, &target, &[]).map(|survey| {
+                let no_reads = ReadsUnder {
+                    reads: std::collections::HashMap::new(),
+                    cited: std::collections::HashMap::new(),
+                };
+                measure_against_survey(documents, &survey, &no_reads, source)
+            })
+        } else {
+            let survey = survey_from_disk(context, &target, &[]);
+            let reads = context.source_reads().reads_under(target.source_root());
+            Ok(measure_against_survey(documents, &survey, &reads, source))
+        }
     });
+    let measured = measured.transpose()?;
     let (coverage, survey_findings) = match measured {
         Some(measured) => (measured.coverage, measured.findings),
         None => (None, Vec::new()),
@@ -55,7 +82,7 @@ pub fn build_report(
     let issues = collect_issues(
         documents,
         &index,
-        grounded.then_some(&source as &dyn SourceFiles),
+        source,
         raw_source_kind_issues(root),
         survey_findings,
     );
@@ -77,27 +104,33 @@ pub fn build_report(
             evidence_drift_root_missing(),
             path_drift_root_missing(target.label.clone()),
         )
-    } else if grounded {
-        let evidence = match locate_from(context, "path_last_changes", target.root())? {
-            Located::Found(found) => {
-                let repo_scope = place_folder(&found.top_level, target.root())
-                    .map_or_else(|_| RepoPath::root(), |placed| placed.path);
-                evidence_drift(
-                    documents,
-                    Ok(EvidenceHistory {
-                        repository: &found.repository,
-                        vault_scope: &found.scope,
-                        repo_scope: &repo_scope,
-                        repo_files: &source,
-                        repo_root: target.source_root(),
-                        kept: context.kept_history(),
-                    }),
-                    &found.top_level.to_string_lossy(),
-                )
+    } else if let Some(source) = source {
+        let evidence = if let Some(disk) = &disk {
+            match locate_from(context, "path_last_changes", target.root())? {
+                Located::Found(found) => {
+                    let repo_scope = place_folder(&found.top_level, target.root())
+                        .map_or_else(|_| RepoPath::root(), |placed| placed.path);
+                    evidence_drift(
+                        documents,
+                        Ok(EvidenceHistory {
+                            repository: &found.repository,
+                            vault_scope: &found.scope,
+                            repo_scope: &repo_scope,
+                            repo_files: disk,
+                            repo_root: target.source_root(),
+                            kept: context.kept_history(),
+                        }),
+                        &found.top_level.to_string_lossy(),
+                    )
+                }
+                Located::Missing(missing) => {
+                    evidence_drift(documents, Err(Some(missing.reason())), "")
+                }
             }
-            Located::Missing(missing) => evidence_drift(documents, Err(Some(missing.reason())), ""),
+        } else {
+            evidence_drift(documents, Err(Some("census-has-no-git-history")), "")
         };
-        (evidence, path_drift(documents, &source, &target.label))
+        (evidence, path_drift(documents, source, &target.label))
     } else {
         (
             evidence_drift(documents, Err(None), ""),

@@ -7,7 +7,6 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
-  EDGE_TARGET_KIND_VALUES,
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
@@ -31,8 +30,6 @@ import {
   diagnosisIssueCount,
   healthChecksSummary,
   healthSummary,
-  tunedHealthScopeOutputSummary,
-  tunedWorkspaceBriefScopeOutputSummary,
   workspaceBriefSummary,
 } from '../scripts/verify/checks/diagnosis.mjs';
 import { agentBriefFailure, agentBriefSummary } from '../scripts/verify/checks/agent-brief.mjs';
@@ -48,8 +45,6 @@ import {
 } from '../scripts/verify/checks/batch-writes.mjs';
 import {
   buildFirstContactRequests,
-  VERIFY_TUNED_HEALTH_ARGS,
-  VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
 } from '../scripts/verify/requests/first-contact.mjs';
 import { cleanupAbsorbFixture, ensureAbsorbFixture } from '../scripts/verify/absorb-fixture.mjs';
 import {
@@ -128,10 +123,6 @@ import {
   maintenanceResumeCursorFailure,
 } from '../scripts/verify/checks/maintenance-cursor.mjs';
 import {
-  meaningRepairFullBodyReadsFailure,
-  meaningRepairReviewChainFailure,
-} from '../scripts/verify/checks/meaning-repair.mjs';
-import {
   overviewFailure,
   overviewQueryPlanFailure,
   projectMapQueryPlanFailure,
@@ -155,7 +146,6 @@ import {
   emptyVerifyVaultFailure,
 } from '../scripts/verify/cli.mjs';
 import {
-  allPathsQueryFailure,
   neighborsFailure,
   pathQueryFailure,
   projectScopeFailure,
@@ -168,7 +158,6 @@ import {
   strictGraphKindFilterFailure,
   strictRecommendRelationsKindFilterFailure,
   strictMatchNodesSortFailure,
-  strictMatchEdgesTypeFailure,
   strictMaintenanceFilterFailure,
   strictRelationFilterFailure,
   retiredToolFailure,
@@ -205,7 +194,7 @@ describe('live local first-contact probes', () => {
         repoRoot: '/repo',
         sameRoot: false,
         restartRequiredForRootChange: true,
-        server: { toolCount: 23, toolNames: [] },
+        server: { toolCount: 24, toolNames: [] },
       }),
     ];
 
@@ -235,7 +224,7 @@ describe('live local first-contact probes', () => {
         repoRoot: '/repo',
         sameRoot: false,
         restartRequiredForRootChange: true,
-        server: { toolCount: 23, toolNames: [] },
+        server: { toolCount: 24, toolNames: [] },
       }),
     ];
 
@@ -313,85 +302,6 @@ function verifiedGoPackageImportEvidence(overrides = {}) {
   };
 }
 
-function humanMeaningRepair(projectSlug) {
-  const domains = Array.from({ length: 6 }, (_, index) => `domains/d${index + 1}`);
-  const capabilities = Array.from(
-    { length: 20 },
-    (_, index) => `capabilities/c${String(index + 1).padStart(2, '0')}`,
-  );
-  const reviewRevision = `sha256:${'a'.repeat(64)}`;
-  return {
-    contract: 'meaningRepair:v2',
-    status: 'human_review_required',
-    projectSlug,
-    blockedBy: null,
-    primaryQuestion: 'abilities',
-    questionsNeedingReview: ['abilities', 'evidence'],
-    provenance: {
-      graphHash: 'project-graph-v1:a1b2c3d4',
-      sourceFingerprint: 'git:abc123:clean',
-      sourceMeasuredAt: '2026-08-04T00:00:00.000Z',
-      sourceCurrentness: 'current',
-    },
-    reviewRevision,
-    questions: {
-      abilities: {
-        basis: 'typed_containment',
-        answerStatus: 'partial',
-        targetCount: domains.length,
-        review: {
-          state: 'structural_candidates_only',
-          alreadyDeclared: 1,
-          candidateAdditions: 5,
-          declaredWithoutSupport: 0,
-          unresolved: 0,
-        },
-      },
-      evidence: {
-        basis: 'current_source_canonical_path',
-        answerStatus: 'partial',
-        targetCount: capabilities.length,
-        review: {
-          state: 'source_path_candidates_only',
-          alreadyDeclared: 2,
-          candidateAdditions: 9,
-          declaredWithoutSupport: 0,
-          unresolved: 9,
-        },
-      },
-    },
-    workflow: [
-      {
-        step: 'read_review_inputs',
-        derivation: {
-          operation: 'meaning_repair_review',
-          order: 'project_then_domains_then_capabilities',
-        },
-        calls: [{
-          tool: 'query_ontology',
-          arguments: {
-            operation: 'meaning_repair_review',
-            project: projectSlug,
-            expectedGraphHash: 'project-graph-v1:a1b2c3d4',
-            expectedSourceFingerprint: 'git:abc123:clean',
-            reviewRevision,
-          },
-        }],
-      },
-      { step: 'human_semantic_approval', calls: [] },
-      { step: 'write_approved_project_body', calls: [] },
-      { step: 'verify', calls: [] },
-      { step: 'refresh_conflict_guard', calls: [] },
-      { step: 'finalize', calls: [] },
-    ],
-    stopWhen: ['source_not_current'],
-    writePolicy: {
-      humanApprovalRequired: true,
-      automaticWrite: false,
-      automaticFinalize: false,
-    },
-  };
-}
 import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-lines.mjs';
 import { GRAPH_ARRAY_KEYS } from './vault/graph/relation-refs.mjs';
 import { NODE_UID_PATTERN } from './schema.mjs';
@@ -434,9 +344,9 @@ function structuredValueRepairDetails(text) {
 
 describe('verify.mjs first-contact gates', () => {
   it('publishes finalize_project_meaning as a non-destructive non-idempotent write tool', () => {
-    assert.equal(EXPECTED_TOOLS.length, 23);
+    assert.equal(EXPECTED_TOOLS.length, 24);
     assert.equal(EXPECTED_READ_TOOLS.length, 13);
-    assert.equal(EXPECTED_WRITE_TOOLS.length, 10);
+    assert.equal(EXPECTED_WRITE_TOOLS.length, 11);
     assert.ok(EXPECTED_WRITE_TOOLS.includes('finalize_project_meaning'));
     assert.equal(EXPECTED_READ_TOOLS.includes('finalize_project_meaning'), false);
     assert.equal(EXPECTED_DESTRUCTIVE_TOOLS.includes('finalize_project_meaning'), false);
@@ -454,13 +364,11 @@ describe('verify.mjs first-contact gates', () => {
   it('packages project-meaning runtime modules and runs their source-checkout proofs', () => {
     assert.ok(MCP_PKG.files.includes('src/project-source/project-source-inspection.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning/project-meaning-inventory.mjs'));
-    assert.ok(MCP_PKG.files.includes('src/meaning/meaning-repair.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning/project-meaning-receipt.mjs'));
     assert.ok(MCP_PKG.files.includes('src/server/tool-inventory.mjs'));
 
     const fullTestCommand = MCP_PKG.scripts['test:all'];
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning\/project-meaning-inventory\.test\.mjs(?:\s|$)/);
-    assert.match(fullTestCommand, /(?:^|\s)src\/meaning\/meaning-repair\.test\.mjs(?:\s|$)/);
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning\/project-meaning-receipt\.test\.mjs(?:\s|$)/);
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning\/project-meaning-restart\.test\.mjs(?:\s|$)/);
   });
@@ -1015,7 +923,7 @@ describe('verify.mjs first-contact gates', () => {
     const tools = [
       {
         name: 'list_concepts',
-        description: 'List every ontology node. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault. Narrow by a predicate with `filter`, or by text with `mentions`, which ranks nodes whose title, relations or body say it and adds `matchedIn` and `score` to each row.',
+        description: 'List every ontology node. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault. Narrow by a predicate with `filter`, or by text with `mentions`, which ranks nodes whose title, relations or body say it, then plain Markdown pages, and adds `matchedIn`, `score` and an `excerpt` to each row.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1100,7 +1008,11 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
+                required: ['slug', 'title', 'mtime'],
+                oneOf: [
+                  { required: ['uid', 'kind'] },
+                  { properties: { isNode: { const: false } }, required: ['isNode'], not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] } },
+                ],
                 properties: {
                   uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
@@ -1456,66 +1368,13 @@ describe('verify.mjs first-contact gates', () => {
             afterActionId: {
               description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.afterActionId.description,
             },
-            componentLimit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 500,
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.componentLimit.description,
-            },
-            cycleLimit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 500,
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.cycleLimit.description,
-            },
-            recommendationLimit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 500,
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.recommendationLimit.description,
-            },
-            orderLimit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 500,
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.orderLimit.description,
-            },
-            nodeLimit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 500,
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.nodeLimit.description,
-            },
             types: { type: 'array', maxItems: RELATION_TYPE_VALUES.length, items: { type: 'string', enum: RELATION_TYPE_VALUES } },
             pattern: { type: 'array', maxItems: RELATION_TYPE_VALUES.length, items: { type: 'string', enum: RELATION_TYPE_VALUES } },
             type: { type: 'string', enum: RELATION_TYPE_VALUES },
-            relation: { type: 'string', enum: RELATION_TYPE_VALUES },
             kind: {
               type: 'string',
               enum: NODE_KIND_VALUES,
               description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.kind.description,
-            },
-            fromKind: {
-              type: 'string',
-              enum: NODE_KIND_VALUES,
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.fromKind.description,
-            },
-            toKind: {
-              type: 'string',
-              enum: EDGE_TARGET_KIND_VALUES,
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.toKind.description,
-            },
-            dependencyTypes: {
-              type: 'array',
-              maxItems: RELATION_TYPE_VALUES.length,
-              items: { type: 'string', enum: RELATION_TYPE_VALUES },
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.dependencyTypes.description,
-            },
-            componentTypes: {
-              type: 'array',
-              maxItems: RELATION_TYPE_VALUES.length,
-              items: { type: 'string', enum: RELATION_TYPE_VALUES },
-              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.componentTypes.description,
             },
             phases: { type: 'array', maxItems: MAINTENANCE_PHASE_VALUES.length, items: { enum: MAINTENANCE_PHASE_VALUES } },
             severities: { type: 'array', maxItems: MAINTENANCE_SEVERITY_VALUES.length, items: { enum: MAINTENANCE_SEVERITY_VALUES } },
@@ -2655,7 +2514,7 @@ describe('verify.mjs first-contact gates', () => {
                   items: {
                     ...tool.outputSchema.properties.nodes.items,
                     required: tool.outputSchema.properties.nodes.items.required.filter(
-                      (field) => field !== 'uid',
+                      (field) => field !== 'title',
                     ),
                   },
                 },
@@ -2840,37 +2699,30 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
         ...queryOntologyTool,
-        description: queryOntologyTool.description.replace('impact and blast_radius follow declared `depends_on` only', 'impact follows edges'),
+        description: queryOntologyTool.description.replace('impact (what depends on a node, declared `depends_on` only)', 'impact (what depends on a node)'),
       })),
       'query_ontology description missing the declared depends_on impact rule',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
         ...queryOntologyTool,
-        description: queryOntologyTool.description.replace('the human explicitly approves', 'the agent decides'),
+        description: queryOntologyTool.description.replace('relation_check (preflight before add_relations', 'relation_check (a check'),
       })),
-      'query_ontology description missing the relation_check approval gate',
+      'query_ontology description missing the relation_check preflight',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
         ...queryOntologyTool,
-        description: queryOntologyTool.description.replace('and `task` right after connection_info', 'whenever'),
+        description: queryOntologyTool.description.replace('connection_info({guide:"query"})', 'the docs'),
       })),
-      'query_ontology description missing the compact agent_brief order',
+      'query_ontology description missing the pointer to the query guide',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
         ...queryOntologyTool,
-        description: queryOntologyTool.description.replace('never approves meaning', 'may approve meaning'),
+        description: queryOntologyTool.description.replace('nodes with no incoming relation are `match_nodes` with `hasIncoming: false`', 'orphans are listed elsewhere'),
       })),
-      'query_ontology description missing the task evidence limit',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool({
-        ...queryOntologyTool,
-        description: queryOntologyTool.description.replace('Required: `slug` for neighbors', 'Arguments vary'),
-      })),
-      'query_ontology description missing the per-operation required arguments',
+      'query_ontology description missing the orphan question',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
@@ -2884,45 +2736,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       })),
       'query_ontology afterActionId description missing cursor pagination guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool({
-        ...queryOntologyTool,
-        inputSchema: {
-          ...queryOntologyTool.inputSchema,
-          properties: {
-            ...queryOntologyTool.inputSchema.properties,
-            componentLimit: { type: 'integer', minimum: 0, maximum: 500, description: 'health/workspace_brief only.' },
-          },
-        },
-      })),
-      'query_ontology componentLimit health tuning schema drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool({
-        ...queryOntologyTool,
-        inputSchema: {
-          ...queryOntologyTool.inputSchema,
-          properties: {
-            ...queryOntologyTool.inputSchema.properties,
-            dependencyTypes: { type: 'array', maxItems: RELATION_TYPE_VALUES.length, items: { type: 'number' }, description: 'health/workspace_brief only.' },
-          },
-        },
-      })),
-      'query_ontology dependencyTypes health tuning schema drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool({
-        ...queryOntologyTool,
-        inputSchema: {
-          ...queryOntologyTool.inputSchema,
-          properties: {
-            ...queryOntologyTool.inputSchema.properties,
-            componentTypes: { type: 'array', maxItems: RELATION_TYPE_VALUES.length, items: { type: 'string', enum: RELATION_TYPE_VALUES }, description: 'components only.' },
-          },
-        },
-      })),
-      'query_ontology componentTypes health tuning description drift',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool(
@@ -3489,72 +3302,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       )),
       'query_ontology kind description drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool(
-        {
-          ...queryOntologyTool,
-          inputSchema: {
-            ...queryOntologyTool.inputSchema,
-            properties: {
-              ...queryOntologyTool.inputSchema.properties,
-              fromKind: { type: 'string', enum: NODE_KIND_VALUES.filter((kind) => kind !== 'domain') },
-            },
-          },
-        },
-      )),
-      'query_ontology fromKind graph kind enum schema drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool(
-        {
-          ...queryOntologyTool,
-          inputSchema: {
-            ...queryOntologyTool.inputSchema,
-            properties: {
-              ...queryOntologyTool.inputSchema.properties,
-              fromKind: {
-                ...queryOntologyTool.inputSchema.properties.fromKind,
-                description: 'match_edges only: optional source node kind filter.',
-              },
-            },
-          },
-        },
-      )),
-      'query_ontology fromKind description drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool(
-        {
-          ...queryOntologyTool,
-          inputSchema: {
-            ...queryOntologyTool.inputSchema,
-            properties: {
-              ...queryOntologyTool.inputSchema.properties,
-              toKind: { type: 'string', enum: EDGE_TARGET_KIND_VALUES.filter((kind) => kind !== 'external') },
-            },
-          },
-        },
-      )),
-      'query_ontology toKind graph kind enum schema drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool(
-        {
-          ...queryOntologyTool,
-          inputSchema: {
-            ...queryOntologyTool.inputSchema,
-            properties: {
-              ...queryOntologyTool.inputSchema.properties,
-              toKind: {
-                ...queryOntologyTool.inputSchema.properties.toKind,
-                description: 'match_edges only: optional target kind filter.',
-              },
-            },
-          },
-        },
-      )),
-      'query_ontology toKind description drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.filter((tool) => tool.name !== 'get_concepts')),
@@ -5949,7 +5696,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict relation filter smoke responses', () => {
     assert.equal(
-      strictRelationFilterFailure(strictErrorResponse('dependencyTypes items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
+      strictRelationFilterFailure(strictErrorResponse('types items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
       null,
     );
     assert.equal(
@@ -5958,15 +5705,15 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       strictRelationFilterFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
-      'strict relation filter response did not report the invalid dependencyTypes filter',
+      'strict relation filter response did not report the invalid types filter',
     );
     assert.equal(
-      strictRelationFilterFailure({ result: { isError: true, content: [{ text: 'dependencyTypes items must be one of: dependencies, depends_on. Did you mean "depends_on"?' }] } }),
-      'strict relation filter response did not report the invalid dependencyTypes value',
+      strictRelationFilterFailure({ result: { isError: true, content: [{ text: 'types items must be one of: dependencies, depends_on. Did you mean "depends_on"?' }] } }),
+      'strict relation filter response did not report the invalid types value',
     );
     assert.equal(
-      strictRelationFilterFailure({ result: { isError: true, content: [{ text: 'dependencyTypes items must be one of: dependencies, depends_on. Received: "depend_on".' }] } }),
-      'strict relation filter response did not suggest the closest dependencyTypes value',
+      strictRelationFilterFailure({ result: { isError: true, content: [{ text: 'types items must be one of: dependencies, depends_on. Received: "depend_on".' }] } }),
+      'strict relation filter response did not suggest the closest types value',
     );
   });
 
@@ -6064,34 +5811,6 @@ describe('verify.mjs first-contact gates', () => {
       strictGraphKindFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }] } }),
       'strict graph kind filter response did not suggest the closest kind value',
     );
-    assert.equal(
-      strictGraphKindFilterFailure(
-        strictErrorResponse('fromKind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?'),
-        { field: 'fromKind' },
-      ),
-      null,
-    );
-    assert.equal(
-      strictGraphKindFilterFailure(
-        strictErrorResponse('toKind must be one of: project, domain, capability, element, document, vault-readme, external, unresolved. Received: "externl". Did you mean "external"?'),
-        { field: 'toKind', received: 'externl', suggestion: 'external' },
-      ),
-      null,
-    );
-    assert.equal(
-      strictGraphKindFilterFailure(
-        { result: { isError: true, content: [{ text: 'fromKind must be one of: project, domain, capability. Did you mean "capability"?' }] } },
-        { field: 'fromKind' },
-      ),
-      'strict graph kind filter response did not report the invalid fromKind value',
-    );
-    assert.equal(
-      strictGraphKindFilterFailure(
-        { result: { isError: true, content: [{ text: 'toKind must be one of: project, domain, capability, external. Received: "externl".' }] } },
-        { field: 'toKind', received: 'externl', suggestion: 'external' },
-      ),
-      'strict graph kind filter response did not suggest the closest toKind value',
-    );
   });
 
   it('fails malformed strict recommend_relations kind filter smoke responses', () => {
@@ -6175,29 +5894,6 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       strictRelationCheckFailure({ result: { isError: true, content: [{ text: 'type must be one of: dependencies, depends_on. Received: "depend_on".' }] } }),
       'strict relation_check response did not suggest the closest type value',
-    );
-  });
-
-  it('fails malformed strict match_edges type smoke responses', () => {
-    assert.equal(
-      strictMatchEdgesTypeFailure(strictErrorResponse('type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
-      null,
-    );
-    assert.equal(
-      strictMatchEdgesTypeFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
-      'strict match_edges type response was not rejected',
-    );
-    assert.equal(
-      strictMatchEdgesTypeFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
-      'strict match_edges type response did not report the invalid type filter',
-    );
-    assert.equal(
-      strictMatchEdgesTypeFailure({ result: { isError: true, content: [{ text: 'type must be one of: dependencies, depends_on. Did you mean "depends_on"?' }] } }),
-      'strict match_edges type response did not report the invalid type value',
-    );
-    assert.equal(
-      strictMatchEdgesTypeFailure({ result: { isError: true, content: [{ text: 'type must be one of: dependencies, depends_on. Received: "depend_on".' }] } }),
-      'strict match_edges type response did not suggest the closest type value',
     );
   });
 
@@ -6791,7 +6487,7 @@ Continue.`;
   it('keeps node-dependent first-contact smokes optional until their live target exists', () => {
     const ids = initialExpectedFirstContactIds();
     assert.deepEqual(OPTIONAL_FIRST_CONTACT_RESPONSE_IDS, [30, 31, 33, 37, 43, 44, 45, 61]);
-    assert.deepEqual(DYNAMIC_FIRST_CONTACT_RESPONSE_IDS, [11, 13, 14, 15, 67, ...OPTIONAL_FIRST_CONTACT_RESPONSE_IDS]);
+    assert.deepEqual(DYNAMIC_FIRST_CONTACT_RESPONSE_IDS, [11, 13, 14, 15, ...OPTIONAL_FIRST_CONTACT_RESPONSE_IDS]);
     for (const optionalId of OPTIONAL_FIRST_CONTACT_RESPONSE_IDS) {
       assert.equal(ids.has(optionalId), false, `${FIRST_CONTACT_RESPONSE_LABELS.get(optionalId)} starts optional`);
     }
@@ -6809,8 +6505,7 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(16), 'strict_args');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(18), 'project_probe');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(19), 'orphan_match_nodes');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(20), 'health_tuned');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(21), 'workspace_brief_tuned');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(21), 'workspace_brief_limited');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(22), 'strict_maintenance_phase_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(23), 'strict_maintenance_severity_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(24), 'strict_maintenance_kind_filter');
@@ -6833,12 +6528,9 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(45), 'delete_concept_dry_run');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(46), 'strict_relation_check');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(47), 'strict_graph_kind_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(48), 'strict_graph_from_kind_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(49), 'strict_graph_to_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(51), 'strict_recommend_relations_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(52), 'strict_recommend_relations_unsupported_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(53), 'strict_match_nodes_sort_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(54), 'strict_match_edges_type_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.has(56), false);
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.has(57), false);
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(71), 'retired_tool');
@@ -6850,7 +6542,6 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(63), 'add_relations_batch_cap');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(64), 'get_concepts_batch_cap');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(65), 'strict_unknown_tool');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(67), 'all_paths');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(69), 'absorb_document_dry_run');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(70), 'infer_imports_focus');
     assert.deepEqual(
@@ -6878,7 +6569,7 @@ Continue.`;
     const strictRelationCheck = buildFirstContactRequests().find((request) => request.id === 46);
     const strictUnknownTool = buildFirstContactRequests().find((request) => request.id === 65);
     assert.equal(analyze?.params?.name, 'analyze_repo_structure');
-    assert.equal(analyze?.params?.arguments?.maxDepth, 2);
+    assert.equal(analyze?.params?.arguments?.maxDepth, undefined, 'maxDepth is retired');
     assert.ok(analyze?.params?.arguments?.rootPath, 'analyze_repo_structure rootPath should be populated');
     assert.equal(infer?.params?.name, 'infer_imports');
     assert.equal(infer?.params?.arguments?.maxFiles, 5000);
@@ -7435,33 +7126,25 @@ Continue.`;
       hasNode: true,
       hasProject: true,
     });
-    assert.deepEqual(projectSmoke.expectedResponseIds, [13, 14, 67, 15]);
+    assert.deepEqual(projectSmoke.expectedResponseIds, [13, 14, 15]);
     assert.deepEqual(
       projectSmoke.requests.map((request) => request.method),
-      ['tools/call', 'tools/call', 'tools/call', 'tools/call'],
+      ['tools/call', 'tools/call', 'tools/call'],
     );
     assert.deepEqual(
       projectSmoke.requests.map((request) => request.params.name),
-      ['query_ontology', 'query_ontology', 'query_ontology', 'query_ontology'],
+      ['query_ontology', 'query_ontology', 'query_ontology'],
     );
     assert.deepEqual(
       projectSmoke.requests.map((request) => request.params.arguments.operation),
-      ['neighbors', 'path', 'all_paths', 'project_scope'],
+      ['neighbors', 'path', 'project_scope'],
     );
     assert.deepEqual(projectSmoke.requests[1].params.arguments, {
       operation: 'path',
       from: 'capabilities/login',
       to: 'project',
     });
-    assert.deepEqual(projectSmoke.requests[2].params.arguments, {
-      operation: 'all_paths',
-      from: 'capabilities/login',
-      to: 'project',
-      maxHops: 5,
-      searchBudget: 1000,
-      limit: 5,
-    });
-    assert.equal(projectSmoke.requests[3].params.arguments.project, 'project');
+    assert.equal(projectSmoke.requests[2].params.arguments.project, 'project');
 
     const projectlessSmoke = buildGraphQuerySmokeRequests({
       slug: 'domains/core',
@@ -7469,10 +7152,10 @@ Continue.`;
       hasNode: true,
       hasProject: false,
     });
-    assert.deepEqual(projectlessSmoke.expectedResponseIds, [13, 14, 67]);
+    assert.deepEqual(projectlessSmoke.expectedResponseIds, [13, 14]);
     assert.deepEqual(
       projectlessSmoke.requests.map((request) => request.params.arguments.operation),
-      ['neighbors', 'path', 'all_paths'],
+      ['neighbors', 'path'],
     );
 
     assert.deepEqual(
@@ -8352,55 +8035,6 @@ Continue.`;
       null,
     );
     assert.equal(
-      allPathsQueryFailure({
-        operation: 'all_paths',
-        from: 'capabilities/login',
-        to: 'project',
-        found: true,
-        direction: 'undirected',
-        maxHops: 5,
-        limit: 5,
-        searchBudget: 1000,
-        expandedStates: 3,
-        exhaustive: true,
-        truncatedByBudget: false,
-        totalPaths: 1,
-        totalPathsExact: true,
-        limited: false,
-        shortestHopCount: 1,
-        byLength: { 1: 1 },
-        evidence: {
-          status: 'complete',
-          reason: 'complete',
-          totalPathsExact: true,
-          pathsComplete: true,
-          nextStep: 'use',
-          recommendation: 'Safe to treat paths and totalPaths as complete for the requested bounds.',
-          suggestedQuery: {
-            operation: 'all_paths',
-            from: 'capabilities/login',
-            to: 'project',
-            direction: 'undirected',
-            maxHops: 5,
-            limit: 5,
-            searchBudget: 1000,
-          },
-        },
-        paths: [
-          {
-            hopCount: 1,
-            hops: ['capabilities/login', 'project'],
-            nodes: [
-              { slug: 'capabilities/login', kind: 'capability', title: 'Login' },
-              { slug: 'project', kind: 'project', title: 'Project' },
-            ],
-            edges: [{ from: 'project', to: 'capabilities/login', via: 'capabilities' }],
-          },
-        ],
-      }, 'capabilities/login', 'project'),
-      null,
-    );
-    assert.equal(
       projectScopeFailure({
         operation: 'project_scope',
         project: 'project',
@@ -8617,70 +8251,6 @@ Continue.`;
       }, 'capabilities/login', 'project'),
       'path response node/hop mismatch at index 1',
     );
-    assert.equal(allPathsQueryFailure({ operation: 'path' }, 'project'), 'all_paths returned unexpected operation: path');
-    assert.equal(
-      allPathsQueryFailure({
-        operation: 'all_paths',
-        from: 'capabilities/login',
-        to: 'project',
-        found: true,
-        limit: 5,
-        searchBudget: 2,
-        expandedStates: 3,
-        exhaustive: false,
-        truncatedByBudget: true,
-        totalPaths: 0,
-        totalPathsExact: false,
-        limited: true,
-        paths: [],
-      }, 'capabilities/login', 'project'),
-      'all_paths response exceeded searchBudget: expanded 3, budget 2',
-    );
-    assert.equal(
-      allPathsQueryFailure({
-        operation: 'all_paths',
-        from: 'capabilities/login',
-        to: 'project',
-        found: true,
-        limit: 5,
-        searchBudget: 1000,
-        expandedStates: 1,
-        exhaustive: false,
-        truncatedByBudget: false,
-        totalPaths: 0,
-        totalPathsExact: false,
-        limited: false,
-        paths: [],
-      }, 'capabilities/login', 'project'),
-      'all_paths response exhaustive/truncatedByBudget mismatch',
-    );
-    assert.equal(
-      allPathsQueryFailure({
-        operation: 'all_paths',
-        from: 'capabilities/login',
-        to: 'project',
-        found: true,
-        limit: 5,
-        searchBudget: 1000,
-        expandedStates: 1,
-        exhaustive: true,
-        truncatedByBudget: false,
-        totalPaths: 2,
-        totalPathsExact: true,
-        limited: false,
-        evidence: {
-          status: 'complete',
-          reason: 'complete',
-          totalPathsExact: true,
-          pathsComplete: true,
-          nextStep: 'use',
-          recommendation: 'Safe to treat paths and totalPaths as complete for the requested bounds.',
-          suggestedQuery: { operation: 'all_paths' },
-        },
-        paths: [],
-      }, 'capabilities/login', 'project'),
-      'all_paths response total mismatch: paths 0, total 2',
-    );
     assert.equal(projectScopeFailure({ operation: 'project_map' }, 'project'), 'project_scope returned unexpected operation: project_map');
     assert.equal(
       projectScopeFailure({
@@ -8858,19 +8428,10 @@ Continue.`;
     );
   });
 
-  it('builds tuned workspace brief first-contact smoke arguments', () => {
-    const tunedBrief = buildFirstContactRequests().find((request) => request.id === 21);
-    assert.deepEqual(tunedBrief?.params?.arguments, {
-      operation: 'workspace_brief',
-      limit: 3,
-      ...VERIFY_TUNED_HEALTH_ARGS,
-      nodeLimit: VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
-    });
-    const tunedHealth = buildFirstContactRequests().find((request) => request.id === 20);
-    assert.deepEqual(tunedHealth?.params?.arguments, {
-      operation: 'health',
-      ...VERIFY_TUNED_HEALTH_ARGS,
-    });
+  it('builds the limited workspace brief first-contact smoke arguments', () => {
+    const limitedBrief = buildFirstContactRequests().find((request) => request.id === 21);
+    assert.deepEqual(limitedBrief?.params?.arguments, { operation: 'workspace_brief', limit: 3 });
+    assert.equal(buildFirstContactRequests().some((request) => request.id === 20), false, 'the tuned health probe is gone with its arguments');
   });
 
   it('accepts advisory needs_attention diagnosis responses', () => {
@@ -8953,26 +8514,6 @@ Continue.`;
     );
   });
 
-  it('formats tuned health scope for verify output', () => {
-    assert.deepEqual(VERIFY_TUNED_HEALTH_ARGS.componentTypes, ['domains', 'domain', 'capabilities', 'dependencies']);
-    assert.equal(
-      tunedHealthScopeOutputSummary(),
-      'dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies',
-    );
-    assert.equal(
-      tunedWorkspaceBriefScopeOutputSummary(),
-      'dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3',
-    );
-    assert.equal(
-      tunedHealthScopeOutputSummary({ dependencyTypes: [], componentTypes: null }),
-      'dependencyTypes=all; componentTypes=all',
-    );
-    assert.equal(
-      tunedWorkspaceBriefScopeOutputSummary({ dependencyTypes: [], componentTypes: null }, 1),
-      'dependencyTypes=all; componentTypes=all; nodeLimit=1',
-    );
-  });
-
   it('fails missing or mismatched structuredContent in verify smoke responses', () => {
     const parsed = { operation: 'overview', graph: { nodes: 1 } };
     assert.equal(
@@ -9025,10 +8566,9 @@ Continue.`;
         hasFindBacklinks: true,
         hasLimitedQueryConcepts: true,
         hasCompileIndexes: true,
-        hasAllPaths: true,
         destructiveDryRunCount: 3,
       }),
-      'direct 13/13, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2, graph 13/13',
+      'direct 13/13, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2, graph 12/12',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -9038,11 +8578,10 @@ Continue.`;
         hasFindBacklinks: true,
         hasLimitedQueryConcepts: true,
         hasCompileIndexes: true,
-        hasAllPaths: true,
         hasMaintenanceResume: true,
         destructiveDryRunCount: 3,
       }),
-      'direct 13/13, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13',
+      'direct 13/13, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 12/12',
     );
   });
 
@@ -9155,32 +8694,6 @@ Continue.`;
           sourceGapId: 'source_unbound',
         },
       },
-      meaningRepair: {
-        contract: 'meaningRepair:v2',
-        status: 'blocked',
-        projectSlug: 'project:app',
-        blockedBy: 'source_not_current',
-        primaryQuestion: null,
-        questionsNeedingReview: [],
-        provenance: null,
-        reviewRevision: null,
-        questions: null,
-        workflow: [],
-        stopWhen: [
-          'source_not_current',
-          'graph_or_source_provenance_changed',
-          'scope_or_receipt_limited',
-          'validation_or_compile_error',
-          'human_approval_missing',
-          'unresolved_evidence_marked_answered',
-          'mtime_conflict',
-        ],
-        writePolicy: {
-          humanApprovalRequired: true,
-          automaticWrite: false,
-          automaticFinalize: false,
-        },
-      },
       readiness: {
         status: 'ready',
         score: 100,
@@ -9199,7 +8712,6 @@ Continue.`;
         'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
         "When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault, and tell the person the Atlas connection is missing; the app's Connect a coding agent dialog restores it.",
-        'Graph DB query pack:',
         'Kind classification contract before writing frontmatter:',
         '- Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization.',
         '- classify from evidence in this order: project scope -> domain boundary -> capability behavior -> implementation element; use unknown only as a temporary review state.',
@@ -9212,12 +8724,7 @@ Continue.`;
         '- Containment spine: project contains domains, domains contain capabilities, and capabilities realize through elements; use depends_on/relates only after that ownership path is clear.',
         '- Color contract: kind hue communicates ontology layer, while domain tint communicates ownership; a wrong color is evidence that kind/domain should be rechecked.',
         '- Before writing, report source path, symbol, route, command, or MCP tool evidence; then state why not the nearest adjacent kind.',
-        'Investigation playbooks:',
-        'Traversal strategy:',
-        'plan_before_enumeration',
         'Write guardrails:',
-        'Result contracts:',
-        'For all_paths, report totalPathsExact.',
         'Run relation_check before add_relations.',
       ].join('\n'),
       health: {
@@ -9246,128 +8753,6 @@ Continue.`;
         { tool: 'query_ontology', arguments: { operation: 'workspace_brief' } },
         { tool: 'query_ontology', arguments: { operation: 'health' } },
         { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', type: 'depends_on' } },
-      ],
-      graphDbQueryPack: [
-        {
-          id: 'graph_facets',
-          intent: 'MATCH graph RETURN kind/domain/degree/relation facets LIMIT 10',
-          goal: 'Read graph dashboard buckets.',
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'facets', limit: 10 } },
-            { tool: 'query_ontology', arguments: { operation: 'schema', limit: 20 } },
-          ],
-        },
-        {
-          id: 'node_scan',
-          intent: 'MATCH (n:capability) WHERE degree(n) >= 2 RETURN n',
-          goal: 'Find high-degree capability nodes.',
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_nodes', kind: 'capability', minDegree: 2, sort: 'degree', limit: 10 } },
-            { tool: 'query_ontology', arguments: { operation: 'match_nodes', kind: 'capability', minDegree: 2, sort: 'degree', limit: 10 } },
-          ],
-        },
-        {
-          id: 'edge_scan',
-          intent: 'MATCH ()-[r:depends_on]->() RETURN r',
-          goal: 'Scan dependency edges.',
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_edges', types: ['depends_on'], limit: 20 } },
-            { tool: 'query_ontology', arguments: { operation: 'match_edges', types: ['depends_on'], limit: 20 } },
-          ],
-        },
-        {
-          id: 'domain_coupling',
-          intent: 'MATCH (domain)-[depends_on|relates]->(domain) RETURN coupling_matrix',
-          goal: 'Compare domain coupling.',
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 } },
-            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'centrality', types: ['depends_on', 'relates'], limit: 10 } },
-            { tool: 'query_ontology', arguments: { operation: 'centrality', types: ['depends_on', 'relates'], limit: 10 } },
-          ],
-        },
-        {
-          id: 'path_evidence',
-          intent: 'MATCH p=(from)-[:depends_on|relates*..3]-(to) RETURN p',
-          goal: 'Collect bounded path evidence.',
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', maxHops: 3, limit: 10 } },
-            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', maxHops: 3, limit: 10 } },
-            { tool: 'query_ontology', arguments: { operation: 'explain_relation', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', direction: 'undirected' } },
-          ],
-        },
-        {
-          id: 'business_questions',
-          intent: 'MATCH business questions TO outcomes, domain boundaries, capability claims, and implementation evidence',
-          goal: 'Answer business ontology questions with graph evidence.',
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'facets' } },
-            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_nodes', kind: 'domain', sort: 'degree', limit: 10 } },
-            { tool: 'query_ontology', arguments: { operation: 'match_nodes', kind: 'domain', sort: 'degree', limit: 10 } },
-            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 } },
-            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_edges', fromKind: 'capability', toKind: 'element', types: ['elements', 'depends_on', 'relates'], limit: 20 } },
-            { tool: 'query_ontology', arguments: { operation: 'match_edges', fromKind: 'capability', toKind: 'element', types: ['elements', 'depends_on', 'relates'], limit: 20 } },
-          ],
-        },
-      ],
-      playbooks: [
-        {
-          id: 'refactor_impact',
-          goal: 'Check blast radius.',
-          evidence: ['Blast radius evidence.'],
-          stopWhen: ['relation_check needs review.'],
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'blast_radius' } },
-            { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', type: 'depends_on' } },
-          ],
-        },
-        {
-          id: 'graph_traversal',
-          goal: 'Gather traversal evidence.',
-          evidence: ['Path alternatives.'],
-          stopWhen: ['Traversal cost is high.'],
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'schema', limit: 20 } },
-            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', maxHops: 5 } },
-            { tool: 'query_ontology', arguments: { operation: 'pattern_walk', slug: 'project:app', pattern: ['domains', 'capabilities'] } },
-            { tool: 'query_ontology', arguments: { operation: 'project_map', project: 'project:app' } },
-          ],
-        },
-      ],
-      traversalStrategy: [
-        {
-          id: 'plan_before_enumeration',
-          priority: 'first',
-          goal: 'Estimate traversal cost.',
-          useWhen: 'Need bounded traversal.',
-          evidence: ['query_plan.execution.nextStep', 'query_plan.execution.saferQuery when present'],
-          stopWhen: ['execution.nextStep is narrow.'],
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner' } },
-          ],
-        },
-        {
-          id: 'bounded_path_evidence',
-          priority: 'evidence',
-          goal: 'Enumerate bounded path evidence.',
-          useWhen: 'Need multiple path alternatives.',
-          evidence: ['all_paths.evidence.pathsComplete', 'all_paths.totalPathsExact'],
-          stopWhen: ['evidence.pathsComplete is false.'],
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', maxHops: 3, searchBudget: 1000, limit: 10 } },
-          ],
-        },
-        {
-          id: 'containment_cross_check',
-          priority: 'confirm',
-          goal: 'Cross-check containment.',
-          useWhen: 'Ownership or domain placement matters.',
-          evidence: ['pattern_walk rows.', 'project_map placement.'],
-          stopWhen: ['Containment disagrees.'],
-          calls: [
-            { tool: 'query_ontology', arguments: { operation: 'pattern_walk', slug: 'project:app', pattern: ['domains', 'capabilities'] } },
-            { tool: 'query_ontology', arguments: { operation: 'project_map', project: 'project:app' } },
-          ],
-        },
       ],
       writeGuardrails: [
         {
@@ -9401,25 +8786,6 @@ Continue.`;
       writePolicy: [
         'Run read tools first.',
         'Run relation_check before add_relations.',
-        'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat non-exhaustive totals as partial evidence.',
-      ],
-      resultContracts: [
-        {
-          operation: 'all_paths',
-          mustReport: [
-            'limit',
-            'searchBudget',
-            'expandedStates',
-            'exhaustive',
-            'truncatedByBudget',
-            'totalPathsExact',
-            'evidence.status',
-            'evidence.reason',
-            'evidence.pathsComplete',
-          ],
-          partialWhen: ['exhaustive=false', 'truncatedByBudget=true', 'totalPathsExact=false', 'evidence.status=partial', 'evidence.pathsComplete=false'],
-          policy: 'Treat paths as partial evidence unless evidence.pathsComplete is true; treat totalPaths as partial evidence unless totalPathsExact is true; follow evidence.suggestedQuery or narrow maxHops/types before using paths as write evidence.',
-        },
       ],
       relationDecisionGuide: [
         { decision: 'skip_existing', severity: 'info', meaning: 'Do not add duplicate edge.' },
@@ -9430,64 +8796,6 @@ Continue.`;
     };
 
     assert.equal(agentBriefFailure(payload), null);
-    const executableRepair = humanMeaningRepair(payload.projectSlug);
-    const repairPayload = {
-      ...payload,
-      meaningRepair: executableRepair,
-      nextActions: [{
-        id: 'review_competency_repair',
-        kind: 'competency_repair',
-        severity: 'warn',
-        count: 2,
-        target: 'abilities',
-        detailContract: executableRepair.contract,
-        message: 'Review current competency claims with explicit human approval.',
-      }],
-    };
-    assert.equal(agentBriefFailure(repairPayload), null);
-    const oldPseudoRead = structuredClone(executableRepair);
-    oldPseudoRead.workflow[0] = {
-      step: 'read_review_inputs',
-      calls: [{
-        tool: 'get_concepts',
-        arguments: { body: 'full' },
-        deriveArguments: { slugs: 'project_and_all_review_targets' },
-      }],
-    };
-    const mismatchedRevision = structuredClone(executableRepair);
-    mismatchedRevision.workflow[0].calls[0].arguments.reviewRevision = `sha256:${'b'.repeat(64)}`;
-    const exposedOffset = structuredClone(executableRepair);
-    exposedOffset.workflow[0].calls[0].arguments.offset = 20;
-    const wrongOperation = structuredClone(executableRepair);
-    wrongOperation.workflow[0].calls[0].arguments.operation = 'agent_brief';
-    const oversizedPacket = structuredClone(executableRepair);
-    oversizedPacket.provenance.sourceFingerprint = `git:${'x'.repeat(5_000)}`;
-    for (const malformed of [
-      oldPseudoRead,
-      mismatchedRevision,
-      exposedOffset,
-      wrongOperation,
-      oversizedPacket,
-    ]) {
-      assert.equal(
-        agentBriefFailure({ ...repairPayload, meaningRepair: malformed }),
-        'agent_brief response malformed meaningRepair review packet',
-      );
-    }
-    assert.equal(
-      agentBriefFailure({ ...payload, meaningRepair: undefined }),
-      'agent_brief response missing meaningRepair review packet',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        meaningRepair: {
-          ...payload.meaningRepair,
-          provenance: { rootPath: '/private/work/app' },
-        },
-      }),
-      'agent_brief meaningRepair exposes private source coordinates',
-    );
     assert.equal(
       agentBriefFailure({ ...payload, projectSource: undefined }),
       'agent_brief response missing categorical projectSource',
@@ -9544,7 +8852,7 @@ Continue.`;
       }),
       'agent_brief response malformed categorical meaningAssessment',
     );
-    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 6 graph DB pack items, 2 playbooks, 3 write guardrails, 1 result contract');
+    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 3 write guardrails');
     assert.equal(
       agentBriefFailure({ ...payload, readiness: { ...payload.readiness, score: 101 } }),
       'agent_brief response malformed readiness score',
@@ -9573,22 +8881,6 @@ Continue.`;
       'agent_brief firstCalls unsupported query_ontology operation at index 0: not_real',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, playbooks: [{ id: 'refactor_impact', goal: 'Check.', calls: [] }] }),
-      'agent_brief playbook refactor_impact missing evidence checklist',
-    );
-    assert.equal(
-      agentBriefFailure({ ...payload, playbooks: [{ ...payload.playbooks[0], evidence: [] }, payload.playbooks[1]] }),
-      'agent_brief playbook refactor_impact missing evidence checklist',
-    );
-    assert.equal(
-      agentBriefFailure({ ...payload, playbooks: [{ ...payload.playbooks[0], stopWhen: [] }, payload.playbooks[1]] }),
-      'agent_brief playbook refactor_impact missing stopWhen checklist',
-    );
-    assert.equal(
-      agentBriefFailure({ ...payload, playbooks: [{ ...payload.playbooks[0], calls: [] }, payload.playbooks[1]] }),
-      'agent_brief playbook refactor_impact missing tool calls',
-    );
-    assert.equal(
       agentBriefFailure({
         ...payload,
         firstCalls: payload.firstCalls.filter((call) => call.arguments.operation !== 'relation_check'),
@@ -9596,159 +8888,8 @@ Continue.`;
       'agent_brief firstCalls missing relation_check preflight',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, graphDbQueryPack: [] }),
-      'agent_brief response missing graphDbQueryPack',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        graphDbQueryPack: payload.graphDbQueryPack.filter((item) => item.id !== 'path_evidence'),
-      }),
-      'agent_brief graphDbQueryPack missing packs: path_evidence',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        graphDbQueryPack: payload.graphDbQueryPack.map((item) =>
-          item.id === 'node_scan'
-            ? { ...item, calls: item.calls.filter((call) => call.arguments.operation !== 'query_plan') }
-            : item,
-        ),
-      }),
-      'agent_brief graphDbQueryPack node_scan missing match_nodes query_plan',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        graphDbQueryPack: payload.graphDbQueryPack.map((item) =>
-          item.id === 'domain_coupling'
-            ? { ...item, calls: item.calls.filter((call) => call.arguments.operation !== 'centrality') }
-            : item,
-        ),
-      }),
-      'agent_brief graphDbQueryPack domain_coupling missing centrality',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        graphDbQueryPack: payload.graphDbQueryPack.map((item) =>
-          item.id === 'path_evidence'
-            ? { ...item, calls: item.calls.filter((call) => call.arguments.operation !== 'explain_relation') }
-            : item,
-        ),
-      }),
-      'agent_brief graphDbQueryPack path_evidence missing explain_relation',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        graphDbQueryPack: payload.graphDbQueryPack.map((item) =>
-          item.id === 'business_questions'
-            ? { ...item, calls: item.calls.filter((call) => call.arguments.operation !== 'match_edges') }
-            : item,
-        ),
-      }),
-      'agent_brief graphDbQueryPack business_questions missing match_edges',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        playbooks: [
-          {
-            id: 'refactor_impact',
-            goal: 'Check blast radius.',
-            evidence: ['Blast radius evidence.'],
-            stopWhen: ['relation_check needs review.'],
-            calls: [{ tool: 'query_ontology', arguments: { operation: 'blast_radius' } }],
-          },
-          payload.playbooks[1],
-        ],
-      }),
-      'agent_brief refactor_impact playbook missing relation_check preflight',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        playbooks: payload.playbooks.filter((playbook) => playbook.id !== 'graph_traversal'),
-      }),
-      'agent_brief missing graph_traversal playbook',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        playbooks: payload.playbooks.map((playbook) =>
-          playbook.id === 'graph_traversal'
-            ? { ...playbook, calls: playbook.calls.filter((call) => call.arguments.operation !== 'pattern_walk') }
-            : playbook,
-        ),
-      }),
-      'agent_brief graph_traversal playbook missing pattern_walk',
-    );
-    assert.equal(
-      agentBriefFailure({ ...payload, traversalStrategy: [] }),
-      'agent_brief response missing traversalStrategy',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        traversalStrategy: payload.traversalStrategy.filter((strategy) => strategy.id !== 'bounded_path_evidence'),
-      }),
-      'agent_brief traversalStrategy missing strategies: bounded_path_evidence',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        traversalStrategy: payload.traversalStrategy.map((strategy) =>
-          strategy.id === 'bounded_path_evidence'
-            ? { ...strategy, evidence: ['all_paths.totalPathsExact'] }
-            : strategy,
-        ),
-      }),
-      'agent_brief traversalStrategy bounded_path_evidence missing pathsComplete evidence',
-    );
-    assert.equal(
       agentBriefFailure({ ...payload, writePolicy: ['Run read tools first.'] }),
       'agent_brief writePolicy missing relation_check add_relations guidance',
-    );
-    assert.equal(
-      agentBriefFailure({ ...payload, resultContracts: [] }),
-      'agent_brief resultContracts missing all_paths contract',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        resultContracts: [
-          {
-            ...payload.resultContracts[0],
-            mustReport: ['searchBudget', 'expandedStates', 'exhaustive'],
-          },
-        ],
-      }),
-      'agent_brief all_paths resultContract missing mustReport fields: limit, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, evidence.pathsComplete',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        resultContracts: [
-          {
-            ...payload.resultContracts[0],
-            partialWhen: ['truncatedByBudget=true'],
-          },
-        ],
-      }),
-      'agent_brief all_paths resultContract missing partial evidence conditions',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        resultContracts: [
-          {
-            ...payload.resultContracts[0],
-            policy: 'Raise the budget.',
-          },
-        ],
-      }),
-      'agent_brief all_paths resultContract missing partial-evidence policy',
     );
     assert.equal(
       agentBriefFailure({
@@ -9781,117 +8922,6 @@ Continue.`;
         nextActions: [{ id: 'resolve_dangling_references', kind: 'resolve_dangling_references', severity: 'fail', count: 1 }],
       }),
       'agent_brief has actionable nextActions: resolve_dangling_references:fail:1. Inspect agent_brief.nextActions before writing.',
-    );
-  });
-
-  it('validates the complete provenance-bound meaning repair review page chain', () => {
-    const repair = humanMeaningRepair('project:app');
-    const agentBrief = { meaningRepair: repair };
-    const rows = [
-      { slug: 'project:app', kind: 'project', expectedMtime: 1 },
-      ...Array.from({ length: 6 }, (_, index) => ({
-        slug: `domains/d${index + 1}`,
-        kind: 'domain',
-        expectedMtime: index + 2,
-        abilitiesDisposition: index === 0 ? 'already_declared' : 'candidate_addition',
-      })),
-      ...Array.from({ length: 20 }, (_, index) => ({
-        slug: `capabilities/c${String(index + 1).padStart(2, '0')}`,
-        kind: 'capability',
-        expectedMtime: index + 8,
-        abilityWitness: {
-          from: `domains/d${(index % 6) + 1}`,
-          type: 'capabilities',
-        },
-        evidenceDisposition: index < 2
-          ? 'already_declared'
-          : index < 11 ? 'candidate_addition' : 'unresolved',
-      })),
-    ];
-    const firstCursor = 'mrp1.first.cursor';
-    const page = (targets, hasMore) => ({
-      operation: 'meaning_repair_review',
-      contract: 'meaningRepairReviewPage:v1',
-      sideEffect: false,
-      status: 'ready',
-      projectSlug: repair.projectSlug,
-      blockedBy: null,
-      provenance: {
-        graphHash: repair.provenance.graphHash,
-        sourceFingerprint: repair.provenance.sourceFingerprint,
-      },
-      reviewRevision: repair.reviewRevision,
-      pagination: {
-        total: rows.length,
-        returned: targets.length,
-        hasMore,
-        nextCursor: hasMore ? firstCursor : null,
-      },
-      targets,
-      readCall: {
-        tool: 'get_concepts',
-        arguments: { slugs: targets.map(({ slug }) => slug), body: 'full' },
-      },
-      nextCall: hasMore ? {
-        tool: 'query_ontology',
-        arguments: {
-          operation: 'meaning_repair_review',
-          project: repair.projectSlug,
-          reviewRevision: repair.reviewRevision,
-          cursor: firstCursor,
-        },
-      } : null,
-    });
-    const pages = [page(rows.slice(0, 20), true), page(rows.slice(20), false)];
-    const requests = [repair.workflow[0].calls[0].arguments, pages[0].nextCall.arguments];
-    assert.equal(meaningRepairReviewChainFailure(agentBrief, pages, requests), null);
-
-    const omitted = structuredClone(pages);
-    omitted[1].targets.pop();
-    omitted[1].pagination.returned -= 1;
-    omitted[1].readCall.arguments.slugs.pop();
-    assert.equal(
-      meaningRepairReviewChainFailure(agentBrief, omitted, requests),
-      'meaning repair review page union has missing or duplicate targets',
-    );
-    const wrongRequest = structuredClone(requests);
-    wrongRequest[1].cursor = 'mrp1.foreign.cursor';
-    assert.equal(
-      meaningRepairReviewChainFailure(agentBrief, pages, wrongRequest),
-      'meaning repair review request 2 does not match the issued call',
-    );
-
-    const readPayloads = pages.map(({ targets }) => ({
-      concepts: targets.map((target) => ({
-        ok: true,
-        uid: '11111111-1111-4111-8111-111111111111',
-        slug: target.slug,
-        frontmatter: { kind: target.kind },
-        body: `Full body for ${target.slug}`,
-        bodyInfo: { totalChars: 20, returnedChars: 20, truncated: false },
-        neighbors: {},
-        outgoingEdges: [],
-        mtime: target.expectedMtime,
-      })),
-    }));
-    assert.equal(meaningRepairFullBodyReadsFailure(pages, readPayloads), null);
-    const changedMtime = structuredClone(readPayloads);
-    changedMtime[1].concepts[0].mtime += 1;
-    assert.equal(
-      meaningRepairFullBodyReadsFailure(pages, changedMtime),
-      `meaning repair full-body read 2 mtime changed for ${pages[1].targets[0].slug}`,
-    );
-    const truncatedBody = structuredClone(readPayloads);
-    truncatedBody[0].concepts[0].bodyInfo.truncated = true;
-    assert.equal(
-      meaningRepairFullBodyReadsFailure(pages, truncatedBody),
-      'meaning repair full-body read 1 row 1 is incomplete',
-    );
-    const missingLength = structuredClone(readPayloads);
-    delete missingLength[0].concepts[0].bodyInfo.totalChars;
-    assert.equal(
-      meaningRepairFullBodyReadsFailure(pages, missingLength),
-      'meaning repair full-body read 1 row 1 is incomplete',
     );
   });
 

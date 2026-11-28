@@ -3,7 +3,7 @@
 // one for a case from the case's own repository folder, then pads it so a case can sit exactly on
 // or just over each limit the server enforces:
 //   12,000 entries · 512 KiB of text in one file · 32 MiB of text in all · 64 MiB for the descriptor.
-import { lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 
 export const SNAPSHOT_LIMITS = Object.freeze({
@@ -37,11 +37,13 @@ function walk(root, relative, entries) {
 }
 
 /**
- * @param {string} rootPath the folder the server will be asked about
+ * @param {string} folder the folder the server will be asked about
  * @param {{ totalEntries?: number, extraEntries?: number, fileTextBytes?: number, totalTextBytes?: number, descriptorBytes?: number, truncated?: boolean, contract?: string }} [spec]
  * @returns {string} the descriptor's contents
  */
-export function buildSourceSnapshot(rootPath, spec = {}) {
+export function buildSourceSnapshot(folder, spec = {}) {
+  // The app names the folder by its real path; a temporary folder under a link (macOS `/var`) is not one.
+  const rootPath = realpathSync(folder);
   const entries = [];
   walk(rootPath, '', entries);
   const extra = [];

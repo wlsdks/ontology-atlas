@@ -6,7 +6,6 @@ import {
   strictGraphKindFilterFailure,
   strictListConceptsKindFailure,
   strictMaintenanceFilterFailure,
-  strictMatchEdgesTypeFailure,
   strictMatchNodesSortFailure,
   strictMultiArgsFailure,
   strictListConceptsFilterFailure,
@@ -53,13 +52,10 @@ export function verifyStrictFilters(responses) {
   const strictRecommendRelationsKindFilterRes = responses.find((r) => r.id === 51);
   const strictRecommendRelationsUnsupportedKindFilterRes = responses.find((r) => r.id === 52);
   const strictMatchNodesSortFilterRes = responses.find((r) => r.id === 53);
-  const strictMatchEdgesTypeFilterRes = responses.find((r) => r.id === 54);
   const retiredToolRes = responses.find((r) => r.id === 71);
   const strictListConceptsFilterKindRes = responses.find((r) => r.id === 58);
   const strictListConceptsFilterHasKeyRes = responses.find((r) => r.id === 59);
   const strictListConceptsKindFilterRes = responses.find((r) => r.id === 60);
-  const strictGraphFromKindFilterRes = responses.find((r) => r.id === 48);
-  const strictGraphToKindFilterRes = responses.find((r) => r.id === 49);
   const strictEnum = strictEnumFailure(strictEnumRes);
   if (strictEnum) {
     log('fail', strictEnum);
@@ -146,26 +142,6 @@ export function verifyStrictFilters(responses) {
     log('fail', strictMatchNodesSortFilter);
     return false;
   }
-  const strictMatchEdgesTypeFilter = strictMatchEdgesTypeFailure(strictMatchEdgesTypeFilterRes);
-  if (strictMatchEdgesTypeFilter) {
-    log('fail', strictMatchEdgesTypeFilter);
-    return false;
-  }
-  log('ok', 'strict graph filters: invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics');
-  const strictGraphFromKindFilter = strictGraphKindFilterFailure(strictGraphFromKindFilterRes, { field: 'fromKind' });
-  if (strictGraphFromKindFilter) {
-    log('fail', strictGraphFromKindFilter);
-    return false;
-  }
-  const strictGraphToKindFilter = strictGraphKindFilterFailure(strictGraphToKindFilterRes, {
-    field: 'toKind',
-    received: 'externl',
-    suggestion: 'external',
-  });
-  if (strictGraphToKindFilter) {
-    log('fail', strictGraphToKindFilter);
-    return false;
-  }
-  log('ok', 'strict graph edge kind filters: invalid match_edges.fromKind/toKind rejected with closest-value hints');
+  log('ok', 'strict graph filters: invalid match_nodes.kind/sort and recommend_relations.kind rejected with narrowed diagnostics');
   return true;
 }
