@@ -17,8 +17,8 @@ export function useQuerySlugVerdict({
   const { recentKey, vaultScopeSettled } = src;
   const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
   /**
-   * Slugs the app itself just renamed or deleted are not "missing"; `useSearchParams` still
-   * holds the old slug after a `history.replaceState`.
+   * Slugs the app itself just renamed or deleted are not "missing"; the query a render reads still
+   * holds the old slug until the router has handled the history write.
    */
   const appTouchedSlugsRef = useRef<ReadonlySet<string>>(new Set());
   useEffect(() => {

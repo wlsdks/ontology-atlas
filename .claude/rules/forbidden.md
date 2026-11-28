@@ -29,8 +29,8 @@
   `/reset-password`, `/settings/*`, `/knowledge/*`, `/review/*`,
   `/diagnostics/*` (R10), and `/skills` (decision 91). Fit new work into a
   current destination first.
-- No `pages/` router, server-only API routes, server actions, or other runtime
-  behaviour incompatible with static export.
+- No server-only API routes, server actions, or other runtime behaviour a
+  folder of static files cannot carry.
 
 ## Authentication and backend
 

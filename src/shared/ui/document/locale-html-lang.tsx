@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { htmlLangOf } from '@/i18n/locales';
 
 /**
- * Keeps `<html lang>` equal to the locale on a client-side switch; `LANG_BOOT`
- * in `lang-boot-script.tsx` sets it before the first paint.
+ * Keeps `<html lang>` equal to the locale on a client-side switch; the boot script
+ * in `src/i18n/boot-script.ts` sets it before the first paint.
  */
 export function LocaleHtmlLang({ locale }: { locale: string }) {
   useEffect(() => {

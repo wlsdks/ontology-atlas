@@ -198,7 +198,7 @@ describe("pre-push hook — a fast mirror of CI", () => {
     expect(patterns.mcpCli.test("mcp/src/index.js")).toBe(true);
     expect(patterns.mcpCli.test("src/mcp-thing.ts")).toBe(false);
     expect(patterns.messages.test("messages/ko.json")).toBe(true);
-    expect(patterns.ts.test("next.config.ts")).toBe(true);
+    expect(patterns.ts.test("vite.config.ts")).toBe(true);
     expect(patterns.ts.test("README.md")).toBe(false);
   });
 

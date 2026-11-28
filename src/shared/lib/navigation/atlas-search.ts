@@ -31,8 +31,9 @@ export function parseSearch(searchString: string): AtlasSearch {
     else search[key] = Array.isArray(earlier) ? [...earlier, value] : [earlier, value];
   }
   const rebuilt = canonical(search);
+  // Delete first: the newest arrival wins, and one already in standard form leaves nothing to remember.
+  arrivedAs.delete(rebuilt);
   if (rebuilt !== raw && rebuilt !== '') {
-    arrivedAs.delete(rebuilt);
     arrivedAs.set(rebuilt, raw);
     if (arrivedAs.size > REMEMBERED_QUERIES) arrivedAs.delete(arrivedAs.keys().next().value as string);
   }

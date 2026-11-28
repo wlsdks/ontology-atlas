@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { exportedPose, workGridPoses } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
-const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+const sharp = require('sharp');
 
 /** The rows a room plays, by row name, with the catalogue clip each one is (`build-moru-companion.mjs`). */
 export const CAST_ROWS = {

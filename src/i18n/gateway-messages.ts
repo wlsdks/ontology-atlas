@@ -1,6 +1,6 @@
 /**
  * Server-side only: the message paths the gateway pages' client tree reads (`/download`, `/guide`,
- * `/changelog`, `/sample`, mounted by `app/(gateway)/[locale]/layout.tsx`).
+ * `/changelog`, `/sample`, mounted by `src/app/routes/$locale/_site/route.tsx`).
  *
  * The client provider serialises its `messages` into every statically exported page, so handing it
  * the whole catalog put all of the workbench's copy into each public page's HTML. A path is a

@@ -5,23 +5,17 @@ import koMessages from "../../../messages/ko.json";
 import enMessages from "../../../messages/en.json";
 
 /**
- * `output: "export"` bakes the nearest Suspense fallback into HTML for `useSearchParams()` views,
- * so a `null` fallback leaves an empty body. Entry-route fallbacks must carry content.
+ * The prerender bakes the nearest Suspense fallback into a page's HTML, so a `null` fallback leaves an empty
+ * body. Entry-route fallbacks must carry content.
  */
 
-const SCAN_DIRS = [join(process.cwd(), "app"), join(process.cwd(), "src")];
+const SCAN_DIRS = [join(process.cwd(), "src"), join(process.cwd(), "scripts/web/site")];
 
 /**
- * `RouteLoadingFallback` is the default, `MapEntryFallback` serves `/topology` and
+ * `RouteLoadingFallback` is the default, `MapEntryPending` serves `/topology` and
  * `GatewayEntryFallback` serves `/`, which hands a browser on to `/download`. The latter two must say different things.
  */
-const APPROVED_FALLBACKS = [
-  "RouteLoadingFallback",
-  "MapEntryFallback",
-  "GatewayEntryFallback",
-  // The Vite app's client form of `MapEntryFallback`, which is a server component and cannot render there.
-  "MapEntryPending",
-] as const;
+const APPROVED_FALLBACKS = ["RouteLoadingFallback", "MapEntryPending", "GatewayEntryFallback"] as const;
 
 /**
  * A boundary that holds hydration on purpose has no fallback to show: React keeps the server's HTML
@@ -43,8 +37,8 @@ const HYDRATION_HOLDS = [
  * pairing matters so the gate guards the right fallback for each route.
  */
 const CONTENT_FALLBACK_ROUTES = [
-  [join(process.cwd(), "app/[locale]/page.tsx"), "GatewayEntryFallback"],
-  [join(process.cwd(), "app/[locale]/topology/page.tsx"), "MapEntryFallback"],
+  [join(process.cwd(), "scripts/web/site/write-site.tsx"), "GatewayEntryFallback"],
+  [join(process.cwd(), "src/app/routes/$locale/_app/topology.tsx"), "MapEntryPending"],
 ] as const;
 
 function collectTsxFiles(dir: string, out: string[] = []): string[] {
@@ -61,9 +55,7 @@ function collectTsxFiles(dir: string, out: string[] = []): string[] {
 }
 
 describe("blank-screen gate on route entry", () => {
-  const files = collectTsxFiles(SCAN_DIRS[0]).concat(
-    collectTsxFiles(SCAN_DIRS[1]),
-  );
+  const files = SCAN_DIRS.flatMap((dir) => collectTsxFiles(dir));
   const suspenseFiles = files.filter(
     (p) =>
       readFileSync(p, "utf-8").includes("<Suspense") &&
@@ -119,7 +111,7 @@ describe("blank-screen gate on route entry", () => {
       const source = readFileSync(route, "utf-8");
       expect(source, `${route} does not use ${expected}`).toContain(expected);
       // Using the other one makes that address describe a different screen.
-      const other = expected === "MapEntryFallback" ? "GatewayEntryFallback" : "MapEntryFallback";
+      const other = expected === "MapEntryPending" ? "GatewayEntryFallback" : "MapEntryPending";
       expect(source, `${route} uses ${other}, which is not the screen of that address`).not.toContain(other);
     }
   });
@@ -137,14 +129,11 @@ describe("blank-screen gate on route entry", () => {
     expect(source).toContain("sample/");
   });
 
-  it("that fallback carries a product sentence rather than a loading caption", () => {
-    const source = readFileSync(
-      join(process.cwd(), "src/shared/ui/fallbacks/map-entry-fallback.tsx"),
-      "utf-8",
-    );
+  it("the map's loading picture carries a product sentence rather than a loading caption", () => {
+    const source = readFileSync(join(process.cwd(), "src/views/home/ui/HomePage.tsx"), "utf-8");
     // A headline and a lede are what keep the demo URL from reverting to a page with nothing to read.
     for (const key of ["headline", "lede"]) {
-      expect(source).toContain(`t('${key}')`);
+      expect(source).toContain(`tMapEntry('${key}')`);
     }
 
     for (const messages of [koMessages, enMessages]) {

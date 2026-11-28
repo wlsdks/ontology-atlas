@@ -31,7 +31,7 @@ function useAppOnlyFace(): boolean {
  *
  * The locale's root is the one address that is no app screen for a browser: it is the website's
  * entry, which a script in the document head sends on to the gateway before the body is parsed
- * (`GatewayHandOverScript`), so its own HTML stays visible and carries no second face.
+ * (the boot script in `src/i18n/boot-script.ts`), so its own HTML stays visible and carries no second face.
  */
 export function AppAddressFaces({ appOnly, children }: { appOnly: ReactNode; children: ReactNode }) {
   const atEntry = stripLocalePrefix(useCommittedAddress().pathname) === "/";

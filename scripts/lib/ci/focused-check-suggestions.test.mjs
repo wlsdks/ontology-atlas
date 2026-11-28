@@ -271,11 +271,9 @@ describe('focused check suggestions', () => {
       'cli/pnpm-lock.yaml',
       'mcp/package.json',
       'mcp/pnpm-lock.yaml',
-      'next.config.ts',
       'tsconfig.json',
       'vitest.config.ts',
       'playwright.config.ts',
-      'postcss.config.mjs',
     ];
 
     for (const path of paths) {
@@ -287,7 +285,7 @@ describe('focused check suggestions', () => {
 
   it('plans the IME Enter guard for TypeScript sources that the full contract suite misses', () => {
     const plans = (path) => commandNames(suggestFocusedChecks([path]));
-    for (const path of ['src/shared/lib/example.ts', 'src/widgets/example/ui/use-example-keys.ts', 'app/sitemap.ts']) {
+    for (const path of ['src/shared/lib/example.ts', 'src/widgets/example/ui/use-example-keys.ts', 'src/app/routes/index.tsx']) {
       assert.equal(plans(path).filter((command) => command === IME_ENTER_GUARD_COMMAND).length, 1, path);
     }
     assert.ok(plans('src/widgets/example/ui/Example.tsx').includes('pnpm test:contracts'));
@@ -1010,7 +1008,6 @@ describe('focused check suggestions', () => {
     for (const path of [
       'src/views/agents/ui/AgentsPage.tsx',
       'src/views/mcp/ui/McpPage.tsx',
-      'src/views/mcp-redirect/ui/McpRedirectPage.tsx',
       'src/app/agents-workspace/index.tsx',
       'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
       'src/widgets/app-settings-menu/ui/agent-setup/AgentSetupSection.tsx',
@@ -1110,8 +1107,8 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  it('suggests static export gates when Next config changes', () => {
-    const result = suggestFocusedChecks(['next.config.ts']);
+  it('suggests the build gates when the bundler configuration changes', () => {
+    const result = suggestFocusedChecks(['vite.config.ts']);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm desktop:check',
@@ -1139,17 +1136,15 @@ describe('focused check suggestions', () => {
     );
   });
 
-  it('suggests lint, contracts, and the a11y ratchets for Next app route entries', () => {
+  it('suggests lint, contracts, and the a11y ratchets for route modules', () => {
     const result = suggestFocusedChecks([
-      'app/layout.tsx',
-      'app/page.tsx',
-      'app/sitemap.ts',
-      'app/[locale]/docs/page.tsx',
-      'next-env.d.ts',
+      'src/app/routes/__root.tsx',
+      'src/app/routes/index.tsx',
+      'src/app/routes/docs.tsx',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec eslint --max-warnings 0 app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
+      'pnpm exec eslint --max-warnings 0 src/app/routes/__root.tsx src/app/routes/index.tsx src/app/routes/docs.tsx',
       'pnpm test:contracts',
       'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
@@ -1157,12 +1152,12 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  // `checks:changed -- --run` hands each command to `/bin/sh`, where a route group's parentheses
-  // are syntax: every command naming one must quote it, or the run stops before any check.
-  it('quotes a route-group path so the shell runs every command that names it', () => {
-    const group = 'app/(gateway)/[locale]/download/page.tsx';
+  // `checks:changed -- --run` hands each command to `/bin/sh`, where a dynamic route segment's `$` and a
+  // parenthesis are syntax: every command naming one must quote it, or the run stops before any check.
+  it('quotes a dynamic-segment path so the shell runs every command that names it', () => {
+    const group = 'src/app/routes/$locale/_site/download.tsx';
     const result = suggestFocusedChecks([group, 'tests/e2e/gateway/(probe).spec.ts', 'src/i18n/(probe).test.ts']);
-    const naming = result.commands.filter((row) => row.command.includes('(gateway)') || row.command.includes('(probe)'));
+    const naming = result.commands.filter((row) => row.command.includes('$locale') || row.command.includes('(probe)'));
     assert.ok(naming.length >= 3, `expected the lint, related and direct-test rows, got ${naming.length}`);
     for (const { command } of naming) {
       const parsed = spawnSync('sh', ['-n', '-c', command], { encoding: 'utf8' });
@@ -1176,11 +1171,11 @@ describe('focused check suggestions', () => {
   it('suggests the design and a11y gates for a brand-new view and route', () => {
     const result = suggestFocusedChecks([
       'src/views/brand-new-surface/ui/BrandNewPage.tsx',
-      'app/[locale]/brand-new/page.tsx',
+      'src/app/routes/brand-new.tsx',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec eslint --max-warnings 0 src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
+      'pnpm exec eslint --max-warnings 0 src/views/brand-new-surface/ui/BrandNewPage.tsx src/app/routes/brand-new.tsx',
       'pnpm test:contracts',
       'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
@@ -1191,7 +1186,6 @@ describe('focused check suggestions', () => {
   it('suggests i18n message parity and typecheck for locale routing changes', () => {
     const result = suggestFocusedChecks([
       'src/i18n/routing.ts',
-      'src/i18n/request.ts',
       'src/i18n/navigation.ts',
       'messages/en.json',
       'messages/ko.json',
@@ -1200,7 +1194,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/i18n/validate-messages.test.mjs',
-      'pnpm exec eslint --max-warnings 0 src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
+      'pnpm exec eslint --max-warnings 0 src/i18n/routing.ts src/i18n/navigation.ts',
       'pnpm typecheck',
       'pnpm test:desktop:check',
       'pnpm test:i18n:messages',
@@ -1421,14 +1415,13 @@ describe('focused check suggestions', () => {
   });
 
   it('suggests the token gates and overflow smoke for global styling changes', () => {
-    const result = suggestFocusedChecks(['postcss.config.mjs', 'app/globals.css', 'app/styles/tokens.css']);
+    const result = suggestFocusedChecks(['app/globals.css', 'app/styles/tokens.css']);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm check:tokens',
       TOKEN_GATES_COMMAND,
       'pnpm exec playwright test tests/e2e/design-audits/overflow-sweep.spec.ts',
     ]);
-    assert.ok(!commandNames(suggestFocusedChecks(['postcss.config.mjs'])).includes(TOKEN_GATES_COMMAND));
   });
 
   it('suggests focused benchmark and onboarding smoke checks', () => {
@@ -1666,7 +1659,7 @@ describe('focused check suggestions', () => {
 
     // What already worked still works — confirming the reach was widened without narrowing.
     assert.ok(typecheck('src/shared/lib/cn.ts'), 'product code in src');
-    assert.ok(typecheck('app/[locale]/agents/page.tsx'), 'app/**');
+    assert.ok(typecheck('src/app/routes/index.tsx'), 'a route module');
     assert.ok(typecheck('tsconfig.json'), 'tsconfig itself');
   });
 
@@ -1801,7 +1794,7 @@ describe('deleted paths participate in rule matching without reaching file-readi
 
   it('a deleted route file still suggests decisions:check', () => {
     const suggestions = suggestFocusedChecks([], {
-      deletedPaths: ['app/[locale]/foo/page.tsx'],
+      deletedPaths: ['src/app/routes/$locale/_app/foo.tsx'],
     });
     const commands = suggestions.commands.map((c) => c.command);
     assert.ok(commands.includes('pnpm decisions:check'), commands.join('\n'));

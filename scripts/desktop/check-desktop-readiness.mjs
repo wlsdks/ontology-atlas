@@ -79,10 +79,11 @@ const pinnedPnpm = String(pkg.packageManager ?? "pnpm@missing");
 const corepackPrepare = new RegExp(`corepack prepare ${pinnedPnpm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} --activate`, "g");
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
-const rootLayout = readText("app/layout.tsx");
-// The site metadata both builds share; the root layout spreads it (`siteMetadata()`).
+// The document every page shares carries the site entity (`siteEntityGraph`); each screen's head spreads the site metadata (`siteMetadata()`).
+const siteDocument = readText("src/app/document/SiteDocument.tsx");
+const screenMetadataSource = readText("src/app/routes/-site/screen-metadata.ts");
 const siteMetadataSource = readText("src/shared/lib/public-pages/site-metadata.ts");
-// The site Organization and WebSite JSON-LD the root layout renders (`siteEntityGraph`).
+// The site Organization and WebSite JSON-LD the document renders (`siteEntityGraph`).
 const siteEntity = readText("src/shared/config/site/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
@@ -101,7 +102,7 @@ const downloadPage = [
 /** The gateway's top chrome, where the brand name is drawn. The brand gate reads page and chrome together, so it does not pin the brand to one file path. */
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
-const downloadRoute = readText("app/(gateway)/[locale]/download/page.tsx");
+const downloadRoute = readText("src/app/routes/$locale/_site/download.tsx");
 const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriVaultScope = readText("src-tauri/src/vault/scope.rs");
 const tauriShim = readTypeScriptFolder("src/shared/lib/vault-folder/native-vault");
@@ -134,7 +135,7 @@ const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/download/check-hosted-download-surface.mjs");
 const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools"];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
-const gatewayHandOverScript = readText("src/app/providers/GatewayHandOverScript.tsx");
+const bootScript = readText("src/i18n/boot-script.ts");
 const docsVaultPageFiles = [
   "src/views/docs-vault/ui/DocsVaultPage.tsx",
   "src/views/docs-vault/ui/DocsVaultHeader.tsx",
@@ -788,15 +789,15 @@ if (
   // the choosing state reaches the same screen.
   rootEntryPage.includes("vault.awaitingVaultChoice") &&
   // The page is the installed app's alone: a plain browser is sent to the download page from the
-  // document head (`GatewayHandOverScript`) before any of it loads, so no gateway page renders here.
+  // document head (`src/i18n/boot-script.ts`) before any of it loads, so no gateway page renders here.
   !rootEntryPage.includes("GatewayLandingPage") &&
-  gatewayHandOverScript.includes("location.replace") &&
-  gatewayHandOverScript.includes("window.isTauri")
+  bootScript.includes("location.replace") &&
+  bootScript.includes("window.isTauri")
 ) {
   pass("root entry derives the loaded-vault map, desktop first run and the launch chooser from runtime state, and hands a plain browser to the download page");
 } else {
   fail(
-    "src/views/root-entry/ui/RootEntryPage.tsx must route a loaded vault to HomePage and an empty desktop shell to FirstRunPage, and src/app/providers/GatewayHandOverScript.tsx must send a browser (no window.isTauri) to /download",
+    "src/views/root-entry/ui/RootEntryPage.tsx must route a loaded vault to HomePage and an empty desktop shell to FirstRunPage, and src/i18n/boot-script.ts must send a browser (no window.isTauri) to /download",
   );
 }
 
@@ -1339,12 +1340,12 @@ if (missingBundleIcons.length === 0) {
 }
 
 if (
-  rootLayout.includes("siteMetadata()") &&
+  screenMetadataSource.includes("siteMetadata()") &&
   siteMetadataSource.includes("title: SITE_NAME") &&
   siteEntity.includes("SITE_NAME = 'Ontology Atlas'") &&
   // Forks that deploy beneath a base path need the manifest helper.
   siteMetadataSource.includes("manifest: withBasePath('/manifest.webmanifest')") &&
-  rootLayout.includes("siteEntityGraph(") &&
+  siteDocument.includes("siteEntityGraph(") &&
   siteEntity.includes("alternateName: 'ontology-atlas'") &&
   webManifest.name === "Ontology Atlas" &&
   webManifest.short_name === "Ontology Atlas" &&

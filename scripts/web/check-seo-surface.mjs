@@ -253,7 +253,7 @@ function collectPages(outDir) {
   const pages = new Map();
   const walk = (directory) => {
     for (const dirent of fs.readdirSync(directory, { withFileTypes: true })) {
-      if (dirent.name.startsWith('_next')) continue;
+      if (dirent.name === 'assets') continue;
       const full = path.join(directory, dirent.name);
       if (dirent.isDirectory()) walk(full);
       else if (dirent.name === 'index.html') {

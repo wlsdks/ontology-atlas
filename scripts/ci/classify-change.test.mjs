@@ -266,7 +266,7 @@ test('unsafe spec paths never become browser command arguments', () => {
 });
 
 test('Playwright helpers and configuration run the merge smoke set and both surfaces, not the full suite', () => {
-  for (const path of ['tests/e2e/global-setup.ts', 'playwright.config.ts']) {
+  for (const path of ['tests/e2e/settle.ts', 'playwright.config.ts']) {
     const plan = buildImpactPlan({ files: [path] });
     assert.equal(plan.lanes.e2e.mode, 'smoke');
     assert.deepEqual(plan.lanes.e2e.unmappedPaths, [path]);

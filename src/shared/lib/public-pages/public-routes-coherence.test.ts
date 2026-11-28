@@ -2,8 +2,8 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-// Next.js fetch-cache pollution can make `app/sitemap.ts` and `generateStaticParams` produce
-// different project sets. Skips when out/ is absent; fails on mismatch otherwise.
+// The sitemap and the prerendered pages are written from different lists, which can drift apart.
+// Skips when out/ is absent; fails on mismatch otherwise.
 describe("public route coherence", () => {
   it("project URLs in out/sitemap.xml match the out/<locale>/project/*/ directories exactly", async () => {
     const root = path.resolve(__dirname, "../../../..");
@@ -38,9 +38,7 @@ describe("public route coherence", () => {
       for (const entry of builtEntries) {
         if (!entry.isDirectory()) continue;
         const name = entry.name;
-        // Next.js internals, legacy redirects, the new-project route and the client fallback shell are not
-        // slugs.
-        if (name.startsWith("__next")) continue;
+        // Legacy redirects, the new-project route and the client fallback shell are not slugs.
         if (name === "view" || name === "topology" || name === "new" || name === "fallback") continue;
         // A demo sample's project page is built but noindex, so the sitemap leaves it out.
         const html = await readFile(path.join(projectDir, name, "index.html"), "utf8").catch(() => "");

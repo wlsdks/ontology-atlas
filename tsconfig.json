@@ -21,11 +21,6 @@
     "incremental": true,
     "stableTypeOrdering": true,
     "types": ["vitest/globals"],
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "paths": {
       "@/*": ["./*"],
       "@/app-providers/*": ["./src/app/*"],
@@ -37,13 +32,6 @@
       "@/i18n/*": ["./src/i18n/*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.mts"],
   "exclude": ["node_modules", "out", "src-tauri/target"]
 }

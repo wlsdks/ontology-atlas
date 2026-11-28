@@ -28,13 +28,13 @@ function pngFiles(root: string): string[] {
 
 describe('pixel mascot brand outputs', () => {
   it('keeps the browser ICO fallback on the same identity as packaged icons', () => {
-    expect(readFileSync(join(ROOT, 'app/favicon.ico'))).toEqual(
+    expect(readFileSync(join(ROOT, 'public/favicon.ico'))).toEqual(
       readFileSync(join(ROOT, 'src-tauri/icons/icon.ico')),
     );
   });
   it('retires every nested-hex SVG identity file', () => {
     for (const path of [
-      'app/icon.svg',
+      'public/icon.svg',
       'public/brand-mark.svg',
       'public/brand/mark.svg',
       'public/brand/mark-mono.svg',
@@ -51,7 +51,7 @@ describe('pixel mascot brand outputs', () => {
 
   it('ships the raster marks and lockups consumed by the app and README', () => {
     const expected: Record<string, { width: number; height: number }> = {
-      'app/icon.png': { width: 512, height: 512 },
+      'public/icon.png': { width: 512, height: 512 },
       'public/brand/mascot-full.png': { width: 512, height: 512 },
       'public/brand/mascot-compact.png': { width: 64, height: 64 },
       'public/brand/mascot-micro.png': { width: 16, height: 16 },

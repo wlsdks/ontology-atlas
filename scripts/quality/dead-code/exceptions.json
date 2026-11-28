@@ -51,9 +51,9 @@
     },
     {
       "key": "frontend:runtime:devDependencies:package.json:tailwindcss",
-      "reason": "Tailwind CSS is retained as the direct compiler dependency for the PostCSS adapter.",
-      "consumer": "postcss.config.mjs",
-      "witness": "@tailwindcss/postcss"
+      "reason": "Tailwind CSS is retained as the direct compiler dependency for the Vite adapter.",
+      "consumer": "vite.config.ts",
+      "witness": "@tailwindcss/vite"
     },
     {
       "key": "frontend:runtime:devDependencies:package.json:@formatjs/icu-messageformat-parser",

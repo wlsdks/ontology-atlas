@@ -57,32 +57,28 @@ function exists(root, repoPath) {
   }
 }
 
+const ROUTES_FOLDER = ['src', 'app', 'routes', '$locale'];
+
+/** The address segments of each route module under `$locale`: a `_layout` segment adds none, a `$param` is `*`. */
+function routePatterns(root) {
+  const folder = path.join(root, ...ROUTES_FOLDER);
+  if (!existsSync(folder)) return [];
+  return readdirSync(folder, { recursive: true })
+    .map((file) => String(file).split(path.sep))
+    .filter((parts) => parts.every((part) => !part.startsWith('-')) && /\.tsx$/.test(parts.at(-1)) && !/\.test\.tsx$/.test(parts.at(-1)))
+    .map((parts) => [...parts.slice(0, -1), parts.at(-1).replace(/\.tsx$/, '')])
+    .filter((parts) => parts.at(-1) !== 'route' && parts.at(-1) !== '$')
+    .map((parts) => parts.filter((part) => !part.startsWith('_') && part !== 'index').map((part) => (part.startsWith('$') ? '*' : part)));
+}
+
 /**
- * Whether a route like `/project/[slug]` or `/topology?mode=focus` has a page under a locale root:
- * `app/[locale]` (the workbench) or `app/(gateway)/[locale]`, since a route group adds no segment.
+ * Whether a route like `/project/new`, `/guide/[segment]` or `/topology?mode=focus` has a route module under
+ * `src/app/routes/$locale/`, where a `[name]` segment of the document matches a `$name` file segment.
  */
 export function routeExists(route, root = ROOT) {
   if (typeof route !== 'string' || !route.startsWith('/')) return false;
   const segments = route.split(/[?#]/)[0].split('/').filter(Boolean);
-  return [path.join(root, 'app', '[locale]'), path.join(root, 'app', '(gateway)', '[locale]')]
-    .some((localeRoot) => routeExistsUnder(localeRoot, segments));
-}
-
-function routeExistsUnder(localeRoot, segments) {
-  let directory = localeRoot;
-  for (const segment of segments) {
-    const exact = path.join(directory, segment);
-    if (existsSync(exact)) {
-      directory = exact;
-      continue;
-    }
-    const dynamic = existsSync(directory)
-      ? readdirSync(directory, { withFileTypes: true }).find((entry) => entry.isDirectory() && /^\[.+\]$/.test(entry.name))
-      : null;
-    if (!dynamic) return false;
-    directory = path.join(directory, dynamic.name);
-  }
-  return existsSync(path.join(directory, 'page.tsx'));
+  return routePatterns(root).some((pattern) => pattern.length === segments.length && pattern.every((part, index) => part === '*' || part === segments[index]));
 }
 
 function decisionIds(root) {
@@ -145,7 +141,7 @@ export function checkDoc(repoPath, raw, { root = ROOT, decisions = decisionIds(r
   }
   if ('routes' in frontmatter && !Array.isArray(frontmatter.routes)) report('routes', 'must be a list, `[]` when the feature has no route');
   for (const route of asList(frontmatter.routes)) {
-    if (!routeExists(route, root)) report('routes', `${route} has no page under app/[locale] or app/(gateway)/[locale]`);
+    if (!routeExists(route, root)) report('routes', `${route} has no route module under src/app/routes/$locale`);
   }
   if ('decisions' in frontmatter && !Array.isArray(frontmatter.decisions)) report('decisions', 'must be a list');
   for (const id of asList(frontmatter.decisions)) {

@@ -8,9 +8,14 @@ import { describe, expect, it } from "vitest";
  * and the error boundary) take only the namespace files they read, through the two modules named below.
  */
 const ROOT = process.cwd();
-const SCAN_DIRS = ["src", "app"];
+const SCAN_DIRS = ["src"];
 const WHOLE_CATALOGUE_IMPORT = /^\s*import\s+(?!type\b)[^;]*?from\s+['"][^'"]*messages\/[a-z]{2}\.json['"]/mu;
 const NAMESPACE_IMPORT = /from\s+['"][^'"]*messages\/([a-z]{2})\/([A-Za-z]+)\.json['"]/gu;
+/** An import of a namespace file with the clause before `from`, to judge what is taken from it. */
+const NAMESPACE_IMPORT_CLAUSE = /import\s+([^;]*?)\s+from\s+['"][^'"]*messages\/[a-z]{2}\/([A-Za-z]+)\.json['"]/gu;
+
+/** A large namespace a standalone screen may read one named string from, and nothing else of it. */
+const ONE_NAMED_STRING: Record<string, string> = { download: "downloadSectionLabel" };
 
 /** What each standalone screen may import, so a large namespace cannot ride along unseen. */
 const STANDALONE_NAMESPACES: Record<string, readonly string[]> = {
@@ -50,5 +55,21 @@ describe("message files stay out of the browser's first pages", () => {
       const namespaces = [...new Set([...file!.text.matchAll(NAMESPACE_IMPORT)].map((m) => m[2]!))].sort();
       expect(namespaces, `${rel} imports a namespace that is not listed`).toEqual([...allowed].sort());
     }
+  });
+
+  it("a large namespace is read by its one named string, never whole", () => {
+    const wholeReads: string[] = [];
+    let named = 0;
+    for (const rel of Object.keys(STANDALONE_NAMESPACES)) {
+      const file = FILES.find((f) => f.rel === rel)!;
+      for (const [, clause, namespace] of file.text.matchAll(NAMESPACE_IMPORT_CLAUSE)) {
+        const only = ONE_NAMED_STRING[namespace!];
+        if (only === undefined) continue;
+        named += 1;
+        if (!new RegExp(`^\\{\\s*${only}(?:\\s+as\\s+\\w+)?\\s*\\}$`, "u").test(clause!.trim())) wholeReads.push(`${rel}: ${clause}`);
+      }
+    }
+    expect(named, "no named import found; the check would idle").toBeGreaterThan(0);
+    expect(wholeReads).toEqual([]);
   });
 });

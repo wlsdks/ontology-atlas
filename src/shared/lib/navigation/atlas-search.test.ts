@@ -30,6 +30,13 @@ describe('Atlas query serializer', () => {
     expect(stringifySearch({})).toBe('');
   });
 
+  it('forgets a spelling once the same query arrives in standard form', () => {
+    parseSearch('?p=a%20b');
+    expect(stringifySearch({ p: 'a b' })).toBe('?p=a%20b');
+    parseSearch('?p=a+b');
+    expect(stringifySearch({ p: 'a b' })).toBe('?p=a+b');
+  });
+
   it('does not let a query key reach the prototype', () => {
     const search = parseSearch('?constructor=1&__proto__=2');
     expect(Object.getPrototypeOf(search)).toBeNull();

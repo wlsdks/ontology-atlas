@@ -243,8 +243,6 @@
     "contract-node:tests/contract/vault-format/validate-vault-document.contract.test.ts": 0.199,
     "contract-node:tests/contract/vault-format/vault-schema.contract.test.ts": 0.788,
     "contract-node:tests/contract/vault-format/vault-walk-rules.contract.test.ts": 0.056,
-    "jsdom:app/[locale]/project/fallback/ProjectFallbackClient.test.tsx": 1.349,
-    "jsdom:app/sitemap.test.ts": 4.496,
     "jsdom:src/app/library-workspace/library-header-layout.test.tsx": 1.177,
     "jsdom:src/app/library-workspace/panel-arrival.test.ts": 1.17,
     "jsdom:src/app/providers/AppShell.test.tsx": 7.993,
@@ -518,7 +516,6 @@
     "jsdom:src/shared/config/destinations-for-vault-shape.test.ts": 2.848,
     "jsdom:src/shared/config/destinations-with-query.test.ts": 2.694,
     "jsdom:src/shared/config/indigo-tokens.test.ts": 2.995,
-    "jsdom:src/shared/config/pretendard-latin-subsets.test.ts": 1.071,
     "jsdom:src/shared/lib/agent-activity/agent-activity-log.test.ts": 1.502,
     "jsdom:src/shared/lib/agent-activity/agent-display-name.test.ts": 2.539,
     "jsdom:src/shared/lib/agent-activity/agent-notifications.test.ts": 0.799,
@@ -1171,6 +1168,8 @@
     "jsdom:src/widgets/vault-agent-panel/ui/AgentTranscript.test.tsx": 2.538,
     "jsdom:src/widgets/vault-agent-panel/ui/VaultAgentPanel.test.tsx": 3.497,
     "jsdom:tests/contract/brand/brand-asset-parity.contract.test.ts": 1.185,
-    "jsdom:tests/contract/map/node-kind-shape-parity.contract.test.ts": 1.229
+    "jsdom:tests/contract/map/node-kind-shape-parity.contract.test.ts": 1.229,
+    "jsdom:src/app/fonts.test.ts": 1.071,
+    "jsdom:src/app/routes/-site/sitemap-entries.test.ts": 4.496
   }
 }

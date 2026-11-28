@@ -29,13 +29,13 @@ would overturn it.
 
 | Layer | Version | What would overturn "keep" |
 |---|---|---|
-| Next.js | 16.3.3, static export | Static export stops covering a case this product needs. Astro or React Router would cost more in local-first redesign than they return |
+| Vite and TanStack Router | Vite 8, file routes, prerendered public pages | The prerender stops covering a public page this product needs, or the route plugin stops generating a committed route tree. Next.js was replaced because a static site needed none of its server features and its build was the slowest step of every check |
 | React | 19.2.8 | A performance measurement on the map renderer that the React Compiler would fix; that measurement is the gate for turning it on |
-| TypeScript | `typescript` aliased to `@typescript/typescript6` 6.0.2, plus `@typescript/native` 7.0.2 | Next and ESLint supporting the native 7.0 API directly. Until then the manifest carries both, and the 6.0 alias exists for those two consumers |
+| TypeScript | `typescript` aliased to `@typescript/typescript6` 6.0.2, plus `@typescript/native` 7.0.2 | ESLint and typescript-eslint supporting the native 7.0 API directly. Until then the manifest carries both, and the 6.0 alias exists for those consumers |
 | Tailwind | 4.3.3 | Losing `@theme` token stability, which the whole design system is built on |
 | ESLint | 9, flat config | An alternative that supports `eslint-plugin-boundaries`. Biome 2.5 does not, and that plugin is the gate enforcing FSD import direction — so today there is no alternative, not merely a preferred one |
-| pnpm | 10.x | Bun publishing a roadmap after the Anthropic acquisition, and its Next static-export support maturing. Watching only |
-| next-intl | 4.13.4 | Leaving the App Router i18n standard |
+| pnpm | 10.x | Bun publishing a roadmap after the Anthropic acquisition, and its Vite support maturing. Watching only |
+| use-intl | the version in `package.json` | A message format the catalogs outgrow. It is the formatter layer next-intl was built on, with no framework attached |
 
 ### Desktop
 
@@ -70,7 +70,7 @@ choice is not made hastily on the day the gate opens.
 
 | Use case | Decision | Waits on |
 |---|---|---|
-| In-app question answering | Vercel AI SDK 5, provider-agnostic, bring your own key | The Q&A slice's gate. It works under static export and lets a person switch providers freely, which is what the no-bundled-credits promise requires |
+| In-app question answering | Vercel AI SDK 5, provider-agnostic, bring your own key | The Q&A slice's gate. It works in a static build and lets a person switch providers freely, which is what the no-bundled-credits promise requires |
 | Local models | Ollama and LM Studio over plain localhost | The same gate. Both speak the OpenAI-compatible shape and neither raises a CORS problem |
 | Cloud provider CORS | A Tauri sidecar proxy | The same gate. Calling Anthropic or OpenAI directly from the WebView is assumed impossible `⚠`, and keys belong in the OS keychain (the Tauri v2 API name still needs checking `⚠`) |
 | Coordination server | Cloudflare Workers with Durable Objects, as the leading candidate | Real demand for team sync. Chosen for minimal solo operation and auditability; a self-built Rust or Go binary is the later migration if it ever earns one |
@@ -82,7 +82,7 @@ choice is not made hastily on the day the gate opens.
 - **Biome or oxlint** instead of ESLint — would lose the FSD boundary gate.
 - **Electron** instead of Tauri — the cost exceeded the benefit, and the diagnosis it rested on
   was wrong.
-- **Astro or React Router** instead of Next.js — a replatform with no measured return.
+- **Astro** instead of Vite and TanStack Router — a replatform with no measured return after the move to Vite.
 - **A CLI framework** instead of hand-written argument parsing.
 - **TypeScript** for `cli/` and `mcp/`.
 - **Bun** instead of pnpm — roadmap unpublished.

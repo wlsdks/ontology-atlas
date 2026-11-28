@@ -36,7 +36,7 @@ changing what those pages show or how they are built.
   locale's date format. The same date is the chapter's `dateModified` in its
   `TechArticle` JSON-LD (with `datePublished` from the English chapter's first
   commit) and `article:modified_time`; a `BreadcrumbList` names Guide, then the
-  chapter (`src/views/gateway-doc/lib/guide-chapter-meta.ts`).
+  chapter (`src/views/gateway-doc/lib/guide-structured-data.ts`).
 - **Read at book size.** Guide and changelog body text is `--text-reading`
   (16px) at `--leading-prose`, under a `--text-hero` page title. At 1920 a
   guide line ran 97 characters at the median and 105 at most (2026-10-15),
@@ -45,15 +45,13 @@ changing what those pages show or how they are built.
 
 ## Where it lives
 
-- `app/(gateway)/[locale]/guide/page.tsx`,
-  `app/(gateway)/[locale]/guide/[segment]/page.tsx`,
-  `app/(gateway)/[locale]/changelog/page.tsx` — the routes, under the gateway
-  layout (`app/(gateway)/[locale]/layout.tsx`).
+- `src/app/routes/$locale/_site/guide/`, `src/app/routes/$locale/_site/changelog.tsx` —
+  the routes, under the site layout (`src/app/routes/$locale/_site/route.tsx`).
 - `src/views/gateway-doc/model/guide-pages.ts` — `GUIDE_PAGES`, the chapter
   list; adding a chapter there grows the routes, the table of contents and
   previous/next together. The chapters themselves are `docs/guide/*.md`, and
   their translations `docs-i18n/guide/{ko,ja,zh}/*.md`, read at build time by
-  `src/views/gateway-doc/lib/read-guide-document.ts`. Editing a chapter means
+  `src/app/routes/-site/guide-chapter.ts`. Editing a chapter means
   editing its translations in the same change.
 - `src/views/gateway-doc/ui/GatewayDocPage.tsx` — the shared reader for both
   pages (`sidebar` for the guide, `entryNav` and `recentSectionLimit` for the
@@ -62,7 +60,7 @@ changing what those pages show or how they are built.
 ## Limits
 
 - The changelog page shows a fixed number of recent sections
-  (`RECENT_SECTIONS` in `app/(gateway)/[locale]/changelog/page.tsx`); older entries are
+  (`RECENT_SECTIONS` in `src/app/routes/$locale/_site/changelog.tsx`); older entries are
   read in the repository.
 
 ## Verified by

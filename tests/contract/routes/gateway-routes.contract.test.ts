@@ -1,8 +1,9 @@
-import { existsSync, readdirSync } from 'node:fs';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isGatewayRoute } from '@/shared/lib/navigation/nav-destination';
+
+import { readRouteAddresses } from './read-route-addresses';
 
 const repoRoot = resolve(__dirname, '../../..');
 
@@ -13,20 +14,23 @@ const repoRoot = resolve(__dirname, '../../..');
 const GATEWAY_ROUTES = ['download', 'guide', 'changelog', 'sample'] as const;
 
 describe('gateway route registration', () => {
+  const routes = readRouteAddresses(repoRoot);
+  const firstSegment = (address: string) => address.split('/')[1];
+
   it.each(GATEWAY_ROUTES)('the `/%s` route really exists', (route) => {
-    expect(existsSync(resolve(repoRoot, `app/(gateway)/[locale]/${route}/page.tsx`))).toBe(true);
+    expect(routes.some((entry) => entry.group === 'site' && firstSegment(entry.address) === route)).toBe(true);
   });
 
   /**
-   * The gateway layout carries a picked subset of the messages and no workbench shell, so a
-   * gateway route under the workbench layout would ship the whole catalog, and a workbench route
-   * under the gateway layout would lose its rail and copy.
+   * The public layout carries a picked subset of the messages and no workbench shell, so a gateway
+   * route under the app layout would ship the whole catalog, and an app route under the public
+   * layout would lose its rail and copy.
    */
-  it('the gateway layout holds exactly the gateway routes', () => {
-    expect(readdirSync(resolve(repoRoot, 'app/(gateway)/[locale]'), { withFileTypes: true })
-      .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort()).toEqual([...GATEWAY_ROUTES].sort());
+  it('the public layout holds exactly the gateway routes', () => {
+    const publicFirstSegments = new Set(routes.filter((entry) => entry.group === 'site').map((entry) => firstSegment(entry.address)));
+    expect([...publicFirstSegments].sort()).toEqual([...GATEWAY_ROUTES].sort());
     for (const route of GATEWAY_ROUTES) {
-      expect(existsSync(resolve(repoRoot, `app/[locale]/${route}`)), `app/[locale]/${route}`).toBe(false);
+      expect(routes.filter((entry) => entry.group === 'app' && firstSegment(entry.address) === route), `/${route} under the app layout`).toEqual([]);
     }
   });
 

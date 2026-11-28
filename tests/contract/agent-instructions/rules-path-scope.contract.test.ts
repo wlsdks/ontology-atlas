@@ -197,17 +197,15 @@ describe("`.claude/rules` path scoping contract", () => {
   });
 
   it("names every legacy redirect route in AGENTS.md", () => {
-    const appDir = join(process.cwd(), "app/[locale]");
-    const pages = globSync("**/page.tsx", { cwd: appDir });
-    expect(pages.length, "no app pages found — this sweep would pass vacuously").toBeGreaterThan(5);
+    const routesDir = join(process.cwd(), "src/app/routes/$locale/_app");
+    const modules = globSync("**/*.tsx", { cwd: routesDir });
+    expect(modules.length, "no route modules found — this sweep would pass vacuously").toBeGreaterThan(5);
 
-    const redirects = pages
-      .filter((page) => /from ["']@\/views\/[a-z-]*redirect["']/.test(
-        readFileSync(join(appDir, page), "utf8"),
-      ))
-      .map((page) => `/${page.replace(/\/?page\.tsx$/, "")}`)
+    const redirects = modules
+      .filter((module) => readFileSync(join(routesDir, module), "utf8").includes("redirectRetiredAddress("))
+      .map((module) => `/${module.replace(/\.tsx$/, "").replace(/(^|\/)index$/, "")}`)
       .sort();
-    expect(redirects.length, "no redirect pages matched the import pattern").toBeGreaterThan(0);
+    expect(redirects.length, "no route module calls redirectRetiredAddress").toBeGreaterThan(0);
 
     const agents = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
     const unnamed = redirects.filter((route) => !agents.includes(`\`${route}\``));

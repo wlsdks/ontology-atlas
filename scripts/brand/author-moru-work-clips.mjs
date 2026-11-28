@@ -14,7 +14,7 @@ import { moruWorkGrid } from './build-moru-sprites.mjs';
 import { WORK_CLIPS } from './moru-work-clips.mjs';
 
 const require = createRequire(import.meta.url);
-const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+const sharp = require('sharp');
 const ROOT = 'assets/brand/moru';
 const SHEETS = 'source/motion-v10';
 const COLUMNS = 4;

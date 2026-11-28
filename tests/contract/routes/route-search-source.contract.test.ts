@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
  * A route's critical chunk carries its `validateSearch`, and the bundler splits only `component`. A schema
  * imported through a view's public file drags that whole view into the chunk every page of the site loads
  * (the download page's first load grew by 700 KB brotli this way), so a route takes each schema from
- * `shared/lib/navigation/screen-searches` or from a file in `src/app` beside its screen.
+ * `shared/lib/navigation/screen-searches` or from a `*-search.ts` file in `src/app` beside its screen.
  */
 const ROUTES = join(process.cwd(), "src", "app", "routes");
 
@@ -27,12 +27,13 @@ describe("a route's search schema comes from a light module", () => {
     expect(FILES.filter((f) => VALIDATE.test(f.text)).length).toBeGreaterThanOrEqual(8);
   });
 
-  it("no route imports its schema from a view", () => {
+  it("every route takes its schema from screen-searches or a *-search.ts file beside its screen", () => {
     const offenders = FILES.flatMap((f) => {
       const name = VALIDATE.exec(f.text)?.[1];
       if (!name) return [];
-      const fromView = new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*['"]@/(?:views|widgets|features)/`, "u");
-      return fromView.test(f.text) ? [`${f.rel}: ${name}`] : [];
+      const source = new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*['"]([^'"]+)['"]`, "u").exec(f.text)?.[1];
+      const allowed = source !== undefined && (source === "@/shared/lib/navigation/screen-searches" || /(?:^|\/)[\w-]+-search$/u.test(source));
+      return allowed ? [] : [`${f.rel}: ${name} from ${source ?? "nowhere"}`];
     });
     expect(offenders).toEqual([]);
   });

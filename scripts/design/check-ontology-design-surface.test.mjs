@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS,
   evaluateOntologyDesignSurface,
   renderOntologyDesignSurfaceReport,
 } from "./check-ontology-design-surface.mjs";
@@ -106,7 +107,6 @@ function writeCleanWorkbenchFixtures(root) {
       "sourceContract.graphChip",
       "sourceContract.agentLabel",
       "sourceContract.agentChip",
-      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
       "SOURCE_VAULT_RUNTIME_REPLAY_MARKERS",
       "pattern_walk/project_map",
       "sourceContract.agentCopyGate",
@@ -272,7 +272,6 @@ test("ontology design surface reports missing workspace execution cells", () => 
     "src/views/docs-vault/ui/DocsVaultAuditModal.tsx",
     [
       "function DocsVaultAuditModal() {}",
-      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
       "sourceContract.agentCopyGate",
     ].join("\n"),
   );
@@ -299,5 +298,19 @@ test("ontology design surface reports missing workspace execution cells", () => 
       "missing marker: SOURCE_VAULT_RUNTIME_REPLAY_MARKERS",
       "missing marker: pattern_walk/project_map",
     ],
+  );
+});
+
+test("every default design surface folder exists, so the gate cannot crash on a folder a refactor removed", () => {
+  for (const directory of DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS) {
+    assert.ok(fs.existsSync(path.join(process.cwd(), directory)), `${directory} does not exist`);
+  }
+});
+
+test("a missing design surface folder is refused by name, not by a stack trace", () => {
+  const root = makeFixture();
+  assert.throws(
+    () => evaluateOntologyDesignSurface({ root, targetDirs: ["src/views/gone"] }),
+    /src\/views\/gone does not exist/,
   );
 });

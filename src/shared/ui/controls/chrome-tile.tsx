@@ -6,7 +6,7 @@ import { Tooltip } from '@/shared/ui/hints/tooltip';
 
 /**
  * The square icon button of the chrome system. Presentational; it enforces the `--chrome-*`
- * tokens and a required name, rendering a next-intl `Link` with `href`. Chrome surfaces use it
+ * tokens and a required name, rendering the router `Link` with `href`. Chrome surfaces use it
  * rather than rebuilding one inline (docs/DESIGN-SYSTEM.md, chrome grammar).
  */
 interface ChromeTileBaseProps {

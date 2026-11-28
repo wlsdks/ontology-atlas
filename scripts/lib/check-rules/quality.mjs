@@ -22,7 +22,7 @@ export const rules = [
       /^scripts\/(?:quality\/dead-code\/.+|.+\.(?:mjs|js))$/,
       /^cli\/(?:src\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
       /^mcp\/(?:src\/|scripts\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
-      /^(?:package(?:-lock)?\.json|pnpm-lock\.yaml|next\.config\.ts|tsconfig(?:\.[^/]+)?\.json|vitest\.config\.ts|playwright\.config\.ts|postcss\.config\.mjs)$/,
+      /^(?:package(?:-lock)?\.json|pnpm-lock\.yaml|tsconfig(?:\.[^/]+)?\.json|vitest\.config\.ts|playwright\.config\.ts)$/,
     ],
   },
   {
@@ -34,18 +34,16 @@ export const rules = [
   {
     order: 970,
     command: 'pnpm typecheck',
-    reason: 'TypeScript or Next.js static export config changed',
+    reason: 'TypeScript source or configuration changed',
     /*
      * Do not exclude test files: `tsconfig.json` includes every .ts file, so CI's `tsc --noEmit`
      * checks them, and vitest does not check types.
      */
     matches: [
-      /^app\/.*\.(?:ts|tsx)$/,
-      /^next\.config\.ts$/,
-      /^next-env\.d\.ts$/,
       /^src\/.*\.(?:ts|tsx)$/,
       /^tests\/.*\.(?:ts|tsx)$/,
       /^tsconfig\.json$/,
+      /^vite\.config\.ts$/,
     ],
   },
   {

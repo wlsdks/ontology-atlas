@@ -8,7 +8,7 @@ import { NATIVE_ROWS } from './build-moru-companion.mjs';
 import { despeckle, faintMarks, holdBody, inkFringe, ivoryFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
-const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+const sharp = require('sharp');
 const INK = [23, 25, 35], SKIN = [214, 211, 201], IVORY = [255, 241, 215], FREE_INK = [109, 115, 210], FRINGE_GRAY = [85, 84, 81], MID_FRINGE_GRAY = [119, 117, 114], HAZE_GRAY = [153, 150, 143];
 
 function canvas(size) {

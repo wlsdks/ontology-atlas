@@ -421,8 +421,8 @@ test('a reused main push still runs every browser lane in full, and nothing else
 });
 
 test('every Vitest sweep of the unit and perf lanes leaves the quarantined files out, and nothing else changes', () => {
-  const quarantinedVitest = ['app/[locale]/project/fallback/ProjectFallbackClient.test.tsx', 'src/shared/lib/cn.test.ts'];
-  const exclusions = " --exclude='app/\\[locale\\]/project/fallback/ProjectFallbackClient.test.tsx' --exclude='src/shared/lib/cn.test.ts'";
+  const quarantinedVitest = ['src/views/[probe]/probe.test.tsx', 'src/shared/lib/cn.test.ts'];
+  const exclusions = " --exclude='src/views/\\[probe\\]/probe.test.tsx' --exclude='src/shared/lib/cn.test.ts'";
   const plans = {
     full: buildImpactPlan({ files: [], forceFull: true }),
     affected: buildImpactPlan({ files: ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx'] }),

@@ -1,11 +1,12 @@
 import type { KnowledgeProjectInsight } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { buildOntologyMapGraph } from "../../lib/map-canvas/map-adapter";
 import { resolveCanvasSelectedSlug } from "../../lib/selection/resolve-canvas-selection";
 import { clampSynthSize, type SynthShape, synthesizeEvidenceStates, synthesizeVaultGraph } from "../../lib/synth-vault/synth-vault";
 import type { MapEvidence } from "@/features/vault-ontology";
-import { resolveRealmNodeId } from "../route-state/url-state";
+import { firstSearchText } from "@/shared/lib/navigation/search-text";
+import { resolveRealmNodeId, type HomeSearch } from "../route-state/url-state";
 
 export function useTopologyGraphProjection({
   projects,
@@ -21,6 +22,7 @@ export function useTopologyGraphProjection({
   deeplinkSourceReady,
   projectsLoaded,
   realmSlug,
+  search,
 }: {
   projects: readonly Project[];
   localGraphRoot: string | null;
@@ -35,6 +37,8 @@ export function useTopologyGraphProjection({
   deeplinkSourceReady: boolean;
   projectsLoaded: boolean;
   realmSlug: string | null;
+  /** The map's own query: `synth*` keys draw a synthetic vault for measurement. */
+  search: HomeSearch;
 }) {
   const projectBySlug = useMemo(
     () => new Map(projects.map((project) => [project.slug, project])),
@@ -79,41 +83,13 @@ export function useTopologyGraphProjection({
     }
     return projects.filter((project) => visited.has(project.slug));
   }, [localGraphRoot, projectBySlug, projects, reverseDeps]);
-  const [synthSize] = useState<number | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = new URLSearchParams(window.location.search).get("synth");
-      return raw === null ? null : clampSynthSize(Number(raw));
-    } catch {
-      return null;
-    }
-  });
-  const [synthDependencies] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return new URLSearchParams(window.location.search).get("synthDeps") === "1";
-    } catch {
-      return false;
-    }
-  });
-  const [synthShape] = useState<SynthShape>(() => {
-    if (typeof window === "undefined") return "uniform";
-    try {
-      return new URLSearchParams(window.location.search).get("synthShape") === "layered" ? "layered" : "uniform";
-    } catch {
-      return "uniform";
-    }
-  });
-  const [synthStaleShare] = useState<number | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = new URLSearchParams(window.location.search).get("synthEvidence");
-      const percent = raw === null ? Number.NaN : Number(raw);
-      return Number.isFinite(percent) ? Math.min(1, Math.max(0, percent / 100)) : null;
-    } catch {
-      return null;
-    }
-  });
+  const rawSynthSize = firstSearchText(search.synth);
+  const synthSize = rawSynthSize === undefined ? null : clampSynthSize(Number(rawSynthSize));
+  const synthDependencies = firstSearchText(search.synthDeps) === "1";
+  const synthShape: SynthShape = firstSearchText(search.synthShape) === "layered" ? "layered" : "uniform";
+  const rawStalePercent = firstSearchText(search.synthEvidence);
+  const stalePercent = rawStalePercent === undefined ? Number.NaN : Number(rawStalePercent);
+  const synthStaleShare = Number.isFinite(stalePercent) ? Math.min(1, Math.max(0, stalePercent / 100)) : null;
   const spotlightIds = spotlightOn ? recentNodeIds : null;
   const freshChannelSlugs = spotlightOn ? recentNodeIds : changedSlugs;
   const projectedSource = useMemo(() => synthSize !== null

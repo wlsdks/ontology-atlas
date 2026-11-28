@@ -60,10 +60,10 @@ const COPY_PLAN = [
   ['src-tauri/icons/Square44x44Logo.png', 'tile-44'],
   ['src-tauri/icons/Square30x30Logo.png', 'tile-30'],
   ['src-tauri/icons/StoreLogo.png', 'tile-50'],
-  ['app/apple-icon.png', 'apple-180'],
+  ['public/apple-icon.png', 'apple-180'],
   // Google Search recommends a square favicon larger than 48px. Keep the browser
   // icon on the canonical full-size brand output; browsers downsample it as needed.
-  ['app/icon.png', 'icon-512'],
+  ['public/icon.png', 'icon-512'],
   ['public/og-image.png', 'og-image'],
   ['public/brand-icon-512.png', 'icon-512'],
   ['public/logo.png', 'icon-1024'],
@@ -148,7 +148,7 @@ execFileSync('iconutil', ['-c', 'icns', ICONSET, '-o', 'src-tauri/icons/icon.icn
 written.push('src-tauri/icons/icon.icns');
 
 written.push(put('src-tauri/icons/icon.ico', buildIco(ICO_PLAN.map(([s, n]) => [s, read(n)]))));
-written.push(put('app/favicon.ico', readFileSync('src-tauri/icons/icon.ico')));
+written.push(put('public/favicon.ico', readFileSync('src-tauri/icons/icon.ico')));
 for (const [path, src] of COPY_PLAN) written.push(put(path, read(src)));
 for (const [state, spec] of Object.entries(readMascotMotionRows(process.cwd(), true))) {
   written.push(put(`public/brand/mascot-${state}-row.png`, readFileSync(spec.path)));

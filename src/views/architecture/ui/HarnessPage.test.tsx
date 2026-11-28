@@ -59,12 +59,6 @@ vi.mock('./ArchitecturePage', () => ({
     </div>
   ),
 }));
-// No router mounts around the screen here; the address on show is whatever the test wrote to the window.
-vi.mock('@/shared/lib/navigation/use-committed-address', async () => {
-  const { parseSearch } = await import('@/shared/lib/navigation/atlas-search');
-  return { useCommittedSearch: () => parseSearch(window.location.search) };
-});
-
 const { HarnessPage } = await import('./HarnessPage');
 const { parseSearch } = await import('@/shared/lib/navigation/atlas-search');
 

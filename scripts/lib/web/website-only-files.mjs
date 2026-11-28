@@ -12,6 +12,10 @@ export const WEBSITE_ONLY_ENTRIES = Object.freeze([
   'og',
   'og-image.png',
   'brand-icon-512.png',
+  // The icons the website's page head names; the app's window has its own in the bundle.
+  'favicon.ico',
+  'icon.png',
+  'apple-icon.png',
   'manifest.webmanifest',
   'llms.txt',
   'llms-full.txt',

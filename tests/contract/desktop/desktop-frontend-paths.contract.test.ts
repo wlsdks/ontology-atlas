@@ -57,7 +57,6 @@ describe("what the app folder leaves out has no way in from the app", () => {
     // gates its link behind the web runtime or renders only on a gateway page; a new file that
     // links `/download` has to be read for that gate and added here.
     const reviewed = new Set([
-      "src/app/providers/GatewayHandOverScript.tsx",
       // The boot script hands a plain browser to /download; its `else` branch runs only when `window.isTauri` is absent.
       "src/i18n/boot-script.ts",
       // Generated route table: it names the route's address, and links nothing.
@@ -104,10 +103,7 @@ describe("what the app folder leaves out has no way in from the app", () => {
       /^src\/shared\/lib\/public-pages\/page-metadata\.ts$/,
       /^src\/shared\/lib\/public-pages\/site-metadata\.ts$/,
       /^src\/shared\/config\/site\/site-entity\.ts$/,
-      /^app\/layout\.tsx$/,
-      /^app\/robots\.ts$/,
-      /^app\/sitemap\.ts$/,
-      /^app\/llms(-full)?\.txt\/route\.ts$/,
+      /^src\/app\/document\/SiteDocument\.tsx$/,
     ];
     const naming = appSource.filter((file) => pattern.test(readFileSync(join(ROOT, file), "utf8")));
     expect(naming).toContain("src/views/download/model/demo-clips.ts");

@@ -45,7 +45,6 @@ const FUTURE_PATHS = [
   "src/shared/ui/brand-new-primitive.tsx",
   "src/shared/lib/brand-new-helper.ts",
   "src/app/brand-new-provider.tsx",
-  "app/[locale]/brand-new/page.tsx",
 ];
 
 /** The single line the field trial planted. It trips four families at once. */
@@ -110,7 +109,7 @@ describe("ramp lint coverage: is a new surface covered from day one", () => {
   it("coverage is a deny list and has not gone back to an allow list", () => {
     // This assertion is the heart of the file. The moment a directory list appears
     // here, the "a newly created directory is on no list" hole returns intact.
-    expect(rampCoveredGlobs).toEqual(["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"]);
+    expect(rampCoveredGlobs).toEqual(["src/**/*.{ts,tsx}"]);
   });
 
   it("the detector does not spin idle on an empty set, since the ramp selectors exist", () => {

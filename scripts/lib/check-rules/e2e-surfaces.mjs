@@ -47,8 +47,8 @@ export const rules = [
   {
     order: 730,
     command: 'pnpm exec playwright test tests/e2e/design-audits/overflow-sweep.spec.ts',
-    reason: 'global CSS, Tailwind, or PostCSS styling behavior changed',
-    matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/, /^postcss\.config\.mjs$/],
+    reason: 'global CSS or Tailwind styling behavior changed',
+    matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/],
   },
   {
     order: 820,
@@ -76,7 +76,7 @@ export const rules = [
       'tests/e2e/agents/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts',
     reason: 'the Agents destination changed — three e2e specs drive its tabs, its connectors card and its deep link',
     matches: [
-      /^src\/views\/(?:agents|mcp|mcp-redirect)\/.+\.tsx?$/,
+      /^src\/views\/(?:agents|mcp)\/.+\.tsx?$/,
       /^src\/app\/agents-workspace\/.+\.tsx?$/,
       /^src\/features\/mcp-connectors\/.+\.tsx?$/,
       /^src\/widgets\/app-settings-menu\/ui\/agent-setup\/(?:AgentSetupSection|AgentSetupSectionLabel|VaultAgentSetupPanel|AgentSetupTroubleshooting|AgentSetupInspection|AgentConnectionStatus)\.tsx$/,
@@ -132,6 +132,6 @@ export const rules = [
     command:
       'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
     reason: 'a route was added or changed — it must be classified into the a11y/contrast ratchets',
-    matches: [/^app\/(?:.+\/)?(?:page|not-found|error|global-error)\.tsx$/],
+    matches: [/^src\/app\/routes\/(?:[^/-][^/]*\/)*[^/-][^/]*(?<!\.test)\.tsx$/],
   },
 ];

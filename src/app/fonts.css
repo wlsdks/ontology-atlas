@@ -1,11 +1,10 @@
 /*
- * The fonts of the Vite build, as plain `@font-face` rules; the Next build gets the same families from
- * `next/font` (`src/shared/config/fonts.ts`). The three variables are the ones `tokens.css` reads.
+ * The app's fonts as plain `@font-face` rules. The three variables are the ones `tokens.css` reads.
  *
  * `Pretendard Latin` is Pretendard's Latin, digits and symbols as the upstream dynamic subsets ship
  * them (SIL OFL 1.1), each face limited to the Latin range, so a Latin page never fetches Hangul. The
  * whole file sits behind them as `Pretendard Whole`, fetched only for a character no subset carries.
- * `pretendard-latin-subsets.test.ts` checks the list against the package; JetBrains Mono (SIL OFL 1.1,
+ * `fonts.test.ts` checks the list against the package; JetBrains Mono (SIL OFL 1.1,
  * `NOTICE.md`) is the Latin file of `@fontsource-variable/jetbrains-mono`.
  */
 :root {

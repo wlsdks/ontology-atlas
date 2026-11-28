@@ -35,22 +35,38 @@ export const HOME_QUERY_KEYS = {
 
 export type HomeQueryKey = (typeof HOME_QUERY_KEYS)[keyof typeof HOME_QUERY_KEYS];
 
-/** The map route's query: the keys the map reads are typed text, any other key passes through. */
-export const homeSearch = screenSearch<readonly HomeQueryKey[]>(Object.values(HOME_QUERY_KEYS));
+/** The keys that draw a synthetic vault for measurement (`synth-vault.ts`); they are not part of the address a person shares. */
+type HomeSynthKey = "synth" | "synthDeps" | "synthShape" | "synthEvidence";
 
-export type HomeSearch = ScreenSearch<readonly HomeQueryKey[]>;
+export type HomeSearch = ScreenSearch<readonly (HomeQueryKey | HomeSynthKey)[]>;
+
+/** The map route's query: the keys the map reads are typed text, any other key passes through. */
+export const homeSearch = screenSearch<readonly (HomeQueryKey | HomeSynthKey)[]>();
 
 /** The Agents page's tab, and beside it the page reads `returnTo`, and its MCP tab reads `mcp` and `install`. */
-export const agentsSearch = screenSearch(["tab", "returnTo", "mcp", "install"] as const);
-
 export type AgentsSearch = ScreenSearch<readonly ["tab", "returnTo", "mcp", "install"]>;
 
-/** The Harness route's query: `?role=` and `?stage=` exist only on the blueprint, so an address with one names it. */
-export const harnessSearch = screenSearch(["view", "role", "stage"] as const);
+export const agentsSearch = screenSearch<readonly ["tab", "returnTo", "mcp", "install"]>();
 
+/** The Harness route's query: `?role=` and `?stage=` exist only on the blueprint, so an address with one names it. */
 export type HarnessSearch = ScreenSearch<readonly ["view", "role", "stage"]>;
 
-/** The lane (`kind`), the round open in it and the run that just landed. */
-export const automationsSearch = screenSearch(["kind", "round", "run"] as const);
+export const harnessSearch = screenSearch<readonly ["view", "role", "stage"]>();
 
+/** The lane (`kind`), the round open in it and the run that just landed. */
 export type AutomationsSearch = ScreenSearch<readonly ["kind", "round", "run"]>;
+
+export const automationsSearch = screenSearch<readonly ["kind", "round", "run"]>();
+
+/**
+ * The Library's tab and ontology view, the round a retired link named, and the document reader's keys:
+ * the open document (`slug`), its list (`view`, `sort`, `group`), the sample vault (`dogfood`) and the
+ * return marker (`via`). `/docs` reads the same keys, because the Library's Ontology tab embeds it.
+ */
+export type LibrarySearch = ScreenSearch<
+  readonly ["tab", "ontologyView", "round", "slug", "view", "dogfood", "sort", "group", "via"]
+>;
+
+export const librarySearch = screenSearch<
+  readonly ["tab", "ontologyView", "round", "slug", "view", "dogfood", "sort", "group", "via"]
+>();

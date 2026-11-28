@@ -7,7 +7,9 @@ import {
 } from '@/entities/knowledge-graph';
 import { buildDocsVaultHref } from '@/entities/docs-vault';
 import { firstSearchText } from '@/shared/lib/navigation/search-text';
-import { useCommittedAddress, useCommittedSearch } from '@/shared/lib/navigation/use-committed-address';
+import { stringifySearch } from '@/shared/lib/navigation/atlas-search';
+import type { LibrarySearch } from '@/shared/lib/navigation/screen-searches';
+import { useCommittedAddress } from '@/shared/lib/navigation/use-committed-address';
 import { usePrevious } from '@/shared/lib/use-previous';
 import {
   parseDocsTreeGroup,
@@ -23,9 +25,9 @@ import {
 } from '../lib/persistence';
 import type { useVaultManifest } from './use-vault-manifest';
 
-export function useDocsVaultAddress() {
-  const { pathname: routePathname, searchString } = useCommittedAddress();
-  const search = useCommittedSearch();
+export function useDocsVaultAddress(search: LibrarySearch) {
+  const { pathname: routePathname } = useCommittedAddress();
+  const searchString = useMemo(() => stringifySearch(search), [search]);
   const searchParams = useMemo(() => new URLSearchParams(searchString), [searchString]);
   const querySlug = firstSearchText(search.slug) ?? null;
   const queryView = parseView(firstSearchText(search.view));

@@ -7,13 +7,13 @@ area: release
 
 # Deployment
 
-> 2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (`output: 'export'`), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages. The old Firebase-specific guide was deleted along with the dependency — this line used to link to an archived copy that no longer exists (2026-07-31: the link had been dead, promising a document nobody could open).
+> 2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site, deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages. The old Firebase-specific guide was deleted along with the dependency — this line used to link to an archived copy that no longer exists (2026-07-31: the link had been dead, promising a document nobody could open).
 
 ## Build
 
 ```bash
 pnpm install
-pnpm build          # static export → out/
+pnpm build          # the site folder → out/, and the app folder for the desktop shell
 ```
 
 This produces an `out/` directory with HTML/JS/CSS only. No server runtime.
@@ -57,7 +57,7 @@ Public URL after deploy: `https://ontologyatlas.com/`.
 vercel --prod
 ```
 
-Vercel auto-detects Next.js. `output: 'export'` produces a static build.
+Point Vercel at the `out/` folder `pnpm build` writes; there is no server runtime to detect.
 
 ### Netlify, S3, other static hosts
 

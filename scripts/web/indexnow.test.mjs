@@ -10,7 +10,7 @@ import { changedUrls, exportedFileOf, INDEXNOW_KEY, submissionOf, submit, visibl
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const page = (text, chunk) =>
-  `<html><head><title>Atlas</title><meta name="description" content="A map"><script src="/_next/${chunk}.js"></script></head><body><main><h1>${text}</h1></main><script>self.__next_f.push(["${chunk}"])</script></body></html>`;
+  `<html><head><title>Atlas</title><meta name="description" content="A map"><script type="module" src="/assets/${chunk}.js"></script></head><body><main><h1>${text}</h1></main><script>window.__record=["${chunk}"]</script></body></html>`;
 
 test('the key the engines fetch is served at the site root', () => {
   assert.equal(fs.readFileSync(path.join(ROOT, 'public', `${INDEXNOW_KEY}.txt`), 'utf8').trim(), INDEXNOW_KEY);

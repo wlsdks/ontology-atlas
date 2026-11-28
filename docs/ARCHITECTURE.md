@@ -53,9 +53,9 @@ area: architecture
 │ └─ /guide · /changelog     gateway reading (vault md)  │
 ├────────────────────────────────────────────────────────┤
 │ App layer                                               │
-│ ├─ Next.js 16 App Router                               │
-│ ├─ next-intl /[locale]/ (en, ko, ja, zh)               │
-│ ├─ output: 'export'  (static)                          │
+│ ├─ Vite 8 + TanStack Router (file routes)              │
+│ ├─ use-intl /[locale]/ (en, ko, ja, zh)                │
+│ ├─ static folders: app (embedded) + site (prerendered) │
 │ ├─ Tauri shell (the installed local workbench)          │
 │ └─ TaxonomyProvider · ToastProvider · MotionProvider   │
 ├────────────────────────────────────────────────────────┤
@@ -326,10 +326,11 @@ folder only in the installed app); the working rule agents load is
 `.claude/rules/surfaces.md`.
 
 **One codebase, one build.** The macOS app is not a port. Tauri loads the very
-same static export into a WebView. Nothing is forked, and nothing should be.
-The macOS and Windows bundles leave out only what the website alone serves:
-`scripts/desktop/stage-desktop-frontend.mjs` copies `out/` to
-`src-tauri/target/desktop-frontend` (`frontendDist`) without `/download`,
+same Vite bundle into a WebView. Nothing is forked, and nothing should be.
+`pnpm build` writes two folders from it: `out/` is the website, with the
+public pages prerendered, and `src-tauri/target/desktop-frontend`
+(`frontendDist`) is the installed app's. The app folder leaves out only what
+the website alone serves (`scripts/lib/web/website-only-files.mjs`): `/download`,
 `/sample`, the gateway's videos and screenshots, Open Graph
 images, `llms*.txt`, the sitemap and `robots.txt`. Tauri compiles that folder
 into the executable, and the updater ships the executable whole, so each of
@@ -360,14 +361,14 @@ that rejected this scheme is overturned only for this door; uid addresses, node
 addresses and any URL that writes or executes remain out, and
 `tests/contract/security/url-scheme-one-door.contract.test.ts` is what keeps them out.
 
-**One page policy for both.** A static host sends no headers, so the production export
-carries its Content-Security-Policy as a meta tag in the root layout
+**One page policy for both.** A static host sends no headers, so the production build
+carries its Content-Security-Policy as a meta tag in `index.html`
 (`src/shared/config/site/web-content-security-policy.ts`): no remote image, connection,
 plugin, `<base>` or form target, and scripts from the page's own origin (inline ones
-included until the export's inline scripts are hashed). The app loads the same HTML
+included until the build's inline scripts are hashed). The app loads the same HTML
 under its own policy (`tauri.conf.json`), and both apply there, so the page policy allows
 everything the app's does, IPC included; `tests/contract/security/web-csp-parity.contract.test.ts`
-holds the two together. `next dev` gets no meta, because refresh needs `eval`.
+holds the two together. `pnpm dev` gets no meta, because refresh needs `eval`.
 
 **What each surface is for.** The app is where the vault lives day to day: the
 place a person reads the map, judges it, and connects their AI agents. It is
@@ -381,7 +382,7 @@ gateway stays because every visitor recorded so far arrived through the web.
 Any other address opened in a plain browser answers with one page, "Ontology
 Atlas runs in the installed app", with the download page and the sample map.
 Each app route's HTML carries two faces, the workbench and that page. The boot
-script (`src/shared/ui/document/lang-boot-script.tsx`) runs first in the body
+script (`src/i18n/boot-script.ts`, inlined by `scripts/vite/atlas-index-html.ts`) runs first in the head
 and sets `data-shell="desktop"` on `<html>` when `window.isTauri` is true; CSS
 keyed on that mark paints exactly one face, so a plain browser, with scripts or
 without, never paints the rail and the app never paints the page meant for
@@ -864,7 +865,7 @@ left out of the app's bundle like `/download`.
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
 /ontology/studio           compatibility redirect; translates node/mode/edit to /topology
-/ontology/insights         compatibility redirect (src/views/insights-redirect/): tab=harness →
+/ontology/insights         compatibility redirect (`beforeLoad`, `retired-address-targets.ts`): tab=harness →
                            /architecture/?view=overview with other flags kept; tab=library →
                            /library/?tab=wiki; review=analysis:<id> or node=<slug> →
                            /topology/?p=<canonical id>; anything else → /topology/
@@ -945,35 +946,34 @@ left out of the app's bundle like `/download`.
 /changelog                 renders the composed changelog (frozen history plus change/release fragments), most recent sections only
 ```
 
-All routes are wrapped under `/[locale]/` by next-intl (en, ko, ja, zh). Chinese is Simplified only, served as `zh` with `<html lang="zh-Hans">`; root `/` sends `zh-Hant`, `zh-TW`, `zh-HK` and `zh-MO` browsers to `/en/`.
+All routes are wrapped under `/[locale]/` (en, ko, ja, zh), the `$locale` segment of the route tree. Chinese is Simplified only, served as `zh` with `<html lang="zh-Hans">`; root `/` sends `zh-Hant`, `zh-TW`, `zh-HK` and `zh-MO` browsers to `/en/`.
 
-Two layouts own that segment, and the URLs do not show which one a page has,
-because a route group adds no segment. `app/[locale]/layout.tsx` is the
+Two layout routes own that segment, and the URLs do not show which one a page has,
+because a pathless layout adds no segment. `src/app/routes/$locale/_app/route.tsx` is the
 workbench: the app shell, vault and agent providers, and the whole message
 catalog, which the shell's rail, settings and agent dock read. The gateway
-pages, `/download`, `/sample`, `/guide` and `/changelog`, live in
-`app/(gateway)/[locale]/` under `GatewayShell`, the same viewport frame without
-the rail, and the client provider receives only the message paths in
-`src/i18n/gateway-messages.ts`. The client provider serialises its messages into
-every exported page, so this keeps the workbench's copy out of the public pages'
-HTML; `gateway-messages.test.ts` walks those pages' client import graph and fails
+pages, `/download`, `/sample`, `/guide` and `/changelog`, live under
+`src/app/routes/$locale/_site/` in the same viewport frame without
+the rail, and their provider receives only the message paths in
+`src/i18n/gateway-messages.ts`. The prerender serialises those messages into
+every public page, so this keeps the workbench's copy out of the public pages'
+HTML; `gateway-messages.test.ts` walks those pages' import graph and fails
 when the list drifts. A move between the two layouts remounts the providers.
 `/` stays a workbench route, since it is the work entry point in the installed
-app; in a plain browser its gateway face shows from the first paint. The
-workbench layout also renders the app-only page (`src/views/app-only`) beside
-the workbench in every app route's HTML, marks it `noindex`, and leaves the
+app; in a plain browser the boot script sends it to `/download` before the body
+is parsed. The workbench layout also renders the app-only page (`src/views/app-only`)
+beside the workbench in every app route's HTML, marks it `noindex`, and leaves the
 choice of face to CSS keyed on `data-shell`.
 
-The workbench layout's props are one segment that every workbench route shares,
-`/` included, so it serialises only `/`'s subset
-(`src/app/providers/root-entry-messages.ts`: the gateway's paths, the root
-entry's copy, and the hidden rail's folder tile and settings search). The whole
+A screen declares the query it reads as the route's `validateSearch`
+(`src/shared/lib/navigation/screen-searches.ts`, or a `*-search.ts` file beside a
+screen under `src/app`) and receives the typed value as its `search` prop; the
+router parses and writes it as text (`src/shared/lib/navigation/atlas-search.ts`).
+`/` starts from the subset `WorkbenchMessagesProvider` is given; the whole
 catalog arrives as one chunk per locale (`src/i18n/workbench-catalog.ts`)
-through `WorkbenchMessagesProvider`: every other workbench route, and `/` in the
-installed app, renders from it on the server and holds hydration until the
-browser has it. In a plain browser `/` keeps the gateway on screen and the shell
-keeps its rail hidden (`src/views/root-entry`). The export of `/`
-fails on a message its subset lacks.
+through that provider: every other workbench route, and `/` in the installed
+app, waits for it. The retired addresses answer from `beforeLoad`
+(`src/app/routes/-redirects/`).
 
 > Removed in earlier rounds: `/admin/*`, `/review/*`, `/diagnostics/*`,
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
@@ -1055,8 +1055,8 @@ to an agent.
   input to canonical via `translateOntologyDeeplinkToTopologyParam`
   (`capabilities/foo` → `capability:foo`; already-canonical / bare /
   evidence-path pass through).
-- **Compatibility redirect**: `OntologyEditRedirectPage` normalizes legacy
-  `/ontology/edit` and `/ontology/studio` query values and replaces the route
+- **Compatibility redirect**: the `/ontology/edit` and `/ontology/studio` routes
+  normalize legacy query values in `beforeLoad` and replace the address
   with `/topology?p=...&workbench=edit` or `/topology?workbench=create`.
 - **Reading a link**: `parseHomeRouteState` owns `p/workbench/edit`, and
   `parseOntologyStudioEditParam` remains only as the compatibility parser for
@@ -1067,15 +1067,15 @@ to an agent.
   addresses files, not nodes, so its `?slug=` deliberately stays a file path.
 - Both the building and the reading side are pinned by `ontology-node-href.test.ts`,
   `translate-ontology-deeplink.test.ts`, and
-  `url-state.test.ts`, and `OntologyEditRedirectPage.test.tsx`. The retired
-  Analysis address is pinned by `InsightsRedirectPage.test.tsx`.
+  `url-state.test.ts`, and `retired-address-targets.test.ts`, which also pins
+  the retired Analysis address.
 
 ## Build pipeline
 
 ```bash
 pnpm docs-vault:build      # docs/ontology/*.md → src/entities/docs-vault/data/manifest.json
 pnpm docs-vault:check      # verify local materialized docs-vault outputs are fresh
-pnpm build                 # next build → static export → out/
+pnpm build                 # Vite: the app folder and the prerendered site (out/)
 pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift
 pnpm test:vault:validate   # focused validator CLI argument contract
 pnpm vault:audit           # dogfood ontology capability/element paths exist in repo
@@ -1090,12 +1090,13 @@ The `docs-vault:build` step is automatic via `predev` and `prebuild` npm hooks. 
 ## i18n routing contract
 
 - In-app navigation: `Link`, `useRouter`, `usePathname` from `@/i18n/navigation` (locale-aware).
-- Locale-agnostic browser history: `useSearchParams` from `next/navigation` (no locale concern).
-- Cross-locale pivot (LocaleSwitch): raw `next/navigation` router, intentional.
+- A screen reads its query from its route (`Route.useSearch()`, typed by `validateSearch`) and
+  hands it down as `search`; chrome beside a screen reads `useCommittedSearch`.
+- Cross-locale pivot (LocaleSwitch): the router's `buildLocation` for the same screen with another
+  `locale` param, `search` and `hash` carried.
 - Translation key namespaces: one file per namespace per locale,
   `messages/<locale>/<Namespace>.json` (kept in parity). `pnpm messages:build`
-  composes the ignored `messages/<locale>.json` that `src/i18n/request.ts` and
-  tests import; installation, checkout and merge hooks, `predev`, `build`, and
+  composes the ignored `messages/<locale>.json` that tests import; installation, checkout and merge hooks, `predev`, `build`, and
   Vitest's global setup run it.
 
 ## Test surface
@@ -1111,9 +1112,9 @@ and emulator scripts entirely).
 When docs and code disagree, code wins:
 
 - `package.json` — what's installed, what scripts exist
-- `next.config.ts` — output mode, image config
-- `app/layout.tsx` — metadata, head, the root error boundary's copy
-- `app/[locale]/layout.tsx`, `app/(gateway)/[locale]/layout.tsx` — the providers
+- `vite.config.ts` — the build, the route plugin, the two output folders
+- `index.html` and `scripts/vite/atlas-index-html.ts` — the document head, the boot script, the page policy
+- `src/app/routes/$locale/_app/route.tsx`, `src/app/routes/$locale/_site/route.tsx` — the providers
 - `eslint.config.mjs` — FSD boundary rules
 
 Long-form docs:
@@ -1122,7 +1123,7 @@ Long-form docs:
 - [`PRODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission
 - [`FEATURES.md`](./FEATURES.md) — currently shipping features
 - [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — design tokens + forbidden patterns
-- [`engineering/deployment.md`](./engineering/deployment.md) — static export → static hosting
+- [`engineering/deployment.md`](./engineering/deployment.md) — the built site folder → static hosting
 - [`CHANGELOG.md`](./CHANGELOG.md) — chronological user-visible changes
 
 ### Internal meaning transition evidence

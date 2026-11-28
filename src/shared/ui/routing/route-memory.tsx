@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
-import { useLocation } from '@tanstack/react-router';
+import { useRouterState } from '@tanstack/react-router';
 import { routing } from '@/i18n/routing';
-import { useCommittedAddress } from '@/shared/lib/navigation/use-committed-address';
 
 export const ROUTE_MEMORY_KEY = 'ontology-atlas:last-route';
 
@@ -17,29 +16,24 @@ export function isRestorableRoute(
   return true;
 }
 
-export function buildRestorableRoute(
-  pathname: string,
-  search = '',
-  hash = '',
-): string | null {
-  if (!isRestorableRoute(pathname)) return null;
-  const route = `${pathname}${search}${hash}`;
-  return isRestorableRoute(route) ? route : null;
+/** The address as the router wrote it (`/ko/docs/?slug=a#b`), or null when its path alone is not restorable. */
+export function restorableRoute(address: string): string | null {
+  const pathname = address.split(/[?#]/, 1)[0] ?? '';
+  return isRestorableRoute(pathname) && isRestorableRoute(address) ? address : null;
 }
 
 export function RouteMemory() {
-  const { pathname, searchString } = useCommittedAddress();
-  const hash = useLocation({ select: (location) => location.hash });
+  const address = useRouterState({ select: (state) => state.resolvedLocation?.href });
 
   useEffect(() => {
-    const route = buildRestorableRoute(pathname, searchString, hash === '' ? '' : `#${hash}`);
+    const route = address === undefined ? null : restorableRoute(address);
     if (!route) return;
     try {
       window.localStorage.setItem(ROUTE_MEMORY_KEY, route);
     } catch {
       // localStorage unavailable: route restore is only a convenience.
     }
-  }, [pathname, searchString, hash]);
+  }, [address]);
 
   return null;
 }

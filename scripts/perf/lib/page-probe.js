@@ -132,7 +132,7 @@
           scripts: (entry.scripts ?? []).slice(0, 5).map((s) => ({
             ms: Math.round(s.duration),
             fn: s.sourceFunctionName || s.invoker || '',
-            url: (s.sourceURL || '').replace(/^.*\/_next\//, '_next/'),
+            url: (s.sourceURL || '').replace(/^.*\/assets\//, 'assets/'),
             char: s.sourceCharPosition,
           })),
         });

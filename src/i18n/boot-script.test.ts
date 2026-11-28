@@ -49,6 +49,12 @@ describe('boot script', () => {
     }
   });
 
+  it('plants the registry html lang for every locale the router serves', () => {
+    for (const code of routing.locales) {
+      expect(run({ pathname: `/${code}/library/` }).lang, code).toBe(LOCALE_META[code].htmlLang);
+    }
+  });
+
   it('lets the path win over the stored choice', () => {
     expect(run({ pathname: '/ja/library/', stored: 'ko' }).lang).toBe('ja');
     expect(run({ pathname: '/zh/', stored: 'ko' }).lang).toBe('zh-Hans');

@@ -4,18 +4,21 @@ import path from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-import { GATEWAY_MESSAGE_PATHS, pickMessagePaths } from './gateway-messages';
+import { SITE_MESSAGE_PATHS } from '@/app-providers/routes/-site/build-facts';
+
+import { pickMessagePaths } from './gateway-messages';
 
 /**
- * The gateway layout hands its client tree only `GATEWAY_MESSAGE_PATHS`, so a client module that
- * reads another namespace would render a missing message on a public page. This walks the import
- * graph from the gateway layout and pages the way the bundler would: a named import follows only
- * the re-exports it names, so a barrel does not pull in every sibling it lists. Each module reached
- * on the client side contributes the namespaces of its `useTranslations` calls.
+ * The public layout hands its tree only `SITE_MESSAGE_PATHS` (the gateway's paths plus the two the
+ * head and the skip link read), so a module that reads another namespace would render a missing
+ * message on a public page. This walks the import graph from the public layout and pages the way the
+ * bundler would: a named import follows only the re-exports it names, so a barrel does not pull in
+ * every sibling it lists. Each module reached contributes the namespaces of its `useTranslations`
+ * calls.
  */
 
 const ROOT = process.cwd();
-const GATEWAY_DIR = path.join(ROOT, 'app', '(gateway)');
+const GATEWAY_DIR = path.join(ROOT, 'src', 'app', 'routes', '$locale', '_site');
 
 const config = ts.parseJsonConfigFileContent(
   ts.readConfigFile(path.join(ROOT, 'tsconfig.json'), ts.sys.readFile).config,
@@ -73,10 +76,8 @@ function factsOf(file: string): ModuleFacts {
   const text = readFileSync(file, 'utf8');
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, /x$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const facts: ModuleFacts = { client: false, imports: [], reexports: [], starExports: [], ownCode: false, namespaces: [], unreadable: [] };
-  const first = source.statements[0];
-  // Everything under `src/` ships to the browser; the Next routes under `app/` still mark their client modules.
-  const declaredClient = Boolean(first && ts.isExpressionStatement(first) && ts.isStringLiteral(first.expression) && first.expression.text === 'use client');
-  facts.client = declaredClient || path.relative(ROOT, file).startsWith(`src${path.sep}`);
+  // Everything under `src/` ships to the browser.
+  facts.client = path.relative(ROOT, file).startsWith(`src${path.sep}`);
   const translators = new Set<string>();
   const messageReaders = new Set<string>();
 
@@ -85,7 +86,7 @@ function factsOf(file: string): ModuleFacts {
       const clause = statement.importClause;
       if (clause?.isTypeOnly) continue;
       const specifier = statement.moduleSpecifier.text;
-      if ((specifier === 'use-intl' || specifier === 'next-intl') && clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      if (specifier === 'use-intl' && clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
         for (const element of clause.namedBindings.elements) {
           const imported = (element.propertyName ?? element.name).text;
           if (imported === 'useTranslations') translators.add(element.name.text);
@@ -153,7 +154,7 @@ function pageEntries(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) return pageEntries(full);
-    return /^(page|layout|not-found|error|loading|template)\.tsx?$/.test(entry.name) ? [full] : [];
+    return /\.tsx$/.test(entry.name) && !/\.test\.tsx$/.test(entry.name) ? [full] : [];
   });
 }
 
@@ -216,29 +217,29 @@ describe('gateway message paths', () => {
   const entries = pageEntries(GATEWAY_DIR);
   const { namespaces, unreadable, modules } = walk(entries);
 
-  it('probe: the walk starts at the gateway layout and reaches the pages’ client tree', () => {
-    expect(entries.map((file) => path.relative(GATEWAY_DIR, file))).toContain(path.join('[locale]', 'layout.tsx'));
+  it('probe: the walk starts at the public layout and reaches the pages’ tree', () => {
+    expect(entries.map((file) => path.relative(GATEWAY_DIR, file))).toContain('route.tsx');
     expect(entries.length).toBeGreaterThanOrEqual(5);
     expect(modules, 'modules reached').toBeGreaterThan(100);
     expect(namespaces.size, 'namespaces read').toBeGreaterThan(10);
   });
 
-  it('every namespace the client tree reads can be read statically', () => {
+  it('every namespace the tree reads can be read statically', () => {
     expect([...unreadable].sort()).toEqual([]);
   });
 
-  it('the layout hands over exactly the namespaces its client tree reads', () => {
+  it('the layout hands over exactly the namespaces its tree reads', () => {
     expect(
-      [...GATEWAY_MESSAGE_PATHS].sort(),
-      'Edit GATEWAY_MESSAGE_PATHS in src/i18n/gateway-messages.ts to this list.',
+      minimalCover(SITE_MESSAGE_PATHS),
+      'Edit GATEWAY_MESSAGE_PATHS in src/i18n/gateway-messages.ts (or the two extra paths in build-facts.ts) to this list.',
     ).toEqual(minimalCover(namespaces));
   });
 
   it('every listed path exists in each locale', () => {
     for (const locale of ['en', 'ko', 'ja', 'zh']) {
       const catalog = JSON.parse(readFileSync(path.join(ROOT, 'messages', `${locale}.json`), 'utf8'));
-      const picked = pickMessagePaths(catalog, GATEWAY_MESSAGE_PATHS);
-      for (const dotted of GATEWAY_MESSAGE_PATHS) {
+      const picked = pickMessagePaths(catalog, SITE_MESSAGE_PATHS);
+      for (const dotted of SITE_MESSAGE_PATHS) {
         const value = dotted.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], picked);
         expect(value, `${locale}: ${dotted}`).toBeDefined();
       }

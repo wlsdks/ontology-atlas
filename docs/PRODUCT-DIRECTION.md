@@ -444,7 +444,7 @@ weaker than that stays an internal prototype; we do not hand it out.
 
 Current distribution contract:
 
-1. Next.js static export is the Tauri frontend payload.
+1. The Vite app folder (`src-tauri/target/desktop-frontend`) is the Tauri frontend payload.
 2. The installed app opens local vaults through the native bridge and verifies
    current Docs, Topology (including contextual writing), Projects, Agents,
    and Git routes.
@@ -457,9 +457,8 @@ Current distribution contract:
    slices. npm distribution is retired; agent setup fails closed and points
    source contributors at local entry points.
 
-Why Tauri first: this repo already uses `output: 'export'`, `images.unoptimized`,
-and `trailingSlash`, which match the static frontend shape expected by Tauri's
-Next.js guide. Electron remains a fallback if the desktop shell needs bundled
+Why Tauri first: this repo already builds a static frontend with trailing
+slashes, the shape Tauri embeds. Electron remains a fallback if the desktop shell needs bundled
 Node.js behavior, but it is heavier and macOS distribution still needs signing
 and notarization.
 
@@ -583,7 +582,7 @@ Pros:
 - Zero install friction (just `npm` / `pnpm`).
 - Any project becomes a potential vault.
 - Offline-first by default.
-- Next.js build output ships as-is (static export + tiny server).
+- The static build output ships as-is (static folder + tiny server).
 
 Cons:
 
@@ -600,7 +599,7 @@ can make folder picking / recent vaults / app launch more natural on macOS.
 Cons: adds native packaging, signing, notarization, updater, and sidecar
 questions that the web surface does not have.
 
-### Option C — Just Next.js static export + a guide
+### Option C — Just the static build + a guide
 
 Use after `pnpm dev`. No packaging. Document with environment variables.
 

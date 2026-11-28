@@ -7,6 +7,7 @@ import { useLocalVault } from '@/entities/vault-session';
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
 import { stringifySearch } from '@/shared/lib/navigation/atlas-search';
+import type { LibrarySearch } from '@/shared/lib/navigation/screen-searches';
 import { firstSearchText } from '@/shared/lib/navigation/search-text';
 import { DESTINATION_HREF, withQuery } from '@/shared/config/destinations';
 import {
@@ -17,7 +18,6 @@ import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vau
 import { PageHeaderBar, RouteLoadingFallback, TabBar } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
-import type { LibrarySearch } from './library-search';
 import { fadeIn, prefersReducedMotion, tabSwitchFade, whenIdle, whenLoaded, type LibraryTab } from './panel-arrival';
 import styles from './library-workspace.module.css';
 
@@ -33,11 +33,11 @@ async function loadOntologyPage(): Promise<OntologyPageComponent> {
 
 const LazyOntologyPage = lazy(async () => ({ default: await loadOntologyPage() }));
 
-function OntologyDocuments() {
+function OntologyDocuments({ search }: { search: LibrarySearch }) {
   const [Page] = useState<OntologyPageComponent>(() => loadedOntologyPage ?? LazyOntologyPage);
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <Page initialCollection="ontology" documentScope="ontology" />
+      <Page initialCollection="ontology" documentScope="ontology" search={search} />
     </Suspense>
   );
 }
@@ -228,7 +228,7 @@ export function LibraryWorkspace({ search }: { search: LibrarySearch }) {
                 ? <LibraryConstellations handle={handle} documents={vault.manifest?.docs ?? []} />
                 : (
                   <div ref={ontologyRef} data-testid="library-ontology-documents-view" className="flex min-h-0 min-w-0 flex-1">
-                    <OntologyDocuments />
+                    <OntologyDocuments search={search} />
                   </div>
                 )}
             </div>

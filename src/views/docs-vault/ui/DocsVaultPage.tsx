@@ -22,6 +22,7 @@ import {
   controlClass,
   useToast,
 } from '@/shared/ui';
+import type { LibrarySearch } from '@/shared/lib/navigation/screen-searches';
 import { useBackToTop, useDocReadingScrollSpy } from '@/widgets/doc-reading-pane';
 import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault';
 import { useDocAccess } from '../model/use-doc-access';
@@ -61,10 +62,12 @@ function DocsVaultContent({
   initialCollection,
   documentScope,
   legacyEntry,
+  search,
 }: {
   initialCollection: DocsVaultDocCollection;
   documentScope: 'all' | 'ontology';
   legacyEntry: boolean;
+  search: LibrarySearch;
 }) {
   const t = useTranslations('docsVault');
   const locale = useLocale();
@@ -73,7 +76,7 @@ function DocsVaultContent({
   const toast = useToast();
   const localVault = useLocalVault();
   const openLocalVault = localVault.open;
-  const address = useDocsVaultAddress();
+  const address = useDocsVaultAddress(search);
   const {
     view,
     getDocHref,
@@ -644,11 +647,13 @@ export function DocsVaultPage({
   initialCollection = 'guides',
   documentScope = 'all',
   legacyEntry = false,
+  search,
 }: {
   initialCollection?: DocsVaultDocCollection;
   documentScope?: 'all' | 'ontology';
   legacyEntry?: boolean;
-} = {}) {
+  search: LibrarySearch;
+}) {
   // Local-first core (`.claude/rules/local-first.md` §1): no auth gate before the vault picker.
   // The exported HTML holds only the neutral frame: the remembered folder is known after hydration.
   const hydrated = useHydrated();
@@ -660,6 +665,7 @@ export function DocsVaultPage({
         initialCollection={initialCollection}
         documentScope={documentScope}
         legacyEntry={legacyEntry}
+        search={search}
       />
     </Suspense>
   );

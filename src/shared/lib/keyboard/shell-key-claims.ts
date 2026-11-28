@@ -2,8 +2,8 @@ import { useEffect, useSyncExternalStore } from 'react';
 
 /**
  * Which screen answers Cmd-K and `?` itself. The shell answers both by default; a screen whose own
- * dialog must answer claims the key while mounted. A claim, not a route list: reading the route
- * needs `useSearchParams`, which fails the static export prerender.
+ * dialog must answer claims the key while mounted. A claim, not a route list: the shell keeps no
+ * table from route to key, so a screen that gains a dialog needs no edit here.
  */
 export type ShellKey = 'search' | 'shortcuts';
 

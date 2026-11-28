@@ -1,7 +1,11 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
-import nextVitals from 'eslint-config-next/core-web-vitals';
-import nextTs from 'eslint-config-next/typescript';
 import boundaries from 'eslint-plugin-boundaries';
+import importPlugin from 'eslint-plugin-import';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 // Enforce FSD layer boundaries at the lint stage. Written with official
 // `boundaries/dependencies` + v7 entity selectors/policies (2026~).
@@ -440,7 +444,7 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/-\\[(?:color:)?#[0-9a-fA-F]{3,8}/]',
     message:
-      'Design charter: no hex inside a Tailwind arbitrary value. Reference --color-* tokens via var(). Surfaces CSS variables cannot reach (Canvas, next/og, standalone HTML) get eslint-disable with a reason.',
+      'Design charter: no hex inside a Tailwind arbitrary value. Reference --color-* tokens via var(). Surfaces CSS variables cannot reach (Canvas, standalone HTML) get eslint-disable with a reason.',
   },
   {
     selector: 'TemplateElement[value.raw=/-\\[(?:color:)?#[0-9a-fA-F]{3,8}/]',
@@ -567,10 +571,10 @@ export const arbitrarySizeSelectors = [
 ];
 
 /*
- * Ramp coverage is a blocklist: every file under `src/**` and `app/**` is covered, with exceptions
+ * Ramp coverage is a blocklist: every file under `src/**` is covered, with exceptions
  * listed per file. An allowlist left newly created directories with no ramp rules at all.
  */
-export const rampCoveredGlobs = ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'];
+export const rampCoveredGlobs = ['src/**/*.{ts,tsx}'];
 
 /**
  * Files exempted from the ramp. The key is a file, never a directory glob, or new files beside it
@@ -586,14 +590,45 @@ export const rampDebtExemptions = [
 const codexTestIgnores = ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'];
 
 const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
   {
-    // `<img>` is the element Atlas renders: `next/image` is gone, and the rule's advice is to use it.
-    rules: { '@next/next/no-img-element': 'off' },
+    name: 'react',
+    files: ['**/*.{js,jsx,mjs,ts,tsx,mts,cts}'],
+    plugins: { react, 'react-hooks': reactHooks, import: importPlugin, 'jsx-a11y': jsxA11y },
+    languageOptions: {
+      sourceType: 'module',
+      parserOptions: { ecmaFeatures: { jsx: true } },
+      globals: { ...globals.browser, ...globals.node },
+    },
+    settings: {
+      react: { version: 'detect' },
+      'import/parsers': { '@typescript-eslint/parser': ['.ts', '.mts', '.cts', '.tsx', '.d.ts'] },
+      'import/resolver': { typescript: { alwaysTryTypes: true } },
+    },
+    rules: {
+      ...react.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      'import/no-anonymous-default-export': 'warn',
+      'react/no-unknown-property': 'off',
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'jsx-a11y/alt-text': 'warn',
+      'jsx-a11y/aria-props': 'warn',
+      'jsx-a11y/aria-proptypes': 'warn',
+      'jsx-a11y/aria-unsupported-elements': 'warn',
+      'jsx-a11y/role-has-required-aria-props': 'warn',
+      'jsx-a11y/role-supports-aria-props': 'warn',
+      'react/jsx-no-target-blank': 'off',
+    },
+  },
+  ...tseslint.configs.recommended,
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-expressions': 'warn',
+    },
   },
   {
-    // Since eslint-config-next 16.2.4, new React Compiler-based rules have been promoted to error,
+    // The React Compiler-based rules of eslint-plugin-react-hooks 7 are errors in its recommended set,
     // but patterns we intentionally use like setState-in-effect / refs-during-render / manual
     // memoization are valid and overly restrictive as errors. Downgraded to warning level to pass lint and allow gradual improvement.
     rules: {
@@ -693,7 +728,7 @@ const eslintConfig = defineConfig([
   // Slice public API: import a slice through its `index.ts`, never through
   // `@/<layer>/<slice>/<segment>/...`. Tests keep deep access.
   {
-    files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     ignores: codexTestIgnores,
     rules: {
       'no-restricted-imports': [
@@ -713,7 +748,7 @@ const eslintConfig = defineConfig([
   // Token-discipline block for every source file: checkbox accent,
   // inline shadow and size, cursor and disabled affordance. Violations are lint errors.
   {
-    files: ['src/**/*.{ts,tsx,jsx,js}', 'app/**/*.{ts,tsx,jsx,js}'],
+    files: ['src/**/*.{ts,tsx,jsx,js}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -727,7 +762,7 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Ramp blocks cover `src/**` and `app/**` except debt files. Reload the checkbox accent selectors
+  // Ramp blocks cover `src/**` except debt files. Reload the checkbox accent selectors
   // so flat-config replacement cannot drop them. Excluded files still get the checkbox accent and
   // accent tint guards from the global block.
   {
@@ -852,7 +887,6 @@ const eslintConfig = defineConfig([
     },
   },
   globalIgnores([
-    '.next/**',
     // Temporary git worktree for agent parallel tasks — its own lint runs in each worktree.
     // If the main lint scans into this, code from other sessions mixes in as noise.
     '.claude/worktrees/**',
@@ -862,7 +896,6 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'src-tauri/target/**',
-    'next-env.d.ts',
   ]),
 ]);
 

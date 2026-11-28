@@ -291,6 +291,7 @@ function HomePageImpl({ mapEntryTicket, search }: { mapEntryTicket: number | nul
     deeplinkSourceReady,
     projectsLoaded: projectsQuery.loaded,
     realmSlug,
+    search,
   });
   const { reverseDeps, ontologyMapGraph, canvasSelectedSlug } = topologyGraphProjection;
   const topologyExplorationLenses = useTopologyExplorationLenses({

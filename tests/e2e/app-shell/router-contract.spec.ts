@@ -19,6 +19,9 @@ const OPENED_AS_WRITTEN = [
   `/ko/library/?tab=wiki&guides=off&q=${HANGUL}%20x`,
   '/en/projects/?p=1&guides=off',
   `/en/architecture/?role=${HANGUL}&guides=off#h`,
+  '/en/topology/?p=capability%3Aa%20b&workbench=edit',
+  '/en/library/?q=a+b&p=a%2Fb',
+  '/en/agents/?tag=a&tab=mcp&tag=b',
 ];
 
 function countDocumentRequests(page: Page) {

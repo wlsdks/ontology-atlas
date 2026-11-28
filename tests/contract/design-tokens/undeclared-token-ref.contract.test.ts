@@ -7,7 +7,7 @@ import { blankComments } from '../../../scripts/quality/source-language/inventor
 /**
  * Blocks `var()` calling a token that does not exist: it becomes invalid at computed-value time and
  * drops the colour silently. Declared means `--name:` in `app/globals.css`, JS injection, a Tailwind
- * `[--name:value]` property or `next/font`; references with a fallback are exempt.
+ * `[--name:value]` property or a font rule; references with a fallback are exempt.
  */
 
 const ROOT = process.cwd();

@@ -124,15 +124,6 @@ cause when the config points inside `Ontology Atlas.app`.
 
 ## Desktop app / source workbench (dev / prod)
 
-### `pnpm dev` 500 error after `pnpm build`
-
-`pnpm build` produces a static `out/` folder, but it can leave `.next/` in an incompatible state. Reset:
-
-```bash
-rm -rf .next
-pnpm dev
-```
-
 ### Topology view is blank
 
 The vault may have no edges yet. Add a relation:

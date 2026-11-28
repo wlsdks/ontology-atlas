@@ -96,10 +96,7 @@ test.describe("the prerendered website", () => {
     await expect(page.locator('[data-server-node="kept"]')).toHaveCount(1);
   });
 
-  test("moves from one guide chapter to the next as a page load", async ({ page, request }) => {
-    const html = await (await request.get("/en/guide/")).text();
-    test.skip(html.includes("/_next/"), "Next's export moves between guide chapters inside one document; this is the Vite prerender's rule");
-
+  test("moves from one guide chapter to the next as a page load", async ({ page }) => {
     await page.goto("/en/guide/");
     await page.waitForLoadState("networkidle");
     const documents: string[] = [];
@@ -111,10 +108,7 @@ test.describe("the prerendered website", () => {
     expect(documents).toEqual(["/en/guide/relations/"]);
   });
 
-  test("changes the language as a page load, so the new page keeps what only its own document holds", async ({ page, request }) => {
-    const html = await (await request.get("/en/guide/")).text();
-    test.skip(html.includes("/_next/"), "Next's export changes the language inside one document; this is the Vite prerender's rule");
-
+  test("changes the language as a page load, so the new page keeps what only its own document holds", async ({ page }) => {
     // The sample's size and a chapter's dates are recorded into each document at build time; a move inside the
     // router would render the new language's page without them.
     for (const { path, keeps } of [

@@ -49,12 +49,12 @@ export function WorkbenchMessagesProvider({
 }
 
 /**
- * A message `/` renders outside its subset is a missing path in `ROOT_ENTRY_MESSAGE_PATHS`. On the
- * server that fails the export of `/` rather than shipping a raw key in its HTML.
+ * A message `/` renders outside its subset is a missing path in `rootMessages`. On the
+ * server that fails the prerender of `/` rather than shipping a raw key in its HTML.
  */
 function reportRootSubsetGap(error: IntlError) {
   if (typeof window === 'undefined' && error.code === 'MISSING_MESSAGE') {
-    throw new Error(`/ renders a message outside ROOT_ENTRY_MESSAGE_PATHS: ${error.message}`);
+    throw new Error(`/ renders a message outside rootMessages: ${error.message}`);
   }
   console.error(error);
 }

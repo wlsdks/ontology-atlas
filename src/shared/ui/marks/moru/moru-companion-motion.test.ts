@@ -50,7 +50,7 @@ describe('Moru ground contact', () => {
   });
   it('keeps planted poses still and moves only while the authored feet are clear of the floor', async () => {
     const require = createRequire(import.meta.url);
-    const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+    const sharp = require('sharp');
     const pixels: Buffer = await sharp('public/brand/moru-companion.png').ensureAlpha().raw().toBuffer();
     const bottomAt = (cell: number) => {
       for (let y = source.cell - 1; y >= 0; y--) for (let x = 0; x < source.cell; x++) {

@@ -47,6 +47,6 @@ export const rules = [
     order: 1040,
     command: 'pnpm decisions:check',
     reason: 'a route or design-spec surface moved, or a record was appended: the ledger must move with the surface and a new record must fit the template',
-    matches: [/^app\/(?:.+\/)?(?:page|not-found)\.tsx$/, /^docs\/DECISIONS\.md$/],
+    matches: [/^src\/app\/routes\/(?:[^/-][^/]*\/)*[^/-][^/]*(?<!\.test)\.tsx$/, /^docs\/DECISIONS\.md$/],
   },
 ];

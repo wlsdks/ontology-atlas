@@ -35,9 +35,9 @@ No browser spec runs before merge; the suite runs nightly on macOS. A rendered
 change runs the specs `checks:changed` maps, locally, before its pull request.
 
 Without `PLAYWRIGHT_STATIC=1` the config starts `pnpm dev`, which renders
-differently from the static export. The static export serves on 3110 and never
-reuses a running server; `checks:changed` runs three or more specs that way,
-since one 47 s build then costs less than dev compiling each route.
+differently from the built folders. They serve on 3110 (the app) and 3111 (the
+website) and never reuse a running server; `checks:changed` runs three or more
+specs that way, since one build is paid once for all of them.
 `build:static` skips the build when `out/` was built from the same inputs, so
 editing only a spec reruns it without rebuilding. Reproduce
 a red e2e in the CI mode before calling CI wrong or flaky; then check for a
@@ -89,15 +89,15 @@ Start from `checks:changed` and any sibling test. Escalate only when the change
 reaches the named risk:
 
 - `pnpm typecheck`: shared types, public interfaces, route seams,
-  Next/TypeScript configuration, or a cross-cutting refactor.
+  TypeScript configuration, or a cross-cutting refactor.
 - `pnpm lint`: ESLint configuration, import direction, structural moves, or
   anything a lint rule governs.
 - `pnpm test:run`: shared primitives, global providers, test configuration, or
   a broad change without a direct test.
 - `pnpm exec playwright test <spec>`: routes, navigation, browser workflows, or
   visible interaction; the whole suite only when several routes changed.
-- `pnpm build` and desktop packaging checks: static export, Next configuration,
-  bundles, release or download paths, or macOS packaging.
+- `pnpm build` and desktop packaging checks: bundler and prerender
+  configuration, bundles, release or download paths, or macOS packaging.
 
 The final report names what ran and why that scope was enough.
 

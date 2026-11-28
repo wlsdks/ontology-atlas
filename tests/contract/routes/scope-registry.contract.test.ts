@@ -2,9 +2,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import {
-  HOME_QUERY_KEYS,
-  VAULT_SCOPED_HOME_QUERY_KEYS } from "@/views/home/model/route-state/url-state";
+import { HOME_QUERY_KEYS } from "@/shared/lib/navigation/screen-searches";
+import { VAULT_SCOPED_HOME_QUERY_KEYS } from "@/views/home/model/route-state/url-state";
 /**
  * Registry gate for state that outlives its scope: every URL query key and persistent storage
  * key has one row. A key missing from registry or code fails; a `vault-scoped` key must be protected.

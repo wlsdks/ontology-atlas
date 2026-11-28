@@ -24,7 +24,7 @@ const E2E_PREFIX = 'tests/e2e/';
 // Each runs alone in its own surface lane, which has no other subject to keep gating.
 const SURFACE_LANE_SPECS = Object.freeze(['web-surface-smoke.spec.ts', 'contextual-meaning-editor.spec.ts']);
 const BROWSER_SPEC = /^tests\/e2e\/(?:[\w-]+\/)*[\w-]+\.spec\.ts$/;
-// Vitest's `app/` and `src/` inventories; route segments such as `[locale]` are part of the name.
+// Vitest's `app/` and `src/` inventories; a bracket is part of a file name and is escaped in the exclude glob.
 const VITEST_FILE = /^(?:app|src)\/(?:[\w[\]-][\w.[\]-]*\/)*[\w[\]-][\w.[\]-]*\.(?:test|spec)\.tsx?$/;
 const GITHUB_LOGIN = /^[A-Za-z\d](?:[A-Za-z\d-]{0,38})$/;
 const ACTIONS_RUN = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/actions\/runs\/\d+(?:\/attempts\/\d+|\/job\/\d+)?$/;

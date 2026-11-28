@@ -8,7 +8,7 @@ describe('ruleGlobs — the paths a .claude rule declares', () => {
     'paths:',
     '  - "src/**"',
     '  - "app/**"',
-    '  - next.config.ts',
+    '  - vite.config.ts',
     'description: whatever',
     '---',
     '',
@@ -16,7 +16,7 @@ describe('ruleGlobs — the paths a .claude rule declares', () => {
   ].join('\n');
 
   it('reads the list in the order written', () => {
-    expect(ruleGlobs(rule)).toEqual(['src/**', 'app/**', 'next.config.ts']);
+    expect(ruleGlobs(rule)).toEqual(['src/**', 'app/**', 'vite.config.ts']);
   });
 
   it.each([

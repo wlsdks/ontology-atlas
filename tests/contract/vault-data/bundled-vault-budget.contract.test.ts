@@ -110,7 +110,7 @@ describe('gateway CHANGELOG preview contract', () => {
 
   it('the on-screen display cap does not exceed the bundled section count, otherwise that many are not shown', () => {
     const pageSource = readFileSync(
-      path.join(process.cwd(), 'app', '(gateway)', '[locale]', 'changelog', 'page.tsx'),
+      path.join(process.cwd(), 'src', 'app', 'routes', '$locale', '_site', 'changelog.tsx'),
       'utf8',
     );
     const match = /const RECENT_SECTIONS = (\d+)/.exec(pageSource);

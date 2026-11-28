@@ -4,9 +4,11 @@ import { describe, expect, it } from 'vitest';
 
 import { GUIDE_PAGES } from '@/views/gateway-doc/model/guide-pages';
 
+import { readRouteAddresses } from './read-route-addresses';
+
 /**
  * Internal links in guide bodies are written without a locale prefix and must still resolve;
- * destinations derive from `GUIDE_PAGES` and the real routes under `app/[locale]/**`.
+ * destinations derive from `GUIDE_PAGES` and the real route modules under `src/app/routes/$locale/`.
  */
 
 const ROOT = process.cwd();
@@ -20,23 +22,9 @@ function guideBodies(): Array<{ file: string; body: string }> {
       .map((name) => ({ file: `${dir}/${name}`, body: readFileSync(join(ROOT, dir, name), 'utf8') })),
   );
 }
-/** The workbench routes and the gateway routes; a route group adds no URL segment. */
-const APP_LOCALE_DIRS = [join(ROOT, 'app/[locale]'), join(ROOT, 'app/(gateway)/[locale]')];
-
-/** Extracts routes from `page.tsx` files under both locale roots. Dynamic segments excluded. */
+/** The addresses the router serves without a parameter, from the route modules of both layouts. */
 function appRoutes(): Set<string> {
-  const out = new Set<string>(['/']);
-  const walk = (dir: string, prefix: string) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.isDirectory()) {
-        walk(join(dir, entry.name), `${prefix}/${entry.name}`);
-      } else if (entry.name === 'page.tsx' && prefix) {
-        out.add(prefix);
-      }
-    }
-  };
-  for (const dir of APP_LOCALE_DIRS) walk(dir, '');
-  return out;
+  return new Set(readRouteAddresses(ROOT).map((route) => route.address).filter((address) => !address.includes('$')));
 }
 
 /** Internal absolute-path links in the markdown body — the `](/…)` form only. */
@@ -67,7 +55,7 @@ describe('guide body links point only at routes that exist', () => {
     // Extracting 0 links and passing as "nothing mismatched" is this contract's only failure mode.
     expect(links.length, 'found no internal link in the guide body, so the scan is broken').toBeGreaterThan(10);
     expect(segments.size, 'could not read the guide segments').toBeGreaterThan(5);
-    expect(routes.has('/guide'), 'the app/[locale] route scan is broken').toBe(true);
+    expect(routes.has('/guide'), 'the route module scan is broken').toBe(true);
   });
 
   it('internal links point only at guide chapters that exist', () => {
