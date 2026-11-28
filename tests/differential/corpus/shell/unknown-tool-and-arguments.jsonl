@@ -13,13 +13,11 @@
 {"raw":"{\"jsonrpc\":\"2.0\",\"id\":802,\"method\":\"tools/call\",\"params\":{\"name\":\"list_concepts\",\"arguments\":{\"constructor\":{\"prototype\":{\"polluted\":true}}}}}"}
 {"id":10,"method":"tools/call","params":{"name":"get_concepts","arguments":{"slugs":["capabilities/cart"],"constructor":1}}}
 {"id":11,"method":"tools/call","params":{"name":"connection_info","arguments":{"guide":"nonsense"}}}
-{"id":12,"method":"tools/call","params":{"name":"git_history","arguments":{"limit":0}}}
-{"id":13,"method":"tools/call","params":{"name":"git_history","arguments":{"limit":"ten"}}}
-{"id":14,"method":"tools/call","params":{"name":"find_backlinks","arguments":{}}}
-{"id":15,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":""}}}
-{"id":16,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":5}}}
-{"id":17,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"nonsense"}}}
-{"id":18,"method":"tools/call","params":{"name":"query_ontology","arguments":{}}}
-{"id":19,"method":"tools/call","params":{"name":"query_concepts","arguments":{"filter":""}}}
-{"id":20,"method":"tools/call","params":{"name":"query_concepts","arguments":{"filter":"kind="}}}
-{"id":21,"method":"tools/call","params":{"name":"query_concepts","arguments":{"filter":"AND AND"}}}
+{"id":12,"method":"tools/call","params":{"name":"find_backlinks","arguments":{}}}
+{"id":13,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":""}}}
+{"id":14,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":5}}}
+{"id":15,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"nonsense"}}}
+{"id":16,"method":"tools/call","params":{"name":"query_ontology","arguments":{}}}
+{"id":17,"method":"tools/call","params":{"name":"list_concepts","arguments":{"filter":""}}}
+{"id":18,"method":"tools/call","params":{"name":"list_concepts","arguments":{"filter":"kind="}}}
+{"id":19,"method":"tools/call","params":{"name":"list_concepts","arguments":{"filter":"AND AND"}}}

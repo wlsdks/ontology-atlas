@@ -2,8 +2,7 @@
 {"case":"backlinks-and-orphans-miniature-repo","vault":"miniature-repo"}
 {"id":1,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":"capabilities/charge-card"}}}
 {"id":2,"method":"tools/call","params":{"name":"find_backlinks","arguments":{"slug":"domains/order"}}}
-{"id":3,"method":"tools/call","params":{"name":"find_orphans","arguments":{}}}
-{"id":4,"method":"tools/call","params":{"name":"find_orphans","arguments":{"kind":"capability"}}}
-{"id":5,"method":"tools/call","params":{"name":"find_orphans","arguments":{"kind":"element"}}}
-{"id":6,"method":"tools/call","params":{"name":"find_orphans","arguments":{"excludeKinds":["project","domain"]}}}
-{"id":7,"method":"tools/call","params":{"name":"find_orphans","arguments":{"kind":"nonsense"}}}
+{"id":3,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","hasIncoming":false}}}
+{"id":4,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","hasIncoming":false,"kind":"capability"}}}
+{"id":5,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","hasIncoming":false,"kind":"element"}}}
+{"id":6,"method":"tools/call","params":{"name":"query_ontology","arguments":{"operation":"match_nodes","hasIncoming":false,"kind":"nonsense"}}}

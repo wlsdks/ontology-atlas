@@ -11,6 +11,6 @@
 {"id":7,"method":"tools/call","params":{"name":"rename_concept","arguments":{"oldSlug":"capabilities/cart","newSlug":"capabilities/raced","confirm":true,"expected_mtime":1700000500000.5}}}
 {"id":8,"method":"tools/call","params":{"name":"delete_concept","arguments":{"slug":"capabilities/cart","confirm":true,"expected_mtime":1700000500000.5}}}
 {"id":9,"method":"tools/call","params":{"name":"merge_concepts","arguments":{"fromSlug":"capabilities/cart","intoSlug":"capabilities/checkout","confirm":true,"expected_mtime":1}}}
-{"id":10,"method":"tools/call","params":{"name":"replace_relation","arguments":{"from":"capabilities/cart","oldTo":"capabilities/x","oldType":"depends_on","newTo":"capabilities/y","newType":"depends_on","why":"x","confirm":true,"expected_mtime":1}}}
-{"id":11,"method":"tools/call","params":{"name":"reclassify_concept","arguments":{"slug":"capabilities/cart","newKind":"element","confirm":true,"expected_mtime":1}}}
+{"id":10,"method":"tools/call","params":{"name":"remove_relation","arguments":{"from":"capabilities/cart","to":"capabilities/x","type":"depends_on","replaceWith":{"to":"capabilities/y","type":"depends_on","why":"x"},"confirm":true,"expected_mtime":1}}}
+{"id":11,"method":"tools/call","params":{"name":"rename_concept","arguments":{"oldSlug":"capabilities/cart","newKind":"element","confirm":true,"expected_mtime":1}}}
 {"id":12,"method":"tools/call","params":{"name":"remove_relation","arguments":{"from":"capabilities/cart","to":"capabilities/checkout","type":"depends_on","confirm":true,"expected_mtime":1}}}

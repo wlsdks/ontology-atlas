@@ -80,7 +80,7 @@ const PLANTED = [
   { kind: 'answer that never comes', ...ADD, planted: { kind: 'drop-answer', id: '1' }, where: /answer/, corpusDir: corpusWithShortWait },
   { kind: 'commit in the repository', family: 'writes', caseName: 'writes-on-miniature-repo-evidence-nodes', planted: { kind: 'repository-state', id: '1' }, where: /repository state/ },
   { kind: 'file time of a planted file', family: 'vault-read', caseName: 'list-concepts-storefront', planted: { kind: 'file-time', id: '1', file: 'capabilities/cart.md' }, where: /folder/ },
-  { kind: 'file a hostile setting must not create', family: 'writes', caseName: 'git-snapshot-in-hostile-repo', planted: { kind: 'must-not-exist', id: '1', file: 'fsmonitor-ran.txt' }, where: /must-not-exist/ },
+  { kind: 'file a hostile setting must not create', family: 'safety', caseName: 'repository-whose-config-would-run-code', planted: { kind: 'must-not-exist', id: '1', file: 'fsmonitor-ran.txt' }, where: /must-not-exist/ },
   { kind: 'write beside the case folder', ...ADD, planted: { kind: 'outside-write', id: '1' }, where: /outside-write/ },
   { kind: 'write in the home folder', ...ADD, planted: { kind: 'home-write', id: '1' }, where: /home:planted\.txt/ },
   { kind: 'frontmatter key order in a written file', ...ADD, planted: { kind: 'frontmatter-key-order', file: 'capabilities/gift-wrap.md' }, where: /folder/ },

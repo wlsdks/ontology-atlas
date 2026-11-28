@@ -4,7 +4,7 @@
 {"id":2,"method":"tools/call","params":{"name":"add_relations","arguments":{"relations":[{"from":"elements/audit","to":"capabilities/cart","type":"relates","why":"audit"}]}}}
 {"id":3,"method":"tools/call","params":{"name":"patch_concept","arguments":{"slug":"elements/audit","body":"audited"}}}
 {"id":4,"method":"tools/call","params":{"name":"rename_concept","arguments":{"oldSlug":"elements/audit","newSlug":"elements/audited","confirm":true}}}
-{"id":5,"method":"tools/call","params":{"name":"reclassify_concept","arguments":{"slug":"elements/audited","newKind":"capability","domain":"domains/order","confirm":true}}}
+{"id":5,"method":"tools/call","params":{"name":"rename_concept","arguments":{"oldSlug":"elements/audited","newKind":"capability","domain":"domains/order","confirm":true}}}
 {"id":6,"method":"tools/call","params":{"name":"merge_concepts","arguments":{"fromSlug":"capabilities/audited","intoSlug":"capabilities/cart","confirm":true}}}
 {"id":7,"method":"tools/call","params":{"name":"delete_concept","arguments":{"slug":"capabilities/faq","confirm":true}}}
 {"id":8,"method":"tools/call","params":{"name":"remove_relation","arguments":{"from":"capabilities/checkout","to":"capabilities/cart","type":"depends_on","confirm":true}}}

@@ -128,7 +128,7 @@ add('shell', 'large-and-odd-ids', { vault: 'one-node' }, [
 ]);
 add('shell', 'arguments-nested-thousands-deep', { vault: 'one-node' }, [
   { raw: `{"jsonrpc":"2.0","id":501,"method":"tools/call","params":{"name":"list_concepts","arguments":{"kind":${'['.repeat(3000)}${']'.repeat(3000)}}}}` },
-  { raw: `{"jsonrpc":"2.0","id":502,"method":"tools/call","params":{"name":"query_concepts","arguments":{"filter":"kind=x","deep":${'{"a":'.repeat(2500)}1${'}'.repeat(2500)}}}}` },
+  { raw: `{"jsonrpc":"2.0","id":502,"method":"tools/call","params":{"name":"list_concepts","arguments":{"filter":"kind=x","deep":${'{"a":'.repeat(2500)}1${'}'.repeat(2500)}}}}` },
   { raw: `{"jsonrpc":"2.0","id":503,"method":"tools/call","params":{"name":"patch_concept","arguments":{"slug":"only","frontmatter":${'{"a":'.repeat(2500)}1${'}'.repeat(2500)}}}}` },
   req('ping'),
 ]);
@@ -162,7 +162,6 @@ for (const [label, env] of [
     req('tools/list'),
     call('add_concepts', { concepts: [{ slug: 'elements/probe', kind: 'element', title: 'Probe' }] }),
     call('list_concepts', { limit: 1 }),
-    call('git_status'),
   ]);
 }
 add('shell', 'retired-tool-names', { vault: 'storefront' }, [
@@ -173,6 +172,16 @@ add('shell', 'retired-tool-names', { vault: 'storefront' }, [
   call('index_project', {}),
   call('add_relation', { from: 'capabilities/cart', to: 'capabilities/checkout', type: 'depends_on', why: 'x' }),
   call('list_nodes'),
+  call('git_status', {}),
+  call('git_history', {}),
+  call('git_snapshot', {}),
+  call('list_constellations', {}),
+  call('find_evidence', { title: 'cart' }),
+  call('find_orphans', {}),
+  call('query_concepts', { filter: 'kind=capability' }),
+  call('disconnect_project_source', { projectSlug: 'storefront', confirm: true }),
+  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/faq', newType: 'depends_on', why: 'x' }),
+  call('reclassify_concept', { slug: 'capabilities/cart', newKind: 'element' }),
 ]);
 add('shell', 'unknown-tool-and-arguments', { vault: 'storefront' }, [
   call('no_such_tool', {}),
@@ -188,16 +197,14 @@ add('shell', 'unknown-tool-and-arguments', { vault: 'storefront' }, [
   { raw: '{"jsonrpc":"2.0","id":802,"method":"tools/call","params":{"name":"list_concepts","arguments":{"constructor":{"prototype":{"polluted":true}}}}}' },
   call('get_concepts', { slugs: ['capabilities/cart'], constructor: 1 }),
   call('connection_info', { guide: 'nonsense' }),
-  call('git_history', { limit: 0 }),
-  call('git_history', { limit: 'ten' }),
   call('find_backlinks', {}),
   call('find_backlinks', { slug: '' }),
   call('find_backlinks', { slug: 5 }),
   call('query_ontology', { operation: 'nonsense' }),
   call('query_ontology', {}),
-  call('query_concepts', { filter: '' }),
-  call('query_concepts', { filter: 'kind=' }),
-  call('query_concepts', { filter: 'AND AND' }),
+  call('list_concepts', { filter: '' }),
+  call('list_concepts', { filter: 'kind=' }),
+  call('list_concepts', { filter: 'AND AND' }),
 ]);
 // Half of a surrogate pair in a name, in an argument, and in a request id (declared change 3). Ids
 // can only be sent as raw lines, so their answers are compared as the server's other messages.
@@ -217,17 +224,17 @@ add('shell', 'half-a-surrogate-pair-in-a-request-id', { vault: 'storefront' }, [
 // Names an agent sends that the answer must carry as sent (declared change 4).
 add('shell', 'unknown-names-in-any-form', { vault: 'storefront' }, [
   call('srv.list_concepts', {}),
-  call('ontology-atlas.git_status', {}),
-  call('git_status', { 'a,b': 1, ' c ': 2 }),
-  call('git_status', { 'q"x': 1 }),
-  call('git_status', { '': 1 }),
+  call('ontology-atlas.list_concepts', {}),
+  call('list_concepts', { 'a,b': 1, ' c ': 2 }),
+  call('list_concepts', { 'q"x': 1 }),
+  call('list_concepts', { '': 1 }),
   call('list_concepts', { limit: 1, '': 2, zz: 3 }),
   req('ping'),
 ]);
 // Arguments reach the server in the order the line holds them; a script object would list integer
 // names first before the line is written, so this one is a raw line (declared change 5).
 add('shell', 'unknown-arguments-sent-in-any-order', { vault: 'storefront' }, [
-  { raw: '{"jsonrpc":"2.0","id":702,"method":"tools/call","params":{"name":"git_status","arguments":{"b":1,"2":2,"1":3}}}' },
+  { raw: '{"jsonrpc":"2.0","id":702,"method":"tools/call","params":{"name":"list_concepts","arguments":{"b":1,"2":2,"1":3}}}' },
   req('ping'),
 ]);
 add('shell', 'missing-vault-root', { vault: 'one-node', env: { OATLAS_VAULT: '$VAULT/does-not-exist' }, handshake: false }, [req('ping')]);
@@ -244,11 +251,9 @@ add('shell', 'vault-root-relative', { vault: 'one-node', env: { OATLAS_VAULT: '.
 add('shell', 'vault-root-with-spaces-and-hangul', { vault: 'one-node', env: { OATLAS_VAULT: '$VAULT/../\ub2e4\ub978 \ubcfc\ud2b8 dir' } }, [call('connection_info', {})]);
 add('shell', 'repo-root-from-environment', { vault: 'miniature-repo', env: { OATLAS_REPO_ROOT: '$PARENT' } }, [
   call('connection_info', {}),
-  call('git_status', {}),
 ]);
 add('shell', 'repo-root-missing', { vault: 'miniature-repo', env: { OATLAS_REPO_ROOT: '$PARENT/gone' } }, [
   call('connection_info', {}),
-  call('git_status', {}),
   call('validate_vault', {}),
 ]);
 add('shell', 'standard-input-closes-at-once', { vault: 'one-node', handshake: false }, [{ $: 'close-stdin' }]);
@@ -266,13 +271,11 @@ add('shell', 'handshake-only-then-end', { vault: 'one-node' }, []);
 
 // Every tool refused for a bad argument shape, from its own schema, on a vault where nothing is written.
 const ALL_TOOLS = [
-  'connection_info', 'git_status', 'git_history', 'git_snapshot', 'list_concepts', 'list_constellations',
-  'get_constellation', 'get_concepts', 'find_evidence', 'finalize_project_meaning', 'connect_project_source',
-  'disconnect_project_source', 'add_concepts', 'add_relations', 'remove_relation', 'replace_relation',
-  'patch_concept', 'find_backlinks', 'find_orphans', 'query_concepts', 'compile_ontology', 'query_ontology',
-  'validate_vault', 'validate_wiki', 'read_source', 'inspect_architecture', 'infer_imports',
-  'analyze_repo_structure', 'rename_concept', 'reclassify_concept', 'merge_concepts', 'delete_concept',
-  'absorb_document',
+  'connection_info', 'list_concepts', 'get_constellation', 'get_concepts', 'finalize_project_meaning',
+  'connect_project_source', 'add_concepts', 'add_relations', 'remove_relation', 'patch_concept',
+  'find_backlinks', 'compile_ontology', 'query_ontology', 'validate_vault', 'validate_wiki', 'read_source',
+  'inspect_architecture', 'infer_imports', 'analyze_repo_structure', 'rename_concept', 'merge_concepts',
+  'delete_concept', 'absorb_document',
 ];
 add('shell', 'every-tool-with-an-unknown-argument', { vault: 'one-node', env: { OATLAS_READ_ONLY: '1' } }, ALL_TOOLS.map((tool) => call(tool, { zzUnknown: 1 })));
 add('shell', 'every-tool-with-wrong-argument-type', { vault: 'one-node', env: { OATLAS_READ_ONLY: '1' } }, ALL_TOOLS.map((tool) => call(tool, 'text')));
@@ -350,11 +353,10 @@ for (const vault of ['storefront', 'edge-names', 'edge-bytes', 'edge-hostile', '
         : ['capabilities/normal', 'domains/inside', 'capabilities/annotate', 'domains/bytes'];
   add('vault-read', `backlinks-and-orphans-${vault}`, { vault }, [
     ...slugs.map((slug) => call('find_backlinks', { slug })),
-    call('find_orphans', {}),
-    call('find_orphans', { kind: 'capability' }),
-    call('find_orphans', { kind: 'element' }),
-    call('find_orphans', { excludeKinds: ['project', 'domain'] }),
-    call('find_orphans', { kind: 'nonsense' }),
+    call('query_ontology', { operation: 'match_nodes', hasIncoming: false }),
+    call('query_ontology', { operation: 'match_nodes', hasIncoming: false, kind: 'capability' }),
+    call('query_ontology', { operation: 'match_nodes', hasIncoming: false, kind: 'element' }),
+    call('query_ontology', { operation: 'match_nodes', hasIncoming: false, kind: 'nonsense' }),
   ]);
 }
 const FILTERS = [
@@ -367,33 +369,33 @@ const FILTERS = [
 ];
 for (const vault of ['storefront', 'edge-names', 'edge-bytes', 'miniature-repo', 'empty']) {
   add('vault-read', `query-concepts-${vault}`, { vault }, [
-    ...FILTERS.map((filter) => call('query_concepts', { filter })),
-    call('query_concepts', { filter: 'kind=capability', limit: 1 }),
-    call('query_concepts', { filter: 'kind=capability', limit: 500 }),
-    call('query_concepts', { filter: 'kind=capability', limit: 501 }),
-    call('query_concepts', { filter: 'kind=capability', limit: 0 }),
+    ...FILTERS.map((filter) => call('list_concepts', { filter })),
+    call('list_concepts', { filter: 'kind=capability', limit: 1 }),
+    call('list_concepts', { filter: 'kind=capability', limit: 500 }),
+    call('list_concepts', { filter: 'kind=capability', limit: 501 }),
+    call('list_concepts', { filter: 'kind=capability', limit: 0 }),
   ]);
 }
 // A domain named in Hangul matches rows in this vault, so its zero-row hint is not in question.
 add('vault-read', 'query-concepts-hangul-domain', { vault: 'edge-names' }, [
-  call('query_concepts', { filter: 'domain=domains/\uacb0\uc81c' }),
-  call('query_concepts', { filter: 'domain=domains/\uacb0\uc81c AND kind=capability' }),
+  call('list_concepts', { filter: 'domain=domains/\uacb0\uc81c' }),
+  call('list_concepts', { filter: 'domain=domains/\uacb0\uc81c AND kind=capability' }),
 ]);
 // A filter is read by recursion, so the Rust server refuses one nested deeper than 32 levels of NOT
 // and brackets or holding more than 256 clauses; the JavaScript server reads any until its stack ends.
 add('vault-read', 'query-concepts-filter-bounds', { vault: 'storefront' }, [
-  call('query_concepts', { filter: `${'NOT '.repeat(32)}kind=domain` }),
-  call('query_concepts', { filter: `${'NOT '.repeat(33)}kind=domain` }),
-  call('query_concepts', { filter: Array(256).fill('kind=domain').join(' AND ') }),
-  call('query_concepts', { filter: Array(257).fill('kind=domain').join(' AND ') }),
+  call('list_concepts', { filter: `${'NOT '.repeat(32)}kind=domain` }),
+  call('list_concepts', { filter: `${'NOT '.repeat(33)}kind=domain` }),
+  call('list_concepts', { filter: Array(256).fill('kind=domain').join(' AND ') }),
+  call('list_concepts', { filter: Array(257).fill('kind=domain').join(' AND ') }),
 ]);
 // The names a zero-row hint reports come from the parsed filter: a name inside a quoted title is not a
 // kind, and a domain with a non-ASCII letter is named whole.
 add('vault-read', 'query-concepts-zero-row-names', { vault: 'storefront' }, [
-  call('query_concepts', { filter: 'title="kind=widget" AND kind=domain' }),
-  call('query_concepts', { filter: 'domain=domains/\uc5c6\ub294-\ub3c4\uba54\uc778' }),
-  call('query_concepts', { filter: 'kind=domain AND domain=domains/nothing-here' }),
-  call('query_concepts', { filter: 'NOT kind=domain AND kind=capability AND slug=x' }),
+  call('list_concepts', { filter: 'title="kind=widget" AND kind=domain' }),
+  call('list_concepts', { filter: 'domain=domains/\uc5c6\ub294-\ub3c4\uba54\uc778' }),
+  call('list_concepts', { filter: 'kind=domain AND domain=domains/nothing-here' }),
+  call('list_concepts', { filter: 'NOT kind=domain AND kind=capability AND slug=x' }),
 ]);
 add('vault-read', 'connection-info-on-each-vault', { vault: 'storefront' }, [call('connection_info', {})]);
 for (const vault of ['edge-names', 'edge-hostile', 'miniature-repo', 'library', 'atlas-ontology', 'empty']) {
@@ -1034,27 +1036,6 @@ planCase('one-node', 'one-node', [
 // git: reads and staleness
 // ---------------------------------------------------------------------------------------------
 
-for (const vault of ['miniature-repo', 'hostile-git', 'storefront', 'empty']) {
-  add('git', `git-reads-${vault}`, { vault }, [
-    call('git_status', {}),
-    call('git_history', {}),
-    call('git_history', { limit: 1 }),
-    call('git_history', { limit: 2 }),
-    call('git_history', { limit: 50 }),
-    call('git_history', { limit: 100000 }),
-    call('git_history', { limit: 0 }),
-    call('git_snapshot', {}),
-    call('git_snapshot', { message: 'chore: preview only' }),
-  ]);
-}
-add('git', 'git-status-after-edits', { vault: 'miniature-repo' }, [
-  call('git_status', {}),
-  { $: 'write-file', path: 'domains/payment.md', text: '---\nuid: aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee\nslug: domains/payment\nkind: domain\ntitle: Payment Changed\n---\n\nchanged\n' },
-  call('git_status', {}),
-  { $: 'write-file', path: 'untracked-note.md', text: '# note\n' },
-  call('git_status', {}),
-  call('git_history', { limit: 5 }),
-]);
 add('git', 'staleness-through-validate-vault', { vault: 'miniature-repo' }, [
   call('validate_vault', {}),
   call('validate_vault', { repoRoot: '$PARENT' }),
@@ -1064,32 +1045,8 @@ add('git', 'staleness-through-validate-vault', { vault: 'miniature-repo' }, [
   call('get_concepts', { slugs: ['capabilities/place-order', 'capabilities/cancel-order'] }),
 ]);
 add('git', 'no-git-executable', { vault: 'miniature-repo', env: { PATH: '/usr/bin/does-not-exist' } }, [
-  call('git_status', {}),
-  call('git_history', { limit: 3 }),
   call('connection_info', {}),
   call('validate_vault', {}),
-]);
-add('git', 'unborn-branch-and-detached-head', { vault: 'one-node' }, [call('git_status', {}), call('git_history', {})]);
-// A rename staged inside the vault, and one from outside into it: the server must report two rows
-// for each, whatever `status.renames` says.
-add('git', 'git-status-staged-rename', { vault: 'miniature-repo' }, [
-  call('git_status', {}),
-  { $: 'git', args: ['mv', 'ontology/domains/payment.md', 'ontology/domains/payment-moved.md'] },
-  call('git_status', {}),
-  { $: 'git', args: ['mv', 'src/order/cancel.ts', 'ontology/cancel-moved.ts'] },
-  call('git_status', {}),
-]);
-// The branch names a commit that is not in the repository: the history cannot be read, and that
-// must not look like a repository with nothing in it.
-add('git', 'git-history-with-a-missing-commit', { vault: 'miniature-repo' }, [
-  { $: 'write-file', path: '../.git/refs/heads/main', text: '1111111111111111111111111111111111111111\n' },
-  call('git_history', {}),
-]);
-// A vault two folders below the top. On Windows the JavaScript server writes its place with
-// backslashes and so counts every row as outside the vault; elsewhere the two servers agree.
-add('git', 'git-reads-in-a-nested-vault', { vault: 'nested-docs-repo' }, [
-  call('git_status', {}),
-  call('git_history', {}),
 ]);
 
 // ---------------------------------------------------------------------------------------------
@@ -1224,37 +1181,37 @@ add('imports', 'infer-imports-atlas-ontology-vault-as-root',{ vault: 'atlas-onto
 add('imports', 'inspect-architecture-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('inspect_architecture', { rootPath: '$VAULT' })]);
 
 // ---------------------------------------------------------------------------------------------
-// evidence: find_evidence, read_source, the agent brief
+// evidence: list_concepts mentions, read_source, the agent brief
 // ---------------------------------------------------------------------------------------------
 
 add('evidence', 'find-evidence-miniature-repo', { vault: 'miniature-repo' }, [
-  call('find_evidence', { title: 'Place Order' }),
-  call('find_evidence', { title: 'Charge Card' }),
-  call('find_evidence', { title: 'charge' }),
-  call('find_evidence', { title: 'Cancel Order', limit: 1 }),
-  call('find_evidence', { title: 'Cancel Order', nodesOnly: true }),
-  call('find_evidence', { title: 'Invoice' }),
-  call('find_evidence', { title: 'Carrier' }),
-  call('find_evidence', { title: 'ledger balance' }),
-  call('find_evidence', { title: 'StockLevel' }),
-  call('find_evidence', { title: 'no such thing anywhere' }),
-  call('find_evidence', { title: '' }),
-  call('find_evidence', { title: '   ' }),
-  call('find_evidence', { title: '\uacb0\uc81c' }),
-  call('find_evidence', { title: 'a'.repeat(5000) }),
-  call('find_evidence', { title: 'TOKEN' }),
-  call('find_evidence', { title: 'sentinel' }),
+  call('list_concepts', { mentions: 'Place Order' }),
+  call('list_concepts', { mentions: 'Charge Card' }),
+  call('list_concepts', { mentions: 'charge' }),
+  call('list_concepts', { mentions: 'Cancel Order', limit: 1 }),
+  call('list_concepts', { mentions: 'Cancel Order' }),
+  call('list_concepts', { mentions: 'Invoice' }),
+  call('list_concepts', { mentions: 'Carrier' }),
+  call('list_concepts', { mentions: 'ledger balance' }),
+  call('list_concepts', { mentions: 'StockLevel' }),
+  call('list_concepts', { mentions: 'no such thing anywhere' }),
+  call('list_concepts', { mentions: '' }),
+  call('list_concepts', { mentions: '   ' }),
+  call('list_concepts', { mentions: '\uacb0\uc81c' }),
+  call('list_concepts', { mentions: 'a'.repeat(5000) }),
+  call('list_concepts', { mentions: 'TOKEN' }),
+  call('list_concepts', { mentions: 'sentinel' }),
 ]);
 for (const vault of ['storefront', 'edge-names', 'edge-hostile']) {
   add('evidence', `find-evidence-${vault}`, { vault }, [
-    call('find_evidence', { title: 'Cart' }),
-    call('find_evidence', { title: 'Order' }),
-    call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc18c' }),
-    call('find_evidence', { title: 'Éclair' }),
-    call('find_evidence', { title: 'Éclair'.normalize('NFD') }),
-    call('find_evidence', { title: 'Cancel', limit: 2, nodesOnly: true }),
-    call('find_evidence', { title: 'secret' }),
-    call('find_evidence', { title: 'SECRET-SENTINEL-outside' }),
+    call('list_concepts', { mentions: 'Cart' }),
+    call('list_concepts', { mentions: 'Order' }),
+    call('list_concepts', { mentions: '\uc8fc\ubb38 \ucde8\uc18c' }),
+    call('list_concepts', { mentions: 'Éclair' }),
+    call('list_concepts', { mentions: 'Éclair'.normalize('NFD') }),
+    call('list_concepts', { mentions: 'Cancel', limit: 2 }),
+    call('list_concepts', { mentions: 'secret' }),
+    call('list_concepts', { mentions: 'SECRET-SENTINEL-outside' }),
   ]);
 }
 add('evidence', 'read-source-miniature-repo', { vault: 'miniature-repo' }, [
@@ -1384,31 +1341,29 @@ add('evidence', 'read-source-argument-bounds', { vault: 'library' }, [
 add('evidence', 'find-evidence-unicode-and-typos', { vault: 'storefront' }, [
   { $: 'write-file', path: 'capabilities/ko-note.md', text: `---\nuid: 3c1f4b8e-5a2d-4c7e-9b1a-0d6e8f2a4c10\nslug: capabilities/ko-note\nkind: capability\ntitle: ${'\uc8fc\ubb38 \ucde8\uc18c'.normalize('NFD')}\ndomain: domains/order\n---\n\nBody about ${'\uacb0\uc81c \uc2b9\uc778'.normalize('NFD')} and Café au lait.\n` },
   { $: 'touch', path: 'capabilities/ko-note.md', mtimeMs: 1_700_000_500_000 },
-  call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc18c' }),
-  call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc18c'.normalize('NFD') }),
-  call('find_evidence', { title: '\uacb0\uc81c \uc2b9\uc778' }),
-  call('find_evidence', { title: 'Café au lait' }),
-  call('find_evidence', { title: 'CAFÉ' }),
-  call('find_evidence', { title: 'Crat' }),
-  call('find_evidence', { title: 'Plce Order' }),
-  call('find_evidence', { title: 'Adres Bok' }),
-  call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc190' }),
-  call('find_evidence', { title: '\ucde8\uc18c \uc8fc\ubb38 \uc2b9' }),
-  call('find_evidence', { title: 'refund policy for returns' }),
-  call('find_evidence', { title: 'x'.repeat(300) }),
+  call('list_concepts', { mentions: '\uc8fc\ubb38 \ucde8\uc18c' }),
+  call('list_concepts', { mentions: '\uc8fc\ubb38 \ucde8\uc18c'.normalize('NFD') }),
+  call('list_concepts', { mentions: '\uacb0\uc81c \uc2b9\uc778' }),
+  call('list_concepts', { mentions: 'Café au lait' }),
+  call('list_concepts', { mentions: 'CAFÉ' }),
+  call('list_concepts', { mentions: 'Crat' }),
+  call('list_concepts', { mentions: 'Plce Order' }),
+  call('list_concepts', { mentions: 'Adres Bok' }),
+  call('list_concepts', { mentions: '\uc8fc\ubb38 \ucde8\uc190' }),
+  call('list_concepts', { mentions: '\ucde8\uc18c \uc8fc\ubb38 \uc2b9' }),
+  call('list_concepts', { mentions: 'refund policy for returns' }),
+  call('list_concepts', { mentions: 'x'.repeat(300) }),
 ]);
 add('evidence', 'find-evidence-hostile-queries', { vault: 'storefront' }, [
-  call('find_evidence', { title: Array.from({ length: 4000 }, (_, i) => `term${i}`).join(' ') }),
-  call('find_evidence', { title: 'a '.repeat(20000).trim() }),
-  call('find_evidence', { title: '\u0000' }),
-  call('find_evidence', { title: 'cart\u0000' }),
-  call('find_evidence', { title: '😀' }),
-  call('find_evidence', { title: 'Cart', limit: 0 }),
-  call('find_evidence', { title: 'Cart', limit: 501 }),
-  call('find_evidence', { title: 'Cart', limit: 1.5 }),
-  call('find_evidence', { title: 'Cart', nodesOnly: 'yes' }),
-  call('find_evidence', {}),
-  call('find_evidence', { title: 5 }),
+  call('list_concepts', { mentions: Array.from({ length: 4000 }, (_, i) => `term${i}`).join(' ') }),
+  call('list_concepts', { mentions: 'a '.repeat(20000).trim() }),
+  call('list_concepts', { mentions: '\u0000' }),
+  call('list_concepts', { mentions: 'cart\u0000' }),
+  call('list_concepts', { mentions: '😀' }),
+  call('list_concepts', { mentions: 'Cart', limit: 0 }),
+  call('list_concepts', { mentions: 'Cart', limit: 501 }),
+  call('list_concepts', { mentions: 'Cart', limit: 1.5 }),
+  call('list_concepts', { mentions: 5 }),
 ]);
 add('evidence', 'agent-brief-operations', { vault: 'miniature-repo' }, [
   call('query_ontology', { operation: 'agent_brief', task: 'change how a card is charged' }),
@@ -2001,7 +1956,7 @@ add('meaning', 'validate-vault-after-write', { vault: 'storefront' }, [
 add('meaning', 'validate-wiki-in-validate-vault-library', { vault: 'library' }, [call('validate_vault', {}), call('validate_vault', { repoRoot: '$VAULT' })]);
 
 // ---------------------------------------------------------------------------------------------
-// writes: the nine writers and git_snapshot, each answer and the bytes left on disk
+// writes: the nine writers, each answer and the bytes left on disk
 // ---------------------------------------------------------------------------------------------
 
 add('writes', 'add-concepts-single', { vault: 'storefront' }, [
@@ -2033,7 +1988,7 @@ add('writes', 'add-concepts-hangul-and-emoji', { vault: 'edge-names' }, [
     { slug: `capabilities/${'\uac00'.repeat(120)}`, kind: 'capability', title: '\uae34 \uc774\ub984', domain: 'domains/\uacb0\uc81c' },
   ] }),
   call('list_concepts', { kind: 'capability', summary: true }),
-  call('query_concepts', { filter: 'title=\ud658\ubd88 \ucc98\ub9ac' }),
+  call('list_concepts', { filter: 'title=\ud658\ubd88 \ucc98\ub9ac' }),
 ]);
 add('writes', 'add-concepts-with-labels-extra-and-body-shapes', { vault: 'storefront' }, [
   call('add_concepts', { concepts: [
@@ -2080,12 +2035,12 @@ add('writes', 'add-relations-and-remove', { vault: 'storefront' }, [
 ]);
 add('writes', 'replace-relation', { vault: 'storefront' }, [
   call('get_concepts', { slugs: ['capabilities/checkout'], body: 'excerpt' }),
-  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/order-lookup', newType: 'depends_on', why: 'swapped' }),
-  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/order-lookup', newType: 'depends_on', why: 'swapped', confirm: true }),
-  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/order-lookup', newType: 'depends_on', why: 'swapped', confirm: true, expected_mtime: 7 }),
-  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/nonexistent', oldType: 'depends_on', newTo: 'capabilities/order-lookup', newType: 'depends_on', why: 'x', confirm: true }),
+  call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/cart', type: 'depends_on', replaceWith: { to: 'capabilities/order-lookup', type: 'depends_on', why: 'swapped' } }),
+  call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/cart', type: 'depends_on', replaceWith: { to: 'capabilities/order-lookup', type: 'depends_on', why: 'swapped' }, confirm: true }),
+  call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/cart', type: 'depends_on', replaceWith: { to: 'capabilities/order-lookup', type: 'depends_on', why: 'swapped' }, confirm: true, expected_mtime: 7 }),
+  call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/nonexistent', type: 'depends_on', replaceWith: { to: 'capabilities/order-lookup', type: 'depends_on', why: 'x' }, confirm: true }),
   call('get_concepts', { slugs: ['capabilities/checkout'], body: 'excerpt' }, { as: 'checkout-read' }),
-  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/order-lookup', oldType: 'depends_on', newTo: 'capabilities/cart', newType: 'relates', why: 'back', confirm: true, expected_mtime: answerOf('checkout-read', 'result.structuredContent.concepts[0].mtime') }),
+  call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/order-lookup', type: 'depends_on', replaceWith: { to: 'capabilities/cart', type: 'relates', why: 'back' }, confirm: true, expected_mtime: answerOf('checkout-read', 'result.structuredContent.concepts[0].mtime') }),
   call('get_concepts', { slugs: ['capabilities/checkout'], body: 'excerpt' }),
 ]);
 add('writes', 'patch-concept-frontmatter-and-body', { vault: 'storefront' }, [
@@ -2135,13 +2090,13 @@ add('writes', 'rename-concept-hangul-and-normalization', { vault: 'edge-names' }
   call('list_concepts', { summary: true }),
 ]);
 add('writes', 'reclassify-concept', { vault: 'storefront' }, [
-  call('reclassify_concept', { slug: 'capabilities/cart', newKind: 'element' }),
-  call('reclassify_concept', { slug: 'capabilities/cart', newKind: 'element', confirm: true, expected_mtime: 5 }),
-  call('reclassify_concept', { slug: 'capabilities/cart', newKind: 'element', confirm: true, expected_mtime: mtimeOf('capabilities/cart.md') }),
-  call('reclassify_concept', { slug: 'elements/cart', newKind: 'capability', newSlug: 'capabilities/cart-again', domain: 'domains/order', confirm: true }),
-  call('reclassify_concept', { slug: 'capabilities/checkout', newKind: 'nonsense', confirm: true }),
-  call('reclassify_concept', { slug: 'capabilities/checkout', newKind: 'domain', domain: null, body: 'now a domain', confirm: true }),
-  call('reclassify_concept', { slug: 'capabilities/nonexistent', newKind: 'element', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/cart', newKind: 'element' }),
+  call('rename_concept', { oldSlug: 'capabilities/cart', newKind: 'element', confirm: true, expected_mtime: 5 }),
+  call('rename_concept', { oldSlug: 'capabilities/cart', newKind: 'element', confirm: true, expected_mtime: mtimeOf('capabilities/cart.md') }),
+  call('rename_concept', { oldSlug: 'elements/cart', newKind: 'capability', newSlug: 'capabilities/cart-again', domain: 'domains/order', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/checkout', newKind: 'nonsense', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/checkout', newKind: 'domain', domain: null, body: 'now a domain', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/nonexistent', newKind: 'element', confirm: true }),
   call('validate_vault', { limit: 3 }),
 ]);
 add('writes', 'merge-concepts', { vault: 'storefront' }, [
@@ -2180,28 +2135,6 @@ add('writes', 'writes-on-miniature-repo-evidence-nodes', { vault: 'miniature-rep
   call('add_concepts', { concepts: [{ slug: 'capabilities/bad-path', kind: 'capability', title: 'Bad Path', domain: 'domains/payment', path: '../outside' }] }),
   call('validate_vault', {}),
 ]);
-add('writes', 'git-snapshot-dry-run-and-commit', { vault: 'miniature-repo' }, [
-  call('git_snapshot', {}),
-  call('patch_concept', { slug: 'capabilities/charge-card', body: 'Charges a card.', expected_mtime: mtimeOf('capabilities/charge-card.md') }),
-  call('git_snapshot', {}),
-  call('git_snapshot', { confirm: true }),
-  call('git_snapshot', { confirm: true, expectedHead: '0000000000000000000000000000000000000000' }),
-  call('git_snapshot', { message: 'chore: checkpoint after charge card' }),
-  call('git_status', {}),
-  call('git_history', { limit: 2 }),
-]);
-add('writes', 'git-snapshot-with-expected-head', { vault: 'miniature-repo' }, [
-  call('git_status', {}),
-  call('git_snapshot', { message: 'chore: first checkpoint' }),
-  call('git_snapshot', { confirm: true, message: 'chore: first checkpoint', expectedHead: '$HEAD' }),
-]);
-add('writes', 'git-snapshot-in-hostile-repo', { vault: 'hostile-git', mustNotExist: ['fsmonitor-ran.txt', 'ssh-ran.txt', 'diff-ran.txt', 'filter-ran.txt', 'hook-ran.txt'] }, [
-  call('git_status', {}),
-  call('git_snapshot', {}),
-  call('git_snapshot', { confirm: true, message: 'chore: hostile checkpoint' }),
-  call('git_history', { limit: 3 }),
-]);
-add('writes', 'git-snapshot-outside-a-repository', { vault: 'storefront' }, [call('git_snapshot', {}), call('git_snapshot', { confirm: true })]);
 add('writes', 'write-then-compile-reports-activity-side-files', { vault: 'storefront' }, [
   call('add_concepts', { concepts: [{ slug: 'elements/side-file-probe', kind: 'element', title: 'Side File Probe' }] }),
   call('add_concepts', { concepts: [{ slug: 'elements/side-file-probe-2', kind: 'element', title: 'Side File Probe Two' }] }),
@@ -2215,16 +2148,16 @@ add('writes', 'write-then-compile-reports-activity-side-files', { vault: 'storef
 // ---------------------------------------------------------------------------------------------
 
 add('library', 'constellations', { vault: 'library' }, [
-  call('list_constellations', {}),
-  call('list_constellations', { limit: 1 }),
-  call('list_constellations', { offset: 1 }),
-  call('list_constellations', { offset: 99 }),
+  call('get_constellation', {}),
+  call('get_constellation', { limit: 1 }),
+  call('get_constellation', { offset: 1 }),
+  call('get_constellation', { offset: 99 }),
   call('get_constellation', { id: '1f6c0b1a-8f2e-4c3a-9d5e-000000000001' }),
   call('get_constellation', { id: 'not-a-uuid' }),
   call('get_constellation', { id: '00000000-0000-4000-8000-000000000000' }),
 ]);
 add('library', 'constellations-in-vaults-without-a-collection-file', { vault: 'storefront' }, [
-  call('list_constellations', {}),
+  call('get_constellation', {}),
   call('get_constellation', { id: '00000000-0000-4000-8000-000000000000' }),
 ]);
 add('library', 'wiki-validation', { vault: 'library' }, [
@@ -2273,9 +2206,9 @@ add('library', 'project-source-connect-and-disconnect', { vault: 'miniature-repo
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', confirm: true }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', repair: true, confirm: true }),
   call('validate_vault', { limit: 3 }),
-  call('disconnect_project_source', { projectSlug: 'miniature-shop' }),
-  call('disconnect_project_source', { projectSlug: 'miniature-shop', confirm: true }),
-  call('disconnect_project_source', { projectSlug: 'miniature-shop', confirm: true }),
+  call('connect_project_source', { projectSlug: 'miniature-shop', disconnect: true }),
+  call('connect_project_source', { projectSlug: 'miniature-shop', disconnect: true, confirm: true }),
+  call('connect_project_source', { projectSlug: 'miniature-shop', disconnect: true, confirm: true }),
   call('connect_project_source', { projectSlug: 'nonexistent', rootPath: '$PARENT' }),
   call('connect_project_source', { projectSlug: 'domains/order', rootPath: '$PARENT' }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT/does-not-exist', confirm: true }),
@@ -2331,7 +2264,7 @@ add('safety', 'hostile-slugs-on-writes', { vault: 'edge-hostile' }, [
   ...HOSTILE_SLUGS.map((slug) => call('delete_concept', { slug, confirm: true, force: true })),
   ...HOSTILE_SLUGS.map((slug) => call('rename_concept', { oldSlug: 'capabilities/normal', newSlug: slug, confirm: true })),
   ...HOSTILE_SLUGS.map((slug) => call('rename_concept', { oldSlug: slug, newSlug: 'capabilities/renamed', confirm: true })),
-  ...HOSTILE_SLUGS.slice(0, 12).map((slug) => call('reclassify_concept', { slug, newKind: 'element', confirm: true })),
+  ...HOSTILE_SLUGS.slice(0, 12).map((slug) => call('rename_concept', { oldSlug: slug, newKind: 'element', confirm: true })),
   ...HOSTILE_SLUGS.slice(0, 12).map((slug) => call('merge_concepts', { fromSlug: slug, intoSlug: 'capabilities/normal', confirm: true })),
   ...HOSTILE_SLUGS.slice(0, 12).map((slug) => call('add_relations', { relations: [{ from: slug, to: 'capabilities/normal', type: 'relates', why: 'x' }] })),
   call('list_concepts', { summary: true }),
@@ -2349,8 +2282,8 @@ add('safety', 'reads-skip-credential-and-hidden-names', { vault: 'edge-hostile' 
   call('list_concepts', {}),
   call('list_concepts', { summary: true }),
   call('compile_ontology', { summary: true }),
-  call('find_evidence', { title: 'sentinel' }),
-  call('find_evidence', { title: 'API_KEY' }),
+  call('list_concepts', { mentions: 'sentinel' }),
+  call('list_concepts', { mentions: 'API_KEY' }),
   call('read_source', { path: '.env' }),
   call('read_source', { path: '.env.local' }),
   call('read_source', { path: 'credentials.json' }),
@@ -2411,7 +2344,7 @@ add('safety', 'confined-source-reads-on', { vault: 'miniature-repo', env: { OATL
   call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', symbol: 'placeOrder' }, { path: '.env', mode: 'outline' }, { path: '../outside', mode: 'outline' }, { path: '/etc/hosts', mode: 'outline' }] }),
   call('infer_imports', { rootPath: '$PARENT' }),
   call('inspect_architecture', { rootPath: '$PARENT' }),
-  call('find_evidence', { title: 'Place Order' }),
+  call('list_concepts', { mentions: 'Place Order' }),
   call('read_source', { path: 'src/order/placement.ts' }),
   call('read_source', { path: '.env' }),
   call('validate_vault', { limit: 3 }),
@@ -2429,8 +2362,6 @@ add('safety', 'confined-source-reads-with-a-bad-descriptor', { vault: 'miniature
 ]);
 add('safety', 'snapshot-descriptor-not-a-number', { vault: 'miniature-repo', env: { OATLAS_SOURCE_SNAPSHOT_FD: 'abc' } }, [call('read_source', { path: 'src/order/placement.ts' })]);
 add('safety', 'repository-whose-config-would-run-code', { vault: 'hostile-git', mustNotExist: ['fsmonitor-ran.txt', 'ssh-ran.txt', 'diff-ran.txt', 'filter-ran.txt', 'hook-ran.txt'] }, [
-  call('git_status', {}),
-  call('git_history', { limit: 5 }),
   call('validate_vault', {}),
   call('query_ontology', { operation: 'health' }),
   call('query_ontology', { operation: 'maintenance_plan' }),
@@ -2445,7 +2376,6 @@ add('safety', 'write-under-read-only-mode', { vault: 'storefront', env: { OATLAS
   call('patch_concept', { slug: 'capabilities/cart', body: 'nope' }),
   call('delete_concept', { slug: 'capabilities/cart', confirm: true, force: true }),
   call('rename_concept', { oldSlug: 'capabilities/cart', newSlug: 'capabilities/x', confirm: true }),
-  call('git_snapshot', { confirm: true }),
   call('absorb_document', { filePath: '$VAULT/storefront.md', confirm: true }),
   call('connect_project_source', { projectSlug: 'storefront', rootPath: '$VAULT', confirm: true }),
   call('finalize_project_meaning', { projectSlug: 'storefront', expected_mtime: 5 }),
@@ -2460,7 +2390,6 @@ add('safety', 'write-with-consent-on-and-no-way-to-ask', { vault: 'storefront', 
   call('rename_concept', { oldSlug: 'capabilities/cart', newSlug: 'capabilities/x' }),
   call('add_concepts', { concepts: [{ slug: 'elements/asked', kind: 'element', title: 'Asked' }], dryRun: true }),
   call('add_concepts', { concepts: [{ slug: 'elements/asked', kind: 'element', title: 'Asked' }], dry_run: true }),
-  call('git_snapshot', {}),
   call('list_concepts', { limit: 1 }),
 ]);
 for (const [label, answer] of [['accepted', 'accept'], ['declined', 'decline'], ['cancelled', 'cancel']]) {
@@ -2497,8 +2426,8 @@ add('safety', 'stale-and-raced-writes', { vault: 'storefront' }, [
   call('rename_concept', { oldSlug: 'capabilities/cart', newSlug: 'capabilities/raced', confirm: true, expected_mtime: 1_700_000_500_000.5 }),
   call('delete_concept', { slug: 'capabilities/cart', confirm: true, expected_mtime: 1_700_000_500_000.5 }),
   call('merge_concepts', { fromSlug: 'capabilities/cart', intoSlug: 'capabilities/checkout', confirm: true, expected_mtime: 1 }),
-  call('replace_relation', { from: 'capabilities/cart', oldTo: 'capabilities/x', oldType: 'depends_on', newTo: 'capabilities/y', newType: 'depends_on', why: 'x', confirm: true, expected_mtime: 1 }),
-  call('reclassify_concept', { slug: 'capabilities/cart', newKind: 'element', confirm: true, expected_mtime: 1 }),
+  call('remove_relation', { from: 'capabilities/cart', to: 'capabilities/x', type: 'depends_on', replaceWith: { to: 'capabilities/y', type: 'depends_on', why: 'x' }, confirm: true, expected_mtime: 1 }),
+  call('rename_concept', { oldSlug: 'capabilities/cart', newKind: 'element', confirm: true, expected_mtime: 1 }),
   call('remove_relation', { from: 'capabilities/cart', to: 'capabilities/checkout', type: 'depends_on', confirm: true, expected_mtime: 1 }),
 ]);
 for (const [label, value] of [['negative', -1], ['string', '5'], ['nan-like', 'NaN'], ['huge', 1e308], ['fractional-tiny', 0.0001], ['zero', 0], ['null', null], ['boolean', true]]) {
@@ -2514,10 +2443,9 @@ add('safety', 'write-guards-on-every-writer', { vault: 'storefront' }, [
   call('delete_concept', { slug: 'capabilities/faq', confirm: 1 }),
   call('delete_concept', { slug: 'capabilities/cart', confirm: true }),
   call('merge_concepts', { fromSlug: 'capabilities/faq', intoSlug: 'capabilities/inquiry' }),
-  call('reclassify_concept', { slug: 'capabilities/faq', newKind: 'element' }),
+  call('rename_concept', { oldSlug: 'capabilities/faq', newKind: 'element' }),
   call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/cart', type: 'depends_on' }),
-  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/faq', newType: 'depends_on', why: 'x' }),
-  call('git_snapshot', { confirm: true }),
+  call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/cart', type: 'depends_on', replaceWith: { to: 'capabilities/faq', type: 'depends_on', why: 'x' } }),
   call('absorb_document', { filePath: '$VAULT/storefront.md' }),
   call('absorb_document', { filePath: '$VAULT/storefront.md', confirm: true }),
 ]);
@@ -2526,7 +2454,7 @@ add('safety', 'audit-lines-for-each-writer', { vault: 'storefront' }, [
   call('add_relations', { relations: [{ from: 'elements/audit', to: 'capabilities/cart', type: 'relates', why: 'audit' }] }),
   call('patch_concept', { slug: 'elements/audit', body: 'audited' }),
   call('rename_concept', { oldSlug: 'elements/audit', newSlug: 'elements/audited', confirm: true }),
-  call('reclassify_concept', { slug: 'elements/audited', newKind: 'capability', domain: 'domains/order', confirm: true }),
+  call('rename_concept', { oldSlug: 'elements/audited', newKind: 'capability', domain: 'domains/order', confirm: true }),
   call('merge_concepts', { fromSlug: 'capabilities/audited', intoSlug: 'capabilities/cart', confirm: true }),
   call('delete_concept', { slug: 'capabilities/faq', confirm: true }),
   call('remove_relation', { from: 'capabilities/checkout', to: 'capabilities/cart', type: 'depends_on', confirm: true }),
@@ -2592,7 +2520,7 @@ const readsAndWrites = (slug) => [
   call('find_backlinks', { slug }),
   call('compile_ontology', { summary: true }),
   call('validate_vault', {}),
-  call('query_concepts', { filter: 'kind=capability' }),
+  call('list_concepts', { filter: 'kind=capability' }),
   call('patch_concept', { slug, body: 'changed' }),
   call('rename_concept', { oldSlug: slug, newSlug: `${slug}-renamed`, confirm: true }),
   call('delete_concept', { slug, confirm: true }),
@@ -2621,8 +2549,8 @@ add('safety', 'killed-during-a-batch-write', { vault: 'storefront', folder: 'inv
 add('safety', 'secrets-are-never-shown', { vault: 'edge-hostile' }, [
   call('get_concepts', { slugs: ['.env', 'credentials', 'id_rsa', 'service-account', '.npmrc'], body: 'full' }),
   ...['.env', '.env.local', 'credentials.json', 'id_rsa', 'service-account.json', '.npmrc'].map((file) => call('read_source', { path: file })),
-  call('find_evidence', { title: 'SECRET-SENTINEL-env' }),
-  call('find_evidence', { title: 'credentials' }),
+  call('list_concepts', { mentions: 'SECRET-SENTINEL-env' }),
+  call('list_concepts', { mentions: 'credentials' }),
   call('list_concepts', {}),
   call('analyze_repo_structure', { rootPath: '$VAULT', sourceReads: ['.env', 'credentials.json', 'id_rsa'].map((file) => ({ path: file, mode: 'outline' })) }),
   call('infer_imports', { rootPath: '$VAULT' }),

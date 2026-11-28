@@ -3,4 +3,3 @@
 {"id":1,"method":"tools/list"}
 {"id":2,"method":"tools/call","params":{"name":"add_concepts","arguments":{"concepts":[{"slug":"elements/probe","kind":"element","title":"Probe"}]}}}
 {"id":3,"method":"tools/call","params":{"name":"list_concepts","arguments":{"limit":1}}}
-{"id":4,"method":"tools/call","params":{"name":"git_status","arguments":{}}}

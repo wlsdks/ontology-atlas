@@ -9,9 +9,8 @@
 {"id":7,"method":"tools/call","params":{"name":"delete_concept","arguments":{"slug":"capabilities/faq","confirm":1}}}
 {"id":8,"method":"tools/call","params":{"name":"delete_concept","arguments":{"slug":"capabilities/cart","confirm":true}}}
 {"id":9,"method":"tools/call","params":{"name":"merge_concepts","arguments":{"fromSlug":"capabilities/faq","intoSlug":"capabilities/inquiry"}}}
-{"id":10,"method":"tools/call","params":{"name":"reclassify_concept","arguments":{"slug":"capabilities/faq","newKind":"element"}}}
+{"id":10,"method":"tools/call","params":{"name":"rename_concept","arguments":{"oldSlug":"capabilities/faq","newKind":"element"}}}
 {"id":11,"method":"tools/call","params":{"name":"remove_relation","arguments":{"from":"capabilities/checkout","to":"capabilities/cart","type":"depends_on"}}}
-{"id":12,"method":"tools/call","params":{"name":"replace_relation","arguments":{"from":"capabilities/checkout","oldTo":"capabilities/cart","oldType":"depends_on","newTo":"capabilities/faq","newType":"depends_on","why":"x"}}}
-{"id":13,"method":"tools/call","params":{"name":"git_snapshot","arguments":{"confirm":true}}}
-{"id":14,"method":"tools/call","params":{"name":"absorb_document","arguments":{"filePath":"$VAULT/storefront.md"}}}
-{"id":15,"method":"tools/call","params":{"name":"absorb_document","arguments":{"filePath":"$VAULT/storefront.md","confirm":true}}}
+{"id":12,"method":"tools/call","params":{"name":"remove_relation","arguments":{"from":"capabilities/checkout","to":"capabilities/cart","type":"depends_on","replaceWith":{"to":"capabilities/faq","type":"depends_on","why":"x"}}}}
+{"id":13,"method":"tools/call","params":{"name":"absorb_document","arguments":{"filePath":"$VAULT/storefront.md"}}}
+{"id":14,"method":"tools/call","params":{"name":"absorb_document","arguments":{"filePath":"$VAULT/storefront.md","confirm":true}}}

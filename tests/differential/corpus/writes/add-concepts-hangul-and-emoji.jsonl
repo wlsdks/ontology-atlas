@@ -2,4 +2,4 @@
 {"case":"add-concepts-hangul-and-emoji","vault":"edge-names"}
 {"id":1,"method":"tools/call","params":{"name":"add_concepts","arguments":{"concepts":[{"slug":"capabilities/환불-처리","kind":"capability","title":"환불 처리","domain":"domains/결제","body":"환불을 처리한다.","labels":{"en":"Refund","ko":"환불"}},{"slug":"capabilities/😀-react","kind":"capability","title":"😀 React","domain":"domains/😀-smile"},{"slug":"capabilities/Éclair-2","kind":"capability","title":"Éclair","domain":"domains/apple"},{"slug":"capabilities/가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가","kind":"capability","title":"긴 이름","domain":"domains/결제"}]}}}
 {"id":2,"method":"tools/call","params":{"name":"list_concepts","arguments":{"kind":"capability","summary":true}}}
-{"id":3,"method":"tools/call","params":{"name":"query_concepts","arguments":{"filter":"title=환불 처리"}}}
+{"id":3,"method":"tools/call","params":{"name":"list_concepts","arguments":{"filter":"title=환불 처리"}}}
