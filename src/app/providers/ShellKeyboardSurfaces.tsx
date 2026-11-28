@@ -10,11 +10,7 @@ import {
 import { blockingSurfaceOpen } from "@/shared/lib/keyboard/use-destination-shortcuts";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
 
-/*
- * The `ssr: false` option is load-bearing: the sheet calls `useSearchParams`, which in the static prerender
- * bails every route out (see `AppShell`). Nothing else is imported from either widget, so neither
- * dialog lands in the chunk every route loads first.
- */
+/* Loaded on first use, and nothing else is imported from either widget, so neither dialog lands in the chunk every route loads first. */
 const ShortcutSheet = lazy(() => import("@/widgets/shortcut-sheet").then((m) => ({ default: m.ShortcutSheet })));
 const MountedGlobalSearch = lazy(() => import("@/widgets/global-search").then((m) => ({ default: m.MountedGlobalSearch })));
 
