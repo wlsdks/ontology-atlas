@@ -13,7 +13,7 @@ use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_aftermath::{counts_after, post_write_maintenance};
 use super::write_gates::{require_not_reserved, PreviewState};
-use super::write_support::{effect, require_current, write_permit};
+use super::write_support::{effect, require_current};
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::ToolError;
@@ -42,18 +42,16 @@ fn referrer_row(backlink: &Backlink<'_>) -> Setting {
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let name = required_non_blank_text(arguments, "slug")?;
     let confirm = optional_boolean(arguments, "confirm")?.unwrap_or(false);
     let force = optional_boolean(arguments, "force")?.unwrap_or(false);
     let expected = optional_non_negative_number(arguments, "expected_mtime")?;
-    let write = write_permit(permit)?;
-    write.write_path(&name).map_err(|error| slug_refusal(&error))?;
+    permit.write_path(&name).map_err(|error| slug_refusal(&error))?;
     let view = VaultView::read(permit)?;
     let Some(slug) = view.disk_slug(&name) else {
         return Err(view.not_found("Doc not found", &name, false));
     };
-    let path = write.write_path(&slug).map_err(|error| slug_refusal(&error))?;
+    let path = permit.write_path(&slug).map_err(|error| slug_refusal(&error))?;
     let source = SourceDocument::read(path.as_confined(), &slug)
         .map_err(|refusal| source_refusal(&view, &slug, refusal))?;
     require_not_reserved(view.document(&slug), "delete_concept")?;
@@ -104,7 +102,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         )));
     }
     require_current(&slug, expected, source.modified)?;
-    write.apply(
+    permit.apply(
         vec![entered(PlanEntry::delete(path.clone()), &source.raw, source.modified)],
         confined_files::Reservations::Refuse(&|path, text| vault_edit::reservation_in(path, text)),
     )?;

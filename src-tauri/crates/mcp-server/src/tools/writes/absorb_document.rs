@@ -18,7 +18,7 @@ use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_aftermath::{counts_after, post_write_maintenance};
 use super::write_gates::PreviewState;
-use super::write_support::{created_by, effect, identity_refusal, write_permit, SessionUids};
+use super::write_support::{created_by, effect, identity_refusal, SessionUids};
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::answer::ToolOutput;
@@ -180,7 +180,6 @@ fn dry_run_message(plan: &AbsorptionPlan, blocked: &[String]) -> String {
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    let write = write_permit(permit)?;
     let file_path = required_non_blank_text(arguments, "filePath")?;
     let confirm = optional_boolean(arguments, "confirm")?.unwrap_or(false);
     let allow_outside_repo = optional_boolean(arguments, "allowOutsideRepo")?.unwrap_or(false);
@@ -253,7 +252,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         let Some(slug) = section.target_slug.as_deref() else {
             continue;
         };
-        let target = write.write_path(slug).map_err(|error| slug_refusal(&error))?;
+        let target = permit.write_path(slug).map_err(|error| slug_refusal(&error))?;
         if target.as_confined().exists() {
             return Err(ToolError::failed(format!(
                 "absorb_document refused before writing anything: \"{slug}\" already exists (created since the dry-run). The vault is unchanged \u{2014} run the dry-run again and re-confirm."
@@ -280,17 +279,17 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
         entries.push(PlanEntry::write(target, text).expecting_absent());
     }
     entries.push(
-        PlanEntry::write(write.absorbed_backup(&source), source.text().to_string())
+        PlanEntry::write(permit.absorbed_backup(&source), source.text().to_string())
             .expecting_absent()
             .as_open_as(source.path()),
     );
     entries.push(
-        PlanEntry::write(write.absorbed_source(&source), slim_pointer(&plan))
+        PlanEntry::write(permit.absorbed_source(&source), slim_pointer(&plan))
             .expecting_text(source.text().to_string())
             .expecting_modified(source.modified_time())
             .expecting_identity(source.identity()),
     );
-    write.apply(
+    permit.apply(
         entries,
         Reservations::Refuse(&|path, text| vault_edit::reservation_in(path, text)),
     )?;

@@ -7,19 +7,7 @@ use vault_edit::{IdentityRefusal, NodeUids};
 use crate::audit::ConceptEffect;
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
-use crate::write_checkpoint::{failure_answer, Permit, WritePermit};
-
-/// The permit that may write. None of the tools here has a dry-run argument, so a preview permit
-/// is a call this server never advertised.
-pub fn write_permit<'a, 'p>(permit: &'a Permit<'p>) -> Result<&'a WritePermit<'p>, ToolError> {
-    match permit {
-        Permit::Apply(write) => Ok(write),
-        Permit::Preview(_) => Err(ToolError::invalid(format!(
-            "{} has no dryRun argument; pass confirm: false to preview.",
-            permit.tool().name()
-        ))),
-    }
-}
+use crate::write_checkpoint::failure_answer;
 
 /// `expected` is the time the caller last saw; the file now has `current`.
 pub fn require_current(

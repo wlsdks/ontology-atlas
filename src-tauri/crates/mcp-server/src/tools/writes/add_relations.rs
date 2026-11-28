@@ -18,7 +18,7 @@ use super::sent_setting::setting_of;
 use super::vault_view::VaultView;
 use super::write_aftermath::findings_on_written;
 use super::write_gates::{member, require_graph_node, require_not_reserved};
-use super::write_support::{effect, modified_ms, write_permit};
+use super::write_support::{effect, modified_ms};
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::ToolError;
@@ -65,7 +65,6 @@ fn add_relation(
     members: &[(String, Setting)],
     batch_row: bool,
 ) -> Result<RelationRow, ToolError> {
-    write_permit(permit)?;
     let context = permit.context();
     let from = non_blank(member(members, "from"), "from")?;
     let to = non_blank(member(members, "to"), "to")?;
@@ -97,7 +96,7 @@ fn add_relation(
     require_graph_node(view.document(&canonical_from), &canonical_from, "Source")?;
     require_graph_node(view.document(&canonical_to), &canonical_to, "Target")?;
 
-    let writable = write_permit(permit)?
+    let writable = permit
         .write_path(&canonical_from)
         .map_err(|error| super::slug_refusal::slug_refusal(&error))?;
     let source = SourceDocument::read(writable.as_confined(), &canonical_from)
@@ -221,7 +220,6 @@ fn failed_relation(
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let Some(raw_rows) = arguments
         .elements("relations")
         .filter(|_| arguments.get("relations").is_some())
@@ -338,7 +336,6 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
 
 /// The retired `add_relation`: one row, answered as the row.
 pub fn call_one(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let mut members: Vec<(String, Setting)> = Vec::new();
     for key in arguments.keys() {
         if let Some(raw) = arguments.get(key) {

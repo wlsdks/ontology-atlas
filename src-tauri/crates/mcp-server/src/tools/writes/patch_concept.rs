@@ -10,7 +10,7 @@ use super::sent_setting::Sent;
 use super::vault_view::VaultView;
 use super::write_aftermath::{findings_on_written, measure_coverage, share_counts, source_state};
 use super::write_gates::{member, require_not_reserved, require_valid_frontmatter_patch};
-use super::write_support::{effect, write_permit};
+use super::write_support::{effect};
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::ToolError;
@@ -33,7 +33,6 @@ pub(super) fn check_title(patch: &[(String, Setting)]) -> Result<(), ToolError> 
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     if arguments.get("patches").is_some() {
         return patch_batch::call(permit, arguments);
     }

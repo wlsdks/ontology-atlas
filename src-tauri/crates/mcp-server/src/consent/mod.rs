@@ -10,9 +10,10 @@
 //! form with fields would be cancelled before a card appeared. Allow, decline or cancel is the
 //! whole answer. The `_meta` hint carries no authority; it lets the app bind the card to the call.
 //!
-//! A dry run changes nothing, so it asks nothing: pausing it would train people to click through the
-//! card that matters. That is decided before this module is reached: a dry run gets a
-//! [`crate::write_checkpoint::PreviewPermit`], which never asks.
+//! A preview changes nothing, so it asks nothing: pausing it would train people to click through the
+//! card that matters. A call that says `confirm: false` is that preview, and [`ask_before_writing`]
+//! returns for it without a question. A call that leaves `confirm` out asks, because a tool
+//! decides for itself what no `confirm` means.
 
 mod consent_refusal;
 mod person_answer;

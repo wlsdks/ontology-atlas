@@ -32,14 +32,15 @@ Rules this crate keeps:
 - A tool's arguments are never read until its handler asks, so any nesting depth reaches the shell.
 - Half of a surrogate pair is not text: a name is read with U+FFFD, an argument that holds one is
   refused by name, and a request id is written back exactly as sent.
-- A write tool takes a `Permit` and returns a `WriteDone` (its answer and what to audit). A dry run
-  gets a `PreviewPermit` that can read the vault and cannot write; anything else gets a
-  `WritePermit` that asked first and holds the session's write lock until `dispatch` has recorded
-  the write, so two approved writes to one concept run one after the other. `permit.apply` needs a
-  `Reservations` value, so a tool states how files reserved for a person are read.
+- A write tool takes a `Permit` and returns a `WriteDone` (its answer and what to audit). The
+  permit asked first (a call that says `confirm: false` is a preview and asks nobody) and holds
+  the session's write lock until `dispatch` has recorded the write, so two approved writes to one
+  concept run one after the other. `permit.apply` needs a `Reservations` value, so a tool states
+  how files reserved for a person are read. No write tool takes `dryRun`: a preview is a handler
+  that stops before it applies its plan.
 - Consent fails closed: no capability to ask, no answer within 60 seconds, a cancelled call, a
   closed connection or anything but `accept` writes nothing, and a cancelled call withdraws its
-  question. A dry run asks nothing and records nothing.
+  question. A preview (`confirm: false`) asks nothing and records nothing.
 - An audit line that cannot be written, or a panic while writing it, goes to standard error and
   never changes a write's answer. The sidecar files are appended with one `write` on an
   append-mode handle; the write lock, not a file lock, keeps this server's own writes apart.

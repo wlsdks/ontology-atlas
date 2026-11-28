@@ -11,10 +11,10 @@ use confined_files::{ConfinedPath, PlanEntry};
 use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_support::{
-    identity_refusal, modified_ms, require_current, write_permit, SessionUids,
+    identity_refusal, modified_ms, require_current, SessionUids,
 };
 use crate::error::ToolError;
-use crate::write_checkpoint::{Permit, WritePermit};
+use crate::write_checkpoint::Permit;
 
 pub struct Patched {
     pub minted_uid: Option<String>,
@@ -60,14 +60,14 @@ impl PlannedPatch {
 }
 
 pub fn plan_patch(
-    write: &WritePermit<'_>,
+    permit: &Permit<'_>,
     view: &VaultView<'_>,
     slug: &str,
     patch: &FieldPatch,
     body: Option<&str>,
     expected_mtime: Option<f64>,
 ) -> Result<PlannedPatch, ToolError> {
-    let writable = write.write_path(slug).map_err(|error| slug_refusal(&error))?;
+    let writable = permit.write_path(slug).map_err(|error| slug_refusal(&error))?;
     let source = SourceDocument::read(writable.as_confined(), slug)
         .map_err(|refusal| source_refusal(view, slug, refusal))?;
     require_current(slug, expected_mtime, source.modified)?;
@@ -93,8 +93,8 @@ pub fn plan_patch(
 }
 
 /// Applies planned patches all or nothing, refusing a file reserved for a person.
-pub fn apply_patches(write: &WritePermit<'_>, planned: Vec<PlanEntry>) -> Result<(), ToolError> {
-    write
+pub fn apply_patches(permit: &Permit<'_>, planned: Vec<PlanEntry>) -> Result<(), ToolError> {
+    permit
         .apply(
             planned,
             confined_files::Reservations::Refuse(&|path, text| {
@@ -112,11 +112,10 @@ pub fn patch_document(
     body: Option<&str>,
     expected_mtime: Option<f64>,
 ) -> Result<Patched, ToolError> {
-    let write = write_permit(permit)?;
-    let planned = plan_patch(write, view, slug, patch, body, expected_mtime)?;
+    let planned = plan_patch(permit, view, slug, patch, body, expected_mtime)?;
     let minted_uid = planned.minted_uid.clone();
     let (entry, file) = planned.into_parts();
-    apply_patches(write, vec![entry])?;
+    apply_patches(permit, vec![entry])?;
     Ok(Patched {
         minted_uid,
         modified_ms: modified_ms(&file),

@@ -19,7 +19,7 @@ use super::slug_refusal::slug_refusal;
 use super::vault_view::VaultView;
 use super::write_aftermath::post_write_maintenance;
 use super::write_gates::{member, require_not_reserved, PreviewState};
-use super::write_support::{effect, require_current, write_permit};
+use super::write_support::{effect, require_current};
 use crate::arguments::Arguments;
 use crate::audit::{ActivityContent, ShareMeasure, WriteDone, WriteRecord};
 use crate::error::ToolError;
@@ -60,7 +60,6 @@ fn record(
 }
 
 pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, ToolError> {
-    write_permit(permit)?;
     let replace_with = arguments.read::<Sent>("replaceWith")?.map(|Sent(sent)| sent);
     if let Some(replacement) = replace_with {
         return replace_relation(permit, arguments, &replacement);
@@ -84,7 +83,7 @@ pub fn call(permit: &Permit<'_>, arguments: &Arguments) -> Result<WriteDone, Too
     let Some(canonical_to) = canonical_to else {
         return Err(view.not_found("Target slug does not exist in vault", &to, false));
     };
-    let writable = write_permit(permit)?
+    let writable = permit
         .write_path(&canonical_from)
         .map_err(|error| slug_refusal(&error))?;
     let source = SourceDocument::read(writable.as_confined(), &canonical_from)
@@ -193,7 +192,7 @@ fn replace_relation(
     let Some(canonical_new) = canonical_new else {
         return Err(view.not_found("New target slug does not exist in vault", &new_to_text, false));
     };
-    let writable = write_permit(permit)?
+    let writable = permit
         .write_path(&canonical_from)
         .map_err(|error| slug_refusal(&error))?;
     let source = SourceDocument::read(writable.as_confined(), &canonical_from)
