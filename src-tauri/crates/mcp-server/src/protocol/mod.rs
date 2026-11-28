@@ -91,6 +91,8 @@ pub struct Session {
     source_reads: source_reads::SessionReads,
     /// The surveys of the repositories asked about, kept until a repository changes.
     survey: repository_survey::SurveyCache,
+    /// What the Git history said of the cited code and the summaries, kept until it changes.
+    history: vault_validation::KeptHistory,
     /// Held by the one write in progress, from its approval to its audit line.
     write_lock: Mutex<()>,
     output: Mutex<Box<dyn Write + Send>>,
@@ -111,6 +113,7 @@ impl Session {
             graph: KeptGraph::new(),
             source_reads: source_reads::SessionReads::new(),
             survey: repository_survey::SurveyCache::default(),
+            history: vault_validation::KeptHistory::default(),
             write_lock: Mutex::new(()),
             config,
             output: Mutex::new(output),
@@ -177,6 +180,10 @@ impl Session {
 
     pub fn source_reads(&self) -> &source_reads::SessionReads {
         &self.source_reads
+    }
+
+    pub fn kept_history(&self) -> &vault_validation::KeptHistory {
+        &self.history
     }
 
     pub fn survey_cache(&self) -> &repository_survey::SurveyCache {

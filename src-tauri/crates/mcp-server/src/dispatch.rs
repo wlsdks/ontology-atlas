@@ -72,6 +72,11 @@ impl<'a> CallContext<'a> {
         self.session.source_reads()
     }
 
+    /// What the history of the repository said of the cited code, kept until the history changes.
+    pub fn kept_history(&self) -> &vault_validation::KeptHistory {
+        self.session.kept_history()
+    }
+
     /// The surveys of the repositories asked about, kept until a repository changes.
     pub fn survey_cache(&self) -> &repository_survey::SurveyCache {
         self.session.survey_cache()

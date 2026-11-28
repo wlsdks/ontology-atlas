@@ -12,6 +12,7 @@ and runs `git` through `hardened-git`; it opens and spawns nothing itself.
 | `node_revisions`, `summary_freshness` | whether a domain or project body was last written before its membership last changed |
 | `evidence_verdict`, `evidence_drift` | whether the code a concept cites moved after the concept was last written |
 | `path_drift` | a cited `path:` or element that is no longer in the repository, with a likely move |
+| `kept_history` | what the history said, kept for the next call: the dating of cited code and documents and the revisions of summary nodes under the commit and the files that shape history, and whether a moved file changed only cosmetically under the file's stamp |
 | `validation_page` | the page of rows, cut by count or size, with repeated guidance folded |
 
 The depth findings (`rule-without-read-lines`, `dependency-both-ways`) are in `build-depth`.

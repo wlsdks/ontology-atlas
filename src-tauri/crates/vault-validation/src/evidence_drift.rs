@@ -6,16 +6,19 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use answer_format::collation::compare_text;
-use confined_files::{names_hidden_or_credential_file, DiskSource, SourceFiles};
+use confined_files::{
+    names_hidden_or_credential_file, DiskSource, FileStamp, SourceFiles, SourceRoot,
+};
 use hardened_git::{RepoPath, Repository};
 use serde::Serialize;
 use source_scan::{
-    comparable_code, date_paths, read_evidence_pairs, Dating, EvidenceRequest, WantedPath,
+    comparable_code, read_evidence_pairs, Dating, EvidenceRequest, WantedPath,
     DATING_WINDOW_COMMITS, MAX_DATED_PATHS, MAX_EVIDENCE_PAIRS,
 };
 use vault_document::LoadedDocument;
 
 use crate::evidence_verdict::{judge_evidence, CitedEntry, EvidencePair, PathChange, Verdict};
+use crate::kept_history::KeptHistory;
 
 const CONCEPT_KINDS: [&str; 3] = ["domain", "capability", "element"];
 const ONTOLOGY_SLUG_PREFIXES: [&str; 4] = ["capabilities/", "domains/", "elements/", "documents/"];
@@ -99,6 +102,10 @@ pub struct EvidenceHistory<'a> {
     /// Where the repository root the cited paths are relative to lies below the top.
     pub repo_scope: &'a RepoPath,
     pub repo_files: &'a DiskSource,
+    /// The folder `repo_files` reads, for the stamp of a working file.
+    pub repo_root: &'a SourceRoot,
+    /// What earlier calls learned from the history, and where this one keeps what it learns.
+    pub kept: &'a KeptHistory,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -241,7 +248,10 @@ fn walk_changes(
         push(path, resolved, Dating::NewestCommit, false);
     }
     let asked: Vec<WantedPath> = wanted.iter().map(|(path, _)| path.clone()).collect();
-    let dated = date_paths(history.repository, &asked, DATING_WINDOW_COMMITS).unwrap_or_default();
+    let dated = history
+        .kept
+        .dating(history.repository, &asked, DATING_WINDOW_COMMITS)
+        .unwrap_or_default();
     wanted
         .iter()
         .enumerate()
@@ -306,10 +316,26 @@ fn cosmetic_pairs(
         return None;
     }
     let mut unchanged = HashSet::new();
-    for chunk in pairs.chunks(MAX_EVIDENCE_PAIRS) {
+    // A pair judged before, with the working file as it was stamped then, is not read again.
+    let mut to_judge: Vec<((String, String), Option<FileStamp>)> = Vec::new();
+    for pair in pairs {
+        let stamp = working_stamp(history, &pair.1);
+        match stamp.and_then(|stamp| {
+            history
+                .kept
+                .cosmetic_verdict(history.repo_root.as_path(), &pair.0, &pair.1, stamp)
+        }) {
+            Some(true) => {
+                unchanged.insert(pair);
+            }
+            Some(false) => {}
+            None => to_judge.push((pair, stamp)),
+        }
+    }
+    for chunk in to_judge.chunks(MAX_EVIDENCE_PAIRS) {
         let requests: Vec<EvidenceRequest<'_>> = chunk
             .iter()
-            .map(|(commit, path)| EvidenceRequest { path, commit })
+            .map(|((commit, path), _)| EvidenceRequest { path, commit })
             .collect();
         let readings = read_evidence_pairs(
             history.repository,
@@ -317,16 +343,34 @@ fn cosmetic_pairs(
             history.repo_files,
             &requests,
         );
-        for ((commit, path), reading) in chunk.iter().zip(readings) {
+        for (((commit, path), stamp), reading) in chunk.iter().zip(readings) {
             let (Some(before), Some(after)) = (reading.before, reading.after) else {
                 continue;
             };
-            if comparable_code(&before, path) == comparable_code(&after, path) {
+            let same = comparable_code(&before, path) == comparable_code(&after, path);
+            if let Some(stamp) = stamp {
+                history.kept.keep_cosmetic_verdict(
+                    history.repo_root.as_path(),
+                    commit,
+                    path,
+                    *stamp,
+                    same,
+                );
+            }
+            if same {
                 unchanged.insert((commit.clone(), path.clone()));
             }
         }
     }
     Some(unchanged)
+}
+
+/// The stamp of the working file a cited name points at, `None` when no regular file is there or
+/// the name is not a plain one.
+fn working_stamp(history: &EvidenceHistory<'_>, path: &str) -> Option<FileStamp> {
+    let clean = RepoPath::new(path)?;
+    let parts: Vec<&str> = clean.as_str().split('/').collect();
+    history.repo_root.repository_file_stamp(&parts)
 }
 
 /// Why evidence was not dated, or the dating itself. `place` is where the history is read from,

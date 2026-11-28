@@ -172,6 +172,12 @@ impl Repository {
         self.run(&owned, MAX_READ_OUTPUT, READ_TIMEOUT)
     }
 
+    /// [`Self::succeeded`] for arguments written as literals.
+    pub(crate) fn succeeded_read(&self, args: &[&str]) -> Result<GitOutput, GitReadError> {
+        let owned: Vec<String> = args.iter().map(|arg| (*arg).to_string()).collect();
+        self.succeeded(&owned)
+    }
+
     /// Output that must have succeeded.
     fn succeeded(&self, args: &[String]) -> Result<GitOutput, GitReadError> {
         self.succeeded_within(args, MAX_READ_OUTPUT, READ_TIMEOUT)

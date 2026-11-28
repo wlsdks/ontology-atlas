@@ -12,6 +12,7 @@ and it and `confined-files` are the only crates that may name `std::process`.
 | `src/environment.rs` | The environment of a run: no setting that conflicts with literal paths or relocates the repository, no lazy fetch, no index write on a read |
 | `src/filter_overrides.rs` | The repository's `filter.*` entries, read once per folder and redirected to identity, with a time limit on reading the config |
 | `src/runner.rs` | `run_git`: one process, bounded output on both streams, a timeout, standard input, no console window |
+| `src/history_state.rs` | `HistoryState`: the commit `HEAD` names plus the shallow, graft and replacement files, so a caller can keep what a `log` said until one of them moves |
 | `src/repo_path.rs` | `RepoPath`: a place in a repository, checked when built; the names an agent wrote are refused for any spelling that could be an option, and the real names of a folder never are |
 | `src/repository.rs` | `Repository`: typed reads (head, status, history, blobs, touched paths) built from checked values |
 | `src/working_tree.rs` | `git status --porcelain=v2 -z` read as rows and a head |

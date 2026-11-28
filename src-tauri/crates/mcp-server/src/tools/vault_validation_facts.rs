@@ -34,10 +34,14 @@ pub fn stale_summaries(context: &CallContext<'_>) -> Result<Vec<StaleSummary>, T
     let read = read_vault(context)?;
     let documents = read.vault.documents();
     let freshness = match locate(context, "node_revisions")? {
-        Located::Found(found) => {
-            summary_freshness(documents, Ok((&found.repository, &found.scope)))
+        Located::Found(found) => summary_freshness(
+            documents,
+            Ok((&found.repository, &found.scope)),
+            context.kept_history(),
+        ),
+        Located::Missing(missing) => {
+            summary_freshness(documents, Err(missing.reason()), context.kept_history())
         }
-        Located::Missing(missing) => summary_freshness(documents, Err(missing.reason())),
     };
     if !freshness.checked {
         return Ok(Vec::new());

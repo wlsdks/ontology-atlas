@@ -16,7 +16,8 @@ use hardened_git::{RepoPath, Repository};
 use serde::Serialize;
 use vault_document::LoadedDocument;
 
-use crate::node_revisions::{contained_slugs, node_revisions, Revision};
+use crate::kept_history::KeptHistory;
+use crate::node_revisions::{contained_slugs, Revision};
 
 /// The kinds whose body summarises their membership; an element's prose describes one role.
 const SUMMARY_KINDS: [&str; 2] = ["project", "domain"];
@@ -209,11 +210,23 @@ fn find_stale(
     rows
 }
 
+/// The reason as this hint has always named it: a machine without the `git` program reads as a
+/// folder without a repository, as the script server's hint did; `evidenceDrift` names the
+/// missing program.
+fn reason_in_hint(reason: &str) -> &str {
+    if reason == "git-not-available" {
+        "not-a-git-repository"
+    } else {
+        reason
+    }
+}
+
 /// Why the check was not made, or the check itself, for the summary nodes of `documents`. `place`
 /// is where the vault's history is read from, or the reason there is none.
 pub fn summary_freshness(
     documents: &[LoadedDocument],
     place: Result<(&Repository, &RepoPath), &str>,
+    kept: &KeptHistory,
 ) -> SummaryFreshness {
     let summaries: Vec<&str> = documents
         .iter()
@@ -240,11 +253,11 @@ pub fn summary_freshness(
                 checked: false,
                 summary_nodes: summaries.len(),
                 stale: Vec::new(),
-                hint: format!("Summary freshness was NOT checked ({reason}). This comparison reads Git history, so a vault outside a repository cannot be judged \u{2014} read each domain against the nodes it contains by hand."),
+                hint: format!("Summary freshness was NOT checked ({}). This comparison reads Git history, so a vault outside a repository cannot be judged \u{2014} read each domain against the nodes it contains by hand.", reason_in_hint(reason)),
             }
         }
     };
-    let revisions = node_revisions(repository, scope, &summaries);
+    let revisions = kept.node_revisions(repository, scope, &summaries);
     let stale = find_stale(documents, &revisions);
     let hint = if stale.is_empty() {
         format!(

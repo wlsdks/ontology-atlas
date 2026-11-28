@@ -59,10 +59,14 @@ pub fn build_report(
     let list = list_problems(&issues.files, issues.by_slug);
 
     let freshness = match locate(context, "node_revisions")? {
-        Located::Found(found) => {
-            summary_freshness(documents, Ok((&found.repository, &found.scope)))
+        Located::Found(found) => summary_freshness(
+            documents,
+            Ok((&found.repository, &found.scope)),
+            context.kept_history(),
+        ),
+        Located::Missing(missing) => {
+            summary_freshness(documents, Err(missing.reason()), context.kept_history())
         }
-        Located::Missing(missing) => summary_freshness(documents, Err(missing.reason())),
     };
 
     let (evidence, drift) = if grounded {
@@ -77,6 +81,8 @@ pub fn build_report(
                         vault_scope: &found.scope,
                         repo_scope: &repo_scope,
                         repo_files: &source,
+                        repo_root: target.source_root(),
+                        kept: context.kept_history(),
                     }),
                     &found.top_level.to_string_lossy(),
                 )
