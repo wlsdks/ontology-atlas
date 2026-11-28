@@ -67,6 +67,9 @@ export function validateQueryOntologyArgs(args = {}) {
   ]) {
     requireOptionalBoolean(args[key], key);
   }
+  requireOptionalNonNegativeInteger(args.offset, 'offset');
+  requireOptionalStringArray(args.excludeKinds, 'excludeKinds', { max: NODE_KIND_VALUES.length });
+  for (const kind of args.excludeKinds ?? []) requireOptionalEnum(kind, 'excludeKinds items', NODE_KIND_VALUES);
   requireOptionalStringArray(args.types, 'types', { max: RELATION_TYPE_VALUES.length });
   requireOptionalStringArray(args.pattern, 'pattern', { max: RELATION_TYPE_VALUES.length });
   requireOptionalStringArray(args.phases, 'phases', { max: MAINTENANCE_PHASE_VALUES.length });

@@ -572,6 +572,35 @@ export function createToolExecutor(port: VaultReadPort) {
         };
       }
 
+      case 'find_orphans': {
+        const kind = stringOrUndefined(args.kind);
+        const excludeKinds = new Set(
+          Array.isArray(args.excludeKinds)
+            ? (args.excludeKinds as unknown[]).map((value) => String(value))
+            : ['project', 'vault-readme'],
+        );
+        const connected = new Set<string>();
+        for (const edge of port.edges) {
+          connected.add(edge.from);
+          connected.add(edge.to);
+        }
+        const orphans = port.nodes
+          .filter((node) => resolveNodeAgentTarget(node).documented)
+          .filter((node) => !connected.has(node.id))
+          .filter((node) => (kind ? node.kind === kind : !excludeKinds.has(node.kind)))
+          .map(nodeRow);
+        const packed = pack({ orphans });
+        return {
+          content: packed.content,
+          isError: false,
+          outcome: 'ok',
+          target: kind ?? '',
+          summary: `읽음: 이어진 곳 없는 개념 ${orphans.length}개`,
+          readSlugs: orphans.map((row) => row.slug),
+          vaultChars: 0,
+        };
+      }
+
       case 'validate_vault': {
         const offset = Math.max(numberOrUndefined(args.offset) ?? 0, 0);
         const limit = Math.min(Math.max(numberOrUndefined(args.limit) ?? 100, 1), 500);

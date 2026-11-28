@@ -20,7 +20,7 @@ Required arguments:
 - \`project\`: project_scope, project_map, agent_brief; omit it when the vault has one project.
 
 Filters and limits:
-- match_nodes: \`kind\`, \`domain\`, \`hasIncoming\`, \`hasOutgoing\`, \`sort\` (degree, inDegree, outDegree, slug), \`limit\`. Nodes with no incoming relation are \`hasIncoming:false\`; the most connected nodes are \`sort:"degree"\`.
+- match_nodes: \`kind\`, \`excludeKinds\`, \`domain\`, \`hasIncoming\`, \`hasOutgoing\`, \`sort\` (degree, inDegree, outDegree, slug), \`limit\`, \`offset\` (pass \`pagination.nextOffset\` while \`pagination.hasMore\`). \`hasIncoming:false\` lists the orphans, read from the files so it answers even when the vault does not compile; a short reference several nodes share counts for each; the project and vault-readme are left out unless \`kind\` or \`excludeKinds\` says otherwise. The most connected nodes are \`sort:"degree"\`.
 - neighbors: \`direction\`, \`types\`, \`includeExternal\`, \`includeUnresolved\` (dangling refs).
 - reachability, impact, blast_radius, subgraph, lineage: \`depth\` (default 3, 2, 2, 2, 20). path, explain_relation, cycles: \`maxHops\` (default 5, 5, 8). cycles also takes \`searchBudget\` (default 5000).
 - containment_tree: \`includeOrphans\`. project_map: \`itemLimit\` per domain (default 20).

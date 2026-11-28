@@ -3,6 +3,9 @@
 export { compileOntologyTool, queryOntologyTool };
 
 import { readOntologyAtlasIgnore } from '../vault/sidecar/ontology-atlas-ignore.mjs';
+import { buildMatchNodesFollowUp } from '../ontology-engine/briefs/agent-responses.mjs';
+import { pageMatchedRows } from '../ontology-engine/selection/match-rules.mjs';
+import { findOrphans } from '../vault/graph/graph-queries.mjs';
 import { queryCompiledOntology, refreshAgentBriefHandoffPrompt } from '../ontology-engine.mjs';
 import { COMPILED_ONTOLOGY_CACHE, REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../server/runtime.mjs';
 import {
@@ -80,8 +83,40 @@ function analysisRecords() {
   return import('../analysis-history/analysis-records.mjs');
 }
 
+/**
+ * `match_nodes` with `hasIncoming: false` is the orphan question, answered from
+ * the files: a vault whose compile fails closed (an invalid `uid:`) still gets
+ * its answer, and a short reference that several nodes share counts as a
+ * reference to each of them, as the graph keys are read everywhere else.
+ */
+function orphanNodes(args) {
+  const limit = args.limit ?? 100;
+  const offset = args.offset ?? 0;
+  const found = findOrphans(VAULT_ROOT, args);
+  const { page, pagination } = pageMatchedRows(found.orphans, { limit, offset });
+  const followUp = buildMatchNodesFollowUp(page[0]);
+  return {
+    operation: 'match_nodes',
+    source: 'vault_files',
+    filters: {
+      kind: args.kind ?? null,
+      domain: args.domain ?? null,
+      hasIncoming: false,
+      hasOutgoing: args.hasOutgoing ?? null,
+      excludeKinds: found.excludeKinds,
+      sort: found.sort,
+    },
+    totalMatches: found.total,
+    limited: pagination.hasMore,
+    pagination,
+    nodes: page,
+    ...(followUp ? { followUp } : {}),
+  };
+}
+
 async function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
+  if (args.operation === 'match_nodes' && args.hasIncoming === false) return orphanNodes(args);
   if (args.operation === 'analysis_record') {
     const { readAnalysisRecord } = await analysisRecords();
     return readAnalysisRecord(VAULT_ROOT, args.recordId);

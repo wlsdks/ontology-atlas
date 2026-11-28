@@ -2259,7 +2259,7 @@ cannot boot.
   `replacement` in the repair fields). `git_status`, `git_history` and `git_snapshot` are
   cut: the agent runs its own `git`. Six are folded: `list_constellations` into
   `get_constellation` (no `id`), `find_evidence` into `list_concepts({mentions})`,
-  `find_orphans` into `query_ontology({operation:'match_nodes',hasIncoming:false})`,
+  `find_orphans` into `query_ontology({operation:'match_nodes',hasIncoming:false})` (read from the files, so it answers a vault that does not compile; a short reference several nodes share counts for each; `project` and `vault-readme` are left out unless `kind` or `excludeKinds` says otherwise; `offset` pages),
   `query_concepts` into `list_concepts({filter})`, `replace_relation` into
   `remove_relation({replaceWith})`, and `reclassify_concept` into
   `rename_concept({newKind})`. Every folded write keeps its dry run, `expected_mtime`,

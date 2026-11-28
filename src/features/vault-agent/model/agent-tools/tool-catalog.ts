@@ -299,6 +299,27 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
     },
   },
   {
+    name: 'find_orphans',
+    description: 'Nodes with no edges at all — the usual starting point for "what is unfinished here". The MCP server answers the same question as `query_ontology` `match_nodes` with `hasIncoming: false`.',
+    effect: 'read',
+    parameters: {
+      type: 'object',
+      properties: {
+        kind: {
+          type: 'string',
+          enum: NODE_KIND_VALUES,
+          description: 'Restrict to one kind. Omit for all kinds.',
+        },
+        excludeKinds: {
+          type: 'array',
+          maxItems: NODE_KIND_VALUES.length,
+          items: { type: 'string', enum: NODE_KIND_VALUES },
+          description: "Kinds to exclude. Defaults to ['project', 'vault-readme'].",
+        },
+      },
+    },
+  },
+  {
     name: 'validate_vault',
     description: 'Frontmatter integrity report: broken refs, missing expected fields, duplicate slugs.',
     effect: 'read',

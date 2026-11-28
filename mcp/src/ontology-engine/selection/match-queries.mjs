@@ -11,7 +11,9 @@ import {
   judgeRelationCheck,
   nodeDegree,
   nodeMatchesFilters,
+  pageMatchedRows,
 } from './match-rules.mjs';
+import { normalizeNonNegativeInteger } from '../query-operation/query-arguments.mjs';
 import { compareText } from '../../compare-text.mjs';
 
 /** Which nodes and edges meet a condition or resemble a given node, and whether a proposed relation is new, present or off-pattern. */
@@ -41,11 +43,14 @@ export function createMatchQueries({
     const hasIncoming = normalizeOptionalBoolean(options.hasIncoming, 'hasIncoming', null);
     const hasOutgoing = normalizeOptionalBoolean(options.hasOutgoing, 'hasOutgoing', null);
     const sort = normalizeNodeSort(options.sort);
+    const offset = normalizeNonNegativeInteger(options.offset, 'offset') ?? 0;
+    const excludeKinds = new Set(options.excludeKinds ?? []);
     const rows = [];
 
     const filters = { kind, domain, hasIncoming, hasOutgoing };
 
     for (const node of nodes) {
+      if (excludeKinds.has(node.kind)) continue;
       if (!nodeMatchesFilters(node, filters)) continue;
       rows.push({
         ...summarizeNode(node),
@@ -55,17 +60,19 @@ export function createMatchQueries({
 
     rows.sort((left, right) => compareNodeRows(left, right, sort));
 
-    const page = rows.slice(0, limit);
+    const { page, pagination } = pageMatchedRows(rows, { limit, offset });
     const followUp = buildMatchNodesFollowUp(page[0]);
 
     return {
       operation: 'match_nodes',
       filters: {
         ...filters,
+        ...(excludeKinds.size > 0 ? { excludeKinds: [...excludeKinds] } : {}),
         sort,
       },
       totalMatches: rows.length,
-      limited: rows.length > limit,
+      limited: pagination.hasMore,
+      pagination,
       nodes: page,
       ...(followUp ? { followUp } : {}),
     };

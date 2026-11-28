@@ -96,3 +96,20 @@ export function judgeRelationCheck({
     : null;
   return { verdict, recommendation, proposedAction, approvalGate };
 }
+
+/** One page of matched rows and the numbers a caller needs to ask for the next one. */
+export function pageMatchedRows(rows, { limit, offset }) {
+  const page = rows.slice(offset, offset + limit);
+  const hasMore = offset + page.length < rows.length;
+  return {
+    page,
+    pagination: {
+      offset,
+      limit,
+      returned: page.length,
+      total: rows.length,
+      hasMore,
+      nextOffset: hasMore ? offset + page.length : null,
+    },
+  };
+}

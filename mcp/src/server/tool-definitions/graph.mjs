@@ -364,7 +364,16 @@ export const QUERY_ONTOLOGY_TOOL = {
         enum: NODE_KIND_VALUES,
       },
       domain: nonBlankStringSchema('match_nodes filter.'),
-      hasIncoming: { type: 'boolean', description: 'match_nodes.' },
+      excludeKinds: {
+        type: 'array',
+        maxItems: NODE_KIND_VALUES.length,
+        items: { ...NON_BLANK_STRING_SCHEMA, enum: NODE_KIND_VALUES },
+        description: 'match_nodes: kinds to leave out. With hasIncoming:false and no kind, project and vault-readme are left out unless this is given.',
+      },
+      hasIncoming: {
+        type: 'boolean',
+        description: 'match_nodes. false lists the orphans no node points at, read from the files, so it answers even when the vault does not compile.',
+      },
       hasOutgoing: { type: 'boolean', description: 'match_nodes.' },
       sort: {
         type: 'string',
@@ -419,6 +428,11 @@ export const QUERY_ONTOLOGY_TOOL = {
         minimum: 1,
         maximum: 500,
         description: 'Rows, default 100.',
+      },
+      offset: {
+        type: 'integer',
+        minimum: 0,
+        description: 'match_nodes: rows to skip; pass pagination.nextOffset while pagination.hasMore.',
       },
       itemLimit: {
         type: 'integer',

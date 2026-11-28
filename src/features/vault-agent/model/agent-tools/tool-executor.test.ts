@@ -596,6 +596,14 @@ describe('tool-executor reads', () => {
     expect(JSON.parse(beyondBound.content)).toEqual({ from: slugs[0], to: slugs[21], found: false, hops: [] });
   });
 
+  it('find_orphans counts only concepts that have a document', async () => {
+    const execute = createToolExecutor(makePort());
+    const payload = JSON.parse((await execute(call('find_orphans'))).content) as {
+      orphans: Array<{ slug: string }>;
+    };
+    expect(payload.orphans.map((row) => row.slug)).toEqual(['capabilities/refund']);
+  });
+
   it('list_concepts narrows by mentions, best title match first, and by a filter predicate', async () => {
     const execute = createToolExecutor(makePort());
     const all = JSON.parse((await execute(call('list_concepts'))).content) as { rows: Array<{ slug: string; kind: string; title: string }> };

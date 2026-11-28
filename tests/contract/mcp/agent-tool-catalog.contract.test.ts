@@ -17,6 +17,15 @@ import { describe, expect, it } from 'vitest';
 
 import { AGENT_READ_TOOLS, AGENT_TOOLS, AGENT_WRITE_TOOLS } from '@/features/vault-agent/model/agent-tools/tool-catalog';
 
+/**
+ * Tools the app agent keeps under their old name whose question the server now
+ * answers as an option of another tool, so there is no definition to compare.
+ */
+const ANSWERED_BY_ANOTHER_TOOL = new Map<string, { tool: string; arguments: readonly string[] }>([
+  ['find_orphans', { tool: 'query_ontology', arguments: ['kind', 'excludeKinds'] }],
+]);
+const COMPARED_TOOLS = AGENT_TOOLS.filter((tool) => !ANSWERED_BY_ANOTHER_TOOL.has(tool.name));
+
 const DEFINITIONS_DIR = join(__dirname, '../../../mcp/src/server/tool-definitions');
 const MCP_SOURCE = readdirSync(DEFINITIONS_DIR)
   .filter((file) => file.endsWith('.mjs'))
@@ -184,7 +193,7 @@ describe('agent tool catalog matches the MCP server definition', () => {
     expect(shape.required).toEqual([]);
   });
 
-  it.each(AGENT_TOOLS.map((tool) => [tool.name, tool] as const))(
+  it.each(COMPARED_TOOLS.map((tool) => [tool.name, tool] as const))(
     '%s: the argument name set equals the one on the MCP side',
     (_name, tool) => {
       const mcp = readMcpToolShape(tool.name);
@@ -193,12 +202,22 @@ describe('agent tool catalog matches the MCP server definition', () => {
     },
   );
 
-  it.each(AGENT_TOOLS.map((tool) => [tool.name, tool] as const))(
+  it.each(COMPARED_TOOLS.map((tool) => [tool.name, tool] as const))(
     '%s: the required arguments equal those on the MCP side',
     (_name, tool) => {
       const mcp = readMcpToolShape(tool.name);
       const ours = [...(tool.parameters.required ?? [])];
       expect(ours.sort()).toEqual([...mcp.required].sort());
+    },
+  );
+
+  it.each([...ANSWERED_BY_ANOTHER_TOOL])(
+    '%s: its arguments are arguments of the server tool that answers it',
+    (name, { tool, arguments: names }) => {
+      const mcp = readMcpToolShape(tool);
+      const ours = Object.keys(AGENT_TOOLS.find((candidate) => candidate.name === name)!.parameters.properties ?? {});
+      expect([...ours].sort()).toEqual([...names].sort());
+      for (const argument of names) expect(mcp.propertyNames).toContain(argument);
     },
   );
 

@@ -9599,6 +9599,45 @@ await test("retired names — each cut or folded tool answers tool_retired with 
   }
 });
 
+await test("match_nodes hasIncoming:false answers the orphan question from the files, as find_orphans did", async () => {
+  const root = makeVault([
+    { slug: "projects/shop", content: "---\nkind: project\ntitle: Shop\ndomains:\n  - domains/billing\n---\n" },
+    { slug: "domains/billing", content: "---\nkind: domain\ntitle: Billing\ncapabilities:\n  - capabilities/charge\n---\n" },
+    // `ledger` names two nodes: an ambiguous short reference counts for each of them.
+    { slug: "capabilities/charge", content: "---\nkind: capability\ntitle: Charge a card\ndomain: domains/billing\nelements:\n  - ledger\n---\n" },
+    { slug: "elements/ledger", content: "---\nkind: element\ntitle: Ledger\ndomain: domains/billing\n---\n" },
+    // An invalid uid makes the compile fail closed; the orphan question still answers.
+    { slug: "elements/archive/ledger", content: "---\nuid: not-a-uid\nkind: element\ntitle: Archived ledger\ndomain: domains/billing\n---\n" },
+    { slug: "capabilities/refund", content: "---\nkind: capability\ntitle: Refund a payment\ndomain: domains/billing\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "compile_ontology", {}),
+      callTool(3, "query_ontology", { operation: "match_nodes", hasIncoming: false }),
+      callTool(4, "query_ontology", { operation: "match_nodes", hasIncoming: false, excludeKinds: [], limit: 1 }),
+      callTool(5, "query_ontology", { operation: "match_nodes", hasIncoming: false, excludeKinds: [], limit: 1, offset: 1 }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true, "the invalid uid stops the compile");
+    const orphans = getCallStructured(responses, 3);
+    assert.equal(orphans.source, "vault_files");
+    assert.deepEqual(orphans.nodes.map((node) => node.slug), ["capabilities/refund"]);
+    assert.equal(orphans.totalMatches, 1);
+    assert.deepEqual(orphans.pagination, { offset: 0, limit: 100, returned: 1, total: 1, hasMore: false, nextOffset: null });
+    assert.deepEqual(orphans.filters.excludeKinds, ["project", "vault-readme"]);
+    const first = getCallStructured(responses, 4);
+    const second = getCallStructured(responses, 5);
+    assert.deepEqual([first.pagination.hasMore, first.pagination.nextOffset, first.totalMatches], [true, 1, 2]);
+    assert.deepEqual(
+      [...first.nodes, ...second.nodes].map((node) => node.slug).sort(),
+      ["capabilities/refund", "projects/shop"],
+    );
+    assert.equal(second.pagination.hasMore, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("remove_relation — dry-run then confirmed removal also removes rationale", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [domains/auth]\nrelation_notes: { domains/auth: Owns auth }\n---\n" },

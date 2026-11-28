@@ -2,6 +2,7 @@ import { nodeUidIssue } from '../../schema.mjs';
 
 import { linkIndexAnswers, linkKeysHold } from '../documents/doc-shape.mjs';
 import { cachedDocShape, docTitle, loadVaultDocs } from '../documents/document-cache.mjs';
+import { compareText } from '../../compare-text.mjs';
 import { collectNeighborRefs, relationNoteFor } from './relation-refs.mjs';
 
 function assertBoundedNonNegativeInteger(value, name, { max }) {
@@ -45,6 +46,75 @@ export function listKinds(rootPath) {
     referencedOnlyTotal: referencedOnly.size,
     conceptsIncludingReferenced: total + referencedOnly.size,
   };
+}
+
+export const DEFAULT_ORPHAN_EXCLUDED_KINDS = Object.freeze(['project', 'vault-readme']);
+
+const ORPHAN_ROW_ORDER = {
+  degree: (a, b) => b.degree - a.degree,
+  inDegree: () => 0,
+  outDegree: (a, b) => b.outDegree - a.outDegree,
+  slug: () => 0,
+};
+
+/**
+ * Nodes no other node points at from a frontmatter graph key, read from the
+ * files: a vault whose compile fails closed (an invalid `uid:`) still answers.
+ * An ambiguous short reference counts as a reference to every candidate, so no
+ * node the vault plainly names is reported as an orphan. `excludeKinds`
+ * defaults to the project and the vault README unless a `kind` is asked for.
+ * Every orphan is returned; the caller pages.
+ */
+export function findOrphans(rootPath, options = {}) {
+  const docs = loadVaultDocs(rootPath);
+  const kind = typeof options.kind === 'string' ? options.kind : null;
+  const domain = typeof options.domain === 'string' ? options.domain : null;
+  const excludeKinds = new Set(
+    Array.isArray(options.excludeKinds)
+      ? options.excludeKinds
+      : kind ? [] : DEFAULT_ORPHAN_EXCLUDED_KINDS,
+  );
+  const hasOutgoing = typeof options.hasOutgoing === 'boolean' ? options.hasOutgoing : null;
+  const sort = Object.hasOwn(ORPHAN_ROW_ORDER, options.sort) ? options.sort : 'degree';
+  const { resolveCandidates } = buildRefIndex(docs);
+  const referenced = new Set();
+  const referencing = new Map();
+  for (const doc of docs) {
+    const targets = new Set();
+    for (const { ref } of collectNeighborRefs(doc)) {
+      for (const candidate of resolveCandidates(ref)) {
+        if (candidate === doc.slug) continue;
+        referenced.add(candidate);
+        targets.add(candidate);
+      }
+    }
+    referencing.set(doc.slug, targets.size);
+  }
+  const orphans = [];
+  for (const doc of docs) {
+    const docKind = doc.frontmatter.kind;
+    if (typeof docKind !== 'string' || !docKind) continue;
+    if (excludeKinds.has(docKind)) continue;
+    if (kind && docKind !== kind) continue;
+    if (domain && doc.frontmatter.domain !== domain) continue;
+    if (referenced.has(doc.slug)) continue;
+    const outDegree = referencing.get(doc.slug) ?? 0;
+    if (hasOutgoing !== null && (outDegree > 0) !== hasOutgoing) continue;
+    orphans.push({
+      uid: doc.frontmatter.uid,
+      slug: doc.slug,
+      kind: docKind,
+      title: docTitle(doc),
+      domain: doc.frontmatter.domain,
+      mtime: doc.mtime,
+      inDegree: 0,
+      outDegree,
+      degree: outDegree,
+    });
+  }
+  const byField = ORPHAN_ROW_ORDER[sort];
+  orphans.sort((a, b) => byField(a, b) || compareText(a.slug, b.slug));
+  return { total: orphans.length, orphans, sort, excludeKinds: [...excludeKinds] };
 }
 
 /**
