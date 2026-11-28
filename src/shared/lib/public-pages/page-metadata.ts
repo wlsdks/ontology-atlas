@@ -54,11 +54,6 @@ export interface PageMetadataInput {
   description: string;
   /** Only when the page has its own OG image; otherwise the locale's site card is used. */
   ogImage?: string;
-  /**
-   * Set when the page directory has an `opengraph-image.tsx`. A leaf `images` value, even via
-   * spread, overrides it, so the builder must omit the key entirely.
-   */
-  hasFileConventionImage?: boolean;
   absoluteTitle?: boolean;
   /**
    * A page whose exported HTML holds no content a search engine can use (the vault fills it in the
@@ -80,8 +75,8 @@ export function siteOgImagePath(locale: string, locales: readonly string[] = rou
 }
 
 /**
- * Every page must carry the social card explicitly: Next replaces the whole top-level
- * `openGraph`/`twitter` key when merging, so root layout images are dropped. A routed locale
+ * Every page carries its social card explicitly, because the site's page merge (`resolveMetadata`)
+ * replaces a whole top-level `openGraph`/`twitter` key rather than merging inside it. A routed locale
  * gets its own card (`pnpm og:build`); anything else falls back to the English site card.
  */
 function siteOgImage(locale: string, locales: readonly string[]) {
@@ -126,7 +121,6 @@ export function buildPageMetadata(
     title,
     description,
     ogImage,
-    hasFileConventionImage,
     absoluteTitle,
     noindex = false,
     contentLocales,
@@ -162,13 +156,13 @@ export function buildPageMetadata(
       description: summary,
       locale: ogLocaleOf(locale),
       ...(alternateLocales.length > 0 ? { alternateLocale: alternateLocales } : {}),
-      ...(hasFileConventionImage ? {} : { images: [ogImage ? { url: ogImage } : siteImage] }),
+      images: [ogImage ? { url: ogImage } : siteImage],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description: summary,
-      ...(hasFileConventionImage ? {} : { images: [ogImage ?? siteImage.url] }),
+      images: [ogImage ?? siteImage.url],
     },
   };
 }
