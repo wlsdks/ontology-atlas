@@ -11140,6 +11140,30 @@
     {
       "case": "evidence/agent-brief-storefront",
       "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 44,
+      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 44,
+      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.structuredContent.errorCode",
+      "change": 44,
+      "reason": "A wrong agent_brief call (a task without detail compact, a detail that is not compact or full, an expectedGraphHash or reviewRevision that is not a digest) answers invalid_arguments, the code the set holds for a call the caller can correct; the JavaScript server said tool_error because its classifier read only certain words (row 44)."
+    },
+    {
+      "case": "evidence/agent-brief-storefront",
+      "where": "answer",
       "id": 4,
       "path": "result.content[0].text#/status",
       "change": 37,

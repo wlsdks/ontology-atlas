@@ -386,9 +386,11 @@ dependency is explained in its pull request and passes `pnpm licenses:check` (al
   0.25.0, Python 0.25.0, Go 0.25.0, Java 0.23.5, `tree-sitter-kotlin-ng` 1.1.0, Rust 0.24.2, C
   0.24.2 (all MIT on crates.io). The import and outline slice measures each grammar's share of the
   program with `cargo bloat` and drops a grammar whose size the program-size gate cannot carry.
-- **Search**: `find_evidence` reuses `vault-index` for the vault-Markdown part of its question if
-  the corpus shows equal or declared answers; source code keeps a hand index in `source-scan`,
-  since `vault-index` indexes none. Fuzzy suggestions use `strsim`.
+- **Search**: `find_evidence` does not use `vault-index`, a decision the slice 7 probe made (see
+  its revision): the index answers whole tokens only (`ord` finds nothing where the script server
+  found every node holding "order"), exists only after the app built it, and a lazy body
+  fingerprint on each loaded document answers from the files alone. Source code keeps a hand index
+  in `source-scan`, since `vault-index` indexes none. Fuzzy suggestions use `strsim`.
 - **Patterns**: `regex`, linear time; `fancy-regex` only where look-around is needed. Each pattern
   restates JavaScript's meaning of `\s`, `\w`, `\b`, `.`, `^`, `$` and case folding under `i`.
 - **Order and Unicode**: `icu_collator` pinned to the ICU 2.2 line the workspace links
@@ -879,8 +881,10 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   script server's plan came to state a direction and a limit its operations never used (row 43).
 - 2026-11-28 (slice 7, evidence search and raw sources): `find_evidence` and `read_source` answer from
   Rust; `agent_brief` does not yet: its answer embeds the validation, meaning and project-source
-  checks, so slice 11 builds it after 9, and requests 3 and 6 of `agent-brief-operations` stay red
-  until then. The probe of `vault-index` settled
+  checks, so slice 11 builds it after 9. Only the real brief requests stay red until then: requests
+  3 and 6 of `agent-brief-operations` and the requests of `agent-brief-storefront` that ask for a
+  brief; its wrong calls (ids 1, 2, 5, 7, 8 of the first and 1 to 3 of the second) are refused by
+  Rust before the vault is read and are declared under row 44. The probe of `vault-index` settled
   the question the Search paragraph left open: FTS5 answers whole tokens (`search.rs`: "each term
   must match, as a phrase of its tokens"), so `ord` finds nothing where `find_evidence` finds every
   node holding "order", the index exists only after the app built it (`Searcher::open` never
