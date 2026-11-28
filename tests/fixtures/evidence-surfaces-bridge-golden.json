@@ -1,0 +1,178 @@
+{
+  "recordedFrom": "the script server (mcp/src/git/git-tools.mjs walk and reader) on 2026-11-28, over the repository built by tests/contract/analysis/evidence-text-surfaces.contract.test.ts",
+  "changes": [
+    {
+      "path": "capabilities/comment.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "capabilities/import.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "capabilities/code.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "capabilities/alias.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "capabilities/space.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "capabilities/layout.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "capabilities/secrets.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "capabilities/notes.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "capabilities/untouched.md",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "src/comment.ts",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:02:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "src/import.ts",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:02:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "src/code.ts",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:02:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "src/alias.ts",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:02:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "src/space.ts",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:02:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "src/layout.py",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:02:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "config/secrets.ts",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:02:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "src/notes.ts",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:02:00Z",
+      "lastCommit": "recorded-commit"
+    },
+    {
+      "path": "src/untouched.ts",
+      "exists": true,
+      "isDir": false,
+      "lastChangedAt": "2026-11-01T00:01:00Z",
+      "lastCommit": "recorded-commit"
+    }
+  ],
+  "readings": [
+    {
+      "path": "src/comment.ts",
+      "before": "export const a = 1;\n",
+      "after": "// Why a is one.\nexport const a = 1; /* fixed */\n"
+    },
+    {
+      "path": "src/import.ts",
+      "before": "import { x } from \"./x\";\nexport const b = x;\n",
+      "after": "import {\n  x, // the one\n} from \"./lib/x\";\nexport const b = x;\n"
+    },
+    {
+      "path": "src/code.ts",
+      "before": "export const c = 1;\n",
+      "after": "export const c = 2;\n"
+    },
+    {
+      "path": "src/alias.ts",
+      "before": "import { strict as check } from \"./rules\";\nexport const d = check;\n",
+      "after": "import { loose as check } from \"./rules\";\nexport const d = check;\n"
+    },
+    {
+      "path": "src/space.ts",
+      "before": "export const e = s.split(' ');\n",
+      "after": "export const e = s.split('');\n"
+    },
+    {
+      "path": "src/layout.py",
+      "before": "if x:\n    a()\n    b()\n",
+      "after": "if x:\n    a()\nb()\n"
+    },
+    {
+      "path": "config/secrets.ts",
+      "before": null,
+      "after": null
+    },
+    {
+      "path": "src/notes.ts",
+      "before": "export const n = 1;\n",
+      "after": null
+    },
+    {
+      "path": "src/untouched.ts",
+      "before": "export const u = 1;\n",
+      "after": "export const u = 1;\n"
+    }
+  ]
+}

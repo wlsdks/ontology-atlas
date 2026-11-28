@@ -1,0 +1,25 @@
+{
+  "recordedFrom": "the script server (mcp/src/git/stale-parent.mjs) on 2026-11-28",
+  "verdicts": {
+    "membership moved after the prose": {
+      "slug": "domains/sample",
+      "behindByMs": 864000000
+    },
+    "prose re-written after the membership moved": null,
+    "one commit changed both, which is a re-judgement": null,
+    "a removal counts the same as an addition": {
+      "slug": "domains/sample",
+      "behindByMs": 432000000
+    },
+    "a reordered containment array is not a change": null,
+    "a duplicate member is not a change": null,
+    "nothing moved at all": null,
+    "a project is a summary kind too": {
+      "slug": "domains/sample",
+      "behindByMs": 1209600000
+    },
+    "an element is not a summary kind": null,
+    "a summary node holding nothing": null,
+    "a single revision cannot separate the clocks": null
+  }
+}

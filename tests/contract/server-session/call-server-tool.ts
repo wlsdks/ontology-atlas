@@ -41,14 +41,19 @@ function answerOf(response: RpcResponse | undefined): ServerToolAnswer {
 /**
  * Calls tools of the MCP server over stdio, the way an agent does, in one session over `vault`.
  * It starts `mcp/src/index.js`, the command every client config names, so the answers are the
- * installed server's whichever program that command starts.
+ * installed server's whichever program that command starts. `repoRoot` names the code folder when
+ * the vault sits inside a repository; it defaults to the vault itself.
  */
-export async function callServerTools(vault: string, calls: readonly ServerToolCall[]): Promise<ServerToolAnswer[]> {
+export async function callServerTools(
+  vault: string,
+  calls: readonly ServerToolCall[],
+  options: { repoRoot?: string } = {},
+): Promise<ServerToolAnswer[]> {
   const { responses } = await runServer({
     command: process.execPath,
     args: [join(process.cwd(), 'mcp', 'src', 'index.js')],
     timeoutMs: 60_000,
-    env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: vault },
+    env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: options.repoRoot ?? vault },
     requests: [
       { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'contract-test', version: '1' } } },
       { jsonrpc: '2.0', method: 'notifications/initialized' },
@@ -67,7 +72,8 @@ export async function callServerTool(
   vault: string,
   name: string,
   args: Record<string, unknown>,
+  options: { repoRoot?: string } = {},
 ): Promise<ServerToolAnswer> {
-  const [answer] = await callServerTools(vault, [{ name, arguments: args }]);
+  const [answer] = await callServerTools(vault, [{ name, arguments: args }], options);
   return answer;
 }

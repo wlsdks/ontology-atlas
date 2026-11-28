@@ -1,0 +1,57 @@
+{
+  "recordedFrom": "the script server (mcp/src/schema.mjs, construction/construction-rules.mjs) on 2026-11-28",
+  "starterBodies": {
+    "project": "# Sample Title\n\nOne- or two-line summary of this project: *what / for whom / why*.\n\n## How it grows\n\n- Fill `domains: [...]` in the frontmatter and the domain nodes hang\n  off the project tree automatically.\n- Each domain's capabilities and elements follow the same pattern.\n\nKind and relation contract: https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind\n",
+    "domain": "# Sample Title\n\nDescribe the stable responsibility or problem boundary, what it includes, what it excludes, and the evidence that makes it more than a folder or team.\n\n## Includes\n\n- <one responsibility this domain owns>\n\n## Excludes\n\n- <one neighbouring responsibility this domain does not own>\n\n## Evidence\n\n- <what makes this more than a folder or a team name>\n\n## Uncertainty\n\n- <what you did not read or could not check>\n\nKind and relation contract: https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind\n",
+    "capability": "# Sample Title\n\nDescribe the observable, implementation-independent ability, its boundary, and the evidence or scenario that proves the product or system can perform it.\n\n## Includes\n\n- <one thing this capability can do>\n\n## Excludes\n\n- <one nearby ability this capability does not provide>\n\n## Evidence\n\n- path: <file> — what it proves\n\n## Uncertainty\n\n- <what you did not read or could not check>\n\nKind and relation contract: https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind\n",
+    "element": "# Sample Title\n\nDescribe the distinct implementation role, what it realizes or proves, and the source path or interface that supports the claim. A path alone is evidence, not a node.\n\n## Includes\n\n- <one part of the role this element plays>\n\n## Excludes\n\n- <one nearby role this element does not play>\n\n## Evidence\n\n- path: <file> — what it proves\n\n## Uncertainty\n\n- <what you did not read or could not check>\n\nKind and relation contract: https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind\n",
+    "document": "# Sample Title\n\nState what this narrative or reference artifact explains and which graph concept it describes.\n\nKind and relation contract: https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind\n"
+  },
+  "starterBodyForCapability": "# Vault Compiler\n\nDescribe the observable, implementation-independent ability, its boundary, and the evidence or scenario that proves the product or system can perform it.\n\n## Includes\n\n- <one thing this capability can do>\n\n## Excludes\n\n- <one nearby ability this capability does not provide>\n\n## Evidence\n\n- path: <file> — what it proves\n\n## Uncertainty\n\n- <what you did not read or could not check>\n\nKind and relation contract: https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind\n",
+  "folders": {
+    "project": "",
+    "domain": "domains/",
+    "capability": "capabilities/",
+    "element": "elements/",
+    "document": ""
+  },
+  "headings": {
+    "definition": [
+      "definition",
+      "summary",
+      "what it is",
+      "what this is",
+      "overview"
+    ],
+    "uncertainty": [
+      "uncertainty",
+      "open questions",
+      "unknowns",
+      "not checked",
+      "confidence"
+    ],
+    "includes": [
+      "includes",
+      "inclusions",
+      "in scope",
+      "scope",
+      "boundary",
+      "constraints"
+    ],
+    "excludes": [
+      "excludes",
+      "exclusions",
+      "out of scope",
+      "not this"
+    ]
+  },
+  "epistemic": {
+    "the test suite and the examples folder, which this survey did not inspect": true,
+    "`typings/index.d.ts`, the TypeScript surface, which was not read": true,
+    "`index.js`, the package front door, which is not carried as a node in this first pass": true,
+    "remote vaults are not mentioned in this scan": true,
+    "Atlas does not sync folders between machines": false,
+    "flags, which are options rather than positional arguments": false,
+    "rendering the graph, which the map surface owns": false
+  }
+}
