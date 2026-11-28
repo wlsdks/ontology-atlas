@@ -100,14 +100,13 @@ const capability = (name, part) => ({
   body: `Handles ${name} (${handlerPath(0, part)}:L1-L3).\n\n${BODY}`,
 });
 
-/** validate_vault's share, read from its coverage sentence: abilities off the map and areas not mapped. */
+/** validate_vault's share, read from its coverage counts: abilities off the map and areas not mapped. */
 function validateCounts(validated) {
-  const abilities = /Areas: (\d+) of (\d+) abilities the survey found/.exec(validated.coverage ?? '');
-  const areas = /(\d+) of (\d+) areas are not mapped yet/.exec(validated.coverage ?? '');
-  assert.ok(abilities && areas, `validate_vault gave no share: ${validated.coverage}`);
+  const areas = validated.coverage?.areas;
+  assert.ok(areas, `validate_vault gave no share: ${JSON.stringify(validated.coverage)}`);
   return {
-    abilities: { total: Number(abilities[2]), offMap: Number(abilities[2]) - Number(abilities[1]) },
-    areas: { total: Number(areas[2]), notMapped: Number(areas[1]) },
+    abilities: { total: areas.abilities, offMap: areas.uncovered },
+    areas: { total: areas.counted, notMapped: areas.notMapped },
   };
 }
 

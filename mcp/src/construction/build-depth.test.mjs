@@ -160,7 +160,7 @@ test('an ability is on the map when a capability or element points at its file b
   ], abilityRepo, null);
   assert.deepEqual(depth.unmappedAreas.map((area) => [area.path, area.uncovered, area.abilities]), [['billing', 6, 12], ['client', 6, 6], ['ledger', 4, 12]], 'largest gap first, ties by lines');
   assert.deepEqual([depth.areaCoverage.abilities, depth.areaCoverage.uncovered], [30, 16], 'a path covers 6 and an element\'s cite 8; a file named without lines and a domain\'s cite cover nothing');
-  assert.deepEqual(coverageReport(depth).areas, { counted: 3, notMapped: 3, mappedPercent: 47 });
+  assert.deepEqual(coverageReport(depth).areas, { counted: 3, notMapped: 3, abilities: 30, uncovered: 16, mappedPercent: 47 });
   assert.deepEqual(notMappedLines(depth.areaCoverage).slice(1), ['- Not mapped yet: billing (6 of 12 abilities not on the map)', '- Not mapped yet: client (6 of 6 abilities not on the map)', '- Not mapped yet: ledger (4 of 12 abilities not on the map)']);
 });
 

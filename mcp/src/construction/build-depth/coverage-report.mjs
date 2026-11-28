@@ -39,7 +39,7 @@ function countsOf(depth) {
       ? { abilities: { surveyed: breadth.abilities, onNode: breadth.node, named: breadth.named, excluded: breadth.excluded, unplaced: breadth.unplaced.length } }
       : {}),
     ...(areas
-      ? { areas: { counted: areas.counted, notMapped: areas.notMapped.length, mappedPercent: mappedPercent(areas) } }
+      ? { areas: { counted: areas.counted, notMapped: areas.notMapped.length, abilities: areas.abilities, uncovered: areas.uncovered, mappedPercent: mappedPercent(areas) } }
       : {}),
     ...(reads && reads.capabilities > 0
       ? { reads: { capabilities: reads.capabilities, read: reads.read, unread: (reads.served === 0 ? reads.uncited : reads.unread).length } }
