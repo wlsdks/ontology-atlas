@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
@@ -18,7 +18,6 @@ import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
 import { formatDate } from "@/shared/lib/locale-text/format-date";
 import { MOTION } from "@/shared/motion";
 import {
-  Button,
   FeatureStage,
   InlineEditable,
   OntologyMapKindGlyph,

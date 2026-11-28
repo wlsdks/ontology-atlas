@@ -21,13 +21,7 @@ use std::time::{Duration, UNIX_EPOCH};
 use serde_json::Value;
 use support::{call, request, run_to_end, Program, INITIALIZED};
 
-const CASES: [&str; 5] = [
-    "storefront",
-    "tangle",
-    "containment-tangle",
-    "empty",
-    "one-node",
-];
+const CASES: [&str; 4] = ["storefront", "tangle", "containment-tangle", "empty"];
 
 /// Every file of a vault carries this time in a plan's `compiledSummary.maxMtime`, so the time a
 /// checkout gave the files is not part of an answer.

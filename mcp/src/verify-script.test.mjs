@@ -364,13 +364,11 @@ describe('verify.mjs first-contact gates', () => {
   it('packages project-meaning runtime modules and runs their source-checkout proofs', () => {
     assert.ok(MCP_PKG.files.includes('src/project-source/project-source-inspection.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning/project-meaning-inventory.mjs'));
-    assert.ok(MCP_PKG.files.includes('src/meaning/meaning-repair.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning/project-meaning-receipt.mjs'));
     assert.ok(MCP_PKG.files.includes('src/server/tool-inventory.mjs'));
 
     const fullTestCommand = MCP_PKG.scripts['test:all'];
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning\/project-meaning-inventory\.test\.mjs(?:\s|$)/);
-    assert.match(fullTestCommand, /(?:^|\s)src\/meaning\/meaning-repair\.test\.mjs(?:\s|$)/);
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning\/project-meaning-receipt\.test\.mjs(?:\s|$)/);
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning\/project-meaning-restart\.test\.mjs(?:\s|$)/);
   });

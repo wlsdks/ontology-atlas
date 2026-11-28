@@ -26,8 +26,6 @@ interface CompilerDoc {
   mtime: number;
 }
 
-type Compiled = ReturnType<typeof compileOntology>;
-
 const MAP_KINDS = new Set(["project", "domain", "capability", "element"]);
 
 function loadDocs(dir: string, base = dir): CompilerDoc[] {

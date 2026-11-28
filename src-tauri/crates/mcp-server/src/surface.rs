@@ -268,11 +268,11 @@ mod tests {
     }
 
     #[test]
-    fn the_full_surface_lists_twenty_three_tools_and_hides_the_retired_ones() {
+    fn the_full_surface_lists_twenty_four_tools_and_hides_the_retired_ones() {
         let listed = surface().tools_for_list(&Modes::FULL);
-        assert_eq!(listed.len(), 23);
+        assert_eq!(listed.len(), 24);
         let read = listed.iter().filter(|tool| tool.read_only).count();
-        assert_eq!((read, listed.len() - read), (13, 10));
+        assert_eq!((read, listed.len() - read), (13, 11));
         for retired in [
             "get_concept",
             "add_concept",
@@ -280,7 +280,6 @@ mod tests {
             "find_path",
             "find_neighbors",
             "list_kinds",
-            "index_project",
         ] {
             assert!(
                 surface().tool(retired).is_some(),
@@ -336,7 +335,7 @@ mod tests {
     #[test]
     fn the_inventory_section_counts_what_is_listed() {
         let instructions = surface().instructions(&Modes::FULL);
-        assert!(instructions.contains("## Tool inventory (23 tools = read 13 + write 10)"));
+        assert!(instructions.contains("## Tool inventory (24 tools = read 13 + write 11)"));
         assert!(!instructions.contains("__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__"));
         let read_only = surface().instructions(&Modes {
             read_only: true,
@@ -353,12 +352,12 @@ mod tests {
         assert!(json.starts_with("{\"tools\":[{\"name\":\"connection_info\""));
         assert!(json.ends_with("}]}"));
         let parsed: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
-        assert_eq!(parsed["tools"].as_array().map(Vec::len), Some(23));
+        assert_eq!(parsed["tools"].as_array().map(Vec::len), Some(24));
         let advertised: Vec<&str> = TOOLS_JSON
             .lines()
             .filter(|line| line.starts_with('{'))
             .collect();
-        assert_eq!(advertised.len(), 23 + 7);
+        assert_eq!(advertised.len(), 24 + 6);
         assert!(json.contains(
             advertised
                 .first()
@@ -371,7 +370,7 @@ mod tests {
     #[test]
     fn an_unknown_tool_lists_every_registered_name_that_is_not_retired_in_utf16_order() {
         let names = surface().allowed_tool_names();
-        assert_eq!(names.len(), 23);
+        assert_eq!(names.len(), 24);
         assert!(names.windows(2).all(|pair| pair.first() < pair.get(1)));
     }
 
