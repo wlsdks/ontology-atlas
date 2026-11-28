@@ -14,7 +14,7 @@ export const SCOPE_CONFIGS = Object.freeze({
   frontend: Object.freeze({
     cwd: '.',
     runtime: source(
-      ['app/styles/*.css', 'vitest.config.ts', 'vitest.setup.ts', 'playwright.config.ts', 'src/app/old-folder-cleanup.ts', 'scripts/web/site/*.{ts,tsx}'],
+      ['app/styles/*.css', 'vitest.config.ts', 'vitest.setup.ts', 'playwright.config.ts', 'src/app/old-folder-cleanup.ts', 'src/app/app-route-tree.gen.ts', 'scripts/web/site/*.{ts,tsx}'],
       ['app/**/*.css', 'src/**/*.{ts,tsx}', 'scripts/web/site/*.{ts,tsx}', '!**/*.{test,spec}.{ts,tsx}', '!src/entities/docs-vault/data/**'],
       ALL_ISSUES,
       { vitest: false, playwright: false, ignoreExportsUsedInFile: true },
